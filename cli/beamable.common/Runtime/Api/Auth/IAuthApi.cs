@@ -71,12 +71,12 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="password">The password the player registered when they associated their email address</param>
 		/// <param name="mergeGamerTagToAccount">
 		/// Since this function can only be called from a <see cref="IAuthApi"/> that already exists,
-		/// there must already be some associated <see cref="User"/> account. If the <see cref="mergeGamerTagToAccount"/> is enabled,
+		/// there must already be some associated <see cref="User"/> account. If the <paramref name="mergeGamerTagToAccount"/> is enabled,
 		/// then the current player will be merged with the player associated with the given email and password.
 		/// </param>
 		/// <param name="customerScoped">
 		/// The email and password login can return a <see cref="TokenResponse"/> that works for a specific CID / PID combo, or for
-		/// an entire CID, across all PIDs. When <see cref="customerScoped"/> is enabled, the resulting token will be eligible for
+		/// an entire CID, across all PIDs. When <paramref name="customerScoped"/> is enabled, the resulting token will be eligible for
 		/// the entire CID, regardless of PID. However, this type of token will only work for <see cref="User"/>'s who are at least
 		/// testers, developers, or admins.
 		/// </param>
@@ -88,15 +88,15 @@ namespace Beamable.Common.Api.Auth
 
 		/// <summary>
 		/// Use a token issued by a third party to retrieve a <see cref="TokenResponse"/>. The resulting token response
-		/// can be used to change the current <see cref="User"/>. You should get the <see cref="thirdPartyToken"/> directly
+		/// can be used to change the current <see cref="User"/>. You should get the <paramref name="thirdPartyToken"/> directly
 		/// from the third party itself.
 		/// A login will only work after the third party has been registered by using the <see cref="RegisterThirdPartyCredentials"/> method.
 		/// </summary>
-		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issued the <see cref="thirdPartyToken"/></param>
+		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issued the <paramref name="thirdPartyToken"/></param>
 		/// <param name="thirdPartyToken">The token that you received from the given <see cref="AuthThirdParty"/></param>
 		/// <param name="includeAuthHeader">
 		/// Since this function can only be called from a <see cref="IAuthApi"/> that already exists,
-		/// there must already be some associated <see cref="User"/> account. If the <see cref="includeAuthHeader"/> is enabled,
+		/// there must already be some associated <see cref="User"/> account. If the <paramref name="includeAuthHeader"/> is enabled,
 		/// then the current player will be merged with the player associated with the given third party credential.
 		/// </param>
 		/// <returns></returns>
@@ -129,8 +129,8 @@ namespace Beamable.Common.Api.Auth
 		/// token to the <see cref="LoginThirdParty"/> method to retrieve a <see cref="TokenResponse"/>.
 		/// This method will associate the third party token with the <i>current</i> <see cref="User"/>.
 		/// </summary>
-		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issued the <see cref="accessToken"/></param>
-		/// <param name="accessToken">The token issued by the <see cref="thirdParty"/></param>
+		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issued the <paramref name="accessToken"/></param>
+		/// <param name="accessToken">The token issued by the <paramref name="thirdParty"/></param>
 		/// <returns>
 		/// A <see cref="Promise{User}"/> that will have the updated <see cref="User"/> data for the current user.
 		/// The resulting <see cref="User"/> object will have the <see cref="User.thirdPartyAppAssociations"/> field updated.
@@ -202,8 +202,8 @@ namespace Beamable.Common.Api.Auth
 		/// In order to remove a third party association, you need to retrieve the third party's auth token for the player one last time, so that Beamable
 		/// can verify that the remove operation is secure and authorized by the actual player.
 		/// </summary>
-		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issues the <see cref="token"/></param>
-		/// <param name="token">The token issued by the <see cref="thirdParty"/></param>
+		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issues the <paramref name="token"/></param>
+		/// <param name="token">The token issued by the <paramref name="thirdParty"/></param>
 		/// <returns>
 		/// A <see cref="Promise{User}"/> that will have the updated <see cref="User"/> data for the current user.
 		/// The resulting <see cref="User"/> object will have the <see cref="User.thirdPartyAppAssociations"/> field updated.
@@ -220,7 +220,7 @@ namespace Beamable.Common.Api.Auth
 		/// can be used to change the current <see cref="User"/>.
 		///
 		/// This method returns a <see cref="ExternalLoginResponse"/>, which will contain a <see cref="TokenResponse"/> if the
-		/// <see cref="challengeSolution"/> field is given.
+		/// <paramref name="challengeSolution"/> field is given.
 		/// Otherwise, this method's <see cref="ExternalLoginResponse"/> will contain a <see cref="ExternalAuthenticationResponse"/>
 		/// which has a challenge that needs to be signed.
 		/// 

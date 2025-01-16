@@ -14,8 +14,6 @@ namespace Beamable.Server.Api.Stats
     {
         private const string OBJECT_SERVICE = "object/stats";
 
-        public IBeamableRequester Requester { get; }
-
         public RequestContext Context { get; }
 
         public MicroserviceStatsApi(IBeamableRequester requester, RequestContext context, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)

@@ -24,7 +24,7 @@ namespace Beamable.Common.Player
 		/// This means you can't have multiple refreshes happening at once.
 		/// </para>
 		/// <para>
-		/// If there is not already a refresh happening, then this will always trigger a <see cref="OnLoadingStarted"/> and a <see cref="OnLoadingFinished"/>.
+		/// If there is not already a refresh happening, then this will always trigger a <see cref="AbsRefreshableObservable.OnLoadingStarted"/> and a <see cref="AbsRefreshableObservable.OnLoadingFinished"/>.
 		/// If the data actually changes, then a <see cref="IObservable.OnUpdated"/> will trigger.
 		/// </para>
 		/// </summary>
@@ -77,7 +77,7 @@ namespace Beamable.Common.Player
 		/// The "same" internal values should always produce the same output integer.
 		/// </para>
 		/// <para>
-		/// By default, the broadcast checksum will use the object's <see cref="GetHashCode()"/> implementation.
+		/// By default, the broadcast checksum will use the object's <see cref="object.GetHashCode()"/> implementation.
 		/// </para>
 		/// </summary>
 		/// <returns>an checksum of the object state</returns>

@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <Nullable>enable</Nullable>
+        <Nullable>disable</Nullable>
         <LangVersion>11</LangVersion>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
@@ -17,9 +17,9 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.Microservice.SourceGen package contains the code for our SourceGenerator that runs over
             your C# Microservices.
@@ -29,6 +29,12 @@
         <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        
+        <!-- RS2007 - is the warning about the AnalyzerReleases.Shipped and Unshipped files. -->
+        <NoWarn>$(NoWarn);RS2007</NoWarn>
+        
+        <!-- NU5128 - is a well known source generator warning because we aren't shipping anything in the standard target format-->
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -40,8 +46,6 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.0.0"/>
         <PackageReference Include="System.Text.Json" Version="9.0.0" />
 
-        <!-- Package the generator in the analyzer directory of the nuget package -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -50,11 +54,18 @@
     </ItemGroup>
     
     <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)/../../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../../icon.jpg" Pack="true" PackagePath=""/>
+        
         <ProjectReference Include="..\..\..\cli\beamable.common\beamable.common.csproj" PrivateAssets="all" />
         <ProjectReference Include="..\..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="all"/>
-        
+
+        <!-- Package the generator in the analyzer directory of the nuget package -->
         <!-- We need to add *.dll here so all dlls would be packed inside NuGet package as our DependencyB.dll is not a NuGet package -->
-        <None Include="$(OutputPath)\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\*.dll" 
+              Pack="true" 
+              PackagePath="analyzers/dotnet/cs" 
+              Visible="false" />
         
     </ItemGroup>
 

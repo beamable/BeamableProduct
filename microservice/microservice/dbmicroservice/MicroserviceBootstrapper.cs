@@ -332,7 +332,7 @@ namespace Beamable.Server
 
 			        try
 			        {
-				        configurationMethod.Invoke(null, new object?[] { builder });
+				        configurationMethod.Invoke(null, new object[] { builder });
 			        }
 			        catch (Exception ex)
 			        {

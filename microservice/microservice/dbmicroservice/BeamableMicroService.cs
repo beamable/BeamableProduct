@@ -213,7 +213,7 @@ namespace Beamable.Server
          _serviceShutdownTokenSource = new CancellationTokenSource();
          (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
 
-         _serviceInitialized.Error(ex =>
+         _ = _serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
@@ -234,7 +234,7 @@ namespace Beamable.Server
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
          if (!_serviceAttribute.EnableEagerContentLoading)
          {
-	         var _ = contentService.Init();
+	         _ = contentService.Init();
          }
       }
       
@@ -415,35 +415,7 @@ namespace Beamable.Server
          }
 
       }
-
-      private async Promise<long> GetExecutorPlayerId()
-      {
-	      if (string.IsNullOrEmpty(_args.RefreshToken))
-	      {
-		      // no refresh token was given, so there is no executor.
-		      // This very likely means the service is running as a deployed service.
-		      //  although it is possible through user-error, a C#MS could be started
-		      //  locally without the refresh-token :( 
-		      return 0; 
-	      }
-	      
-	      // a refresh token is resolvable to an access token, which can be used to fetch
-	      //  a playerId. Perhaps, there is no playerId in the realm yet.
-
-	      // var http = new MicroserviceHttpRequester(_args, new HttpClient());
-	      // var auth = new AuthApi(_requester);
-	      // var token = await auth.PostToken(new TokenRequestWrapper
-	      // {
-		     //  grant_type = "refresh_token", 
-		     //  refresh_token = _args.RefreshToken
-	      // }, includeAuthHeader: false);
-	      //
-	      // var account = new AccountsApi(http);
-	      // account.
-
-	      throw new NotImplementedException("cannot ensure playerId");
-      }
-
+      
       private bool TryBuildPortalUrl(out string portalUrl)
       {
 	      var cid = _args.CustomerID;
@@ -621,30 +593,33 @@ namespace Beamable.Server
          try
          {
 	         if (!_runningTaskTable.TryAdd(messageNumber, task))
-            {
-               BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
-            }
-            // watch the task...
-            var _ = task.ContinueWith(finishedTask =>
-            {
-               if (!_runningTaskTable.TryRemove(messageNumber, out var _))
-               {
-                  BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
-               }
-               if (finishedTask.IsFaulted)
-               {
-                  BeamableLogger.LogException(finishedTask.Exception);
-               }
-            });
+	         {
+		         BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
+	         }
+
+	         // watch the task...
+	         _ = task.ContinueWith(finishedTask =>
+	         {
+		         if (!_runningTaskTable.TryRemove(messageNumber, out _))
+		         {
+			         BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
+		         }
+
+		         if (finishedTask.IsFaulted)
+		         {
+			         BeamableLogger.LogException(finishedTask.Exception);
+		         }
+	         });
          }
          catch (Exception ex)
          {
-            if (!_runningTaskTable.TryRemove(messageNumber, out _))
-            {
-               Log.Warning("[Exception] Could not discard monitored task {message} {stack}", ex.Message, ex.StackTrace);
-            }
+	         if (!_runningTaskTable.TryRemove(messageNumber, out _))
+	         {
+		         Log.Warning("[Exception] Could not discard monitored task {message} {stack}", ex.Message,
+			         ex.StackTrace);
+	         }
 
-            throw;
+	         throw;
          }
 
          return task;
@@ -868,7 +843,7 @@ namespace Beamable.Server
 		      method: Method.POST,
 		      uri: "gateway/provider",
 		      body: req.ToJson());
-	      serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
+	      _ = serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
 
 	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
 		      ? PromiseBase.SuccessfulUnit

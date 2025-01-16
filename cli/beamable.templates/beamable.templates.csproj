@@ -9,6 +9,8 @@
         <TargetFramework>net6.0</TargetFramework>
         <PackageId>Beamable.Templates</PackageId>
         <Title>Beamable dotnet-new-templates</Title>
+        <PackageIcon>icon.jpg</PackageIcon>
+        
         <PackageReadmeFile>readme.md</PackageReadmeFile>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
@@ -27,9 +29,12 @@
 
     <ItemGroup>
         <None Include="readme.md" Pack="true" PackagePath="\"/>
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
         <Content Include=".config\dotnet-tools.json" />
         
-        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\*.gitignore" />
         <Compile Remove="**\*" />
     </ItemGroup>
 
