@@ -67,7 +67,7 @@ jobs:
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: profiler
           if-no-files-found: error
