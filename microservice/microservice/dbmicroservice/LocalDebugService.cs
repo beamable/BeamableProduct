@@ -86,7 +86,6 @@ namespace Beamable.Server {
 			{
 				this.Response.ContentType = "text/event-stream";
 
-				var index = 0;
 				using var writer = this.HttpContext.OpenResponseText();
 				var id = Guid.NewGuid().ToString();
 				var channel = _debugLogSink.GetMessageSubscription(id);

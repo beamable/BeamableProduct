@@ -16,7 +16,6 @@ namespace Beamable.Experimental.Api.Lobbies
 		private readonly IBeamableRequester _requester;
 		private readonly IUserContext _userContext;
 		private readonly IBeamLobbyApi _api;
-		private ILobbyApi _lobbyApiImplementation;
 
 		public LobbyService(IBeamableRequester requester, IUserContext userContext, IBeamLobbyApi api)
 		{
@@ -44,7 +43,7 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		}
 
-		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+		/// <inheritdoc cref="ILobbyApi.CreateLobby(string,Beamable.Experimental.Api.Lobbies.LobbyRestriction,string,string,System.Collections.Generic.List{Beamable.Experimental.Api.Lobbies.Tag},int?,int?,System.Collections.Generic.Dictionary{string,string},System.Collections.Generic.Dictionary{string,string})"/>
 		public async Promise<Lobby> CreateLobby(string name,
 		                                  LobbyRestriction restriction,
 		                                  string gameTypeId = null,
@@ -69,7 +68,7 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		}
 
-		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+		/// <inheritdoc cref="ILobbyApi.CreateLobby(string,Beamable.Experimental.Api.Lobbies.LobbyRestriction,Beamable.Common.Content.SimGameTypeRef,string,System.Collections.Generic.List{Beamable.Experimental.Api.Lobbies.Tag},int?,int?,System.Collections.Generic.List{string},System.Collections.Generic.Dictionary{string,string})"/>
 		public Promise<Lobby> CreateLobby(string name,
 										  LobbyRestriction restriction,
 										  SimGameTypeRef gameTypeRef = null,

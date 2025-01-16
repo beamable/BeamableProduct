@@ -32,14 +32,14 @@ public class FederationInstanceConfig : IEquatable<FederationInstanceConfig>
 	[JsonProperty("interface"), System.Text.Json.Serialization.JsonPropertyName("interface"), System.Text.Json.Serialization.JsonRequired]
 	public string Interface;
 
-	public bool Equals(FederationInstanceConfig? other)
+	public bool Equals(FederationInstanceConfig other)
 	{
 		if (ReferenceEquals(null, other)) return false;
 		if (ReferenceEquals(this, other)) return true;
 		return Interface == other.Interface;
 	}
 
-	public override bool Equals(object? obj)
+	public override bool Equals(object obj)
 	{
 		if (ReferenceEquals(null, obj)) return false;
 		if (ReferenceEquals(this, obj)) return true;
@@ -49,7 +49,7 @@ public class FederationInstanceConfig : IEquatable<FederationInstanceConfig>
 
 	public override int GetHashCode() => Interface.GetHashCode();
 
-	public static bool operator ==(FederationInstanceConfig? left, FederationInstanceConfig? right) => Equals(left, right);
+	public static bool operator ==(FederationInstanceConfig left, FederationInstanceConfig right) => Equals(left, right);
 
-	public static bool operator !=(FederationInstanceConfig? left, FederationInstanceConfig? right) => !Equals(left, right);
+	public static bool operator !=(FederationInstanceConfig left, FederationInstanceConfig right) => !Equals(left, right);
 }

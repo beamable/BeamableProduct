@@ -23,6 +23,8 @@
 <!--    <GenerateDocumentationFile>true</GenerateDocumentationFile>-->
     <NoWarn>$(NoWarn);1591;1574;1572;1587;1573</NoWarn>
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>icon.jpg</PackageIcon>
     
     <BeamLatestBuildNumber>$([System.IO.File]::ReadAllText("$(MSBuildThisFileDirectory)/../../build-number.txt").Trim())</BeamLatestBuildNumber>
     <VersionPrefix Condition="'$(VersionPrefix)'=='' OR '$(BeamOverrideVersionWithLocalDev)'=='true'">0.0.123.$(BeamLatestBuildNumber)</VersionPrefix>
@@ -31,15 +33,11 @@
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>10</LangVersion>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <OutputType>Exe</OutputType>
     
   </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
-  
   <PropertyGroup Condition="'$(IsWindows)'=='true'">
     <DefineConstants>_WINDOWS</DefineConstants>
   </PropertyGroup>
@@ -81,6 +79,10 @@
   </ItemGroup>
 
   <ItemGroup>
+
+    <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
@@ -104,10 +106,10 @@
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
     <!-- Unix-Based -->
-    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')" Command="./$(OutputPath)net8.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net9.0/')" Command="./$(OutputPath)net9.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
     
     <!-- Windows-Based -->
-    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')" Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net9.0\')" Command=".\$(OutputPath)net9.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
     
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>

@@ -10,9 +10,9 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.UnityEngine.Addressables code contains mock classes that act as psuedo replacements for Unity addressable types.
         </Description>
@@ -27,7 +27,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+        <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 
 </Project>

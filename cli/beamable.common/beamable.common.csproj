@@ -6,9 +6,9 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.Common package contains the standard Beamable code that powers
             The Beamable Unity SDK, as well as Beamable C# Microservices.
@@ -29,7 +29,10 @@
         
     </PropertyGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
+        <ProjectReference Include="..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
       <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
     <ItemGroup Label="Pack: custom targets">

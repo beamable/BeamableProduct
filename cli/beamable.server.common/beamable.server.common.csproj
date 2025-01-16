@@ -6,9 +6,9 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.Server.Common package contains the standard Beamable code that helps with Beamable Microservices.
         </Description>
@@ -34,13 +34,16 @@
     </ItemGroup>
 
     <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
-        <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.19.2"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.CodeDom" Version="6.0.0" />
     </ItemGroup>
 
     <ItemGroup Label="Pack: source code">
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
         <None Include="Runtime/**/*.cs" PackagePath="content/netstandard2.0/Runtime" Pack="True" />
         <None Include="SharedRuntime/**/*.cs" PackagePath="content/netstandard2.0/SharedRuntime" Pack="True" />
     </ItemGroup>

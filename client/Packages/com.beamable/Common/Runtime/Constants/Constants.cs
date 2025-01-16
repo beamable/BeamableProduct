@@ -167,6 +167,7 @@ namespace Beamable.Common
 			public const string BEAM_PATH = "BEAM_PATH";
 			public const string BEAM_DOTNET_PATH = "BEAM_DOTNET_PATH";
 			public const string BEAM_DOTNET_MSBUILD_PATH = "BEAM_DOTNET_MSBUILD_PATH";
+			public const string BEAM_REQUIRE_PROCESS_ID = "BEAM_REQUIRE_PROCESS_ID";
 		}
 	}
 }

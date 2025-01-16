@@ -83,6 +83,62 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 	}
 }
 
+public class FederatedPlayerInitCallableGenerator : ICallableGenerator
+{
+	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+	{
+
+		var type = provider.instanceType;
+		var output = new List<ServiceMethod>();
+		
+		var interfaces = type.GetInterfaces();
+		var methodToPathMap = new Dictionary<string, string>
+		{
+			[nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "player",
+		};
+
+		foreach (var interfaceType in interfaces)
+		{
+			if (!interfaceType.IsGenericType) continue;
+			if (interfaceType.GetGenericTypeDefinition() != typeof(IFederatedPlayerInit<>)) continue;
+
+			var map = type.GetInterfaceMap(interfaceType);
+			var federatedType = interfaceType.GetGenericArguments()[0];
+			var identity = Activator.CreateInstance(federatedType) as IFederationId;
+
+			var federatedNamespace = identity.GetUniqueName();
+			var method = map.TargetMethods[0];
+
+			var attribute = method.GetCustomAttribute<CallableAttribute>(true);
+			if (attribute != null) continue;
+			
+			if (!methodToPathMap.TryGetValue(map.InterfaceMethods[0].Name, out var pathName))
+			{
+				var err = $"Unable to map method name to path part. name=[{method.Name}]";
+				throw new Exception(err);
+			}
+			
+			var path = $"{federatedNamespace}/{pathName}";
+			var tag = federatedNamespace;
+			
+			var serviceMethod = ServiceMethodHelper.CreateMethod(
+				serviceAttribute,
+				provider,
+				path,
+				tag,
+				false,
+				new HashSet<string>(new []{"*"}),
+				method,
+				true);
+			
+			Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+			output.Add(serviceMethod);
+		}		
+		
+		return output;
+	}
+}
+
 /// <summary>
 /// Generates callable methods for federated login functionality.
 /// </summary>

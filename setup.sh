@@ -13,8 +13,8 @@ echo "Setting up the Beamables!"
 source ./.dev.env
 
 echo "Checking OS=[$OSTYPE] type for root value"
+
 # Get the current directory in the right format...
-#new_path="${path:0:2}//${path:2}"
 case "$OSTYPE" in
     solaris*) ROOT=$(pwd) ;;
     darwin*)  ROOT=$(pwd) ;;
@@ -43,7 +43,6 @@ mkdir -p $SOURCE_FOLDER
 
 echo "Removing old source (if none exists, you'll see an error 'Unable to find any package', but that is okay)"
 dotnet nuget remove source $FEED_NAME || true
-
 
 echo "Adding new source!"
 dotnet nuget add source $SOURCE_FOLDER --name $FEED_NAME
