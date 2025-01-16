@@ -58,7 +58,7 @@ namespace Beamable.Common.Content
 		/// This may result in many network requests if the <see cref="entries"/> haven't been downloaded before.
 		/// </summary>
 		/// <param name="batchSize">
-		/// The <see cref="batchSize"/> controls how many concurrent network requests will be allowed to run simultaneously.
+		/// The <paramref name="batchSize"/> controls how many concurrent network requests will be allowed to run simultaneously.
 		/// </param>
 		/// <returns>
 		/// A <see cref="SequencePromise{T}"/> representing the progress of the content resolution. At the end, it will have a

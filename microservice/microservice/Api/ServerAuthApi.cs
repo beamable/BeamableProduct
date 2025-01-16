@@ -11,12 +11,11 @@ namespace Beamable.Server.Api
       public const string BASIC_SERVICE = "/basic/accounts";
       public const string OBJECT_SERVICE = "/object/accounts";
 
-      public IBeamableRequester Requester { get; }
       public RequestContext Context { get; }
 
       public ServerAuthApi(IRequester requester, RequestContext context) : base(requester)
       {
-         Requester = requester;
+         _requester = requester;
          Context = context;
       }
 

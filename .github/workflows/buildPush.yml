@@ -73,11 +73,12 @@ jobs:
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -125,7 +126,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -261,7 +262,7 @@ jobs:
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
@@ -331,7 +332,7 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: beamableproduct.ipa
           path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'

@@ -163,7 +163,7 @@ namespace Beamable.Common.Api.Inventory
 		Promise<Unit> SetCurrencyProperties(CurrencyRef currency, List<CurrencyProperty> properties, string transaction = null);
 
 		/// <summary>
-		/// Add an instance of the given <see cref="itemRef"/> to the player's inventory.
+		/// Add an instance of the given <paramref name="itemRef"/> to the player's inventory.
 		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="itemRef">A <see cref="ItemRef"/></param>
@@ -173,7 +173,7 @@ namespace Beamable.Common.Api.Inventory
 		Promise<Unit> AddItem(ItemRef itemRef, Dictionary<string, string> properties = null, string transaction = null);
 
 		/// <summary>
-		/// Add an item instance of the given <see cref="contentId"/> to the player's inventory.
+		/// Add an item instance of the given <paramref name="contentId"/> to the player's inventory.
 		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="contentId">A content ID of the item type</param>
@@ -249,7 +249,7 @@ namespace Beamable.Common.Api.Inventory
 			where TContent : ItemContent, new();
 
 		/// <summary>
-		/// Get the  <see cref="InventoryObject{TContent}"/> that are of a specific item content type and match the given <see cref="itemReferences"/>
+		/// Get the  <see cref="InventoryObject{TContent}"/> that are of a specific item content type and match the given <paramref name="itemReferences"/>
 		/// </summary>
 		/// <param name="itemReferences">
 		/// Filter for only the items that match the given <see cref="ItemRef{TContent}"/> types.

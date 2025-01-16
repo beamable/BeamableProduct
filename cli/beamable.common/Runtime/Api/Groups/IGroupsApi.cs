@@ -76,15 +76,15 @@ namespace Beamable.Common.Api.Groups
 		/// <param name="scoreMax">This will be removed in a future version of Beamable. </param>
 		/// <param name="sortField">
 		/// Sort the resulting groups on a particular field name.
-		/// When this field is used, you must also specify a <see cref="sortValue"/>
+		/// When this field is used, you must also specify a <paramref name="sortValue"/>
 		/// </param>
 		/// <param name="sortValue">
 		/// Use a positive number to sort the resulting groups from highest to lowest.
 		/// Use a negative number to sort the resulting groups from lowest to highest.
-		/// When this field is used, you must also specify a <see cref="sortField"/>
+		/// When this field is used, you must also specify a <paramref name="sortField"/>
 		/// </param>
-		/// <param name="offset">The number of resulting groups to skip in the response. This can be used with <see cref="limit"/> to page the groups.</param>
-		/// <param name="limit">The maximum number of resulting groups for the response. This can be used with the <see cref="offset"/> to page the groups.</param>
+		/// <param name="offset">The number of resulting groups to skip in the response. This can be used with <paramref name="limit"/> to page the groups.</param>
+		/// <param name="limit">The maximum number of resulting groups for the response. This can be used with the <paramref name="offset"/> to page the groups.</param>
 		/// <returns></returns>
 		Promise<GroupSearchResponse> Search(
 		   string name = null,
@@ -159,7 +159,7 @@ namespace Beamable.Common.Api.Groups
 		/// Send a request to the rest of the group to request an amount <see cref="Currency"/>.
 		/// Other members in the group may decide to donate their personal currency to the requester by calling the <see cref="Donate"/> method.
 		/// The status of donations can be observed in the <see cref="Group.donations"/> list.
-		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="GroupDonationsContent"/> content object called "default".
+		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="Beamable.Common.Groups.GroupDonationsContent"/> content object called "default".
 		/// After a player makes a donation request, they must wait some number seconds (as configured in the donations.default) before making a new request.
 		/// </summary>
 		/// <param name="group">The group id</param>
@@ -171,7 +171,7 @@ namespace Beamable.Common.Api.Groups
 		/// Send an amount of player currency to fulfil a pending donation request.
 		/// Members of a group can request currency by running the <see cref="MakeDonationRequest"/> method.
 		/// The status of donations can be observed in the <see cref="Group.donations"/> list.
-		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="GroupDonationsContent"/> content object called "default".
+		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="Beamable.Common.Groups.GroupDonationsContent"/> content object called "default".
 		/// </summary>
 		/// <param name="group">The group id</param>
 		/// <param name="recipientId">The player id of the player that is asking for a donation.</param>
@@ -189,7 +189,7 @@ namespace Beamable.Common.Api.Groups
 		/// then this method must be called by the original player to complete the donation.
 		///
 		/// This method will claim all outstanding donations for the current player.
-		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="GroupDonationsContent"/> content object called "default".
+		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="Beamable.Common.Groups.GroupDonationsContent"/> content object called "default".
 		/// </summary>
 		/// <param name="group">the group id.</param>
 		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>

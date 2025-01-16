@@ -29,7 +29,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// </summary>
 		/// <param name="tournamentContentId">A tournament content id.</param>
 		/// <returns>
-		/// A <see cref="Promise{T}"/> containing the first <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <see cref="tournamentContentId"/>
+		/// A <see cref="Promise{T}"/> containing the first <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <paramref name="tournamentContentId"/>
 		/// </returns>
 		[Obsolete("Use " + nameof(GetRunningTournamentInfo) + " method instead.")]
 		Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId);
@@ -39,7 +39,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// </summary>
 		/// <param name="tournamentContentId">A tournament content id.</param>
 		/// <returns>
-		/// A <see cref="Promise{T}"/> containing the running <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <see cref="tournamentContentId"/>
+		/// A <see cref="Promise{T}"/> containing the running <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <paramref name="tournamentContentId"/>
 		/// </returns>
 		Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId);
 
@@ -74,8 +74,8 @@ namespace Beamable.Common.Api.Tournaments
 		/// Leaving this blank, or passing 0, will get the global standings for the <i>current</i> cycle.
 		/// For example, if the value is 2, the resulting global standings will be from 2 cycles ago.
 		/// </param>
-		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the global standings.</param>
-		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the global standings.</param>
+		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <paramref name="max"/>, this can be used to page the global standings.</param>
+		/// <param name="max">Limit the number of entries that will be returned. used with <paramref name="from"/>, this can be used to page the global standings.</param>
 		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are global.</returns>
 		Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId, int cycle = -1, int from = -1,
@@ -90,8 +90,8 @@ namespace Beamable.Common.Api.Tournaments
 		/// Leaving this blank, or passing 0, will get the standings for the <i>current</i> cycle.
 		/// For example, if the value is 2, the resulting standings will be from 2 cycles ago.
 		/// </param>
-		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the standings.</param>
-		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the standings.</param>
+		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <paramref name="max"/>, this can be used to page the standings.</param>
+		/// <param name="max">Limit the number of entries that will be returned. used with <paramref name="from"/>, this can be used to page the standings.</param>
 		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are relative the current player's tier and stage.</returns>
 		Promise<TournamentStandingsResponse> GetStandings(string tournamentId, int cycle = -1, int from = -1,
@@ -106,8 +106,8 @@ namespace Beamable.Common.Api.Tournaments
 		/// Leaving this blank, or passing 0, will get the standings for the <i>current</i> cycle.
 		/// For example, if the value is 2, the resulting standings will be from 2 cycles ago.
 		/// </param>
-		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the standings.</param>
-		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the standings.</param>
+		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <paramref name="max"/>, this can be used to page the standings.</param>
+		/// <param name="max">Limit the number of entries that will be returned. used with <paramref name="from"/>, this can be used to page the standings.</param>
 		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are for the player's group members.</returns>
 		Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId, int cycle = -1, int from = -1,
@@ -123,8 +123,8 @@ namespace Beamable.Common.Api.Tournaments
 		/// Leaving this blank, or passing 0, will get the standings for the <i>current</i> cycle.
 		/// For example, if the value is 2, the resulting standings will be from 2 cycles ago.
 		/// </param>
-		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the group standings.</param>
-		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the group standings.</param>
+		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <paramref name="max"/>, this can be used to page the group standings.</param>
+		/// <param name="max">Limit the number of entries that will be returned. used with <paramref name="from"/>, this can be used to page the group standings.</param>
 		/// <param name="focus">The id of a group to focus the results for. A focused response will include the given group, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentGroupsResponse"/> where the inner standings are relative the current player's tier and stage.</returns>
 		Promise<TournamentGroupsResponse> GetGroups(string tournamentId, int cycle = -1, int from = -1,
@@ -160,20 +160,20 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<TournamentPlayerStatus> JoinTournament(string tournamentId, double startScore = 0);
 
 		/// <summary>
-		/// Set the tournament score for the given <see cref="dbid"/>. The player must have joined the tournament using the <see cref="JoinTournament"/>
+		/// Set the tournament score for the given <paramref name="dbid"/>. The player must have joined the tournament using the <see cref="JoinTournament"/>
 		/// method before they can submit scores.
 		/// </summary>
 		/// <param name="tournamentId">The runtime id of a tournament.</param>
 		/// <param name="dbid">The player id of the player that will have their score updated.</param>
 		/// <param name="score">
-		/// If the <see cref="incrementScore"/> is false (which it is by default),
+		/// If the <paramref name="incrementScore"/> is false (which it is by default),
 		///  then the score will be the player's new score.
-		/// However, if the <see cref="incrementScore"/> is true,
+		/// However, if the <paramref name="incrementScore"/> is true,
 		///  then the score will be added to the player's existing score. Negative values would lower the player's score.
 		/// </param>
 		/// <param name="incrementScore">
-		/// When true, the <see cref="score"/> value will be added to the player's existing score.
-		/// When false, the <see cref="score"/> value will become the player's new score.
+		/// When true, the <paramref name="score"/> value will be added to the player's existing score.
+		/// When false, the <paramref name="score"/> value will become the player's new score.
 		/// </param>
 		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<Unit> SetScore(string tournamentId, long dbid, double score, bool incrementScore = false);

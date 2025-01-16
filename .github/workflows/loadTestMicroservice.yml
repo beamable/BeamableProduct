@@ -19,20 +19,23 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            9.0.x
       - name: Install Dotnet Counters
         run: |
           dotnet tool install --global dotnet-counters --version 7.0.447801
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet tool restore
+          beam version update -q
           dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
@@ -66,7 +69,7 @@ jobs:
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: profiler
           if-no-files-found: error

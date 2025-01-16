@@ -68,7 +68,7 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 9.0.x
 
       - uses: actions/setup-node@v4
         with:
@@ -89,7 +89,9 @@ jobs:
 
       - name: Install CLI
         working-directory: ./
-        run: bash ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "./cli/cli" "Global"
+        run: |
+          bash ./setup.sh
+          bash ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 

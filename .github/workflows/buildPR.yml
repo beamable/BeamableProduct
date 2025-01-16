@@ -19,7 +19,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['8.0.x' ]
+        dotnet-version: ['9.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-nuget
       - name: Build a Nuget package
         run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: Microservice Nuget Package
           path: ./nuget-build
@@ -49,7 +49,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['8.0.x' ]
+        dotnet-version: ['9.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -78,7 +78,7 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        dotnet-version: ['8.0.x' ]
+        dotnet-version: ['9.0.x' ]
         runners: [ windows-latest, ubuntu-latest ]
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
@@ -103,15 +103,18 @@ jobs:
         working-directory: ./
         shell: bash
         run: |
-          ./set-packages.sh "${{ github.workspace }}/client"
-        env:
-          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
+          ./setup.sh
+          ./dev.sh
+      - name: Check CLI
+        run: |
+          cat ./build-number.txt
+          beam --version
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build
-        run: dotnet build --configuration Release --no-restore cli/tests
+        run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Test
-        run: dotnet test --configuration Release --no-restore cli/tests
+        run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -149,11 +152,12 @@ jobs:
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -208,7 +212,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -258,11 +262,12 @@ jobs:
       - name: Setup .NET Core SDK 
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -343,7 +348,7 @@ jobs:
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}

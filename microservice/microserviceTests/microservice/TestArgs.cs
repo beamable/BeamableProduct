@@ -128,5 +128,6 @@ namespace microserviceTests.microservice
       public string MetadataUrl { get; }
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
+	  public int RequireProcessId { get; }
    }
 }

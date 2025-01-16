@@ -38,7 +38,8 @@ public static class RouteTableGeneration
 			{
 				new FederatedLoginCallableGenerator(),
 				new FederatedInventoryCallbackGenerator(),
-				new FederatedGameServerCallableGenerator()
+				new FederatedGameServerCallableGenerator(),
+				new FederatedPlayerInitCallableGenerator()
 			},
 			generators
 			);

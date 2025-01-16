@@ -7,15 +7,15 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.Tooling.Common package contains standard Beamable code shared between the CLI and the Microservices
         </Description>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
         <PackageOutputPath>./nupkg</PackageOutputPath>
-
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
 
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>11</LangVersion>
@@ -30,11 +30,14 @@
       <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="Serilog" Version="2.10.0" />
-      <PackageReference Include="System.Text.Json" Version="8.0.4"/>
+      <PackageReference Include="System.Text.Json" Version="9.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
+        <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
       <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
       <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>

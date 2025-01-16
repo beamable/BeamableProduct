@@ -89,7 +89,7 @@ namespace Beamable.Common.Dependencies
 
 		/// <summary>
 		/// Given some type, try to find the service <see cref="ServiceDescriptor"/> for the type.
-		/// If the service isn't registered, then the method will return false and <see cref="descriptor"/> will be null.
+		/// If the service isn't registered, then the method will return false and <paramref name="descriptor"/> will be null.
 		/// </summary>
 		/// <param name="descriptor"></param>
 		/// <typeparam name="T"></typeparam>
@@ -107,13 +107,13 @@ namespace Beamable.Common.Dependencies
 		Promise Dispose();
 
 		/// <summary>
-		/// Using the <see cref="IDependencyProvider.Fork"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
+		/// Using the <see cref="IDependencyProvider.Fork(IDependencyBuilder)"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
 		/// If this scope has a parent, this will point to it, or be null.
 		/// </summary>
 		IDependencyProviderScope Parent { get; }
 
 		/// <summary>
-		/// Using the <see cref="IDependencyProvider.Fork"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
+		/// Using the <see cref="IDependencyProvider.Fork(IDependencyBuilder)"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
 		/// If this scope has any children, this enumeration shows them, or it will be empty.
 		/// </summary>
 		IEnumerable<IDependencyProviderScope> Children { get; }
@@ -158,7 +158,7 @@ namespace Beamable.Common.Dependencies
 		IEnumerable<ServiceDescriptor> SingletonServices { get; }
 
 		/// <summary>
-		/// If <see cref="IDependencyProvider.Fork"/> had been called on this instance, then there would be children.
+		/// If <see cref="IDependencyProvider.Fork(IDependencyBuilder)"/> had been called on this instance, then there would be children.
 		/// If you want to disassociate the parent/child relationship, use this function.
 		/// </summary>
 		/// <param name="child"></param>

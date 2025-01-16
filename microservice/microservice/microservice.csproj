@@ -7,9 +7,9 @@
     <Company>Beamable</Company>
     <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
     <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-    <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
     <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-    <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageIcon>icon.jpg</PackageIcon>
     <Description>
       The Beamable.Microservice.Runtime package contains the code required for running C# Microservices.
     </Description>
@@ -22,7 +22,7 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <OutputType>Library</OutputType>
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
@@ -36,17 +36,20 @@
   <ItemGroup Label="Nuget Packages">
     <PackageReference Include="EmbedIO" Version="3.4.*" />
     <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Serilog" Version="2.10.*" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.*" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
     <PackageReference Include="Serilog.Sinks.File" Version="3.1.1" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="7.0.0" />
-    <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+    <PackageReference Include="System.Threading.RateLimiting" Version="9.0.1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.19.2"/>
+
+    <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
   </ItemGroup>
   
   <ItemGroup Label="Public Beamable References">
@@ -65,6 +68,9 @@
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net8.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
+  </ItemGroup>
+  <ItemGroup Label="Pack Internal Beamable References: Net9.0">
+    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net9.0" Pack="True"/>
   </ItemGroup>
   
 

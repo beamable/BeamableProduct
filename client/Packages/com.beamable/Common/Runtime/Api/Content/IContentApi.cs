@@ -41,7 +41,7 @@ namespace Beamable.Common.Api.Content
 		/// </param>
 		/// <param name="contentType">
 		/// If you know the type of the content, you can pass it so that the resulting <see cref="IContentObject"/> will be
-		/// castable to the given <see cref="contentType"/>
+		/// castable to the given <paramref name="contentType"/>
 		/// </param>
 		/// <param name="manifestID">
 		/// By default, use the "global" manifest. A realm can have multiple groupings of content, where each group has its own manifest.
@@ -83,9 +83,9 @@ namespace Beamable.Common.Api.Content
 		/// By default, use the "global" manifest. A realm can have multiple groupings of content, where each group has its own manifest.
 		/// If you haven't published multiple manifests, you should not use this field.
 		/// </param>
-		/// <typeparam name="TContent">The type of the content that the <see cref="reference"/> refers to.</typeparam>
+		/// <typeparam name="TContent">The type of the content that the <paramref name="reference"/> refers to.</typeparam>
 		/// <returns>
-		/// A <see cref="Promise{TContent}"/> that returns a <see cref="TContent"/> for the given content reference
+		/// A <see cref="Promise{TContent}"/> that returns a <typeparamref name="TContent"/> for the given content reference
 		/// </returns>
 		Promise<TContent> GetContent<TContent>(IContentRef reference, string manifestID = "") where TContent : ContentObject, new();
 
@@ -102,9 +102,9 @@ namespace Beamable.Common.Api.Content
 		/// By default, use the "global" manifest. A realm can have multiple groupings of content, where each group has its own manifest.
 		/// If you haven't published multiple manifests, you should not use this field.
 		/// </param>
-		/// <typeparam name="TContent">The type of the content that the <see cref="reference"/> refers to.</typeparam>
+		/// <typeparam name="TContent">The type of the content that the <paramref name="reference"/> refers to.</typeparam>
 		/// <returns>
-		/// A <see cref="Promise{TContent}"/> that returns a <see cref="TContent"/> for the given content reference
+		/// A <see cref="Promise{TContent}"/> that returns a <typeparamref name="TContent"/> for the given content reference
 		/// </returns>
 		Promise<TContent> GetContent<TContent>(IContentRef<TContent> reference, string manifestID = "") where TContent : ContentObject, new();
 
@@ -130,7 +130,7 @@ namespace Beamable.Common.Api.Content
 		/// </param>
 		/// <returns>
 		/// A <see cref="Promise{ClientManifest}"/> that will complete when the latest <see cref="ClientManifest"/> has been received from Beamable.
-		/// The manifest will only include entries that passed the given <see cref="filter"/>
+		/// The manifest will only include entries that passed the given <paramref name="filter"/>
 		/// </returns>
 		Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "");
 
@@ -145,7 +145,7 @@ namespace Beamable.Common.Api.Content
 		/// </param>
 		/// <returns>
 		/// A <see cref="Promise{ClientManifest}"/> that will complete when the latest <see cref="ClientManifest"/> has been received from Beamable.
-		/// The manifest will only include entries that passed the given <see cref="filter"/>
+		/// The manifest will only include entries that passed the given <paramref name="query"/>
 		/// </returns>
 		Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "");
 

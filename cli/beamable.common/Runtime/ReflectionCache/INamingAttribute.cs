@@ -22,7 +22,7 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// A function that validates the list of names given to the implementing attribute instance.
 		/// </summary>
-		/// <returns>An <see cref="AttributeValidationResult{T}"/> with a clear message and <see cref="ReflectionCache.ValidationResultType"/>.</returns>
+		/// <returns>An <see cref="AttributeValidationResult"/> with a clear message and <see cref="ReflectionCache.ValidationResultType"/>.</returns>
 		AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames);
 	}
 

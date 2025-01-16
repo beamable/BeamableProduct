@@ -19,7 +19,7 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 9.0.x
       - name: Install dotnet-format
         run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Build CLI 
