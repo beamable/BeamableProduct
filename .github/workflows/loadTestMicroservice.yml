@@ -19,7 +19,7 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 9.0.x
       - name: Install Dotnet Counters
         run: |
           dotnet tool install --global dotnet-counters --version 7.0.447801
