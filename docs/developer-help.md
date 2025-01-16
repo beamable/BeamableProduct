@@ -26,16 +26,14 @@ First, here is a list of the scripts. Later on there will be a "workflow-first" 
 
 | script                | description                                                                                                                                                                                                                                                                                       |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/set-packages.sh`    | builds all your local source code to nuget packages, and installs them inside a local nuget package source. The packages will always have version, `0.0.123`. Note: this script _also_ runs the `/templates/build.sh` script by default, but it _does not_ run the `/cli/cli/install.sh` script.  |
-| `/cli/cli/install.sh` | builds your local CLI source code and installs it globally.                                                                                                                                                                                                                                       |
-| `/templates/build.sh` | builds your local templates and installs them globally.                                                                                                                                                                                                                                           |
+| `/dev.sh`    | builds all your local source code to nuget packages, and installs them inside a local nuget package source. The packages will always have version, `0.0.123`.                                                                                                                             |
 
 #### I wrote a new CLI command, and I want to play with it. 
 there are _many_ ways to do this, (see the CLI section), but using scripts, you should run the `cli/cli/install.sh` script. This will build your local source code into a CLI, and install it globally. After you do this, you can run `beam` wherever on your machine. 
 
 
 #### I changed some Microservice Framework code, and I want to validate it works in a new SAM project (without using Docker)
-Good work, sir/madam for your desire to test your work! If your change is _just_ inside the Microservice Framework, then you should run the `./set-packages.sh` script to bundle all of your Nuget packages to a locally available `0.0.123` version. Once this is done, in your SAM project, you should change the nuget reference from whatever it _was_, to `0.0.123`. 
+Good work, sir/madam for your desire to test your work! If your change is _just_ inside the Microservice Framework, then you should run the `./dev.sh` script to bundle all of your Nuget packages to a locally available `0.0.123` version. Once this is done, in your SAM project, you should change the nuget reference from whatever it _was_, to `0.0.123`. 
 
 ```xml
 <PackageReference Include="Beamable.Microservice.Runtime" Version="0.0.123" /> 
@@ -43,7 +41,7 @@ Good work, sir/madam for your desire to test your work! If your change is _just_
 
 You may need to run a `dotnet restore` to make the SAM pay attention to the new version of the code. Now, when you start the SAM, it will use your local version of the source code. 
 
-There is a more robust way to accomplish this task as well, but with its robustness, comes annoyance. _Technically_, instead of getting all the `Beamable.Microservice.Runtime` code from the nuget package, your SAM project _could_ use `<ProjectReference>`'s to map directly to your source code. This will take longer to set up, but has a nice pay-off. If you spend the time to configure all these source code links, then you don't need to re-run `./set-packages.sh` every time you make a change and want to re-test. (I would encourage you to write a unit test to help with fast iteration speed, but hey, no one scrambles an egg alike). 
+There is a more robust way to accomplish this task as well, but with its robustness, comes annoyance. _Technically_, instead of getting all the `Beamable.Microservice.Runtime` code from the nuget package, your SAM project _could_ use `<ProjectReference>`'s to map directly to your source code. This will take longer to set up, but has a nice pay-off. If you spend the time to configure all these source code links, then you don't need to re-run `./dev.sh` every time you make a change and want to re-test. (I would encourage you to write a unit test to help with fast iteration speed, but hey, no one scrambles an egg alike). 
 
 As an example, Imagine (please) that I have a SAM project in a sibling `/myProject` directory to the monorepo.
 
@@ -87,7 +85,6 @@ Oh boy, you're in the thick of it, now. The docker use-case requires that all th
 
 Ultimately, what needs to happen is that docker needs to be able to find your source code. There are lots of ways that _could_ happen, but the proposed solution is to have the dockerfile for your SAM project copy in a local Nuget package source, register it, and then find the source code from that. 
 
-When you run `./set-packages.sh`, you can pass an argument which is the path to your local `.beamable` project. Then, the output `0.0.123` packages will be sent to that package source. You can write the dockerfile manually, but if hindsight is 20/20, then it would be better to create the service with the `--beamable-dev` flag. This will create a slightly different dockerfile for your service that you can find in the `templates/BeamStorage/Dockerfile-BeamableDev` file. 
 
 ```Dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env  

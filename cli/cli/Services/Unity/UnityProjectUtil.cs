@@ -24,20 +24,11 @@ public static class UnityProjectUtil
 		var sourceFiles = Enumerable.ToList<GeneratedFileDescriptor>(GetAllSourceInDirectory(srcFolder)); 
 		var metaFiles = UnityCliGenerator.GenerateMetaFiles(sourceFiles);
 		
-		foreach (var x in metaFiles)
-		{
-			Log.Debug("Found src: " + x.FileName);
-		}
-		
 		// need to create meta files for the various folders, too...
 		var uniqueFolders = sourceFiles.Select(x => Path.GetDirectoryName(x.FileName))
 			.Distinct()
 			.Where(x => !string.IsNullOrEmpty(x))
 			.ToList();
-		foreach (var x in uniqueFolders)
-		{
-			Log.Debug("Found folder: " + x);
-		}
 		var metaFolders = UnityCliGenerator.GenerateMetaFiles(uniqueFolders);
 
 		WriteFilesAtDirectory(targetUnityPath, sourceFiles);
@@ -61,9 +52,23 @@ public static class UnityProjectUtil
 		{
 			var fullPath = Path.Combine(targetDirectory, file.FileName);
 			var dir = Path.GetDirectoryName(fullPath);
-			Directory.CreateDirectory(dir);
-			Log.Debug($"Writing {file.FileName} to {fullPath}");
+			
+			if (Directory.Exists(dir))
+			{
+				File.SetAttributes(dir, FileAttributes.None);
+			}
+			else
+			{
+				Directory.CreateDirectory(dir);
+				File.SetAttributes(dir, FileAttributes.ReadOnly);
+			}
+			
+			if (File.Exists(fullPath))
+			{
+				File.SetAttributes(fullPath, FileAttributes.None);
+			}
 			File.WriteAllText(fullPath, file.Content);
+			File.SetAttributes(fullPath, FileAttributes.ReadOnly);
 		}
 	}
 
@@ -304,6 +309,7 @@ public static class UnityProjectUtil
 			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
 			foreach (var file in filesToDelete)
 			{
+				File.SetAttributes(file, FileAttributes.None);
 				File.Delete(file);
 			}
 		}

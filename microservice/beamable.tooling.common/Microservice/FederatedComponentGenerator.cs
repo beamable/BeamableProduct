@@ -19,6 +19,8 @@ public static class FederatedComponentGenerator
 				return FederationType.IFederatedCommerce;
 			case "IFederatedGameServer":
 				return FederationType.IFederatedGameServer;
+			case "IFederatedPlayerInit":
+				return FederationType.IFederatedPlayerInit;
 			default:
 				throw new InvalidOperationException(
 					$"the given federation name=[{federationName}] is not mapped to a federation enum value");

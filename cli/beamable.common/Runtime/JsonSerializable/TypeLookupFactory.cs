@@ -6,7 +6,7 @@ namespace Beamable.Serialization
 	public partial class JsonSerializable
 	{
 		/// <summary>
-		/// The <see cref="TypeLookupFactory{T}"/> allows the <see cref="JsonSerializable.FromJson"/> method
+		/// The <see cref="TypeLookupFactory{T}"/> allows the <see cref="JsonSerializable.FromJson{T}(string,bool)"/> method
 		/// to read JSON with polymorphic data types.
 		/// It is required that each sub type of a polymorphic root implement a "type" field.
 		/// The "type" field is used by this factory to generate the correct instance.

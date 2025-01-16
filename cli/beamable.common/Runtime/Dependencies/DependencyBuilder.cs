@@ -78,7 +78,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
 		/// </summary>
-		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="TInterface"/></param>
+		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="T"/></param>
 		/// <typeparam name="T">The type that is actually registered in the <see cref="IDependencyBuilder"/>. There can only be one registration for this type per <see cref="IDependencyBuilder"/></typeparam>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder AddTransient<T>(Func<IDependencyProvider, T> factory);
@@ -87,7 +87,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
 		/// </summary>
-		/// <param name="factory">A function that produces an instance of <typeparamref name="TInterface"/></param>
+		/// <param name="factory">A function that produces an instance of <typeparamref name="T"/></param>
 		/// <typeparam name="T">The type that is actually registered in the <see cref="IDependencyBuilder"/>. There can only be one registration for this type per <see cref="IDependencyBuilder"/></typeparam>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder AddTransient<T>(Func<T> factory);
@@ -96,7 +96,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
 		/// <para>
-		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
+		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="T"/> type,
 		/// and providing parameters for the constructor from the <see cref="IDependencyProvider"/> itself
 		/// </para>
 		/// </summary>
@@ -171,7 +171,7 @@ namespace Beamable.Common.Dependencies
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
-		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="TInterface"/></param>
+		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="T"/></param>
 		/// <typeparam name="T">The type that is actually registered in the <see cref="IDependencyBuilder"/>. There can only be one registration for this type per <see cref="IDependencyBuilder"/></typeparam>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder AddScoped<T>(Func<IDependencyProvider, T> factory);
@@ -184,7 +184,7 @@ namespace Beamable.Common.Dependencies
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
-		/// <param name="factory">A function that produces an instance of <typeparamref name="TInterface"/></param>
+		/// <param name="factory">A function that produces an instance of <typeparamref name="T"/></param>
 		/// <typeparam name="T">The type that is actually registered in the <see cref="IDependencyBuilder"/>. There can only be one registration for this type per <see cref="IDependencyBuilder"/></typeparam>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder AddScoped<T>(Func<T> factory);
@@ -210,7 +210,7 @@ namespace Beamable.Common.Dependencies
 		/// will generate a new scope instance.
 		/// </para>
 		/// <para>
-		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
+		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="T"/> type,
 		/// and providing parameters for the constructor from the <see cref="IDependencyProvider"/> itself
 		/// </para>
 		/// </summary>
@@ -314,7 +314,7 @@ namespace Beamable.Common.Dependencies
 		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
-		/// <param name="service">A value instance of <typeparamref name="TInterface"/></param>
+		/// <param name="service">A value instance of <typeparamref name="T"/></param>
 		/// <typeparam name="T">The type that is actually registered in the <see cref="IDependencyBuilder"/>. There can only be one registration for this type per <see cref="IDependencyBuilder"/></typeparam>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder AddSingleton<T>(T service);
@@ -326,7 +326,7 @@ namespace Beamable.Common.Dependencies
 		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// <para>
-		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
+		/// The instance will automatically be created by using the first available constructor of the type,
 		/// and providing parameters for the constructor from the <see cref="IDependencyProvider"/> itself
 		/// </para>
 		/// </summary>
@@ -341,7 +341,7 @@ namespace Beamable.Common.Dependencies
 		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// <para>
-		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
+		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="T"/> type,
 		/// and providing parameters for the constructor from the <see cref="IDependencyProvider"/> itself
 		/// </para>
 		/// </summary>
@@ -354,7 +354,7 @@ namespace Beamable.Common.Dependencies
 		/// </summary>
 		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
 		/// <typeparam name="TNew">The new implementation type</typeparam>
-		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <typeparamref name="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate = true) where TNew : TExisting;
 
@@ -363,8 +363,8 @@ namespace Beamable.Common.Dependencies
 		/// </summary>
 		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
 		/// <typeparam name="TNew">The new implementation type</typeparam>
-		/// <param name="newService">The instance of <see cref="TNew"/> that will be used </param>
-		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <param name="newService">The instance of <typeparamref name="TNew"/> that will be used </param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <typeparamref name="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true) where TNew : TExisting;
 
@@ -376,7 +376,7 @@ namespace Beamable.Common.Dependencies
 		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
 		/// <typeparam name="TNew">The new implementation type</typeparam>
 		/// <param name="factory">A method that will be invoked to create the instance</param>
-		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <typeparamref name="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<TNew> factory, bool autoCreate = true) where TNew : TExisting;
 
@@ -386,7 +386,7 @@ namespace Beamable.Common.Dependencies
 		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
 		/// <typeparam name="TNew">The new implementation type</typeparam>
 		/// <param name="factory">A method that will be invoked to create the instance</param>
-		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <typeparamref name="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<IDependencyProvider, TNew> factory, bool autoCreate = true) where TNew : TExisting;
 

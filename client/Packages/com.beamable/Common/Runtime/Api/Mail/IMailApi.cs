@@ -13,6 +13,7 @@ namespace Beamable.Common.Api.Mail
 		/// <param name="request">
 		/// A <see cref="SearchMailRequest"/> to filter the player's mail with.
 		/// </param>
+		/// <param name="includeAuthHeader"></param>
 		/// <returns>
 		/// A <see cref="Promise{T}"/> containing a <see cref="SearchMailResponse"/>
 		/// The response will include a set of <see cref="SearchMailResponseClause"/>s that correspond to

@@ -6,9 +6,9 @@
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageIcon>icon.jpg</PackageIcon>
         <Description>
             The Beamable.Server.Common package contains the standard Beamable code that helps with Beamable Microservices.
         </Description>
@@ -20,6 +20,8 @@
         <LangVersion>8</LangVersion>
 
         <UseMongoNugetReference>true</UseMongoNugetReference>
+        <BeamCopyCommonFlags>--no-build</BeamCopyCommonFlags>
+        
     </PropertyGroup>
 
     <PropertyGroup>
@@ -32,22 +34,26 @@
     </ItemGroup>
 
     <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
-        <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.19.2"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.CodeDom" Version="6.0.0" />
     </ItemGroup>
 
     <ItemGroup Label="Pack: source code">
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
         <None Include="Runtime/**/*.cs" PackagePath="content/netstandard2.0/Runtime" Pack="True" />
         <None Include="SharedRuntime/**/*.cs" PackagePath="content/netstandard2.0/SharedRuntime" Pack="True" />
     </ItemGroup>
     
     
-    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="'$(ReleaseSharedCode)'=='true' AND Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
+    <Target Name="CopyCodeToUnity" 
+            Condition="'$(BEAM_COPY_CODE_TO_UNITY)' == 'true' AND Exists('../../client/Packages/com.beamable') AND '$(TargetFramework)'=='net8.0'">
         <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
-        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v"/>
-        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime --logs v"/>
+        <Exec Command="dotnet run -f net8.0 --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v --no-redirect --emit-log-streams --no-log-file"/>
+        <Exec Command="dotnet run -f net8.0 --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime --logs v --no-redirect --emit-log-streams --no-log-file"/>
     </Target>
-    
+
 </Project>

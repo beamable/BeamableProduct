@@ -43,6 +43,7 @@ namespace Beamable.Server
 		public string MetadataUrl { get; }
 		public string RefreshToken { get; }
 		public long AccountId { get; }
+		public int RequireProcessId { get; }
 	}
 
 	public enum LogOutputType
@@ -88,6 +89,7 @@ namespace Beamable.Server
 		public string MetadataUrl { get; set; }
 		public string RefreshToken { get; set; }
 		public long AccountId { get; set; }
+		public int RequireProcessId { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -130,7 +132,8 @@ namespace Beamable.Server
 				LogOutputPath = args.LogOutputPath,
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
 				MetadataUrl = args.MetadataUrl,
-				AccountId = args.AccountId
+				AccountId = args.AccountId,
+				RequireProcessId = args.RequireProcessId
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -198,6 +201,9 @@ namespace Beamable.Server
 		}
 
 		public long AccountId => GetLongFromEnvironmentVariable("USER_ACCOUNT_ID", 0);
+
+		public int RequireProcessId =>
+			GetIntFromEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, 0);
 
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");

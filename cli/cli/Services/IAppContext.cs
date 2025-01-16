@@ -46,7 +46,7 @@ public interface IAppContext
 	/// <summary>
 	/// The version of the CLI that is currently running.
 	/// </summary>
-	PackageVersion ExecutingVersion { get; }
+	string ExecutingVersion { get; }
 	
 	/// <summary>
 	/// true if the CLI is running in a directory that has a .beamable folder and a .config/dotnet-tools.json
@@ -57,7 +57,7 @@ public interface IAppContext
 	/// The version of the CLI defined in the local project's .config/dotnet-tools.json file; or null if this
 	/// isn't a local project. 
 	/// </summary>
-	PackageVersion LocalProjectVersion { get; }
+	string LocalProjectVersion { get; }
 	string DockerPath { get; }
 
 	/// <summary>
@@ -101,13 +101,13 @@ public class DefaultAppContext : IAppContext
 
 
 	/// <inheritdoc cref="IAppContext.ExecutingVersion"/>
-	public PackageVersion ExecutingVersion => VersionService.GetNugetPackagesForExecutingCliVersion();
+	public string ExecutingVersion => VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 
 	/// <inheritdoc cref="IAppContext.IsLocalProject"/>
 	public bool IsLocalProject => LocalProjectVersion != null;
 
 	/// <inheritdoc cref="IAppContext.LocalProjectVersion"/>
-	public PackageVersion LocalProjectVersion
+	public string LocalProjectVersion
 	{
 		get
 		{

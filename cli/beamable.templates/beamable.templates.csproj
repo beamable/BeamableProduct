@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    
+    <PropertyGroup>
+        <Authors>Beamable</Authors>
+        <Description>dotnet new templates for Beamable</Description>
+        <PackageTags>template dotnet Beamable service</PackageTags>
+        
+        <PackageType>Template</PackageType>
+        <TargetFramework>net6.0</TargetFramework>
+        <PackageId>Beamable.Templates</PackageId>
+        <Title>Beamable dotnet-new-templates</Title>
+        <PackageIcon>icon.jpg</PackageIcon>
+        
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+        
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        
+        <IncludeContentInPack>true</IncludeContentInPack>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <ContentTargetFolders>content</ContentTargetFolders>
+
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="readme.md" Pack="true" PackagePath="\"/>
+        <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+
+        <Content Include=".config\dotnet-tools.json" />
+        
+        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\*.gitignore" />
+        <Compile Remove="**\*" />
+    </ItemGroup>
+
+</Project>

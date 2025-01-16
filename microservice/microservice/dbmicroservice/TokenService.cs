@@ -16,7 +16,7 @@ public static class HotReloadMetadataUpdateHandler
 
 	public static List<BeamableMicroService> ServicesToRebuild = new List<BeamableMicroService>();
 
-	public static void UpdateApplication(Type[]? updatedTypes)
+	public static void UpdateApplication(Type[] updatedTypes)
 	{
 		ReloadCount++;
 		foreach (var service in ServicesToRebuild)

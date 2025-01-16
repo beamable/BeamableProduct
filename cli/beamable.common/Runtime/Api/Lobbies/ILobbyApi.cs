@@ -56,6 +56,7 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="passcodeLength">Configurable value for how long the generated passcode should be.</param>
 		/// <param name="maxPlayers">Configurable value for the maximum number of players this lobby can have.</param>
 		/// <param name="statsToInclude">Stat keys to include with Lobby requests.</param>
+		/// <param name="data"></param>
 		/// <returns>A <see cref="Promise{Lobby}"/> representing the created lobby.</returns>
 		Promise<Lobby> CreateLobby(string name,
 								   LobbyRestriction restriction,
@@ -102,6 +103,7 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="lobbyId">The id of the <see cref="Lobby"/>.</param>
 		/// <param name="tags">List of <see cref="Tag"/> to associate with the player.</param>
 		/// <param name="playerId">The id of the player.</param>
+		/// <param name="replace"></param>
 		/// <returns>A <see cref="Promise{Lobby}"/> representing the modified lobby.</returns>
 		Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false);
 

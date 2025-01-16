@@ -30,10 +30,12 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// <see cref="SignatureOfInterest"/> default constructor.  
 		/// </summary>
+		/// <param name="returnType"></param>
 		/// <param name="parameters">
 		/// If no parameters were passed, we assume the user does not care about it and we don't validate parameters.
 		/// If has length 0, it will be enforced that the method has 0 parameters.
-		/// </param> 
+		/// </param>
+		/// <param name="isStatic"></param> 
 		public SignatureOfInterest(bool isStatic, Type returnType, ParameterOfInterest[] parameters)
 		{
 			IsStatic = isStatic;
@@ -198,6 +200,7 @@ namespace Beamable.Common.Reflection
 		/// <param name="methodInfo">
 		/// The method whose parameters we want to look at.
 		/// </param>
+		/// <param name="invalidParamTypes"></param>
 		/// <returns>
 		/// True, if any of the <paramref name="parametersOfInterest"/> match any of the parameters of <paramref name="methodInfo"/>.
 		/// </returns>

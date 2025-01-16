@@ -58,7 +58,7 @@ namespace Beamable.Common.Scheduler
 		/// After a <see cref="Job"/> is scheduled, it will execute some time later.
 		/// This method returns the upcoming times the job will be executed.
 		/// If the job has many upcoming executions due to a CRON trigger, or multiple exactTimes,
-		/// this method will include as many upcoming executions up to the <see cref="limit"/>
+		/// this method will include as many upcoming executions up to the <paramref name="limit"/>
 		/// </summary>
 		/// <param name="jobId">The <see cref="Job.id"/> of a scheduled <see cref="Job"/></param>
 		/// <param name="from">A time to look for executions afterwards.</param>
@@ -172,9 +172,9 @@ namespace Beamable.Common.Scheduler
 		/// The name can be used to filter using the <see cref="GetJobs"/> function.
 		/// </param>
 		/// <param name="action">A <see cref="ISchedulableAction"/> that the <see cref="Job"/>
-		/// will execute when any of the <see cref="triggers"/> execute.</param>
+		/// will execute when any of the <paramref name="triggers"/> execute.</param>
 		/// <param name="triggers">A set of <see cref="ISchedulerTrigger"/>s that
-		/// will cause the <see cref="action"/> to execute.</param>
+		/// will cause the <paramref name="action"/> to execute.</param>
 		/// <param name="retryPolicy">A <see cref="RetryPolicy"/> for the action</param>
 		/// <returns>The created <see cref="Job"/></returns>
 		public async Promise<Job> CreateJob(

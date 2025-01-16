@@ -47,9 +47,9 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// Get the federation id string from a type of <see cref="IFederationId"/>.
-		/// The FederationId is the the unique name of a federation implementation. 
+		/// The FederationId is the unique name of a federation implementation. 
 		/// </summary>
-		/// <param name="federationId"></param>
+		/// <param name="federationIdType"></param>
 		/// <returns></returns>
 		public static string GetUniqueName(Type federationIdType)
 		{
@@ -75,9 +75,9 @@ namespace Beamable.Common
 				
 		/// <summary>
 		/// Get the federation id string from a type of <see cref="IFederationId"/>.
-		/// The FederationId is the the unique name of a federation implementation. 
+		/// The FederationId is the unique name of a federation implementation. 
 		/// </summary>
-		/// <param name="federationId"></param>
+		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		public static string GetUniqueName<T>() where T : IFederationId
 		{

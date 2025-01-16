@@ -77,10 +77,11 @@ namespace Beamable.Common.Reflection
 	/// <summary>
 	/// We use this class to control the resolution order of our <see cref="IReflectionSystem"/>s.
 	/// </summary>
+	[Obsolete]
 	public static class BeamableReflectionSystemPriorities
 	{
 		/// <summary>
-		/// Priority for the <see cref="BeamHint"/>-related Reflection system.
+		/// Priority for the BeamHint-related Reflection system.
 		/// Since we need to gather some data before we resolve any BeamContexts when we are in the editor, this must happen before.
 		/// </summary>
 		public const int BEAM_HINT_REFLECTION_SYSTEM_PRIORITY = 0;

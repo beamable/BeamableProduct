@@ -12,7 +12,8 @@ You'll need dotnet core and docker installed locally.
 
 In case you want to debug changes made in this project inside a microservice, you can run (inside the `client/` folder):
 ```
-./set-packages.sh
+./setup.sh
+./dev.sh
 ```
 
 This will create a local feed source for the beamable nuget packages, so you can change the version of the package

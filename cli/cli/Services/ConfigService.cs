@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Util;
 using Beamable.Serialization.SmallerJSON;
 using cli.Options;
 using cli.Services;
@@ -411,8 +412,7 @@ public class ConfigService
 		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 		string manifestString;
 
-		var executingCliVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
-
+		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
 		// Create the file if it doesn't exist with our default local tool and its correct version.
 		if (!File.Exists(pathToToolsManifest))
 		{
@@ -421,7 +421,7 @@ public class ConfigService
   ""isRoot"": true,
   ""tools"": {{
     ""beamable.tools"": {{
-      ""version"": ""{executingCliVersion}"",
+      ""version"": ""{versionStr}"",
       ""commands"": [
         ""beam""
       ]
@@ -441,7 +441,7 @@ public class ConfigService
 				manifestString = versionMatching.Replace(manifestString, match =>
 				{
 					var fullMatch = match.Value;
-					return fullMatch.Replace(match.Groups[1].Value, executingCliVersion);
+					return fullMatch.Replace(match.Groups[1].Value, versionStr);
 				});
 			}
 			else
@@ -456,7 +456,7 @@ public class ConfigService
 
 				// Prepare the correct value for the "beamable.tools" entry into the manifest file.
 				var toolsDict = new ArrayDict();
-				toolsDict.Add("version", executingCliVersion);
+				toolsDict.Add("version", versionStr);
 				toolsDict.Add("commands", new[] { "beam" });
 
 				// Update the tools JSON object 
@@ -510,7 +510,7 @@ public class ConfigService
 
 		var pathToToolsManifest = currentPath;
 
-		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
 
 		if (versionMatch.Success)

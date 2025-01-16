@@ -130,8 +130,7 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 			existingFederationIds = uniqueFederationIds,
 			availableFederationTypes = Enum.GetValues<FederationType>().Select(FederationTypeExtensions.ToEnumString).Except(new string[]
 			{
-				// these federations are not actually supported yet. (Oct
-				"IFederatedPlayerInit",
+				// these federations are not actually supported yet. (revised Jan 16 2025)
 				"IFederatedCommerce"
 			}).ToList()
 		});

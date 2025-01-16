@@ -69,7 +69,7 @@ namespace Beamable.Common
 
 
 				/// <summary>
-				/// OpenAPI extension that stores <see cref="System.Type.Name"/> of a type used in the microservice "Callable" method signatures.
+				/// OpenAPI extension that stores <see cref="System.Type.FullName"/> of a type used in the microservice "Callable" method signatures.
 				/// </summary>
 				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME = "x-beamable-type-name";
 

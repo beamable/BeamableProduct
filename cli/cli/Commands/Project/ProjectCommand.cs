@@ -242,7 +242,28 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 					.Where(asm => !asm.Name.Contains("BeamableMicroserviceBase") && !asm.Name.Contains("Beamable.Server"))
 					.ToList();
 				foreach (AssemblyName referencedAssembly in requiredAssemblies)
-					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
+				{
+					Assembly loadedAssembly = null;
+					try
+					{
+						loadedAssembly = loadContext.LoadFromAssemblyName(referencedAssembly);
+					}
+					catch (Exception ex)
+					{
+						var likelyPath = Path.Combine(Path.GetDirectoryName(userAssembly.Location),
+							referencedAssembly.Name + ".dll");
+						Log.Debug($"Failed to load assembly=[{referencedAssembly.FullName}] via AssemblyName, so falling back to path=[{likelyPath}]. ex-type=[{ex.GetType().Name}] ex-message=[{ex.Message}]");
+						loadedAssembly = loadContext.LoadFromAssemblyPath(likelyPath);
+
+						if (loadedAssembly.FullName != referencedAssembly.FullName)
+						{
+							Log.Warning($"The assembly=[{referencedAssembly.FullName}] had to load via file-path fallback, but the full-name no longer matches the original assembly reference. Loaded=[{userAssembly.FullName}]");
+						}
+					}
+
+					allAssemblies.Add(loadedAssembly);
+
+				}
 			}
 			else
 			{

@@ -40,7 +40,9 @@ namespace Beamable.Common.Content
 		[Serializable]
 		class VersionProxy
 		{
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 			public string version;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 		}
 	}
 
@@ -50,7 +52,7 @@ namespace Beamable.Common.Content
 		/// <summary>
 		/// Member holding the serialized content. However,
 		/// instead of writing/reading from this, please use
-		/// <see cref="TryGetContent"/>, and <see cref="UpdateContentInfo"/>
+		/// <see cref="TryGetContent"/>, and <see cref="TryUpdateContent"/>
 		/// </summary>
 		public List<ContentDataInfo> content = new List<ContentDataInfo>();
 

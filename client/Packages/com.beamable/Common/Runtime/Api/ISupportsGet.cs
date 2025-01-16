@@ -137,6 +137,8 @@ namespace Beamable.Common.Api
 		/// <summary>
 		/// Builds a <see cref="Method.POST"/> request's body for the given scope and caches it in <see cref="ScopesToBodyMap"/>.
 		/// </summary>
+		/// <param name="ctx">A <see cref="IUserContext"/> to use for the object key</param>
+		/// <param name="serviceName">the API service name for the object service</param>
 		/// <param name="scope">A ","-separated string with all item types or ids that we want to get OR an empty string. Null is not supported.</param>
 		public override string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
 		{

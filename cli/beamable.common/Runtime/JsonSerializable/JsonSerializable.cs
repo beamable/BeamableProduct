@@ -223,6 +223,8 @@ namespace Beamable.Serialization
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="json"></param>
+		/// <param name="factories"></param>
+		/// <param name="throwOnInvalidJson"></param>
 		/// <returns></returns>
 		public static T FromJson<T>(string json, IEnumerable<ISerializableFactory> factories, bool throwOnInvalidJson = false) where T : ISerializable, new()
 		{

@@ -21,7 +21,7 @@ public class SchemaGenerator
 	/// <summary>
 	/// Finds all complex types used in the specified service methods.
 	/// </summary>
-	/// <param name="methods">The collection of service methods to analyze.</param>
+	/// <param name="startingTypes">The collection of service methods to analyze.</param>
 	/// <returns>An enumeration of complex types found in the service methods.</returns>
 	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<Type> startingTypes)
 	{

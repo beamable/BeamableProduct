@@ -29,7 +29,6 @@ namespace Beamable.Api.Analytics
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.
 		/// </summary>
-		/// <param name="gamerTag">Gamertag.</param>
 		/// <param name="payload">Payload (json string)</param>
 		public AnalyticsEventRequest(string payload)
 		{

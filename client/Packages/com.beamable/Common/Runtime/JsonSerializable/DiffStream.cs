@@ -66,8 +66,6 @@ namespace Beamable.Serialization
 	
 	public class DiffStream
 	{
-		private JsonPathValueStream _currentValues;
-		private JsonPathValueStream _nextValues;
 		
 		public static DiffChangeSummary FindChanges<T>(T current, T next) 
 			where T : JsonSerializable.ISerializable
@@ -132,10 +130,8 @@ namespace Beamable.Serialization
 
 	public class JsonPathValueStream : JsonSerializable.IStreamSerializer
 	{
-		private JsonSerializable.IStreamSerializer other;
 		public Dictionary<string, string> jsonPathToValue = new Dictionary<string, string>();
-		private string _prefix;
-		
+
 		public bool TryGetJsonPathValue(string jsonPath, out string stringifiedValue)
 		{
 			return jsonPathToValue.TryGetValue(jsonPath, out stringifiedValue);

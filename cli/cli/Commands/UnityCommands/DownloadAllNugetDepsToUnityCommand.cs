@@ -38,7 +38,7 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, "com.beamable");
 		var infoServer = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, "com.beamable.server");
 
-		if (info.beamableNugetVersion == "0.0.123")
+		if (info.beamableNugetVersion.StartsWith("0.0.123"))
 		{
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}

@@ -33,6 +33,8 @@ namespace Beamable.Common
 		public abstract void Error(string error, params object[] args);
 	}
 
+
+#if !DB_MICROSERVICE
 	/// <summary>
 	/// This type defines the passthrough to %UnityEngine.Debug methods such as Log, LogWarning, and LogException.
 	///
@@ -41,7 +43,6 @@ namespace Beamable.Common
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-#if !DB_MICROSERVICE
 	public class BeamableLogUnityProvider : BeamableLogProvider
 	{
 		public override void Info(string message)

@@ -137,5 +137,13 @@ public static class Diagnostics
 				DiagnosticSeverity.Error,
 				true);
 		
+		public static readonly DiagnosticDescriptor FederationIdMustBeDefault
+			= new("BEAM_FED_O006",
+				$"IFederationId must be \"default\"",
+				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)} with a value of \"default\", Id={{0}}",
+				Category_Federations,
+				DiagnosticSeverity.Error,
+				true);
+		
 	}
 }

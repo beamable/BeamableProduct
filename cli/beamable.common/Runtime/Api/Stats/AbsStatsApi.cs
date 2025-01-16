@@ -11,7 +11,7 @@ namespace Beamable.Common.Api.Stats
 	public abstract class AbsStatsApi : IStatsApi
 	{
 		private readonly UserDataCache<Dictionary<string, string>>.FactoryFunction _cacheFactory;
-		public IBeamableRequester Requester { get; }
+		public IBeamableRequester Requester { get; protected set; }
 		public IUserContext UserContext { get; }
 		protected IDependencyProvider Provider { get; }
 		private static long TTL_MS = 15 * 60 * 1000;

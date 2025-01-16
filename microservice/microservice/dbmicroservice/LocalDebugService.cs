@@ -16,6 +16,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using static Beamable.Common.Constants.Features.Services;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace Beamable.Server {
 
@@ -85,7 +86,6 @@ namespace Beamable.Server {
 			{
 				this.Response.ContentType = "text/event-stream";
 
-				var index = 0;
 				using var writer = this.HttpContext.OpenResponseText();
 				var id = Guid.NewGuid().ToString();
 				var channel = _debugLogSink.GetMessageSubscription(id);
