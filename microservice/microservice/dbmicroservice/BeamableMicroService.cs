@@ -213,7 +213,7 @@ namespace Beamable.Server
          _serviceShutdownTokenSource = new CancellationTokenSource();
          (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
 
-         var errorHandler = _serviceInitialized.Error(ex =>
+         _ = _serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
@@ -234,7 +234,7 @@ namespace Beamable.Server
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
          if (!_serviceAttribute.EnableEagerContentLoading)
          {
-	         var _ = contentService.Init();
+	         _ = contentService.Init();
          }
       }
       
@@ -593,30 +593,33 @@ namespace Beamable.Server
          try
          {
 	         if (!_runningTaskTable.TryAdd(messageNumber, task))
-            {
-               BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
-            }
-            // watch the task...
-            var _ = task.ContinueWith(finishedTask =>
-            {
-               if (!_runningTaskTable.TryRemove(messageNumber, out var _))
-               {
-                  BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
-               }
-               if (finishedTask.IsFaulted)
-               {
-                  BeamableLogger.LogException(finishedTask.Exception);
-               }
-            });
+	         {
+		         BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
+	         }
+
+	         // watch the task...
+	         _ = task.ContinueWith(finishedTask =>
+	         {
+		         if (!_runningTaskTable.TryRemove(messageNumber, out _))
+		         {
+			         BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
+		         }
+
+		         if (finishedTask.IsFaulted)
+		         {
+			         BeamableLogger.LogException(finishedTask.Exception);
+		         }
+	         });
          }
          catch (Exception ex)
          {
-            if (!_runningTaskTable.TryRemove(messageNumber, out _))
-            {
-               Log.Warning("[Exception] Could not discard monitored task {message} {stack}", ex.Message, ex.StackTrace);
-            }
+	         if (!_runningTaskTable.TryRemove(messageNumber, out _))
+	         {
+		         Log.Warning("[Exception] Could not discard monitored task {message} {stack}", ex.Message,
+			         ex.StackTrace);
+	         }
 
-            throw;
+	         throw;
          }
 
          return task;
@@ -840,7 +843,7 @@ namespace Beamable.Server
 		      method: Method.POST,
 		      uri: "gateway/provider",
 		      body: req.ToJson());
-	      var logCallback = serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
+	      _ = serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
 
 	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
 		      ? PromiseBase.SuccessfulUnit

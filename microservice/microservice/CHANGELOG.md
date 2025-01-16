@@ -11,8 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Providing `BEAM_REQUIRE_PROCESS_ID` environment variable will cause microservice to quit when configured process terminates. [#3839](https://github.com/beamable/BeamableProduct/issues/3839)
 - Player initialization support through `IFederatedPlayerInit` interface. [#3838](https://github.com/beamable/BeamableProduct/issues/3838)
 
-### Fixed
-- Updated internal mongo driver reference to Nuget 2.19.2 
+### Changed
+- Updated internal mongo driver reference to Nuget 2.19.2
+
+### Removed
+- Nuget packages no longer support net6.0
 
 ## [3.0.1] - 2024-12-09
 

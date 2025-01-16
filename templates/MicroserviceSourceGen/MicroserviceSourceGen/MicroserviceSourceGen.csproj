@@ -46,8 +46,6 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.0.0"/>
         <PackageReference Include="System.Text.Json" Version="9.0.0" />
 
-        <!-- Package the generator in the analyzer directory of the nuget package -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -61,9 +59,13 @@
         
         <ProjectReference Include="..\..\..\cli\beamable.common\beamable.common.csproj" PrivateAssets="all" />
         <ProjectReference Include="..\..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="all"/>
-        
+
+        <!-- Package the generator in the analyzer directory of the nuget package -->
         <!-- We need to add *.dll here so all dlls would be packed inside NuGet package as our DependencyB.dll is not a NuGet package -->
-        <None Include="$(OutputPath)\*.dll" Exclude="**/*MicroserviceSourceGen.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\*.dll" 
+              Pack="true" 
+              PackagePath="analyzers/dotnet/cs" 
+              Visible="false" />
         
     </ItemGroup>
 
