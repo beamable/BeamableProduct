@@ -548,7 +548,7 @@ namespace Beamable.Common
 		public bool HasProcessedAllEntries => Total == Count;
 
 		/// <summary>
-		/// An enumeration of the successful results. There will be a <see cref="T"/> for each successful promise.
+		/// An enumeration of the successful results. There will be a <typeparamref name="T"/> for each successful promise.
 		/// </summary>
 		public IEnumerable<T> SuccessfulResults => _successes.Select(s => s.Result);
 
@@ -667,13 +667,13 @@ namespace Beamable.Common
 		/// This function accepts a generator that will produce a promise, and then
 		/// that promise will be executed.
 		///
-		/// If the promise fails, the <see cref="shouldRetry"/> callback will be executed
+		/// If the promise fails, the <paramref name="shouldRetry"/> callback will be executed
 		/// with the Exception that caused the promise to fail. If the callback returns
 		/// `true`, then the generator function will be re-invoked to generate a new promise
 		/// instance.
 		///
 		/// This loop continues until the promise succeeds, the callback returns false,
-		/// or the callback has been called <see cref="maxAttempts"/> times.
+		/// or the callback has been called <paramref name="maxAttempts"/> times.
 		/// </summary>
 		/// <param name="promiseGenerator"></param>
 		/// <param name="shouldRetry"></param>
@@ -800,6 +800,7 @@ namespace Beamable.Common
 		/// Only one promise will be active at any given moment.
 		/// </summary>
 		/// <param name="generators"></param>
+		/// <param name="stopWhen"></param>
 		/// <typeparam name="T"></typeparam>
 		/// <returns>A single promise of Unit to represent the completion of the processing. Any other side effects need to be handled separately</returns>
 		public static Promise<Unit> ExecuteSerially<T>(List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
@@ -1020,7 +1021,7 @@ namespace Beamable.Common
 		/// Create a new promise that potentially recovers from a failure that occurs in the given promise.
 		/// If the given promise succeeds, this method's returned promise will succeed with the same value.
 		/// If the given promise fails, the exception will be passed to the callback, and this method's returned promise will succeed
-		/// or fail based on the return value of the callback. If the callback returns a <see cref="T"/>, then the returned promise
+		/// or fail based on the return value of the callback. If the callback returns a <typeparamref name="T"/>, then the returned promise
 		/// will succeed with that value. If the callback throws the same exception, or raises a new one, then the returned promise
 		/// will fail with the given exception.
 		/// </summary>
@@ -1038,7 +1039,7 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// Similar to <see cref="Recover{T}"/>.
-		/// However, The callback returns a <see cref="Promise{T}"/> instead of a <see cref="T"/> directly.
+		/// However, The callback returns a <see cref="Promise{T}"/> instead of a <typeparamref name="T"/> directly.
 		/// </summary>
 		/// <param name="promise">A promise</param>
 		/// <param name="callback">A recovery function</param>
@@ -1067,7 +1068,7 @@ namespace Beamable.Common
 
 #if !UNITY_WEBGL || UNITY_EDITOR // webgl does not support the system.threading library
 		/// <summary>
-		/// Convert <see cref="Task"/> to <see cref="Promise{Unit}"/>.
+		/// Convert <see cref="System.Threading.Tasks.Task"/> to <see cref="Promise{Unit}"/>.
 		/// </summary>
 		/// <param name="task"></param>
 		/// <returns></returns>
@@ -1095,7 +1096,7 @@ namespace Beamable.Common
 		}
 
 		/// <summary>
-		/// Convert <see cref="Task{T}"/> to <see cref="Promise{T}"/>.
+		/// Convert <see cref="System.Threading.Tasks.Task{T}"/> to <see cref="Promise{T}"/>.
 		/// </summary>
 		/// <param name="task"></param>
 		/// <typeparam name="T"></typeparam>
@@ -1126,7 +1127,7 @@ namespace Beamable.Common
 		/// <summary>
 		/// Convert the given promise to a <see cref="Promise{Unit}"/>
 		/// </summary>
-		/// <param name="self">some promise of type <see cref="T"/></param>
+		/// <param name="self">some promise of type <typeparamref name="T"/></param>
 		/// <typeparam name="T">some type</typeparam>
 		/// <returns>A promise of type Unit</returns>
 		public static Promise<Unit> ToUnit<T>(this Promise<T> self)

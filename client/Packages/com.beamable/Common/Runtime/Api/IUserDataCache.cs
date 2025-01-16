@@ -75,7 +75,7 @@ namespace Beamable.Common.Api
 			/// Checks if the entry in the user data cache has outlived a given time-to-live.
 			/// </summary>
 			/// <param name="ttlMs">A time-to-live in milliseconds</param>
-			/// <returns>true if the <see cref="cacheTime"/> is older than the given <see cref="ttlMs"/>, false otherwise</returns>
+			/// <returns>true if the <see cref="cacheTime"/> is older than the given <paramref name="ttlMs"/>, false otherwise</returns>
 			public bool IsExpired(long ttlMs)
 			{
 				if (ttlMs == 0)

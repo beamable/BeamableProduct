@@ -208,8 +208,8 @@ namespace Beamable.Common.Api
 		/// Valid values are case-insensitive version of Get, Post, Put, and Delete.
 		/// </summary>
 		/// <param name="str">The string to parse</param>
-		/// <param name="res">The <see cref="Method"/> value associated with the <see cref="str"/> if it was parsable. If the return of the method is false, do not use the value of this out parameter.</param>
-		/// <returns>True if the <see cref="res"/> out variable has been set, and the <see cref="str"/> was a valid <see cref="Method"/>. False otherwise.</returns>
+		/// <param name="res">The <see cref="Method"/> value associated with the <paramref name="str"/> if it was parsable. If the return of the method is false, do not use the value of this out parameter.</param>
+		/// <returns>True if the <paramref name="res"/> out variable has been set, and the <paramref name="str"/> was a valid <see cref="Method"/>. False otherwise.</returns>
 		public static bool TryParseMethod(string str, out Method res)
 		{
 			res = Method.GET;
@@ -275,30 +275,30 @@ namespace Beamable.Common.Api
 		/// <param name="uri">A Beamable API relative uri. The uri may contain URL parameters. </param>
 		/// <param name="body">
 		/// The body of the network request.
-		/// If the type of the <see cref="body"/> is an object, it will be serialized to JSON.
-		/// If the type of the <see cref="body"/> is a string, no serialization will occur.
+		/// If the type of the <paramref name="body"/> is an object, it will be serialized to JSON.
+		/// If the type of the <paramref name="body"/> is a string, no serialization will occur.
 		/// </param>
 		/// <param name="includeAuthHeader">
-		/// When <see cref="includeAuthHeader"/> is true, the <see cref="IAccessToken.Token"/> value will be automatically
-		/// passed in as the Authorization Header for the request. When the <see cref="includeAuthHeader"/> is false, no
+		/// When <paramref name="includeAuthHeader"/> is true, the <see cref="IAccessToken.Token"/> value will be automatically
+		/// passed in as the Authorization Header for the request. When the <paramref name="includeAuthHeader"/> is false, no
 		/// Authorization Header will be sent with the network request.
 		/// </param>
 		/// <param name="parser">
-		/// By default, the network response will be assumed JSON and deserialized as such. However, if a <see cref="parser"/>
+		/// By default, the network response will be assumed JSON and deserialized as such. However, if a <paramref name="parser"/>
 		/// is provided, the network response will be given the parser as a string. The parser can convert the string into the
-		/// expected result type, <see cref="T"/>
+		/// expected result type, <typeparamref name="T"/>
 		/// </param>
 		/// <param name="useCache">
-		/// When <see cref="useCache"/> is enabled, the network response will be written to disk and indexed by the
-		/// <see cref="uri"/>, <see cref="method"/>, and <see cref="includeAuthHeader"/>.
+		/// When <paramref name="useCache"/> is enabled, the network response will be written to disk and indexed by the
+		/// <paramref name="uri"/>, <paramref name="method"/>, and <paramref name="includeAuthHeader"/>.
 		/// If the same request is sent later when the player is offline, the disk value will be read and given as a valid response.
 		/// </param>
 		/// <typeparam name="T">
-		/// The type of the network response. The network response will be deserialized into an instance of <see cref="T"/>.
-		/// You can override the parsing by passing a custom <see cref="parser"/>
+		/// The type of the network response. The network response will be deserialized into an instance of <typeparamref name="T"/>.
+		/// You can override the parsing by passing a custom <paramref name="parser"/>
 		/// </typeparam>
 		/// <returns>
-		/// A <see cref="Promise{T}"/> of type <see cref="T"/> when the network request completes.
+		/// A <see cref="Promise{T}"/> of type <typeparamref name="T"/> when the network request completes.
 		/// </returns>
 		Promise<T> Request<T>(
 		   Method method,
@@ -337,27 +337,27 @@ namespace Beamable.Common.Api
 		/// <param name="url"></param>
 		/// <param name="body">
 		/// The body of the network request.
-		/// If the type of the <see cref="body"/> is an object, it will be serialized to JSON.
-		/// If the type of the <see cref="body"/> is a string, no serialization will occur.
+		/// If the type of the <paramref name="body"/> is an object, it will be serialized to JSON.
+		/// If the type of the <paramref name="body"/> is a string, no serialization will occur.
 		/// </param>
 		/// <param name="headers">
 		/// A dictionary where the keys are header names, and the values are the header values.
 		/// </param>
 		/// <param name="contentType">
 		/// A MIME type for the request. For example, "application/json".
-		/// If the <see cref="body"/> is serialized to JSON, the <see cref="contentType"/> will become "application/json" by default.
+		/// If the <paramref name="body"/> is serialized to JSON, the <paramref name="contentType"/> will become "application/json" by default.
 		/// </param>
 		/// <param name="parser">
-		/// By default, the network response will be assumed JSON and deserialized as such. However, if a <see cref="parser"/>
+		/// By default, the network response will be assumed JSON and deserialized as such. However, if a <paramref name="parser"/>
 		/// is provided, the network response will be given the parser as a string. The parser can convert the string into the
-		/// expected result type, <see cref="T"/>
+		/// expected result type, <typeparamref name="T"/>
 		/// </param>
 		/// <typeparam name="T">
-		/// The type of the network response. The network response will be deserialized into an instance of <see cref="T"/>.
-		/// You can override the parsing by passing a custom <see cref="parser"/>
+		/// The type of the network response. The network response will be deserialized into an instance of <typeparamref name="T"/>.
+		/// You can override the parsing by passing a custom <paramref name="parser"/>
 		/// </typeparam>
 		/// <returns>
-		/// A <see cref="Promise{T}"/> of type <see cref="T"/> when the network request completes.
+		/// A <see cref="Promise{T}"/> of type <typeparamref name="T"/> when the network request completes.
 		/// </returns>
 		Promise<T> ManualRequest<T>(Method method,
 		   string url,
@@ -677,12 +677,12 @@ namespace Beamable.Common.Api
 		/// </summary>
 		/// <param name="self">The promise that has failed.</param>
 		/// <param name="recovery">A recovery lambda that accepts the original <see cref="RequesterException"/> and produces a valid
-		/// successful <see cref="T"/> instance.</param>
+		/// successful <typeparamref name="T"/> instance.</param>
 		/// <typeparam name="T">
 		/// The promise's inner type
 		/// </typeparam>
 		/// <returns>
-		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the 404 error.
+		/// A promise chain that will use the given <paramref name="recovery"/> method in the event of the 404 error.
 		/// </returns>
 		public static Promise<T> RecoverFrom404<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
 		   => RecoverFromStatus(self, 404, recovery);
@@ -693,12 +693,12 @@ namespace Beamable.Common.Api
 		/// </summary>
 		/// <param name="self">The promise that has failed.</param>
 		/// <param name="recovery">A recovery lambda that accepts the original <see cref="RequesterException"/> and produces a valid
-		/// successful <see cref="T"/> instance.</param>
+		/// successful <typeparamref name="T"/> instance.</param>
 		/// <typeparam name="T">
 		/// The promise's inner type
 		/// </typeparam>
 		/// <returns>
-		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the 401, 403, or 404 error.
+		/// A promise chain that will use the given <paramref name="recovery"/> method in the event of the 401, 403, or 404 error.
 		/// </returns>
 		public static Promise<T> RecoverFrom40x<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
 			=> RecoverFromStatus(self, new long[] { 401, 403, 404 }, recovery);
@@ -710,12 +710,12 @@ namespace Beamable.Common.Api
 		/// <param name="self">The promise that has failed.</param>
 		/// <param name="status">A set of HTTP status codes that the recovery will run for.</param>
 		/// <param name="recovery">A recovery lambda that accepts the original <see cref="RequesterException"/> and produces a valid
-		/// successful <see cref="T"/> instance.</param>
+		/// successful <typeparamref name="T"/> instance.</param>
 		/// <typeparam name="T">
 		/// The promise's inner type
 		/// </typeparam>
 		/// <returns>
-		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the error.
+		/// A promise chain that will use the given <paramref name="recovery"/> method in the event of the error.
 		/// </returns>
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long[] status, System.Func<RequesterException, T> recovery)
 		{
@@ -736,12 +736,12 @@ namespace Beamable.Common.Api
 		/// <param name="self">The promise that has failed.</param>
 		/// <param name="status">An HTTP status code that the recovery will run for.</param>
 		/// <param name="recovery">A recovery lambda that accepts the original <see cref="RequesterException"/> and produces a valid
-		/// successful <see cref="T"/> instance.</param>
+		/// successful <typeparamref name="T"/> instance.</param>
 		/// <typeparam name="T">
 		/// The promise's inner type
 		/// </typeparam>
 		/// <returns>
-		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the error.
+		/// A promise chain that will use the given <paramref name="recovery"/> method in the event of the error.
 		/// </returns>
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
 		{
