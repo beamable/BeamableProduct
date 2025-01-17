@@ -120,21 +120,11 @@ namespace Beamable.Editor.BeamCli
 			}
 
 			// need to install the CLI
-			InstallCli();
-		}
-
-		private static void InstallCli()
-		{
 			var installResult = InstallTool();
 
 			if (!installResult)
 			{
-				Debug.LogError("Beamable could not install the Beam CLI. Trying again in 1 second");
-				Task.Run(async () =>
-				{
-					await Task.Delay(1000); //Just wait a bit and try again
-					InstallCli();
-				});
+				Debug.LogError("Beamable could not install the Beam CLI.");
 			}
 		}
 
