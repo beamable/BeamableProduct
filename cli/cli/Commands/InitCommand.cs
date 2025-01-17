@@ -7,6 +7,7 @@ using CliWrap;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
 using Command = System.CommandLine.Command;
@@ -56,8 +57,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		// Options to allow for re-initializing a project to a different host/cid/pid and user
 		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
-		AddOption(new CidOption(), (args, i) => args.cid = i);
-		AddOption(new PidOption(), (args, i) => args.pid = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
 		AddOption(
@@ -162,7 +161,10 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
 		var originalPath = Path.GetFullPath(Directory.GetCurrentDirectory());
-		
+		var parseResult = args.DependencyProvider.GetService<BindingContext>().ParseResult;
+		args.cid = parseResult.GetValueForOption(CidOption.Instance);
+		args.pid = parseResult.GetValueForOption(PidOption.Instance);
+
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
