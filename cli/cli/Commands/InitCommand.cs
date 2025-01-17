@@ -90,16 +90,98 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
+
+	async Task<bool> HandleExistingWorkspaceCase(InitCommandArgs args)
+	{
+		string cid, host, workingDir, configFolder;
+
+		{ // find an existing .beamable folder, or don't. If not, then this is not the handle-existing-workspace case!
+			workingDir = Path.Combine(args.ConfigService.WorkingDirectory, args.path);
+			if (!ConfigService.TryToFindBeamableFolder(workingDir, out configFolder))
+			{
+				return false;
+			}
+		}
+
+		{ // handle confirmation step to let people know they are not creating a new workspace!
+			var shouldContinue = args.Quiet || AnsiConsole.Prompt(
+				new ConfirmationPrompt($"Existing beamable workspace found at {configFolder}.\n" +
+				                       $"Would you like to change CID and PID within the existing project? \n" +
+				                       $"(Otherwise, you will create a new beamable workspace)")
+					.ShowChoices());
+			if (!shouldContinue)
+			{
+				return false;
+			}
+		}
+
+		{ // switch the runtime to be operating in the existing workspace folder
+			args.ConfigService.SetTempWorkingDir(Path.GetDirectoryName(configFolder));
+		}
+
+		{ // set the host string from existing value or given parameter, and then reset cid/pid
+			host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
+			_ctx.Set(string.Empty, string.Empty, host);
+		}
+		
+
+		{ // resolve the CID
+			cid = await GetCid(args);
+			if (!AliasHelper.IsCid(cid))
+			{
+				try
+				{
+					var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+					cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+				}
+				catch (RequesterException)
+				{
+					throw new CliException($"Organization not found for '{cid}', try again");
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogError(e.Message);
+					throw;
+				}
+			}
+			_configService.SetConfigString(Constants.CONFIG_CID, cid);
+		}
+
+		{ // resolve the new PID
+			var success = await GetPidAndAuth(args, cid, host);
+			if (!success)
+			{
+				AnsiConsole.MarkupLine(":thumbs_down: Failure! try again");
+				throw new CliException("invalid authorization");
+			}
+		}
+
+		return true;
+	}
+
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
 		var originalPath = Path.GetFullPath(Directory.GetCurrentDirectory());
-		Directory.CreateDirectory(args.path);
-		args.ConfigService.SetTempWorkingDir(args.path);
-
+		
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
+
+		
+		var exitEarly = await HandleExistingWorkspaceCase(args);
+		if (exitEarly)
+		{
+			return new InitCommandResult
+			{
+				host = _ctx.Host,
+				cid = _ctx.Cid,
+				pid = _ctx.Pid
+			};
+		}
+
+		Directory.CreateDirectory(args.path);
+		args.ConfigService.SetTempWorkingDir(args.path);
 		
 		// Setup integration with DotNet for C#MSs --- If we ever have integrations with other microservice languages, we 
 		{
@@ -121,11 +203,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
-		else _ctx.Set(string.Empty, _ctx.Pid, _ctx.Host);
+		else _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
-		_ctx.Set(cid, _ctx.Pid, host);
+		_ctx.Set(cid, string.Empty, host);
 
 		if (!AliasHelper.IsCid(cid))
 		{
@@ -305,9 +387,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 	private Task<string> GetCid(InitCommandArgs args)
 	{
-		if (!string.IsNullOrEmpty(_ctx.Cid) && string.IsNullOrEmpty(args.cid))
-			return Task.FromResult(_ctx.Cid);
-
 		if (!string.IsNullOrEmpty(args.cid))
 			return Task.FromResult(args.cid);
 
