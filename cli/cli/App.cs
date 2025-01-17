@@ -247,9 +247,9 @@ public class App
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
-		Commands.AddSingleton<CidOption>();
+		Commands.AddSingleton(CidOption.Instance);
 		Commands.AddSingleton<QuietOption>();
-		Commands.AddSingleton<PidOption>();
+		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton<ConfigDirOption>();
 		Commands.AddSingleton<HostOption>();
 		Commands.AddSingleton<LimitOption>();

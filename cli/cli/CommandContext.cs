@@ -337,6 +337,10 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	public override string Description { get => IAppCommand.GetModifiedDescription(IsForInternalUse, _description); set => _description = value; }
 
 
+	protected Argument<T> AddArgument<T>(Argument<T> arg, Action<TArgs, T> binder)
+	{
+		return AddArgument<T>(arg, (args, _, i) => binder(args, i));
+	}
 	/// <summary>
 	/// Add an argument to the current command
 	/// </summary>
@@ -349,22 +353,22 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	/// to the <see cref="Handle"/> method.
 	/// </param>
 	/// <typeparam name="T"></typeparam>
-	protected Argument<T> AddArgument<T>(Argument<T> arg, Action<TArgs, T> binder)
+	protected Argument<T> AddArgument<T>(Argument<T> arg, Action<TArgs, BindingContext, T> binder)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
 			: null;
 
-		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, _, args) =>
+		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, parse, args) =>
 		{
 			if (validator != null)
 			{
-				binder(args, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
+				binder(args, parse, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
 			}
 			else
 			{
 				var res = ctx.ParseResult.GetValueForArgument(arg);
-				binder(args, res);
+				binder(args, parse, res);
 			}
 		});
 		_bindingActions.Add(set);
