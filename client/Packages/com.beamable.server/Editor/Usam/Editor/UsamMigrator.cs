@@ -755,12 +755,21 @@ namespace Beamable.Server.Editor.Usam
 					{
 						var assetPath = AssetDatabase.GUIDToAssetPath(id);
 						var nameQuery = $"{Path.DirectorySeparatorChar}{name}.asmdef";
+						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+
 						if (!assetPath.Contains(nameQuery))
 						{
-							continue;
+							//First try our best to see if the name of the assembly def is different from it's name property
+							{
+								nameQuery = $"{Path.DirectorySeparatorChar}{asset.name}.asmdef";
+								if (!assetPath.Contains(nameQuery)) // IF it's still not the asset we are looking for, reset the variable and keep looking
+								{
+									asset = null;
+									continue;
+								}
+							}
 						}
-
-						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+						break;
 					}
 
 					if (asset == null) //if the asset is still null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
