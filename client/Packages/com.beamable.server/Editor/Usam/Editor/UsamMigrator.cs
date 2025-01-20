@@ -531,7 +531,8 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(storage);
+						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors);
+						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
 						foreach (AssemblyDefinitionAsset asmdef in assemblies)
@@ -659,7 +660,8 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(service);
+						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors);
+						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
 						foreach (AssemblyDefinitionAsset asmdef in assemblies)
@@ -737,9 +739,10 @@ namespace Beamable.Server.Editor.Usam
 			return plan;
 		}
 		
-		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor)
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor, out List<string> errors)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
+			errors = new List<string>();
 			
 			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
 			foreach (var name in dependencies)
@@ -758,6 +761,12 @@ namespace Beamable.Server.Editor.Usam
 						}
 
 						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+					}
+
+					if (asset == null) //if the asset is still null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
+					{
+						errors.Add($"The assembly reference {name} could not be added, please manually add it after the migration is completed.");
+						continue;
 					}
 
 					assets.Add(asset);
