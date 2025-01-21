@@ -79,4 +79,7 @@ cd cli/beamable.templates/templates/BeamService
 dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
 dotnet restore BeamService.csproj  --no-cache --force
 
+# Go back to the project root
+cd ../../../..
+
 # TODO: update the unreal sandbox

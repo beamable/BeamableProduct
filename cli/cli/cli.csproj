@@ -82,6 +82,9 @@
 
     <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
     <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)/../../dev.sh" Pack="false" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)/../../setup.sh" Pack="false" PackagePath=""/>
+    
 
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />

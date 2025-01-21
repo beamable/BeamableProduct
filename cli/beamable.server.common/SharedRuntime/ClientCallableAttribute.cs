@@ -9,6 +9,16 @@ using System.Threading.Tasks;
 namespace Beamable.Server
 {
 	/// <summary>
+	/// Determines whether the code to make a request to a particular callable will be generated or not inside client code. 
+	/// </summary>
+	[System.Flags]
+	public enum CallableFlags
+	{
+		None = 0,
+		SkipGenerateClientFiles = 1 << 0,
+	}
+
+	/// <summary>
 	/// Base callable attribute used to identify methods to be exposed by microservices as endpoints. This attribute makes the endpoint publicly accessible (no need for authentication).
 	/// <see cref="ClientCallableAttribute"/> forces the authentication to be required.
 	/// <see cref="AdminOnlyCallableAttribute"/> makes it so that only an admin/developer can reach the endpoint. 
@@ -18,9 +28,7 @@ namespace Beamable.Server
 	{
 		public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>()
 		{
-			new ParameterOfInterest(typeof(Delegate), false, false, false),
-			new ParameterOfInterest(typeof(Task), false, false, false),
-			new ParameterOfInterest(typeof(Promise), false, false, false),
+			new ParameterOfInterest(typeof(Delegate), false, false, false), new ParameterOfInterest(typeof(Task), false, false, false), new ParameterOfInterest(typeof(Promise), false, false, false),
 		};
 
 		protected string pathName = "";
@@ -28,9 +36,11 @@ namespace Beamable.Server
 
 		public bool RequireAuthenticatedUser { get; }
 
-		public CallableAttribute() : this("", null, false) { }
+		public CallableFlags Flags { get; }
 
-		public CallableAttribute(string pathnameOverride = "", string[] requiredScopes = null, bool requireAuthenticatedUser = false)
+		public CallableAttribute() : this("", null, false, CallableFlags.None) { }
+
+		public CallableAttribute(string pathnameOverride = "", string[] requiredScopes = null, bool requireAuthenticatedUser = false, CallableFlags flags = CallableFlags.None)
 		{
 			pathName = pathnameOverride;
 			RequiredScopes = requiredScopes == null
@@ -38,6 +48,7 @@ namespace Beamable.Server
 				: new HashSet<string>(requiredScopes);
 
 			RequireAuthenticatedUser = requireAuthenticatedUser;
+			Flags = flags;
 		}
 
 		public string PathName
@@ -106,8 +117,8 @@ namespace Beamable.Server
 	[AttributeUsage(AttributeTargets.Method)]
 	public class ClientCallableAttribute : CallableAttribute
 	{
-		public ClientCallableAttribute() : this("", null) { }
-		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null) : base(pathnameOverride, requiredScopes, true) { }
+		public ClientCallableAttribute() : this("", null, CallableFlags.None) { }
+		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null, CallableFlags flags = CallableFlags.None) : base(pathnameOverride, requiredScopes, true, flags) { }
 	}
 
 	/// <summary>
@@ -141,19 +152,22 @@ namespace Beamable.Server
 	[AttributeUsage(AttributeTargets.Method)]
 	public class AdminOnlyCallableAttribute : ClientCallableAttribute
 	{
-		public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
-																			   requiredScopes: new[] { "*" })
-		{ }
+		public AdminOnlyCallableAttribute(string pathnameOverride = "", CallableFlags flags = CallableFlags.None) : base(pathnameOverride,
+			requiredScopes: new[] { "*" }, flags)
+		{
+		}
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
 	public class ServerCallableAttribute : CallableAttribute
 	{
-		public ServerCallableAttribute(string pathnameOverride = "") : base(
+		public ServerCallableAttribute(string pathnameOverride = "", CallableFlags flags = CallableFlags.None) : base(
 			pathnameOverride,
 			requireAuthenticatedUser: false,
-			requiredScopes: new[] { "*" })
-		{ }
+			requiredScopes: new[] { "*" },
+			flags: flags)
+		{
+		}
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
