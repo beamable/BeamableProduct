@@ -51,6 +51,25 @@ dotnet nuget add source $SOURCE_FOLDER --name $FEED_NAME
 echo "Creating build number file"
 echo 0 > build-number.txt
 
+# reset the template projects to reference the base version number
+TEMPLATE_DOTNET_CONFIG_PATH="./cli/beamable.templates/.config/dotnet-tools.json"
+rm -f $TEMPLATE_DOTNET_CONFIG_PATH
+cat > $TEMPLATE_DOTNET_CONFIG_PATH << EOF
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "beamable.tools": {
+      "version": "0.0.123.0",
+      "commands": [
+        "beam"
+      ],
+      "rollForward": false
+    }
+  }
+}
+EOF
+
 
 # TODO: Consider running this as part of a post-pull git action
 # TODO: Should this run the `sync-rider-run-settings.sh` script? (probably)
