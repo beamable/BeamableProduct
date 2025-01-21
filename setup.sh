@@ -51,6 +51,9 @@ dotnet nuget add source $SOURCE_FOLDER --name $FEED_NAME
 echo "Creating build number file"
 echo 0 > build-number.txt
 
+# restore cli tools
+dotnet tool restore --tool-manifest ./cli/cli/.config/dotnet-tools.json
+
 # reset the template projects to reference the base version number
 TEMPLATE_DOTNET_CONFIG_PATH="./cli/beamable.templates/.config/dotnet-tools.json"
 ls -a "./cli/beamable.templates/"
