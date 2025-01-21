@@ -32,9 +32,9 @@
         <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 
-        <Content Include=".config\dotnet-tools.json" />
+        <Content Include="$(MSBuildThisFileDirectory)\.config\dotnet-tools.json" />
         
-        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\*.gitignore" />
+        <Content Include="$(MSBuildThisFileDirectory)\templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\*.gitignore" />
         <Compile Remove="**\*" />
     </ItemGroup>
 
