@@ -92,8 +92,6 @@ jobs:
         run: |
           bash ./setup.sh
           bash ./dev.sh 
-        env:
-          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
       - name: Check CLI
         run: beam version
