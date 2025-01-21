@@ -260,7 +260,7 @@ When you do that, the service will not start --- but the container will look exa
 
 > 📘 Troubleshoot
 > 
-> If you are on a mac with the apple silicon processors (M1, M2, etc) the following error might occur when deploying C# Microservices. In that case, make sure that the `Use Rosetta for emulation on Apple Silicon`is disable in your Docker settings.
+> If you are on a Mac with the apple silicon processors (M1, M2, etc) the following error might occur when deploying C# Microservices. In that case, make sure that the `Use Rosetta for emulation on Apple Silicon` is disabled in your Docker settings.
 > 
 > ```
 > assertion failed [block != nullptr]: BasicBlock requested for unrecognized address
