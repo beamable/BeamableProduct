@@ -1,3 +1,6 @@
+# this file gets updated locally all the time, and created by the setup.sh script.
+cli/beamable.templates/.config/dotnet-tools.json
+
 # Local developer files.
 .p4config
 /ProjectsSource/

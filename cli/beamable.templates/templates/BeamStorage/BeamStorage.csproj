@@ -26,7 +26,7 @@
     </PropertyGroup>
     
     <ItemGroup Label="Nuget References">
-      <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />      
+      <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
     </ItemGroup>
 
 </Project>
