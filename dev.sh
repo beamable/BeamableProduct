@@ -71,7 +71,11 @@ rm -rf $TMP_BUILD_OUTPUT
 rm -rf $HOME/.nuget/packages/beamable.*/$PREVIOUS_VERSION
 
 # install the latest CLI globally.
+echo "updating global CLI tool"
 dotnet tool install Beamable.Tools --version $VERSION --global --allow-downgrade --no-cache
+echo "updated global CLI tool"
+beam --version
+
 
 # restore the nuget packages (and CLI) for a sample project, thus restoring the
 # nuget-cache for all projects.
