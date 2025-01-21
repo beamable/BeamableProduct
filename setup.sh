@@ -53,6 +53,8 @@ echo 0 > build-number.txt
 
 # reset the template projects to reference the base version number
 TEMPLATE_DOTNET_CONFIG_PATH="./cli/beamable.templates/.config/dotnet-tools.json"
+ls -a "./cli/beamable.templates/"
+mkdir -p "./cli/beamable.templates/.config"
 cat > $TEMPLATE_DOTNET_CONFIG_PATH << EOF
 {
   "version": 1,
