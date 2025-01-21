@@ -94,11 +94,7 @@ jobs:
           bash ./dev.sh 
 
       - name: Check CLI
-        run: |
-          pwd
-          ls
-          beam --version
-          beam version
+        run: beam version
 
       - name: Get Version Number (Nightly)
         if: ${{ inputs.releaseType == 'nightly' }} 
