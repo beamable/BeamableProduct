@@ -15,12 +15,11 @@ echo "running dotnet packs"
 
 if [ -z "$SUFFIX" ]
 then
-    BUILD_ARGS="--configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION"
+    BUILD_ARGS="--configuration Release /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION"
 else
-    BUILD_ARGS="--configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION"
+    BUILD_ARGS="--configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION"
 fi
 
-#TODO: need to update the template references somehow!
 
 dotnet pack ./build/LocalBuild/LocalBuild.sln --output $BUILD_OUTPUT $BUILD_ARGS
 
