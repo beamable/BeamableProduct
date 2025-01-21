@@ -63,10 +63,10 @@ public class ServiceDocGenerator
 	/// <param name="microserviceType">The type of the microservice to generate documentation for.</param>
 	/// <param name="attribute">The MicroserviceAttribute associated with the microservice.</param>
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
-	/// <param name="excludeFederationCallbackEndpoints">When true, does not generate the doc for any endpoints coming from federation. Used primarily for code-generating in-SDK client code for Microservices.</param>
+	/// <param name="forClientCodeGeneration">Should be true if you want the OAPI-spec that will be used for client code generating (does not generate the doc for any endpoints coming from federation and respect <see cref="CallableFlags.SkipGenerateClientFiles"/>).</param>
 	/// <param name="extraSchemas">List of types to add to the schema list of the OAPI doc.</param>
 	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes, bool excludeFederationCallbackEndpoints = false, Type[] extraSchemas = null)
+	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes, bool forClientCodeGeneration = false, Type[] extraSchemas = null)
 	{
 		extraSchemas ??= Array.Empty<Type>();
 
@@ -79,14 +79,20 @@ public class ServiceDocGenerator
 		var methods = coll.Methods.ToList();
 		for (var i = methods.Count - 1; i >= 0; i--)
 		{
-			// Skip out all federated callbacks IF the caller of this function asked us to do so.
-			if (excludeFederationCallbackEndpoints && methods[i].IsFederatedCallbackMethod)
+			// IF the caller is asking for the Client-Code-Gen spec, we skip out the federated and hidden methods.
+			if (forClientCodeGeneration)
 			{
-				Log.Debug("Removing federated callback {MethodName} that made through the check", methods[i].Method.Name);
-				methods.RemoveAt(i);
+				var isFederatedMethod = methods[i].IsFederatedCallbackMethod;
+				var attrs = methods[i].Method.GetCustomAttributes(typeof(CallableAttribute), true);
+				var isHidden = attrs.Length > 0 && ((CallableAttribute)attrs[0]).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
+				if(isFederatedMethod || isHidden)
+				{
+					Log.Debug("Removing federated callback {MethodName} that made through the check", methods[i].Method.Name);
+					methods.RemoveAt(i);
+				}
 			}
 		}
-
+		
 		var doc = new OpenApiDocument
 		{
 			Info = new OpenApiInfo { Title = attribute.MicroserviceName, Version = "0.0.0" },
