@@ -257,3 +257,12 @@ ENTRYPOINT ["tail", "-f", "/dev/null"]
 ```
 
 When you do that, the service will not start --- but the container will look exactly like it does just before the service runs, except it won't be cleaned up by the health-check failing. This means you can easily inspect its file structure via Docker for Windows/Mac's UI or other tools.
+
+> 📘 Troubleshoot
+> 
+> If you are on a mac with the apple silicon processors (M1, M2, etc) the following error might occur when deploying C# Microservices. In that case, make sure that the `Use Rosetta for emulation on Apple Silicon`is disable in your Docker settings.
+> 
+> ```
+> assertion failed [block != nullptr]: BasicBlock requested for unrecognized address
+> (BuilderBase.h:550 block_for_offset)
+> ```
