@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - nuget package license and icon use baked files instead of links.
+- re-running `beam init` in an existing beamable workspace will prompt for new CID and PID information. [#3456](https://github.com/beamable/BeamableProduct/issues/3456)
 
 ## [3.0.2] - 2024-12-17
 
