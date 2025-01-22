@@ -17,7 +17,7 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			   .WithNoAuthHeader()
 			   .WithResponse(new AvailabilityResponse() { available = true });
 
-			yield return _service.IsEmailAvailable(email).AsYield();
+			yield return _service.GetCredentialStatus(email).AsYield();
 
 			Assert.AreEqual(true, _requester.AllMocksCalled);
 		}
