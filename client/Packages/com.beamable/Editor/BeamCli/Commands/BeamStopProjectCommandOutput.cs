@@ -1,13 +1,13 @@
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-	using Beamable.Common;
-	using Beamable.Common.BeamCli;
-
-	[System.SerializableAttribute()]
-	public partial class BeamStopProjectCommandOutput
-	{
-		public string serviceName;
-		public BeamServiceInstance instance;
-	}
+    using Beamable.Common;
+    using Beamable.Common.BeamCli;
+    
+    [System.SerializableAttribute()]
+    public partial class BeamStopProjectCommandOutput
+    {
+        public string serviceName;
+        public BeamServiceInstance instance;
+    }
 }
