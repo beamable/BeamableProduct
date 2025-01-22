@@ -19,7 +19,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool runHealthChecks;
 		/// <summary>Restart existing deployed services</summary>
 		public bool redeploy;
-		/// <summary>Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
+		/// <summary>Create a Release that merges your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
 		public bool merge;
 		/// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
 		public bool replace;

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed issue in `unreal init` command that could cause the Target file to fail being modified.
 - `project generate-client` no longer fails on projects referencing `Microsoft.Extensions.Caching.Memory`, [#3844](https://github.com/beamable/BeamableProduct/issues/3844)
+- CLI commands use local microservice federation unless the new `--prefer-remote-federation` flag is provided.
 
 ### Changed
 - nuget package license and icon use baked files instead of links.

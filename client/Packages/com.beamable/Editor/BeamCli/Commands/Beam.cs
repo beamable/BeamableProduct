@@ -24,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string log;
 		/// <summary>If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, then any global invocation of the beam tool will automatically redirect and call the local version. However, there will be a performance penalty due to the extra process invocation. This option flag will cause an error to occur instead of automatically redirecting the execution to a new process invocation. </summary>
 		public bool noRedirect;
+		/// <summary>By default, any local CLI invocation that should trigger a Federation of any type will prefer locally running Microservices. However, if you need the CLI to use the remotely running Microservices, use this option to ignore locally running services. </summary>
+		public bool preferRemoteFederation;
 		/// <summary>Show help for all commands</summary>
 		public bool helpAll;
 		/// <summary>By default, logs will automatically mask tokens. However, when this option is enabled, tokens will be visible in their full text. This is a security risk.</summary>
@@ -106,6 +108,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.noRedirect != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--no-redirect=" + this.noRedirect));
+			}
+			// If the preferRemoteFederation value was not default, then add it to the list of args.
+			if ((this.preferRemoteFederation != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--prefer-remote-federation=" + this.preferRemoteFederation));
 			}
 			// If the helpAll value was not default, then add it to the list of args.
 			if ((this.helpAll != default(bool)))

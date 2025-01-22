@@ -12,7 +12,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string routingKey;
 		/// <summary>When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set</summary>
 		public bool remote;
-		/// <summary>A hint to the Portal page which tool is being used.</summary>
+		/// <summary>A hint to the Portal page which tool is being used</summary>
 		public string srcTool;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

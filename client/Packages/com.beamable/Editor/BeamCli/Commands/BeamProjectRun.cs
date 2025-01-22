@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool detach;
 		/// <summary>We compile services that need compiling before running. This will disable the client-code generation part of the compilation</summary>
 		public bool noClientGen;
+		/// <summary>Forwards the given process-id to the BEAM_REQUIRE_PROCESS_ID environment variable of the running Microservice. The Microservice will self-destruct if the given process exits</summary>
+		public int requireProcessId;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -71,6 +73,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.noClientGen != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--no-client-gen=" + this.noClientGen));
+			}
+			// If the requireProcessId value was not default, then add it to the list of args.
+			if ((this.requireProcessId != default(int)))
+			{
+				genBeamCommandArgs.Add(("--require-process-id=" + this.requireProcessId));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

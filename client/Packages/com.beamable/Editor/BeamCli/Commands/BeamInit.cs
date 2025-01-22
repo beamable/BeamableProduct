@@ -14,10 +14,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string password;
 		/// <summary>The host endpoint for beamable</summary>
 		public string host;
-		/// <summary>Cid to use; will default to whatever is in the file system</summary>
-		public string cid;
-		/// <summary>Pid to use; will default to whatever is in the file system</summary>
-		public string pid;
 		/// <summary>Refresh token to use for the requests</summary>
 		public string refreshToken;
 		/// <summary>Overwrite the stored extra paths for where to find projects</summary>
@@ -60,18 +56,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.host != default(string)))
 			{
 				genBeamCommandArgs.Add((("--host=\"" + this.host)
-								+ "\""));
-			}
-			// If the cid value was not default, then add it to the list of args.
-			if ((this.cid != default(string)))
-			{
-				genBeamCommandArgs.Add((("--cid=\"" + this.cid)
-								+ "\""));
-			}
-			// If the pid value was not default, then add it to the list of args.
-			if ((this.pid != default(string)))
-			{
-				genBeamCommandArgs.Add((("--pid=\"" + this.pid)
 								+ "\""));
 			}
 			// If the refreshToken value was not default, then add it to the list of args.
