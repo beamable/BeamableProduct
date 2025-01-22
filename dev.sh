@@ -74,8 +74,8 @@ rm -rf $HOME/.nuget/packages/beamable.*/$PREVIOUS_VERSION
 dotnet tool install Beamable.Tools --version $VERSION --global --allow-downgrade --no-cache
 
 # generate unity CLI
-beam generate-interface --engine unity --output=./client/Packages/com.beamable/Editor/BeamCli/Commands
-dotnet tool run dotnet-format ./client/Packages/com.beamable/Editor/BeamCli/Commands
+#beam generate-interface --engine unity --output=./client/Packages/com.beamable/Editor/BeamCli/Commands
+#dotnet tool run dotnet-format ./client/Packages/com.beamable/Editor/BeamCli/Commands
 
 # restore the nuget packages (and CLI) for a sample project, thus restoring the
 # nuget-cache for all projects.
