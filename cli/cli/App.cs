@@ -826,9 +826,12 @@ public class App
 						var federations = ListFederationsCommand.GetLocalFederations(appContext.Cid, appContext.Pid,
 							provider.GetService<BeamoLocalSystem>().BeamoManifest);
 						var routeMap = string.Join(",", federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
-						var requester = provider.GetService<CliRequester>();
-						Log.Debug($"Setting routing header=[{routeMap}]");
-						requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] = routeMap;
+						if (provider.CanBuildService<CliRequester>())
+						{
+							var requester = provider.GetService<CliRequester>();
+							Log.Debug($"Setting routing header=[{routeMap}]");
+							requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] = routeMap;
+						}
 					}
 				}
 
