@@ -1799,7 +1799,8 @@ namespace Beamable.Player
 		public async Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
 			await OnReady;
-			return await _authService.IsThirdPartyAvailable(thirdParty, token);
+			var status = await _authService.GetCredentialStatus(thirdParty, token);
+			return status == CredentialUsageStatus.NEVER_USED;
 		}
 
 		/// <summary>
@@ -1859,7 +1860,8 @@ namespace Beamable.Player
 		public async Promise<bool> IsEmailAvailable(string email)
 		{
 			await OnReady;
-			return await _authService.IsEmailAvailable(email);
+			CredentialUsageStatus status = await _authService.GetCredentialStatus(email);
+			return status == CredentialUsageStatus.NEVER_USED;
 		}
 
 		/// <summary>

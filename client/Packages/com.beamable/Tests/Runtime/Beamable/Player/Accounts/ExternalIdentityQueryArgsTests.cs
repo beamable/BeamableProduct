@@ -56,9 +56,9 @@ namespace Beamable.Tests.Runtime.Player.Accounts
 					 });
 			var api = Context.Api.AuthService;
 
-			var req = api.IsThirdPartyAvailable(AuthThirdParty.Google, "a+bc");
+			var req = api.GetCredentialStatus(AuthThirdParty.Google, "a+bc");
 			yield return req.ToYielder();
-			Assert.IsTrue(req.GetResult());
+			Assert.IsTrue(req.GetResult() == CredentialUsageStatus.NEVER_USED);
 		}
 
 
