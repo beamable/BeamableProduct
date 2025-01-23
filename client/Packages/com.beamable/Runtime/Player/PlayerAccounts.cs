@@ -1804,6 +1804,15 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
+		/// Checks the status of a given third party token.
+		/// </summary>
+		/// <returns>Returns an enum with the correct status for that third party token</returns>
+		public Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token)
+		{
+			return _authService.GetCredentialStatus(thirdParty, token);
+		}
+
+		/// <summary>
 		/// Adds an email credential to the given <see cref="PlayerAccount"/>,
 		/// and returns a <see cref="RegistrationResult"/>. If the returned
 		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
@@ -1862,6 +1871,17 @@ namespace Beamable.Player
 			await OnReady;
 			CredentialUsageStatus status = await _authService.GetCredentialStatus(email);
 			return status == CredentialUsageStatus.NEVER_USED;
+		}
+
+		/// <summary>
+		/// Checks the status of the provided email. If it's attached to an account already then this will return ASSIGNED_TO_AN_ACCOUNT.
+		/// If it's available, it will return NEVER_USED. And finally it will return INVALID_CREDENTIAL in case of a fail in the process.
+		/// </summary>
+		/// <param name="email"></param>
+		/// <returns>The status of this email in the credentials</returns>
+		public Promise<CredentialUsageStatus> GetCredentialStatus(string email)
+		{
+			return _authService.GetCredentialStatus(email);
 		}
 
 		/// <summary>
