@@ -89,12 +89,21 @@ public class ListFederationsCommand : StreamCommand<ListServicesCommandArgs, Lis
 
 	public override async Task Handle(ListServicesCommandArgs args)
 	{
+		var output = GetLocalFederations(args.AppContext.Cid, args.AppContext.Pid, args.BeamoLocalSystem.BeamoManifest);
+		ApplyFilters(args, output);
+		SendResults(output);
+		
+		await Task.CompletedTask;
+	}
+
+	public static ListServicesCommandOutput GetLocalFederations(string cid, string pid, BeamoLocalManifest beamoManifest)
+	{
 		var output = new ListServicesCommandOutput();
-		output.cid = args.AppContext.Cid;
-		output.pid = args.AppContext.Pid;
+		output.cid = cid;
+		output.pid = pid;
 		output.services = new();
 
-		foreach (var sd in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
+		foreach (var sd in beamoManifest.ServiceDefinitions)
 		{
 			if (sd.Protocol is not BeamoProtocolType.HttpMicroservice) continue;
 			if (sd.IsLocal is not true) continue; 
@@ -107,10 +116,7 @@ public class ListFederationsCommand : StreamCommand<ListServicesCommandArgs, Lis
 			output.services.Add(service);
 		}
 
-		ApplyFilters(args, output);
-		SendResults(output);
-		
-		await Task.CompletedTask;
+		return output;
 	}
 
 	public override bool AutoLogOutput => true;

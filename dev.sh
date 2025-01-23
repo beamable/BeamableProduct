@@ -73,6 +73,9 @@ rm -rf $HOME/.nuget/packages/beamable.*/$PREVIOUS_VERSION
 # install the latest CLI globally.
 dotnet tool install Beamable.Tools --version $VERSION --global --allow-downgrade --no-cache
 
+# generate unity CLI
+beam generate-interface --engine unity --output=./client/Packages/com.beamable/Editor/BeamCli/Commands
+
 # restore the nuget packages (and CLI) for a sample project, thus restoring the
 # nuget-cache for all projects.
 cd cli/beamable.templates/templates/BeamService

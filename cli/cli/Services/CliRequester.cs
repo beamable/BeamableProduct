@@ -1,12 +1,14 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
 using System.Text;
+using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
 
@@ -16,6 +18,8 @@ public class CliRequester : IRequester
 	public IAccessToken AccessToken => _ctx.Token;
 	public string Pid => AccessToken.Pid;
 	public string Cid => AccessToken.Cid;
+
+	public Dictionary<string, string> GlobalHeaders { get; } = new Dictionary<string, string>();
 
 	public CliRequester(IAppContext ctx)
 	{
@@ -35,20 +39,36 @@ public class CliRequester : IRequester
 										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
 		Log.Verbose($"{method} call: {uri}");
-
+		
 		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
+		
+		if (GlobalHeaders != null)
+		{
+			foreach (var kvp in GlobalHeaders)
+			{
+				request.Headers.Add(kvp.Key, kvp.Value);
+			}
+		}
+		
 		if (customHeaders != null)
 		{
 			foreach (string customHeader in customHeaders)
 			{
 				var headers = customHeader.Split('=');
-				if (headers.Length == 2)
+				var key = headers[0];
+				var value = headers[1];
+				if (headers.Length != 2)
+					continue;
+				
+				if (request.Headers.Contains(key))
 				{
-					request.Headers.Add(headers[0], headers[1]);
+					request.Headers.Remove(key);
 				}
+				request.Headers.Add(key, value);
 			}
 		}
+
 
 		Log.Verbose($"Calling: {request}");
 

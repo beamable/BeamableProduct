@@ -49,13 +49,11 @@ namespace Beamable.Editor.BeamCli
 			{
 				saveToFile = true,
 				noTokenSave = true,
-				cid = _ctx.Requester.Cid,
-				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
 				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray()
 			};
-
-			if (string.IsNullOrEmpty(args.cid) || string.IsNullOrEmpty(args.pid))
+			
+			if (string.IsNullOrEmpty(_ctx.Requester.Cid) || string.IsNullOrEmpty(_ctx.Requester.Pid))
 			{
 				// cannot call the init command with a blank cid/pid. 
 				return;
