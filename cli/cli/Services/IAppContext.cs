@@ -31,6 +31,7 @@ public interface IAppContext
 	public string Cid { get; }
 	public string Pid { get; }
 	public string Host { get; }
+	public bool PreferRemoteFederation { get; }
 	public bool UsePipeOutput { get; }
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
@@ -89,9 +90,11 @@ public class DefaultAppContext : IAppContext
 	private readonly LoggingLevelSwitch _logSwitch;
 	private readonly UnmaskLogsOption _unmaskLogsOption;
 	private readonly NoLogFileOption _noLogFileOption;
+	private readonly PreferRemoteFederationOption _routeMapOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
+	public bool PreferRemoteFederation { get; private set; }
 	public bool UsePipeOutput { get; private set; }
 	public bool ShowRawOutput { get; private set; }
 	public bool ShowPrettyOutput { get; private set; }
@@ -165,7 +168,8 @@ public class DefaultAppContext : IAppContext
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
-		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption)
+		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
+		PreferRemoteFederationOption routeMapOption)
 	{
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
@@ -183,6 +187,7 @@ public class DefaultAppContext : IAppContext
 		_logSwitch = logSwitch;
 		_unmaskLogsOption = unmaskLogsOption;
 		_noLogFileOption = noLogFileOption;
+		_routeMapOption = routeMapOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
@@ -266,6 +271,7 @@ public class DefaultAppContext : IAppContext
 		ShowPrettyOutput = bindingContext.ParseResult.GetValueForOption(_showPrettyOption);
 		UsePipeOutput = Console.IsOutputRedirected;
 
+		PreferRemoteFederation = _bindingContext.ParseResult.GetValueForOption(_routeMapOption);
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
 		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
@@ -316,7 +322,7 @@ public class DefaultAppContext : IAppContext
 
 		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
-
+		
 
 	}
 
