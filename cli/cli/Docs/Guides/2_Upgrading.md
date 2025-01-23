@@ -21,6 +21,48 @@ The Beamable CLI may include changes between versions that require developer int
 
 These are ordered with the latest versions towards the top, and the older versions toward the bottom of the document. **When jumping multiple versions (A.A.A -> C.C.C), apply the migrations without skipping steps (A.A.A -> B.B.B -> C.C.C).**
 
+### From 3.0.1 to 4.0.0
+The upgrade from 3.0.x to 4.0.0 is relatively simple compared to other major 
+releases. 
+
+#### Removed `net6.0` and `net7.0` support
+Unfortunately, `net6.0` and `net7.0` have reached their [End-Of-Life phases](https://devblogs.microsoft.com/dotnet/dotnet-6-end-of-support/). 
+The CLI 4.0 release officially drops Beamable support for these EOL dotnet 
+versions. As such, when you update your projects, you must update your
+`.csproj` files to use `net8.0`. 
+
+In all your `.csproj` files, find the line with the `<TargetFramework>` 
+declaration, 
+
+```xml
+<TargetFramework>net6.0</TargetFramework>
+```
+
+And update it to
+```xml
+<TargetFramework>net8.0</TargetFramework>
+```
+
+> 📘 Update Dotnet SDK
+>
+> As of CLI 4.0.0, you must have dotnet8 SDK installed on your development 
+> machines, instead of the dotnet6 SDK. 
+
+#### `MongoDb.Driver` package vulnerability 
+Previous versions of Beamable relied on version 2.15.1 of the `MongoDb.
+Driver` nuget package. If your project does not include any storage objects, 
+you can ignore this step. However, if you do have storage objects, then 
+those projects likely include this reference in the `.csproj` files, 
+
+```xml
+<PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+```
+
+If your storage object does not include direct references to the `MongoDB.
+Driver`, you can simply delete this line, and the correct version will be 
+included automatically by referencing the `Beamable.Microservice.Runtime` 
+package. You can also change the version number to exactly `2.19.2`.  
+
 ### From 2.0.2 to 3.0.1
 The upgrade from 2.0.x to 3.0.1 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
 
@@ -120,13 +162,22 @@ In every `csproj` file for **Microservices**, **MicroStorages**, and **Common Li
 </PropertyGroup>
 ```
 
-Then, we recommend you upgrade the `TargetFramework` to `.net8.0`:
+If the project is targeting `net6.0` or `net7.0`, then, we recommend you 
+upgrade the `TargetFramework` to `.net8.0`.
 ```xml
 <PropertyGroup Label="Dotnet Settings">  
   <!-- net8.0 is the LTS version until 2026. To update your net version, update the <TargetFramework> when Beamable announces support. -->  
   <TargetFramework>net8.0</TargetFramework>  
 </PropertyGroup>
 ```
+
+> 📘 Don't update `netstandard2.1` to `net8.0`
+>
+> Be careful not to update common projects from `netstandard2.1` to `net8.0`.
+> The `netstandard2.1` target produces `.dll` files that can be copied 
+> directly into a wide variety of engines, such as Unity. However, `net8.0` 
+> binaries are not compatible with Unity. 
+
 
 ##### Microservices
 For every Microservice project replace all `PackageReference` elements that reference a `Beamable.` with the following two references:
@@ -159,15 +210,7 @@ Then, add the following to the `Beamable Settings` `Property Group`. Please repl
 ##### Common Libraries
 For every Common Library project, replace all `PackageReference` elements that reference a `Beamable.` with the following reference:
 ```xml
-<PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
-```
-
-Then, also add the following to the `Beamable Settings` `Property Group`:
-```xml
-<PropertyGroup Label="Beamable Settings">  
-  <!-- All Microservices must have the value, "service" -->  
-  <BeamProjectType>service</BeamProjectType>          
-</PropertyGroup>
+<PackageReference Include="Beamable.Common" Version="$(BeamableVersion)" />
 ```
 
 #### Microservice Code Changes - `partial` and `FederationId` 

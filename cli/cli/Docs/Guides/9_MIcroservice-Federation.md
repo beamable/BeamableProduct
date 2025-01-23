@@ -22,10 +22,12 @@ dotnet beam project new service HelloWorld
 
 Microservice _Federation_ is the ability to inject custom server logic in the middle of existing Beamable server functionality. Federation can be used to add custom behaviour to your game like supporting external identity auth providers, using a block chain as the backing data provider for player inventory, managing how match making works, and more. 
 
-There are 3 types of federation. All of these federations have C# interfaces that define the types of functions that they require. 
+There are 4 types of federation. All of these federations have C# interfaces 
+that define the types of functions that they require. 
 1. `IFederatedLogin`
 2. `IFederatedInventory`
 3. `IFederatedGameServer`
+4. `IFederatedPlayerInit`
 
 A Microservice supports these federations when both of the following requirements are true.
 1. The `Microservice` class includes the associated federation interface.

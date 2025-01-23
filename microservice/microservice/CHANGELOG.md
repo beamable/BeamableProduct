@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.0] - Unreleased
+## [4.0.0] - Unreleased
 
 ### Added
 - Providing `BEAM_REQUIRE_PROCESS_ID` environment variable will cause microservice to quit when configured process terminates. [#3839](https://github.com/beamable/BeamableProduct/issues/3839)
@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `CallableFlags` to all `Callable` attributes. You can now use this to opt-out of client-code generation for specific `Callables` (mostly used for hiding `AdminOnlyCallables` from client source). 
 
 ### Changed
-- Updated internal mongo driver reference to Nuget 2.19.2
+- Updated MongoDb.Driver reference to 2.19.2 in accordance with [known security vulnerability](https://github.com/advisories/GHSA-7j9m-j397-g4wx)
 
 ### Removed
-- Nuget packages no longer support net6.0
+- No longer support net6.0
 
 ## [3.0.1] - 2024-12-09
 
