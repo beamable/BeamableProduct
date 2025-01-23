@@ -103,7 +103,6 @@
 <!--  </Target>-->
   <Target Name="BuildCLIForUnity" AfterTargets="Build" Condition="$(BEAM_GENERATE_INTERFACE)==true">
     <Exec Command="$(OutDir)/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-    <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
@@ -113,8 +112,6 @@
     
     <!-- Windows-Based -->
     <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net9.0\')" Command=".\$(OutputPath)net9.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
-    
-    <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>
 
 </Project>
