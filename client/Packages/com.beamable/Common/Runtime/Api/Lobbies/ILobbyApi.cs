@@ -97,6 +97,9 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Notify the given lobby that the player intends to leave.
 		/// </summary>
+		/// <remarks>The implemented behavior is that when the lobby host leaves, the lobby is destroyed.
+		/// If there’s a need for the host to leave the lobby without destroying it,
+		/// the host should first appoint a new lobby host using the UpdateLobby method from the ILobbyApi.</remarks>
 		/// <param name="lobbyId">The id of the <see cref="Lobby"/> to leave.</param>
 		Promise LeaveLobby(string lobbyId);
 

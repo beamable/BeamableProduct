@@ -249,6 +249,9 @@ namespace Beamable.Player
 		/// <summary>
 		/// Leave the lobby if the player is in a lobby.
 		/// </summary>
+		/// <remarks>The implemented behavior is that when the lobby host leaves, the lobby is destroyed.
+		/// If there’s a need for the host to leave the lobby without destroying it,
+		/// the host should first appoint a new lobby host using the Update method.</remarks>
 		public async Promise Leave()
 		{
 			if (Value == null)
