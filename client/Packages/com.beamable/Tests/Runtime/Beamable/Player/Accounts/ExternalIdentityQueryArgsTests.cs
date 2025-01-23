@@ -61,6 +61,52 @@ namespace Beamable.Tests.Runtime.Player.Accounts
 			Assert.IsTrue(req.GetResult() == CredentialUsageStatus.NEVER_USED);
 		}
 
+		[UnityTest]
+		public IEnumerator QueryArgs_ThirdPartyNotAvailable()
+		{
+			var expectedUrl =
+				"/basic/accounts/available/third-party?thirdParty=google&token=a%2bbc";
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			Assert.IsTrue(Context.OnReady.IsCompleted);
+
+			Requester.MockRequest<AvailabilityResponse>(Method.GET,
+			                                            expectedUrl
+			         ).WithNoAuthHeader()
+			         .WithResponse(new AvailabilityResponse
+			         {
+				         available = false
+			         });
+			var api = Context.Api.AuthService;
+
+			var req = api.GetCredentialStatus(AuthThirdParty.Google, "a+bc");
+			yield return req.ToYielder();
+			Assert.IsTrue(req.GetResult() == CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT);
+		}
+
+		[UnityTest]
+		public IEnumerator QueryArgs_ThirdPartyRequestError()
+		{
+			var expectedUrl =
+				"/basic/accounts/available/third-party?thirdParty=google&token=a%2bbc";
+			var exception = new RequesterException("", "", "", 400, "{}");
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			Assert.IsTrue(Context.OnReady.IsCompleted);
+
+			Requester.MockRequest<AvailabilityResponse>(Method.GET,
+			                                            expectedUrl
+			         ).WithNoAuthHeader()
+			         .WithResponse(exception);
+			var api = Context.Api.AuthService;
+
+			var req = api.GetCredentialStatus(AuthThirdParty.Google, "a+bc");
+			yield return req.ToYielder();
+			Assert.IsTrue(req.GetResult() == CredentialUsageStatus.INVALID_CREDENTIAL);
+		}
+
 
 		[UnityTest]
 		public IEnumerator QueryArgs_RemoveThirdPartyAssociation()

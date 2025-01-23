@@ -137,7 +137,7 @@ namespace Beamable.Common.Api.Auth
 		/// </summary>
 		/// <param name="email">
 		/// An email address to associate with the player. Email addresses must be unique to each player. You
-		/// can use the <see cref="GetCredentialStatus"/> method to check if the given email is available before
+		/// can use the <see cref="GetCredentialStatus(string)"/> method to check if the given email is available before
 		/// attempting the <see cref="RegisterDBCredentials"/>.
 		/// </param>
 		/// <param name="password">A password for the player to use later to recover their account.</param>
