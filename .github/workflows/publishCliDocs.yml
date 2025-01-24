@@ -36,7 +36,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Build and Publish Docs
         run: |
-          dotnet run --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
+          dotnet run -f net9.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
       - name: Post to a Slack channel
         id: slack
         uses: slackapi/slack-github-action@v1.21.0
