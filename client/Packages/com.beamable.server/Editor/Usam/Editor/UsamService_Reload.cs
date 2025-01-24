@@ -21,6 +21,7 @@ namespace Beamable.Server.Editor.Usam
 			var taskId = ++latestReloadTaskId;
 			
 			LoadLegacyServices();
+			LoadAllAssemblies();
 			
 			_ctx.OnRealmChange -= OnBeamEditorRealmChanged;
 			_ctx.OnRealmChange += OnBeamEditorRealmChanged;

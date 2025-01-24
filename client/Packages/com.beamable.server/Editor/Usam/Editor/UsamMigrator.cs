@@ -531,7 +531,7 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors);
+						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors, usam.allAssemblyAssets);
 						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
@@ -660,7 +660,7 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors);
+						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors, usam.allAssemblyAssets);
 						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
@@ -739,7 +739,7 @@ namespace Beamable.Server.Editor.Usam
 			return plan;
 		}
 		
-		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor, out List<string> errors)
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor, out List<string> errors, List<AssemblyDefinitionAsset> allAssets)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
 			errors = new List<string>();
@@ -749,26 +749,15 @@ namespace Beamable.Server.Editor.Usam
 			{
 				if (CsharpProjectUtil.IsValidReference(name))
 				{
-					var guids = AssetDatabase.FindAssets($"{name} t:{nameof(AssemblyDefinitionAsset)}");
 					AssemblyDefinitionAsset asset = null;
-					foreach (var id in guids)
+					foreach (var asmdefAsset in allAssets)
 					{
-						var assetPath = AssetDatabase.GUIDToAssetPath(id);
-						var nameQuery = $"{Path.DirectorySeparatorChar}{name}.asmdef";
-						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
-
-						if (!assetPath.Contains(nameQuery))
+						if (!name.Equals(asmdefAsset.name)) // IF it's still not the asset we are looking for, reset the variable and keep looking
 						{
-							//First try our best to see if the name of the assembly def is different from it's name property
-							{
-								nameQuery = $"{Path.DirectorySeparatorChar}{asset.name}.asmdef";
-								if (!assetPath.Contains(nameQuery)) // IF it's still not the asset we are looking for, reset the variable and keep looking
-								{
-									asset = null;
-									continue;
-								}
-							}
+							continue;
 						}
+
+						asset = asmdefAsset;
 						break;
 					}
 
