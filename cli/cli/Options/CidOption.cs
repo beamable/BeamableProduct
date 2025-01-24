@@ -7,6 +7,6 @@ public class CidOption : ConfigurableOption
 	public static CidOption Instance { get; } = new CidOption();
 
 	private CidOption()
-		: base(Constants.CONFIG_CID, "Cid to use; will default to whatever is in the file system")
+		: base(Constants.CONFIG_CID, $"CID (CustomerId) to use (found in Portal->Account); defaults to whatever is in '.beamable/{Constants.CONFIG_DEFAULTS_FILE_NAME}'")
 	{ }
 }
