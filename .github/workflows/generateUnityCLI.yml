@@ -46,7 +46,7 @@ jobs:
         run: ls -a
       - name: Build CLI 
         run: |
-           dotnet build ./cli/cli -p:BEAM_GENERATE_INTERFACE=true
+          ./dev.sh
       - name: Delete Trash Files
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |
