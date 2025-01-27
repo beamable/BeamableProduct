@@ -29,6 +29,9 @@ jobs:
         with:
           dotnet-version: |
             9.0.x
+      - name: Run Setup
+        run: |
+          ./setup.sh
       - name: Clear old files
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |
