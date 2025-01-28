@@ -10,6 +10,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
+using microservice.Extensions;
 using Command = System.CommandLine.Command;
 
 namespace cli;
@@ -192,7 +193,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				throw new CliException("Could not create Dotnet tools manifest file");
 			}
-			var (result, buffer) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, "tool restore", args.path);
+			var (result, buffer) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, "tool restore", args.path.EnquotePath());
 			if (result.ExitCode != 0)
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");

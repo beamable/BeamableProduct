@@ -1,6 +1,7 @@
 using cli.Services;
 using CliWrap;
 using System.CommandLine;
+using microservice.Extensions;
 
 namespace cli.UnityCommands;
 
@@ -28,7 +29,7 @@ public class RestoreProjectCommand : AtomicCommand<RestoreProjectCommandArgs, Re
 
 	public override async Task<RestoreProjectCommandOutput> GetResult(RestoreProjectCommandArgs args)
 	{
-		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"build {args.csProjPath}")
+		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"build {args.csProjPath.EnquotePath()}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog();
 		

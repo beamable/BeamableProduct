@@ -12,6 +12,7 @@ using System.CommandLine;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using microservice.Extensions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
@@ -268,7 +269,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var runtimeArg = forceCpu
 			? "--runtime unix-x64"
 			: "--use-current-runtime";
-		var buildArgs = $"publish {definition.AbsoluteProjectPath} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport}";
+		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
 

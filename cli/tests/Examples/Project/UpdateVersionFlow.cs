@@ -25,7 +25,7 @@ public partial class BeamProjectNewFlows
         
         
         { // act
-            RunFull(new string[] { "version", "update", "-q" }, assertExitCode: true, builder =>
+            var code = RunFull(new string[] { "version", "update", "-q" }, assertExitCode: true, builder =>
             {
                 // builder.RemoveIfExists<IFileOpenerService>();
                 // builder.AddSingleton<IFileOpenerService>(p =>
