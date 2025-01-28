@@ -193,7 +193,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				throw new CliException("Could not create Dotnet tools manifest file");
 			}
-			var (result, buffer) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, "tool restore", args.path.EnquotePath());
+			var (result, buffer) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, "tool restore", args.path);
 			if (result.ExitCode != 0)
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");
