@@ -9,7 +9,7 @@ using tests.MoqExtensions;
 
 namespace tests.Examples.Project;
 
-public class BeamProjectNewFlows : CLITestExtensions
+public partial class BeamProjectNewFlows : CLITestExtensions
 {
 	[Test]
 	[TestCase("Example", ".")]

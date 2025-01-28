@@ -33,7 +33,6 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		ResetConfigurator();
 
 		// step into newly created beamable folder...
-		Directory.SetCurrentDirectory(serviceName);
 		Directory.SetCurrentDirectory(executeFrom);
 
 		// mock call to get secret,

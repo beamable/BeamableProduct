@@ -56,7 +56,7 @@ public class BeamServicesFlows : CLITest
 		Assert.IsTrue(isRunning, $"Container '{ServiceName}' should be running.");
 
 		string workingDirectory = Directory.GetCurrentDirectory();
-		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Directory.SetCurrentDirectory($"{workingDirectory}/services");
 		Mock<BeamoService>(mock =>
 		{
 			mock.Setup(x => x.GetCurrentManifest())
@@ -106,7 +106,7 @@ public class BeamServicesFlows : CLITest
 		Assert.IsTrue(isRunning, $"Container '{ServiceName}' should be running.");
 
 		string workingDirectory = Directory.GetCurrentDirectory();
-		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Directory.SetCurrentDirectory($"{workingDirectory}/services");
 		Mock<BeamoService>(mock =>
 		{
 			mock.Setup(x => x.GetCurrentManifest())

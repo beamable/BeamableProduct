@@ -86,7 +86,8 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			Log.Information("Not opening due to given option flag.");
 		} else {
 			Log.Information($"Opening solution {solutionPath}");
-			await OpenFileWithDefaultApp(solutionPath);
+			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
+			await opener.OpenFileWithDefaultApp(solutionPath);
 		}
 	
 		
@@ -105,25 +106,4 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		await command.ExecuteAsync();
 	}
 	
-	public static async Task OpenFileWithDefaultApp(string filePath)
-	{
-		try
-		{
-			var process = new Process
-			{
-				StartInfo = new ProcessStartInfo
-				{
-					FileName = filePath,
-					UseShellExecute = true // Important for launching with default app
-				}
-			};
-			var success = process.Start();
-			await Task.Delay(500);
-			Log.Information("Opened : " + success);
-		}
-		catch (Exception ex)
-		{
-			Log.Error("Failed to open program: " +ex.Message);
-		}
-	}
 }
