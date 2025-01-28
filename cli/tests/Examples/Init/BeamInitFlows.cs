@@ -14,8 +14,10 @@ namespace tests.Examples.Init;
 
 public class BeamInitFlows : CLITest
 {
-	[Test]
-	public void InEmptyDirectory()
+	[TestCase("")]
+	[TestCase("toast")]
+	[TestCase("with a space")]
+	public void InEmptyDirectory(string initArg)
 	{
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
 		var alias = "sample-alias";
@@ -78,13 +80,20 @@ public class BeamInitFlows : CLITest
 		// before we start, the directory should not exist...
 		Assert.That(!Directory.Exists(".beamable"), "there should not be a .beamable folder to start");
 
-		Run("init");
+		if (string.IsNullOrEmpty(initArg))
+		{
+			Run("init");
+		}
+		else
+		{
+			Run("init", initArg);
+		}
 
 		// there should a .beamable folder
-		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
+		Assert.That(File.Exists( Path.Combine(initArg,".beamable/connection-configuration.json")), "there must be a config defaults file after beam init.");
 
 		// the contents of the file should contain the given cid and pid.
-		var configDefaultsStr = File.ReadAllText(".beamable/connection-configuration.json");
+		var configDefaultsStr = File.ReadAllText(Path.Combine(initArg, ".beamable/connection-configuration.json"));
 		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
 
 		bool areEqual = JToken.DeepEquals(JToken.Parse(configDefaultsStr), JToken.Parse(expectedJson));
