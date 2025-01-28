@@ -531,7 +531,7 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors, usam.allAssemblyAssets);
+						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors, usam.allAssemblyAssets, usam.AssemblyService);
 						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
@@ -660,7 +660,7 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors, usam.allAssemblyAssets);
+						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors, usam.allAssemblyAssets, usam.AssemblyService);
 						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
@@ -739,7 +739,11 @@ namespace Beamable.Server.Editor.Usam
 			return plan;
 		}
 		
-		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor, out List<string> errors, List<AssemblyDefinitionAsset> allAssets)
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(
+			IDescriptor descriptor,
+			out List<string> errors,
+			List<AssemblyDefinitionAsset> allAssets,
+			UsamAssemblyService usamAssemblyService)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
 			errors = new List<string>();
@@ -752,7 +756,8 @@ namespace Beamable.Server.Editor.Usam
 					AssemblyDefinitionAsset asset = null;
 					foreach (var asmdefAsset in allAssets)
 					{
-						if (!name.Equals(asmdefAsset.name)) // IF it's still not the asset we are looking for, reset the variable and keep looking
+						var assemblyName = usamAssemblyService.GetAssemblyName(asmdefAsset.name);
+						if (!name.Equals(assemblyName)) // IF it's still not the asset we are looking for, reset the variable and keep looking
 						{
 							continue;
 						}

@@ -35,7 +35,7 @@ namespace Beamable.Editor.Microservice.UI2
 			for (var i = 0; i < usam.latestManifest.services.Count; i++)
 			{
 				var service = usam.latestManifest.services[i];
-				var settings = BeamableMicroservicesSettings.GetSerializedSettings(service, usam.allAssemblies);
+				var settings = BeamableMicroservicesSettings.GetSerializedSettings(service, usam.allAssemblyAssets);
 				serviceSettings.Add(settings);
 			}
 

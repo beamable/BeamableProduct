@@ -144,8 +144,6 @@ namespace Beamable.Server.Editor.Usam
 		private ProjectStorageEraseWrapper _eraseCommand;
 		private CommonAreaService _commonArea;
 
-		public List<AssemblyDefinitionAsset> allAssemblies = new List<AssemblyDefinitionAsset>();
-
 		public UsamAssemblyService AssemblyService => _assemblyUtil;
 		private UsamAssemblyService _assemblyUtil;
 
