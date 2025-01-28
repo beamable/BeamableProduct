@@ -168,7 +168,12 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 						asset = assemblyDefAsset;
 						break;
 					}
-					//TODO add log error in case didn't find any asset with that name
+
+					if (asset == null) //if the asset is still null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
+					{
+						Debug.LogError($"The assembly reference {name} could not be added.");
+						continue;
+					}
 
 					instance.assemblyReferences.Add(asset);
 				}
