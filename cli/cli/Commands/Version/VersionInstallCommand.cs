@@ -8,6 +8,7 @@ using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text;
+using microservice.Extensions;
 using Command = System.CommandLine.Command;
 
 namespace cli.Version;

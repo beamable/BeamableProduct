@@ -8,12 +8,40 @@ using Serilog.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using cli.Services;
 using tests.MoqExtensions;
 
 namespace tests.Examples.Init;
 
 public class BeamInitFlows : CLITest
 {
+
+	[TestCase("")]
+	[TestCase("toast")]
+	[TestCase("with a space")]
+	[TestCase("with a space/Iglued")]
+	public void UpdateFlow_LocalDevVersion(string initArg)
+	{
+		InEmptyDirectory(initArg);
+		
+		// and now run an update command!
+		//  it should be on 0.0.123.x where x is the build number, 
+		//  so updating should just re-import everything.
+
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
+		if (!string.IsNullOrEmpty(initArg))
+		{
+			Directory.SetCurrentDirectory(initArg);
+		}
+		Run("version", "update", "-q");
+		_mockObjects.Clear();
+	}
+	
 	[TestCase("")]
 	[TestCase("toast")]
 	[TestCase("with a space")]
