@@ -29,6 +29,9 @@ jobs:
         with:
           dotnet-version: |
             9.0.x
+      - name: Run Setup
+        run: |
+          ./setup.sh
       - name: Clear old files
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |
@@ -43,7 +46,7 @@ jobs:
         run: ls -a
       - name: Build CLI 
         run: |
-           dotnet msbuild -r:True -t:Build ./cli/cli -p:BEAM_GENERATE_INTERFACE=true
+          ./dev.sh
       - name: Delete Trash Files
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |

@@ -97,13 +97,6 @@
     <EmbeddedResource Include="Docs\**\*.md" />
   </ItemGroup>
 
-
-<!--  <Target Name="PrepTools" BeforeTargets="BuildCLIInterface" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">-->
-<!--    <Exec Command="dotnet tool restore" />-->
-<!--  </Target>-->
-  <Target Name="BuildCLIForUnity" AfterTargets="Build" Condition="$(BEAM_GENERATE_INTERFACE)==true">
-    <Exec Command="$(OutDir)/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-  </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
