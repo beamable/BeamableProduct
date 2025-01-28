@@ -12,9 +12,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public string email;
         /// <summary>User password</summary>
         public string password;
-        /// <summary>The host endpoint for beamable</summary>
+        /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/connection-configuration.json'</summary>
         public string host;
-        /// <summary>Refresh token to use for the requests</summary>
+        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
         public string refreshToken;
         /// <summary>Overwrite the stored extra paths for where to find projects</summary>
         public string[] saveExtraPaths;

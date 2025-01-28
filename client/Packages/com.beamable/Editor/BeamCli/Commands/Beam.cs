@@ -6,19 +6,19 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Should any networking happen?</summary>
+        /// <summary>[DEPRECATED] Run as much of the command as possible without making any network calls</summary>
         public bool dryrun;
-        /// <summary>Cid to use; will default to whatever is in the file system</summary>
+        /// <summary>CID (CustomerId) to use (found in Portal->Account); defaults to whatever is in '.beamable/connection-configuration.json'</summary>
         public string cid;
-        /// <summary>Pid to use; will default to whatever is in the file system</summary>
+        /// <summary>PID (Realm ID) to use (found in Portal -> Games -> Any Realm's details); defaults to whatever is in '.beamable/connection-configuration.json'</summary>
         public string pid;
-        /// <summary>When true, skip input waiting and use defaults</summary>
+        /// <summary>When true, skip input waiting and use default arguments (or error if no defaults are possible)</summary>
         public bool quiet;
-        /// <summary>The host endpoint for beamable</summary>
+        /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/connection-configuration.json'</summary>
         public string host;
-        /// <summary>The access token to use for the requests</summary>
+        /// <summary>The access token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
         public string accessToken;
-        /// <summary>Refresh token to use for the requests</summary>
+        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
         public string refreshToken;
         /// <summary>Extra logs gets printed out</summary>
         public string log;
@@ -39,7 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool emitLogStreams;
         /// <summary>additional file paths to be included when building a local project manifest. </summary>
         public string[] addProjectPath;
-        /// <summary>Directory to use for configuration</summary>
+        /// <summary>[DEPRECATED] Path override for the .beamable folder</summary>
         public string dir;
         /// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
         public bool raw;
