@@ -102,28 +102,15 @@ namespace Beamable.Server.Editor.Usam
 
 		public string GetAssemblyName(BeamUnityAssemblyReferenceData assemblyData)
 		{
-			var asset = _usam.allAssemblyAssets.FirstOrDefault(a => a.name.Equals(assemblyData.AssemblyName));
 
-			if (asset == null)
+			var assetPair = _usam.allAssemblyAssets.FirstOrDefault(a => a.Value.name.Equals(assemblyData.AssemblyName));
+
+			if (assetPair.Value == null)
 			{
 				Debug.LogError($"Assembly asset [{assemblyData.AssemblyName}] not found.");
 			}
 
-			var info = asset.ConvertToInfo();
-			return info.Name; // We do this to return the actual assembly definition asset name, and not the file name
-		}
-
-		public string GetAssemblyName(string assemblyAssetName)
-		{
-			var asset = _usam.allAssemblyAssets.FirstOrDefault(a => a.name.Equals(assemblyAssetName));
-
-			if (asset == null)
-			{
-				Debug.LogError($"Assembly asset [{assemblyAssetName}] not found.");
-			}
-
-			var info = asset.ConvertToInfo();
-			return info.Name; // We do this to return the actual assembly definition asset name, and not the file name
+			return assetPair.Key; // We do this to return the actual assembly definition asset name, and not the file name
 		}
 
 		IEnumerable<Assembly> GetDeeplyReferencedAssemblies(Assembly assembly)

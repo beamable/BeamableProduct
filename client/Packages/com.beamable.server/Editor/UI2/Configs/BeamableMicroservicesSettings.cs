@@ -140,7 +140,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		}
 		
 		public static SerializedObject GetSerializedSettings(BeamManifestServiceEntry service,
-		                                                     List<AssemblyDefinitionAsset> allAssemblies)
+		                                                     Dictionary<string, AssemblyDefinitionAsset> allAssemblies)
 		{
 			var instance = CreateInstance<BeamableMicroservicesSettings>();
 			instance.service = service;
@@ -160,12 +160,12 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 					AssemblyDefinitionAsset asset = null;
 					foreach (var assemblyDefAsset in allAssemblies)
 					{
-						if (!name.AssemblyName.Equals(assemblyDefAsset.name))
+						if (!name.AssemblyName.Equals(assemblyDefAsset.Value.name))
 						{
 							continue;
 						}
 
-						asset = assemblyDefAsset;
+						asset = assemblyDefAsset.Value;
 						break;
 					}
 

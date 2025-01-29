@@ -742,7 +742,7 @@ namespace Beamable.Server.Editor.Usam
 		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(
 			IDescriptor descriptor,
 			out List<string> errors,
-			List<AssemblyDefinitionAsset> allAssets,
+			Dictionary<string, AssemblyDefinitionAsset> allAssets,
 			UsamAssemblyService usamAssemblyService)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
@@ -754,19 +754,13 @@ namespace Beamable.Server.Editor.Usam
 				if (CsharpProjectUtil.IsValidReference(name))
 				{
 					AssemblyDefinitionAsset asset = null;
-					foreach (var asmdefAsset in allAssets)
-					{
-						var assemblyName = usamAssemblyService.GetAssemblyName(asmdefAsset.name);
-						if (!name.Equals(assemblyName)) // IF it's still not the asset we are looking for, reset the variable and keep looking
-						{
-							continue;
-						}
 
-						asset = asmdefAsset;
-						break;
+					if (allAssets.TryGetValue(name, out var assemblyAsset))
+					{
+						asset = assemblyAsset;
 					}
 
-					if (asset == null) //if the asset is still null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
+					if (asset == null) //if the asset is null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
 					{
 						errors.Add($"The assembly reference {name} could not be added, please manually add it after the migration is completed.");
 						continue;
