@@ -236,6 +236,7 @@ namespace Beamable.Server.Editor.Usam
 
 			latestManifest.services ??= new List<BeamManifestServiceEntry>();
 
+			LoadAllAssemblies();
 			_assemblyUtil.Reload();
 			Reload();
 		}
