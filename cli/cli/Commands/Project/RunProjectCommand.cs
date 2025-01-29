@@ -281,7 +281,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				//  if you look in task-manager. 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					commandStr = $"/C {exe.EnquotePath()} {commandStr}".EnquotePath('(', ')');
+					commandStr = "/C " + $"{exe.EnquotePath()} {commandStr}".EnquotePath('(', ')');
 					exe = "cmd.exe";
 				}
 				else
