@@ -36,6 +36,16 @@ namespace Beamable.Tests.Runtime.Api
 			return GetUserDelegate(token);
 		}
 
+		public Promise<CredentialUsageStatus> GetCredentialStatus(string email)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token)
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<bool> IsEmailAvailable(string email)
 		{
 			return IsEmailAvailableDelegate(email);

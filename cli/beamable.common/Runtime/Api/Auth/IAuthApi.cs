@@ -1,3 +1,5 @@
+using System;
+
 namespace Beamable.Common.Api.Auth
 {
 	public interface IAuthApi : IHasBeamableRequester
@@ -28,12 +30,34 @@ namespace Beamable.Common.Api.Auth
 		Promise<User> GetUser(TokenResponse token);
 
 		/// <summary>
+		/// Check the credential status of the given email and returns an <see cref="Promise{CredentialUsageStatus}"/>
+		/// <see cref="CredentialUsageStatus.NEVER_USED"/> means that the email was never associated to a <see cref="User"/>.
+		/// <see cref="CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT"/> means that the email is already associated to an <see cref="User"/>.
+		/// <see cref="CredentialUsageStatus.INVALID_CREDENTIAL"/> means that an error happened while checking the email status.
+		/// </summary>
+		/// <param name="email">The email address to check</param>
+		/// <returns>A promise that will return a value among the <see cref="CredentialUsageStatus"/> enum possibilities, as described above.</returns>
+		Promise<CredentialUsageStatus> GetCredentialStatus(string email);
+
+		/// <summary>
+		/// Check the credential status of the given third party and returns an <see cref="Promise{CredentialUsageStatus}"/>
+		/// <see cref="CredentialUsageStatus.NEVER_USED"/> means that the third party was never associated to an <see cref="User"/>.
+		/// <see cref="CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT"/> means that the third party is already associated to an <see cref="User"/>.
+		/// <see cref="CredentialUsageStatus.INVALID_CREDENTIAL"/> means that an error happened while checking the third party status.
+		/// </summary>
+		/// <param name="thirdParty">the <see cref="AuthThirdParty"/> that issued the token</param>
+		/// <param name="token">the token that was issued by the third party. You should get this directly from the third party itself.</param>
+		/// <returns>A promise that will return a value among the <see cref="CredentialUsageStatus"/> enum possibilities, as described above.</returns>
+		Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token);
+
+		/// <summary>
 		/// Check if a given email address is available to be associated with a <see cref="User"/>.
 		/// Each email address is only assignable to one <see cref="User"/>, so if one player registers an email,
 		/// that email cannot be registered by any other players.
 		/// </summary>
 		/// <param name="email">The email address to check</param>
 		/// <returns>A promise that will result in true if the address is available, false otherwise.</returns>
+		[Obsolete("Use " + nameof(GetCredentialStatus) + "instead.")]
 		Promise<bool> IsEmailAvailable(string email);
 
 		/// <summary>
@@ -45,6 +69,7 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="thirdParty">the <see cref="AuthThirdParty"/> that issued the token</param>
 		/// <param name="token">the token that was issued by the third party. You should get this directly from the third party itself.</param>
 		/// <returns>A promise that will result in true if the token is available, false otherwise.</returns>
+		[Obsolete("Use " + nameof(GetCredentialStatus) + "instead.")]
 		Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token);
 
 		/// <summary>
@@ -112,7 +137,7 @@ namespace Beamable.Common.Api.Auth
 		/// </summary>
 		/// <param name="email">
 		/// An email address to associate with the player. Email addresses must be unique to each player. You
-		/// can use the <see cref="IsEmailAvailable"/> method to check if the given email is available before
+		/// can use the <see cref="GetCredentialStatus(string)"/> method to check if the given email is available before
 		/// attempting the <see cref="RegisterDBCredentials"/>.
 		/// </param>
 		/// <param name="password">A password for the player to use later to recover their account.</param>

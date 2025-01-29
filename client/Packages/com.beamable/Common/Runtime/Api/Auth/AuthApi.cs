@@ -9,6 +9,17 @@ using UnityEngine;
 
 namespace Beamable.Common.Api.Auth
 {
+
+	public enum CredentialUsageStatus
+	{
+		// the credential is "available" to be used.
+		NEVER_USED,
+
+		// this means that the credential is already bound to a playerId
+		ASSIGNED_TO_AN_ACCOUNT,
+		INVALID_CREDENTIAL
+	}
+
 	public class AuthApi : IAuthApi
 	{
 		protected const string TOKEN_URL = "/basic/auth/token";
@@ -43,6 +54,61 @@ namespace Beamable.Common.Api.Auth
 			return user;
 		}
 
+		public async Promise<CredentialUsageStatus> GetCredentialStatus(string email)
+		{
+			var encodedEmail = _requester.EscapeURL(email);
+
+			try
+			{
+				var resp = await _requester
+					.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available?email={encodedEmail}", null,
+					                               false);
+
+				if (resp.available)
+				{
+					return CredentialUsageStatus.NEVER_USED;
+				}
+
+				return CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT;
+			}
+			catch
+			{
+				return CredentialUsageStatus.INVALID_CREDENTIAL;
+			}
+
+		}
+
+		public async Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token)
+		{
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
+
+			try
+			{
+				var resp = await _requester
+				       .Request<AvailabilityResponse>(
+					       Method.GET,
+					       $"{ACCOUNT_URL}/available/third-party{qb}", null,
+					       false);
+
+				if (resp.available)
+				{
+					return CredentialUsageStatus.NEVER_USED;
+				}
+
+				return CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT;
+			}
+			catch
+			{
+				return CredentialUsageStatus.INVALID_CREDENTIAL;
+			}
+
+		}
+
+		[Obsolete("Use " + nameof(GetCredentialStatus) + "instead.")]
 		public Promise<bool> IsEmailAvailable(string email)
 		{
 			var encodedEmail = _requester.EscapeURL(email);
@@ -52,6 +118,7 @@ namespace Beamable.Common.Api.Auth
 				   .Map(resp => resp.available);
 		}
 
+		[Obsolete("Use " + nameof(GetCredentialStatus) + "instead.")]
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
 			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>

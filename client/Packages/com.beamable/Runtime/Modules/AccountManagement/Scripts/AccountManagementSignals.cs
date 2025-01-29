@@ -461,10 +461,14 @@ namespace Beamable.AccountManagement
 			}
 
 			var token = thirdPartyResponse.AuthToken;
-			return beamableAPI.AuthService.IsThirdPartyAvailable(thirdParty, token)
-							  .FlatMap(available =>
-										   HandleThirdPartyToken(beamableAPI, available, thirdPartyResponse,
-																 thirdParty));
+			return beamableAPI.AuthService.GetCredentialStatus(thirdParty, token)
+							  .FlatMap(status =>
+							  {
+								  bool available = status == CredentialUsageStatus.NEVER_USED;
+								  return HandleThirdPartyToken(beamableAPI, available, thirdPartyResponse,
+								                        thirdParty);
+							  });
+
 		}
 
 		Promise<User> HandleThirdPartyToken(IBeamableAPI beamableAPI,
