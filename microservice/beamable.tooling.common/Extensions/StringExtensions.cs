@@ -26,18 +26,19 @@ namespace microservice.Extensions
 	    /// If the path already has the <paramref name="quoteChar"/> at the start AND end, then the string is unchanged. 
 	    /// </summary>
 	    /// <param name="path">A path string</param>
-	    /// <param name="quoteChar">Optional, the quote character. By default, it is a double quote. </param>
+	    /// <param name="openChar">Optional, the quote character. By default, it is a double quote. </param>
+	    /// <param name="closeChar">Optional, the quote character. By default, it is a double quote. </param>
 	    /// <returns></returns>
-	    public static string EnquotePath(this string path, char quoteChar='"')
+	    public static string EnquotePath(this string path, char openChar='"', char closeChar='"')
 	    {
 		    if (string.IsNullOrEmpty(path)) return path;
 
-		    var isFirstCharMatch = path[0] == quoteChar;
-		    var isLastCharMatch = path[path.Length - 1] == quoteChar;
+		    var isFirstCharMatch = path[0] == openChar;
+		    var isLastCharMatch = path[path.Length - 1] == closeChar;
 
 		    if (isFirstCharMatch && isLastCharMatch) return path;
 
-		    return quoteChar + path + quoteChar;
+		    return openChar + path + closeChar;
 	    }
 	    
     }
