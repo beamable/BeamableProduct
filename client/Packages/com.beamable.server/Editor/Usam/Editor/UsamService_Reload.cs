@@ -19,9 +19,9 @@ namespace Beamable.Server.Editor.Usam
 		public Promise WaitReload()
 		{
 			var taskId = ++latestReloadTaskId;
-			
-			LoadLegacyServices();
+
 			LoadAllAssemblies();
+			LoadLegacyServices();
 			
 			_ctx.OnRealmChange -= OnBeamEditorRealmChanged;
 			_ctx.OnRealmChange += OnBeamEditorRealmChanged;
