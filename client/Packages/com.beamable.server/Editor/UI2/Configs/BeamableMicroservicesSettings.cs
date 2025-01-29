@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Util;
+using Beamable.Server;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
@@ -137,7 +139,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			throw new NotImplementedException();
 		}
 		
-		public static SerializedObject GetSerializedSettings(BeamManifestServiceEntry service)
+		public static SerializedObject GetSerializedSettings(BeamManifestServiceEntry service,
+		                                                     Dictionary<string, AssemblyDefinitionAsset> allAssemblies)
 		{
 			var instance = CreateInstance<BeamableMicroservicesSettings>();
 			instance.service = service;
@@ -154,18 +157,22 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				instance.assemblyReferences = new List<AssemblyDefinitionAsset>();
 				foreach (var name in service.unityReferences)
 				{
-					var guids = AssetDatabase.FindAssets($"{name.AssemblyName} t:{nameof(AssemblyDefinitionAsset)}");
 					AssemblyDefinitionAsset asset = null;
-					foreach (var id in guids)
+					foreach (var assemblyDefAsset in allAssemblies)
 					{
-						var assetPath = AssetDatabase.GUIDToAssetPath(id);
-						var nameQuery = $"{Path.DirectorySeparatorChar}{name.AssemblyName}.asmdef";
-						if (!assetPath.Contains(nameQuery))
+						if (!name.AssemblyName.Equals(assemblyDefAsset.Value.name))
 						{
 							continue;
 						}
 
-						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+						asset = assemblyDefAsset.Value;
+						break;
+					}
+
+					if (asset == null) //if the asset is still null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
+					{
+						Debug.LogError($"The assembly reference {name} could not be added.");
+						continue;
 					}
 
 					instance.assemblyReferences.Add(asset);
