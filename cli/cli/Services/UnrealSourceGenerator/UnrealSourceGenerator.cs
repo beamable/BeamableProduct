@@ -1775,6 +1775,27 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		var methodName = SwaggerService.FormatPathNameAsMethodName(nameRelevantPath);
 
+		var routeParams = new List<string>();
+		var routeParamExtension = "";
+		var isInParam = false;
+		for (var i = 0; i < endpointPath.Length; i++)
+		{
+			if (endpointPath[i] == '{')
+			{
+				isInParam = true;
+			}
+			else if (endpointPath[i] == '}')
+			{
+				isInParam = false;
+				routeParams.Add(routeParamExtension);
+				routeParamExtension = "";
+			}
+			else if(isInParam)
+			{
+				routeParamExtension += endpointPath[i];
+			}
+		}
+		
 		// Capitalize the name
 		methodName = methodName.Length > 1 ? methodName.Capitalize() : methodName;
 
@@ -1807,6 +1828,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				_ => throw new Exception($"Should not be possible for service {serviceName} to fall here.")
 			};
 			methodName = conflictResolutionPrefix + methodName;
+			
+			// Lets append the route params
+			if (routeParams.Count != 0)
+				methodName += $"By{string.Join("And", routeParams.Select(r => r.Sanitize().Capitalize()))}";
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1862,7 +1887,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Ensure we don't have '-', '/' and others in the name
 		methodName = methodName.Sanitize();
-
+		
 		// If the name here is empty (happens in routes like this "/object/mail/{objectId}/"), we'll use the service's own name as the method name.
 		methodName = string.IsNullOrEmpty(methodName) ? serviceName : methodName;
 		methodName = $"{methodName}";
