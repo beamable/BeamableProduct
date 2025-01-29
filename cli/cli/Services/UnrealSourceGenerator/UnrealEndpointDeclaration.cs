@@ -468,7 +468,7 @@ U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespac
 	/**
 	 * @brief Private implementation that all overloaded BP UFunctions call.	  
 	 */
-	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
 	                                const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,
 	                                int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
 
@@ -490,11 +490,11 @@ U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespac
 		const auto BeamRequestProcessor = Backend->MakeBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
 			(OutRequestId, RequestData, OnSuccess, OnError, OnComplete);
 		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);		
+		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);		
 	}}";
 
 	public const string RAW_BP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
                                                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,
                                                   int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
@@ -506,7 +506,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 ";
 
 	public const string RAW_MS_BP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
                                                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,
                                                   int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
@@ -522,7 +522,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 	/**
 	 * @brief Private implementation for requests that require authentication that all overloaded BP UFunctions call.	  
 	 */
-	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
 	                  const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, 
 					  int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
 
@@ -546,11 +546,11 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
 	    
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
+		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
 	}}";
 
 	public const string RAW_AUTH_BP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken,
                                 U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, 
 								int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
@@ -562,7 +562,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 ";
 
 	public const string RAW_MS_AUTH_BP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken,
                                 U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, 
 								int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
@@ -578,7 +578,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 	/**
 	 * @brief Overload version for binding lambdas when in C++ land. Prefer the BP version whenever possible, this is here mostly for quick experimentation purposes.	 
 	 */
-	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
 	                                 const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;
 ";
 
@@ -602,11 +602,11 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
+		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
 	}}";
 
 	public const string RAW_CPP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, 
                                                U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
 	// AUTO-GENERATED...	
@@ -617,7 +617,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 ";
 
 	public const string RAW_MS_CPP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig,
                                                U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
 	// AUTO-GENERATED...	
@@ -631,7 +631,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	/**
 	 * @brief Overload version for binding lambdas when in C++ land. Prefer the BP version whenever possible, this is here mostly for quick experimentation purposes.	 
 	 */
-	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
+	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
 	                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
 
 
@@ -655,11 +655,11 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
+		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
 	}}";
 
 	public const string RAW_AUTH_CPP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, 
                               U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
 	// AUTO-GENERATED...
@@ -670,7 +670,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 ";
 
 	public const string RAW_MS_AUTH_CPP_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, 
                               U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
 {{
 	// AUTO-GENERATED...
@@ -704,7 +704,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	Backend->GetRetryConfigForRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), RetryConfig);
 	
     int64 OutRequestId;
-	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
+	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Request, Handler, OutRequestId, OpHandle, CallingContext);
 	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
@@ -738,7 +738,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
 
     int64 OutRequestId;
-	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
+	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Request, Handler, OutRequestId, OpHandle, CallingContext);
 	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
@@ -767,7 +767,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	Backend->GetRetryConfigForRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), RetryConfig);	
 	
 	int64 OutRequestId = 0;
-	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);
 	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
@@ -800,7 +800,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
 
 	int64 OutRequestId;
-	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
 	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
