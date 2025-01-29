@@ -20,7 +20,6 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 
 	public override void Configure()
 	{
-		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		AddArgument(new Argument<ServiceName>("name", "The name of the new library project"),
 			(args, i) => args.ProjectName = i);
 		SolutionCommandArgs.ConfigureSolutionFlag(this);

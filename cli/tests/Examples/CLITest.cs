@@ -35,7 +35,7 @@ public class CLITest
 	protected LoggingLevelSwitch _serilogLevel;
 	private Action<IDependencyBuilder> _configurator;
 
-	private List<Mock> _mockObjects = new();
+	protected List<Mock> _mockObjects = new();
 
 	protected DockerClient _dockerClient = null!;
 

@@ -185,6 +185,7 @@ public class App
 		services.AddSingleton<IDataReporterService, DataReporterService>();
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
+		services.AddSingleton<IFileOpenerService, FileOpenerService>();
 		
 		OpenApiRegistration.RegisterOpenApis(services);
 
