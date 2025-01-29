@@ -411,7 +411,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
-		var argString = $"buildx build {fullContextPath} -f {fullDockerfilePath} " +
+		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport).Replace("\\", "/")} " +
