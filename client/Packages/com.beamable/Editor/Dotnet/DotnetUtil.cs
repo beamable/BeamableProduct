@@ -70,15 +70,15 @@ namespace Beamable.Editor.Dotnet
 			}
 			else
 			{
-				InstallDotnetToLibrary();
-				if (TryGetDotnetFilePath(out path))
+				//InstallDotnetToLibrary();
+				/*if (TryGetDotnetFilePath(out path))
 				{
 					DotnetHome = path;
 				}
 				else
-				{
+				{*/
 					throw new Exception("Beamable unable to start because no Dotnet exists");
-				}
+				//}
 			}
 		}
 
@@ -122,7 +122,7 @@ namespace Beamable.Editor.Dotnet
 			EditorUtility.ClearProgressBar();
 		}
 
-		static bool TryGetDotnetFilePath(out string filePath)
+		public static bool TryGetDotnetFilePath(out string filePath)
 		{
 			filePath = null;
 
