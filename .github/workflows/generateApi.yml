@@ -20,6 +20,9 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 9.0.x
+      - name: Run Setup
+        run: |
+          ./setup.sh
       - name: Install dotnet-format
         run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Build CLI 
@@ -27,7 +30,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./cli/beamable.common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
+          dotnet run -f net9.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./cli/beamable.common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
       - name: Format files
         id: format
         run: dotnet-format -f ./cli/beamable.common/Runtime/OpenApi
