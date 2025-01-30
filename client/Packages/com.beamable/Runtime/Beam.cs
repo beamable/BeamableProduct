@@ -414,7 +414,7 @@ namespace Beamable
 		/// </remarks>
 		/// <param name="pid">a valid Beamable PID for the current CID.</param>
 		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
-		/// <returns>An enum with information if PID change was performed.</returns>
+		/// <returns><see cref="SwitchPidResult"/> An enum with information if PID change was performed.</returns>
 		public static async Promise<SwitchPidResult> SwitchToPid(string pid, string sceneQualifier = "0")
 		{
 			if (RuntimeConfigProvider.Pid.Equals(pid))
@@ -528,9 +528,18 @@ namespace Beamable
 		}
 	}
 
+	/// <summary>
+	/// Return type of the <see cref="Beam.SwitchToPid"/> method.
+	/// </summary>
 	public enum SwitchPidResult
 	{
+		/// <summary>
+		/// The PID passed to the method was the same as the active PID and no action was performed.
+		/// </summary>
 		NoAction,
+		/// <summary>
+		/// Beam stopped all <see cref="BeamContext"/> instances and switched to the new PID.
+		/// </summary>
 		SwitchedToNewPid,
 	}
 }
