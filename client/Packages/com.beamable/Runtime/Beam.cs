@@ -409,8 +409,30 @@ namespace Beamable
 		/// When the next <see cref="BeamContext"/> loads, it will use the same CID as before, but the
 		/// PID will be the value given to this function.
 		/// </summary>
+		/// <remarks>
+		/// If the passed PID is the same as the current one no action is performed.
+		/// </remarks>
 		/// <param name="pid">a valid Beamable PID for the current CID.</param>
 		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
+		/// <returns>An enum with information if PID change was performed.</returns>
+		public static async Promise<SwitchPidResult> SwitchToPid(string pid, string sceneQualifier = "0")
+		{
+			if (RuntimeConfigProvider.Pid.Equals(pid))
+				return SwitchPidResult.NoAction;
+			await StopAllContexts();
+			RuntimeConfigProvider.Pid = pid;
+			await ResetToScene(sceneQualifier);
+			return SwitchPidResult.SwitchedToNewPid;
+		}
+
+		/// <summary>
+		/// Changes the current PID value for the game, and resets the game to the given scene defined by <see cref="sceneQualifier"/>.
+		/// When the next <see cref="BeamContext"/> loads, it will use the same CID as before, but the
+		/// PID will be the value given to this function.
+		/// </summary>
+		/// <param name="pid">a valid Beamable PID for the current CID.</param>
+		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
+		[Obsolete("Method is obsolete, please use SwitchToPid instead.")]
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
 			await StopAllContexts();
@@ -504,5 +526,11 @@ namespace Beamable
 
 			return loadAction;
 		}
+	}
+
+	public enum SwitchPidResult
+	{
+		NoAction,
+		SwitchedToNewPid,
 	}
 }
