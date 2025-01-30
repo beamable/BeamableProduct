@@ -14,17 +14,7 @@ namespace Beamable.Editor.Dotnet
 	public static partial class DotnetUtil
 	{
 		private static readonly PackageVersion REQUIRED_INSTALL_VERSION = "8.0.302";
-
-		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
-
-#if UNITY_EDITOR_WIN
-		private const string DOTNET_LIBRARY_PATH = "Library\\BeamableEditor\\Dotnet";
-		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
-		public static readonly string DOTNET_EXEC = "dotnet.exe";
-#else
 		public static readonly string DOTNET_EXEC = "dotnet.dll";
-#endif
-
 		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
 		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"8.0.302\"\n} \n}";
 
@@ -130,7 +120,7 @@ namespace Beamable.Editor.Dotnet
 			var error = proc.StandardError.ReadToEnd();
 
 			string sdkSection = output.Split(new string[] {".NET runtimes installed:"}, StringSplitOptions.None)[0];
-			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(\/[^\]]+)\]");
+			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(.+)\]");
 			pathByVersion = new Dictionary<string, string>();
 
 			foreach (Match match in regex.Matches(sdkSection))
