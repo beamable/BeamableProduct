@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -21,29 +22,11 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
 		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
-		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
-		public static readonly string DOTNET_GLOBAL_PATH =
-			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-
-		public static readonly string DOTNET_EXEC = "dotnet";
+		public static readonly string DOTNET_EXEC = "dotnet.dll";
 #endif
 
-		/// <summary>
-		/// this list is in order precedence 
-		/// </summary>
-		static string[] _dotnetLocationCandidates = new string[]
-		{
-			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION),
-			System.Environment.GetEnvironmentVariable("DOTNET_ROOT"),
-			DOTNET_LIBRARY_PATH,
-			DOTNET_GLOBAL_PATH
-		};
-
-		public static string DotnetHome { get; private set; }
-		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
-		public static bool IsUsingGlobalDotnet => DotnetHome.Equals(DOTNET_GLOBAL_PATH);
-
-		public static string DotnetMSBuildPath => Path.Combine(DotnetHome, "sdk", REQUIRED_INSTALL_VERSION.ToString());
+		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
+		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"8.0.302\"\n} \n}";
 
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
@@ -64,21 +47,23 @@ namespace Beamable.Editor.Dotnet
 		/// </summary>
 		public static void InitializeDotnet()
 		{
-			if (TryGetDotnetFilePath(out var path))
+			if (!TryGetDotnetFilePath(out var path))
 			{
-				DotnetHome = path;
-			}
-			else
-			{
-				//InstallDotnetToLibrary();
-				/*if (TryGetDotnetFilePath(out path))
+				InstallDotnetToLibrary();
+				if (!TryGetDotnetFilePath(out path))
 				{
-					DotnetHome = path;
-				}
-				else
-				{*/
 					throw new Exception("Beamable unable to start because no Dotnet exists");
-				//}
+				}
+			}
+
+			WriteGlobalDotnet();
+		}
+
+		private static void WriteGlobalDotnet()
+		{
+			if (!File.Exists(DOTNET_GLOBAL_CONFIG_PATH))
+			{
+				File.WriteAllText(DOTNET_GLOBAL_CONFIG_PATH, DOTNET_GLOBAL_CONFIG);
 			}
 		}
 
@@ -90,7 +75,7 @@ namespace Beamable.Editor.Dotnet
 
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = Path.GetFullPath(DotnetPath),
+				FileName = "dotnet",
 				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,
@@ -122,29 +107,70 @@ namespace Beamable.Editor.Dotnet
 			EditorUtility.ClearProgressBar();
 		}
 
+		public static bool CheckDotnetInfo(out Dictionary<string, string> pathByVersion)
+		{
+			var proc = new Process();
+
+			var infoCommand = $" --info";
+
+			proc.StartInfo = new ProcessStartInfo
+			{
+				FileName = "dotnet",
+				WorkingDirectory = Path.GetFullPath("."),
+				Arguments = infoCommand,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+			};
+			proc.Start();
+			proc.WaitForExit();
+
+			var output = proc.StandardOutput.ReadToEnd();
+			var error = proc.StandardError.ReadToEnd();
+
+			string sdkSection = output.Split(new string[] {".NET runtimes installed:"}, StringSplitOptions.None)[0];
+			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(\/[^\]]+)\]");
+			pathByVersion = new Dictionary<string, string>();
+
+			foreach (Match match in regex.Matches(sdkSection))
+			{
+				if (!pathByVersion.ContainsKey(match.Groups[1].Value))
+				{
+					pathByVersion.Add(match.Groups[1].Value,
+					                  Path.Combine(match.Groups[2].Value, match.Groups[1].Value));
+				}
+			}
+
+			return proc.ExitCode == 0;
+		}
+
 		public static bool TryGetDotnetFilePath(out string filePath)
 		{
 			filePath = null;
 
-			foreach (var path in _dotnetLocationCandidates)
+			if (!CheckDotnetInfo(out Dictionary<string, string> pathByVersion))
 			{
-				if (path == null) continue;
+				return false;
+			}
 
-				var dotnetPath = Path.Combine(path, DOTNET_EXEC);
+			foreach (var path in pathByVersion)
+			{
+				var dotnetPath = Path.Combine(path.Value, DOTNET_EXEC);
 				if (!CheckForDotnetAtPath(dotnetPath))
 				{
 					continue;
 				}
 
-				if (!CheckVersion(dotnetPath, out var version))
+				if (!(path.Key == REQUIRED_INSTALL_VERSION))
 				{
-					
+
 					Debug.LogWarning(
-						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {version}, required: {REQUIRED_INSTALL_VERSION}");
+						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}, required: {REQUIRED_INSTALL_VERSION}");
 					continue;
 				}
 
-				filePath = path;
+				filePath = path.Value;
 				return true;
 			}
 

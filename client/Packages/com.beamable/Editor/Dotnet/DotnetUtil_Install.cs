@@ -92,17 +92,16 @@ namespace Beamable.Editor.Dotnet
 
 		static bool RunInstallScript(string version)
 		{
-			Directory.CreateDirectory(DOTNET_LIBRARY_PATH);
 
 			using (var process = new System.Diagnostics.Process())
 			{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
-				var command = $"{DotnetInstallScriptPath} --install-dir {DOTNET_LIBRARY_PATH} --no-path --version {version}";
+				var command = $"{DotnetInstallScriptPath} --version {version}";
 				process.StartInfo.FileName = "sh";
 				process.StartInfo.Arguments = $"-c '{command}'";
 #else
 				process.StartInfo.FileName = "powershell.exe";
-				process.StartInfo.Arguments = "-ExecutionPolicy Bypass -File \"" + DotnetInstallScriptPath + $"\" -InstallDir \"{DOTNET_LIBRARY_PATH}\" -NoPath -Version {version}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+				process.StartInfo.Arguments = "-ExecutionPolicy Bypass -File \"" + DotnetInstallScriptPath + $"\" -Version {version}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
 #endif
 				// Configure the process using the StartInfo properties.
 				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
