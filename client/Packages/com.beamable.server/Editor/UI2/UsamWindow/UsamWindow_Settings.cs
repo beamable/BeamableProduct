@@ -28,7 +28,21 @@ namespace Beamable.Editor.Microservice.UI2
 
 		void ReserializeSettings()
 		{
-			if (hasSerializedSettingsYet) return;
+
+			if (hasSerializedSettingsYet)
+			{
+				if (HasInvalidTargetObjects())
+				{
+					hasSerializedSettingsYet = false;
+				}
+				else
+				{
+					// we already serialized, AND the targetObjects appear to still be valid.
+					return;
+				}
+			}
+			
+			
 			// annoying, Unity's own SerializedObject type is not inherently serializable; so it needs to get
 			//  re-serialized over and over again as we domain relaod. 
 			serviceSettings.Clear();
@@ -48,6 +62,28 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 
 			hasSerializedSettingsYet = true;
+
+			bool HasInvalidTargetObjects()
+			{
+				// double check that the serializedObjects we have are still intact.
+				//  they may have null'd out during a Playmode transition. 
+				foreach (var serializedObject in serviceSettings)
+				{
+					if (serializedObject.targetObject == null)
+					{
+						return true;
+					}
+				}
+				foreach (var serializedObject in storageSettings)
+				{
+					if (serializedObject.targetObject == null)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
 		}
 		
 		void DrawSettings()
@@ -175,6 +211,7 @@ namespace Beamable.Editor.Microservice.UI2
 				if (settings == null)
 				{
 					EditorGUILayout.LabelField("Please refresh this page.");
+					EditorGUILayout.EndVertical();
 					return;
 				}
 
@@ -315,6 +352,7 @@ namespace Beamable.Editor.Microservice.UI2
 			if (settings == null)
 			{
 				EditorGUILayout.LabelField("Please refresh this page.");
+				EditorGUILayout.EndVertical();
 				return;
 			}
 
