@@ -82,16 +82,18 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
-		public static bool InstallLocalManifest()
+		public static bool InstallLocalManifest(out string manifestPath)
 		{
 			var proc = new Process();
 
 			var installCommand = $"new tool-manifest --force";
 
+			var workingDirectory = Path.GetFullPath(".");
+			manifestPath = Path.Combine(workingDirectory, ".config", "dotnet-tools.json");
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetPath),
-				WorkingDirectory = Path.GetFullPath("."),
+				WorkingDirectory = workingDirectory,
 				Arguments = installCommand,
 				UseShellExecute = false,
 				CreateNoWindow = true,
