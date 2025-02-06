@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Dotnet
@@ -88,13 +89,10 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is fetching dotnet installer", .1f);
-			DownloadInstallScript();
-
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is installing dotnet in your Library folder", .2f);
-			RunInstallScript(REQUIRED_INSTALL_VERSION.ToString());
-
-			EditorUtility.ClearProgressBar();
+			if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Beamable Unity SDK requires dotnet sdk 8.0.302 to function properly. Please download the  SDK Installer and proceed with the installation before continuing.","Download", "Close"))
+        	{
+				Application.OpenURL("https://github.com/dotnet/core/blob/main/release-notes/8.0/8.0.6/8.0.302.md");
+			}
 		}
 
 		public static bool CheckDotnetInfo(out Dictionary<string, string> pathByVersion)
@@ -117,7 +115,6 @@ namespace Beamable.Editor.Dotnet
 			proc.WaitForExit();
 
 			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
 
 			string sdkSection = output.Split(new string[] {".NET runtimes installed:"}, StringSplitOptions.None)[0];
 			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(.+)\]");

@@ -96,7 +96,7 @@ namespace Beamable.Editor.Dotnet
 			using (var process = new System.Diagnostics.Process())
 			{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
-				var command = $"{DotnetInstallScriptPath} --version {version}";
+				var command = $"{DotnetInstallScriptPath} --version {version} --verbose";
 				process.StartInfo.FileName = "sh";
 				process.StartInfo.Arguments = $"-c '{command}'";
 #else
@@ -116,6 +116,12 @@ namespace Beamable.Editor.Dotnet
 				{
 					if (data == null || string.IsNullOrEmpty(data.Data)) return;
 					Debug.Log("DOTNET ERROR INSTALL: " + data.Data);
+				};
+
+				process.OutputDataReceived += (sender, args) =>
+				{
+					if (args == null || string.IsNullOrEmpty(args.Data)) return;
+					Debug.Log("DOTNET OUTPUT INSTALL: " + args.Data);
 				};
 
 
