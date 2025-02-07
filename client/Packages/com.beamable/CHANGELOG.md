@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Beam.SwitchToPid` method as a replacement for `Beam.ChangePid` with extra functionality- if the passed PID is the same as the current one no action is performed.
+
 ### Fixed
 - `Party.Invite()` no longer throws a null reference exception. [#3797](https://github.com/beamable/BeamableProduct/issues/3797)
 - `UnityBeamablePurchaser` no longer adds null sku product ids into IAP catalog [#3702](https://github.com/beamable/BeamableProduct/issues/3702)
@@ -16,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
 - `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
-
+- `Beam.ChangePid` marked as Obsolete
 
 ## [2.0.2] - 2024-12-17
 

@@ -5,7 +5,7 @@ namespace cli;
 public class DryRunOption : Option<bool>
 {
 	public DryRunOption()
-		: base("--dryrun", "Should any networking happen?")
+		: base("--dryrun", "[DEPRECATED] Run as much of the command as possible without making any network calls")
 	{
 
 	}
