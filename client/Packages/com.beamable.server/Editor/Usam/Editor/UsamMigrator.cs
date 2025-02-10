@@ -531,7 +531,8 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(storage);
+						var assemblies = GetAssemblyDefinitionAssets(storage, out List<string> errors, usam.allAssemblyAssets, usam.AssemblyService);
+						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
 						foreach (AssemblyDefinitionAsset asmdef in assemblies)
@@ -659,7 +660,8 @@ namespace Beamable.Server.Editor.Usam
 				{ // then, add refs
 
 					{ // assembly def refs
-						var assemblies = GetAssemblyDefinitionAssets(service);
+						var assemblies = GetAssemblyDefinitionAssets(service, out List<string> errors, usam.allAssemblyAssets, usam.AssemblyService);
+						plan.manualSteps.AddRange(errors);
 						var pathsList = new List<string>();
 						var namesList = new List<string>();
 						foreach (AssemblyDefinitionAsset asmdef in assemblies)
@@ -737,27 +739,31 @@ namespace Beamable.Server.Editor.Usam
 			return plan;
 		}
 		
-		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor)
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(
+			IDescriptor descriptor,
+			out List<string> errors,
+			Dictionary<string, AssemblyDefinitionAsset> allAssets,
+			UsamAssemblyService usamAssemblyService)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
+			errors = new List<string>();
 			
 			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
 			foreach (var name in dependencies)
 			{
 				if (CsharpProjectUtil.IsValidReference(name))
 				{
-					var guids = AssetDatabase.FindAssets($"{name} t:{nameof(AssemblyDefinitionAsset)}");
 					AssemblyDefinitionAsset asset = null;
-					foreach (var id in guids)
-					{
-						var assetPath = AssetDatabase.GUIDToAssetPath(id);
-						var nameQuery = $"{Path.DirectorySeparatorChar}{name}.asmdef";
-						if (!assetPath.Contains(nameQuery))
-						{
-							continue;
-						}
 
-						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+					if (allAssets.TryGetValue(name, out var assemblyAsset))
+					{
+						asset = assemblyAsset;
+					}
+
+					if (asset == null) //if the asset is null, we don't try to add this assembly as reference, put it in a list and ask user to manually add the reference
+					{
+						errors.Add($"The assembly reference {name} could not be added, please manually add it after the migration is completed.");
+						continue;
 					}
 
 					assets.Add(asset);
