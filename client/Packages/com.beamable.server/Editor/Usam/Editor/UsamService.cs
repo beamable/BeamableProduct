@@ -83,6 +83,8 @@ namespace Beamable.Server.Editor.Usam
 
 		public SerializableDictionaryStringToBool serviceToAutoGenClient = new SerializableDictionaryStringToBool();
 
+		public Dictionary<string, AssemblyDefinitionAsset> allAssemblyAssets;
+
 		/// <summary>
 		/// Controls where traffic will be directed
 		/// </summary>
@@ -234,6 +236,7 @@ namespace Beamable.Server.Editor.Usam
 
 			latestManifest.services ??= new List<BeamManifestServiceEntry>();
 
+			LoadAllAssemblies();
 			_assemblyUtil.Reload();
 			Reload();
 		}
@@ -592,6 +595,23 @@ namespace Beamable.Server.Editor.Usam
 		void LoadLegacyServices()
 		{
 			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache, this);
+		}
+
+		private void LoadAllAssemblies()
+		{
+			if (allAssemblyAssets != null)
+			{
+				return;
+			}
+
+			var allAssets = AssemblyDefinitionHelper.EnumerateAssemblyDefinitionAssets().ToList();
+			allAssemblyAssets = new Dictionary<string, AssemblyDefinitionAsset>();
+
+			foreach (var asset in allAssets)
+			{
+				var info = AssemblyDefinitionHelper.ConvertToInfo(asset);
+				allAssemblyAssets.Add(info.Name, asset);
+			}
 		}
 
 		public void OpenMongo(string beamoId)

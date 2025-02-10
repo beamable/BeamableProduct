@@ -3,6 +3,7 @@ using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor.Compilation;
 using UnityEngine;
 
@@ -88,14 +89,28 @@ namespace Beamable.Server.Editor.Usam
 		{
 			foreach (var reference in references)
 			{
-				if (!_nameToAssembly.TryGetValue(reference.AssemblyName, out var assembly)) continue;
-				if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
+				var assemblyName = GetAssemblyName(reference);
+				if (!_nameToAssembly.TryGetValue(assemblyName, out var assembly)) continue;
+				if (!CsharpProjectUtil.IsValidReference(assemblyName)) continue;
 				_referencedAssemblies.Add(assembly);
 				foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
 				{
 					_referencedAssemblies.Add(subReference);
 				}
 			}
+		}
+
+		public string GetAssemblyName(BeamUnityAssemblyReferenceData assemblyData)
+		{
+
+			var assetPair = _usam.allAssemblyAssets.FirstOrDefault(a => a.Value.name.Equals(assemblyData.AssemblyName));
+
+			if (assetPair.Value == null)
+			{
+				Debug.LogError($"Assembly asset [{assemblyData.AssemblyName}] not found.");
+			}
+
+			return assetPair.Key; // We do this to return the actual assembly definition asset name, and not the file name
 		}
 
 		IEnumerable<Assembly> GetDeeplyReferencedAssemblies(Assembly assembly)
