@@ -15,7 +15,8 @@ public class ContentPullCommand : AtomicCommand<ContentPullCommandArgs, LocalCon
 
 	public override void Configure()
 	{
-		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToPull = s);
+		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToPull = s.Length > 0 ? s[0].Split(',') : Array.Empty<string>());
+		AddOption(ContentCommand.CONTENT_IDS_FILTER_OPTION, (args, s) => args.ContentIdsToPull = s.Length > 0 ? s[0].Split(',') : Array.Empty<string>());
 	}
 
 	public override async Task<LocalContentState> GetResult(ContentPullCommandArgs args)
@@ -31,7 +32,10 @@ public class ContentPullCommand : AtomicCommand<ContentPullCommandArgs, LocalCon
 			var localCache = _contentService.GetLocalCache(manifestsToPull[i]);
 
 			await localCache.UpdateTags();
-			_ = await localCache.PullContent();
+			if(args.ContentIdsToPull?.Length == 0)
+				_ = await localCache.PullContent();
+			else
+				_ = await localCache.PullContent(args.ContentIdsToPull);
 		}
 
 		// Get the local content state for all the requested manifests
@@ -45,4 +49,5 @@ public class ContentPullCommand : AtomicCommand<ContentPullCommandArgs, LocalCon
 public class ContentPullCommandArgs : ContentCommandArgs
 {
 	public string[] ManifestIdsToPull;
+	public string[] ContentIdsToPull;
 }
