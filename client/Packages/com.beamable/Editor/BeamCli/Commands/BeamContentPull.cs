@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return all manifests</summary>
         public string[] manifestIds;
+        /// <summary>Inform a subset of ','-separated content ids for which to return data. By default, will return all content</summary>
+        public string[] contentIds;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,6 +19,12 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.manifestIds != default(string[])))
             {
                 genBeamCommandArgs.Add((("--manifest-ids=\"" + this.manifestIds) 
+                                + "\""));
+            }
+            // If the contentIds value was not default, then add it to the list of args.
+            if ((this.contentIds != default(string[])))
+            {
+                genBeamCommandArgs.Add((("--content-ids=\"" + this.contentIds) 
                                 + "\""));
             }
             string genBeamCommandStr = "";
