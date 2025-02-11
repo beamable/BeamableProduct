@@ -84,11 +84,11 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
                               "Relative time strings are in the format <number><unit>. " +
                               "The unit is either s (seconds), m (minutes), h (hours), or d (days). " +
                               "To represent 5 minutes in the past, use the term '5m' ";
-        AddArgument(new Argument<string>("service-id", "the beamo id for the service to get logs for"), (args, i) => args.service = i);
-        AddOption(new Option<string>(new string[]{"-f", "--filter"}, "a text filter for log searching"), (args, i) => args.filter = i);
-        AddOption(new Option<string>(new string[]{"-sl", "--server-log-level",}, "a log level filter for searching"), (args, i) => args.level = i);
-        AddOption(new Option<string>(new string[]{"--from"}, "a timestamp filter, where logs must be newer than this time. " + FORMAT), (args, i) => args.fromTimestamp = i);
-        AddOption(new Option<string>(new string[]{"--to"}, "a timestamp filter, where logs must be older than this time. " + FORMAT), (args, i) => args.toTimestamp = i);
+        AddArgument(new Argument<string>("service-id", "The beamo id for the service to get logs for"), (args, i) => args.service = i);
+        AddOption(new Option<string>(new string[]{"-f", "--filter"}, "A text filter for log searching"), (args, i) => args.filter = i);
+        AddOption(new Option<string>(new string[]{"-sl", "--server-log-level",}, "A log level filter for searching"), (args, i) => args.level = i);
+        AddOption(new Option<string>(new string[]{"--from"}, "A timestamp filter, where logs must be newer than this time. " + FORMAT), (args, i) => args.fromTimestamp = i);
+        AddOption(new Option<string>(new string[]{"--to"}, "A timestamp filter, where logs must be older than this time. " + FORMAT), (args, i) => args.toTimestamp = i);
     }
 
     public static bool TryParseTimeString(string timeString, out DateTimeOffset time)
