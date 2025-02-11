@@ -169,6 +169,7 @@ namespace Beamable.Editor.Dotnet
 		public static bool TryGetDotnetFilePath(out string filePath)
 		{
 			filePath = null;
+			var errors = new List<string>();
 
 			if (!CheckDotnetInfo(out Dictionary<string, string> pathByVersion))
 			{
@@ -177,22 +178,21 @@ namespace Beamable.Editor.Dotnet
 
 			foreach (var path in pathByVersion)
 			{
-				var dotnetPath = Path.Combine(path.Value, DOTNET_EXEC);
-				if (!CheckForDotnetAtPath(dotnetPath))
-				{
-					continue;
-				}
-
 				if (!(path.Key == REQUIRED_INSTALL_VERSION))
 				{
 
-					Debug.LogWarning(
+					errors.Add(
 						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}, required: {REQUIRED_INSTALL_VERSION}");
 					continue;
 				}
 
 				filePath = path.Value;
 				return true;
+			}
+
+			foreach (string err in errors)
+			{
+				Debug.LogWarning(err);
 			}
 
 			return false;
