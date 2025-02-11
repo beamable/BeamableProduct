@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -91,7 +92,11 @@ namespace Beamable.Editor.Dotnet
 		{
 			if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Beamable Unity SDK requires dotnet sdk 8.0.302 to function properly. Please download the  SDK Installer and proceed with the installation before continuing.","Download", "Close"))
         	{
-				Application.OpenURL("https://github.com/dotnet/core/blob/main/release-notes/8.0/8.0.6/8.0.302.md");
+				Application.OpenURL(GetDotnetDownloadLink());
+				if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Waiting for dotnet installation before proceeding", "Ok"))
+				{
+					// We don't need to do anything here, just continue the flow and the next thing will be checking if dotnet was successfuly installed
+				}
 			}
 		}
 
@@ -130,6 +135,34 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			return proc.ExitCode == 0;
+		}
+
+		public static string GetDotnetDownloadLink()
+		{
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X64:
+						return "https://download.visualstudio.microsoft.com/download/pr/b6f19ef3-52ca-40b1-b78b-0712d3c8bf4d/426bd0d376479d551ce4d5ac0ecf63a5/dotnet-sdk-8.0.302-win-x64.exe";
+					case Architecture.Arm64:
+						return "hhttps://download.visualstudio.microsoft.com/download/pr/a98d10f0-ae96-4d7f-be23-613fe9fc22cc/cd29f30a839a98d39d3df639a810f658/dotnet-sdk-8.0.302-win-arm64.exe";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X64:
+						return "https://download.visualstudio.microsoft.com/download/pr/5b488f80-2155-4b14-9865-50f328574283/e9126ea28af0375173a18e1d8a6a3086/dotnet-sdk-8.0.302-osx-x64.pkg";
+					case Architecture.Arm64:
+						return "https://download.visualstudio.microsoft.com/download/pr/348456db-b1d0-49ce-930d-4e905ed17efd/a39c5b23c669ed9b270e0169eea2b83b/dotnet-sdk-8.0.302-osx-arm64.pkg";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			{
+				return "https://github.com/dotnet/core/blob/main/release-notes/8.0/install-linux.md";
+			}
+
+			throw new NotImplementedException("unsupported os");
 		}
 
 		public static bool TryGetDotnetFilePath(out string filePath)

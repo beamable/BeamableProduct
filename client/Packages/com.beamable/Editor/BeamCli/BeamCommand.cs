@@ -383,9 +383,6 @@ namespace Beamable.Editor.BeamCli
 				process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
-				//process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
-				//process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
-				//	Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
 				
 				_status = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>
