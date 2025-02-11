@@ -10,6 +10,8 @@ namespace Beamable.Tests.Runtime.Api
 	public class MockAuthService : IAuthService
 	{
 		public Func<string, Promise<bool>> IsEmailAvailableDelegate;
+		public Func<string, Promise<CredentialUsageStatus>> GetCredentialStatusEmailDelegate;
+		public Func<AuthThirdParty, string, Promise<CredentialUsageStatus>> GetCredentialStatusThirdPartyDelegate;
 		public Func<string, string, Promise<User>> RegisterDbCredentialsDelegate;
 		public Func<string, string, bool, Promise<TokenResponse>> LoginDelegate;
 		public Func<TokenResponse, Promise<User>> GetUserDelegate;
@@ -38,12 +40,12 @@ namespace Beamable.Tests.Runtime.Api
 
 		public Promise<CredentialUsageStatus> GetCredentialStatus(string email)
 		{
-			throw new NotImplementedException();
+			return GetCredentialStatusEmailDelegate(email);
 		}
 
 		public Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token)
 		{
-			throw new NotImplementedException();
+			return GetCredentialStatusThirdPartyDelegate(thirdParty, token);
 		}
 
 		public Promise<bool> IsEmailAvailable(string email)

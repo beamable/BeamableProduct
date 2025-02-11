@@ -49,7 +49,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 
 			_signaler.Loading.AddListener(arg => _pendingPromise.CompleteSuccess(PromiseBase.Unit));
 
-			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(true);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.NEVER_USED);
 			_engine.MockAuthService.RegisterDbCredentialsDelegate =
 			   (email, password) => Promise<User>.Successful(null);
 
@@ -66,7 +66,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 		{
 			var nextUser = new User();
 
-			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(true);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.NEVER_USED);;
 			_engine.MockAuthService.RegisterDbCredentialsDelegate =
 			   (email, password) => Promise<User>.Successful(nextUser);
 
@@ -86,7 +86,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 		{
 			var token = new TokenResponse();
 			var nextUser = new User { id = _engineUser.id + 1 }; // the id needs to be different for the switch to get broadcast.
-			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(false);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT);
 			_engine.MockAuthService.LoginDelegate = (email, password, merge) => Promise<TokenResponse>.Successful(token);
 			_engine.MockAuthService.GetUserDelegate = t => Promise<User>.Successful(nextUser);
 
