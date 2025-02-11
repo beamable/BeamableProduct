@@ -56,7 +56,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 		[UnityTest]
 		public IEnumerator WhenEmailAvailable_SignalsAvailable()
 		{
-			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(true);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.NEVER_USED);;
 
 			_signaler.EmailIsAvailable = new EmailEvent();
 			_signaler.EmailIsAvailable.AddListener(x => _pendingPromise.CompleteSuccess(PromiseBase.Unit));
@@ -68,7 +68,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 		[UnityTest]
 		public IEnumerator WhenEmailRegistered_SignalsRegistered()
 		{
-			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(false);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT);;
 
 			_signaler.EmailIsRegistered = new EmailEvent();
 			_signaler.EmailIsRegistered.AddListener(x => _pendingPromise.CompleteSuccess(PromiseBase.Unit));

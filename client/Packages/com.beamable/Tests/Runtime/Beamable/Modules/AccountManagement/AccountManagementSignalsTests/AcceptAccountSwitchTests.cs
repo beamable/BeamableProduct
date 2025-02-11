@@ -65,7 +65,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 			var email = "tuna@paste.com";
 			var token = new TokenResponse();
 			var user = new User { id = _engineUser.id + 1 }; // the id needs to be different for the test to signal login
-			_engine.MockAuthService.IsEmailAvailableDelegate = x => Promise<bool>.Successful(false);
+			_engine.MockAuthService.GetCredentialStatusEmailDelegate = email => Promise<CredentialUsageStatus>.Successful(CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT);
 			_engine.MockAuthService.LoginDelegate = (e, p, m) => Promise<TokenResponse>.Successful(token);
 			_engine.MockAuthService.GetUserDelegate = t => Promise<User>.Successful(user);
 			_engine.GetDeviceUsersDelegate = () => Promise<ISet<UserBundle>>.Successful(new HashSet<UserBundle>());

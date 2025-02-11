@@ -8,7 +8,7 @@ namespace Beamable.AccountManagement
 	{
 		public static Promise<bool> IsEmailRegistered(this IBeamableAPI beamableAPI, string email)
 		{
-			return beamableAPI.AuthService.IsEmailAvailable(email).Map(available => !available);
+			return beamableAPI.AuthService.GetCredentialStatus(email).Map(available => available == CredentialUsageStatus.ASSIGNED_TO_AN_ACCOUNT);
 		}
 
 		public static Promise<User> AttachThirdPartyToCurrentUser(this IBeamableAPI beamableAPI,
