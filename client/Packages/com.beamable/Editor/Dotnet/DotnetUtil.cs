@@ -116,6 +116,7 @@ namespace Beamable.Editor.Dotnet
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
 			};
+			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
 			proc.WaitForExit();
 
