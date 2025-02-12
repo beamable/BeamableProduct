@@ -39,13 +39,49 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private static Font _codeFont;
 
+		/// <summary>
+		/// Different operating systems may have different fonts available.
+		/// This list is an ordered list of font names by preference.
+		/// </summary>
+		private static readonly string[] _codeFontNamesPriority = new string[]
+		{
+			"Courier",
+			"Consolas",
+			"Lucida Console"
+		};
+		
+		
 		private static Font codeFont
 		{
 			get
 			{
 				if (_codeFont == null)
 				{
-					_codeFont = Font.CreateDynamicFontFromOSFont("Courier", 12);
+					var allNames = Font.GetOSInstalledFontNames();
+					var foundName = string.Empty;
+					foreach (var name in _codeFontNamesPriority)
+					{
+						if (string.IsNullOrEmpty(foundName)) break;
+						foreach (var existingName in allNames)
+						{
+							if (string.IsNullOrEmpty(foundName)) break;
+							if (existingName == name)
+							{
+								foundName = name;
+							}
+						}
+					}
+
+					if (string.IsNullOrEmpty(foundName))
+					{
+						// shucks, we couldn't find a font, default to the label font :shrug:
+						_codeFont = EditorStyles.label.font;
+					}
+					else
+					{
+						_codeFont = Font.CreateDynamicFontFromOSFont(foundName, 12);
+					}
+					
 				}
 				return _codeFont;
 			}
