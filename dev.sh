@@ -85,4 +85,16 @@ dotnet restore BeamService.csproj  --no-cache --force
 # Go back to the project root
 cd ../../../..
 
-# TODO: update the unreal sandbox
+# If the user has the Unreal repo as a sibling, we update the version number there too
+if [[ -d "../UnrealSDK" ]]; then
+  cd ../UnrealSDK
+  dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
+  cd Microservices
+  for i in `find . -name "*.csproj" -type f`; do
+    echo "Restoring Microservice Project: $i"
+    dotnet restore "$i" --no-cache --force      
+  done
+  cd ../../BeamableProduct  
+fi
+
+
