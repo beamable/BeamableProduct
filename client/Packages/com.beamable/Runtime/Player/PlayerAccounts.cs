@@ -1799,7 +1799,17 @@ namespace Beamable.Player
 		public async Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
 			await OnReady;
-			return await _authService.IsThirdPartyAvailable(thirdParty, token);
+			var status = await _authService.GetCredentialStatus(thirdParty, token);
+			return status == CredentialUsageStatus.NEVER_USED;
+		}
+
+		/// <summary>
+		/// Checks the status of a given third party token.
+		/// </summary>
+		/// <returns>Returns an enum with the correct status for that third party token</returns>
+		public Promise<CredentialUsageStatus> GetCredentialStatus(AuthThirdParty thirdParty, string token)
+		{
+			return _authService.GetCredentialStatus(thirdParty, token);
 		}
 
 		/// <summary>
@@ -1859,7 +1869,19 @@ namespace Beamable.Player
 		public async Promise<bool> IsEmailAvailable(string email)
 		{
 			await OnReady;
-			return await _authService.IsEmailAvailable(email);
+			CredentialUsageStatus status = await _authService.GetCredentialStatus(email);
+			return status == CredentialUsageStatus.NEVER_USED;
+		}
+
+		/// <summary>
+		/// Checks the status of the provided email. If it's attached to an account already then this will return ASSIGNED_TO_AN_ACCOUNT.
+		/// If it's available, it will return NEVER_USED. And finally it will return INVALID_CREDENTIAL in case of a fail in the process.
+		/// </summary>
+		/// <param name="email"></param>
+		/// <returns>The status of this email in the credentials</returns>
+		public Promise<CredentialUsageStatus> GetCredentialStatus(string email)
+		{
+			return _authService.GetCredentialStatus(email);
 		}
 
 		/// <summary>

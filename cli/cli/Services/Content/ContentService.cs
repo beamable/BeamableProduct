@@ -181,7 +181,7 @@ public class ContentService
 		var invalidManifestIds = existingManifestIds.Where(id => !filter.Contains(id)).ToArray();
 		if (invalidManifestIds.Length != 0)
 		{
-			throw new CliException($"Content Manifests Not Found. MANIFEST_IDS_NOT_FOUND=[{invalidManifestIds}], AVAILABLE_IDS=[{existingManifestIds}]");
+			throw new CliException($"Content Manifests Not Found. MANIFEST_IDS_NOT_FOUND=[{string.Join(", ",invalidManifestIds)}], AVAILABLE_IDS=[{string.Join(",", existingManifestIds)}]");
 		}
 
 		return filter;
