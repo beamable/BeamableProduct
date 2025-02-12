@@ -38,7 +38,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Nuget Packages
-        run: sh ./build/customUnityDockerImage/build-images.sh
+        run: bash ./build/customUnityDockerImage/build-images.sh
         env: 
           CUSTOM_REGISTRY: ${{ env.REGISTRY }}/
       
