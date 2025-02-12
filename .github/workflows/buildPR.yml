@@ -152,7 +152,9 @@ jobs:
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: |
+            '9.0.x'
+            '8.0.302'
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
