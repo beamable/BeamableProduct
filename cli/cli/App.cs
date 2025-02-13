@@ -52,6 +52,7 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
+using cli.Commands.Project.Logs;
 using Command = System.CommandLine.Command;
 
 namespace cli;
@@ -313,6 +314,8 @@ public class App
 		Commands.AddSubCommand<SnapshotStorageObjectCommand, SnapshotStorageObjectCommandArgs, StorageGroupCommand>();
 		Commands.AddSubCommand<RestoreStorageObjectCommand, RestoreStorageObjectCommandArgs, StorageGroupCommand>();
 		Commands.AddSubCommand<EraseStorageObjectCommand, EraseStorageObjectCommandArgs, StorageGroupCommand>();
+
+		Commands.AddSubCommand<GetRemoteLogsCommand, GetRemoteLogsCommandArgs, ProjectCommand>();
 		
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
