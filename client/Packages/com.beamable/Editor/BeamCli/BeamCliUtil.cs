@@ -228,14 +228,14 @@ namespace Beamable.Editor.BeamCli
 				return false;
 			}
 
-			if (!DotnetUtil.InstallLocalManifest())
+			if (!DotnetUtil.InstallLocalManifest(out var manifestPath))
 			{
 				BeamableLogger.LogError("Unable to install BeamCLI from package: couldn't create a local manifest for the project.");
 				return false;
 			}
-
+			
 			var proc = new Process();
-			var installCommand = $"tool install beamable.tools";
+			var installCommand = $"tool install beamable.tools --tool-manifest {manifestPath}";
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
