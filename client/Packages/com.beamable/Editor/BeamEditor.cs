@@ -388,7 +388,8 @@ namespace Beamable
 			}
 			var inclusions = configuration.CustomPathInclusions.GetOrElse(() => new List<string>
 			{
-				"/usr/local/bin" // the default path on macOs
+				"/usr/local/bin", // the default path on macOs
+				"/usr/local/share/dotnet" // default path on mac for dotnet
 			});
 			var path = System.Environment.GetEnvironmentVariable(PATH) ?? "";
 
