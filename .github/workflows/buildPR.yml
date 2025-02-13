@@ -208,7 +208,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/${{steps.unityMap.outputs.UNITY_MODE}}:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
           customParameters: -warnaserror+
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
