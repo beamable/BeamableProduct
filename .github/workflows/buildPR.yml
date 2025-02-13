@@ -9,6 +9,9 @@ on:
     paths-ignore:
       - 'rfc/**'
 
+env:
+  DOCKER_REGISTRY: ghcr.io
+
 jobs:
   baseNuget:
     timeout-minutes: 10
@@ -70,7 +73,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ${{ matrix.runners }}
     concurrency:
       group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
@@ -133,7 +136,7 @@ jobs:
         unityVersion:
           - 2021.3.29f1
           - 2022.3.7f1
-          - 6000.0.30f1
+          - 6000.0.37f1
         include:
           - unityVersion: 2022.3.7f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
@@ -143,12 +146,32 @@ jobs:
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
-          - unityVersion: 6000.0.30f1
+          - unityVersion: 6000.0.37f1
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Unity Mapped Values
+        id: unityMap
+        env: 
+          UNITY_MODE: >-
+            ${{ fromJson('{
+              "playmode": "player",
+              "editmode": "editor"
+            }')[matrix.testMode] }}
+        run: |
+          echo "UNITY_MODE=$UNITY_MODE" >> "$GITHUB_OUTPUT"
+
+
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
@@ -169,26 +192,6 @@ jobs:
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
           ReleaseSharedCode=true dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Cache Docker Layers
-        uses: actions/cache@v3
-        id: cache_docker
-        with:
-          path: ./docker-cache
-          key: Docker-gzipped-${{ matrix.unityVersion }}
-          restore-keys: |
-            Docker-gzipped-${{ matrix.unityVersion }}
-      - name: Load Docker Image If Exits
-        continue-on-error: true
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/prepare_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
-        shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -205,6 +208,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
           customParameters: -warnaserror+
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
@@ -212,18 +216,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-          path: ${{ steps.tests.outputs.artifactsPath }}
-          retention-days: 3
-      - name: Save Docker Image If Exits
-        if: ${{ !steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/save_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/save_base_image.sh
-        shell: bash
+
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
@@ -236,13 +229,12 @@ jobs:
       fail-fast: false
       matrix:
         targetPlatform:
-#          - WebGL Disabled due to existing lightbeam sample action
           - Android
           - StandaloneWindows
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 6000.0.30f1
+          - 6000.0.37f1
         projectPath:
           - client
         include:
@@ -259,10 +251,31 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      
+      - name: Create Unity Mapped Values
+        id: unityMap
+        env: 
+          UNITY_PLATFORM: >-
+            ${{ fromJson('{
+              "Android": "android",
+              "StandaloneWindows": "windows-mono",
+              "iOS": "ios",
+              "StandaloneOSX": "mac-mono"
+            }')[matrix.targetPlatform] }}
+        run: |
+          echo "UNITY_PLATFORM=$UNITY_PLATFORM" >> "$GITHUB_OUTPUT"
+
+
       - name: Setup .NET Core SDK 
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
@@ -277,30 +290,11 @@ jobs:
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
           ReleaseSharedCode=true dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
           ./build/create_config_defaults.sh
-        shell: bash
-      - name: Cache Docker Layers
-        uses: actions/cache@v3
-        id: cache_docker
-        with:
-          path: ./docker-cache
-          key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-          restore-keys: |
-            Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - name: Load Docker Image If Exits
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
-        continue-on-error: true
-        run: |
-          chmod +x ./build/prepare_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v3
@@ -331,6 +325,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-${{steps.unityMap.outputs.UNITY_PLATFORM}}-3.1.0
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
@@ -342,23 +337,3 @@ jobs:
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
 
-      - name: Save Docker Image If Exits
-        if: ${{ !steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/save_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
-        shell: bash
-      - uses: actions/upload-artifact@v4
-        if: ${{ matrix.targetPlatform != 'WebGL' }}
-        with:
-          name: Build-${{ matrix.targetPlatform }}
-          path: dist/**
-          retention-days: 3
-#      - name: upload
-#        if: ${{ matrix.targetPlatform == 'WebGL' }}
-#        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}} --acl public-read
-#      - uses: github-actions-up-and-running/pr-comment@v1.0.1
-#        if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
-#        with:
-#          repo-token: ${{ secrets.GITHUB_TOKEN }}
-#          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)
