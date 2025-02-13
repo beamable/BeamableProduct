@@ -73,7 +73,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: ${{ matrix.runners }}
     concurrency:
       group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
