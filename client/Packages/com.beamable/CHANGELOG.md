@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Beam.ChangePid` marked as Obsolete
 - Dotnet is not installed locally anymore, if the required version is not installed yet, the SDK will prompt the user to install the right version.
 
+## [2.0.3] - 2024-02-13
+- no changes
+
 ## [2.0.2] - 2024-12-17
 
 ### Fixed
