@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
 - The methods `isEmailAvailable` and `IsThirdPartyAvailable` from the `AuthService` obsolete and adds the new `GetCredentialStatus` with overloads for both the email and third party.[#3700](https://github.com/beamable/BeamableProduct/issues/3700)
 - `Beam.ChangePid` marked as Obsolete
+- Dotnet is not installed locally anymore, if the required version is not installed yet, the SDK will prompt the user to install the right version.
 
 ## [2.0.2] - 2024-12-17
 

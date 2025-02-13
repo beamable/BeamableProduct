@@ -14,17 +14,6 @@ namespace Beamable.Editor.BeamCli
 {
 	public static class BeamCliUtil
 	{
-		static bool USE_GLOBAL
-		{
-			get
-			{
-				var config = EditorConfiguration.Instance;
-				if (config == null || !config.AdvancedCli.HasValue) return false;
-
-				return config.AdvancedCli.Value.UseGlobalCLI;
-			}
-		}
-
 		static bool USE_SRC
 		{
 			get
@@ -54,10 +43,6 @@ namespace Beamable.Editor.BeamCli
 					return SessionState.GetString(SRC_BEAM, string.Empty);
 				}
 
-				if (USE_GLOBAL)
-				{
-					return Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH, "tools");
-				}
 				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
 				return Path.Combine(CLI_LIBRARY, CLI_VERSION);
 			}
@@ -97,6 +82,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
+
 			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())
@@ -109,12 +95,6 @@ namespace Beamable.Editor.BeamCli
 				{
 					return;
 				}
-			}
-
-			if (USE_GLOBAL)
-			{
-				// if using global, we make no promises about anything.
-				return;
 			}
 
 			// need to install the CLI
@@ -198,7 +178,7 @@ namespace Beamable.Editor.BeamCli
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
+				FileName = "dotnet",
 				WorkingDirectory = cliAbsolutePath,
 				Arguments = "build -c Release -f net6.0",
 				UseShellExecute = false,
@@ -262,7 +242,7 @@ namespace Beamable.Editor.BeamCli
 			}
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
+				FileName = "dotnet",
 				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,

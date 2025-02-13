@@ -21,8 +21,6 @@ namespace Beamable.Editor.Dotnet
 			_resultBuffer = new List<string>();
 		}
 
-		public string DotnetPath => Path.GetFullPath(DotnetUtil.DotnetPath);
-
 		private Process _process;
 		protected virtual bool CaptureStandardBuffers => true;
 		public bool AutoLogErrors { get; set; } = true;
@@ -59,7 +57,7 @@ namespace Beamable.Editor.Dotnet
 
 				using (_process = new System.Diagnostics.Process())
 				{
-					_process.StartInfo.FileName = DotnetPath;
+					_process.StartInfo.FileName = "dotnet";
 					_process.StartInfo.Arguments = command;
 					// Configure the process using the StartInfo properties.
 					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;

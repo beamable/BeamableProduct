@@ -69,7 +69,7 @@ namespace Beamable.Editor.BeamCli.Commands
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Verbose",
 				skipStandaloneValidation = true,
-				dotnetPath = Path.GetFullPath(DotnetUtil.DotnetPath),
+				dotnetPath = "dotnet",
 				quiet = true,
 				noLogFile = true,
 				raw = true,
@@ -359,14 +359,14 @@ namespace Beamable.Editor.BeamCli
 			
 			using (process = new System.Diagnostics.Process())
 			{
-				process.StartInfo.FileName = DotnetUtil.DotnetPath;
+				process.StartInfo.FileName = "dotnet";
 				process.StartInfo.Arguments = _command;
 				
 #if UNITY_EDITOR_WIN
 				// this will start the process in a sub-process, allowing the main Unity program to exit.
 				//  on mac the process-tree "just works" (thought Chris, who was up late at night at starting to hallucinate) 
 				process.StartInfo.FileName = "cmd.exe";
-				process.StartInfo.Arguments = $"/C {DotnetUtil.DotnetPath} {_command}";
+				process.StartInfo.Arguments = $"/C dotnet {_command}";
 #endif
 			
 				// Configure the process using the StartInfo properties.
@@ -383,9 +383,6 @@ namespace Beamable.Editor.BeamCli
 				process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
-				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
-				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
-					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
 				
 				_status = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>

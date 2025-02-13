@@ -703,11 +703,7 @@ namespace Beamable.Editor.Content
 			string[] files = Directory.GetFiles(defaultDir);
 			var addedEntries = new List<AddressableAssetEntry>();
 
-			var addressableAssetSettings = AddressableAssetSettingsDefaultObject.GetSettings(false);
-			if (addressableAssetSettings == null)
-			{
-				throw new Exception("Addressables was not configured");
-			}
+			var addressableAssetSettings = AddressableAssetSettingsDefaultObject.GetSettings(true);
 
 			var filesToMarkAddressable = new List<string>();
 
