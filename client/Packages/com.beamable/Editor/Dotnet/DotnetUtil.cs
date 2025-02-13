@@ -70,7 +70,8 @@ namespace Beamable.Editor.Dotnet
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = "dotnet",
-				WorkingDirectory = workingDirectory,				Arguments = installCommand,
+				WorkingDirectory = workingDirectory,
+				Arguments = installCommand,
 				UseShellExecute = false,
 				CreateNoWindow = true,
 				RedirectStandardOutput = true,
