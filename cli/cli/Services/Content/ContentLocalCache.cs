@@ -282,6 +282,33 @@ public class ContentLocalCache
 		// Return the updated list of content
 		return contents;
 	}
+	
+	public async Promise<List<ContentDocument>> PullContent(IEnumerable<string> toDownload, bool saveToDisk = true)
+	{
+		var manifest = await UpdateManifest();
+		var contents = new List<ContentDocument>(manifest.entries.Count);
+
+		// Download and overwrite the local content for things that have changed based on the hash. 
+		{
+			var requiresDownloadContent = manifest.entries.Where(e => toDownload.Contains(e.contentId)).ToArray();
+			var downloadPromises = requiresDownloadContent.Select(async c =>
+			{
+				var content = await _requester.CustomRequest(Method.GET, c.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
+				if (saveToDisk)
+				{
+					await UpdateContent(content);
+				}
+
+				return content;
+			}).ToArray();
+
+			var downloadedContent = await Task.WhenAll(downloadPromises);
+			contents.AddRange(downloadedContent);
+		}
+
+		// Return the updated list of content
+		return contents;
+	}
 
 	public async Promise RemoveLocalOnlyContent()
 	{

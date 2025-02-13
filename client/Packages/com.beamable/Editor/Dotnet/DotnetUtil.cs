@@ -5,7 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Dotnet
@@ -13,37 +16,9 @@ namespace Beamable.Editor.Dotnet
 	public static partial class DotnetUtil
 	{
 		private static readonly PackageVersion REQUIRED_INSTALL_VERSION = "8.0.302";
-
-		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
-
-#if UNITY_EDITOR_WIN
-		private const string DOTNET_LIBRARY_PATH = "Library\\BeamableEditor\\Dotnet";
-		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
-		public static readonly string DOTNET_EXEC = "dotnet.exe";
-#else
-		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
-		public static readonly string DOTNET_GLOBAL_PATH =
-			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-
-		public static readonly string DOTNET_EXEC = "dotnet";
-#endif
-
-		/// <summary>
-		/// this list is in order precedence 
-		/// </summary>
-		static string[] _dotnetLocationCandidates = new string[]
-		{
-			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION),
-			System.Environment.GetEnvironmentVariable("DOTNET_ROOT"),
-			DOTNET_LIBRARY_PATH,
-			DOTNET_GLOBAL_PATH
-		};
-
-		public static string DotnetHome { get; private set; }
-		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
-		public static bool IsUsingGlobalDotnet => DotnetHome.Equals(DOTNET_GLOBAL_PATH);
-
-		public static string DotnetMSBuildPath => Path.Combine(DotnetHome, "sdk", REQUIRED_INSTALL_VERSION.ToString());
+		public static readonly string DOTNET_EXEC = "dotnet.dll";
+		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
+		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"8.0.302\"\n} \n}";
 
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
@@ -64,21 +39,23 @@ namespace Beamable.Editor.Dotnet
 		/// </summary>
 		public static void InitializeDotnet()
 		{
-			if (TryGetDotnetFilePath(out var path))
-			{
-				DotnetHome = path;
-			}
-			else
+			if (!TryGetDotnetFilePath(out var path))
 			{
 				InstallDotnetToLibrary();
-				if (TryGetDotnetFilePath(out path))
-				{
-					DotnetHome = path;
-				}
-				else
+				if (!TryGetDotnetFilePath(out path))
 				{
 					throw new Exception("Beamable unable to start because no Dotnet exists");
 				}
+			}
+
+			WriteGlobalDotnet();
+		}
+
+		private static void WriteGlobalDotnet()
+		{
+			if (!File.Exists(DOTNET_GLOBAL_CONFIG_PATH))
+			{
+				File.WriteAllText(DOTNET_GLOBAL_CONFIG_PATH, DOTNET_GLOBAL_CONFIG);
 			}
 		}
 
@@ -92,9 +69,8 @@ namespace Beamable.Editor.Dotnet
 			manifestPath = Path.Combine(workingDirectory, ".config", "dotnet-tools.json");
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = Path.GetFullPath(DotnetPath),
-				WorkingDirectory = workingDirectory,
-				Arguments = installCommand,
+				FileName = "dotnet",
+				WorkingDirectory = workingDirectory,				Arguments = installCommand,
 				UseShellExecute = false,
 				CreateNoWindow = true,
 				RedirectStandardOutput = true,
@@ -115,39 +91,109 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is fetching dotnet installer", .1f);
-			DownloadInstallScript();
-
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is installing dotnet in your Library folder", .2f);
-			RunInstallScript(REQUIRED_INSTALL_VERSION.ToString());
-
-			EditorUtility.ClearProgressBar();
+			if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Beamable Unity SDK requires dotnet sdk 8.0.302 to function properly. Please download the  SDK Installer and proceed with the installation before continuing.","Download", "Close"))
+        	{
+				Application.OpenURL(GetDotnetDownloadLink());
+				if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Waiting for dotnet installation before proceeding", "Ok"))
+				{
+					// We don't need to do anything here, just continue the flow and the next thing will be checking if dotnet was successfuly installed
+				}
+			}
 		}
 
-		static bool TryGetDotnetFilePath(out string filePath)
+		public static bool CheckDotnetInfo(out Dictionary<string, string> pathByVersion)
+		{
+			var proc = new Process();
+
+			var infoCommand = $" --info";
+
+			proc.StartInfo = new ProcessStartInfo
+			{
+				FileName = "dotnet",
+				WorkingDirectory = Path.GetFullPath("."),
+				Arguments = infoCommand,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+			};
+			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			proc.Start();
+			proc.WaitForExit();
+
+			var output = proc.StandardOutput.ReadToEnd();
+
+			string sdkSection = output.Split(new string[] {".NET runtimes installed:"}, StringSplitOptions.None)[0];
+			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(.+)\]");
+			pathByVersion = new Dictionary<string, string>();
+
+			foreach (Match match in regex.Matches(sdkSection))
+			{
+				if (!pathByVersion.ContainsKey(match.Groups[1].Value))
+				{
+					pathByVersion.Add(match.Groups[1].Value,
+					                  Path.Combine(match.Groups[2].Value, match.Groups[1].Value));
+				}
+			}
+
+			return proc.ExitCode == 0;
+		}
+
+		public static string GetDotnetDownloadLink()
+		{
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X64:
+						return "https://download.visualstudio.microsoft.com/download/pr/b6f19ef3-52ca-40b1-b78b-0712d3c8bf4d/426bd0d376479d551ce4d5ac0ecf63a5/dotnet-sdk-8.0.302-win-x64.exe";
+					case Architecture.Arm64:
+						return "hhttps://download.visualstudio.microsoft.com/download/pr/a98d10f0-ae96-4d7f-be23-613fe9fc22cc/cd29f30a839a98d39d3df639a810f658/dotnet-sdk-8.0.302-win-arm64.exe";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X64:
+						return "https://download.visualstudio.microsoft.com/download/pr/5b488f80-2155-4b14-9865-50f328574283/e9126ea28af0375173a18e1d8a6a3086/dotnet-sdk-8.0.302-osx-x64.pkg";
+					case Architecture.Arm64:
+						return "https://download.visualstudio.microsoft.com/download/pr/348456db-b1d0-49ce-930d-4e905ed17efd/a39c5b23c669ed9b270e0169eea2b83b/dotnet-sdk-8.0.302-osx-arm64.pkg";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			{
+				return "https://github.com/dotnet/core/blob/main/release-notes/8.0/install-linux.md";
+			}
+
+			throw new NotImplementedException("unsupported os");
+		}
+
+		public static bool TryGetDotnetFilePath(out string filePath)
 		{
 			filePath = null;
+			var errors = new List<string>();
 
-			foreach (var path in _dotnetLocationCandidates)
+			if (!CheckDotnetInfo(out Dictionary<string, string> pathByVersion))
 			{
-				if (path == null) continue;
+				return false;
+			}
 
-				var dotnetPath = Path.Combine(path, DOTNET_EXEC);
-				if (!CheckForDotnetAtPath(dotnetPath))
+			foreach (var path in pathByVersion)
+			{
+				if (!(path.Key == REQUIRED_INSTALL_VERSION))
 				{
+
+					errors.Add(
+						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}, required: {REQUIRED_INSTALL_VERSION}");
 					continue;
 				}
 
-				if (!CheckVersion(dotnetPath, out var version))
-				{
-					
-					Debug.LogWarning(
-						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {version}, required: {REQUIRED_INSTALL_VERSION}");
-					continue;
-				}
-
-				filePath = path;
+				filePath = path.Value;
 				return true;
+			}
+
+			foreach (string err in errors)
+			{
+				Debug.LogWarning(err);
 			}
 
 			return false;
