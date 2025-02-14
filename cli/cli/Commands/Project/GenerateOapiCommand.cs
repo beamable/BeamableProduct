@@ -14,6 +14,7 @@ using Serilog;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
+using microservice.Extensions;
 
 namespace cli.Commands.Project;
 
@@ -163,7 +164,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		Log.Debug($"service path=[{projectPath}]");
-		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";
+		var commandStr = $"msbuild {projectPath.EnquotePath()} -t:GetTargetPath -verbosity:diag";
 		Log.Debug($"running {args.AppContext.DotnetPath} {commandStr}");
 		var stdOutBuilder = new StringBuilder();
 		var result = await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)

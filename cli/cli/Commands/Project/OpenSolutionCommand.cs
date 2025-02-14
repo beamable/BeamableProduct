@@ -3,6 +3,7 @@ using CliWrap;
 using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
+using microservice.Extensions;
 
 namespace cli.Commands.Project;
 
@@ -53,7 +54,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
 		
 			Log.Debug($"adding project=[{proj}] to solution");
-			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {solutionPath} add {proj}");
+			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}");
 			command.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error));
 			await command.ExecuteAsync();
 		}
@@ -85,7 +86,8 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			Log.Information("Not opening due to given option flag.");
 		} else {
 			Log.Information($"Opening solution {solutionPath}");
-			await OpenFileWithDefaultApp(solutionPath);
+			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
+			await opener.OpenFileWithDefaultApp(solutionPath);
 		}
 	
 		
@@ -93,7 +95,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 	
 	static async Task AddUnityDepToSolution(CommandArgs args, BeamoServiceDefinition definition, string fullSlnPath, string projectPath){
 		var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projectPath);
-		var slnArgStr = $"sln {fullSlnPath} add {slnProjPath} -s \"UnityAssemblies (shared)\"";
+		var slnArgStr = $"sln {fullSlnPath.EnquotePath()} add {slnProjPath.EnquotePath()} -s \"UnityAssemblies (shared)\"";
 		Log.Verbose($"adding assembly to solution, arg=[{slnArgStr}]");
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)
 			.WithValidation(CommandResultValidation.None)
@@ -104,25 +106,4 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		await command.ExecuteAsync();
 	}
 	
-	public static async Task OpenFileWithDefaultApp(string filePath)
-	{
-		try
-		{
-			var process = new Process
-			{
-				StartInfo = new ProcessStartInfo
-				{
-					FileName = filePath,
-					UseShellExecute = true // Important for launching with default app
-				}
-			};
-			var success = process.Start();
-			await Task.Delay(500);
-			Log.Information("Opened : " + success);
-		}
-		catch (Exception ex)
-		{
-			Log.Error("Failed to open program: " +ex.Message);
-		}
-	}
 }

@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
+using microservice.Extensions;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
@@ -928,7 +929,7 @@ public static class ProjectContextUtil
 				var projPath = reference.UnevaluatedInclude;
 				Log.Verbose("Removing reference to " + projPath);
 				var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projPath);
-				var slnArgStr = $"sln {fullSlnPath} remove {slnProjPath}";
+				var slnArgStr = $"sln {fullSlnPath.EnquotePath()} remove {slnProjPath.EnquotePath()}";
 				Log.Verbose($"removing assembly from solution, arg=[{slnArgStr}]");
 				var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)
 					.WithValidation(CommandResultValidation.None)
@@ -949,7 +950,7 @@ public static class ProjectContextUtil
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });
 
 			var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projectPath);
-			var slnArgStr = $"sln {fullSlnPath} add {slnProjPath} -s \"UnityAssemblies (shared)\"";
+			var slnArgStr = $"sln {fullSlnPath.EnquotePath()} add {slnProjPath.EnquotePath()} -s \"UnityAssemblies (shared)\"";
 			Log.Verbose($"adding assembly to solution, arg=[{slnArgStr}]");
 			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)
 				.WithValidation(CommandResultValidation.None)

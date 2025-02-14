@@ -8,6 +8,7 @@ using Serilog;
 using Spectre.Console;
 using System.Text;
 using System.Text.RegularExpressions;
+using microservice.Extensions;
 
 namespace cli.Services;
 
@@ -380,8 +381,8 @@ public class ProjectService
 		}
 
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
-		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath}");
-		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
+		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()}");
+		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath.EnquotePath()} add {microserviceInfo.ServicePath.EnquotePath()}");
 
 		await args.BeamoLocalSystem.InitManifest();
 
@@ -429,7 +430,7 @@ public class ProjectService
 		}
 
 		// create the solution
-		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
+		await RunDotnetCommand($"new sln -n {solutionName.EnquotePath()} -o {solutionPath.EnquotePath()}");
 
 		return Path.Combine(solutionPath, $"{solutionName}.sln");
 	}
@@ -444,14 +445,14 @@ public class ProjectService
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 
 		// create the beam microservice project
-		await RunDotnetCommand($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"");
+		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()}");
 
 		// restore the microservice tools
 		await RunDotnetCommand(
 			$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
 
 		// add the microservice to the solution
-		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
+		await RunDotnetCommand($"sln {solutionPath.EnquotePath()} add {projectPath.EnquotePath()}");
 
 		// create the shared library project only if requested
 		if (generateCommon)
@@ -460,7 +461,7 @@ public class ProjectService
 			var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
 			await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
 			// add the shared library as a reference of the project
-			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
+			await RunDotnetCommand($"add {projectPath.EnquotePath()} reference {commonProjectPath.EnquotePath()}");
 		}
 
 		return projectPath;
@@ -475,13 +476,13 @@ public class ProjectService
 	/// <returns>Task representing the asynchronous operation.</returns>
 	public async Task CreateCommonProject(string commonProjectName, string commonProjectPath, string usedVersion, string solutionPath)
 	{
-		await RunDotnetCommand($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"");
+		await RunDotnetCommand($"new beamlib -n {commonProjectName.EnquotePath()} -o {commonProjectPath.EnquotePath()}");
 
 		// restore the shared library tools
 		await RunDotnetCommand($"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 		// add the shared library to the solution
-		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
+		await RunDotnetCommand($"sln {solutionPath.EnquotePath()} add {commonProjectPath.EnquotePath()}");
 	}
 
 	/// <summary>
@@ -498,7 +499,7 @@ public class ProjectService
 			? string.Empty
 			: $" --version \"{version}\"";
 
-		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
+		return RunDotnetCommand($"add {projectPath.EnquotePath()} package {packageName}{versionToUpdate}");
 	}
 
 	public Task RunDotnetCommand(string arguments)
@@ -544,7 +545,7 @@ public class ProjectService
 		Log.Debug($"error log path=[{errorPath}]");
 		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
-		var commandStr = $"build {projectPath} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		var commandStr = $"build {projectPath.EnquotePath()} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))

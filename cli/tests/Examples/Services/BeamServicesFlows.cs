@@ -29,7 +29,7 @@ public class BeamServicesFlows : CLITest
 	{
 		#region Arrange
 
-		new BeamProjectNewFlows().NewProject_AutoInit_NoSlnConfig("Example");
+		new BeamProjectNewFlows().NewProject_Init_NoSlnConfig("Example", ".");
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
@@ -56,7 +56,7 @@ public class BeamServicesFlows : CLITest
 		Assert.IsTrue(isRunning, $"Container '{ServiceName}' should be running.");
 
 		string workingDirectory = Directory.GetCurrentDirectory();
-		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Directory.SetCurrentDirectory($"{workingDirectory}/services");
 		Mock<BeamoService>(mock =>
 		{
 			mock.Setup(x => x.GetCurrentManifest())
@@ -79,7 +79,7 @@ public class BeamServicesFlows : CLITest
 	{
 		#region Arrange
 
-		new BeamProjectNewFlows().NewProject_AutoInit_NoSlnConfig("Example");
+		new BeamProjectNewFlows().NewProject_Init_NoSlnConfig("Example", ".");
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
@@ -106,7 +106,7 @@ public class BeamServicesFlows : CLITest
 		Assert.IsTrue(isRunning, $"Container '{ServiceName}' should be running.");
 
 		string workingDirectory = Directory.GetCurrentDirectory();
-		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Directory.SetCurrentDirectory($"{workingDirectory}/services");
 		Mock<BeamoService>(mock =>
 		{
 			mock.Setup(x => x.GetCurrentManifest())

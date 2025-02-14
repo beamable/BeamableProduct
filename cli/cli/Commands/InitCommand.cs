@@ -10,6 +10,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
+using microservice.Extensions;
 using Command = System.CommandLine.Command;
 
 namespace cli;

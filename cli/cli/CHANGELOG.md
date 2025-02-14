@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam content pull` now accepts `content-ids "some.content.id,some.other.content.id"` option [#3878](https://github.com/beamable/BeamableProduct/issues/3878)
 - `beam project remote-logs` command exists for advanced use cases
 
+### Fixed
+- various CLI commands no longer break when the `.beamable` workspace is
+  located in a directory with spaces in the path string. [#3866](https://github.com/beamable/BeamableProduct/issues/3866)
+
 ## [4.0.0] - 2025-01-24
 
 ### Added
