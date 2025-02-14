@@ -12,6 +12,7 @@ using Beamable.Server.Content;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading;
+using Beamable.Common.Leaderboards;
 
 namespace microserviceTests.microservice.Content
 {
@@ -28,7 +29,7 @@ namespace microserviceTests.microservice.Content
          _cache.RegisterTypeProvider(contentTypeCache);
          _cache.RegisterReflectionSystem(contentTypeCache);
 
-         var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
+         var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
          _cache.GenerateReflectionCache(asms);
       }
 
@@ -92,6 +93,84 @@ namespace microserviceTests.microservice.Content
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
 
+      
+      
+      [Test]
+      public void Simple_Filter()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async (uri) =>
+         {
+	         var serailizer = new MicroserviceContentSerializer();
+
+	         if (uri.Contains("boo"))
+	         {
+		         var leaderboardContent = new LeaderboardContent();
+		         leaderboardContent.SetContentName("boo");
+		         return serailizer.Serialize(leaderboardContent);
+	         }
+	         else
+	         {
+		         var itemContent = new ItemContent();
+		         itemContent.SetContentName("foo");
+		         return serailizer.Serialize(itemContent);
+	         }
+
+         });
+
+         TestSocket testSocket = null;
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddInitialContentMessageHandler(-1, new ContentReference
+            {
+               id = "items.foo",
+               version = "123",
+               uri = "items.foo",
+               visibility = "public"
+            }, new ContentReference
+            {
+	            id = "leaderboards.boo",
+	            version = "123",
+	            uri = "leaderboards.boo",
+	            visibility = "public"
+            });
+            socket.SetAuthentication(true);
+
+            // don't mock anything...
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
+         (_, socketCtx.Daemon) =
+	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(rc);
+         });
+
+
+         contentService.Init();
+
+         var fetchPromise = contentService.GetManifest("t:items");
+         var fetchTask = Task.Run(async () => await fetchPromise);
+         fetchTask.Wait(10);
+         Assert.IsTrue(fetchPromise.IsCompleted);
+
+         Assert.AreEqual(1, fetchPromise.GetResult().entries.Count);
+         Assert.AreEqual("items.foo", fetchPromise.GetResult().entries[0].contentId);
+
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      
       [Test]
       public void CachePurgedOnNewManifest()
       {
