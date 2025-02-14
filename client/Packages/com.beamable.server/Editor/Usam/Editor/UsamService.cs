@@ -145,7 +145,7 @@ namespace Beamable.Server.Editor.Usam
 		private ProjectStorageEraseWrapper _eraseCommand;
 		private CommonAreaService _commonArea;
 
-		public List<UsamServiceUpgradesForBeamoId> _requiredUpgrades = new List<UsamServiceUpgradesForBeamoId>();
+		public List<BeamCheckResultsForBeamoId> _requiredUpgrades = new List<BeamCheckResultsForBeamoId>();
 
 		public UsamAssemblyService AssemblyService => _assemblyUtil;
 		private UsamAssemblyService _assemblyUtil;

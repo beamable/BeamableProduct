@@ -52,6 +52,7 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
+using cli.CheckCommands;
 using cli.Commands.Project.Logs;
 using Command = System.CommandLine.Command;
 
@@ -307,6 +308,10 @@ public class App
 		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
+		
+		Commands.AddRootCommand<CheckCommandCommandGroup>();
+		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
+		
 		Commands.AddRootCommand<ProjectCommand>();
 
 		Commands.AddSubCommand<OpenSolutionCommand, OpenSolutionCommandArgs, ProjectCommand>();

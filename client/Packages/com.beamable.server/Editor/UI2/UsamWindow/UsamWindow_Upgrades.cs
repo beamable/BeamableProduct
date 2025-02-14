@@ -66,9 +66,9 @@ namespace Beamable.Editor.Microservice.UI2
 
 
 					// render the description for all the upgrades.
-					for (var j = 0; j < upgrades.sortedUpgrades.Count; j++)
+					for (var j = 0; j < upgrades.fileEdits.Count; j++)
 					{
-						var upgrade = upgrades.sortedUpgrades[j];
+						var upgrade = upgrades.fileEdits[j];
 						
 						EditorGUILayout.LabelField(upgrade.description, new GUIStyle(EditorStyles.label)
 						{
@@ -76,22 +76,41 @@ namespace Beamable.Editor.Microservice.UI2
 						});
 					}
 					
-					// show a button
-					EditorGUILayout.BeginHorizontal();
-					EditorGUILayout.Space(1, true);
-					var clickUpgrade = GUILayout.Button("Upgrade", GUILayout.ExpandWidth(false));
-					if (clickUpgrade)
-					{
-						AddDelayedAction(() =>
-						{
-							usam.DoUpgrades(upgrades);
-						});
-					}
-					EditorGUILayout.EndHorizontal();
-					
 					EditorGUILayout.EndVertical();
 
 				}
+			}
+			
+			
+			{ // draw buttons
+				EditorGUILayout.BeginHorizontal(new GUIStyle()
+				{
+					margin = new RectOffset(0, 6, 20, 10)
+				});
+				EditorGUILayout.Space(1, true);
+				EditorGUILayout.Space(1, true);
+				EditorGUILayout.Space(1, true);
+
+
+				bool clickedMigrate = false;
+				if (usam._requiredUpgrades.Count > 0)
+				{
+					clickedMigrate = BeamGUI.PrimaryButton(new GUIContent("Fix All"));
+				} else
+				{
+					GUI.enabled = false;
+					BeamGUI.PrimaryButton(new GUIContent("Fixing..."));
+					GUI.enabled = true;
+				}
+				
+				if (clickedMigrate)
+				{
+					AddDelayedAction(() =>
+					{
+						usam.DoUpgrade("*");
+					});
+				}
+				EditorGUILayout.EndHorizontal();
 			}
 			
 			EditorGUILayout.EndScrollView();

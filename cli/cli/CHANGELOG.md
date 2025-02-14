@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `beam content pull` now accepts `content-ids "some.content.id,some.other.content.id"` option [#3878](https://github.com/beamable/BeamableProduct/issues/3878)
 - `beam project remote-logs` command exists for advanced use cases
+- `beam checks scan` command for finding known issues after CLI upgrades
+
 
 ## [4.0.0] - 2025-01-24
 
