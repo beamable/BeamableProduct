@@ -41,6 +41,18 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 			}
 
+			{ // maybe we need to do upgrades?
+				if (usam?._requiredUpgrades?.Count > 0)
+				{
+					state = WindowState.REQUIRED_UGPRADES;
+					return;
+				} else if (state == WindowState.REQUIRED_UGPRADES)
+				{
+					// but there are no upgrades...
+					state = WindowState.NORMAL;
+				}
+			}
+
 			
 			{ // refresh cards
 				cards.Clear();
@@ -124,6 +136,9 @@ namespace Beamable.Editor.Microservice.UI2
 				case WindowState.NORMAL:
 					DrawContent();
 					break;
+				case WindowState.REQUIRED_UGPRADES:
+					DrawUpgrades();
+					break;
 			}
 		}
 
@@ -173,6 +188,11 @@ namespace Beamable.Editor.Microservice.UI2
 			SETTINGS,
 			PUBLISH,
 			MIGRATE,
+			
+			/// <summary>
+			/// these are on-going file replacement upgrades, where as <see cref="MIGRATE"/> is the 1.x to 2.x migratino flow.
+			/// </summary>
+			REQUIRED_UGPRADES
 		}
 		
 		[Serializable]

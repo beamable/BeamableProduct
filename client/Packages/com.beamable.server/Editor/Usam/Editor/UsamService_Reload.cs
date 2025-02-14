@@ -32,7 +32,8 @@ namespace Beamable.Server.Editor.Usam
 				
 				hasReceivedManifestThisDomain = true;
 				latestManifest = cb.data;
-
+				_requiredUpgrades.Clear();
+				
 				foreach (var service in latestManifest.services)
 				{
 					service.Flags = BeamManifestEntryFlags.IS_SERVICE;
@@ -40,6 +41,12 @@ namespace Beamable.Server.Editor.Usam
 					if (isReadonly)
 					{
 						service.Flags |= BeamManifestEntryFlags.IS_READONLY;
+					}
+
+					var upgrades = CheckForRequiredUpgrades(service);
+					if (upgrades != null)
+					{
+						_requiredUpgrades.Add(upgrades);
 					}
 				}
 
