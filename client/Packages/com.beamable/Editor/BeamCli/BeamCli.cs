@@ -89,7 +89,7 @@ namespace Beamable.Editor.BeamCli
 			});
 			linkCommand.OnError(cb =>
 			{
-				Debug.LogError("Unable to register Unity project with local CLI project." + cb.data.message);
+				Debug.LogWarning("Unable to register Unity project with local CLI project." + cb.data.message);
 			});
 			var _ = linkCommand.Run();
 		}
