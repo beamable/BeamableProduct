@@ -108,6 +108,7 @@ namespace Beamable.Server.Editor.Usam
 			if (assetPair.Value == null)
 			{
 				Debug.LogError($"Assembly asset [{assemblyData.AssemblyName}] not found.");
+				return "";
 			}
 
 			return assetPair.Key; // We do this to return the actual assembly definition asset name, and not the file name
