@@ -9,11 +9,13 @@ using tests.MoqExtensions;
 
 namespace tests.Examples.Project;
 
-public class BeamProjectNewFlows : CLITestExtensions
+public partial class BeamProjectNewFlows : CLITestExtensions
 {
 	[Test]
-	[TestCase("Example")]
-	public void NewProject_AutoInit_NoSlnConfig(string serviceName)
+	[TestCase("Example", ".")]
+	[TestCase("Example", "toast")]
+	[TestCase("Example", "with a space")]
+	public void NewProject_Init_NoSlnConfig(string serviceName, string dir)
 	{
 		#region Arrange
 
@@ -29,33 +31,38 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "new", "service", serviceName, "-i", "--quiet");
+		Run("init", dir);
+		var old = Directory.GetCurrentDirectory();
+		Directory.SetCurrentDirectory(dir);
+		Run("project", "new", "service", serviceName, "--quiet");
+		Directory.SetCurrentDirectory(old);
+		_mockObjects.Clear();
 
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
+		Assert.That(BFile.Exists($"{dir}/BeamableServices.sln"),
 			$"There must be an Example.sln file after beam project new {serviceName}");
 
 		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+		Assert.That(BFile.Exists($"{dir}/services/{serviceName}/{serviceName}.csproj"),
 			$"There must be a csproj file after beam project new {serviceName}");
 
-		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/Dockerfile"),
+		Assert.That(BFile.Exists($"{dir}/services/{serviceName}/Dockerfile"),
 			$"There must be a dockerfile");
-		Assert.That(!BFile.Exists($"{serviceName}/services/{serviceName}/Dockerfile-BeamableDev"),
+		Assert.That(!BFile.Exists($"{dir}/services/{serviceName}/Dockerfile-BeamableDev"),
 			$"There must not be a dev dockerfile");
 		
 		// There should be a .config/dotnet-tools.json file
-		Assert.That(BFile.Exists($".config/dotnet-tools.json"), "There must be .config/dotnet-tools.json file");
+		Assert.That(BFile.Exists($"{dir}/.config/dotnet-tools.json"), "There must be .config/dotnet-tools.json file");
 
 		
 		// the contents of the file beamoId should be equal to the name of the service created
 		
 		
-		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
+		string localCsProjContent = BFile.ReadAllText($"{dir}/services/{serviceName}/{serviceName}.csproj");
 		// var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
 		// Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
 
@@ -65,7 +72,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(hasProjectType, "csproj must have project type fragment\n" + localCsProjContent);
 		Assert.That(hasNugetReference, "csproj must have nuget reference fragment\n" + localCsProjContent);
 		
-		string dockerfileContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/Dockerfile");
+		string dockerfileContent = BFile.ReadAllText($"{dir}/services/{serviceName}/Dockerfile");
 		var hasCorrectCopyFragment = dockerfileContent.Contains("# <beamReserved>") &&
 		                             dockerfileContent.Contains("# </beamReserved>");
 		Assert.IsTrue(hasCorrectCopyFragment, "the docker file needs to have a copy line relative to the services folder.\n" + dockerfileContent);
@@ -73,45 +80,10 @@ public class BeamProjectNewFlows : CLITestExtensions
 		#endregion
 	}
 
-	[Test]
-	public void NewProject_AutoInit_NoSlnConfig_PassFlags()
-	{
-		#region Arrange
-
-		SetupMocks(mockAlias: false, mockRealms: false, mockAdminMe: false);
-		Ansi.Input.PushTextWithEnter(userName); // enter email
-		Ansi.Input.PushTextWithEnter(password); // enter password
-		const string serviceName = "Example";
-
-		#endregion
-
-		#region Act
-
-		Run("project", "new", "service", serviceName, "-i", "--quiet", "--cid", cid, "--pid", pid);
-
-		#endregion
-
-		#region Assert
-
-		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
-			$"There must be an Example.sln file after beam project new {serviceName}");
-		
-		// there should be a csproj file
-		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
-			$"There must be a beamo csproj file after beam project new {serviceName}");
-
-		// the contents of the file beamoId should be equal to the name of the service created
-		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
-
-		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
-		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
-
-		#endregion
-	}
-
-	[Test]
-	public void NewProject_AutoInit_SlnPathInLocalFolder()
+	[TestCase(".")]
+	[TestCase("toast")]
+	[TestCase("with a space")]
+	public void NewProject_AutoInit_SlnPathInLocalFolder(string dir)
 	{
 		#region Arrange
 
@@ -129,22 +101,29 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "new", "service", serviceName, "-i", "--quiet", "--sln", $"{slnName}.sln");
 
+		Run("init", dir);
+		var old = Directory.GetCurrentDirectory();
+		Directory.SetCurrentDirectory(dir);
+		Run("project", "new", "service", serviceName, "--quiet", "--sln", $"{slnName}.sln");
+		Directory.SetCurrentDirectory(old);
+		_mockObjects.Clear();
+
+		
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{slnName}.sln"),
+		Assert.That(BFile.Exists($"{dir}/{slnName}.sln"),
 			$"There must be an {slnName}.sln file after beam project new --sln {slnName}");
 
 		// there should be a csproj file
-		Assert.That(BFile.Exists($"services/{serviceName}/{serviceName}.csproj"),
+		Assert.That(BFile.Exists($"{dir}/services/{serviceName}/{serviceName}.csproj"),
 			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localCsProjContent = BFile.ReadAllText($"services/{serviceName}/{serviceName}.csproj");
+		string localCsProjContent = BFile.ReadAllText($"{dir}/services/{serviceName}/{serviceName}.csproj");
 
 		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
 		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
@@ -153,8 +132,10 @@ public class BeamProjectNewFlows : CLITestExtensions
 	}
 
 
-	[Test]
-	public void NewProject_AutoInit_NewSlnPathInSubFolder()
+	[TestCase(".")]
+	[TestCase("toast")]
+	[TestCase("with a space")]
+	public void NewProject_AutoInit_NewSlnPathInSubFolder(string dir)
 	{
 		#region Arrange
 
@@ -173,22 +154,27 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "new", "service", serviceName, "-i", "--quiet", "--sln", $"{slnName}.sln");
-
+		Run("init", dir);
+		var old = Directory.GetCurrentDirectory();
+		Directory.SetCurrentDirectory(dir);
+		Run("project", "new", "service", serviceName, "--quiet", "--sln", $"{slnName}.sln");
+		Directory.SetCurrentDirectory(old);
+		_mockObjects.Clear();
+		
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{slnName}.sln"),
+		Assert.That(BFile.Exists($"{dir}/{slnName}.sln"),
 			$"There must be an {slnName}.sln file after beam project new --sln {slnName}");
 
 		// there should be a csproj file
-		Assert.That(BFile.Exists($"{slnPath}/services/{serviceName}/{serviceName}.csproj"),
+		Assert.That(BFile.Exists($"{dir}/{slnPath}/services/{serviceName}/{serviceName}.csproj"),
 			$"There must be a beamo csproj file after beam project new service.\n" );
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localCsProjContent = BFile.ReadAllText($"{slnPath}/services/{serviceName}/{serviceName}.csproj");
+		string localCsProjContent = BFile.ReadAllText($"{dir}/{slnPath}/services/{serviceName}/{serviceName}.csproj");
 
 		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
 		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);

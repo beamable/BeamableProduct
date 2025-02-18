@@ -11,6 +11,7 @@ using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using microservice.Extensions;
 
 namespace cli.Services;
 
@@ -247,7 +248,7 @@ public partial class BeamoLocalSystem
 		var projectPath = Path.Combine(relativeProjectPath, $"{project.BeamoId}.csproj");
 		var dependencyPath = Path.Combine(_configService.GetRelativeToBeamableFolderPath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
 
-		var command = $"remove {projectPath} reference {dependencyPath}";
+		var command = $"remove {projectPath.EnquotePath()} reference {dependencyPath.EnquotePath()}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
 		{
@@ -266,7 +267,7 @@ public partial class BeamoLocalSystem
 	{
 		var projectPath = _configService.BeamableRelativeToExecutionRelative(project.ProjectDirectory);
 		var dependencyPath = relativePath;
-		var command = $"add {projectPath} reference {dependencyPath}";
+		var command = $"add {projectPath.EnquotePath()} reference {dependencyPath.EnquotePath()}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
 		{

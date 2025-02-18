@@ -25,8 +25,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 	public override void Configure()
 	{
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
-		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
-
 		SolutionCommandArgs.Configure(this);
 
 		var storageDeps = new Option<List<string>>("--link-to", "The name of the project to link this storage to")

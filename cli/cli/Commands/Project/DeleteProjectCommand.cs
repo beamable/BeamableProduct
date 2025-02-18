@@ -1,5 +1,6 @@
 using cli.Dotnet;
 using cli.Services;
+using microservice.Extensions;
 
 namespace cli.Commands.Project;
 
@@ -56,7 +57,7 @@ public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, Dele
 			Directory.Delete(sd.AbsoluteProjectDirectory, recursive: true);
 			
 			var runTask = CliExtensions
-				.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {slnFile} remove {sd.AbsoluteProjectPath}")
+				.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {slnFile.EnquotePath()} remove {sd.AbsoluteProjectPath.EnquotePath()}")
 				.ExecuteAsyncAndLog();
 			
 			tasks.Add(runTask);

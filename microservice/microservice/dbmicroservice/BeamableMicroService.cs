@@ -897,7 +897,15 @@ namespace Beamable.Server
 		      federationRequest.routingKey = routingKey;
 	      }
 
-	      await api.PutMicroserviceFederationTraffic(federationRequest);
+	      try
+	      {
+		      var response = await api.PutMicroserviceFederationTraffic(federationRequest);
+		      Log.Verbose($"Registered federation. result=[{response.result}], routes=[{string.Join(",",response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}"))}]");
+	      }
+	      catch (Exception ex)
+	      {
+		      Log.Error($"Failed to register federation components. {ex.Message}");
+	      }
       }
 
       private Promise<Unit> RemoveService(string name)

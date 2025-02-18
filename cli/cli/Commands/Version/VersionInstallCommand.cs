@@ -8,6 +8,7 @@ using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text;
+using microservice.Extensions;
 using Command = System.CommandLine.Command;
 
 namespace cli.Version;
@@ -116,13 +117,14 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 				Log.Information($"Restoring local project=[{local.AbsoluteProjectPath}]");
 				try
 				{
-					await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"restore {local.AbsoluteProjectPath}")
+					await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"restore {local.AbsoluteProjectPath.EnquotePath()}")
 						.WithValidation(CommandResultValidation.ZeroExitCode)
 						.ExecuteAsyncAndLog();
 				}
 				catch (Exception ex)
 				{
 					Log.Error($"Failed to restore local project=[{local.AbsoluteProjectPath}] message=[{ex.Message}]");
+					throw new CliException(ex.Message);
 				}
 			}
 		}

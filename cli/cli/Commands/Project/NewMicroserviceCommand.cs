@@ -13,18 +13,8 @@ namespace cli.Commands.Project;
 public class NewProjectCommandArgs : CommandArgs
 {
 	public ServiceName ProjectName;
-	public bool AutoInit;
 	public List<string> LinkedStorages;
 	public List<string> Groups = new();
-}
-
-public class AutoInitFlag : ConfigurableOptionFlag
-{
-	public AutoInitFlag() : base("init", "Automatically create a .beamable folder context if no context exists")
-	{
-		AddAlias("-i");
-		IsHidden = true;
-	}
 }
 
 public interface IHaveSolutionFlag
@@ -142,21 +132,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 		{
 			return;
 		}
-
-		if (!AutoInit)
-		{
-			throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
-		}
-
-
-		var initArgs = Create<InitCommandArgs>();
-		initArgs.path = ".";
-		initArgs.saveToFile = true;
-		var oldDir = initArgs.ConfigService.WorkingDirectory;
-		initArgs.ConfigService.SetTempWorkingDir(this.GetSlnDirectory());
-		await command.Handle(initArgs);
-		initArgs.ConfigService.SetTempWorkingDir(oldDir);
-		initArgs.ConfigService.SetBeamableDirectory(this.GetSlnDirectory());
 	}
 
 }
@@ -205,7 +180,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	public override void Configure()
 	{
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
-		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		SolutionCommandArgs.Configure(this);
 		var serviceDeps = new Option<List<string>>("--link-to", "The name of the storage to link this service to")
 		{

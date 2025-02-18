@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using microservice.Extensions;
 
 namespace cli.Commands.Project;
 
@@ -261,7 +262,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			Directory.CreateDirectory(errorPathDir);
 
 			var exe = args.AppContext.DotnetPath;
-			var commandStr = $"run --project \"{projectPath}\" --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
+			var commandStr = $"run --project {projectPath.EnquotePath()} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
 
 			if (buildFlags.HasFlag(ProjectService.BuildFlags.DisableClientCodeGen))
 			{
@@ -280,7 +281,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				//  if you look in task-manager. 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					commandStr = $"/C {exe} {commandStr}";
+					commandStr = "/C " + $"{exe.EnquotePath()} {commandStr}".EnquotePath('(', ')');
 					exe = "cmd.exe";
 				}
 				else

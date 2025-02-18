@@ -29,11 +29,10 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		const string secret = "secret";
 
 		var newFlow = new BeamProjectNewFlows();
-		newFlow.NewProject_AutoInit_NoSlnConfig(serviceName);
+		newFlow.NewProject_Init_NoSlnConfig(serviceName, ".");
 		ResetConfigurator();
 
 		// step into newly created beamable folder...
-		Directory.SetCurrentDirectory(serviceName);
 		Directory.SetCurrentDirectory(executeFrom);
 
 		// mock call to get secret,
