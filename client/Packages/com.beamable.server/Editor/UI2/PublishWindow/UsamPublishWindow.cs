@@ -153,6 +153,14 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					state = State.FATAL_ERROR;
 					_fatalError = err.data;
 				});
+				_planCommand.OnLog(cb =>
+				{
+					var levelChar = cb.data.logLevel.ToLowerInvariant()[0];
+					if (levelChar == 'e' || levelChar == 'f') // error or fatal 
+					{
+						Debug.LogError(cb.data.message);
+					}
+				});
 				_planPromise = _planCommand.Run();
 			}
 		}
