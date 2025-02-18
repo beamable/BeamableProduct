@@ -198,6 +198,19 @@ namespace Beamable.Server
 
         public static ReflectionCache ConfigureReflectionCache()
         {
+
+	        { 
+		        // unless the referenced assemblies are explicitly loaded, 
+		        //  it is likely that content types will be missed when. 
+		        //  dotnet has not _loaded_ those assemblies yet, so the 
+		        //  reflection cache sweep will miss them. 
+		        var referencedAssemblies = Assembly.GetEntryAssembly().GetReferencedAssemblies();
+		        foreach (var asm in referencedAssemblies)
+		        {
+			        Assembly.Load(asm);
+		        }
+	        }
+
 	        var reflectionCache = new ReflectionCache();
 	        var contentTypeReflectionCache = new ContentTypeReflectionCache();
 	        var mongoIndexesReflectionCache = new MongoIndexesReflectionCache();
