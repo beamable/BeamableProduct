@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ChecksScanArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>automatically fix known issues for the given code prefixes, or * to fix everything </summary>
+        /// <summary>Automatically fix known issues for the given code prefixes, or * to fix everything </summary>
         public string[] fix;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
