@@ -211,13 +211,13 @@ public class ConfigService
 	{
 		var currentPaths = LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
 		currentPaths.AddRange(paths);
-		SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, currentPaths);
+		SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, currentPaths.Distinct().ToList());
 	}
 	public void SavePathsToIgnoreToFile(List<string> paths)
 	{
 		var currentPaths = LoadDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE);
 		currentPaths.AddRange(paths);
-		SaveDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE, currentPaths);
+		SaveDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE, currentPaths.Distinct().ToList());
 	}
 
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
