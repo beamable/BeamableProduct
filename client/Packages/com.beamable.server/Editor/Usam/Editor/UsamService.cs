@@ -107,6 +107,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public List<NamedLogView> _namedLogs = new List<NamedLogView>();
 
+		
 		[NonSerialized]
 		public bool hasReceivedManifestThisDomain;
 		
@@ -143,6 +144,8 @@ namespace Beamable.Server.Editor.Usam
 		private ProjectStorageRestoreWrapper _restoreCommand;
 		private ProjectStorageEraseWrapper _eraseCommand;
 		private CommonAreaService _commonArea;
+
+		public List<BeamCheckResultsForBeamoId> _requiredUpgrades = new List<BeamCheckResultsForBeamoId>();
 
 		public UsamAssemblyService AssemblyService => _assemblyUtil;
 		private UsamAssemblyService _assemblyUtil;

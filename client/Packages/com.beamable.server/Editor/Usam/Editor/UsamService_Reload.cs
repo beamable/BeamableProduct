@@ -4,6 +4,7 @@ using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.Extensions;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -25,6 +26,18 @@ namespace Beamable.Server.Editor.Usam
 			_ctx.OnRealmChange += OnBeamEditorRealmChanged;
 
 			var command = _cli.UnityManifest();
+
+			_requiredUpgrades.Clear();
+			var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
+			checkCommand.OnStreamCheckResultsForBeamoId(cb =>
+			{
+				if (latestReloadTaskId != taskId)
+					return;
+				_requiredUpgrades.Add(cb.data);
+			});
+			checkCommand.Run();
+			
+			
 			command.OnStreamShowManifestCommandOutput(cb =>
 			{
 				if (latestReloadTaskId != taskId)
@@ -32,7 +45,7 @@ namespace Beamable.Server.Editor.Usam
 				
 				hasReceivedManifestThisDomain = true;
 				latestManifest = cb.data;
-
+				
 				foreach (var service in latestManifest.services)
 				{
 					service.Flags = BeamManifestEntryFlags.IS_SERVICE;
@@ -41,6 +54,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						service.Flags |= BeamManifestEntryFlags.IS_READONLY;
 					}
+
 				}
 
 				foreach (var storage in latestManifest.storages)

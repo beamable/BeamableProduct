@@ -19,8 +19,6 @@ namespace Beamable.Editor.Microservice.UI2
 		void DrawMigrate()
 		{
 
-			// EditorGUILayout.BeginVertical();
-			
 			migrateScrollPosition = EditorGUILayout.BeginScrollView(migrateScrollPosition);
 
 			{ // draw explanation text
