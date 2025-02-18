@@ -43,7 +43,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 
 		directory = Path.GetRelativePath(args.ConfigService.BaseDirectory, directory);
 
-		if (startingDir != directory)
+		if (startingDir != directory && !args.Quiet)
 		{
 			if (!AnsiConsole.Confirm($"Add {directory} as unity project?"))
 			{
