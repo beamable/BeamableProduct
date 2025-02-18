@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0]
 
 ### Added
-
+- Unity 6 Support
 - `Beam.SwitchToPid` method as a replacement for `Beam.ChangePid` with extra functionality- if the passed PID is the same as the current one no action is performed.
 
 ### Fixed
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Installing CLI uses correct dotnet tool manifest
 
 ### Changed
+- Upgrade CLI to 4.0.1
 - Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
 - `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
 - The methods `isEmailAvailable` and `IsThirdPartyAvailable` from the `AuthService` obsolete and adds the new `GetCredentialStatus` with overloads for both the email and third party.[#3700](https://github.com/beamable/BeamableProduct/issues/3700)
