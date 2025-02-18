@@ -8,8 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Name of the new project</summary>
         public Beamable.Common.Semantics.ServiceName name;
-        /// <summary>Automatically create a .beamable folder context if no context exists</summary>
-        public bool init;
         /// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
@@ -29,11 +27,6 @@ namespace Beamable.Editor.BeamCli.Commands
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // Add the name value to the list of args.
             genBeamCommandArgs.Add(this.name.ToString());
-            // If the init value was not default, then add it to the list of args.
-            if ((this.init != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--init=" + this.init));
-            }
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
             {
