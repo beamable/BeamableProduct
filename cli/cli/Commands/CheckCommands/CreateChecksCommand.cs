@@ -48,7 +48,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
 
     public override void Configure()
     {
-        AddOption(new Option<List<string>>(new string[]{"--fix", "-f"}, "automatically fix known issues for the given code prefixes, or * to fix everything ")
+        AddOption(new Option<List<string>>(new string[]{"--fix", "-f"}, "Automatically fix known issues for the given code prefixes, or * to fix everything ")
         {
             AllowMultipleArgumentsPerToken = true,
             Arity = ArgumentArity.ZeroOrMore
