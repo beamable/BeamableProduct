@@ -64,7 +64,16 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 		}
 
 		// Now that we know the id/type pair is not in use, we can add it to the selected service.
-		selectedService.FederationsConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig { Interface = args.FederationInterface } });
+		if (selectedService.FederationsConfig.Federations.TryGetValue(args.FederationId, out var federationInstanceConfigs))
+		{
+			selectedService.FederationsConfig.Federations[args.FederationId] = selectedService.FederationsConfig.Federations[args.FederationId]
+				.Append(new FederationInstanceConfig { Interface = args.FederationInterface }).ToArray();
+		}
+		else
+		{
+			selectedService.FederationsConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig { Interface = args.FederationInterface } });
+		}
+
 
 		// Serialize the updated source gen config to disk
 		await ProjectContextUtil.SerializeSourceGenConfigToDisk(args.ConfigService.BaseDirectory, selectedService);

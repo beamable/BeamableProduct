@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - various CLI commands no longer break when the `.beamable` workspace is
   located in a directory with spaces in the path string. [#3866](https://github.com/beamable/BeamableProduct/issues/3866)
 
+## Fixed
+- Unity project not being added to SAMS if it is a child of the SAMS 
+- `additional-project-paths` and `project-paths-to-ignore` being overwritten when calling `beam init`
+- beam fed add - fails to add inventory federation after adding login federation [#3873](https://github.com/beamable/BeamableProduct/issues/3873)
+
 ## [4.0.0] - 2025-01-24
 
 ### Added
