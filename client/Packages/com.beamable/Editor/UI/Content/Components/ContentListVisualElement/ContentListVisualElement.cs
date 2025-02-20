@@ -364,10 +364,24 @@ namespace Beamable.Editor.Content.Components
 
 			ContentItemDescriptor selectedItem = selectionList[0];
 			if (selectedItem.LocalStatus !=
-				HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
+			    HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
 				return;
 
 			evt.menu.BeamableAppendAction("Duplicate item", (Action<Vector2>)((pos) => Duplicate(selectedItem)));
+		}
+		private void AddCopyIdButton(ContextualMenuPopulateEvent evt)
+		{
+			List<ContentItemDescriptor> selectionList = Model.SelectedContents.ToList();
+			if (selectionList.Count != 1)
+				return;
+
+			ContentItemDescriptor selectedItem = selectionList[0];
+			evt.menu.AppendSeparator();
+			evt.menu.BeamableAppendAction("Copy item ID to clipboard", (Action<Vector2>)((pos) =>
+			{
+				Debug.Log(selectedItem.Id);
+				EditorGUIUtility.systemCopyBuffer = selectedItem.Id;
+			}));
 		}
 
 		private void Duplicate(ContentItemDescriptor contentItem)
@@ -466,6 +480,7 @@ namespace Beamable.Editor.Content.Components
 					AddDuplicateButton(evt);
 
 					ShowContextMenuForSingle(evt, Model.SelectedContents.FirstOrDefault());
+					AddCopyIdButton(evt);
 					break;
 				default:
 					ShowContextMenuForMany(evt, Model.SelectedContents.ToList());
