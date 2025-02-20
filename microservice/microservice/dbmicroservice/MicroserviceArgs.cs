@@ -5,16 +5,17 @@ using Beamable.Common.Util;
 using Beamable.Server.Common;
 using System;
 using System.IO;
+using microservice.Observability;
 
 namespace Beamable.Server
 {
-	public interface IMicroserviceArgs : IRealmInfo
+	public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
 	{
 		public IDependencyProviderScope ServiceScope { get; }
 		public int HealthPort { get; }
 		string Host { get; }
 		string Secret { get; }
-		string NamePrefix { get; }
+		
 		string SdkVersionBaseBuild { get; }
 		string SdkVersionExecution { get; }
 		bool WatchToken { get; }

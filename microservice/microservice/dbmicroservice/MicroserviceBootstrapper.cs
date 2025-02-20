@@ -58,6 +58,14 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
+using microservice.Observability;
+using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using ZLogger;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
 using RankEntry = Beamable.Common.Api.Leaderboards.RankEntry;
@@ -75,9 +83,73 @@ namespace Beamable.Server
 
 	    public static IUsageApi EcsService;
 
-	    private static DebugLogSink _sink;
+	    // private static DebugLogSink _sink;
 	    private static Task _localDiscoveryBroadcast;
 
+	    private static ILoggerFactory ConfigureZLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
+	    {
+		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+		    LogUtil.TryParseSystemLogLevel(args.LogLevel, out var envLogLevel);
+
+		    // TODO: need to replace "DebugLogSink" class with something ZLogger-like
+		    
+		    var factory = LoggerFactory.Create(builder =>
+		    {
+			    builder.SetMinimumLevel(envLogLevel);
+
+			    switch (args.LogOutputType)
+			    {
+				    case LogOutputType.DEFAULT when !inDocker:
+				    case LogOutputType.UNSTRUCTURED:
+					    builder.AddZLoggerConsole(opts =>
+					    {
+						    opts.UsePlainTextFormatter();
+					    });
+					    // logger = logConfig.WriteTo.Console(
+						   //  new MessageTemplateTextFormatter(
+							  //   "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+					    break;
+				    
+				    case LogOutputType.FILE:
+					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
+					    // logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
+					    break;
+	            
+				    case LogOutputType.STRUCTURED_AND_FILE:
+					    builder.AddZLoggerConsole(opts =>
+					    {
+						    opts.UseJsonFormatter();
+					    });
+					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
+
+					    // logger = logConfig
+						   //  .WriteTo.Console(new MicroserviceLogFormatter())
+						   //  .WriteTo.File(args.LogOutputPath ?? "./service.log");
+					    break;
+				    case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+				    case LogOutputType.STRUCTURED:
+				    default:
+					    builder.AddZLoggerConsole(opts =>
+					    {
+						    opts.UseJsonFormatter(conf =>
+						    {
+						    });
+					    });
+					    // logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+					    
+					    // logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+					    break;
+			    }
+
+			    // builder.AddZLoggerLogProcessor((opts) => BuildOtelZLogger(opts, activityProvider));
+			    // builder.AddZLoggerConsole(config =>
+			    // {
+			    // });
+		    });
+
+		    return factory;
+	    }
+	    
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
             var logLevel = args.LogLevel;
@@ -244,6 +316,7 @@ namespace Beamable.Server
 		        collection
 			        .AddScoped<T>()
 			        .AddSingleton(attribute)
+			        .AddSingleton(_activityProvider)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
 			        .AddSingleton<IUsageApi>(EcsService)
@@ -589,6 +662,58 @@ namespace Beamable.Server
 	        return false;
         }
 
+        private static DefaultActivityProvider _activityProvider;
+        private static ILoggerFactory _loggerFactory;
+        public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        {
+	        _activityProvider = new DefaultActivityProvider(args, attribute);
+
+
+	        var resourceBuilder = ResourceBuilder.CreateEmpty()
+		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace, 
+			        autoGenerateServiceInstanceId: false, 
+			        serviceInstanceId: _activityProvider.ServiceId)
+		        .AddAttributes(new Dictionary<string, object>()
+		        {
+			        ["cid"] = args.CustomerID,
+			        ["pid"] = args.ProjectName,
+			        ["author-account-id"] = args.AccountId,
+			        ["beam-sdk-version"] = args.SdkVersionExecution,
+		        });
+	        
+	        var metricProvider = Sdk.CreateMeterProviderBuilder()
+			        .AddMeter(Constants.Features.Otel.METER_NAME)
+			        .AddProcessInstrumentation()
+			        .AddRuntimeInstrumentation()
+			        .SetResourceBuilder(resourceBuilder)
+			        .AddOtlpExporter(config =>
+			        {
+				        config.ExportProcessorType = ExportProcessorType.Simple;
+				        // TODO: take host from arg
+				        // GRPC HOST: http://localhost:4317
+				        config.Protocol = OtlpExportProtocol.Grpc;
+			        })
+			        .Build()
+		        ;
+
+
+	        var traceProvider = Sdk.CreateTracerProviderBuilder()
+			        .SetResourceBuilder(resourceBuilder)
+			        .AddSource(Constants.Features.Otel.METER_NAME)
+			        .AddOtlpExporter(config =>
+			        {
+				        config.Protocol = OtlpExportProtocol.Grpc;
+			        })
+			        .Build()
+		        ;
+
+	        _activityProvider.TestCounter.Add(1, new KeyValuePair<string, object>[]
+	        {
+		        new KeyValuePair<string, object>("toast", 4),
+		        new KeyValuePair<string, object>("fish", "stick")
+	        });
+        }
+
         
         /// <summary>
         /// This method can be called before the start of the microservice to inject some CLI information.
@@ -603,7 +728,10 @@ namespace Beamable.Server
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
-	        _sink = ConfigureLogging(envArgs, attribute);
+	        ConfigureTelemetry(envArgs, attribute);
+	        _loggerFactory = ConfigureZLogging(envArgs, attribute);
+	        
+	        // _sink = ConfigureLogging(envArgs, attribute);
 	        Log.Information($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
@@ -739,7 +867,7 @@ namespace Beamable.Server
 				
 	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _sink);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, null);
 		            var runningDebugTask = localDebug.Run();
 	            }
 	            
