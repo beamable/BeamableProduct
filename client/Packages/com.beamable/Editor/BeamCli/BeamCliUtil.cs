@@ -235,7 +235,7 @@ namespace Beamable.Editor.BeamCli
 			}
 			
 			var proc = new Process();
-			var installCommand = $"tool install beamable.tools --tool-manifest {manifestPath}";
+			var installCommand = $"tool install beamable.tools --tool-manifest \"{manifestPath}\"";
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
