@@ -46,10 +46,6 @@ using microservice;
 using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
-using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -58,6 +54,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
+using beamable.tooling.common.Microservice;
 using microservice.Observability;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
@@ -76,7 +73,6 @@ namespace Beamable.Server
     {
 	    private const int MSG_SIZE_LIMIT = 1000;
 
-	    public static LoggingLevelSwitch LogLevel;
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
@@ -85,18 +81,29 @@ namespace Beamable.Server
 
 	    // private static DebugLogSink _sink;
 	    private static Task _localDiscoveryBroadcast;
+	    public static LogLevel LogLevel;
 
-	    private static ILoggerFactory ConfigureZLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
+	    private static ILoggerFactory ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, MicroserviceAttribute attr)
 	    {
 		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-		    LogUtil.TryParseSystemLogLevel(args.LogLevel, out var envLogLevel);
+		    if (!LogUtil.TryParseSystemLogLevel(args.LogLevel, out LogLevel))
+		    {
+			    LogLevel = LogLevel.Warning;
+		    }
 
-		    // TODO: need to replace "DebugLogSink" class with something ZLogger-like
-		    
 		    var factory = LoggerFactory.Create(builder =>
 		    {
-			    builder.SetMinimumLevel(envLogLevel);
-
+			    // all logs are valid, but may not pass the filter. 
+			    builder.SetMinimumLevel(LogLevel.Trace);
+			    
+			    builder.AddFilter(level => level >= LogLevel);
+			    if (!inDocker)
+			    {
+				    var debugLogProcessor = _debugLogProcessor = new DebugLogProcessor();
+				    builder
+					    .AddZLoggerLogProcessor(debugLogProcessor);
+			    }
+			    
 			    switch (args.LogOutputType)
 			    {
 				    case LogOutputType.DEFAULT when !inDocker:
@@ -147,95 +154,104 @@ namespace Beamable.Server
 			    // });
 		    });
 
+		    
+		    // use newtonsoft for JsonUtility
+		    JsonUtilityConverter.Init();
+
+		    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
+		    Debug.Instance = new MicroserviceDebug();
+		    _logger = BeamableZLoggerProvider.LogContext.Value = _loggerFactory.CreateLogger<TMicroservice>();
+
+		    
 		    return factory;
 	    }
 	    
-	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
-        {
-            var logLevel = args.LogLevel;
-			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
-
-			LogUtil.TryParseLogLevel(logLevel, out var envLogLevel);
-
-            var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-            
-            
-            // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-            LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
-
-            // https://github.com/serilog/serilog/wiki/Configuration-Basics
-            var logConfig = new LoggerConfiguration()
-	            .MinimumLevel.ControlledBy(LogLevel)
-	            .Enrich.FromLogContext()
-	            .Destructure.ByTransforming<MicroserviceRequestContext>(ctx => new
-	            {
-		            cid = ctx.Cid,
-		            pid = ctx.Pid,
-		            path = ctx.Path,
-		            status = ctx.Status,
-		            id = ctx.Id,
-		            isEvent = ctx.IsEvent,
-		            userId = ctx.UserId,
-		            scopes = ctx.Scopes
-	            });
-
-            if (!disableLogTruncate)
-            {
-	            logConfig = logConfig
-		            .Enrich.With(new LogMsgSizeEnricher(args.LogTruncateLimit))
-		            .Destructure.ToMaximumCollectionCount(args.LogMaxCollectionSize)
-		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
-		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
-            }
-
-            var logger = logConfig;
-
-            DebugLogSink debugLogSink = null;
-            if (!inDocker)
-            {
-	            debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
-	            logConfig = logConfig.WriteTo.Sink(debugLogSink);
-            }
-            
-            switch (args.LogOutputType)
-            {
-	            case LogOutputType.DEFAULT when !inDocker:
-	            case LogOutputType.UNSTRUCTURED:
-		            logger = logConfig.WriteTo.Console(
-			            new MessageTemplateTextFormatter(
-				            "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
-		            break;
-	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
-	            case LogOutputType.STRUCTURED:
-		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
-		            break;
-	            case LogOutputType.FILE:
-		            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
-		            break;
-	            
-	            case LogOutputType.STRUCTURED_AND_FILE:
-		            logger = logConfig
-			            .WriteTo.Console(new MicroserviceLogFormatter())
-			            .WriteTo.File(args.LogOutputPath ?? "./service.log");
-		            break;
-				default:
-					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
-					break;
-            }
-            
-            
-            Log.Logger = logger
-               .CreateLogger();
-
-            // use newtonsoft for JsonUtility
-            JsonUtilityConverter.Init();
-
-            BeamableLogProvider.Provider = new BeamableSerilogProvider();
-            Debug.Instance = new MicroserviceDebug();
-            BeamableSerilogProvider.LogContext.Value = Log.Logger;
-
-            return debugLogSink;
-        }
+	  //   private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
+   //      {
+   //          var logLevel = args.LogLevel;
+			// var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+   //
+			// LogUtil.TryParseLogLevel(logLevel, out var envLogLevel);
+   //
+   //          var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+   //          
+   //          
+   //          // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
+   //          LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
+   //
+   //          // https://github.com/serilog/serilog/wiki/Configuration-Basics
+   //          var logConfig = new LoggerConfiguration()
+	  //           .MinimumLevel.ControlledBy(LogLevel)
+	  //           .Enrich.FromLogContext()
+	  //           .Destructure.ByTransforming<MicroserviceRequestContext>(ctx => new
+	  //           {
+		 //            cid = ctx.Cid,
+		 //            pid = ctx.Pid,
+		 //            path = ctx.Path,
+		 //            status = ctx.Status,
+		 //            id = ctx.Id,
+		 //            isEvent = ctx.IsEvent,
+		 //            userId = ctx.UserId,
+		 //            scopes = ctx.Scopes
+	  //           });
+   //
+   //          if (!disableLogTruncate)
+   //          {
+	  //           logConfig = logConfig
+		 //            .Enrich.With(new LogMsgSizeEnricher(args.LogTruncateLimit))
+		 //            .Destructure.ToMaximumCollectionCount(args.LogMaxCollectionSize)
+		 //            .Destructure.ToMaximumDepth(args.LogMaxDepth)
+		 //            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
+   //          }
+   //
+   //          var logger = logConfig;
+   //
+   //          DebugLogSink debugLogSink = null;
+   //          if (!inDocker)
+   //          {
+	  //           debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
+	  //           logConfig = logConfig.WriteTo.Sink(debugLogSink);
+   //          }
+   //          
+   //          switch (args.LogOutputType)
+   //          {
+	  //           case LogOutputType.DEFAULT when !inDocker:
+	  //           case LogOutputType.UNSTRUCTURED:
+		 //            logger = logConfig.WriteTo.Console(
+			//             new MessageTemplateTextFormatter(
+			// 	            "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+		 //            break;
+	  //           case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+	  //           case LogOutputType.STRUCTURED:
+		 //            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+		 //            break;
+	  //           case LogOutputType.FILE:
+		 //            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
+		 //            break;
+	  //           
+	  //           case LogOutputType.STRUCTURED_AND_FILE:
+		 //            logger = logConfig
+			//             .WriteTo.Console(new MicroserviceLogFormatter())
+			//             .WriteTo.File(args.LogOutputPath ?? "./service.log");
+		 //            break;
+			// 	default:
+			// 		logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+			// 		break;
+   //          }
+   //          
+   //          
+   //          Log.Logger = logger
+   //             .CreateLogger();
+   //
+   //          // use newtonsoft for JsonUtility
+   //          JsonUtilityConverter.Init();
+   //
+   //          BeamableLogProvider.Provider = new BeamableSerilogProvider();
+   //          Debug.Instance = new MicroserviceDebug();
+   //          BeamableSerilogProvider.LogContext.Value = Log.Logger;
+   //
+   //          return debugLogSink;
+   //      }
 
         public static void ConfigureUnhandledError()
         {
@@ -264,7 +280,7 @@ namespace Beamable.Server
 			        Console.Error.WriteLine($"{ex.Message} -- {ex.StackTrace}");
 		        }
 		        
-				Log.Fatal($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
+				_logger.ZLogCritical($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
 	        };
         }
 
@@ -299,7 +315,7 @@ namespace Beamable.Server
 			        !asm.GetName().Name.StartsWith("Serilog."))
 		        .Select(asm => asm.GetName().Name)
 		        .ToList();
-	        Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+	        _logger.ZLogDebug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
 	        reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
 
 	        return reflectionCache;
@@ -307,7 +323,7 @@ namespace Beamable.Server
 
         public static IDependencyBuilder ConfigureServices<T>(IMicroserviceArgs envArgs) where T : Microservice
         {
-	        Log.Debug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
+	        _logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
 	        var attribute = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
 	        
 	        try
@@ -317,6 +333,7 @@ namespace Beamable.Server
 			        .AddScoped<T>()
 			        .AddSingleton(attribute)
 			        .AddSingleton(_activityProvider)
+			        .AddSingleton<ILoggerFactory>(_loggerFactory)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
 			        .AddSingleton<IUsageApi>(EcsService)
@@ -386,7 +403,7 @@ namespace Beamable.Server
 			        ;
 		        OpenApiRegistration.RegisterOpenApis(collection);
 		        
-		        Log.Debug(Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES);
+		        _logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES);
 		        var builder = new DefaultServiceBuilder(collection);
 
 		        // Gets Service Configuration Methods
@@ -526,7 +543,7 @@ namespace Beamable.Server
 		        }
 		        catch (Exception e)
 		        {
-			        Log.Error(e, e.Message);
+			        _logger.LogError(e, e.Message);
 		        }
 	        });
         }
@@ -540,7 +557,7 @@ namespace Beamable.Server
 	        {
 		        try
 		        {
-					Log.Debug($"Running process-watcher loop for required process id=[{requireProcessId}]");
+					_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
 					var processExists = true;
 					do
 					{
@@ -562,12 +579,12 @@ namespace Beamable.Server
 					} while (processExists);
 					
 					// terminate. 
-					Log.Information("Quitting because required process no longer exists");
+					_logger.LogInformation("Quitting because required process no longer exists");
 					Environment.Exit(0);
 		        }
 		        catch (Exception ex)
 		        {
-			        Log.Error($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			        _logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
 		        }
 	        });
 	        
@@ -664,6 +681,8 @@ namespace Beamable.Server
 
         private static DefaultActivityProvider _activityProvider;
         private static ILoggerFactory _loggerFactory;
+        private static DebugLogProcessor _debugLogProcessor;
+        public static ILogger _logger;
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        _activityProvider = new DefaultActivityProvider(args, attribute);
@@ -729,10 +748,10 @@ namespace Beamable.Server
 	        var envArgs = new EnvironmentArgs();
 
 	        ConfigureTelemetry(envArgs, attribute);
-	        _loggerFactory = ConfigureZLogging(envArgs, attribute);
+	        _loggerFactory = ConfigureZLogging<TMicroservice>(envArgs, attribute);
 	        
 	        // _sink = ConfigureLogging(envArgs, attribute);
-	        Log.Information($"Starting Prepare");
+	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
@@ -764,13 +783,13 @@ namespace Beamable.Server
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				Log.Verbose($"Generate env process (error): [{args.Data}]");
+				_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
 				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        Log.Verbose($"Generate env process (log): [{args.Data}]");
+		        _logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
 		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
@@ -785,7 +804,7 @@ namespace Beamable.Server
 	        {
 		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
 	        }
-	        Log.Information($"Running command {fileName} {arguments}");
+	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
 	        process.Start();
 	        process.BeginOutputReadLine();
 	        process.BeginErrorReadLine();
@@ -804,10 +823,10 @@ namespace Beamable.Server
 	     
 	        if (process.ExitCode != 0)
 	        {
-		        Log.Error($"generate-env output:\n{sublogs}");
+		        _logger.ZLogError($"generate-env output:\n{sublogs}");
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
-	        Log.Information($"environment:\n{result}");
+	        _logger.ZLogInformation($"environment:\n{result}");
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 	        if (parsedOutput.type != "stream")
@@ -828,7 +847,7 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        BeamableSerilogProvider.LogContext.Value = Log.Logger;
+	        BeamableZLoggerProvider.LogContext.Value = _logger;
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
@@ -867,7 +886,7 @@ namespace Beamable.Server
 				
 	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, null);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _debugLogProcessor);
 		            var runningDebugTask = localDebug.Run();
 	            }
 	            
@@ -875,9 +894,8 @@ namespace Beamable.Server
 	            //therefore getting dependencies through nuget, so not required to check versions mismatch.
 	            if (!string.IsNullOrEmpty(args.SdkVersionExecution) && !string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
 	            {
-		            Log.Fatal(
-			            "Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.",
-			            args.SdkVersionBaseBuild, args.SdkVersionExecution);
+		            _logger.ZLogCritical(
+			            $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
 		            throw new Exception(
 			            $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
 	            }
@@ -906,7 +924,7 @@ namespace Beamable.Server
 		            message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
 		            message.AppendLine("Stack Trace:");
 		            message.AppendLine(ex.StackTrace);
-		            Log.Fatal(message.ToString());
+		            _logger.LogCritical(message.ToString());
 		            throw;
 	            }
 
@@ -918,30 +936,5 @@ namespace Beamable.Server
 
             await Task.Delay(-1);
         }
-    }
-
-    internal class LogMsgSizeEnricher : ILogEventEnricher
-    {
-	    private readonly int _width;
-	    
-	    public LogMsgSizeEnricher(int width)
-	    {
-		    _width = width;
-	    }
-
-	    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
-	    {
-		    foreach (var singleProp in logEvent.Properties)
-		    {
-			    var stringifiedPropValue = singleProp.Value?.ToString();
-
-			    if (stringifiedPropValue != null && stringifiedPropValue.Length > _width)
-			    {
-				    stringifiedPropValue = stringifiedPropValue.Substring(0, _width) + "...";
-				    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, stringifiedPropValue));
-			    }
-		    }
-
-	    }
     }
 }

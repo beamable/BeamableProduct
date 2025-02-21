@@ -1,5 +1,4 @@
 using Beamable;
-using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
@@ -9,12 +8,10 @@ using cli.Unreal;
 using cli.Utils;
 using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 
 namespace cli.Dotnet;

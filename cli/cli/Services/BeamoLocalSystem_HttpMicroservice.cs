@@ -164,7 +164,7 @@ public partial class BeamoLocalSystem
 				VariableName = ENV_HOST,
 				Value = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket"
 			},
-			new() { VariableName = ENV_LOG_LEVEL, Value = _ctx.LogLevel.ToString() },
+			new() { VariableName = ENV_LOG_LEVEL, Value = _ctx.LogSwitch.Level.ToString() },
 			new() { VariableName = ENV_NAME_PREFIX, Value = routingKey ?? ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },

@@ -23,6 +23,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace tests;
 
@@ -146,6 +148,12 @@ public class Tests
 	[Test]
 	public void TestUnrealMicroserviceGen()
 	{
+		BeamableZLoggerProvider.Provider = new BeamableZLoggerProvider();
+		BeamableZLoggerProvider.LogContext.Value = LoggerFactory.Create(builder =>
+		{
+			builder.AddZLoggerConsole();
+		}).CreateLogger<Tests>();
+		
 		var gen = new ServiceDocGenerator();
 		var doc = gen.Generate<TroublesomeService>(null);
 

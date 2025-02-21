@@ -5,15 +5,15 @@ using cli.Services;
 using Docker.DotNet;
 using Moq;
 using NUnit.Framework;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using Serilog.Formatting.Display;
 using Spectre.Console;
 using Spectre.Console.Testing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using ZLogger;
+
 #pragma warning disable CS8618
 
 namespace tests.Examples;
@@ -32,7 +32,7 @@ public class CLITest
 	protected string TestId { get; private set; }
 
 	protected Mock<IRequester> _mockRequester;
-	protected LoggingLevelSwitch _serilogLevel;
+	protected BeamLogSwitch _logSwitch;
 	private Action<IDependencyBuilder> _configurator;
 
 	protected List<Mock> _mockObjects = new();
@@ -63,7 +63,7 @@ public class CLITest
 			.Interactive()
 			.EmitAnsiSequences();
 
-		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Verbose };
+		_logSwitch = new BeamLogSwitch() { Level = LogLevel.Trace };
 		_mockRequester = new Mock<IRequester>();
 	}
 
@@ -127,11 +127,11 @@ public class CLITest
 			_configurator?.Invoke(builder);
 			configurator?.Invoke(builder);
 		},
-		logger => logger
-		.WriteTo.Console(new MessageTemplateTextFormatter(
-			"{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"))
-		.MinimumLevel.ControlledBy(_serilogLevel)
-		.CreateLogger(),
+		logger =>
+		{
+			logger.SetMinimumLevel(_logSwitch.Level);
+			logger.AddZLoggerConsole();
+		},
 
 		args);
 

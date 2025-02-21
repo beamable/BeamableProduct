@@ -7,7 +7,6 @@ using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
-using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;

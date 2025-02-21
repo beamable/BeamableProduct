@@ -49,7 +49,7 @@
 
     <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
     <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
-    <PackageReference Include="ZLogger" Version="2.5.9" />
+    <PackageReference Include="ZLogger" Version="2.5.10" />
 
   </ItemGroup>
   

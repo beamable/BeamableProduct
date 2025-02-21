@@ -9,10 +9,11 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Pooling;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
-using Core.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using System.Diagnostics;
+using beamable.tooling.common.Microservice;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace Beamable.Server
 {
@@ -172,7 +173,7 @@ namespace Beamable.Server
 
 	      if (Daemon.AuthorizationCounter <= 0)
 	      {
-		      Log.Verbose($"Waiting for authorization, but auth is already done. message=[{message}]");
+		      BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Waiting for authorization, but auth is already done. message=[{message}]");
 		      return;
 	      }
 
@@ -187,7 +188,7 @@ namespace Beamable.Server
 		      }
 		      await Task.Delay(100);
 	      }
-	      Log.Verbose($"Leaving wait for send. message=[{message}]");
+         BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
       }
 
       public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
@@ -216,16 +217,12 @@ namespace Beamable.Server
          }
          // all attempts have failed : (
          var finalEx = new SocketClosedException(failures);
-         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", finalEx.GetType().Name,
-            finalEx.Message,
-            finalEx.Source, finalEx.StackTrace);
+         BeamableZLoggerProvider.LogContext.Value.ZLogError($"Exception {finalEx.GetType().Name}: {finalEx.Message} - {finalEx.Source} \n {finalEx.StackTrace}");
 
          for (var i = 0 ; i < failures.Count; i ++)
          {
             var failure = failures[i];
-            BeamableSerilogProvider.LogContext.Value.Error("  Failure {i} {type}: {message} - {source} \n {stack}", i, finalEx.GetType().Name,
-               failure.Message,
-               failure.Source, failure.StackTrace);
+            BeamableZLoggerProvider.LogContext.Value.ZLogError($"  Failure {i} {finalEx.GetType().Name}: {failure.Message} - {failure.Source} \n {failure.StackTrace}");
          }
 
          throw finalEx;
@@ -317,7 +314,7 @@ namespace Beamable.Server
          var requestId = GetNextRequestId();
          if (_pendingMessages.ContainsKey(requestId))
          {
-            BeamableSerilogProvider.Instance.Debug("The request {id} was already taken", requestId);
+            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"The request {requestId} was already taken");
             return AddListener(req, uri, parser); // try again.
          }
 
@@ -482,7 +479,7 @@ namespace Beamable.Server
          }
 
          var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
-         Log.Debug("sending request " + truncatedMsg);
+         BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
 	         {
@@ -491,7 +488,7 @@ namespace Beamable.Server
 				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
 				         {
 					         // need to wait for authentication to finish...
-					         Log.Debug($"Request {{id}} and {truncatedMsg} failed with 403. Will reauth and and retry.", req.id);
+                        BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry." );
 
 					         _socketContext.Daemon.WakeAuthThread();
 					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();

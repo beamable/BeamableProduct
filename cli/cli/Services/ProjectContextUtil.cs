@@ -1,19 +1,13 @@
+using System.Diagnostics;
+using System.Text.Json;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using Beamable.Server.Common;
 using CliWrap;
-using Microsoft.Build.Construction;
-using Microsoft.Build.Evaluation;
-using Microsoft.Build.Locator;
-using Newtonsoft.Json;
-using Serilog;
-using System.Diagnostics;
-using System.Text.Json;
-using System.Xml;
-using System.Xml.Linq;
 using microservice.Extensions;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using Microsoft.Build.Evaluation;
+using Newtonsoft.Json;
 
 namespace cli.Services;
 

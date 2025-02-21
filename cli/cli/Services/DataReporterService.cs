@@ -2,11 +2,9 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
+using Beamable.Server;
 using Newtonsoft.Json;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
-using System.Text;
+using ZLogger;
 
 namespace cli.Services;
 
@@ -90,30 +88,40 @@ public class DataReporterService : IDataReporterService
 	}
 }
 
-public class ReporterSink : ILogEventSink
+public class ReporterSink : IAsyncLogProcessor
 {
 	private readonly IDependencyProvider _provider;
 	private object key = new();
+	private BeamLogSwitch _logSwitch;
 
 	public ReporterSink(IDependencyProvider provider)
 	{
 		_provider = provider;
+		_logSwitch = _provider.GetService<BeamLogSwitch>();
 	}
 	
-	public void Emit(LogEvent logEvent)
+	
+	public void Post(IZLoggerEntry log)
 	{
-		var writer = new StringWriter();
-		logEvent.RenderMessage(writer);
+		if (_logSwitch.Level >= log.LogInfo.LogLevel) return;
+		
 		lock (key)
 		{
+			var (logLevel, _) = LogUtil.GetSeverityText(log.LogInfo.LogLevel);
 			_provider.GetService<IDataReporterService>().Report("logs",
 				new CliLogMessage
 				{
-					message = writer.ToString(), 
-					logLevel = logEvent.Level.ToString(),
-					timestamp = logEvent.Timestamp.ToUnixTimeMilliseconds()
+					message = log.ToString(), 
+					logLevel = logLevel,
+					timestamp = log.LogInfo.Timestamp.Local.ToUnixTimeMilliseconds()
 				}
 			);
 		}
 	}
+
+	public ValueTask DisposeAsync()
+	{
+		return ValueTask.CompletedTask;
+	}
+
 }

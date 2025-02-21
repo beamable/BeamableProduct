@@ -1,46 +1,28 @@
-using Serilog;
-using Serilog.Configuration;
-using Serilog.Core;
-using Serilog.Events;
-using Serilog.Formatting;
-using Serilog.Formatting.Display;
-using Serilog.Sinks.SystemConsole.Themes;
+
 using Spectre.Console;
 using System.Text;
+using ZLogger;
 
 namespace cli.Utils;
 
-public static class AnsiConsoleSinkExtensions
+public class SpectreZLoggerProcessor : IAsyncLogProcessor
 {
-	public static LoggerConfiguration BeamAnsi(
-		this LoggerSinkConfiguration sinkConfiguration,
-		string outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
-		)
+	private readonly BeamLogSwitch _logSwitch;
+
+	public SpectreZLoggerProcessor(BeamLogSwitch logSwitch)
 	{
-		var formatter = new MessageTemplateTextFormatter(outputTemplate);
-		return sinkConfiguration.Sink(new AnsiConsoleSink(formatter));
+		_logSwitch = logSwitch;
 	}
-}
-
-public class AnsiConsoleSink : ILogEventSink
-{
-	private readonly ITextFormatter _formatter;
-	private readonly StringWriter _writer;
-
-	public AnsiConsoleSink(
-		ITextFormatter formatter)
+	
+	public ValueTask DisposeAsync()
 	{
-		_writer = new StringWriter();
-		this._formatter = formatter;
+		return ValueTask.CompletedTask;
 	}
 
-	public void Emit(LogEvent logEvent)
+	public void Post(IZLoggerEntry log)
 	{
-		_writer.GetStringBuilder().Clear();
-		_formatter.Format(logEvent, _writer);
-		_writer.Flush();
-		var str = _writer.GetStringBuilder().ToString();
-		AnsiConsole.WriteLine(str);
+		if (log.LogInfo.LogLevel < _logSwitch.Level) return; // skip
+		
+		AnsiConsole.WriteLine(log.ToString());
 	}
-
 }

@@ -6,6 +6,7 @@ using System.Security.Cryptography.Xml;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Beamable.Server.Common;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 
@@ -55,31 +56,6 @@ public class Logs
             return ValueTask.CompletedTask;
         }
 
-        public static (string text, int level) GetSeverityText(LogLevel logLevel)
-        {
-            // https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
-            
-            //  map the string names to the commonly used Beamable phrasings.
-            switch (logLevel)
-            {
-                case LogLevel.Trace:
-                    // some call it trace, we call it verbose
-                    return ("verbose", 1);
-                case LogLevel.Debug:
-                    return ("debug", 5);
-                case LogLevel.Information:
-                    return ("info", 9);
-                case LogLevel.Warning:
-                    return ("warn", 13);
-                case LogLevel.Error:
-                    return ("error", 17);
-                case LogLevel.Critical:
-                    // some call it critical, we call it fatal
-                    return ("fatal", 21);
-                default:
-                    return ("none", 100);
-            }
-        }
         
         public void Post(IZLoggerEntry log)
         {
@@ -106,7 +82,7 @@ public class Logs
                     ["host.name"] = "localhost"
                 }
             };
-            (sigNoz.severity, sigNoz.level) = GetSeverityText(log.LogInfo.LogLevel);
+            (sigNoz.severity, sigNoz.level) = LogUtil.GetSeverityText(log.LogInfo.LogLevel);
             
             
             for (var i = 0; i < log.ParameterCount; i++)

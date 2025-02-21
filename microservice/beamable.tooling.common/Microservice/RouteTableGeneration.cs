@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using Beamable.Server;
 using microservice.Common;
 

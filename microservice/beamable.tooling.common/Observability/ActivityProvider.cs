@@ -21,8 +21,14 @@ public class BeamActivity : IDisposable
 {
     private readonly Activity _activity;
 
-    public ActivityTraceId TraceId => _activity.TraceId;
-    public ActivitySpanId SpanId => _activity.SpanId;
+    public ActivityTraceId TraceId => _activity?.TraceId ?? default;
+    public ActivitySpanId SpanId => _activity?.SpanId ?? default;
+    
+    /// <summary>
+    /// The activity provider returns null instances of <see cref="Activity"/>
+    /// when there is no configured listener. 
+    /// </summary>
+    public bool IsReal => _activity != null;
     
     public BeamActivity(Activity activity)
     {
@@ -125,12 +131,17 @@ public class DefaultActivityProvider
 
     public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart=true)
     {
-        var context = new ActivityContext(
-            parent.TraceId, 
-            parent.SpanId, 
-            ActivityTraceFlags.Recorded
+        ActivityContext context = default;
+
+        if (parent.IsReal)
+        {
+            context = new ActivityContext(
+                parent.TraceId,
+                parent.SpanId,
+                ActivityTraceFlags.Recorded
             );
-        
+        }
+
         var activity = _activitySource.CreateActivity(
             operationName, 
             ActivityKind.Server, parentContext: context, idFormat: ActivityIdFormat.W3C);

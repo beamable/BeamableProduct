@@ -13,6 +13,7 @@ using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading;
 using Beamable.Common.Leaderboards;
+using microserviceTests.microservice.Util;
 
 namespace microserviceTests.microservice.Content
 {
@@ -31,6 +32,8 @@ namespace microserviceTests.microservice.Content
 
          var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
          _cache.GenerateReflectionCache(asms);
+         
+         LoggingUtil.InitTestCorrelator();
       }
 
       [Test]

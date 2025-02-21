@@ -1,8 +1,12 @@
 using Beamable.Common;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Beamable.Common.Dependencies;
+using beamable.tooling.common.Microservice;
+using microservice.Observability;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace Beamable.Server;
 
@@ -28,6 +32,7 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 	/// <inheritdoc />
 	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
 	{
+		
 		var type = provider.instanceType;
 		var output = new List<ServiceMethod>();
 		
@@ -74,7 +79,8 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 					method,
 					true);
 
-				Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+				
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found Federated method. FederatedPath={path}, MethodName={serviceMethod.Method.Name}");
 				output.Add(serviceMethod);
 			}
 		}		
@@ -87,7 +93,6 @@ public class FederatedPlayerInitCallableGenerator : ICallableGenerator
 {
 	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
 	{
-
 		var type = provider.instanceType;
 		var output = new List<ServiceMethod>();
 		
@@ -131,7 +136,7 @@ public class FederatedPlayerInitCallableGenerator : ICallableGenerator
 				method,
 				true);
 			
-			Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found Federated method. FederatedPath={path}, MethodName={serviceMethod.Method.Name}");
 			output.Add(serviceMethod);
 		}		
 		
@@ -189,7 +194,7 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 				method,
 				true);
 			
-			Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found Federated method. FederatedPath=path, MethodName={serviceMethod.Method.Name}" );
 			output.Add(serviceMethod);
 		}		
 		
@@ -251,7 +256,7 @@ public class FederatedGameServerCallableGenerator : ICallableGenerator
 					method,
 					true);
 
-				Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found Federated method. FederatedPath={path}, MethodName={serviceMethod.Method.Name}" );
 				output.Add(serviceMethod);
 			}
 		}
