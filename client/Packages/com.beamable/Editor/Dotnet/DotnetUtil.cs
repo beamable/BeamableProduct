@@ -111,7 +111,7 @@ namespace Beamable.Editor.Dotnet
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = "dotnet",
-				WorkingDirectory = Path.GetFullPath("."),
+				WorkingDirectory = "\"" + Path.GetFullPath(".") + "\"",
 				Arguments = infoCommand,
 				UseShellExecute = false,
 				CreateNoWindow = true,
