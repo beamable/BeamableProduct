@@ -31,9 +31,6 @@ jobs:
       - name: Generate API
         run: |
           dotnet run -f net9.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./cli/beamable.common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
-      - name: Format files
-        id: format
-        run: dotnet-format -f ./cli/beamable.common/Runtime/OpenApi
       - name: Install local packages
         working-directory: ./
         shell: bash
