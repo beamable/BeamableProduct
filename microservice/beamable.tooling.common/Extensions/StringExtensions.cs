@@ -23,7 +23,7 @@ namespace microservice.Extensions
 
 	    /// <summary>
 	    /// Ensure that a path has quotes around it.
-	    /// If the path already has the <paramref name="quoteChar"/> at the start AND end, then the string is unchanged. 
+	    /// If the path already has the given chars at the start AND end, then the string is unchanged. 
 	    /// </summary>
 	    /// <param name="path">A path string</param>
 	    /// <param name="openChar">Optional, the quote character. By default, it is a double quote. </param>
