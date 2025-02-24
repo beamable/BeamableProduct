@@ -41,7 +41,7 @@ jobs:
           ./setup.sh
           ./dev.sh
       - name: Check for Changes
-        run: echo "{any}={$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)}" >> $GITHUB_OUTPUT"
+        run: echo "any=$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)" >> $GITHUB_OUTPUT
         id: changes
       - name: Check Status
         run: git status
