@@ -83,7 +83,7 @@ namespace Beamable.Server
 	    private static Task _localDiscoveryBroadcast;
 	    public static LogLevel LogLevel;
 
-	    private static ILoggerFactory ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, MicroserviceAttribute attr)
+	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, MicroserviceAttribute attr)
 	    {
 		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 		    if (!LogUtil.TryParseSystemLogLevel(args.LogLevel, out LogLevel))
@@ -91,7 +91,7 @@ namespace Beamable.Server
 			    LogLevel = LogLevel.Warning;
 		    }
 
-		    var factory = LoggerFactory.Create(builder =>
+		    _loggerFactory = LoggerFactory.Create(builder =>
 		    {
 			    // all logs are valid, but may not pass the filter. 
 			    builder.SetMinimumLevel(LogLevel.Trace);
@@ -103,7 +103,13 @@ namespace Beamable.Server
 				    builder
 					    .AddZLoggerLogProcessor(debugLogProcessor);
 			    }
-			    
+
+			    builder.AddZLoggerLogProcessor(opts =>
+			    {
+				    opts.IncludeScopes = true;
+				    var processor = new Logs.OtelZLogProcessor(_activityProvider);
+				    return processor;
+			    });
 			    switch (args.LogOutputType)
 			    {
 				    case LogOutputType.DEFAULT when !inDocker:
@@ -161,9 +167,6 @@ namespace Beamable.Server
 		    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		    Debug.Instance = new MicroserviceDebug();
 		    _logger = BeamableZLoggerProvider.LogContext.Value = _loggerFactory.CreateLogger<TMicroservice>();
-
-		    
-		    return factory;
 	    }
 	    
 	  //   private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
@@ -685,9 +688,7 @@ namespace Beamable.Server
         public static ILogger _logger;
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
-	        _activityProvider = new DefaultActivityProvider(args, attribute);
-
-
+	        
 	        var resourceBuilder = ResourceBuilder.CreateEmpty()
 		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace, 
 			        autoGenerateServiceInstanceId: false, 
@@ -747,8 +748,8 @@ namespace Beamable.Server
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
-	        ConfigureTelemetry(envArgs, attribute);
-	        _loggerFactory = ConfigureZLogging<TMicroservice>(envArgs, attribute);
+	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        ConfigureZLogging<TMicroservice>(envArgs, attribute);
 	        
 	        // _sink = ConfigureLogging(envArgs, attribute);
 	        _logger.LogInformation($"Starting Prepare");
@@ -850,6 +851,8 @@ namespace Beamable.Server
 	        BeamableZLoggerProvider.LogContext.Value = _logger;
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
+
+	        ConfigureTelemetry(envArgs, attribute);
 
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();

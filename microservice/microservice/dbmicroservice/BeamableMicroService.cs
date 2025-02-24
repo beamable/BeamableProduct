@@ -32,6 +32,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using microservice.Observability;
 using Microsoft.Extensions.Logging;
+using ZLogger;
 
 #pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
@@ -820,6 +821,8 @@ namespace Beamable.Server
 		      ["beam.request.playerId"] = ctx.UserId,
 		      ["beam.request.requestId"] = ctx.Id,
 	      });
+	      logger.LogInformation("Hello world");
+	      logger.ZLogInformation($"Hello Zworld");
 	      // var reqLog = Log.ForContext("requestContext", ctx, true);
 	      // BeamableSerilogProvider.LogContext.Value = reqLog;
 

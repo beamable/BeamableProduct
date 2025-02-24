@@ -59,56 +59,84 @@ public class Logs
         
         public void Post(IZLoggerEntry log)
         {
-            var msg = log.ToString();
-            
-            ulong nanoseconds = (ulong)(log.LogInfo.Timestamp.Utc.ToUnixTimeMilliseconds() * 1_000_000);
-            nanoseconds += (ulong)(log.LogInfo.Timestamp.Utc.Ticks % TimeSpan.TicksPerMillisecond) * 100;
-            
-            var sigNoz = new SigNozLogMessage
+            // lock (_client)
             {
-                timestamp = nanoseconds,
-                message = msg,
-                resources = new Dictionary<string, string>
-                {
-                    // https://signoz.io/docs/logs-management/features/logs-quick-filters/#service-name
-                    ["service.name"] = _provider.ServiceName,
-                    ["service.namespace"] = _provider.ServiceNamespace,
-                    ["service.instance.id"] = _provider.ServiceId,
-                    
-                    // https://signoz.io/docs/logs-management/features/logs-quick-filters/#environment
-                    ["deployment.environment"] = "Local",
-                    
-                    // https://signoz.io/docs/logs-management/features/logs-quick-filters/#hostname
-                    ["host.name"] = "localhost"
-                }
-            };
-            (sigNoz.severity, sigNoz.level) = LogUtil.GetSeverityText(log.LogInfo.LogLevel);
-            
-            
-            for (var i = 0; i < log.ParameterCount; i++)
-            {
-                var parameterName = log.GetParameterKeyAsString(i);
-                sigNoz.attributes[parameterName] = log.GetParameterValue(i)?.ToString();
-            }
+                var msg = log.ToString();
 
-            var currentActivity = _provider.CurrentActivity.Value;
-            if (currentActivity != null)
-            {
-                sigNoz.spanId = currentActivity.SpanId.ToString();
-                sigNoz.traceId = currentActivity.TraceId.ToString();
+                ulong nanoseconds = (ulong)(log.LogInfo.Timestamp.Utc.ToUnixTimeMilliseconds() * 1_000_000);
+                nanoseconds += (ulong)(log.LogInfo.Timestamp.Utc.Ticks % TimeSpan.TicksPerMillisecond) * 100;
+
+                var sigNoz = new SigNozLogMessage
+                {
+                    timestamp = nanoseconds,
+                    message = msg,
+                    resources = new Dictionary<string, string>
+                    {
+                        // https://signoz.io/docs/logs-management/features/logs-quick-filters/#service-name
+                        ["service.name"] = _provider.ServiceName,
+                        ["service.namespace"] = _provider.ServiceNamespace,
+                        ["service.instance.id"] = _provider.ServiceId,
+
+                        // https://signoz.io/docs/logs-management/features/logs-quick-filters/#environment
+                        ["deployment.environment"] = "Local",
+
+                        // https://signoz.io/docs/logs-management/features/logs-quick-filters/#hostname
+                        ["host.name"] = "localhost"
+                    }
+                };
+                (sigNoz.severity, sigNoz.level) = LogUtil.GetSeverityText(log.LogInfo.LogLevel);
+
+
+                // log.LogInfo.
+                for (var i = 0; i < log.ParameterCount; i++)
+                {
+                    var parameterName = log.GetParameterKeyAsString(i);
+                    sigNoz.attributes[parameterName] = log.GetParameterValue(i)?.ToString();
+                }
+
+                if (log.LogInfo.ScopeState != null)
+                {
+                    foreach (var kvp in log.LogInfo.ScopeState.Properties)
+                    {
+                        sigNoz.attributes["scope." + kvp.Key] = kvp.Value?.ToString();
+                    }
+                }
+
+
+                var currentActivity = _provider.CurrentActivity.Value;
+                if (currentActivity != null)
+                {
+                    sigNoz.spanId = currentActivity.SpanId.ToString();
+                    sigNoz.traceId = currentActivity.TraceId.ToString();
+                }
+
+                // TODO: play with attributes and such
+
+                var message = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:8082");
+                var json = System.Text.Json.JsonSerializer.Serialize(new List<SigNozLogMessage> { sigNoz },
+                    new JsonSerializerOptions
+                    {
+                        IncludeFields = true,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+                    });
+                message.Content = JsonContent.Create(new List<SigNozLogMessage> { sigNoz },
+                    options: new JsonSerializerOptions
+                    {
+                        IncludeFields = true,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+                    });
+               
+                // TODO: post the message to a channel, and have a separate consumer. 
+                var task = _client.SendAsync(message);
+                // task.ContinueWith(async r =>
+                // {
+                //     var res = await r;
+                //
+                //     var body = await res.Content.ReadAsStringAsync();
+                //     Console.WriteLine("ZLOG SENT:" + res.StatusCode + "\n" + body + "\n\n" + json);
+                // });
+                // Console.WriteLine("ZLOG: " + json);
             }
-            
-            // TODO: play with attributes and such
-            
-            var message = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:8082");
-            message.Content = JsonContent.Create(new List<SigNozLogMessage>{sigNoz}, options: new JsonSerializerOptions
-            {
-                IncludeFields = true
-            });
-            // TODO: post the message to a channel, and have a separate consumer. 
-            var _ = _client.SendAsync(message);
-            
-            Console.WriteLine(msg);
         }
 
         // public class SigNozLogRequest
@@ -128,6 +156,7 @@ public class Logs
             public string severity;
             
             [JsonPropertyName("severity_number")]
+            
             public int level;
             
             [JsonPropertyName("trace_id")]
