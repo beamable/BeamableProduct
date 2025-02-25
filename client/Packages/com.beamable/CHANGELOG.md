@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2025-02-21
+## [2.1.0] - 2025-02-24
 
 ### Added
 - Unity 6 Support
@@ -19,14 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Installing CLI uses correct dotnet tool manifest
 
 ### Changed
-- Upgrade CLI to 4.0.1
+- Upgrade CLI to 4.1.1
 - Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
 - `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
 - The methods `isEmailAvailable` and `IsThirdPartyAvailable` from the `AuthService` obsolete and adds the new `GetCredentialStatus` with overloads for both the email and third party.[#3700](https://github.com/beamable/BeamableProduct/issues/3700)
 - `Beam.ChangePid` marked as Obsolete
 - Dotnet is not installed locally anymore, if the required version is not installed yet, the SDK will prompt the user to install the right version.
-- `BeamEditor` static constructor calls `AssetDatabase.Refresh()` before
-  initializing Text Mesh Pro and Addressables
+- OpenAPI Generated SDK's `Message.expires` field is now an `OptionalLong` 
+  instead of `OptionalInt`
 
 ## [2.0.3] - 2025-02-13
 - no changes
