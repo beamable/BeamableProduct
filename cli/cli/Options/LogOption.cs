@@ -6,7 +6,9 @@ namespace cli;
 
 public class LogOption : ConfigurableOption
 {
-	public LogOption() : base("log", "Extra logs gets printed out")
+	public static LogOption Instance => new LogOption();
+	
+	private LogOption() : base("log", "Extra logs gets printed out")
 	{
 		AddAlias("--logs");
 	}

@@ -1,13 +1,12 @@
-using Beamable.Common.BeamCli;
+
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using cli.Services;
 using cli.Utils;
-using Microsoft.Extensions.DependencyInjection;
+	//using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
-using System.CommandLine.Help;
+using Beamable.Server;
 using System.CommandLine.Invocation;
 using System.Text;
 
@@ -52,13 +51,13 @@ public static class DependencyInjectionExtensions
 		{
 			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
 			var factory = new CommandFactory<TCommand>();
-			var root = commandProvider.GetRequiredService<TBaseCommand>();
-			var command = commandProvider.GetRequiredService<TCommand>();
+			var root = commandProvider.GetService<TBaseCommand>();
+			var command = commandProvider.GetService<TCommand>();
 
 			command.CommandProvider = commandProvider;
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
-			command.SetHandler(async (TArgs args) =>
+			command.SetHandler(new Func<TArgs, Task>( async (TArgs args) =>
 			{
 
 				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
@@ -67,6 +66,7 @@ public static class DependencyInjectionExtensions
 				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
 				if (command is IResultProvider resultProvider)
 				{
+					args.Provider.GetService<IDataReporterService>();
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
 				}
 
@@ -90,7 +90,7 @@ public static class DependencyInjectionExtensions
 
 				await command.Handle(args);
 				
-			}, binder);
+			}), binder);
 			root.AddCommand(command);
 			return factory;
 		});

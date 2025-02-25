@@ -53,6 +53,7 @@ using cli.Commands.Project.Logs;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
+using ZLogger.Formatters;
 using Command = System.CommandLine.Command;
 
 namespace cli;
@@ -107,16 +108,12 @@ public class App
 			}
 			
 			builder.SetMinimumLevel(LogLevel.Trace);
-			// var baseConfig = config.MinimumLevel.Verbose();
-			if (appCtx.ShouldMaskLogs)
-			{
-				// TODO: need to mask tokens from the logs
-			}
 			
 			// forward zLogs to the spectre console
 			builder.AddZLoggerLogProcessor(opts =>
 			{
-				return new SpectreZLoggerProcessor(appCtx.LogSwitch);
+				opts.UseBeamFormatter(appCtx);
+				return new SpectreZLoggerProcessor(appCtx.LogSwitch, opts);
 			});
 			
 			// maybe write the logs to a file?
@@ -135,8 +132,11 @@ public class App
 					}
 				}
 
-				// TODO: how to handle level?
-				builder.AddZLoggerFile(logPath);
+				
+				builder.AddZLoggerFile(logPath, opts =>
+				{
+					opts.UseBeamFormatter(appCtx);
+				});
 				
 				
 			}
@@ -269,7 +269,7 @@ public class App
 		Commands.AddSingleton<DeployFilePathOption>();
 		Commands.AddSingleton<AccessTokenOption>();
 		Commands.AddSingleton<RefreshTokenOption>();
-		Commands.AddSingleton<LogOption>();
+		Commands.AddSingleton(LogOption.Instance);
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
 		Commands.AddSingleton(ExtraProjectPathOptions.Instance);
