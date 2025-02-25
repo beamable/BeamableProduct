@@ -378,10 +378,10 @@ public partial class DeployUtil
 				case DiffType.Removed:
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
-						throw new CliException($"cannot remove a service reference=[{change.currentValue}] from the manifest");
+						summary.removedServices.Add(change.currentValue);
 					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
-						throw new CliException($"cannot remove a storage reference=[{change.currentValue}] from the manifest");
+						summary.removedStorage.Add(change.currentValue);
 					}
 					break;
 			}
@@ -584,11 +584,13 @@ public partial class DeployUtil
 
 		// Make sure we are not adding storage object references for services that won't get uploaded.
 		var storages = next.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).ToList();
+		var remoteStorages = remote.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).ToList();
 		for (int i = storages.Count - 1; i >= 0; i--)
 		{
 			ServiceStorageReference serviceStorageReference = storages[i];
 			var shouldKeep = storagesToKeep.Any(s => s.id.Equals(serviceStorageReference.id));
-			if (!shouldKeep)
+			var existsInRemote = remoteStorages.Any(s => s.id.Equals(serviceStorageReference.id));
+			if (!shouldKeep && !existsInRemote)
 			{
 				storages.RemoveAt(i);
 			}
