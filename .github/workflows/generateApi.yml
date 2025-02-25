@@ -31,14 +31,19 @@ jobs:
       - name: Generate API
         run: |
           dotnet run -f net9.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./cli/beamable.common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
-      - name: Format files
-        id: format
-        run: dotnet-format -f ./cli/beamable.common/Runtime/OpenApi
+      - name: Install local packages
+        working-directory: ./
+        shell: bash
+        run: |
+          ./setup.sh
+          ./dev.sh
       - name: Check for Changes
-        run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
+        run: echo "any=$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)" >> $GITHUB_OUTPUT
         id: changes
+      - name: Check Status
+        run: git status
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v7
         id: cpr
         if: ${{ steps.changes.outputs.any == 'true' }}
         with:
@@ -52,6 +57,7 @@ jobs:
           delete-branch: true
           add-paths: |
             client/Packages/com.beamable/Common/Runtime/OpenApi
+            cli/beamable.common/Runtime/OpenApi
       - name: Post to a Slack channel
         if: ${{ steps.changes.outputs.any == 'true' && steps.cpr.outputs.pull-request-number }}
         id: slack

@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0]
+## [2.1.0] - 2025-02-24
 
 ### Added
 - Unity 6 Support
 - `Beam.SwitchToPid` method as a replacement for `Beam.ChangePid` with extra functionality- if the passed PID is the same as the current one no action is performed.
+- `Copy item ID to clipboard` menu item in Content Window.
 
 ### Fixed
 - `Party.Invite()` no longer throws a null reference exception. [#3797](https://github.com/beamable/BeamableProduct/issues/3797)
@@ -18,14 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Installing CLI uses correct dotnet tool manifest
 
 ### Changed
-- Upgrade CLI to 4.0.1
+- Upgrade CLI to 4.1.1
 - Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
 - `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
 - The methods `isEmailAvailable` and `IsThirdPartyAvailable` from the `AuthService` obsolete and adds the new `GetCredentialStatus` with overloads for both the email and third party.[#3700](https://github.com/beamable/BeamableProduct/issues/3700)
 - `Beam.ChangePid` marked as Obsolete
 - Dotnet is not installed locally anymore, if the required version is not installed yet, the SDK will prompt the user to install the right version.
+- OpenAPI Generated SDK's `Message.expires` field is now an `OptionalLong` 
+  instead of `OptionalInt`
 
-## [2.0.3] - 2024-02-13
+## [2.0.3] - 2025-02-13
 - no changes
 
 ## [2.0.2] - 2024-12-17

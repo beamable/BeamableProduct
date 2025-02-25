@@ -126,12 +126,15 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 
 	}
 
-	public async Promise CreateConfigIfNeeded(InitCommand command)
+	public Promise CreateConfigIfNeeded(InitCommand command)
 	{
+		// TODO: I think this method can be deleted? 
 		if (ConfigService.DirectoryExists.GetValueOrDefault(false))
 		{
-			return;
+			return Promise.Success;
 		}
+
+		return Promise.Success;
 	}
 
 }
