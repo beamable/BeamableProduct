@@ -104,6 +104,7 @@ namespace Beamable.Editor.Dotnet
 
 		public static bool CheckDotnetInfo(out Dictionary<string, string> pathByVersion)
 		{
+			pathByVersion = new Dictionary<string, string>();
 			var proc = new Process();
 
 			var infoCommand = $" --info";
@@ -119,25 +120,32 @@ namespace Beamable.Editor.Dotnet
 				RedirectStandardError = true,
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			proc.Start();
-			proc.WaitForExit();
-
-			var output = proc.StandardOutput.ReadToEnd();
-
-			string sdkSection = output.Split(new string[] {".NET runtimes installed:"}, StringSplitOptions.None)[0];
-			Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(.+)\]");
-			pathByVersion = new Dictionary<string, string>();
-
-			foreach (Match match in regex.Matches(sdkSection))
+			try
 			{
-				if (!pathByVersion.ContainsKey(match.Groups[1].Value))
-				{
-					pathByVersion.Add(match.Groups[1].Value,
-					                  Path.Combine(match.Groups[2].Value, match.Groups[1].Value));
-				}
-			}
+				proc.Start();
+				proc.WaitForExit();
 
-			return proc.ExitCode == 0;
+				var output = proc.StandardOutput.ReadToEnd();
+
+				string sdkSection =
+					output.Split(new string[] { ".NET runtimes installed:" }, StringSplitOptions.None)[0];
+				Regex regex = new Regex(@"(\d+\.\d+\.\d+)\s+\[(.+)\]");
+
+				foreach (Match match in regex.Matches(sdkSection))
+				{
+					if (!pathByVersion.ContainsKey(match.Groups[1].Value))
+					{
+						pathByVersion.Add(match.Groups[1].Value,
+							Path.Combine(match.Groups[2].Value, match.Groups[1].Value));
+					}
+				}
+
+				return proc.ExitCode == 0;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		public static string GetDotnetDownloadLink()
