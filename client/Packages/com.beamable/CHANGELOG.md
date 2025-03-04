@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Handle case when dotnet is not installed on macOS.
+- Renaming Content in Unity 6 works [3916](https://github.
+  com/beamable/BeamableProduct/issues/3916)
 
 ## [2.1.0] - 2025-02-24
 
