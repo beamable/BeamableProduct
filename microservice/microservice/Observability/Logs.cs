@@ -78,10 +78,10 @@ public class Logs
                         ["service.instance.id"] = _provider.ServiceId,
 
                         // https://signoz.io/docs/logs-management/features/logs-quick-filters/#environment
-                        ["deployment.environment"] = "Local",
-
+                        ["deployment.environment"] = "beam-local",
+    
                         // https://signoz.io/docs/logs-management/features/logs-quick-filters/#hostname
-                        ["host.name"] = "localhost"
+                        ["host.name"] = System.Environment.MachineName
                     }
                 };
                 (sigNoz.severity, sigNoz.level) = LogUtil.GetSeverityText(log.LogInfo.LogLevel);

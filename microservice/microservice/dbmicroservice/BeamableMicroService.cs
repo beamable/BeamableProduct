@@ -803,6 +803,20 @@ namespace Beamable.Server
 		      requestActivity.SetStatus(ActivityStatusCode.Ok);
 	      }
 
+	      if (ctx.Headers.TryGetValue("x-datadog-parent-id", out var existingTraceId))
+	      {
+		      if (ctx.Headers.TryGetValue("x-datadog-trace-id", out var existingSpanId))
+		      {
+			      // activity.SetTags(new Dictionary<string, object>
+			      // {
+				     //  ["dd.trace_id"] = existingSpanId
+			      // });
+			      activity.SetParent(existingTraceId, existingSpanId);
+		      }
+		      //x-datadog-trace-id]=   8647374746544577818
+		      //{[x-datadog-parent-id]=7346329468965460460}
+	      }
+
 	      activity.SetTags(new Dictionary<string, object>
 	      {
 		      ["beam.request.playerId"] = ctx.UserId,
@@ -817,16 +831,14 @@ namespace Beamable.Server
 	      var logger = BeamableZLoggerProvider.LogContext.Value = _args.ServiceScope.GetLogger<BeamableMicroService>();
 	      using var scope = logger.BeginScope(new Dictionary<string, object>
 	      {
+		      // TODO: allow customization
 		      ["beam.request.path"] = ctx.Path,
 		      ["beam.request.playerId"] = ctx.UserId,
 		      ["beam.request.requestId"] = ctx.Id,
 	      });
-	      logger.LogInformation("Hello world");
-	      logger.ZLogInformation($"Hello Zworld");
 	      // var reqLog = Log.ForContext("requestContext", ctx, true);
 	      // BeamableSerilogProvider.LogContext.Value = reqLog;
-
-
+	      
 	      try
 	      {
 		      using var tokenSource = new CancellationTokenSource();

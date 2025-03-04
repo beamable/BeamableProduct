@@ -93,6 +93,8 @@ namespace Beamable.Server
 
 		    _loggerFactory = LoggerFactory.Create(builder =>
 		    {
+			    // TODO: handle per-route / config options
+			    
 			    // all logs are valid, but may not pass the filter. 
 			    builder.SetMinimumLevel(LogLevel.Trace);
 			    
@@ -144,20 +146,11 @@ namespace Beamable.Server
 				    default:
 					    builder.AddZLoggerConsole(opts =>
 					    {
-						    opts.UseJsonFormatter(conf =>
-						    {
-						    });
+						    opts.UseJsonFormatter();
 					    });
-					    // logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
-					    
-					    // logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
 					    break;
 			    }
 
-			    // builder.AddZLoggerLogProcessor((opts) => BuildOtelZLogger(opts, activityProvider));
-			    // builder.AddZLoggerConsole(config =>
-			    // {
-			    // });
 		    });
 
 		    
@@ -716,7 +709,7 @@ namespace Beamable.Server
 			        .Build()
 		        ;
 
-
+			// TODO: keep references to providers so that we can force flush them at the shutdown
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
 			        .SetResourceBuilder(resourceBuilder)
 			        .AddSource(Constants.Features.Otel.METER_NAME)
@@ -726,12 +719,6 @@ namespace Beamable.Server
 			        })
 			        .Build()
 		        ;
-
-	        _activityProvider.TestCounter.Add(1, new KeyValuePair<string, object>[]
-	        {
-		        new KeyValuePair<string, object>("toast", 4),
-		        new KeyValuePair<string, object>("fish", "stick")
-	        });
         }
 
         

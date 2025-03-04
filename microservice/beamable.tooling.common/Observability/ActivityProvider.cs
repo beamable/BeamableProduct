@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Text;
 using System.Threading;
 using Beamable.Common;
 using Beamable.Server;
@@ -29,6 +30,8 @@ public class BeamActivity : IDisposable
     /// when there is no configured listener. 
     /// </summary>
     public bool IsReal => _activity != null;
+    
+    public readonly static BeamActivity Noop = new BeamActivity(null);
     
     public BeamActivity(Activity activity)
     {
@@ -73,6 +76,12 @@ public class BeamActivity : IDisposable
     {
         if (_activity == null) return;
         _activity.Stop();
+    }
+
+    public void SetParent(string traceId, string spanId)
+    {
+        _activity.SetParentId(ActivityTraceId.CreateFromUtf8String(Encoding.UTF8.GetBytes(traceId)),
+            ActivitySpanId.CreateFromUtf8String(Encoding.UTF8.GetBytes(spanId)));
     }
     
     public void Stop(ActivityStatusCode status)
@@ -119,20 +128,22 @@ public class DefaultActivityProvider
     
     public BeamActivity Create(string operationName, bool autoStart=true)
     {
+        // TODO: if configured not to; return a null activity
         var activity = _activitySource.CreateActivity(operationName, ActivityKind.Server);
+       
         var beamActivity = new BeamActivity(activity);
         CurrentActivity.Value = beamActivity;
         if (autoStart)
         {
             activity?.Start();
         }
+        
         return beamActivity;
     }
 
-    public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart=true)
+    public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true)
     {
         ActivityContext context = default;
-
         if (parent.IsReal)
         {
             context = new ActivityContext(
@@ -142,6 +153,10 @@ public class DefaultActivityProvider
             );
         }
 
+        return Create(operationName, context, autoStart);
+    }
+    public BeamActivity Create(string operationName, ActivityContext context, bool autoStart=true)
+    {
         var activity = _activitySource.CreateActivity(
             operationName, 
             ActivityKind.Server, parentContext: context, idFormat: ActivityIdFormat.W3C);
