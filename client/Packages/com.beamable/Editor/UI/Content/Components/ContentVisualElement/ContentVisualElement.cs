@@ -210,7 +210,10 @@ namespace Beamable.Editor.Content.Components
 
 		private void NameLabel_OnKeydown(KeyDownEvent evt)
 		{
+			// unity 6 doesn't need to stop the propagation, otherwise the renaming doesn't work
+			#if !UNITY_6000_0_OR_NEWER
 			evt.StopPropagation();
+			#endif
 			switch (evt.keyCode)
 			{
 				case KeyCode.Escape:
@@ -230,7 +233,12 @@ namespace Beamable.Editor.Content.Components
 
 		private void NameLabel_OnBlur(BlurEvent evt)
 		{
+			#if UNITY_6000_0_OR_NEWER
+			CheckName();
+			CommitName();
+			#else
 			evt.StopPropagation();
+			#endif
 		}
 
 		private void CommitName()
