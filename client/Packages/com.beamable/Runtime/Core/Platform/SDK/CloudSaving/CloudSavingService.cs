@@ -129,6 +129,29 @@ namespace Beamable.Api.CloudSaving
 				});
 			});
 		}
+ 
+		/// <summary>
+		/// This method will force the upload of local save data to cloud save
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing if the upload was successful</returns>
+		public async Promise<bool> ForceUploadSave()
+		{
+			if (!_connectivityService.HasConnectivity)
+			{
+				Debug.LogWarning("Save not upload due to no connectivity");
+				return false;
+			}
+
+			if (!Directory.Exists(LocalCloudDataFullPath))
+			{
+				Debug.LogWarning("Save not upload as no local save had been found");
+				return false;
+			}
+
+			await UploadLocalSave();
+			return true;
+		}
+		
 		private Promise<Unit> ClearQueuesAndLocalManifest()
 		{
 			_pendingUploads.Clear();
@@ -168,20 +191,27 @@ namespace Beamable.Api.CloudSaving
 				{
 					continue;
 				}
-				_pendingUploads.Clear();
-				if (Directory.Exists(LocalCloudDataFullPath))
-				{
-					foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*", SearchOption.AllDirectories))
-					{
-						yield return SetPendingUploads(filepath);
-					}
-				}
 
-				if (_pendingUploads.Count > 0)
+				yield return UploadLocalSave();
+			}
+		}
+
+		private async Promise<Unit> UploadLocalSave()
+		{
+			_pendingUploads.Clear();
+			if (Directory.Exists(LocalCloudDataFullPath))
+			{
+				foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*", SearchOption.AllDirectories))
 				{
-					yield return UploadUserData();
+					await SetPendingUploads(filepath);
 				}
 			}
+
+			if (_pendingUploads.Count > 0)
+			{
+				await UploadUserData();
+			}
+			return await Promise<Unit>.Successful(PromiseBase.Unit);
 		}
 
 		private void InvokeError(string reason, Exception inner)
@@ -486,18 +516,24 @@ namespace Beamable.Api.CloudSaving
 				foreach (var kv in fileNameToKey)
 				{
 					PreSignedURL s3PresignedURL;
-					bool isSuccessful = s3Response.TryGetValue(kv.Value, out s3PresignedURL);
+					
 
-					if (isSuccessful)
+					if (s3Response.TryGetValue(kv.Value, out s3PresignedURL))
 					{
 						var fullPathToFile = kv.Key;
-						isSuccessful = promiseList.TryAdd(s3PresignedURL.url,
+						
+						var canAdd = promiseList.TryAdd(s3PresignedURL.url,
 														  new Func<Promise<Unit>>(
 															  () => GetOrPostObjectInS3(
 																  fullPathToFile, s3PresignedURL, method)));
-					}
 
-					if (!isSuccessful)
+						if (!canAdd)
+						{
+							Debug.LogWarning($"PreSigned URL is already being used, check if {s3PresignedURL.objectKey} is already added");
+						}
+						
+					}
+					else
 					{
 						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
 					}
