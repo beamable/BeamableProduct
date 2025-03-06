@@ -339,7 +339,23 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
 		var app = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
-		var fullContextPath = Path.GetFullPath(config.BaseDirectory);
+
+		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
+		{
+			logMessage?.Invoke(new ServicesBuildCommandOutput
+			{
+				message = "no service exists for the name",
+				isFailure = true
+			});
+			return new BuildImageOutput
+			{
+				service = id
+			};
+		}
+
+		var dockerContextPath = Path.GetDirectoryName(http.Metadata.absolutePath);
+		
+		var fullContextPath = Path.GetFullPath(dockerContextPath);
 
 		// TODO: consider using an enum Flags for the multitude of builds
 		// TODO: expose the `forDeploymentBuild` arg out to the Build param, so `beam services build` creates a local version
@@ -366,18 +382,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			tags = new string[] { "latest" };
 		}
 		
-		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
-		{
-			logMessage?.Invoke(new ServicesBuildCommandOutput
-			{
-				message = "no service exists for the name",
-				isFailure = true
-			});
-			return new BuildImageOutput
-			{
-				service = id
-			};
-		}
+	
 
 		if (!beamoLocal.BeamoManifest.TryGetDefinition(id, out var definition))
 		{
@@ -414,8 +419,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +

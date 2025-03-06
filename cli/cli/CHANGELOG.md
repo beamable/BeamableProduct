@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.2] 
+
+### Changed
+- Microservice docker builds use their project folder as a Docker Build 
+  Context, instead of the `.beamable` root folder. 
+
 ## [4.1.1] - 2025-02-24
 
 ### Changed
