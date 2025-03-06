@@ -156,21 +156,22 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			if (!HasDependencies())
-			{
-				AssetDatabase.Refresh();
-				_dependenciesLoadPromise = ImportDependencies();
-				_dependenciesLoadPromise.Then(_ =>
-				{
-					EditorUtility.RequestScriptReload();
-					AssetDatabase.Refresh();
-					Initialize();
-				}).Error(_ =>
-				{
-					Initialize();
-				});
-			}
-			else
+			// temp removed to test. 
+			// if (!HasDependencies())
+			// {
+			// 	AssetDatabase.Refresh();
+			// 	_dependenciesLoadPromise = ImportDependencies();
+			// 	_dependenciesLoadPromise.Then(_ =>
+			// 	{
+			// 		EditorUtility.RequestScriptReload();
+			// 		AssetDatabase.Refresh();
+			// 		Initialize();
+			// 	}).Error(_ =>
+			// 	{
+			// 		Initialize();
+			// 	});
+			// }
+			// else
 			{
 				Initialize();
 			}
@@ -369,7 +370,7 @@ namespace Beamable
 
 		public static async Promise ImportDependencies()
 		{
-			AddressableAssetSettingsDefaultObject.GetSettings(false);
+			AddressableAssetSettingsDefaultObject.GetSettings(true);
 			await TextMeshProImporter.ImportEssentials();
 		}
 		
