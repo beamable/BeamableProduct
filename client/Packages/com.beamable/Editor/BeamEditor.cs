@@ -158,6 +158,7 @@ namespace Beamable
 		{
 			if (!HasDependencies())
 			{
+				AssetDatabase.Refresh();
 				_dependenciesLoadPromise = ImportDependencies();
 				_dependenciesLoadPromise.Then(_ =>
 				{
@@ -368,7 +369,7 @@ namespace Beamable
 
 		public static async Promise ImportDependencies()
 		{
-			AddressableAssetSettingsDefaultObject.GetSettings(true);
+			AddressableAssetSettingsDefaultObject.GetSettings(false);
 			await TextMeshProImporter.ImportEssentials();
 		}
 		
