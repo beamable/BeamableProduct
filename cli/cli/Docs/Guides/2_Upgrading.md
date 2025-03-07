@@ -63,6 +63,13 @@ Driver`, you can simply delete this line, and the correct version will be
 included automatically by referencing the `Beamable.Microservice.Runtime` 
 package. You can also change the version number to exactly `2.19.2`.  
 
+#### Modify the `.dockerignore` file if you have one
+In your service projects, if you have a `dockerignore` file, add the 
+following line to the end of the file. 
+```
+!**/beamApp
+```
+
 ### From 2.0.2 to 3.0.1
 The upgrade from 2.0.x to 3.0.1 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
 
