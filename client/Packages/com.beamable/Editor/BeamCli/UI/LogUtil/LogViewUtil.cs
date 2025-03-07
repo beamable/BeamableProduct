@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Editor.UI;
+using Beamable.Editor.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -353,7 +354,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					});
 				}
 
-				EditorGUILayout.Space(1, true);
+				EditorGUILayout.Space(1, false);
 
 				{ // search text field
 					EditorGUI.BeginChangeCheck();
@@ -362,7 +363,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					var searchRect = GUILayoutUtility.GetRect(GUIContent.none, searchStyle);
 					
 					// if there isn't enough space, don't bother rendering it.
-					if (searchRect.width > 70)
+					if (searchRect.width > 30)
 					{
 						var searchClearRect = new Rect(searchRect.xMax - searchRect.height - 2, searchRect.y,
 						                               searchRect.height, searchRect.height);
@@ -393,6 +394,15 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 									window.Repaint();
 								});
 							}
+						}
+					}
+					else
+					{
+						var noSearchBarSpaceButton = GUILayout.Button("\u2026", new GUIStyle(EditorStyles.toolbarButton), GUILayout.MinWidth(35),  GUILayout.ExpandWidth(false));
+						if (noSearchBarSpaceButton)
+						{ 
+							Vector2 windowSize = new Vector2(Screen.width, 70);
+							PopupWindow.Show(searchRect, new GenericMessagePopup("Hidden Contents", "There is no available space to display the search bar, please resize the window.", windowSize));
 						}
 					}
 				}
