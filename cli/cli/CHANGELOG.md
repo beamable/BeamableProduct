@@ -12,8 +12,10 @@ no changes
 ## [4.1.2] - 2025-03-06
 
 ### Changed
-- Microservice docker builds use their project folder as a Docker Build 
-  Context, instead of the `.beamable` root folder. 
+- Microservice docker builds use their project folder as a Docker Build Context, instead of the `.beamable` root folder.
+
+### Fixed
+- Deleting local storage objects now marks them as "archived" in remote deployment
 
 ## [4.1.1] - 2025-02-24
 
