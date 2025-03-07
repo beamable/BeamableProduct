@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Upgrade CLI to 4.1.3
 
+## [Unreleased]
+### Fixed
+- Fixed game crash on Android and iOS whenever a error occurred on `CloudSavingService`.
+
+### Changed
+ - Updated logs on `CloudSavingService.HandleRequest` for better understanding of possible errors regarding manifest keys that doesn't match the server.
+
 ## [2.1.2] - 2025-03-05
 ### Added
 - Added new method (`ForceUploadSave`) on `CloudSavingService` to force upload local save to cloud.
