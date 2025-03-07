@@ -535,7 +535,8 @@ namespace Beamable.Api.CloudSaving
 					}
 					else
 					{
-						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
+						string availableKeys = string.Join(" | ", s3Response.Keys);
+						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}. Available Keys are: {availableKeys}");
 					}
 				}
 
@@ -547,7 +548,14 @@ namespace Beamable.Api.CloudSaving
 				return Promise.ExecuteInBatch(10, promiseList.Values.ToList()).Map(_ => PromiseBase.Unit);
 			}).Error(delete =>
 			{
-				Directory.Delete(localCloudDataPath.temp, true);
+				#if UNITY_ANDROID || UNITY_IOS
+				Debug.LogWarning($"Temp Folder cannot be deleted on {Application.platform}, skipping it.");
+				#else
+				if (Directory.Exists(localCloudDataPath.temp))
+				{
+					Directory.Delete(localCloudDataPath.temp, true);
+				}
+				#endif
 			});
 		}
 
