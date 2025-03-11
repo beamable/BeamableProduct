@@ -40,12 +40,18 @@ namespace Beamable.Editor.ToolbarExtender
 				
 				return String.Compare(a.ProjectName, b.ProjectName, StringComparison.Ordinal);
 			});
-				
+			var buildPid = editor.ServiceScope.GetService<ConfigDefaultsService>().Pid;
+			var buildName = buildPid.ToString();
+			var sameEditorAndBuildPids = buildPid == editor.CurrentRealm?.Pid;
 			foreach (var proj in projects)
 			{
 				var enabled = proj.Pid == editor.CurrentRealm.Pid;
-				
-				menu.AddItem(new GUIContent(rootDisplay.text + "/" + proj.DisplayName), enabled, () =>
+				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.ProjectName} [build]" : proj.ProjectName;
+				if (buildPid == proj.Pid)
+				{
+					buildName = proj.ProjectName;
+				}
+				menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
 				{
 					editor.SwitchRealm(proj);
 				});
@@ -58,6 +64,12 @@ namespace Beamable.Editor.ToolbarExtender
 				{
 					var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
 				});
+				if(!sameEditorAndBuildPids)
+				{
+					menu.AddDisabledItem(new GUIContent($"{rootDisplay.text}/Editor is on realm {editor.CurrentRealm?.DisplayName}, but the build will use the {buildName}."));
+					menu.AddDisabledItem(new GUIContent($"{rootDisplay.text}/Calling `Save` would update the config-defaults file which is used in builds."));
+					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, editor.WriteConfig);
+				}
 			}
 		}
 
