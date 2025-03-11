@@ -66,8 +66,6 @@ namespace Beamable.Editor.ToolbarExtender
 				});
 				if(!sameEditorAndBuildPids)
 				{
-					menu.AddDisabledItem(new GUIContent($"{rootDisplay.text}/Editor is on realm {editor.CurrentRealm?.DisplayName}, but the build will use the {buildName}."));
-					menu.AddDisabledItem(new GUIContent($"{rootDisplay.text}/Calling `Save` would update the config-defaults file which is used in builds."));
 					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, editor.WriteConfig);
 				}
 			}
