@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Beamable.ConsoleCommands;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Editor.Modules.Account
@@ -20,16 +19,19 @@ namespace Beamable.Editor.Modules.Account
 		{
 			_ctx.OnReady.Then(_ =>
 			{
-				var DBID = _ctx.PlayerId;
-				Debug.Log($"Current user: {DBID}");
-				GetPortalUrl(DBID).Then(Application.OpenURL);
+				var playerId = _ctx.PlayerId;
+				Debug.Log($"Current user: {playerId}");
+				Application.OpenURL(GetPortalUrl());
 			});
 			return "Opening portal..";
 		}
-		private Promise<string> GetPortalUrl(long DBID)
+
+		private string GetPortalUrl()
 		{
 			var api = BeamEditorContext.Default;
-			return Promise<string>.Successful($"{BeamableEnvironment.PortalUrl}/{api.CurrentCustomer.Alias}/games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/players/{DBID}?refresh_token={api.Requester.Token.RefreshToken}");
+			string url =
+				$"{BeamableEnvironment.PortalUrl}/{_ctx.Cid}/games/{api.ProductionRealm.Pid}/realms/{_ctx.Pid}/players/{_ctx.PlayerId}?refresh_token={api.Requester.Token.RefreshToken}";
+			return url;
 		}
 	}
 }
