@@ -59,11 +59,13 @@ using microservice.Observability;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using ZLogger;
 using Constants = Beamable.Common.Constants;
+using Otel = Beamable.Common.Constants.Features.Otel;
 using Debug = UnityEngine.Debug;
 using RankEntry = Beamable.Common.Api.Leaderboards.RankEntry;
 
@@ -106,12 +108,21 @@ namespace Beamable.Server
 					    .AddZLoggerLogProcessor(debugLogProcessor);
 			    }
 
-			    builder.AddZLoggerLogProcessor(opts =>
+			    builder.AddOpenTelemetry(logging =>
 			    {
-				    opts.IncludeScopes = true;
-				    var processor = new Logs.OtelZLogProcessor(_activityProvider);
-				    return processor;
+				    // https://signoz.io/blog/opentelemetry-dotnet-logs/
+				    logging.IncludeScopes = true;
+				    logging
+					    .SetResourceBuilder(_resourceBuilder)
+					    .AddOtlpExporter();
+				    
 			    });
+			    // builder.AddZLoggerLogProcessor(opts =>
+			    // {
+				   //  opts.IncludeScopes = true;
+				   //  var processor = new Logs.OtelZLogProcessor(args, _activityProvider);
+				   //  return processor;
+			    // });
 			    switch (args.LogOutputType)
 			    {
 				    case LogOutputType.DEFAULT when !inDocker:
@@ -675,48 +686,29 @@ namespace Beamable.Server
 	        return false;
         }
 
+        private static IMicroserviceArgs _args;
         private static DefaultActivityProvider _activityProvider;
+        private static ResourceBuilder _resourceBuilder;
         private static ILoggerFactory _loggerFactory;
         private static DebugLogProcessor _debugLogProcessor;
         public static ILogger _logger;
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
-	        
-	        var resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace, 
-			        autoGenerateServiceInstanceId: false, 
-			        serviceInstanceId: _activityProvider.ServiceId)
-		        .AddAttributes(new Dictionary<string, object>()
-		        {
-			        ["cid"] = args.CustomerID,
-			        ["pid"] = args.ProjectName,
-			        ["author-account-id"] = args.AccountId,
-			        ["beam-sdk-version"] = args.SdkVersionExecution,
-		        });
-	        
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
-			        .AddMeter(Constants.Features.Otel.METER_NAME)
+			        .AddMeter(Otel.METER_NAME)
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
-			        .SetResourceBuilder(resourceBuilder)
-			        .AddOtlpExporter(config =>
-			        {
-				        config.ExportProcessorType = ExportProcessorType.Simple;
-				        // TODO: take host from arg
-				        // GRPC HOST: http://localhost:4317
-				        config.Protocol = OtlpExportProtocol.Grpc;
-			        })
+			        
+			        .SetResourceBuilder(_resourceBuilder)
+			        .AddOtlpExporter()
 			        .Build()
 		        ;
 
 			// TODO: keep references to providers so that we can force flush them at the shutdown
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
-			        .SetResourceBuilder(resourceBuilder)
-			        .AddSource(Constants.Features.Otel.METER_NAME)
-			        .AddOtlpExporter(config =>
-			        {
-				        config.Protocol = OtlpExportProtocol.Grpc;
-			        })
+			        .SetResourceBuilder(_resourceBuilder)
+			        .AddSource(Otel.METER_NAME)
+			        .AddOtlpExporter()
 			        .Build()
 		        ;
         }
@@ -733,12 +725,27 @@ namespace Beamable.Server
         {
 	        
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = new EnvironmentArgs();
-
+	        var envArgs = _args = new EnvironmentArgs();
+	        var resolvedCid = await ConfigureCid(envArgs);
+	        _args.SetResolvedCid(resolvedCid);
+	        
+	        
 	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        _resourceBuilder = ResourceBuilder.CreateEmpty()
+		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace, 
+			        autoGenerateServiceInstanceId: false, 
+			        serviceInstanceId: _activityProvider.ServiceId)
+		        .AddAttributes(new Dictionary<string, object>()
+		        {
+			        [Otel.ATTR_CID] = envArgs.CustomerID,
+			        [Otel.ATTR_PID] = envArgs.ProjectName,
+			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
+			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
+		        });
+	        
+	        
 	        ConfigureZLogging<TMicroservice>(envArgs, attribute);
 	        
-	        // _sink = ConfigureLogging(envArgs, attribute);
 	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";

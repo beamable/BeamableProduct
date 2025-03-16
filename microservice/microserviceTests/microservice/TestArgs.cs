@@ -147,5 +147,8 @@ namespace microserviceTests.microservice
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
 	  public int RequireProcessId { get; }
+	  public string OtelExporterOtlpProtocol { get; }
+	  public string OtelExporterOtlpEndpoint { get; }
+	  public string OtelExporterOtlpHeaders { get; }
    }
 }

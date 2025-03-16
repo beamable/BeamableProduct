@@ -45,6 +45,11 @@ namespace Beamable.Server
 		public string RefreshToken { get; }
 		public long AccountId { get; }
 		public int RequireProcessId { get; }
+		public string OtelExporterOtlpProtocol { get; }
+		public string OtelExporterOtlpEndpoint { get; }
+		public string OtelExporterOtlpHeaders { get; }
+
+		void SetResolvedCid(string resolvedCid);
 	}
 
 	public enum LogOutputType
@@ -91,6 +96,9 @@ namespace Beamable.Server
 		public string RefreshToken { get; set; }
 		public long AccountId { get; set; }
 		public int RequireProcessId { get; set; }
+		public string OtelExporterOtlpProtocol { get; set; }
+		public string OtelExporterOtlpEndpoint { get; set; }
+		public string OtelExporterOtlpHeaders { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -134,7 +142,10 @@ namespace Beamable.Server
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
 				MetadataUrl = args.MetadataUrl,
 				AccountId = args.AccountId,
-				RequireProcessId = args.RequireProcessId
+				RequireProcessId = args.RequireProcessId,
+				OtelExporterOtlpEndpoint = args.OtelExporterOtlpEndpoint,
+				OtelExporterOtlpHeaders = args.OtelExporterOtlpHeaders,
+				OtelExporterOtlpProtocol = args.OtelExporterOtlpProtocol
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -205,6 +216,11 @@ namespace Beamable.Server
 
 		public int RequireProcessId =>
 			GetIntFromEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, 0);
+
+		
+		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL");
+		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
 
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");
