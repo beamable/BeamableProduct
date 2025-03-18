@@ -22,7 +22,7 @@ namespace Beamable.Player.CloudSaving
 {
 	public class PlayerCloudSaving : ICloudSavingService
 	{
-		private const string DataReplacedNotification = "cloudsaving.refresh";
+		private const string DATA_REPLACED_NOTIFICATION = "cloudsaving.refresh";
 		private readonly IPlatformService _platformService;
 		private readonly PlayerCloudSavingConfiguration _configuration;
 		private readonly CoroutineService _coroutineService;
@@ -372,9 +372,9 @@ namespace Beamable.Player.CloudSaving
 			
 			ObjectRequests uploadRequests = GenerateDownloadRequest(downloadDetails);
 
-			_downloadPromise = _cloudSavingApi.PostDataDownloadURL(uploadRequests).FlatMap(respose =>
+			_downloadPromise = _cloudSavingApi.PostDataDownloadURL(uploadRequests).FlatMap(response =>
 			{
-				var downloadUrls = respose.response;
+				var downloadUrls = response.response;
 
 				if (downloadUrls.Length < downloadDetails.Count)
 				{
@@ -599,7 +599,7 @@ namespace Beamable.Player.CloudSaving
 
 		private void ReplaceEntry(List<CloudSaveEntry> entries, string fileName, CloudSaveEntry newEntry)
 		{
-			var entryIndex = FindEntryFileInList(fileName, entries);
+			int entryIndex = FindEntryFileInList(fileName, entries);
 			if (entryIndex != -1)
 			{
 				newEntry.isModified = true;
@@ -709,7 +709,7 @@ namespace Beamable.Player.CloudSaving
 
 		private void CheckFolderFiles()
 		{
-			var savedFiles = Directory.GetFiles(_localSaveInformation.DataPath, "*.*", SearchOption.TopDirectoryOnly);
+			string[] savedFiles = Directory.GetFiles(_localSaveInformation.DataPath, "*.*", SearchOption.TopDirectoryOnly);
 			foreach (string savedFilePath in savedFiles)
 			{
 				var fileInfo = new FileInfo(savedFilePath);
@@ -916,14 +916,14 @@ namespace Beamable.Player.CloudSaving
 
 		private void SubscribeToEvents()
 		{
-			_notificationService.Subscribe(DataReplacedNotification, OnDataReplaced);
+			_notificationService.Subscribe(DATA_REPLACED_NOTIFICATION, OnDataReplaced);
 			_beamContext.OnUserLoggedIn += OnUserLogged;
 			_beamContext.OnReloadUser += OnReloadUser;
 		}
 
 		private void UnsubscribeToEvents()
 		{
-			_notificationService.Unsubscribe(DataReplacedNotification, OnDataReplaced);
+			_notificationService.Unsubscribe(DATA_REPLACED_NOTIFICATION, OnDataReplaced);
 			_beamContext.OnUserLoggedIn -= OnUserLogged;
 			_beamContext.OnReloadUser -= OnReloadUser;
 		}
@@ -974,28 +974,28 @@ namespace Beamable.Player.CloudSaving
 
 		private class LocalSavePathDetail
 		{
-			private const string BeamableFolder = "beamable";
-			private const string PlayerCloudSaveFolder = "playercloudsave";
-			private const string DataFolder = "data";
-			private const string TempFolder = "temp";
-			private const string ArchiveFolder = "archive";
-			private const string ManifestName = "cloudDataManifest.json";
+			private const string BEAMABLE_FOLDER = "beamable";
+			private const string PLAYER_CLOUD_SAVE_FOLDER = "playercloudsave";
+			private const string DATA_FOLDER = "data";
+			private const string TEMP_FOLDER = "temp";
+			private const string ARCHIVE_FOLDER = "archive";
+			private const string MANIFEST_NAME = "cloudDataManifest.json";
 			
-			private IPlatformService _platformService;
+			private readonly IPlatformService _platformService;
 
 			public LocalSavePathDetail(IPlatformService platformService)
 			{
 				_platformService = platformService;
 			}
 
-			private string RootPath => Path.Combine(Application.persistentDataPath, BeamableFolder, PlayerCloudSaveFolder);
+			private string RootPath => Path.Combine(Application.persistentDataPath, BEAMABLE_FOLDER, PLAYER_CLOUD_SAVE_FOLDER);
 			private string BasePath =>
 				Path.Combine(RootPath, _platformService.Cid, _platformService.Pid, _platformService.User.id.ToString());
 		
-			public string ManifestPath => Path.Combine(BasePath, ManifestName);
-			public string TempFolderPath => Path.Combine(BasePath, TempFolder);
-			public string ArchivePath => Path.Combine(BasePath, ArchiveFolder);
-			public string DataPath => Path.Combine(BasePath, DataFolder);
+			public string ManifestPath => Path.Combine(BasePath, MANIFEST_NAME);
+			public string TempFolderPath => Path.Combine(BasePath, TEMP_FOLDER);
+			public string ArchivePath => Path.Combine(BasePath, ARCHIVE_FOLDER);
+			public string DataPath => Path.Combine(BasePath, DATA_FOLDER);
 		}
 		
 	}
