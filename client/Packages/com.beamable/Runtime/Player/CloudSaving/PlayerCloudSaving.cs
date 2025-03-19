@@ -678,8 +678,6 @@ namespace Beamable.Player.CloudSaving
 			}
 		}
 
-
-
 		private int FindEntryFileInList(string fileName, List<CloudSaveEntry> entries)
 		{
 			return entries.FindIndex(x => string.Equals(x.key, fileName, StringComparison.InvariantCultureIgnoreCase));
