@@ -16,6 +16,7 @@ no changes
 
 ### Fixed
 - Deleting local storage objects now marks them as "archived" in remote deployment
+- Improved DateTime deserialization.
 
 ## [4.1.1] - 2025-02-24
 
