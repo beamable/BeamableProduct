@@ -424,6 +424,23 @@ namespace Beamable.Player.CloudSaving
 			string pathToTempDownload = Path.Combine(basePath, saveFileName);
 			var downloadHandler = new DownloadHandlerFile(pathToTempDownload);
 			return Promise.RetryPromise(() => SendDownloadRequest(preSignedUrl.url, downloadHandler), _ => true, 10)
+			              .RecoverWith(
+				              exception =>
+				              {
+					              if (exception is InvalidOperationException)
+					              {
+						              exception = exception.InnerException;
+					              }
+					              
+					              if (exception is not PlatformRequesterException {Status: 404})
+					              {
+						              throw exception;
+					              }
+					              // If file isn't found in storage, skip it and use Local File.
+					              Debug.LogWarning(exception.Message);
+					              return PromiseBase.SuccessfulUnit;
+
+				              })
 			              .Error(ProvideErrorCallback(nameof(DownloadFileRequest)));
 		}
 
@@ -443,13 +460,24 @@ namespace Beamable.Player.CloudSaving
 				{
 					if (request.result != UnityWebRequest.Result.Success)
 					{
-						result.CompleteError(
-							new Exception($"Could not upload file, error message: {request.error}"));
+						var platformError = new PlatformError
+						{
+							status = request.responseCode,
+							service = "cloudsaving",
+							error = request.error,
+							message = $"Error when trying to Download Save File from Storage"
+						};
+						result.CompleteError(new PlatformRequesterException(
+							                     platformError, request, $"{request.responseCode}: {request.error}"));
 					}
 					else
 					{
 						result.CompleteSuccess(PromiseBase.Unit);
 					}
+				}
+				catch (Exception exception)
+				{
+					result.CompleteError(exception);
 				}
 				finally
 				{
