@@ -30,7 +30,7 @@ namespace Beamable.Utility
             {
 #if UNITY_WEBGL && !UNITY_EDITOR
 				File.WriteAllText(path, content);
-	            return Promise<FileInfo>.Successful(new FileInfo(path));
+	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
 	            await File.WriteAllTextAsync(path, content);
 	            return new FileInfo(path);
@@ -48,7 +48,7 @@ namespace Beamable.Utility
             {
 #if UNITY_WEBGL && !UNITY_EDITOR
 	            File.WriteAllBytes(path, content);
-	            return Promise<FileInfo>.Successful(new FileInfo(path));
+	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
                 await File.WriteAllBytesAsync(path, content);
                 return new FileInfo(path);
@@ -66,7 +66,7 @@ namespace Beamable.Utility
                 if (!File.Exists(path))
                     return string.Empty;
 #if UNITY_WEBGL && !UNITY_EDITOR
-                return Promise<string>.Successful(File.ReadAllText(path));
+                return await Promise<string>.Successful(File.ReadAllText(path));
 #else
                 return await File.ReadAllTextAsync(path);
 #endif
@@ -83,7 +83,7 @@ namespace Beamable.Utility
                 if (!File.Exists(path))
                     return Array.Empty<byte>();
 #if UNITY_WEBGL && !UNITY_EDITOR
-                return Promise<byte[]>.Successful(File.ReadAllBytes(path));
+                return await Promise<byte[]>.Successful(File.ReadAllBytes(path));
 #else
                 return await File.ReadAllBytesAsync(path);
 #endif
