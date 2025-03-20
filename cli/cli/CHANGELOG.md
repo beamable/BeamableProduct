@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.4] - 2025-03-20
+
+### Fixed
+- Improved DateTime deserialization.
+
 ## [4.1.3] - 2025-03-07
 
 no changes
@@ -16,7 +21,6 @@ no changes
 
 ### Fixed
 - Deleting local storage objects now marks them as "archived" in remote deployment
-- Improved DateTime deserialization.
 
 ## [4.1.1] - 2025-02-24
 
