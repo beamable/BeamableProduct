@@ -5,16 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.4] - 2025-03-20
+
+### Fixed
+- Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
+
+## [2.1.3] - 2025-03-10
+
 ### Fixed
 - Fixed game crash on Android and iOS whenever a error occurred on `CloudSavingService`.
 
 ### Changed
-- Updated logs on `CloudSavingService.HandleRequest` for better understanding of possible errors regarding manifest keys that doesn't match the server.
-
-## [2.1.3] - 2025-03-07
-### Changed
 - Upgrade CLI to 4.1.3
+- Updated logs on `CloudSavingService.HandleRequest` for better understanding of possible errors regarding manifest keys that doesn't match the server.
 
 ## [2.1.2] - 2025-03-05
 ### Added
