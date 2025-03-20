@@ -69,6 +69,10 @@ namespace Beamable.Player.CloudSaving
 			_notificationService = notificationService;
 			_localSaveInformation =  new LocalSavePathDetail(_platformService);
 			ServiceStatus = CloudSaveStatus.Inactive;
+			
+#if UNITY_WEBGL && !UNITY_EDITOR
+			BeamUnityFileUtils.PrepareIndexedDB();
+#endif
 		}
 
 		public async Promise<CloudSaveStatus> Init(int pollingIntervalSeconds = 10)

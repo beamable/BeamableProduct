@@ -14,7 +14,8 @@ namespace Beamable.Player.CloudSaving
 		/// <param name="resolveType">The resolution strategy to apply to all conflicts.</param>
 		public static void ResolveAll(this IConflictResolver resolver, ConflictResolveType resolveType)
 		{
-			foreach (var conflict in resolver.Conflicts)
+			List<DataConflictDetail> conflicts = new(resolver.Conflicts);
+			foreach (var conflict in conflicts)
 			{
 				resolver.Resolve(conflict, resolveType);
 			}
