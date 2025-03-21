@@ -24,6 +24,7 @@ using Beamable.Connection;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
+using Beamable.Player.CloudSaving;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
@@ -208,6 +209,8 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
+		
+		public ICloudSavingService CloudSaving => ServiceProvider.GetService<ICloudSavingService>();
 
 		public PlayerLeaderboards Leaderboards => ServiceProvider.GetService<PlayerLeaderboards>();
 

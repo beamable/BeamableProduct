@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### New
+- New Implementation for CloudSavingAPI using `ICloudSavingService` as Player SDK. Accessible by `BeamContext.CloudSaving`.
+- New `BeamUnityFileUtils` static class to Handle File Operations.
+- New LightBeam sample for `BeamContext.CloudSaving` basic operations.
+
 ### Fixed
 - Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
 

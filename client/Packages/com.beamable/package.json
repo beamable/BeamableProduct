@@ -73,6 +73,14 @@
       "subText": "microservice",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Inventory_Violet@3x.png",
       "relativeMainAssetPath": "Sample_LootBox.unity"
+    },
+    {
+      "displayName": "Cloud Saving",
+      "description": "Contains a friendly user interface demonstrating how to use the Player Cloud Saving Service.",
+      "path": "SAMPLES_PATH/LightBeamSamples/CloudSaving",
+      "subText": "data",
+      "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Beamable_Violet@3x.png",
+      "relativeMainAssetPath": "Sample_CloudSaving.unity"
     }
   ]
 }
