@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
+- `CloudSavingService` could not initialize correctly if a save file could not be found in storage. If that happens that file will be ignored and the system will use the Local one, if exists.
 
 ## [2.1.3] - 2025-03-10
 

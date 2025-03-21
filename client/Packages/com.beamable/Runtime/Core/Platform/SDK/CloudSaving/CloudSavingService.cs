@@ -614,9 +614,16 @@ namespace Beamable.Api.CloudSaving
 			}
 			if (isError)
 			{
+				if (request.responseCode == 404)
+				{
+					// File not found in S3, skip Download and use LocalSave
+					promise.CompleteSuccess(PromiseBase.Unit);
+					yield return promise;
+					yield break;
+				}
 				_ProcessFilesPromiseList.Clear();
 				promise.Error(ProvideErrorCallback(nameof(HandleResponse)));
-				promise.CompleteError(new Exception($"Failed to process {filename}, stopping service."));
+				promise.CompleteError(new Exception($"Failed to download {filename}, stopping service."));
 				yield return promise;
 				yield break;
 			}
