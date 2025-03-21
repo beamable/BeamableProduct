@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `BeamUnityFileUtils` static class to Handle File Operations.
 - New LightBeam sample for `BeamContext.CloudSaving` basic operations.
 
-## [2.1.4] - 2025-03-20
-
 ### Fixed
 - Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
 
