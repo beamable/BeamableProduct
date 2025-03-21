@@ -93,6 +93,8 @@ namespace Beamable.Player.CloudSaving
 			SetupFolders();
 
 			await LoadLocalManifest();
+			
+			CheckFolderFiles();
 
 			await GetCloudData();
 
@@ -199,7 +201,7 @@ namespace Beamable.Player.CloudSaving
 			{
 				return;
 			}
-
+			
 			// Conflicts are resolved, start Watcher files and Enable Service if it isn't initializing already
 			FinishInitService();
 		}
@@ -908,10 +910,10 @@ namespace Beamable.Player.CloudSaving
 
 		private void FinishInitService()
 		{
+			ServiceStatus = CloudSaveStatus.Initialized;
 			UpdateLocalManifest();
 			SetupWatcher();
 			SubscribeToEvents();
-			ServiceStatus = CloudSaveStatus.Initialized;
 		}
 
 		private async void UpdateLocalManifest(bool force = false)
