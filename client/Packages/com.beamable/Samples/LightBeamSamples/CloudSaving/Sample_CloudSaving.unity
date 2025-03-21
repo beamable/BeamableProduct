@@ -748,7 +748,7 @@ MonoBehaviour:
   LevelInput: {fileID: 0}
   DifficultyDropdown: {fileID: 0}
   ClassDropdown: {fileID: 0}
-  InitSystemButton: {fileID: 0}
+  BackButton: {fileID: 0}
   SaveButton: {fileID: 0}
   LoadButton: {fileID: 0}
   ForceUploadButton: {fileID: 0}

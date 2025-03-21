@@ -1,8 +1,9 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Player.CloudSaving;
 using Beamable.Runtime.LightBeams;
-using System;
-using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,18 +11,16 @@ using UnityEngine.UI;
 [BeamContextSystem]
 public class HomePage : MonoBehaviour, ILightComponent
 {
-	private const string SaveFileName = "campaignData.sav";
-
 	[Header("Scene References")]
-	public TMP_InputField LevelInput;
-
-	public TMP_Dropdown DifficultyDropdown;
-	public TMP_Dropdown ClassDropdown;
 	public Button InitSystemButton;
-	public Button SaveButton;
-	public Button LoadButton;
-	public Button ForceUploadButton;
-	public Button ForceDownloadButton;
+	public Button StringPageButton;
+	public Button BytePageButton;
+	public Button JsonPageButton;
+
+	public GameObject ConflictRoot;
+	public TextMeshProUGUI ConflictFileName;
+	public ConflictViewReferences LocalConflictData;
+	public ConflictViewReferences CloudConflictData;
 
 	public TextMeshProUGUI _serviceStatus;
 	public TextMeshProUGUI playerId;
@@ -35,16 +34,37 @@ public class HomePage : MonoBehaviour, ILightComponent
 		_ctx = ctx;
 		playerId.text = $"Player Id: {ctx.BeamContext.PlayerId}";
 		InitSystemButton.HandleClicked(InitSystem);
-		_cloudSavingService = _ctx.BeamContext.CloudSaving;
+		_cloudSavingService = _ctx.Scope.GetService<ICloudSavingService>();
 
-		SaveButton.HandleClicked(SaveCampaignData);
-		LoadButton.HandleClicked(LoadCampaignData);
-		ForceUploadButton.HandleClicked(ForceUploadData);
-		ForceDownloadButton.HandleClicked(ForceDownloadData);
-
+		StringPageButton.HandleClicked(GoToStringPage);
+		BytePageButton.HandleClicked(GoToBytePage);
+		JsonPageButton.HandleClicked(GoToJsonPage);
+		
 		UpdateServiceStatus(_cloudSavingService.ServiceStatus);
 
+		CloudSavingManager.OnCloudSaveConflict += CustomConflictResolver;
+		
 		return Promise.Success;
+	}
+
+	private void OnDestroy()
+	{
+		CloudSavingManager.OnCloudSaveConflict -= CustomConflictResolver;
+	}
+
+	private void GoToJsonPage()
+	{
+		_ctx.GotoPage<JsonPage>();
+	}
+
+	private void GoToBytePage()
+	{
+		_ctx.GotoPage<BytePage>();
+	}
+
+	private void GoToStringPage()
+	{
+		_ctx.GotoPage<StringPage>();
 	}
 
 	public void InitSystem()
@@ -52,9 +72,6 @@ public class HomePage : MonoBehaviour, ILightComponent
 		_cloudSavingService.Init().Then(status =>
 		{
 			UpdateServiceStatus(status);
-			DifficultyDropdown.AddOptions(Enum.GetNames(typeof(Difficulty)).ToList());
-			ClassDropdown.AddOptions(Enum.GetNames(typeof(CharacterClass)).ToList());
-			LoadCampaignData();
 		});
 		UpdateServiceStatus(_cloudSavingService.ServiceStatus);
 	}
@@ -63,82 +80,42 @@ public class HomePage : MonoBehaviour, ILightComponent
 	{
 		_serviceStatus.text = $"Service Status: {serviceStatus}";
 		bool isInitialized = serviceStatus == CloudSaveStatus.Initialized;
-		SaveButton.interactable = isInitialized;
-		LoadButton.interactable = isInitialized;
-		ForceUploadButton.interactable = isInitialized;
-		ForceDownloadButton.interactable = isInitialized;
-		LevelInput.interactable = isInitialized;
-		DifficultyDropdown.interactable = isInitialized;
-		ClassDropdown.interactable = isInitialized;
+		StringPageButton.interactable = isInitialized;
+		BytePageButton.interactable = isInitialized;
+		JsonPageButton.interactable = isInitialized;
 		InitSystemButton.interactable = serviceStatus == CloudSaveStatus.Inactive;
 	}
 
-	public async void SaveCampaignData()
+	private void CustomConflictResolver(IConflictResolver conflictresolver)
 	{
-		var data = new CampaignData
-		{
-			Level = int.TryParse(LevelInput.text, out int level) ? level : 1,
-			Difficulty = (Difficulty)DifficultyDropdown.value,
-			MainClass = (CharacterClass)ClassDropdown.value
-		};
-
-		await _cloudSavingService.SaveData(SaveFileName, data);
+		StartCoroutine(ResolveConflictRoutine(conflictresolver));
 	}
 
-	private async void LoadCampaignData()
+	private IEnumerator ResolveConflictRoutine(IConflictResolver conflictResolver)
 	{
-		var result = await _cloudSavingService.LoadData<CampaignData>(SaveFileName);
-
-		if (result != null)
+		ConflictRoot.SetActive(true);
+		while (conflictResolver.Conflicts.Count > 0)
 		{
-			LevelInput.text = result.Level.ToString();
-			DifficultyDropdown.value =
-				DifficultyDropdown.options.FindIndex(o => o.text == result.Difficulty.ToString());
-			ClassDropdown.value = ClassDropdown.options.FindIndex(o => o.text == result.MainClass.ToString());
+			bool isSolving = true;
+			var conflict = conflictResolver.Conflicts[0];
+			ConflictFileName.text = conflict.FileName;
+			LocalConflictData.SetValues(conflict.LocalSaveEntry, () =>
+			{
+				conflictResolver.Resolve(conflict, ConflictResolveType.UseLocal);
+				isSolving = false;
+			});
+			CloudConflictData.SetValues(conflict.CloudSaveEntry, () =>
+			{
+				conflictResolver.Resolve(conflict, ConflictResolveType.UseCloud);
+				isSolving = false;
+			});
+			
+			yield return new WaitWhile(() => isSolving);
 		}
+		ConflictRoot.SetActive(false);
+		UpdateServiceStatus(_cloudSavingService.ServiceStatus);
+		yield return null;
 	}
-
-	private void ForceUploadData()
-	{
-		_cloudSavingService.ForceUploadLocalData();
-	}
-
-	private void ForceDownloadData()
-	{
-		_cloudSavingService.ForceDownloadCloudData().Then(_ =>
-		{
-			LoadCampaignData();
-		});
-	}
-
-
-	private enum Difficulty
-	{
-		Easy,
-		Medium,
-		Hard,
-	}
-
-	private enum CharacterClass
-	{
-		Fighter,
-		Druid,
-		Cleric,
-		Sorcerer,
-		Barbarian,
-		Bard,
-		Ranger,
-		Monk,
-		Rogue,
-		Paladin,
-		Wizard,
-		Warlock,
-	}
-
-	private class CampaignData
-	{
-		public int Level;
-		public Difficulty Difficulty;
-		public CharacterClass MainClass;
-	}
+	
+	
 }
