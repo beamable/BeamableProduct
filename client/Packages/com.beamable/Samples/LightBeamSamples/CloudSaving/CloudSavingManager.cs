@@ -7,6 +7,7 @@ public class CloudSavingManager : MonoBehaviour
 {
 	[Header("Scene references")]
 	public RectTransform root;
+
 	public CanvasGroup loadingBlocker;
 
 	[Header("Asset references")]

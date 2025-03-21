@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common;
+using System;
 using UnityEngine;
 
 namespace Beamable.Player.CloudSaving
@@ -23,6 +24,16 @@ namespace Beamable.Player.CloudSaving
 		/// </para>
 		/// </summary>
 		public ICloudSavingService.ConflictResolver HandleConflicts;
+
+		/// <summary>
+		/// Handles errors that occur during file downloads.
+		/// <para>
+		/// If an exception is thrown while downloading a file, this function will be invoked with the exception as a parameter.
+		/// The function should return a <see cref="Promise{Unit}"/> indicating the resolution of the error handling process.
+		/// If no custom ErrorHandler is provided, the system will use <see cref="PlayerCloudSaving.DefaultDownloadFileErrorRecover"/>
+		/// </para>
+		/// </summary>
+		public Func<Exception, Promise<Unit>> HandleDownloadFileError;
 
 		/// <summary>
 		/// Allows overriding the default serialization behavior for <see cref="ICloudSavingService.SaveData{T}"/>.

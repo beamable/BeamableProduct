@@ -12,85 +12,85 @@ namespace Beamable.Utility
 	public static class BeamUnityFileUtils
 	{
 #if UNITY_WEBGL && !UNITY_EDITOR || true
-        [DllImport("__Internal")]
-        private static extern void SyncToIndexedDB();
-        
-        public static void PrepareIndexedDB()
-        {
-            SyncToIndexedDB();
-        }
+		[DllImport("__Internal")]
+		private static extern void SyncToIndexedDB();
+
+		public static void PrepareIndexedDB()
+		{
+			SyncToIndexedDB();
+		}
 
 #endif
-        /// <summary>
-        /// Writes a string to a file asynchronously.
-        /// </summary>
-        public static async Promise<FileInfo> WriteStringFile(string path, string content)
-        {
-            return await ExecuteWithErrorHandling(async () =>
-            {
+		/// <summary>
+		/// Writes a string to a file asynchronously.
+		/// </summary>
+		public static async Promise<FileInfo> WriteStringFile(string path, string content)
+		{
+			return await ExecuteWithErrorHandling(async () =>
+			{
 #if UNITY_WEBGL && !UNITY_EDITOR
 				File.WriteAllText(path, content);
 	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
-	            await File.WriteAllTextAsync(path, content);
-	            return new FileInfo(path);
+				await File.WriteAllTextAsync(path, content);
+				return new FileInfo(path);
 #endif
-                
-            });
-        }
 
-        /// <summary>
-        /// Writes a byte array to a file asynchronously.
-        /// </summary>
-        public static async Promise<FileInfo> WriteBytesFile(string path, byte[] content)
-        {
-            return await ExecuteWithErrorHandling(async () =>
-            {
+			});
+		}
+
+		/// <summary>
+		/// Writes a byte array to a file asynchronously.
+		/// </summary>
+		public static async Promise<FileInfo> WriteBytesFile(string path, byte[] content)
+		{
+			return await ExecuteWithErrorHandling(async () =>
+			{
 #if UNITY_WEBGL && !UNITY_EDITOR
 	            File.WriteAllBytes(path, content);
 	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
-                await File.WriteAllBytesAsync(path, content);
-                return new FileInfo(path);
+				await File.WriteAllBytesAsync(path, content);
+				return new FileInfo(path);
 #endif
-            });
-        }
+			});
+		}
 
-        /// <summary>
-        /// Reads a file as a string asynchronously.
-        /// </summary>
-        public static async Promise<string> ReadStringFile(string path)
-        {
-            return await ExecuteWithErrorHandling(async () =>
-            {
-                if (!File.Exists(path))
-                    return string.Empty;
+		/// <summary>
+		/// Reads a file as a string asynchronously.
+		/// </summary>
+		public static async Promise<string> ReadStringFile(string path)
+		{
+			return await ExecuteWithErrorHandling(async () =>
+			{
+				if (!File.Exists(path))
+					return string.Empty;
 #if UNITY_WEBGL && !UNITY_EDITOR
                 return await Promise<string>.Successful(File.ReadAllText(path));
 #else
-                return await File.ReadAllTextAsync(path);
+				return await File.ReadAllTextAsync(path);
 #endif
-            });
-        }
+			});
+		}
 
-        /// <summary>
-        /// Reads a file as a byte array asynchronously.
-        /// </summary>
-        public static async Promise<byte[]> ReadBytesFile(string path)
-        {
-            return await ExecuteWithErrorHandling(async () =>
-            {
-                if (!File.Exists(path))
-                    return Array.Empty<byte>();
+		/// <summary>
+		/// Reads a file as a byte array asynchronously.
+		/// </summary>
+		public static async Promise<byte[]> ReadBytesFile(string path)
+		{
+			return await ExecuteWithErrorHandling(async () =>
+			{
+				if (!File.Exists(path))
+					return Array.Empty<byte>();
 #if UNITY_WEBGL && !UNITY_EDITOR
                 return await Promise<byte[]>.Successful(File.ReadAllBytes(path));
 #else
-                return await File.ReadAllBytesAsync(path);
+				return await File.ReadAllBytesAsync(path);
 #endif
-            });
-        }
+			});
+		}
 
-		
+
 		/// <summary>
 		/// Moves a file to an archive folder, appending a timestamp to its filename.
 		/// </summary>
@@ -105,7 +105,7 @@ namespace Beamable.Utility
 			string fileName = $"{Path.GetFileName(filePath)}-Archive-{DateTime.UtcNow:yyyyMMddHHmmss}";
 			string archivedFilePath = Path.Combine(archivePath, fileName);
 			File.Move(filePath, archivedFilePath);
-			
+
 #if UNITY_WEBGL && !UNITY_EDITOR
 			SyncToIndexedDB();
 #endif
@@ -132,18 +132,21 @@ namespace Beamable.Utility
 			}
 
 			File.Move(filePath, newFilePath);
-			
+
 #if UNITY_WEBGL && !UNITY_EDITOR
 			SyncToIndexedDB();
 #endif
-			
+
 			return new FileInfo(newFilePath);
 		}
 
 		/// <summary>
 		/// Serializes an object to JSON and writes it to a file.
 		/// </summary>
-		public static async Promise<FileInfo> WriteJsonContent<T>(string path, T content, Func<object, string> serializer = null, bool prettyPrint = false)
+		public static async Promise<FileInfo> WriteJsonContent<T>(string path,
+		                                                          T content,
+		                                                          Func<object, string> serializer = null,
+		                                                          bool prettyPrint = false)
 		{
 			string jsonData = serializer == null ? JsonUtility.ToJson(content, prettyPrint) : serializer(content);
 			return await WriteStringFile(path, jsonData);
@@ -152,19 +155,22 @@ namespace Beamable.Utility
 		/// <summary>
 		/// Reads and deserializes a JSON file into an object.
 		/// </summary>
-		public static async Promise<T> ReadJsonContent<T>(string path, Func<string, object> deserializer = null, T defaultObject = default)
+		public static async Promise<T> ReadJsonContent<T>(string path,
+		                                                  Func<string, object> deserializer = null,
+		                                                  T defaultObject = default)
 		{
 			if (File.Exists(path))
 			{
 				string content = await ReadStringFile(path);
-				object deserializedObject = deserializer == null ? JsonUtility.FromJson<T>(content) : deserializer(content);
+				object deserializedObject =
+					deserializer == null ? JsonUtility.FromJson<T>(content) : deserializer(content);
 				if (deserializedObject != null)
 					return (T)deserializedObject;
 			}
 
 			return defaultObject;
 		}
-		
+
 		/// <summary>
 		/// Reads a file without locking it, allowing concurrent access.
 		/// <para>This is useful for scenarios where multiple processes or threads might need to read the file.</para>
@@ -195,7 +201,7 @@ namespace Beamable.Utility
 			char[] invalidChars = Path.GetInvalidPathChars();
 			return new string(fileName.Select(c => invalidChars.Contains(c) ? replaceChar : c).ToArray());
 		}
-		
+
 		// Default error handling for both WebGL and non-WebGL environments
 		private static async Promise<T> ExecuteWithErrorHandling<T>(Func<Promise<T>> action)
 		{

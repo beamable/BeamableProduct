@@ -8,10 +8,12 @@ namespace Beamable.Player.CloudSaving
 		/// The Name of the Save file that has a conflict between local and cloud data.
 		/// </summary>
 		public string FileName;
+
 		/// <summary>
 		/// The <see cref="CloudSaveEntry"/> data of the Local Save
 		/// </summary>
 		public CloudSaveEntry LocalSaveEntry;
+
 		/// <summary>
 		/// The <see cref="CloudSaveEntry"/> data of the Cloud Save
 		/// </summary>
@@ -21,7 +23,7 @@ namespace Beamable.Player.CloudSaving
 		/// The path for the local saved file
 		/// </summary>
 		public string LocalFilePath;
-		
+
 		/// <summary>
 		/// The path for the temporarily download Remote File.
 		/// </summary>
@@ -29,9 +31,9 @@ namespace Beamable.Player.CloudSaving
 
 		public bool Equals(DataConflictDetail other)
 		{
-			return FileName == other.FileName && 
+			return FileName == other.FileName &&
 			       Equals(LocalSaveEntry, other.LocalSaveEntry) &&
-			       Equals(CloudSaveEntry, other.CloudSaveEntry) && 
+			       Equals(CloudSaveEntry, other.CloudSaveEntry) &&
 			       LocalFilePath == other.LocalFilePath &&
 			       CloudFilePath == other.CloudFilePath;
 		}

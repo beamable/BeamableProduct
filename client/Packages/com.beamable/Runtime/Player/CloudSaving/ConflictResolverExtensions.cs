@@ -48,7 +48,8 @@ namespace Beamable.Player.CloudSaving
 			List<DataConflictDetail> conflicts = new(resolver.Conflicts);
 			foreach (DataConflictDetail conflictDetail in conflicts)
 			{
-				bool isLocalMoreRecent = conflictDetail.LocalSaveEntry.lastModified > conflictDetail.CloudSaveEntry.lastModified;
+				bool isLocalMoreRecent = conflictDetail.LocalSaveEntry.lastModified >
+				                         conflictDetail.CloudSaveEntry.lastModified;
 				var resolveType = isLocalMoreRecent ? ConflictResolveType.UseLocal : ConflictResolveType.UseCloud;
 				resolver.Resolve(conflictDetail, resolveType);
 			}

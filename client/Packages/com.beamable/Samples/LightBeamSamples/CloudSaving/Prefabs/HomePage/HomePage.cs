@@ -11,7 +11,7 @@ using UnityEngine.UI;
 public class HomePage : MonoBehaviour, ILightComponent
 {
 	private const string SaveFileName = "campaignData.sav";
-	
+
 	[Header("Scene References")]
 	public TMP_InputField LevelInput;
 
@@ -22,14 +22,14 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public Button LoadButton;
 	public Button ForceUploadButton;
 	public Button ForceDownloadButton;
-	
+
 	public TextMeshProUGUI _serviceStatus;
 	public TextMeshProUGUI playerId;
-	
+
 	private LightBeam _ctx;
 	private ICloudSavingService _cloudSavingService;
-	
-	
+
+
 	public Promise OnInstantiated(LightBeam ctx)
 	{
 		_ctx = ctx;
@@ -41,9 +41,9 @@ public class HomePage : MonoBehaviour, ILightComponent
 		LoadButton.HandleClicked(LoadCampaignData);
 		ForceUploadButton.HandleClicked(ForceUploadData);
 		ForceDownloadButton.HandleClicked(ForceDownloadData);
-		
+
 		UpdateServiceStatus(_cloudSavingService.ServiceStatus);
-		
+
 		return Promise.Success;
 	}
 
@@ -72,7 +72,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		ClassDropdown.interactable = isInitialized;
 		InitSystemButton.interactable = serviceStatus == CloudSaveStatus.Inactive;
 	}
-	
+
 	public async void SaveCampaignData()
 	{
 		var data = new CampaignData
@@ -92,16 +92,17 @@ public class HomePage : MonoBehaviour, ILightComponent
 		if (result != null)
 		{
 			LevelInput.text = result.Level.ToString();
-			DifficultyDropdown.value = DifficultyDropdown.options.FindIndex(o => o.text == result.Difficulty.ToString());
+			DifficultyDropdown.value =
+				DifficultyDropdown.options.FindIndex(o => o.text == result.Difficulty.ToString());
 			ClassDropdown.value = ClassDropdown.options.FindIndex(o => o.text == result.MainClass.ToString());
 		}
 	}
-	
+
 	private void ForceUploadData()
 	{
 		_cloudSavingService.ForceUploadLocalData();
 	}
-	
+
 	private void ForceDownloadData()
 	{
 		_cloudSavingService.ForceDownloadCloudData().Then(_ =>
@@ -109,7 +110,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 			LoadCampaignData();
 		});
 	}
-	
+
 
 	private enum Difficulty
 	{
@@ -133,7 +134,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		Wizard,
 		Warlock,
 	}
-	
+
 	private class CampaignData
 	{
 		public int Level;
