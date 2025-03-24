@@ -9,10 +9,17 @@ public class BigStream : Stream
     public int currentStreamIndex;
     public List<MemoryStream> innerStreams = new List<MemoryStream>();
     
-    public int MaxStreamSize { get; set; } = MAX_STREAM_SIZE;
+    public int MaxStreamSize { get; } = MAX_STREAM_SIZE;
 
-    public BigStream()
+    public BigStream(int maxStreamSize=-1)
     {
+        if (maxStreamSize <= 0)
+        {
+            maxStreamSize = MAX_STREAM_SIZE;
+        }
+
+        MaxStreamSize = maxStreamSize;
+        
         currentStreamIndex = 0;
         innerStreams.Add(CreateInnerStream());
     }

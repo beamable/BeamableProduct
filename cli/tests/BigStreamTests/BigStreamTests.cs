@@ -9,10 +9,7 @@ public class BigStreamTests
     [Test]
     public void Simple()
     {
-        var bs = new BigStream
-        {
-            MaxStreamSize = 2
-        };
+        var bs = new BigStream(maxStreamSize: 2);
         bs.Write(new byte[]{1,2,3,4,5}, 1, 3);
         
         Assert.That(bs.innerStreams.Count, Is.EqualTo(2));
