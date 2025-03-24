@@ -9,8 +9,6 @@ public class BigStream : Stream
     public int currentStreamIndex;
     public List<MemoryStream> innerStreams = new List<MemoryStream>();
     
-    // private long _position;
-
     public int MaxStreamSize { get; set; } = MAX_STREAM_SIZE;
 
     public BigStream()
@@ -148,29 +146,6 @@ public class BigStream : Stream
                     innerStreams[i].Position = 0;
                 }
             }
-
-            // var pos = value;
-            //
-            // var curr = 0L;
-            // for (var i = 0; i < innerStreams.Count; i++)
-            // {
-            //     curr += MaxStreamSize;
-            //     if (curr > pos)
-            //     {
-            //         currentStreamIndex = i;
-            //         innerStreams[i].Position = ( pos % MaxStreamSize);
-            //         break;
-            //     }
-            //     else
-            //     {
-            //         innerStreams[i].Position = MaxStreamSize - 1;
-            //     }
-            // }
-            //
-            // for (var i = currentStreamIndex + 1; i < innerStreams.Count; i++)
-            // {
-            //     innerStreams[i].Position = 0;
-            // }
         }
     }
 }
