@@ -51,29 +51,54 @@ public partial class BeamoLocalSystem
 
 		foreach (var sd in serviceDefinitionsToDeploy)
 		{
-			if (sd.Protocol is not BeamoProtocolType.HttpMicroservice)
+			var attempt = 300; // pick a sufficiently large number to have many retries, but not loop forever.
+			var attemptErrors = new List<Exception>();
+			var success = false;
+			
+			while (!success && attempt-- > 0)
 			{
-				continue;
-			}
-
-			var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
-			var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
-
-			var requestObj = JObject.Parse(request);
-			var federatedKey = Beamable.Common.Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
-			if (requestObj.TryGetValue(federatedKey, out var federatedJsonBlob))
-			{
-				var federatedComponents = new List<string>();
-				var federatedComponentsToken = federatedJsonBlob.Children().ToList();
-				foreach (JToken token in federatedComponentsToken)
+				try
 				{
-					string component = token.ToString();
-					federatedComponents.Add(component);
-				}
+					if (sd.Protocol is not BeamoProtocolType.HttpMicroservice)
+					{
+						continue;
+					}
 
-				if (!federatedComponentByServiceName.TryAdd(sd.BeamoId, federatedComponents))
-					throw new CliException($"Found a Service with an already existing name here. This should be impossible. SERVICE_ID={sd.BeamoId}");
+					var url =
+						$"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
+					var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
+					success = true;
+
+					var requestObj = JObject.Parse(request);
+					var federatedKey = Beamable.Common.Constants.Features.Services
+						.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+					if (requestObj.TryGetValue(federatedKey, out var federatedJsonBlob))
+					{
+						var federatedComponents = new List<string>();
+						var federatedComponentsToken = federatedJsonBlob.Children().ToList();
+						foreach (JToken token in federatedComponentsToken)
+						{
+							string component = token.ToString();
+							federatedComponents.Add(component);
+						}
+
+						if (!federatedComponentByServiceName.TryAdd(sd.BeamoId, federatedComponents))
+							throw new CliException(
+								$"Found a Service with an already existing name here. This should be impossible. SERVICE_ID={sd.BeamoId}");
+					}
+				}
+				catch (Exception ex)
+				{
+					attemptErrors.Add(ex);
+					await Task.Delay(TimeSpan.FromSeconds(1));
+				}
 			}
+
+			if (success) continue;
+			
+			var lastError = attemptErrors.LastOrDefault();
+			throw new CliException(
+				$"Service {sd.BeamoId} was not able to verify locally after many attempts. Final error=[{lastError?.GetType().Name}] message=[{lastError?.Message}]\n{lastError.StackTrace}");
 		}
 
 
