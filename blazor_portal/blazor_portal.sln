@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "blazor_portal", "blazor_portal.csproj", "{01E4441E-4AF9-49E6-B72D-55E3D5E9D13F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.common", "..\cli\beamable.common\beamable.common.csproj", "{10D80AE8-1C04-4CD2-8337-0BD06845865F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "..\cli\beamable.server.common\beamable.server.common.csproj", "{C988F379-A706-4B98-9D34-82C78D947A22}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.tooling.common", "..\microservice\beamable.tooling.common\beamable.tooling.common.csproj", "{74AF7935-BD85-4184-9FF8-8B6E357CA66D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01E4441E-4AF9-49E6-B72D-55E3D5E9D13F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01E4441E-4AF9-49E6-B72D-55E3D5E9D13F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01E4441E-4AF9-49E6-B72D-55E3D5E9D13F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01E4441E-4AF9-49E6-B72D-55E3D5E9D13F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10D80AE8-1C04-4CD2-8337-0BD06845865F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10D80AE8-1C04-4CD2-8337-0BD06845865F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10D80AE8-1C04-4CD2-8337-0BD06845865F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10D80AE8-1C04-4CD2-8337-0BD06845865F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C988F379-A706-4B98-9D34-82C78D947A22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C988F379-A706-4B98-9D34-82C78D947A22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C988F379-A706-4B98-9D34-82C78D947A22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C988F379-A706-4B98-9D34-82C78D947A22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74AF7935-BD85-4184-9FF8-8B6E357CA66D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74AF7935-BD85-4184-9FF8-8B6E357CA66D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74AF7935-BD85-4184-9FF8-8B6E357CA66D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74AF7935-BD85-4184-9FF8-8B6E357CA66D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

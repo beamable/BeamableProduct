@@ -1,0 +1,128 @@
+@using Beamable.Common.Api.Auth
+@using Beamable.Common.Api.Realms
+@using blazor_portal.Services
+@using Serilog
+@inject IContext ctx;
+@inject IAliasService AliasService;
+@inject IAuthApi AuthApi;
+@inject IRealmsApi RealmsApi;
+@if (Loading)
+{
+    <h4>@Information</h4>
+    <div class="spinner"></div>
+}
+else if(string.IsNullOrWhiteSpace(ctx.Token.RefreshToken))
+{
+    <div class="my-container">
+        @if (string.IsNullOrWhiteSpace(ctx.Cid))
+        {
+                <label>
+                    <p>Cid</p>
+                    <InputText @bind-Value="Cid"></InputText>
+                </label>
+        }
+        else
+        {
+                <label>
+                    <p>Cid</p>
+                    <InputText disabled="true" @bind-Value="Cid"></InputText>
+                </label>
+        }
+            <label>
+                <p>Email</p>
+                <InputText type="email" @bind-Value="Email"></InputText>
+            </label>
+            <label>
+                <p>Password</p>
+                <InputText type="password" @bind-Value="Password"></InputText>
+            </label>
+        <button @onclick="Test">Login</button>
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(Error))
+{
+    <div class="my-container error">@Error</div>
+}
+@if (Realms.Count > 0)
+{
+    
+    <div class="my-container">
+        <h3>Realms @Cid</h3>
+        @foreach (var realm in Realms)
+        {
+            <p>@realm.DisplayName</p>
+        }
+    </div>
+}
+@code {
+
+    [Parameter]
+    public string Cid { get; set; }
+
+    public string Password { get; set; }
+    public string Email { get; set; }
+    public bool Loading { get; set; }
+    
+    public string Error { get; set; }
+    public string Information { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(ctx.Token.RefreshToken))
+        {
+            await UpdateRealms();
+        }
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Test()
+    {
+        Error = string.Empty;
+        Loading = true;
+        await ctx.Set(string.Empty, string.Empty, "https://api.beamable.com");
+        try
+        {
+            Information = "Resolving CID";
+            var result = await AliasService.Resolve(Cid);
+            if (result.Cid.HasValue)
+            {
+                Cid = result.Cid;
+                await ctx.Set(Cid, string.Empty, "https://api.beamable.com");
+            }
+            else
+            {
+                Loading = false;
+                return;
+            }
+            Information = "Logging";
+
+            if (string.IsNullOrWhiteSpace(ctx.Token.RefreshToken))
+            {
+                var response = await AuthApi.Login(Email, Password);
+                await ctx.UpdateToken(response);
+            }
+            Log.Information("RESULT: {}", result.Cid);
+            await UpdateRealms();
+        }
+        catch (Exception e)
+        {
+            Error = e.ToString();
+        }
+        
+        Loading = false;
+    }
+
+    private async Task UpdateRealms()
+    {
+        Information = "Gathering Realms Information";
+        var games = await RealmsApi.GetGames();
+        Realms.Clear();
+        foreach (var realmView in games)
+        {
+            var rel = await RealmsApi.GetRealms(realmView);
+            Realms.AddRange(rel);
+        }
+    }
+
+    public List<RealmView> Realms { get; set; } = new List<RealmView>();
+
+}

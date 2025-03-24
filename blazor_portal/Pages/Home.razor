@@ -1,0 +1,14 @@
+﻿@page "/"
+@using blazor_portal.Elements
+
+<PageTitle>Portal Main Page</PageTitle>
+
+<h1 class="text-3xl font-bold underline">
+    Portal login page
+</h1>
+
+<LoginPanel @ref="_loginPanel" ></LoginPanel>
+@code
+{
+    private LoginPanel _loginPanel;
+}
