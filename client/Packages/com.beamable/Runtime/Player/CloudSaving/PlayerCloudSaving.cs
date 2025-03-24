@@ -93,8 +93,6 @@ namespace Beamable.Player.CloudSaving
 			SetupFolders();
 
 			await LoadLocalManifest();
-			
-			CheckFolderFiles();
 
 			await GetCloudData();
 
@@ -208,17 +206,17 @@ namespace Beamable.Player.CloudSaving
 
 		public async Promise<Unit> SaveData(string fileName, string content)
 		{
-			return await BaseSaveData(fileName, content);
+			return await BaseSaveData(fileName, content, true);
 		}
 
 		public async Promise<Unit> SaveData(string fileName, byte[] content)
 		{
-			return await BaseSaveData(fileName, content);
+			return await BaseSaveData(fileName, content, true);
 		}
 
 		public async Promise<Unit> SaveData<T>(string fileName, T contentData)
 		{
-			return await BaseSaveData(fileName, contentData);
+			return await BaseSaveData(fileName, contentData, true);
 		}
 
 		public Promise<string> LoadDataString(string fileName)
@@ -261,6 +259,11 @@ namespace Beamable.Player.CloudSaving
 			ArchiveSaves(cloudDataUpdateBuilder.FilesToArchive);
 
 			ForgetSaves(cloudDataUpdateBuilder.FilesToForget);
+			
+			foreach ((string fileName, object content) in cloudDataUpdateBuilder.FilesToSave)
+			{
+				await BaseSaveData(fileName, content, false);
+			}
 
 			_updatePromise = CheckAndApplyChangedEntries();
 			await _updatePromise;
@@ -652,7 +655,7 @@ namespace Beamable.Player.CloudSaving
 			}
 		}
 
-		private async Promise<Unit> BaseSaveData<T>(string fileName, T contentData)
+		private async Promise<Unit> BaseSaveData<T>(string fileName, T contentData, bool saveLocalManifest)
 		{
 			fileName = BeamUnityFileUtils.SanitizeFileName(fileName);
 			// Parse and check fileName
@@ -674,6 +677,12 @@ namespace Beamable.Player.CloudSaving
 			FileInfo fileInfo = await promise.Error(ProvideErrorCallback(nameof(BaseSaveData)));
 
 			AddOrUpdateLocalManifestEntry(fileInfo);
+			if (saveLocalManifest)
+			{
+				await BeamUnityFileUtils.WriteJsonContent(_localSaveInformation.ManifestPath, _localManifest,
+				                                          prettyPrint: true);
+			}
+
 			return PromiseBase.Unit;
 		}
 
@@ -761,6 +770,7 @@ namespace Beamable.Player.CloudSaving
 				Directory.GetFiles(_localSaveInformation.DataPath, "*.*", SearchOption.TopDirectoryOnly);
 			foreach (string savedFilePath in savedFiles)
 			{
+				Debug.Log($"File found on base path: {savedFilePath}");
 				var fileInfo = new FileInfo(savedFilePath);
 				AddOrUpdateLocalManifestEntry(fileInfo);
 			}
