@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
-#if UNITY_WEBGL && !UNITY_EDITOR || true
+#if UNITY_WEBGL && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
 using UnityEngine;
@@ -11,7 +11,7 @@ namespace Beamable.Utility
 {
 	public static class BeamUnityFileUtils
 	{
-#if UNITY_WEBGL && !UNITY_EDITOR || true
+#if UNITY_WEBGL && !UNITY_EDITOR
 		[DllImport("__Internal")]
 		private static extern void SyncToIndexedDB();
 
@@ -30,6 +30,7 @@ namespace Beamable.Utility
 			{
 #if UNITY_WEBGL && !UNITY_EDITOR
 				File.WriteAllText(path, content);
+				SyncToIndexedDB();
 	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
 				await File.WriteAllTextAsync(path, content);
@@ -48,6 +49,7 @@ namespace Beamable.Utility
 			{
 #if UNITY_WEBGL && !UNITY_EDITOR
 	            File.WriteAllBytes(path, content);
+				SyncToIndexedDB();
 	            return await Promise<FileInfo>.Successful(new FileInfo(path));
 #else
 				await File.WriteAllBytesAsync(path, content);
