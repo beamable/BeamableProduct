@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using Beamable.Server.Common;
 
 namespace cli.Services;
 
@@ -31,14 +32,14 @@ public static class ServiceUploadUtil
 		public long Size;
 	}
 
-	static async Task<MemoryStream> SaveDockerImage(string dockerPath, string imageId)
+	static async Task<BigStream> SaveDockerImage(string dockerPath, string imageId)
 	{
 		if (!DockerPathOption.TryValidateDockerExec(dockerPath, out var dockerPathError))
 		{
 			throw new CliException(dockerPathError);
 		}
 
-		var stream = new MemoryStream();
+		var stream = new BigStream();
 		var argString = $"image save {imageId}";
 		var command = Cli
 			.Wrap(dockerPath)
