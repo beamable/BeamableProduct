@@ -61,6 +61,7 @@ public partial class BeamoLocalSystem
 				{
 					if (sd.Protocol is not BeamoProtocolType.HttpMicroservice)
 					{
+						success = true;
 						continue;
 					}
 
@@ -98,7 +99,7 @@ public partial class BeamoLocalSystem
 			
 			var lastError = attemptErrors.LastOrDefault();
 			throw new CliException(
-				$"Service {sd.BeamoId} was not able to verify locally after many attempts. Final error=[{lastError?.GetType().Name}] message=[{lastError?.Message}]\n{lastError.StackTrace}");
+				$"Service {sd.BeamoId} was not able to verify locally after many attempts. Final error=[{lastError?.GetType().Name}] message=[{lastError?.Message}]\n{lastError?.StackTrace}");
 		}
 
 
