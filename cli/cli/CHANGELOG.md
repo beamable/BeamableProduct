@@ -122,8 +122,7 @@ no changes
 ## [2.0.3] - 2025-03-24
 
 ### Fixed
-- `beam services deploy` retries local health check for services up to 5
-  minutes per service.
+- `beam services deploy` retries local health check for services up to 5 minutes per service.
 
 ## [2.0.2] - 2024-09-25
 
