@@ -264,12 +264,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		Directory.CreateDirectory(errorPathDir);
 		
 		var productionArgs = forDeployment
-			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
+			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
 			: "";
 		var runtimeArg = forceCpu
 			? "--runtime unix-x64"
 			: "--use-current-runtime";
-		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
+		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
 
