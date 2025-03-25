@@ -1,0 +1,21 @@
+{
+    "name": "LightBeam.CloudSavingManager",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Customer.Common",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.LightBeams",
+        "Unity.Addressables"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
