@@ -19,6 +19,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool runHealthChecks;
         /// <summary>Restart existing deployed services</summary>
         public bool redeploy;
+        /// <summary>Build services sequentially instead of all together</summary>
+        public bool buildSequentially;
         /// <summary>Create a Release that merges your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
         public bool merge;
         /// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
@@ -68,6 +70,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.redeploy != default(bool)))
             {
                 genBeamCommandArgs.Add(("--redeploy=" + this.redeploy));
+            }
+            // If the buildSequentially value was not default, then add it to the list of args.
+            if ((this.buildSequentially != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--build-sequentially=" + this.buildSequentially));
             }
             // If the merge value was not default, then add it to the list of args.
             if ((this.merge != default(bool)))
