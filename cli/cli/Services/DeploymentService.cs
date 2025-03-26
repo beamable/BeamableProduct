@@ -1287,13 +1287,28 @@ public partial class DeployUtil
 			}
 		}
 
-		var results = await Task.WhenAll(pendingTasks);
-		foreach (var (reference, output, index) in results)
+		try
 		{
-			services[index] = reference;
-			buildReports.Add(output);
+			var results = await Task.WhenAll(pendingTasks);
+			foreach (var (reference, output, index) in results)
+			{
+				services[index] = reference;
+				buildReports.Add(output);
+			}
 		}
-		
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Failed to collect build report.");
+			foreach (var task in pendingTasks)
+			{
+				if (task.IsFaulted)
+				{
+					Log.Error(task.Exception, "- Inner build report failure");
+				}
+			}
+			throw;
+		}
+
 		return (new ManifestView
 		{
 			manifest = services,
