@@ -28,6 +28,9 @@ public class SSLResolverTests
 
     [TestCase(true, "prod-api.studiogames.services", "prod.content.studiogames.services")]
     [TestCase(false, "prod-api.studiogames.services", "somewhere.else.com")]
+    
+    [TestCase(true, "prod-api.studiogames.services/", "prod.content.studiogames.services")]
+    [TestCase(true, "prod-api.studiogames.services/toast", "prod.content.studiogames.services")]
     public void NoSslForHost(bool expected, string host, string request)
     {
         var resolver = new DefaultContentResolver(new TestArgs
