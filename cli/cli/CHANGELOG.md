@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [4.1.5] - 2025-03-26
 ### Fixed
 - Microservices Docker images can be larger than 2GB. [#3926](https://github.com/beamable/BeamableProduct/issues/3926)
 - `beam deploy` commands use `--disable-build-servers` to prevent file locking 
