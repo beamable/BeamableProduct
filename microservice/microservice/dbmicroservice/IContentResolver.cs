@@ -27,6 +27,11 @@ namespace Beamable.Server
 			   _suffixFilter = "." + string.Join(".", hostLike
 				   .Split(".")
 				   .Skip(1));
+			   
+			   // trim off any pathing in the host 
+			   int idx = _suffixFilter.IndexOf('/');
+			   if (idx != -1)
+				   _suffixFilter = _suffixFilter.Substring(0, idx);
 		   }
 		   
 		   var handler = new HttpClientHandler();

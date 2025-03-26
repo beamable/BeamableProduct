@@ -1,6 +1,8 @@
 using CliWrap;
 using Serilog;
 using System.CommandLine;
+using Beamable.Common.Dependencies;
+using cli.Services;
 
 namespace cli.DockerCommands;
 
@@ -76,25 +78,34 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 		
 	}
 
-	public static async Task<DockerStatusCommandOutput> CheckDocker(CommandArgs args)
+	public static Task<DockerStatusCommandOutput> CheckDocker(CommandArgs args)
 	{
-		var daemonTask = IsDaemonAvailable(args);
-		var cliTask = IsCliAvailable(args);
+		return CheckDocker(args.AppContext, args.BeamoLocalSystem);
+	}
+	public static Task<DockerStatusCommandOutput> CheckDocker(IDependencyProvider provider)
+	{
+		return CheckDocker(provider.GetService<IAppContext>(), provider.GetService<BeamoLocalSystem>());
+	}
+	
+	public static async Task<DockerStatusCommandOutput> CheckDocker(IAppContext appContext, BeamoLocalSystem beamo)
+	{
+		var daemonTask = IsDaemonAvailable(beamo);
+		var cliTask = IsCliAvailable(appContext);
 		
 		var output = new DockerStatusCommandOutput
 		{
 			isDaemonRunning = await daemonTask,
 			isCliAccessible = await cliTask,
-			cliLocation = args.AppContext.DockerPath
+			cliLocation = appContext.DockerPath
 		};
 		return output;
 	}
 
-	static async Task<bool> IsCliAvailable(CommandArgs args)
+	static async Task<bool> IsCliAvailable(IAppContext appContext)
 	{
 
 		var command = CliWrap.Cli
-			.Wrap(args.AppContext.DockerPath)
+			.Wrap(appContext.DockerPath)
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(x =>
 			{
 			}))
@@ -123,11 +134,11 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 
 	}
 
-	static async Task<bool> IsDaemonAvailable(CommandArgs args)
+	static async Task<bool> IsDaemonAvailable(BeamoLocalSystem beamo)
 	{
 		try
 		{
-			await args.BeamoLocalSystem.Client.System.PingAsync();
+			await beamo.Client.System.PingAsync();
 			return true;
 		}
 		catch

@@ -38,6 +38,10 @@ public class DeployArgs
 		command.AddOption(new Option<bool>(new string[] { "--restart", "--redeploy", "--roll" }, "Restart existing deployed services"),
 			(args, i) => args.UseLatestDeployedManifest = i);
 		
+		command.AddOption(new Option<bool>(new string[] { "--build-sequentially", "-bs" }, "Build services sequentially instead of all together"),
+			(args, i) => args.UseSequentialBuild = i);
+
+		
 		AddModeOption(command, (args, i) => args.DeployMode = i);
 	}
 	
