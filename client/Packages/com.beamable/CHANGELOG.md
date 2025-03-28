@@ -5,10 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.4] - 2025-03-26
 
 ### Fixed
-- Open portal on user realm, don't force the editor one.
+- Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
+
+### Changed
+- Upgrade CLI to 4.1.5
+
+### Added
+- Added validation of PID input when calling `Beam.SwitchToPid`
 
 ### Added
 - Added validation of PID input when calling `Beam.SwitchToPid`
@@ -19,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed game crash on Android and iOS whenever a error occurred on `CloudSavingService`.
 
 ### Changed
-- Upgrade CLI to 4.1.3
 - Updated logs on `CloudSavingService.HandleRequest` for better understanding of possible errors regarding manifest keys that doesn't match the server.
 
 ## [2.1.2] - 2025-03-05

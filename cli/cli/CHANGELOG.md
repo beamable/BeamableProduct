@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [4.1.5] - 2025-03-26
+### Fixed
+- Microservices Docker images can be larger than 2GB. [#3926](https://github.com/beamable/BeamableProduct/issues/3926)
+- `beam deploy` commands use `--disable-build-servers` to prevent file locking 
+- `beam deploy` commands check that `docker` is running before starting
+- `beam deploy` commands set `CopyToLinkedProjects` to `false` to avoid duplicate project copies. 
+- multi-threading issue `beam deploy` commands that led to `"local service does not exist"` error.
+
+### Added
+- `beam deploy` commands support new `--build-sequentially` option to run builds in sequence instead of all together
+
+## [4.1.4] - 2025-03-20
+
+### Fixed
+- Improved DateTime deserialization.
+
 ## [4.1.3] - 2025-03-07
 
 no changes
@@ -101,6 +118,11 @@ no changes
 
 ### Removed
 - `beam services deploy` has been replaced in favor of `beam deploy`
+
+## [2.0.3] - 2025-03-24
+
+### Fixed
+- `beam services deploy` retries local health check for services up to 5 minutes per service.
 
 ## [2.0.2] - 2024-09-25
 

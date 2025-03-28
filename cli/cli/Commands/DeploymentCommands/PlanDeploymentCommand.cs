@@ -19,6 +19,7 @@ public interface IHasDeployPlanArgs
 	public bool UseLatestDeployedManifest { get; set; }
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
+	bool UseSequentialBuild { get; set; }
 }
 
 public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
@@ -31,6 +32,7 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool UseLatestDeployedManifest { get; set; }
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
+	public bool UseSequentialBuild { get; set; }
 }
 
 public class PlanReleaseProgressChannel : IResultChannel
