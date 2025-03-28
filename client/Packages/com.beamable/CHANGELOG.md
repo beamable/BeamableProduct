@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Upgrade CLI to 4.1.5
 
+### Added
+- Added validation of PID input when calling `Beam.SwitchToPid`
+
 ## [2.1.3] - 2025-03-10
 
 ### Fixed
