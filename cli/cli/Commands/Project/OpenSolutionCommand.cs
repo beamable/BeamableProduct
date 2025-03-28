@@ -3,6 +3,7 @@ using CliWrap;
 using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
+using Beamable.Common.Dependencies;
 using microservice.Extensions;
 
 namespace cli.Commands.Project;
@@ -33,17 +34,20 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			(args, i) => args.onlyGenerate = i);
 	}
 
-	public override async Task Handle(OpenSolutionCommandArgs args)
+	public static async Task CreateSolution(CommandArgs args, string slnPath)
 	{
 		var projService = args.ProjectService;
 
-		if (!args.GetSlnExists())
+		var slnDir = Path.GetDirectoryName(slnPath);
+		var slnFileName = Path.GetFileName(slnPath);
+		
+		if (!File.Exists(slnPath))
 		{
-			Log.Debug($"Creating solution file=[{args.SolutionFilePath}]");
-			await projService.CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
+			Log.Debug($"Creating solution file=[{slnPath}]");
+			await projService.CreateNewSolution(slnDir, slnFileName);
 		}
 		
-		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, args.GetSlnDirectory(), Path.GetFileName(args.SlnFilePath));
+		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, slnDir, slnPath);
 		var fullSolutionPath = Path.GetFullPath(solutionPath);
 		Log.Debug($"Resolved sln path=[{solutionPath}]");
 		
@@ -54,9 +58,9 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
 		
 			Log.Debug($"adding project=[{proj}] to solution");
-			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}");
+			var argStr = $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}";
+			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, argStr);
 			command.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error));
-			await command.ExecuteAsync();
 		}
 
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
@@ -80,14 +84,25 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path);
 			}
 		}
+	}
 
+	public override async Task Handle(OpenSolutionCommandArgs args)
+	{
+		await CreateSolution(args, args.SolutionFilePath);
+		
 		if (args.onlyGenerate)
 		{
 			Log.Information("Not opening due to given option flag.");
 		} else {
-			Log.Information($"Opening solution {solutionPath}");
+			Log.Information($"Opening solution {args.SolutionFilePath}");
+			
+			// this await exists to try and allow the sln file to close all hooks
+			//  on windows, with visual studio, it will fail to open the FIRST time
+			//  after the file is generated. But if you pass the --only-generate flag
+			//  and open it by hand, it works... Puzzling...
+			await Task.Delay(TimeSpan.FromMilliseconds(500));
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
-			await opener.OpenFileWithDefaultApp(solutionPath);
+			await opener.OpenFileWithDefaultApp(args.SolutionFilePath);
 		}
 	
 		

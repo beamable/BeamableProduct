@@ -430,9 +430,17 @@ public class ProjectService
 		}
 
 		// create the solution
-		await RunDotnetCommand($"new sln -n {solutionName.EnquotePath()} -o {solutionPath.EnquotePath()}");
+		var slnNameWithExtension = solutionName;
+		if (!slnNameWithExtension.EndsWith(".sln"))
+		{
+			slnNameWithExtension += ".sln";
+		}
 
-		return Path.Combine(solutionPath, $"{solutionName}.sln");
+		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
+		
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()}", out var buffer);
+
+		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
 
 	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
@@ -505,6 +513,10 @@ public class ProjectService
 	public Task RunDotnetCommand(string arguments)
 	{
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
+	}
+	public Task RunDotnetCommand(string arguments, out StringBuilder buffer)
+	{
+		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog(out buffer).Task;
 	}
 
 	
@@ -654,7 +666,8 @@ public static class CliExtensions
 	{
 		var command = Cli.Wrap(dotnetPath)
 			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" })
-			.WithArguments(arguments);
+			.WithArguments(arguments)
+			;
 		return command;
 	}
 
@@ -662,7 +675,7 @@ public static class CliExtensions
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
 
-		var buffer = new StringBuilder();
+		var  buffer = new StringBuilder();
 		var commandTask = command
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
@@ -674,6 +687,19 @@ public static class CliExtensions
 				Log.Error(buffer.ToString());
 			}
 		});
+		return commandTask;
+	}
+
+	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command, out StringBuilder buffer)
+	{
+		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
+
+		buffer = new StringBuilder();
+		var commandTask = command
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync();
 		return commandTask;
 	}
 }
