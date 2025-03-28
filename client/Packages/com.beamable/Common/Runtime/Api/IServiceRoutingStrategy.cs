@@ -34,7 +34,7 @@ namespace Beamable.Common.Api
 		public static async Promise<string> GetRoutingHeaderValue(this IServiceRoutingStrategy strategy)
 		{
 			var map = await strategy.GetServiceMap();
-			var value = string.Join(",", map.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+			var value = string.Join(",", map.Select(kvp => $"micro_{kvp.Key}:{kvp.Value}"));
 			return value;
 		}
 
