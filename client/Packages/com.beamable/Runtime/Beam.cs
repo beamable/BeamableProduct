@@ -107,7 +107,7 @@ namespace Beamable
 		/// <summary>
 		/// Controls the CID/PID connection strings for the game.
 		/// However, this should not be used directly. Instead,
-		/// Use <see cref="ChangePid"/> to change the PID at runtime.
+		/// Use <see cref="SwitchToPid"/> to change the PID at runtime.
 		/// </summary>
 		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
 			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
@@ -411,7 +411,7 @@ namespace Beamable
 		/// </summary>
 		/// <remarks>
 		/// If the passed PID is the same as the current one no action is performed.
-		/// </remarks>
+		/// </remarks> 
 		/// <param name="pid">a valid Beamable PID for the current CID.</param>
 		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
 		/// <returns><see cref="SwitchPidResult"/> An enum with information if PID change was performed.</returns>
@@ -419,6 +419,9 @@ namespace Beamable
 		{
 			if (RuntimeConfigProvider.Pid.Equals(pid))
 				return SwitchPidResult.NoAction;
+			if (!DefaultRuntimeConfigProvider.IsValidPid(pid))
+				return SwitchPidResult.InvalidPidNoAction;
+
 			await StopAllContexts();
 			RuntimeConfigProvider.Pid = pid;
 			await ResetToScene(sceneQualifier);
@@ -435,6 +438,11 @@ namespace Beamable
 		[Obsolete("Method is obsolete, please use SwitchToPid instead.")]
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
+			if (!DefaultRuntimeConfigProvider.IsValidPid(pid))
+			{
+				Debug.LogError($"PID {pid} is not valid.");
+				return;
+			}
 			await StopAllContexts();
 			RuntimeConfigProvider.Pid = pid;
 			await ResetToScene(sceneQualifier);
@@ -538,8 +546,14 @@ namespace Beamable
 		/// </summary>
 		NoAction,
 		/// <summary>
+		/// The PID passed to the method was in an incorrect format, and no action was performed.
+		/// The correct format for a PID is `DE_` followed by numbers.
+		/// </summary>
+		InvalidPidNoAction,
+		/// <summary>
 		/// Beam stopped all <see cref="BeamContext"/> instances and switched to the new PID.
 		/// </summary>
 		SwitchedToNewPid,
+		
 	}
 }
