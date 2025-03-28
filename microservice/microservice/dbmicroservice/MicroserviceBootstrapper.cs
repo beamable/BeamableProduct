@@ -564,7 +564,7 @@ namespace Beamable.Server
 	        {
 		        try
 		        {
-					_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
+					//_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
 					var processExists = true;
 					do
 					{
@@ -586,12 +586,12 @@ namespace Beamable.Server
 					} while (processExists);
 					
 					// terminate. 
-					_logger.LogInformation("Quitting because required process no longer exists");
+					//_logger.LogInformation("Quitting because required process no longer exists");
 					Environment.Exit(0);
 		        }
 		        catch (Exception ex)
 		        {
-			        _logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			        //_logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
 		        }
 	        });
 	        
@@ -700,7 +700,11 @@ namespace Beamable.Server
 			        .AddRuntimeInstrumentation()
 			        
 			        .SetResourceBuilder(_resourceBuilder)
-			        .AddOtlpExporter()
+			        .AddOtlpExporter((c) =>
+			        {
+				        c.ExportProcessorType = ExportProcessorType.Simple;
+				        c.Protocol = OtlpExportProtocol.Grpc;
+			        })
 			        .Build()
 		        ;
 
@@ -708,7 +712,11 @@ namespace Beamable.Server
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
 			        .SetResourceBuilder(_resourceBuilder)
 			        .AddSource(Otel.METER_NAME)
-			        .AddOtlpExporter()
+			        .AddOtlpExporter((c) =>
+			        {
+				        c.ExportProcessorType = ExportProcessorType.Simple;
+				        c.Protocol = OtlpExportProtocol.Grpc;
+			        })
 			        .Build()
 		        ;
         }
@@ -723,30 +731,10 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
-	        
-	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = _args = new EnvironmentArgs();
-	        var resolvedCid = await ConfigureCid(envArgs);
-	        _args.SetResolvedCid(resolvedCid);
+	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        
-	        
-	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
-	        _resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace, 
-			        autoGenerateServiceInstanceId: false, 
-			        serviceInstanceId: _activityProvider.ServiceId)
-		        .AddAttributes(new Dictionary<string, object>()
-		        {
-			        [Otel.ATTR_CID] = envArgs.CustomerID,
-			        [Otel.ATTR_PID] = envArgs.ProjectName,
-			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
-			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
-		        });
-	        
-	        
-	        ConfigureZLogging<TMicroservice>(envArgs, attribute);
-	        
-	        _logger.LogInformation($"Starting Prepare");
+	        //_logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
@@ -778,13 +766,13 @@ namespace Beamable.Server
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
+				//_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
 				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        _logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
+		        //_logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
 		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
@@ -799,7 +787,7 @@ namespace Beamable.Server
 	        {
 		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
 	        }
-	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
+	        //_logger.ZLogInformation($"Running command {fileName} {arguments}");
 	        process.Start();
 	        process.BeginOutputReadLine();
 	        process.BeginErrorReadLine();
@@ -818,10 +806,10 @@ namespace Beamable.Server
 	     
 	        if (process.ExitCode != 0)
 	        {
-		        _logger.ZLogError($"generate-env output:\n{sublogs}");
+		        //_logger.ZLogError($"generate-env output:\n{sublogs}");
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
-	        _logger.ZLogInformation($"environment:\n{result}");
+	        //_logger.ZLogInformation($"environment:\n{result}");
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 	        if (parsedOutput.type != "stream")
@@ -838,6 +826,27 @@ namespace Beamable.Server
 	        {
 		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
 	        }
+
+	        envArgs = _args = new EnvironmentArgs();
+	        //var resolvedCid = await ConfigureCid(envArgs);
+	        //_args.SetResolvedCid(resolvedCid);
+
+
+	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        _resourceBuilder = ResourceBuilder.CreateEmpty()
+		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace,
+			        autoGenerateServiceInstanceId: false,
+			        serviceInstanceId: _activityProvider.ServiceId)
+		        .AddAttributes(new Dictionary<string, object>()
+		        {
+			        [Otel.ATTR_CID] = envArgs.CustomerID,
+			        [Otel.ATTR_PID] = envArgs.ProjectName,
+			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
+			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
+		        });
+
+
+	        ConfigureZLogging<TMicroservice>(envArgs, attribute);
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice

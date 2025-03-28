@@ -99,6 +99,10 @@ namespace Beamable.Server
 		public string OtelExporterOtlpProtocol { get; set; }
 		public string OtelExporterOtlpEndpoint { get; set; }
 		public string OtelExporterOtlpHeaders { get; set; }
+		public void SetResolvedCid(string resolvedCid)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -221,6 +225,10 @@ namespace Beamable.Server
 		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL");
 		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
+		public void SetResolvedCid(string resolvedCid)
+		{
+			//CustomerID = resolvedCid;
+		}
 
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");

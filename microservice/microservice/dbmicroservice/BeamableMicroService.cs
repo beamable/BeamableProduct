@@ -811,7 +811,7 @@ namespace Beamable.Server
 			      // {
 				     //  ["dd.trace_id"] = existingSpanId
 			      // });
-			      activity.SetParent(existingTraceId, existingSpanId);
+			      //activity.SetParent(existingTraceId, existingSpanId);
 		      }
 		      //x-datadog-trace-id]=   8647374746544577818
 		      //{[x-datadog-parent-id]=7346329468965460460}
