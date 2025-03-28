@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2025-03-26
+
+no changes
+
+## [2.1.3] - 2025-03-10
+
+### Fixed
+- Beam Services and CLI Debugger Search Bars weren't being rendered when there isn't enough space. Now when there is no space a button will show notifying the user to resize the window. [#3893](https://github.com/beamable/BeamableProduct/issues/3893)
+
+## [2.1.2] - 2025-03-05
+
+no changes
+
+## [2.1.1] - 2025-03-04
+
+no changes
+
 ## [2.1.0] - 2025-02-24
 
 ### Changed
