@@ -20,6 +20,9 @@
 
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>
+        <!-- Override the publishable property during beam builds when BeamPublish is included. -->
+        <IsPublishable Condition="'$(BeamPublish)' == 'true'">true</IsPublishable>
+        
         <!-- The tool path for the beamCLI. -->
         <BeamableTool Condition="'$(BeamableTool)' == ''">$(BEAM_PATH)</BeamableTool>
         <BeamableTool Condition="'$(BeamableTool)' == ''">beam</BeamableTool>

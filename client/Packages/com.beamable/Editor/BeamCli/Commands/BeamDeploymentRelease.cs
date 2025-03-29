@@ -27,6 +27,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool replace;
         /// <summary>The file path to a pre-generated plan file using the `deploy plan` command</summary>
         public string fromPlan;
+        /// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
+        public string sln;
         /// <summary>Use the most recent plan generated from the plan command</summary>
         public bool fromLatestPlan;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -90,6 +92,12 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.fromPlan != default(string)))
             {
                 genBeamCommandArgs.Add((("--from-plan=\"" + this.fromPlan) 
+                                + "\""));
+            }
+            // If the sln value was not default, then add it to the list of args.
+            if ((this.sln != default(string)))
+            {
+                genBeamCommandArgs.Add((("--sln=\"" + this.sln) 
                                 + "\""));
             }
             // If the fromLatestPlan value was not default, then add it to the list of args.
