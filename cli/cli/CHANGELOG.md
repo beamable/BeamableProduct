@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- `beam deploy` commands use solution level building instead of per-project
+- `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)
 - `beam project open` command adds small delay before opening `.sln` to appease Visual Studio
 
 ### Added

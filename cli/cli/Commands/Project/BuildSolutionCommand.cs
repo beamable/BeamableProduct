@@ -134,7 +134,9 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                 ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", 
                 ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
                 
+                // control where the custom log file goes
                 ["BEAM_MSBUILD_LOG_PATH"] = buildLogFile,
+                
                 // this makes it so that no projects publish, unless those projects
                 //  explicitly set the `IsPublishable` property to true. Our
                 //  microservices do this in the .props file when BeamPublish it set.
@@ -144,15 +146,9 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
             {
                 if (line == null) return;
                 Log.Verbose(line);
-                // logMessage?.Invoke(new ServicesBuildCommandOutput
-                // {
-                //     message = line
-                // });
             }))
             .WithValidation(CommandResultValidation.None)
             .ExecuteAsync(cts.Token);
-        // BuildImageSourceOutput
-
         await command;
 
         { // read the build log
@@ -207,7 +203,6 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                     // this build has failed, and there is no point in file-copying...
                     continue;
                 }
-                
                 
                 if (!Directory.Exists(result.outputDirSupport))
                 {
