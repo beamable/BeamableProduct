@@ -15,6 +15,8 @@ public class SolutionLogs
 [Serializable]
 public class ProjectLogs
 {
+    public bool success;
+    public string message;
     public List<CustomLogEvent> errors = new List<CustomLogEvent>();
     public List<CustomLogEvent> warnings = new List<CustomLogEvent>();
 }
@@ -41,11 +43,13 @@ public class MsBuildSolutionLogger : Logger
     {
         eventSource.ErrorRaised += EventSourceOnErrorRaised;
         eventSource.WarningRaised += EventSourceOnWarningRaised;
+        eventSource.ProjectFinished += EventSourceOnProjectFinished;
         _path = Environment.GetEnvironmentVariable("BEAM_MSBUILD_LOG_PATH");
         _path ??= "publishLogs.json";
         
     }
-    
+
+
     public override void Shutdown()
     {
         var json = JsonSerializer.Serialize(logs, new JsonSerializerOptions
@@ -55,6 +59,18 @@ public class MsBuildSolutionLogger : Logger
         });
         File.WriteAllText(_path, json);
         base.Shutdown();
+    }
+    
+    
+    private void EventSourceOnProjectFinished(object sender, ProjectFinishedEventArgs e)
+    {
+        if (!logs.projects.TryGetValue(e.ProjectFile, out var project))
+        {
+            project = logs.projects[e.ProjectFile] = new ProjectLogs();
+        }
+
+        project.success = e.Succeeded;
+        project.message = e.Message;
     }
 
     private void EventSourceOnWarningRaised(object sender, BuildWarningEventArgs e)

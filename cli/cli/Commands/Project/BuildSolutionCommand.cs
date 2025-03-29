@@ -27,6 +27,12 @@ public class BuildSolutionCommandResults
 }
 public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, BuildSolutionCommandResults>
 {
+    
+    // I haven't thought too hard about this yet; this command
+    //  was developed as a way to test solution-level building
+    //  for usage in the plan/release flows. 
+    public override bool IsForInternalUse => true;
+
     public BuildSolutionCommand() : base("build-sln", "Builds all local projects with a temp solution file")
     {
     }
@@ -38,23 +44,29 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
 
     public override async Task Handle(BuildSolutionCommandArgs args)
     {
-        await Build(args);
+        var results = await Build(args);
+        foreach (var (beamoId, result) in results)
+        {
+            if (!result.Success)
+            {
+                Log.Error($"failed to build {beamoId}");
+                foreach (var error in result.report.errors)
+                {
+                    Log.Error($" {error.formattedMessage}");
+                }
+            }
+        }
     }
 
-    public static async Task Build<TArgs>(TArgs args)
+    public static async Task<Dictionary<string, BuildImageSourceOutput>> Build<TArgs>(TArgs args, 
+        bool forDeployment=true,
+        bool forceCpu=true)
         where TArgs : CommandArgs, IHasSolutionFileArg
     {
         var beamo = args.BeamoLocalSystem;
+        var resultMap = new Dictionary<string, BuildImageSourceOutput>();
         
-        // var slnName = "temp.sln";
-        // var slnPath = Path.GetFullPath(Path.Combine(args.ConfigService.BaseDirectory, ".beamable", "temp", "buildsln", slnName));
-        // if (File.Exists(slnPath))
-        // {
-        //     File.Delete(slnPath);
-        // }
-        //
-        // await OpenSolutionCommand.CreateSolution(args, slnPath);
-
+        
         var buildDirRoot = Path.Combine("bin", "beamApp");
         var buildDirSupport = Path.Combine(buildDirRoot, "support");
         var buildDirApp = Path.Combine(buildDirRoot, "app");
@@ -74,8 +86,6 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
             }
         }
         
-        var forDeployment = true;
-        var forceCpu = true;
         var dotnetPath = args.AppContext.DotnetPath;
         var slnPath = args.SolutionFilePath;
         var buildLogFile = Path.Combine(errorPathDir, "publish.json");
@@ -97,10 +107,12 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
 
                         // make sure the builds produce a deterministic output so that docker imageIds end up being the same.
                         $"-p:Deterministic=\"True\" " +
-                        $"-p:ErrorLogDirectory={errorPathDir.EnquotePath()} " +
                         $"{productionArgs} " +
 
+                        // use a custom logger, so we can get the errors back for each
+                        //  project one by one
                         $"-logger:{customLoggerArg.EnquotePath()} " + 
+                        
                         // put the entire build in the support directly- 
                         //  and after wards, we will copy only the app pieces to the 
                         //  /app folder.
@@ -131,7 +143,7 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
             .WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
             {
                 if (line == null) return;
-                Log.Information(line);
+                Log.Verbose(line);
                 // logMessage?.Invoke(new ServicesBuildCommandOutput
                 // {
                 //     message = line
@@ -145,10 +157,44 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
 
         { // read the build log
             var json = File.ReadAllText(buildLogFile);
-            var log = JsonSerializer.Deserialize<SolutionLogs>(json, new JsonSerializerOptions
+            var results = JsonSerializer.Deserialize<SolutionLogs>(json, new JsonSerializerOptions
             {
                 IncludeFields = true
             });
+
+            foreach (var (projectPath, result) in results.projects)
+            {
+                foreach (var (beamoId, http) in beamo.BeamoManifest.HttpMicroserviceLocalProtocols)
+                {
+                    if (http.Metadata.absolutePath == projectPath)
+                    {
+                        var projectFolder = Path.GetDirectoryName(http.Metadata.absolutePath);
+                        var projectBuildDirSupport = Path.Combine(projectFolder, buildDirSupport);
+                        var projectBuildDirApp = Path.Combine(projectFolder, buildDirApp);
+                        var projectBuildDirRoot = Path.Combine(projectFolder, buildDirRoot);
+
+                        resultMap[beamoId] = new BuildImageSourceOutput
+                        {
+                            service = beamoId,
+                            outputDirApp = projectBuildDirApp,
+                            outputDirSupport = projectBuildDirSupport,
+                            outputDirRoot = projectBuildDirRoot,
+                            report = new ProjectErrorReport
+                            {
+                                isSuccess = result.success,
+                                errors = result.errors.Select(x => new ProjectErrorResult
+                                {
+                                    line = x.lineNumber,
+                                    column = x.colNumber,
+                                    level = "error",
+                                    formattedMessage = $"error {x.code}: {x.message}",
+                                    uri = x.file
+                                }).ToList()
+                            }
+                        };
+                    }
+                }
+            }
 
         }
 
@@ -156,27 +202,31 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
         { // copy all the tid-bits out of /support into /app
             foreach (var (beamoId, http) in beamo.BeamoManifest.HttpMicroserviceLocalProtocols)
             {
-                var projectFolder = Path.GetDirectoryName(http.Metadata.absolutePath);
-                var projectBuildDirSupport = Path.Combine(projectFolder, buildDirSupport);
-                var projectBuildDirApp = Path.Combine(projectFolder, buildDirApp);
-
-                if (!Directory.Exists(projectBuildDirSupport))
+                if (!resultMap.TryGetValue(beamoId, out var result))
+                {
+                    // this build has failed, and there is no point in file-copying...
+                    continue;
+                }
+                
+                
+                if (!Directory.Exists(result.outputDirSupport))
                 {
                     // the build failed and there is nothing to move. 
                     continue;
                 }
                 
-                Directory.CreateDirectory(projectBuildDirApp);
+                Directory.CreateDirectory(result.outputDirApp);
                 
-                var filesToMove = Directory.GetFiles(projectBuildDirSupport, beamoId + ".*", SearchOption.TopDirectoryOnly);
+                var filesToMove = Directory.GetFiles(result.outputDirSupport, beamoId + ".*", SearchOption.TopDirectoryOnly);
                 foreach (var fileToMove in filesToMove)
                 {
-                    var target = Path.Combine(projectBuildDirApp, Path.GetFileName(fileToMove));
+                    var target = Path.Combine(result.outputDirApp, Path.GetFileName(fileToMove));
                     File.Move(fileToMove, target);
                 }
             }
         }
-        
 
+
+        return resultMap;
     }
 }

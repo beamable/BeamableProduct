@@ -336,7 +336,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		bool noCache=false,
 		bool forceCpu=false,
 		bool pull=false,
-		string[] tags=null)
+		string[] tags=null,
+		BuildImageSourceOutput report=default)
 	{
 		// a fake number of "steps" that the tarball is allotted. 
 		const int tarBallSteps = 2; // TODO: there is no tarball step anymore, so the loading around it doesn't make sense
@@ -365,7 +366,11 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		// TODO: consider using an enum Flags for the multitude of builds
 		// TODO: expose the `forDeploymentBuild` arg out to the Build param, so `beam services build` creates a local version
-		var report = await BuildLocalSource(provider, id, forceCpu, logMessage);
+
+		if (string.IsNullOrEmpty(report.service))
+		{
+			report = await BuildLocalSource(provider, id, forceCpu, logMessage);
+		}
 		if (!report.Success){
 			return new BuildImageOutput
 			{

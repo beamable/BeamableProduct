@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- `beam deploy` commands use solution level building instead of per-project
+- `beam project open` command adds small delay before opening `.sln` to appease Visual Studio
+
+### Added
+- `beam deploy release` shows CID/PID information as part of release confirmation [#3954](https://github.com/beamable/BeamableProduct/issues/3954)
 
 ## [4.1.5] - 2025-03-26
 ### Fixed
