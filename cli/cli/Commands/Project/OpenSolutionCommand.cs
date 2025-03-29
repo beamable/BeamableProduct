@@ -96,13 +96,15 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		} else {
 			Log.Information($"Opening solution {args.SolutionFilePath}");
 			
+			
 			// this await exists to try and allow the sln file to close all hooks
 			//  on windows, with visual studio, it will fail to open the FIRST time
 			//  after the file is generated. But if you pass the --only-generate flag
 			//  and open it by hand, it works... Puzzling...
 			await Task.Delay(TimeSpan.FromMilliseconds(500));
+
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
-			await opener.OpenFileWithDefaultApp(args.SolutionFilePath);
+			await opener.OpenFileWithDefaultApp(Path.GetFullPath(args.SolutionFilePath));
 		}
 	
 		
