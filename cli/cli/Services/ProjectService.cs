@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Sarif;
 using Serilog;
 using Spectre.Console;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using microservice.Extensions;
 
@@ -443,6 +444,98 @@ public class ProjectService
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
 
+	public delegate bool ProjectFilterPredicate(string fullCsProjPath);
+	
+	public async Task<string> CreateSolutionFilterFile(string slnPath, ProjectFilterPredicate filter)
+	{
+		{ // make sure the path actually has the sln file extension
+			if (!slnPath.EndsWith(".sln"))
+			{
+				slnPath += ".sln";
+			}
+		}
+		
+		var slnFilterPath = Path.ChangeExtension(slnPath, ".writable.slnf");
+		var slnDir = Path.GetDirectoryName(slnPath);
+
+		var slnListArg = $"sln {slnPath.EnquotePath()} list";
+		var lines = new List<string>();
+		var command = CliExtensions.GetDotnetCommand(_app.DotnetPath, slnListArg)
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
+		{
+			lines.Add(line);
+		}));
+		// command.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer));
+		var result = await command.ExecuteAsync();
+		if (result.ExitCode != 0)
+		{
+			throw new CliException("Failed to run sln list");
+		}
+
+		var bufferStr = string.Join(Environment.NewLine, lines);
+		{ // do some validation that the output matches our expectations... 
+			string error = null;
+			if (lines.Count == 0)
+				error = ($"Unspected sln filter. Expected header. output=[{bufferStr}]");
+			if (lines[0] != "Project(s)")
+				error = ($"Unspected sln filter. Expected 'Project(s)'. output=[{bufferStr}]");
+			if (lines[1].Any(c => c != '-'))
+				error = ($"Unspected sln filter. Expected a line of dashes. output=[{bufferStr}]");
+
+			if (!string.IsNullOrEmpty(error))
+			{
+				Log.Error(error);
+				return null;
+			}
+		}
+		
+		
+		var filteredProjectPaths = new List<string>();
+		for (var i = 2; i < lines.Count; i++)
+		{
+			var relativePathToSln = lines[i];
+			var fullPath = Path.GetFullPath(Path.Combine(slnDir, relativePathToSln));
+			if (filter(fullPath))
+			{
+				filteredProjectPaths.Add(relativePathToSln);
+			}
+		}
+
+		var model = new SolutionFilterModel
+		{
+			solution = new SolutionFilterModel.Solution
+			{
+				path = slnPath, projects = filteredProjectPaths
+			}
+		};
+		var filterJson = JsonSerializer.Serialize(model, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true });
+		File.WriteAllText(slnFilterPath, filterJson);
+		return slnFilterPath;
+	}
+
+	[Serializable]
+	public class SolutionFilterModel
+	{
+		public Solution solution;
+		[Serializable]
+		public class Solution
+		{
+			public string path;
+			public List<string> projects = new List<string>();
+		}
+		// {
+		// 	"solution": {
+		// 		"path": "BeamableServices.sln",
+		// 		"projects": [
+		// 		"services\\CommonLand\\CommonLand.csproj",
+		// 		"services\\Serv1\\Serv1.csproj",
+		// 		"services\\Serv2\\Serv2.csproj",
+		// 		"services\\Serv3\\Serv3.csproj"
+		// 			]
+		// 	}
+		// }
+	}
+
 	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
 	{
 		if (!File.Exists(solutionPath))
@@ -698,7 +791,6 @@ public static class CliExtensions
 		var commandTask = command
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
-			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync();
 		return commandTask;
 	}

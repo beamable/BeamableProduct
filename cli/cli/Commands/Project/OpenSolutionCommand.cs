@@ -14,6 +14,10 @@ public class OpenSolutionCommandArgs : CommandArgs, IHasSolutionFileArg
 
 	public bool onlyGenerate;
 
+	public int waitTime;
+
+	public bool useUnityFilter;
+	
 	public string SolutionFilePath
 	{
 		get => SlnFilePath;
@@ -32,6 +36,12 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 		AddOption(new Option<bool>("--only-generate", "Only generate the sln but do not open it"),
 			(args, i) => args.onlyGenerate = i);
+		
+		AddOption(new Option<bool>("--from-unity", "Use a solution filter that hides projects that aren't writable in a Unity project"),
+			(args, i) => args.useUnityFilter = i);
+		
+		AddOption(new Option<int>("--wait-time-ms", () => 0, "The number of milliseconds to wait after generating the .sln file before opening it"),
+			(args, i) => args.waitTime = i);
 	}
 
 	public static async Task CreateSolution(CommandArgs args, string slnPath)
@@ -59,8 +69,9 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		
 			Log.Debug($"adding project=[{proj}] to solution");
 			var argStr = $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}";
-			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, argStr);
-			command.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error));
+			await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, argStr)
+				.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error))
+				.ExecuteAsyncAndLog();
 		}
 
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
@@ -86,25 +97,64 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		}
 	}
 
+	public static async Task<string> CreateSolutionFilter(CommandArgs args, string slnPath)
+	{
+		var projService = args.ProjectService;
+
+		var badUnityPath = Path.Combine("Library", "PackageCache");
+		var baseDir = args.ConfigService.BaseDirectory;
+		return await projService.CreateSolutionFilterFile(slnPath, csProjPath =>
+		{
+			if (csProjPath.Contains(badUnityPath, StringComparison.InvariantCultureIgnoreCase))
+			{
+				// the project is part of a Unity cache; and should not be loaded. 
+				//  TODO: its possible that the project is not ACTUALLY in a cache; 
+				//  this folder detection is very low fidelity... 
+				Log.Verbose($"Hiding project=[{csProjPath}] because it is in a unity package cache.");
+				return false;
+			}
+
+			if (!csProjPath.StartsWith(baseDir))
+			{
+				// the project is not part of the .beamable folder; and should not be loaded. 
+				//  TODO: again, this kind of stinks.
+				Log.Verbose($"Hiding project=[{csProjPath}] because it is not in the root .beamable folder");
+				return false;
+			}
+			
+			return true;
+		});
+	}
+
 	public override async Task Handle(OpenSolutionCommandArgs args)
 	{
 		await CreateSolution(args, args.SolutionFilePath);
+
+		var openPath = args.SolutionFilePath;
+		if (args.useUnityFilter)
+		{
+			var filterPath = await CreateSolutionFilter(args, args.SolutionFilePath);
+			if (filterPath != null)
+			{
+				openPath = filterPath;
+			}
+		}
 		
 		if (args.onlyGenerate)
 		{
 			Log.Information("Not opening due to given option flag.");
 		} else {
-			Log.Information($"Opening solution {args.SolutionFilePath}");
+			Log.Information($"Opening solution {openPath}");
 			
 			
 			// this await exists to try and allow the sln file to close all hooks
 			//  on windows, with visual studio, it will fail to open the FIRST time
 			//  after the file is generated. But if you pass the --only-generate flag
 			//  and open it by hand, it works... Puzzling...
-			await Task.Delay(TimeSpan.FromMilliseconds(500));
+			await Task.Delay(TimeSpan.FromMilliseconds(args.waitTime));
 
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
-			await opener.OpenFileWithDefaultApp(Path.GetFullPath(args.SolutionFilePath));
+			await opener.OpenFileWithDefaultApp(Path.GetFullPath(openPath));
 		}
 	
 		
