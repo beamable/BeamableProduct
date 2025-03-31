@@ -135,7 +135,7 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                 ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
                 
                 // control where the custom log file goes
-                ["BEAM_MSBUILD_LOG_PATH"] = buildLogFile,
+                [MsBuildSolutionLogger.LOG_PATH_ENV_VAR] = buildLogFile,
                 
                 // this makes it so that no projects publish, unless those projects
                 //  explicitly set the `IsPublishable` property to true. Our

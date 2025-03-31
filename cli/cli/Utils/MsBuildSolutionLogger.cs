@@ -36,6 +36,8 @@ public class CustomLogEvent
 
 public class MsBuildSolutionLogger : Logger
 {
+    public const string LOG_PATH_ENV_VAR = "BEAM_MSBUILD_LOG_PATH";
+    
     private SolutionLogs logs = new SolutionLogs();
     private string _path;
     
@@ -44,7 +46,7 @@ public class MsBuildSolutionLogger : Logger
         eventSource.ErrorRaised += EventSourceOnErrorRaised;
         eventSource.WarningRaised += EventSourceOnWarningRaised;
         eventSource.ProjectFinished += EventSourceOnProjectFinished;
-        _path = Environment.GetEnvironmentVariable("BEAM_MSBUILD_LOG_PATH");
+        _path = Environment.GetEnvironmentVariable(LOG_PATH_ENV_VAR);
         _path ??= "publishLogs.json";
         
     }
@@ -79,7 +81,7 @@ public class MsBuildSolutionLogger : Logger
         {
             project = logs.projects[e.ProjectFile] = new ProjectLogs();
         }
-        project.errors.Add(new CustomLogEvent
+        project.warnings.Add(new CustomLogEvent
         {
             code = e.Code,
             file = e.File,

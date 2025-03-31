@@ -1256,11 +1256,11 @@ public partial class DeployUtil
 		var buildReports = new List<BuildImageOutput>();
 		
 		// build all the local services first as a solution level build.
-		var reports = new Dictionary<string, BuildImageSourceOutput>();
+		var beamoIdToReport = new Dictionary<string, BuildImageSourceOutput>();
 		if (!useSequentialBuild)
 		{
 			// when using a sequential build; we'll fall back to one at a time
-			reports = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
+			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
 		}
 
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
@@ -1276,7 +1276,7 @@ public partial class DeployUtil
 
 					var index = serviceIndex++;
 					progressHandler?.Invoke(BUILD_PROGRESS_PREFIX + definition.BeamoId, 0, serviceName: definition.BeamoId);
-					reports.TryGetValue(definition.BeamoId, out var existingBuildReport);
+					beamoIdToReport.TryGetValue(definition.BeamoId, out var existingBuildReport);
 					var buildTask = CreateServiceReference(
 						provider, 
 						definition, 
