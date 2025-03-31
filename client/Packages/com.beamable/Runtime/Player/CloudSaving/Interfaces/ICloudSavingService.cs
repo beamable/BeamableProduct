@@ -154,6 +154,12 @@ namespace Beamable.Player.CloudSaving
 		/// <param name="builder">An <see cref="Action"/> that configures the update process.</param>
 		/// <returns>A <see cref="Promise"/> that completes when the update is finished.</returns>
 		public Promise<Unit> Update(Action<CloudDataUpdateBuilder> builder);
+		
+		/// <summary>
+		/// Updates the Default Conflict Resolver with a <see cref="ConflictResolver"/> override delegate 
+		/// </summary>
+		/// <param name="resolverOverride">The <see cref="ConflictResolver"/> delegate to override the default conflict resolver</param>
+		public void SetConflictResolverOverride(ConflictResolver resolverOverride);
 
 	}
 }

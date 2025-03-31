@@ -247,6 +247,11 @@ namespace Beamable.Player.CloudSaving
 			return Update(cloudDataUpdateBuilder);
 		}
 
+		public void SetConflictResolverOverride(ICloudSavingService.ConflictResolver resolverOverride)
+		{
+			_configuration.HandleConflicts = resolverOverride;
+		}
+
 		private async Promise Update(CloudDataUpdateBuilder cloudDataUpdateBuilder)
 		{
 			if (_updatePromise is {IsCompleted: false})

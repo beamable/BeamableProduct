@@ -15,8 +15,6 @@ public class CloudSavingManager : MonoBehaviour
 
 	[Header("Asset references")]
 	public CloudSavingExampleConfig config;
-
-	public static Action<IConflictResolver> OnCloudSaveConflict;
 	
 	async void Start()
 	{
@@ -29,11 +27,6 @@ public class CloudSavingManager : MonoBehaviour
 			builder.AddLightComponent(config.stringPage);
 			builder.AddLightComponent(config.bytePage);
 			builder.AddLightComponent(config.jsonPage);
-
-			builder.ReplaceSingleton(new PlayerCloudSavingConfiguration
-			{
-				HandleConflicts = resolver => OnCloudSaveConflict?.Invoke(resolver)
-			});
 
 		});
 		

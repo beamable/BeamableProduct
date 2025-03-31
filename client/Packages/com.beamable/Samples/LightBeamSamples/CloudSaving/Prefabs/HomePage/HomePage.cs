@@ -42,14 +42,14 @@ public class HomePage : MonoBehaviour, ILightComponent
 		
 		UpdateServiceStatus(_cloudSavingService.ServiceStatus);
 
-		CloudSavingManager.OnCloudSaveConflict += CustomConflictResolver;
+		_cloudSavingService.SetConflictResolverOverride(CustomConflictResolver);
 		
 		return Promise.Success;
 	}
 
 	private void OnDestroy()
 	{
-		CloudSavingManager.OnCloudSaveConflict -= CustomConflictResolver;
+		_cloudSavingService.SetConflictResolverOverride(null);
 	}
 
 	private void GoToJsonPage()
