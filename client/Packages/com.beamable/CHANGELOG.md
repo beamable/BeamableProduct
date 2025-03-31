@@ -7,13 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### New
+### Added
+
 - New Implementation for CloudSavingAPI using `ICloudSavingService` as Player SDK. Accessible by `BeamContext.CloudSaving`.
 - New `BeamUnityFileUtils` static class to Handle File Operations.
 - New LightBeam sample for `BeamContext.CloudSaving` basic operations.
+- Added validation of PID input when calling `Beam.SwitchToPid`
+- Update the Select Realm menu to allow updating config-defaults.
+
+
+## [2.1.4] - 2025-03-26
 
 ### Fixed
 - Admin Console - opens portal on user realm instead of the editor one. Useful when realm changed in runtime.
+
+### Changed
+- Upgrade CLI to 4.1.5
 
 ## [2.1.3] - 2025-03-10
 
@@ -21,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed game crash on Android and iOS whenever a error occurred on `CloudSavingService`.
 
 ### Changed
-- Upgrade CLI to 4.1.3
 - Updated logs on `CloudSavingService.HandleRequest` for better understanding of possible errors regarding manifest keys that doesn't match the server.
 
 ## [2.1.2] - 2025-03-05
