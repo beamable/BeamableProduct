@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `beam deploy release` shows CID/PID information as part of release confirmation [#3954](https://github.com/beamable/BeamableProduct/issues/3954)
+- `beam checks scan` command recognizes missing `.dockerignore` configuration where "!**/beamApp" is required as final line.
 
 ## [4.1.5] - 2025-03-26
 ### Fixed
