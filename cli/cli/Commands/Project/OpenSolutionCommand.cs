@@ -14,8 +14,6 @@ public class OpenSolutionCommandArgs : CommandArgs, IHasSolutionFileArg
 
 	public bool onlyGenerate;
 
-	public int waitTime;
-
 	public bool useUnityFilter;
 	
 	public string SolutionFilePath
@@ -40,8 +38,6 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		AddOption(new Option<bool>("--from-unity", "Use a solution filter that hides projects that aren't writable in a Unity project"),
 			(args, i) => args.useUnityFilter = i);
 		
-		AddOption(new Option<int>("--wait-time-ms", () => 0, "The number of milliseconds to wait after generating the .sln file before opening it"),
-			(args, i) => args.waitTime = i);
 	}
 
 	public static async Task CreateSolution(CommandArgs args, string slnPath)
@@ -146,12 +142,10 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		} else {
 			Log.Information($"Opening solution {openPath}");
 			
-			
-			// this await exists to try and allow the sln file to close all hooks
-			//  on windows, with visual studio, it will fail to open the FIRST time
-			//  after the file is generated. But if you pass the --only-generate flag
-			//  and open it by hand, it works... Puzzling...
-			await Task.Delay(TimeSpan.FromMilliseconds(args.waitTime));
+			// when opening visual studio, we need to clear the MSBUILD path, otherwise
+			//  VS will try and use it, and get very confused and fail to open any of the
+			//  projects.
+			Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", null);
 
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
 			await opener.OpenFileWithDefaultApp(Path.GetFullPath(openPath));
