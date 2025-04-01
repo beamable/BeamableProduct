@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcb2d9b2cab333e48ac2c64b5100ab39, type: 3}
+  m_Name: CloudSavingConfig
+  m_EditorClassIdentifier: 
+  homePage: {fileID: 8789708553362360361, guid: 36bd979e51a66b04d8ea0a3ef4e3fc92,
+    type: 3}
+  stringPage: {fileID: 3038998263858474259, guid: 0c09c3fa1d60efa458b3961522d46371,
+    type: 3}
+  bytePage: {fileID: 5119391169685059033, guid: d094c9353e10615498bced73e6f358ee,
+    type: 3}
+  jsonPage: {fileID: 1770339102864891904, guid: abd82458108b7534fb3f909cd4dc9f67,
+    type: 3}

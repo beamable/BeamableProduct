@@ -50,6 +50,7 @@ using Beamable.Experimental.Api.Parties;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
+using Beamable.Player.CloudSaving;
 using Beamable.Reflection;
 using Beamable.Sessions;
 using Core.Platform.SDK;
@@ -275,6 +276,7 @@ namespace Beamable
 			DependencyBuilder.AddScopedStorage<PlayerLeaderboards, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
+			DependencyBuilder.AddScoped<ICloudSavingService, PlayerCloudSaving>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>(p => p.GetService<PlayerInventory>().Currencies);
 			DependencyBuilder.AddScoped<PlayerSocial>();
@@ -292,6 +294,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
+			DependencyBuilder.AddSingleton<PlayerCloudSavingConfiguration>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
 

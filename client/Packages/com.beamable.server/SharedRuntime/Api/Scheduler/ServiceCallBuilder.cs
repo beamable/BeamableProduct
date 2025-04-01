@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Server.Common@4.1.5
-// https://www.nuget.org/packages/Beamable.Server.Common/4.1.5
+// this file was copied from nuget package Beamable.Server.Common@4.2.0-PREVIEW.RC3
+// https://www.nuget.org/packages/Beamable.Server.Common/4.2.0-PREVIEW.RC3
 
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -203,7 +203,7 @@ namespace Beamable.Server
 
 				parameterNames[i] = parameterName;
 			}
-			var routingKey = _useLocal ? new OptionalString($"{_ctx.ServiceName}:{_ctx.Prefix}") : new OptionalString();
+			var routingKey = _useLocal ? new OptionalString($"micro_{_ctx.ServiceName}:{_ctx.Prefix}") : new OptionalString();
 
 
 			return new ServiceMethodInfo { parameterNames = parameterNames, pathName = pathName, routingKey = routingKey };
