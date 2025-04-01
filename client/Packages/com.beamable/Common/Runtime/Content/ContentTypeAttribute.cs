@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@4.2.0-PREVIEW.RC4
-// https://www.nuget.org/packages/Beamable.Common/4.2.0-PREVIEW.RC4
+// this file was copied from nuget package Beamable.Common@4.2.0-PREVIEW.RC5
+// https://www.nuget.org/packages/Beamable.Common/4.2.0-PREVIEW.RC5
 
 using Beamable.Common.Reflection;
 using System;
