@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added validation of PID input when calling `Beam.SwitchToPid`
 - Update the Select Realm menu to allow updating config-defaults.
 
+### Fixed
+- Fixed an issue which attempting using Stats after refreshing `PlayerStats` did not returned updated values.
 
 ## [2.1.4] - 2025-03-26
 
