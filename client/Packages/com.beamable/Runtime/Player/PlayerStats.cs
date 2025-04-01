@@ -173,7 +173,8 @@ namespace Beamable.Player
 		protected override async Promise PerformRefresh()
 		{
 			await _platform.OnReady;
-
+			// Ensure cache is clear so we force to get stat data from server
+			_statService.ClearCaches();
 			var stats = await _statService.GetStats("client", "public", "player", _userContext.UserId);
 
 			var nextData = new SerializableDictionaryStringToPlayerStat();
