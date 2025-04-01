@@ -18,6 +18,7 @@ using Serilog;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using cli.Commands.Project;
 using cli.DockerCommands;
 using cli.Utils;
 using BeamoLocalManifest = cli.Services.BeamoLocalManifest;
@@ -832,10 +833,11 @@ public partial class DeployUtil
 			;
 	}
 	
-	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan(
+	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan<TArgs>(
 		IDependencyProvider provider, 
-		IHasDeployPlanArgs args,
+		TArgs args,
 		ProgressHandler progressHandler)
+	where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		const string FetchManifestProgressName = "fetching latest";
 		const string MergingManifestProgressName = "calculating plan";
@@ -898,7 +900,7 @@ public partial class DeployUtil
 				throw CliExceptions.DOCKER_NOT_RUNNING;
 			}
 
-			localTask = CreateReleaseManifestFromLocal(provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		
@@ -1242,7 +1244,8 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal(IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, bool useSequentialBuild=false)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, bool useSequentialBuild=false)
+		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
 		var storages = new ServiceStorageReference[localManifest.EmbeddedMongoDbLocalProtocols.Count];
@@ -1251,6 +1254,15 @@ public partial class DeployUtil
 		var storageIndex = 0;
 		var pendingTasks = new List<Task<(ServiceReference, BuildImageOutput, int)>>();
 		var buildReports = new List<BuildImageOutput>();
+		
+		// build all the local services first as a solution level build.
+		var beamoIdToReport = new Dictionary<string, BuildImageSourceOutput>();
+		if (!useSequentialBuild)
+		{
+			// when using a sequential build; we'll fall back to one at a time
+			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
+		}
+
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
 		{
 			var definition = localManifest.ServiceDefinitions[i];
@@ -1264,12 +1276,14 @@ public partial class DeployUtil
 
 					var index = serviceIndex++;
 					progressHandler?.Invoke(BUILD_PROGRESS_PREFIX + definition.BeamoId, 0, serviceName: definition.BeamoId);
+					beamoIdToReport.TryGetValue(definition.BeamoId, out var existingBuildReport);
 					var buildTask = CreateServiceReference(
 						provider, 
 						definition, 
 						localManifest.HttpMicroserviceLocalProtocols[definition.BeamoId],
 						progressHandler, 
-						index
+						index,
+						existingSourceReport: existingBuildReport
 					);
 					
 					pendingTasks.Add(buildTask);
@@ -1341,7 +1355,10 @@ public partial class DeployUtil
 		IDependencyProvider provider,
 		BeamoServiceDefinition definition,
 		HttpMicroserviceLocalProtocol http,
-		ProgressHandler progressHandler, int serviceIndex)
+		ProgressHandler progressHandler, 
+		int serviceIndex,
+		BuildImageSourceOutput existingSourceReport=default
+		)
 	{
 		string imageId = null;
 		BuildImageOutput report = default;
@@ -1350,10 +1367,14 @@ public partial class DeployUtil
 			var progressName = BUILD_PROGRESS_PREFIX + definition.BeamoId;
 			try
 			{
-				progressHandler?.Invoke(progressName, 0, serviceName: definition.BeamoId);
+				progressHandler?.Invoke(progressName, .01f, serviceName: definition.BeamoId);
 				var sb = new StringBuilder();
 				report = await ServicesBuildCommand.Build(provider, definition.BeamoId,
 					forceCpu: true,
+					
+					// passing in the report may prevent the actual build from happening!
+					//  this makes sense when a solution-level build has ALREADY happened. 
+					report: existingSourceReport,
 					logMessage: log =>
 					{
 						sb.AppendLine(log.message);

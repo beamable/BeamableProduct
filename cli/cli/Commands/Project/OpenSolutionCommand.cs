@@ -3,6 +3,7 @@ using CliWrap;
 using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
+using Beamable.Common.Dependencies;
 using microservice.Extensions;
 
 namespace cli.Commands.Project;
@@ -13,6 +14,8 @@ public class OpenSolutionCommandArgs : CommandArgs, IHasSolutionFileArg
 
 	public bool onlyGenerate;
 
+	public bool useUnityFilter;
+	
 	public string SolutionFilePath
 	{
 		get => SlnFilePath;
@@ -31,19 +34,26 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 		AddOption(new Option<bool>("--only-generate", "Only generate the sln but do not open it"),
 			(args, i) => args.onlyGenerate = i);
+		
+		AddOption(new Option<bool>("--from-unity", "Use a solution filter that hides projects that aren't writable in a Unity project"),
+			(args, i) => args.useUnityFilter = i);
+		
 	}
 
-	public override async Task Handle(OpenSolutionCommandArgs args)
+	public static async Task CreateSolution(CommandArgs args, string slnPath)
 	{
 		var projService = args.ProjectService;
 
-		if (!args.GetSlnExists())
+		var slnDir = Path.GetDirectoryName(slnPath);
+		var slnFileName = Path.GetFileName(slnPath);
+		
+		if (!File.Exists(slnPath))
 		{
-			Log.Debug($"Creating solution file=[{args.SolutionFilePath}]");
-			await projService.CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
+			Log.Debug($"Creating solution file=[{slnPath}]");
+			await projService.CreateNewSolution(slnDir, slnFileName);
 		}
 		
-		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, args.GetSlnDirectory(), Path.GetFileName(args.SlnFilePath));
+		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, slnDir, slnPath);
 		var fullSolutionPath = Path.GetFullPath(solutionPath);
 		Log.Debug($"Resolved sln path=[{solutionPath}]");
 		
@@ -54,9 +64,10 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
 		
 			Log.Debug($"adding project=[{proj}] to solution");
-			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}");
-			command.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error));
-			await command.ExecuteAsync();
+			var argStr = $"sln {solutionPath.EnquotePath()} add {proj.EnquotePath()}";
+			await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, argStr)
+				.WithStandardErrorPipe(PipeTarget.ToDelegate(Log.Error))
+				.ExecuteAsyncAndLog();
 		}
 
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
@@ -80,14 +91,64 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 				await AddUnityDepToSolution(args, sd, fullSolutionPath, unityDep.Path);
 			}
 		}
+	}
 
+	public static async Task<string> CreateSolutionFilter(CommandArgs args, string slnPath)
+	{
+		var projService = args.ProjectService;
+
+		var badUnityPath = Path.Combine("Library", "PackageCache");
+		var baseDir = args.ConfigService.BaseDirectory;
+		return await projService.CreateSolutionFilterFile(slnPath, csProjPath =>
+		{
+			if (csProjPath.Contains(badUnityPath, StringComparison.InvariantCultureIgnoreCase))
+			{
+				// the project is part of a Unity cache; and should not be loaded. 
+				//  TODO: its possible that the project is not ACTUALLY in a cache; 
+				//  this folder detection is very low fidelity... 
+				Log.Verbose($"Hiding project=[{csProjPath}] because it is in a unity package cache.");
+				return false;
+			}
+
+			if (!csProjPath.StartsWith(baseDir))
+			{
+				// the project is not part of the .beamable folder; and should not be loaded. 
+				//  TODO: again, this kind of stinks.
+				Log.Verbose($"Hiding project=[{csProjPath}] because it is not in the root .beamable folder");
+				return false;
+			}
+			
+			return true;
+		});
+	}
+
+	public override async Task Handle(OpenSolutionCommandArgs args)
+	{
+		await CreateSolution(args, args.SolutionFilePath);
+
+		var openPath = args.SolutionFilePath;
+		if (args.useUnityFilter)
+		{
+			var filterPath = await CreateSolutionFilter(args, args.SolutionFilePath);
+			if (filterPath != null)
+			{
+				openPath = filterPath;
+			}
+		}
+		
 		if (args.onlyGenerate)
 		{
 			Log.Information("Not opening due to given option flag.");
 		} else {
-			Log.Information($"Opening solution {solutionPath}");
+			Log.Information($"Opening solution {openPath}");
+			
+			// when opening visual studio, we need to clear the MSBUILD path, otherwise
+			//  VS will try and use it, and get very confused and fail to open any of the
+			//  projects.
+			Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", null);
+
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
-			await opener.OpenFileWithDefaultApp(solutionPath);
+			await opener.OpenFileWithDefaultApp(Path.GetFullPath(openPath));
 		}
 	
 		

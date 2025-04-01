@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)
+- `beam project open` command can create a `.slnf` file to show a subset of projects based on the Unity project perspective.
+
+### Fixed
+- `beam project open` works with Visual Studio
+
+### Added
+- `beam deploy release` shows CID/PID information as part of release confirmation [#3954](https://github.com/beamable/BeamableProduct/issues/3954)
+- `beam checks scan` command recognizes missing `.dockerignore` configuration where "!**/beamApp" is required as final line.
 
 ## [4.1.5] - 2025-03-26
 ### Fixed
