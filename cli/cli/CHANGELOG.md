@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam project open` command can create a `.slnf` file to show a subset of projects based on the Unity project perspective.
 
 ### Fixed
+- `beam project generate-client` creates clients with correct `ISupportsFederation` style interfaces directly from the CLI by loading available `IFederationId` types [#3958](https://github.com/beamable/BeamableProduct/issues/3958)
 - `beam project open` works with Visual Studio
 
 ### Added
 - `beam deploy release` shows CID/PID information as part of release confirmation [#3954](https://github.com/beamable/BeamableProduct/issues/3954)
 - `beam checks scan` command recognizes missing `.dockerignore` configuration where "!**/beamApp" is required as final line.
+- `beam project generate-client` supports `--output-unity-projects` flag to specify custom Unity project output paths in addition to linked projects
 
 ## [4.1.5] - 2025-03-26
 ### Fixed

@@ -53,7 +53,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			await projService.CreateNewSolution(slnDir, slnFileName);
 		}
 		
-		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, slnDir, slnPath);
+		var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, slnDir, slnFileName);
 		var fullSolutionPath = Path.GetFullPath(solutionPath);
 		Log.Debug($"Resolved sln path=[{solutionPath}]");
 		
@@ -145,10 +145,13 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 			// when opening visual studio, we need to clear the MSBUILD path, otherwise
 			//  VS will try and use it, and get very confused and fail to open any of the
 			//  projects.
-			Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", null);
-
+			const string MSBUILD_EXE_PATH = "MSBUILD_EXE_PATH";
+			var oldMsBuildExePath = Environment.GetEnvironmentVariable(MSBUILD_EXE_PATH);
+			Environment.SetEnvironmentVariable(MSBUILD_EXE_PATH, null);
 			var opener = args.DependencyProvider.GetService<IFileOpenerService>();
 			await opener.OpenFileWithDefaultApp(Path.GetFullPath(openPath));
+			Environment.SetEnvironmentVariable(MSBUILD_EXE_PATH, oldMsBuildExePath);
+
 		}
 	
 		
