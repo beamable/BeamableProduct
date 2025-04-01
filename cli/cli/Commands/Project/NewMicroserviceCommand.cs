@@ -65,7 +65,15 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 					
 					var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
 					Log.Verbose($"creating default --sln value, found /.beamable=[{path}]");
-					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
+					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault(
+						f =>
+						{
+							var slnContent = File.ReadAllText(f);
+							// ignore the unity-like .sln file
+							var hasUnityIsm = slnContent.Contains("\"Assembly-CSharp.csproj\"",
+								StringComparison.InvariantCultureIgnoreCase);
+							return !hasUnityIsm;
+						});
 					if (string.IsNullOrEmpty(firstSlnPath))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
 					
