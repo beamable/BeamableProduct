@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@4.1.5
-// https://www.nuget.org/packages/Beamable.Common/4.1.5
+// this file was copied from nuget package Beamable.Common@4.2.0-PREVIEW.RC3
+// https://www.nuget.org/packages/Beamable.Common/4.2.0-PREVIEW.RC3
 
 ﻿#if !UNITY_WEBGL || UNITY_EDITOR
 using System;
