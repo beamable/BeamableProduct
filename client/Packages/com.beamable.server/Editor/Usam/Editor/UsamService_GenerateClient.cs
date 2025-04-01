@@ -58,32 +58,6 @@ namespace Beamable.Server.Editor.Usam
 				}).ToArray();
 			}
 			
-			{
-				// update the args with the locally available federationIds, 
-				//  this is so that the generated clients won't have compile errors
-				//  NOTE: It is still required for developers in Unity to write their own
-				//        implementation of IFederationId
-				var availableFederationIds = CompiledFederationIds;
-				args.existingFedIds = new string[availableFederationIds.Count];
-				args.existingFedTypeNames = new string[availableFederationIds.Count];
-				
-				for (var i = 0; i < availableFederationIds.Count; i++)
-				{
-					var federation = availableFederationIds[i];
-					var federationType = federation.GetType();
-					
-					if (string.IsNullOrEmpty(federationType.Namespace))
-					{
-						args.existingFedTypeNames[i] = federationType.Name;
-					}
-					else
-					{
-						args.existingFedTypeNames[i] = $"{federationType.Namespace}.{federationType.Name}";
-					}
-					args.existingFedIds[i] = federation.GetUniqueName();
-				}
-			}
-
 			{ // update the hint path structure
 				var hints = new List<string>();
 				foreach (var kvp in _assemblyUtil.beamoIdToClientHintPath)

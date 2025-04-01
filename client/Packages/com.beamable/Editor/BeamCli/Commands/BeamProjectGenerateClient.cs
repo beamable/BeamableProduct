@@ -18,11 +18,13 @@ namespace Beamable.Editor.BeamCli.Commands
         public string outputDir;
         /// <summary>When true, generate the source client files to all associated projects</summary>
         public bool outputLinks;
+        /// <summary>Paths to unity projects to generate clients in</summary>
+        public string[] outputUnityProjects;
         /// <summary>A set of existing federation ids</summary>
         public string[] existingFedIds;
-        /// <summary>A set of existing class names for federations</summary>
+        /// <summary>A set of existing class names for federations (Obsolete)</summary>
         public string[] existingFedTypeNames;
-        /// <summary>A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root</summary>
+        /// <summary>A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root (Obsolete)</summary>
         public string[] outputPathHints;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
@@ -68,6 +70,15 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.outputLinks != default(bool)))
             {
                 genBeamCommandArgs.Add(("--output-links=" + this.outputLinks));
+            }
+            // If the outputUnityProjects value was not default, then add it to the list of args.
+            if ((this.outputUnityProjects != default(string[])))
+            {
+                for (int i = 0; (i < this.outputUnityProjects.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--output-unity-projects=" + this.outputUnityProjects[i]));
+                }
             }
             // If the existingFedIds value was not default, then add it to the list of args.
             if ((this.existingFedIds != default(string[])))
