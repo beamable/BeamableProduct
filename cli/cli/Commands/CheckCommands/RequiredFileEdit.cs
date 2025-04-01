@@ -3,8 +3,8 @@ using Microsoft.Build.Evaluation;
 
 namespace cli.CheckCommands;
 
-public delegate RequiredFileEdit ProjectFileEditFunction(string beamoId, Dictionary<int, int> lineNumberToIndex,
-    Project project);
+public delegate RequiredFileEdit ProjectFileEditFunction(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> lines,
+    Project project, FileCache cache);
 
 public class FileCache : Dictionary<string, string>
 {
@@ -28,6 +28,14 @@ public class RequiredFileEdit
     public int line;
     public int column;
 
+    public void SetLocationAsAppend(Dictionary<int, int> lineNumberToIndex, string allText)
+    {
+        line = lineNumberToIndex.Keys.Max() + 1;
+        column = 0;
+        startIndex = allText.Length;
+        endIndex = startIndex;
+    }
+    
     public bool TrySetLocation(ElementLocation location, Dictionary<int, int> lineNumberToIndex, string originalText)
     {
         if (!lineNumberToIndex.TryGetValue(location.Line - 1, out var index))

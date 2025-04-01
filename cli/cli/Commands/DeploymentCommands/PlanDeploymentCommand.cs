@@ -9,7 +9,7 @@ using System.CommandLine;
 
 namespace cli.DeploymentCommands;
 
-public interface IHasDeployPlanArgs
+public interface IHasDeployPlanArgs : IHasSolutionFileArg
 {
 	public string Comment { get; set; }
 	public string[] ServiceComments { get; set; }
@@ -33,6 +33,14 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
+	public string SlnFilePath;
+
+
+	public string SolutionFilePath
+	{
+		get => SlnFilePath;
+		set => SlnFilePath = value;
+	}
 }
 
 public class PlanReleaseProgressChannel : IResultChannel
@@ -197,7 +205,8 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
-	
+		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
+
 		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "A file path to save the plan"),
 			(args, i) => args.toFile = i);
 		

@@ -21,8 +21,9 @@ public class FileOpenerService : IFileOpenerService
                     UseShellExecute = true // Important for launching with default app
                 }
             };
+            
             var success = process.Start();
-            await Task.Delay(500);
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
             Log.Information("Opened : " + success);
         }
         catch (Exception ex)
