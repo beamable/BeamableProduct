@@ -72,7 +72,7 @@ public class GenerateClientFileCommand
 		};
 		AddOption(existingFedOption, (args, i) => { });
 		AddOption(
-			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations")
+			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations (Obsolete)")
 			{
 				AllowMultipleArgumentsPerToken = true,
 				Arity = ArgumentArity.ZeroOrMore
@@ -86,7 +86,7 @@ public class GenerateClientFileCommand
 
 		AddOption(new Option<List<string>>(
 				name: "--output-path-hints",
-				description: "A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root"
+				description: "A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root (Obsolete)"
 				)
 			{
 				AllowMultipleArgumentsPerToken = true,

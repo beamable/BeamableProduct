@@ -22,9 +22,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] outputUnityProjects;
         /// <summary>A set of existing federation ids</summary>
         public string[] existingFedIds;
-        /// <summary>A set of existing class names for federations</summary>
+        /// <summary>A set of existing class names for federations (Obsolete)</summary>
         public string[] existingFedTypeNames;
-        /// <summary>A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root</summary>
+        /// <summary>A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root (Obsolete)</summary>
         public string[] outputPathHints;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
