@@ -36,6 +36,7 @@ namespace Beamable.Api.CloudSaving
 		private PlatformRequester _requester;
 		private WaitForSecondsRealtime _delay;
 		private CoroutineService _coroutineService;
+		private readonly ServiceLock _serviceLock;
 		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
 		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
@@ -70,12 +71,22 @@ namespace Beamable.Api.CloudSaving
 		/// </summary>
 		public bool isInitializing = false;
 
-		public CloudSavingService(IPlatformService platform, PlatformRequester requester,
-		   CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This field is a guard that is true when the <see cref="Init"/> method is finished, and false otherwise.
+		/// </summary>
+		public bool IsInitialized = false;
+
+		public CloudSavingService(IPlatformService platform,
+		                          PlatformRequester requester,
+		                          CoroutineService coroutineService,
+		                          IDependencyProvider provider,
+		                          ServiceLock serviceLock) : base(provider, ServiceName)
 		{
 			_platform = platform;
 			_requester = requester;
 			_coroutineService = coroutineService;
+			_serviceLock = serviceLock;
 			_connectivityService = provider.GetService<IConnectivityService>();
 		}
 
@@ -90,6 +101,13 @@ namespace Beamable.Api.CloudSaving
 		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
 		public Promise<Unit> Init(int pollingIntervalSecs = 10)
 		{
+			
+			if (!_serviceLock.AttemptToLock(ServiceLock.CloudSavingServiceName, nameof(CloudSavingService)))
+			{
+				Debug.LogWarning($"Could not Initialize {nameof(CloudSavingService)} because another CloudSaving service is already initialized.");
+				return PromiseBase.SuccessfulUnit;
+			}
+			
 			if (isInitializing) { return _initDone; }
 
 			_initDone = new Promise<Unit>();
@@ -125,6 +143,7 @@ namespace Beamable.Api.CloudSaving
 				 );
 					_initDone.CompleteSuccess(PromiseBase.Unit);
 					isInitializing = false;
+					IsInitialized = true;
 					return _initDone;
 				});
 			});

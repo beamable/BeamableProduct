@@ -1,20 +1,7 @@
 {
-    "name": "Beamable.Platform",
+    "name": "Beamable.Utility",
     "rootNamespace": "",
-    "references": [
-        "PubNub",
-        "Beamable.Config",
-        "Beamable.Coroutines",
-        "Beamable.JsonSerializable",
-        "Beamable.Pooling",
-        "Beamable.Service",
-        "Beamable.SmallerJSON",
-        "Beamable.ConsoleCommands",
-        "Unity.Beamable.Runtime.Common",
-        "Google.Play.Games",
-        "Unity.Notifications.iOS",
-        "Beamable.Utility"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
