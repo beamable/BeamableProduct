@@ -505,7 +505,10 @@ public class ProjectService
 		{
 			solution = new SolutionFilterModel.Solution
 			{
-				path = slnPath, projects = filteredProjectPaths
+				// this file lives right next to the .sln, 
+				//  so the relative path should be just the file name
+				path = Path.GetFileName(slnPath), 
+				projects = filteredProjectPaths
 			}
 		};
 		var filterJson = JsonSerializer.Serialize(model, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true });
