@@ -329,6 +329,7 @@ public class App
 		Commands.AddSubCommand<DeleteProjectCommand, DeleteProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<BuildSolutionCommand, BuildSolutionCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewCommonLibraryCommand, CreateCommonLibraryArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();

@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Sarif;
 using Serilog;
 using Spectre.Console;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using microservice.Extensions;
 
@@ -430,9 +431,112 @@ public class ProjectService
 		}
 
 		// create the solution
-		await RunDotnetCommand($"new sln -n {solutionName.EnquotePath()} -o {solutionPath.EnquotePath()}");
+		var slnNameWithExtension = solutionName;
+		if (!slnNameWithExtension.EndsWith(".sln"))
+		{
+			slnNameWithExtension += ".sln";
+		}
 
-		return Path.Combine(solutionPath, $"{solutionName}.sln");
+		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
+		
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()}", out var buffer);
+
+		return Path.Combine(solutionPath, slnNameWithExtension);
+	}
+
+	public delegate bool ProjectFilterPredicate(string fullCsProjPath);
+	
+	public async Task<string> CreateSolutionFilterFile(string slnPath, ProjectFilterPredicate filter)
+	{
+		{ // make sure the path actually has the sln file extension
+			if (!slnPath.EndsWith(".sln"))
+			{
+				slnPath += ".sln";
+			}
+		}
+		
+		var slnFilterPath = Path.ChangeExtension(slnPath, ".writable.slnf");
+		var slnDir = Path.GetDirectoryName(slnPath);
+
+		var slnListArg = $"sln {slnPath.EnquotePath()} list";
+		var lines = new List<string>();
+		var command = CliExtensions.GetDotnetCommand(_app.DotnetPath, slnListArg)
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
+		{
+			lines.Add(line);
+		}));
+		// command.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer));
+		var result = await command.ExecuteAsync();
+		if (result.ExitCode != 0)
+		{
+			throw new CliException("Failed to run sln list");
+		}
+
+		var bufferStr = string.Join(Environment.NewLine, lines);
+		{ // do some validation that the output matches our expectations... 
+			string error = null;
+			if (lines.Count == 0)
+				error = ($"Unspected sln filter. Expected header. output=[{bufferStr}]");
+			if (lines[0] != "Project(s)")
+				error = ($"Unspected sln filter. Expected 'Project(s)'. output=[{bufferStr}]");
+			if (lines[1].Any(c => c != '-'))
+				error = ($"Unspected sln filter. Expected a line of dashes. output=[{bufferStr}]");
+
+			if (!string.IsNullOrEmpty(error))
+			{
+				Log.Error(error);
+				return null;
+			}
+		}
+		
+		
+		var filteredProjectPaths = new List<string>();
+		for (var i = 2; i < lines.Count; i++)
+		{
+			var relativePathToSln = lines[i];
+			var fullPath = Path.GetFullPath(Path.Combine(slnDir, relativePathToSln));
+			if (filter(fullPath))
+			{
+				filteredProjectPaths.Add(relativePathToSln);
+			}
+		}
+
+		var model = new SolutionFilterModel
+		{
+			solution = new SolutionFilterModel.Solution
+			{
+				// this file lives right next to the .sln, 
+				//  so the relative path should be just the file name
+				path = Path.GetFileName(slnPath), 
+				projects = filteredProjectPaths
+			}
+		};
+		var filterJson = JsonSerializer.Serialize(model, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true });
+		File.WriteAllText(slnFilterPath, filterJson);
+		return slnFilterPath;
+	}
+
+	[Serializable]
+	public class SolutionFilterModel
+	{
+		public Solution solution;
+		[Serializable]
+		public class Solution
+		{
+			public string path;
+			public List<string> projects = new List<string>();
+		}
+		// {
+		// 	"solution": {
+		// 		"path": "BeamableServices.sln",
+		// 		"projects": [
+		// 		"services\\CommonLand\\CommonLand.csproj",
+		// 		"services\\Serv1\\Serv1.csproj",
+		// 		"services\\Serv2\\Serv2.csproj",
+		// 		"services\\Serv3\\Serv3.csproj"
+		// 			]
+		// 	}
+		// }
 	}
 
 	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
@@ -505,6 +609,10 @@ public class ProjectService
 	public Task RunDotnetCommand(string arguments)
 	{
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
+	}
+	public Task RunDotnetCommand(string arguments, out StringBuilder buffer)
+	{
+		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog(out buffer).Task;
 	}
 
 	
@@ -654,7 +762,8 @@ public static class CliExtensions
 	{
 		var command = Cli.Wrap(dotnetPath)
 			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" })
-			.WithArguments(arguments);
+			.WithArguments(arguments)
+			;
 		return command;
 	}
 
@@ -662,7 +771,7 @@ public static class CliExtensions
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
 
-		var buffer = new StringBuilder();
+		var  buffer = new StringBuilder();
 		var commandTask = command
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
@@ -674,6 +783,18 @@ public static class CliExtensions
 				Log.Error(buffer.ToString());
 			}
 		});
+		return commandTask;
+	}
+
+	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command, out StringBuilder buffer)
+	{
+		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
+
+		buffer = new StringBuilder();
+		var commandTask = command
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
+			.ExecuteAsync();
 		return commandTask;
 	}
 }
