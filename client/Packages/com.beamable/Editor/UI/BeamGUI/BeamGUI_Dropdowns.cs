@@ -38,12 +38,36 @@ namespace Beamable.Editor.Util
 		                                     )
 			where T : EditorWindow
 		{
+			LayoutDropDown(rootWindow, current,widthOption,() => new DropdownMetadata<T>
+			{
+				window = windowFactory(),
+				startSize = new Vector2Int(300, 100)
+			},out _,yPadding,yShift, backdropColor);
+		}
+
+		public static void LayoutDropDown<T>(EditorWindow rootWindow,
+		                                     GUIContent current,
+		                                     GUILayoutOption widthOption,
+		                                     Func<DropdownMetadata<T>> windowFactory,
+		                                     int yPadding = 5,
+		                                     int yShift = 1,
+		                                     Color backdropColor = default
+		)
+			where T : EditorWindow
+		{
 			LayoutDropDown(rootWindow, current,widthOption,windowFactory,out _,yPadding,yShift, backdropColor);
 		}
+		
+		public struct DropdownMetadata<T> where T : EditorWindow
+		{
+			public T window;
+			public Vector2 startSize;
+		}
+		
 		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
 		                                     GUIContent current, 
 		                                     GUILayoutOption widthOption, 
-		                                     Func<T> windowFactory,
+		                                     Func<DropdownMetadata<T>> windowFactory,
 		                                     out Rect contentBounds,
 		                                     int yPadding=5,
 		                                     int yShift=1,
@@ -127,16 +151,17 @@ namespace Beamable.Editor.Util
 				if (shouldShow)
 				{
 					
-					var popup = windowFactory?.Invoke();
+					var metadata = windowFactory?.Invoke() ?? new DropdownMetadata<T>();
+					var popup = metadata.window;
 					_popupTypeToCloseTime[typeof(T)] = new PopupTime
 					{
 						window = popup
 					};
 					const int tabHeight = 20;
-					var popupWidth = 300;
+					var popupWidth = metadata.startSize.x;
 					var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
 					var popupPosition = new Rect(xCoord, rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
-					popup.ShowAsDropDown(popupPosition, new Vector2(popupWidth, 100));
+					popup.ShowAsDropDown(popupPosition, metadata.startSize);
 
 				}
 			}
