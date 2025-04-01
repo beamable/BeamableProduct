@@ -59,7 +59,7 @@
     },
     {
       "displayName": "Lobby Management",
-      "description": "Contains a unostentatious user interface demonstrating how to use the API for creating, joining and managing lobbies.",
+      "description": "Contains a un-ostentatious user interface demonstrating how to use the API for creating, joining and managing lobbies.",
       "path": "SAMPLES_PATH/LightBeamSamples/LobbyManager",
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/BattleTested_Violet@3x.png",
@@ -76,10 +76,10 @@
     },
     {
       "displayName": "Cloud Saving",
-      "description": "Contains a friendly user interface demonstrating how to use the Player Cloud Saving Service.",
+      "description": "Contains a benevolent user interface demonstrating how to use the Player Cloud Saving Service.",
       "path": "SAMPLES_PATH/LightBeamSamples/CloudSaving",
       "subText": "data",
-      "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Beamable_Violet@3x.png",
+      "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/CloudDataToMicroServices_Violet@3x.png",
       "relativeMainAssetPath": "Sample_CloudSaving.unity"
     }
   ]
