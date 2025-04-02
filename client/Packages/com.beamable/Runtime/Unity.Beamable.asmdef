@@ -1,5 +1,6 @@
 {
     "name": "Unity.Beamable",
+    "rootNamespace": "",
     "references": [
         "Beamable.Config",
         "Beamable.ConsoleCommands",
@@ -17,14 +18,16 @@
         "VirtualList",
         "Beamable.UnityUIExtensions",
         "Unity.Beamable.Purchasing",
-        "Beamable.Endel.NativeWebsocket"
+        "Beamable.Endel.NativeWebsocket",
+        "Beamable.Utility"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

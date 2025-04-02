@@ -12,7 +12,8 @@
         "Beamable.ConsoleCommands",
         "Unity.Beamable.Runtime.Common",
         "Google.Play.Games",
-        "Unity.Notifications.iOS"
+        "Unity.Notifications.iOS",
+        "Beamable.Utility"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
