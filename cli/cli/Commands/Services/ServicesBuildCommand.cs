@@ -206,6 +206,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		}
 	}
 
+	public static async Task BuildAllLocalSource()
+	{
+		// create a temp solution file... 
+		
+	}
+
 	public static async Task<BuildImageSourceOutput> BuildLocalSource(
 		IDependencyProvider provider, 
 		string id, 
@@ -264,12 +270,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		Directory.CreateDirectory(errorPathDir);
 		
 		var productionArgs = forDeployment
-			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
+			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
 			: "";
 		var runtimeArg = forceCpu
 			? "--runtime unix-x64"
 			: "--use-current-runtime";
-		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
+		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
 
@@ -330,7 +336,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		bool noCache=false,
 		bool forceCpu=false,
 		bool pull=false,
-		string[] tags=null)
+		string[] tags=null,
+		BuildImageSourceOutput report=default)
 	{
 		// a fake number of "steps" that the tarball is allotted. 
 		const int tarBallSteps = 2; // TODO: there is no tarball step anymore, so the loading around it doesn't make sense
@@ -339,11 +346,31 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
 		var app = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
-		var fullContextPath = Path.GetFullPath(config.BaseDirectory);
+
+		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
+		{
+			logMessage?.Invoke(new ServicesBuildCommandOutput
+			{
+				message = "no service exists for the name",
+				isFailure = true
+			});
+			return new BuildImageOutput
+			{
+				service = id
+			};
+		}
+
+		var dockerContextPath = Path.GetDirectoryName(http.Metadata.absolutePath);
+		
+		var fullContextPath = Path.GetFullPath(dockerContextPath);
 
 		// TODO: consider using an enum Flags for the multitude of builds
 		// TODO: expose the `forDeploymentBuild` arg out to the Build param, so `beam services build` creates a local version
-		var report = await BuildLocalSource(provider, id, forceCpu, logMessage);
+
+		if (string.IsNullOrEmpty(report.service))
+		{
+			report = await BuildLocalSource(provider, id, forceCpu, logMessage);
+		}
 		if (!report.Success){
 			return new BuildImageOutput
 			{
@@ -366,18 +393,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			tags = new string[] { "latest" };
 		}
 		
-		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
-		{
-			logMessage?.Invoke(new ServicesBuildCommandOutput
-			{
-				message = "no service exists for the name",
-				isFailure = true
-			});
-			return new BuildImageOutput
-			{
-				service = id
-			};
-		}
+	
 
 		if (!beamoLocal.BeamoManifest.TryGetDefinition(id, out var definition))
 		{
@@ -414,8 +430,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +
@@ -555,6 +571,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			}));
 		
 		var result = await command.ExecuteAsync();
+
 		var isSuccess = result.ExitCode == 0;
 		
 		if (isSuccess)

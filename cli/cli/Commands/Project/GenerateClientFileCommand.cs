@@ -21,6 +21,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public string microserviceAssemblyPath;
 	public string outputDirectory;
 	public bool outputToLinkedProjects = true;
+	public List<string> outputToUnityProjects;
 	public List<string> beamoIds;
 	public List<string> withTags;
 	public List<string> excludeTags;
@@ -52,14 +53,23 @@ public class GenerateClientFileCommand
 		AddArgument(new Argument<string>("source", "The .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
 		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
 		AddOption(new Option<bool>("--output-links", () => true, "When true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
-
+		AddOption(new Option<List<string>>(
+				name: "--output-unity-projects",
+				description: "Paths to unity projects to generate clients in"
+			)
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			}, 
+			(args, i) => args.outputToUnityProjects = i);
+		
 		var existingFedOption = new Option<List<string>>("--existing-fed-ids", "A set of existing federation ids")
 		{
 			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(existingFedOption, (args, i) => { });
 		AddOption(
-			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations")
+			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations (Obsolete)")
 			{
 				AllowMultipleArgumentsPerToken = true,
 				Arity = ArgumentArity.ZeroOrMore
@@ -73,7 +83,7 @@ public class GenerateClientFileCommand
 
 		AddOption(new Option<List<string>>(
 				name: "--output-path-hints",
-				description: "A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root"
+				description: "A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root (Obsolete)"
 				)
 			{
 				AllowMultipleArgumentsPerToken = true,
@@ -158,6 +168,18 @@ public class GenerateClientFileCommand
 			var allSchemaTypes = ServiceDocGenerator
 				.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
 
+			var possibleFederationIdTypes = allTypes.Where(t =>
+				t.IsAssignableTo(typeof(IFederationId))).ToArray();
+			var discoveredFederationNameToFullTypeName = new Dictionary<string, string>();
+			foreach (var possibleFederationType in possibleFederationIdTypes)
+			{
+				var federationAttribute = possibleFederationType.GetCustomAttribute<FederationIdAttribute>();
+				if (federationAttribute == null) continue;
+
+				discoveredFederationNameToFullTypeName[federationAttribute.FederationId] =
+					possibleFederationType.FullName;
+			}
+			
 			if (missingAttributes.Count > 0)
 			{
 				var typesWithErr = string.Join(",",
@@ -186,15 +208,51 @@ public class GenerateClientFileCommand
 					continue;
 				}
 
-				if (args.outputToLinkedProjects)
+				var unityProjectTargets = new HashSet<string>();
+				{
+					// combine all unity targets
+					if (args.outputToLinkedProjects)
+					{
+						foreach (var target in args.ProjectService.GetLinkedUnityProjects())
+						{
+							unityProjectTargets.Add(target);
+						}
+					}
+					if (args.outputToUnityProjects != null)
+					{
+						foreach (var target in args.outputToUnityProjects)
+						{
+							unityProjectTargets.Add(target);
+						}
+					}
+				}
+
+				if (unityProjectTargets.Count > 0)
 				{
 					// UNITY
 
-					Log.Verbose($"Linked project count {args.ProjectService.GetLinkedUnityProjects().Count}");
-					if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
+					Log.Verbose($"Linked project count {unityProjectTargets.Count}");
+				
+					var existingFeds = new List<ExistingFederation>();
+					foreach (var (id, typeName) in discoveredFederationNameToFullTypeName)
 					{
-						var existingFeds = new List<ExistingFederation>();
-						for (var i = 0; i < args.existingFederationIds.Count; i++)
+						existingFeds.Add(new ExistingFederation
+						{
+							federationId = id, 
+							federationIdTypeName = typeName
+						});
+					}
+					for (var i = 0; i < args.existingFederationIds.Count; i++)
+					{
+						var existing =
+							existingFeds.FirstOrDefault(e => e.federationId == args.existingFederationIds[i]);
+						if (existing != null)
+						{
+							// if the federation was discovered via reflection; then allow the arg to at least 
+							//  override the discovered setting... 
+							existing.federationIdTypeName = args.existingFederationTypeNames[i];
+						}
+						else
 						{
 							existingFeds.Add(new ExistingFederation
 							{
@@ -202,41 +260,42 @@ public class GenerateClientFileCommand
 								federationIdTypeName = args.existingFederationTypeNames[i]
 							});
 						}
+					}
 
-						var generator = new ClientCodeGenerator(descriptor, existingFeds);
-						if (!string.IsNullOrEmpty(args.outputDirectory))
+					var generator = new ClientCodeGenerator(descriptor, existingFeds);
+					if (!string.IsNullOrEmpty(args.outputDirectory))
+					{
+						Directory.CreateDirectory(args.outputDirectory);
+						var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
+						generator.GenerateCSharpCode(outputPath);
+					}
+
+					foreach (var unityProjectPath in unityProjectTargets)
+					{
+
+						var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
+						var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
+						if (!Directory.Exists(unityAssetPath))
 						{
-							Directory.CreateDirectory(args.outputDirectory);
-							var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
-							generator.GenerateCSharpCode(outputPath);
+							Log.Error(
+								$"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
+							continue;
 						}
 
-						foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
+						beamoIdToOutputHint.TryGetValue(descriptor.Name, out var hintPath);
+
+						GeneratedFileDescriptor fileDescriptor =
+							new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString() };
+
+						Task generationTask =
+							GenerateFile(descriptor, fileDescriptor, args, unityPathRoot, hintPath);
+						if (generationTask != null)
 						{
-
-							var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
-							var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
-							if (!Directory.Exists(unityAssetPath))
-							{
-								Log.Error(
-									$"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
-								continue;
-							}
-
-							beamoIdToOutputHint.TryGetValue(descriptor.Name, out var hintPath);
-
-							GeneratedFileDescriptor fileDescriptor =
-								new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString() };
-
-							Task generationTask =
-								GenerateFile(descriptor, fileDescriptor, args, unityPathRoot, hintPath);
-							if (generationTask != null)
-							{
-								await generationTask;
-								break;
-							}
+							await generationTask;
+							break;
 						}
 					}
+				
 				}
 			}
 
