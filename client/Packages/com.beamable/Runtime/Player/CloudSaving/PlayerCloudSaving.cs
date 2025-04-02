@@ -6,6 +6,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Semantics;
 using Beamable.Coroutines;
 using Beamable.Utility;
 using System;
@@ -22,13 +23,14 @@ namespace Beamable.Player.CloudSaving
 {
 	public class PlayerCloudSaving : ICloudSavingService
 	{
-		private const string DATA_REPLACED_NOTIFICATION = "cloudsaving.refresh";
+		private const string DataReplacedNotification = "cloudsaving.refresh";
 		private readonly IPlatformService _platformService;
 		private readonly PlayerCloudSavingConfiguration _configuration;
 		private readonly CoroutineService _coroutineService;
 		private readonly ICloudsavingApi _cloudSavingApi;
 		private readonly BeamContext _beamContext;
 		private readonly INotificationService _notificationService;
+		private readonly ServiceLock _serviceLock;
 		private readonly LocalSavePathDetail _localSaveInformation;
 
 		private CloudSavingManifest _localManifest;
@@ -60,7 +62,8 @@ namespace Beamable.Player.CloudSaving
 		                         CoroutineService coroutineService,
 		                         ICloudsavingApi cloudSavingApi,
 		                         BeamContext beamContext,
-		                         INotificationService notificationService)
+		                         INotificationService notificationService,
+		                         ServiceLock serviceLock)
 		{
 			_platformService = platformService;
 			_configuration = configuration;
@@ -68,6 +71,7 @@ namespace Beamable.Player.CloudSaving
 			_cloudSavingApi = cloudSavingApi;
 			_beamContext = beamContext;
 			_notificationService = notificationService;
+			_serviceLock = serviceLock;
 			_localSaveInformation = new LocalSavePathDetail(_platformService);
 			ServiceStatus = CloudSaveStatus.Inactive;
 
@@ -81,6 +85,12 @@ namespace Beamable.Player.CloudSaving
 			if (ServiceStatus != CloudSaveStatus.Inactive)
 			{
 				Debug.LogWarning("PlayerCloudSaving is already initialized. To ReInitialize use the ReInit method.");
+				return ServiceStatus;
+			}
+
+			if (!_serviceLock.AttemptToLock(ServiceLock.CloudSavingServiceName, nameof(PlayerCloudSaving)))
+			{
+				Debug.LogWarning($"Could not Initialize {nameof(PlayerCloudSaving)} because another CloudSaving service is already initialized.");
 				return ServiceStatus;
 			}
 
@@ -978,14 +988,14 @@ namespace Beamable.Player.CloudSaving
 
 		private void SubscribeToEvents()
 		{
-			_notificationService.Subscribe(DATA_REPLACED_NOTIFICATION, OnDataReplaced);
+			_notificationService.Subscribe(DataReplacedNotification, OnDataReplaced);
 			_beamContext.OnUserLoggedIn += OnUserLogged;
 			_beamContext.OnReloadUser += OnReloadUser;
 		}
 
 		private void UnsubscribeToEvents()
 		{
-			_notificationService.Unsubscribe(DATA_REPLACED_NOTIFICATION, OnDataReplaced);
+			_notificationService.Unsubscribe(DataReplacedNotification, OnDataReplaced);
 			_beamContext.OnUserLoggedIn -= OnUserLogged;
 			_beamContext.OnReloadUser -= OnReloadUser;
 		}
