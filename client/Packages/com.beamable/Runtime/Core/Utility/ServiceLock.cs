@@ -12,7 +12,6 @@ public class ServiceLock
 		bool isLocked = _serviceLocker.TryGetValue(serviceName, out string implementation);
 		if (!isLocked || implementation == implementationName)
 		{
-			Debug.Log($"Locking {implementationName} as the current CloudSaving service.");
 			_serviceLocker[serviceName] = implementationName;
 			return true;
 		}

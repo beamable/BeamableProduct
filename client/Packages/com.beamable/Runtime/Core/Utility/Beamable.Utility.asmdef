@@ -6,17 +6,9 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [
-        "Facebook.Unity.dll"
-    ],
+    "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "com.unity.mobile.notifications",
-            "expression": "[2,3]",
-            "define": "NOTIFICATIONS_PACKAGE"
-        }
-    ],
+    "versionDefines": [],
     "noEngineReferences": false
 }
