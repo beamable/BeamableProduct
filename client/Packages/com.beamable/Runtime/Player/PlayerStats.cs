@@ -175,12 +175,19 @@ namespace Beamable.Player
 			await _platform.OnReady;
 			// Ensure cache is clear so we force to get stat data from server
 			_statService.ClearCaches();
-			var stats = await _statService.GetStats("client", "public", "player", _userContext.UserId);
-
+			
+			var publicStats = await _statService.GetStats("client", "public", "player", _userContext.UserId);
+			var privateStats = await _statService.GetStats("client", "private", "player", _userContext.UserId);
+			
 			var nextData = new SerializableDictionaryStringToPlayerStat();
-			foreach (var kvp in stats)
+			foreach (var publicStat in publicStats)
 			{
-				nextData.Add(kvp.Key, new PlayerStat(kvp.Key, kvp.Value, this));
+				nextData.Add(publicStat.Key, new PlayerStat(publicStat.Key, publicStat.Value, this));
+			}
+
+			foreach (var privateStat in privateStats)
+			{
+				nextData.Add(privateStat.Key, new PlayerStat(privateStat.Key, privateStat.Value, this));
 			}
 
 			SetData(nextData);
