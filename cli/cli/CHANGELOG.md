@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `beam project generate-client` creates clients with correct `ISupportsFederation` style interfaces directly from the CLI by loading available `IFederationId` types [#3958](https://github.com/beamable/BeamableProduct/issues/3958)
 - `beam project open` works with Visual Studio
+- `beam init` will save extra path files even when reinitializing a `.beamable` folder
 
 ### Added
 - `beam deploy release` shows CID/PID information as part of release confirmation [#3954](https://github.com/beamable/BeamableProduct/issues/3954)
