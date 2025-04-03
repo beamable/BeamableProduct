@@ -17,7 +17,7 @@ namespace Beamable.Server.Editor.Usam
 			var _ = WaitReload();
 		}
 		
-		public Promise WaitReload()
+		public async Promise WaitReload()
 		{
 			var taskId = ++latestReloadTaskId;
 			LoadLegacyServices();
@@ -25,9 +25,14 @@ namespace Beamable.Server.Editor.Usam
 			_ctx.OnRealmChange -= OnBeamEditorRealmChanged;
 			_ctx.OnRealmChange += OnBeamEditorRealmChanged;
 
-			var command = _cli.UnityManifest();
-
 			_requiredUpgrades.Clear();
+
+			// make sure the cli has been initialized, 
+			//  otherwise there may be settings or files that haven't 
+			//  been flushed yet. 
+			await _ctx.BeamCli.OnReady;
+
+			var command = _cli.UnityManifest();
 			var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
 			checkCommand.OnStreamCheckResultsForBeamoId(cb =>
 			{
@@ -35,7 +40,7 @@ namespace Beamable.Server.Editor.Usam
 					return;
 				_requiredUpgrades.Add(cb.data);
 			});
-			checkCommand.Run();
+			_ = checkCommand.Run();
 			
 			
 			command.OnStreamShowManifestCommandOutput(cb =>
@@ -75,7 +80,7 @@ namespace Beamable.Server.Editor.Usam
 			ListenForStatus();
 			ListenForDocker();
 			ListenForBuildChanges();
-			return p;
+			await p;
 		}
 
 		private void OnBeamEditorRealmChanged(RealmView realm)
