@@ -1307,14 +1307,14 @@ public partial class DeployUtil
 				buildReports.Add(output);
 			}
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
-			Log.Error(ex, "Failed to collect build report.");
+			Log.Error("Failed to collect build report.");
 			foreach (var task in pendingTasks)
 			{
 				if (task.IsFaulted)
 				{
-					Log.Error(task.Exception, "- Inner build report failure");
+					Log.Error($"- Inner build report failure. message=[{task.Exception.Message}]");
 				}
 			}
 			throw;

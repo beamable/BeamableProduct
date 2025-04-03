@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Loader;
+using Beamable.Common;
 
 namespace cli.Dotnet;
 
