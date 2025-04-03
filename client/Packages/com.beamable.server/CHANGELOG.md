@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - _Beam Services_ window's service selector dropdown has correct height on Windows
+- `Lightbeam.Lootbox.SharedCode` doesn't through rouge assembly not found errors anymore. [3944](https://github.com/beamable/BeamableProduct/issues/3944)
 
 ## [2.1.4] - 2025-03-26
 
