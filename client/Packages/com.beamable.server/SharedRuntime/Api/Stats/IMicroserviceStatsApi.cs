@@ -31,7 +31,7 @@ namespace Beamable.Server.Api.Stats
 		/// <param name="userId">The ID of the user that you want to retrieve the stats</param>
 		/// <param name="stats">This is an optional parameter. It will filter which stats you want to retrieve instead of retrieving it all</param>
 		/// <returns>A promise which contains a dictionary with the retrieved stats</returns>
-		Promise<Dictionary<string, string>> GetStats(StatsDomainType domain, StatsAccessType access, long userId,
+		Promise<Dictionary<string, string>> GetFilteredStats(StatsDomainType domain, StatsAccessType access, long userId,
 			string[] stats = null);
 		
 		/// <summary>
@@ -113,8 +113,8 @@ namespace Beamable.Server.Api.Stats
 
 		/// <summary>
 		/// <para>
-		/// This method is obsolete, please use <see cref="GetStats(StatsDomainType,StatsAccessType,long,string[])"/> instead.
-		/// You can replace it for <code>GetStats(StatsDomainType.Game, StatsAccessType.Public, userId, stats)</code>
+		/// This method is obsolete, please use <see cref="GetFilteredStats"/> instead.
+		/// You can replace it for <code>GetFilteredStats(StatsDomainType.Game, StatsAccessType.Public, userId, stats)</code>
 		/// </para>
 		/// Retrieve one or more stat values, each by key
 		/// </summary>
@@ -126,7 +126,7 @@ namespace Beamable.Server.Api.Stats
 
 		/// <summary>
 		/// <para>
-		/// This method is obsolete, please use <see cref="GetStats(StatsDomainType,StatsAccessType,long,string[])"/> instead.
+		/// This method is obsolete, please use <see cref="GetStats"/> instead.
 		/// You can replace it for <code>GetStats(StatsDomainType.Game, StatsAccessType.Public, userId)</code>
 		/// </para>
 		/// Retrieve all stat values, each by key
@@ -151,7 +151,7 @@ namespace Beamable.Server.Api.Stats
 
 		/// <summary>
 		/// <para>
-		/// This method is obsolete, please use <see cref="GetStats(StatsDomainType,StatsAccessType,long,string[])"/> instead.
+		/// This method is obsolete, please use <see cref="GetFilteredStats"/> instead.
 		/// You can replace it for <code>GetStat(StatsDomainType.Game, StatsAccessType.Private, userId, stats)</code>
 		/// </para>
 		/// Retrieve one or more stat values, each by key
@@ -164,7 +164,7 @@ namespace Beamable.Server.Api.Stats
 
 		/// <summary>
 		/// <para>
-		/// This method is obsolete, please use <see cref="GetStats(StatsDomainType,StatsAccessType,long,string[])"/> instead.
+		/// This method is obsolete, please use <see cref="GetStat"/> instead.
 		/// You can replace it for <code>GetStat(StatsDomainType.Game, StatsAccessType.Private, userId)</code>
 		/// </para>
 		/// Retrieve all stat values, each by key
@@ -176,8 +176,8 @@ namespace Beamable.Server.Api.Stats
 
 		/// <summary>
 		/// <para>
-		/// This method is obsolete, please use <see cref="GetStats(StatsDomainType,StatsAccessType,long,string[])"/> instead.
-		/// You can replace it for <code>GetStat(StatsDomainType.Game, StatsAccessType.Private, userId)</code>
+		/// This method is obsolete, please use <see cref="GetStats"/> instead.
+		/// You can replace it for <code>GetStats(StatsDomainType.Game, StatsAccessType.Private, userId)</code>
 		/// </para>
 		/// Retrieve all stat values, each by key
 		/// </summary>

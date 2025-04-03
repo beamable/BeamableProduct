@@ -23,7 +23,7 @@ namespace Beamable.Server.Api.Stats
             Context = context;
         }
 
-        public Promise<Dictionary<string, string>> GetStats(StatsDomainType domain, StatsAccessType access, long userId, string[] stats = null)
+        public Promise<Dictionary<string, string>> GetFilteredStats(StatsDomainType domain, StatsAccessType access, long userId, string[] stats = null)
         {
 	        string prefix = GeneratePrefix(domain, access, userId);
 	        return BaseGetStats(prefix, stats);
@@ -31,7 +31,7 @@ namespace Beamable.Server.Api.Stats
 
         public Promise<string> GetStat(StatsDomainType domain, StatsAccessType access, long userId, string stat)
         {
-	        return GetStats(domain, access, userId, new[] { stat }).Map(res => res.GetValueOrDefault(stat));
+	        return GetFilteredStats(domain, access, userId, new[] { stat }).Map(res => res.GetValueOrDefault(stat));
         }
 
         public Promise SetStats(StatsDomainType domain, StatsAccessType access, long userId, Dictionary<string, string> stats)
