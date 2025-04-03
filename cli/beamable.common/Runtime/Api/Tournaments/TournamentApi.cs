@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Tournaments
 
 		public Promise<string> GetPlayerAlias(long playerId, string statName = "alias")
 		{
-			return _stats.GetStats("client", "public", "player", playerId).Map(stats =>
+			return _stats.GetStats(StatsDomainType.Client, StatsAccessType.Public, playerId).Map(stats =>
 			{
 				var defaultAlias = "unknown";
 				stats.TryGetValue(statName, out defaultAlias);
@@ -258,7 +258,7 @@ namespace Beamable.Common.Api.Tournaments
 
 		public Promise<string> GetPlayerAvatar(long playerId, string statName = "avatar")
 		{
-			return _stats.GetStats("client", "public", "player", playerId).Map(stats =>
+			return _stats.GetStats(StatsDomainType.Client, StatsAccessType.Public, playerId).Map(stats =>
 			{
 				var defaultAlias = "0";
 				stats.TryGetValue("avatar", out defaultAlias);

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Upgrade CLI to 4.2.0
+- StatsService now supports accessing Private Client Stats.
 
 ### Fixed
 - Fixed an issue which attempting using Stats after refreshing `PlayerStats` did not returned updated values.

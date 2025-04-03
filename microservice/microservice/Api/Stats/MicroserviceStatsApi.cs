@@ -23,6 +23,60 @@ namespace Beamable.Server.Api.Stats
             Context = context;
         }
 
+        public Promise<Dictionary<string, string>> GetStats(StatsDomainType domain, StatsAccessType access, long userId, string[] stats = null)
+        {
+	        string prefix = GeneratePrefix(domain, access, userId);
+	        return BaseGetStats(prefix, stats);
+        }
+
+        public Promise<string> GetStat(StatsDomainType domain, StatsAccessType access, long userId, string stat)
+        {
+	        return GetStats(domain, access, userId, new[] { stat }).Map(res => res.GetValueOrDefault(stat));
+        }
+
+        public Promise SetStats(StatsDomainType domain, StatsAccessType access, long userId, Dictionary<string, string> stats)
+        {
+	        string prefix = GeneratePrefix(domain, access, userId);
+	        return BaseSetStats(prefix, stats).ToPromise();
+        }
+
+        public Promise SetStat(StatsDomainType domain, StatsAccessType access, long userId, string key, string value)
+        {
+	        return SetStats(domain, access, userId, new Dictionary<string, string> { { key, value } });
+        }
+
+        public Promise DeleteStats(StatsDomainType domain, StatsAccessType access, long userId, string[] stats)
+        {
+	        string prefix = GeneratePrefix(domain, access, userId);
+	       return BaseDeleteStats(prefix, stats);
+        }
+
+        public Promise DeleteStat(StatsDomainType domain, StatsAccessType access, long userId, string key)
+        {
+	        return DeleteStats(domain, access, userId, new[] { key });
+        }
+        
+        protected override Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
+        {
+	        string queryString = "";
+	        for (int i = 0; i < gamerTags.Count; i++)
+	        {
+		        if (i > 0)
+		        {
+			        queryString += ",";
+		        }
+		        queryString += $"{prefix}{gamerTags[i]}";
+	        }
+
+	        return Requester.Request<BatchReadStatsResponse>(
+		        Method.GET,
+		        $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
+		        useCache: true
+	        ).Map(rsp => rsp.ToDictionary());
+        }
+
+        #region Obsolete Methods
+        
         public Promise<string> GetPublicPlayerStat(long userId, string stat)
         {
 	        return GetStats("game", "public", "player", userId, new string[] { stat })
@@ -79,32 +133,15 @@ namespace Beamable.Server.Api.Stats
 
         public Promise<EmptyResponse> SetStats(string domain, string access, string type, long userId, Dictionary<string, string> stats)
         {
-            var key = $"{domain}.{access}.{type}.{userId}";
-            return Requester.Request<EmptyResponse>(Method.POST, $"{OBJECT_SERVICE}/{key}", new StatUpdates(stats));
+	        var key = $"{domain}.{access}.{type}.{userId}";
+	        return BaseSetStats(key, stats);
         }
 
         public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
            string[] stats)
         {
-            var key = $"{domain}.{access}.{type}.{userId}";
-            var statString = stats == null ? string.Empty : string.Join(",", stats);
-            return Requester.Request<StatsResponse>(Method.GET, $"{OBJECT_SERVICE}/{key}", new StatsRequest
-            {
-                stats = statString
-            }).Map(res =>
-            {
-                Dictionary<string, string> stats = res.stats.ToDictionary(
-                kvp => kvp.Key,
-                kvp =>
-                {
-                    if (kvp.Value is JContainer jarray)
-                    {
-                        return jarray.ToString(Formatting.None);
-                    }
-                    return $"{kvp.Value}";
-                });
-                return stats;
-            });
+	        var prefix = $"{domain}.{access}.{type}.{userId}";
+	        return BaseGetStats(prefix, stats);
         }
 
         public Promise DeleteProtectedPlayerStats(long userId, string[] stats) => 
@@ -113,32 +150,47 @@ namespace Beamable.Server.Api.Stats
         public Promise DeleteStats(string domain, string access, string type, long userId, string[] stats)
         {
 	        var key = $"{domain}.{access}.{type}.{userId}";
+	        return BaseDeleteStats(key, stats);
+        }
+
+        #endregion
+
+        private Promise<Dictionary<string, string>> BaseGetStats(string prefix, string[] stats)
+        {
 	        var statString = stats == null ? string.Empty : string.Join(",", stats);
-	        return Requester.Request<Unit>(Method.DELETE, $"{OBJECT_SERVICE}/{key}", new StatsRequest
+	        return Requester.Request<StatsResponse>(Method.GET, $"{OBJECT_SERVICE}/{prefix}", new StatsRequest
+	        {
+		        stats = statString
+	        }).Map(res =>
+	        {
+		        Dictionary<string, string> statsDict = res.stats.ToDictionary(
+			        kvp => kvp.Key,
+			        kvp =>
+			        {
+				        if (kvp.Value is JContainer jarray)
+				        {
+					        return jarray.ToString(Formatting.None);
+				        }
+				        return $"{kvp.Value}";
+			        });
+		        return statsDict;
+	        });
+        }
+        
+        private Promise<EmptyResponse> BaseSetStats(string prefix, Dictionary<string, string> stats)
+        {
+	        return Requester.Request<EmptyResponse>(Method.POST, $"{OBJECT_SERVICE}/{prefix}", new StatUpdates(stats));
+        }
+        
+        private Promise BaseDeleteStats(string prefix, string[] stats)
+        {
+	        var statString = stats == null ? string.Empty : string.Join(",", stats);
+	        return Requester.Request<Unit>(Method.DELETE, $"{OBJECT_SERVICE}/{prefix}", new StatsRequest
 	        {
 		        stats = statString
 	        }).ToPromise();
         }
-
-        protected override Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
-        {
-            string queryString = "";
-            for (int i = 0; i < gamerTags.Count; i++)
-            {
-                if (i > 0)
-                {
-                    queryString += ",";
-                }
-                queryString += $"{prefix}{gamerTags[i]}";
-            }
-
-            return Requester.Request<BatchReadStatsResponse>(
-               Method.GET,
-               $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-               useCache: true
-            ).Map(rsp => rsp.ToDictionary());
-        }
-
+        
     }
 
 #pragma warning disable 0649
