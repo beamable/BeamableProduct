@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Opening Microservice solution will create a `.slnf` file and only show projects which are not readonly
 
+### Fixed
+- _Beam Services_ window's service selector dropdown has correct height on Windows
+
 ## [2.1.4] - 2025-03-26
 
 no changes

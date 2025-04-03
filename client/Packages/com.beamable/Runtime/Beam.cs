@@ -276,6 +276,7 @@ namespace Beamable
 			DependencyBuilder.AddScopedStorage<PlayerLeaderboards, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
+			DependencyBuilder.AddSingleton<ServiceLock>();
 			DependencyBuilder.AddScoped<ICloudSavingService, PlayerCloudSaving>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>(p => p.GetService<PlayerInventory>().Currencies);
