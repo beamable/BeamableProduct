@@ -234,7 +234,7 @@ namespace Beamable.Editor.Microservice.UI2
 								                       return new BeamGUI.DropdownMetadata<ServicePickerWindow>
 								                       {
 									                       window = popup,
-									                       startSize = new Vector2(300, cards.Count * ServicePickerWindow.ComputedHeight)
+									                       startSize = new Vector2(300, cards.Count * ServicePickerWindow.ComputedHeight + 40)
 								                       };
 							                       }
 							);
