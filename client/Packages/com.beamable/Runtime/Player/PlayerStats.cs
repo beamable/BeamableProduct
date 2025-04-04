@@ -2,6 +2,7 @@ using Beamable.Api;
 using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Stats;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
@@ -37,12 +38,24 @@ namespace Beamable.Player
 		/// The value of the stat
 		/// </summary>
 		public string Value { get; }
+		
+		/// <summary>
+		/// The AccessType of the Stat, can be Public or Private 
+		/// </summary>
+		public StatsAccessType AccessType { get; }
+		
+		/// <summary>
+		/// The DomainType of the Stat, can be Client or Game
+		/// </summary>
+		public StatsDomainType DomainType { get; }
 
-		public PlayerStat(string key, string value, PlayerStats group)
+		public PlayerStat(string key, string value, PlayerStats group, StatsAccessType accessType, StatsDomainType domainType)
 		{
 			Key = key;
 			Value = value;
 			Group = group;
+			AccessType = accessType;
+			DomainType = domainType;
 		}
 
 		public static implicit operator string(PlayerStat self) => self.Value;
@@ -175,12 +188,26 @@ namespace Beamable.Player
 			await _platform.OnReady;
 			// Ensure cache is clear so we force to get stat data from server
 			_statService.ClearCaches();
-			var stats = await _statService.GetStats("client", "public", "player", _userContext.UserId);
 
+			var publicStats =
+				await _statService.GetStats(StatsDomainType.Client, StatsAccessType.Public, _userContext.UserId);
+			
+			var privateStats =
+				await _statService.GetStats(StatsDomainType.Client, StatsAccessType.Private, _userContext.UserId);
+			
 			var nextData = new SerializableDictionaryStringToPlayerStat();
-			foreach (var kvp in stats)
+			foreach (var publicStat in publicStats)
 			{
-				nextData.Add(kvp.Key, new PlayerStat(kvp.Key, kvp.Value, this));
+				nextData.Add(publicStat.Key,
+				             new PlayerStat(publicStat.Key, publicStat.Value, this, StatsAccessType.Public,
+				                            StatsDomainType.Client));
+			}
+
+			foreach (var privateStat in privateStats)
+			{
+				nextData.Add(privateStat.Key,
+				             new PlayerStat(privateStat.Key, privateStat.Value, this, StatsAccessType.Private,
+				                            StatsDomainType.Client));
 			}
 
 			SetData(nextData);

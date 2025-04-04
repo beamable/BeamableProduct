@@ -1,3 +1,4 @@
+using Beamable.Common.Api.Stats;
 using System.Threading.Tasks;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
@@ -15,14 +16,14 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			[ClientCallable]
 			public async Task<string> GetPrivateStats(string statKey)
 			{
-				var stat = await Services.Stats.GetProtectedPlayerStat(Context.UserId, statKey);
+				var stat = await Services.Stats.GetStat(StatsDomainType.Game, StatsAccessType.Private, Context.UserId, statKey);
 				return stat;
 			}
 
 			[ClientCallable]
-			public async Task<string> GetStats(string domain, string access, string type)
+			public async Task<string> GetStats(StatsDomainType domain, StatsAccessType access)
 			{
-				var stats = await Services.Stats.GetStats(domain, access, type, Context.UserId);
+				var stats = await Services.Stats.GetStats(domain, access, Context.UserId);
 				return string.Join(",", stats.Values);
 			}
 		}
@@ -57,7 +58,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			Assert.IsTrue(ms.HasInitialized);
 
 			testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats),
-				1, 1, "game", "private", "player"));
+				1, 1, StatsDomainType.Game, StatsAccessType.Private));
 
 			// simulate shutdown event...
 			await ms.OnShutdown(this, null);
@@ -94,7 +95,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			Assert.IsTrue(ms.HasInitialized);
 
 			testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats),
-				1, 1, "game", "private", "player"));
+				1, 1, StatsDomainType.Game, StatsAccessType.Private));
 
 			// simulate shutdown event...
 			await ms.OnShutdown(this, null);

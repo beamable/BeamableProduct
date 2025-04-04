@@ -44,8 +44,7 @@ namespace Beamable.Api.Stats
 			return Requester.Request<BatchReadStatsResponse>(
 			   Method.GET,
 			   $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-			   useCache: true,
-			   includeAuthHeader: false
+			   useCache: true
 			).RecoverWith(ex =>
 			   {
 				   if (!_offlineCache.UseOfflineCache)
