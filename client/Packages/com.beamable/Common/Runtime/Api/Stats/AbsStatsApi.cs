@@ -39,20 +39,20 @@ namespace Beamable.Common.Api.Stats
 		
 		public UserDataCache<Dictionary<string, string>> GetCache(StatsDomainType domain, StatsAccessType access)
 		{
-			string prefix = GeneratePrefix(domain, access);
+			string prefix = StatsApiHelper.GeneratePrefix(domain, access);
 			return GetCache(prefix);
 		}
 
 		public Promise<EmptyResponse> SetStats(StatsAccessType access, Dictionary<string, string> stats)
 		{
 			long gamerTag = UserContext.UserId;
-			string prefix = $"client.{ParseAccessValue(access)}.player.";
+			string prefix = StatsApiHelper.GeneratePrefix(StatsDomainType.Client, access);
 			return BaseSetStats(stats, prefix, gamerTag);
 		}
 		
 		public Promise<Dictionary<string, string>> GetStats(StatsDomainType domain, StatsAccessType access, long id)
 		{
-			string prefix = GeneratePrefix(domain, access);
+			string prefix = StatsApiHelper.GeneratePrefix(domain, access);
 			return GetCache(prefix).Get(id);
 		}
 
@@ -74,7 +74,9 @@ namespace Beamable.Common.Api.Stats
 		public Promise<StatsSearchResponse> SearchStats(StatsDomainType domain, StatsAccessType access,
 			List<Criteria> criteria)
 		{
-			return SearchStats(ParseDomainType(domain), ParseAccessValue(access), "player", criteria);
+			string domainType = StatsApiHelper.ParseDomainType(domain);
+			string accessValue = StatsApiHelper.ParseAccessValue(access);
+			return SearchStats(domainType, accessValue, "player", criteria);
 		}
 		
 		/// <summary>
@@ -181,38 +183,7 @@ namespace Beamable.Common.Api.Stats
 		protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
 		   List<long> gamerTags);
 
-		protected string GeneratePrefix(StatsDomainType domain, StatsAccessType access)
-		{
-			string domainValue = ParseDomainType(domain);
-
-			string accessValue = ParseAccessValue(access);
-			return $"{domainValue}.{accessValue}.player.";
-		}
 		
-		protected string GeneratePrefix(StatsDomainType domain, StatsAccessType access, long userId)
-		{
-			return $"{GeneratePrefix(domain, access)}{userId}";
-		}
-
-		protected static string ParseDomainType(StatsDomainType domain)
-		{
-			return domain switch
-			{
-				StatsDomainType.Client => "client",
-				StatsDomainType.Game => "game",
-				_ => string.Empty
-			};
-		}
-		
-		protected static string ParseAccessValue(StatsAccessType access)
-		{
-			return access switch
-			{
-				StatsAccessType.Private => "private",
-				StatsAccessType.Public => "public",
-				_ => string.Empty
-			};
-		}
 		
 		private Promise<EmptyResponse> BaseSetStats(Dictionary<string, string> stats, string prefix, long gamerTag)
 		{
@@ -230,8 +201,7 @@ namespace Beamable.Common.Api.Stats
 		public long[] ids;
 	}
 
-
-
+	
 	/// <summary>
 	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.
 	/// </summary>
