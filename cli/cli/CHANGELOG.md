@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.2.0] - 2025-04-03
+## [4.2.0] - 2025-04-04
 ### Changed
 - `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)
 - `beam project open` command can create a `.slnf` file to show a subset of projects based on the Unity project perspective.
