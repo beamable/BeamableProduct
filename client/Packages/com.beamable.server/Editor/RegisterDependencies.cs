@@ -22,6 +22,7 @@ namespace Beamable.Server.Editor
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<IServiceRoutingResolution, UsamRoutingResolution>();
+			builder.AddSingleton<IRequesterStorage, RequesterDebugger>();
 			builder.AddSingleton<UsamRoutingStrategy, UsamRoutingStrategy>(_ =>
 			{
 				var usam = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();

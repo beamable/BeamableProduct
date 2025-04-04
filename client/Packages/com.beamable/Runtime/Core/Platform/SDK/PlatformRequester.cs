@@ -17,6 +17,7 @@ using Beamable.Common.Scheduler;
 using Beamable.Common.Spew;
 using Beamable.Serialization;
 using Core.Platform.SDK;
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,6 +47,51 @@ namespace Beamable.Api
 	{
 		Promise Init();
 		string RoutingMap { get; }
+	}
+
+	public interface IRequesterStorage
+	{
+		int HandleRequestStarted(Method method, string url, Dictionary<string, string> headers, [CanBeNull] string body);
+		void HandleRequestFinished(int id, bool success, [CanBeNull] string responseBody);
+	}
+
+	public class RequesterDebugger : IRequesterStorage
+	{
+		private readonly Dictionary<int,RequestInfo> _storage = new Dictionary<int, RequestInfo>();
+		public int HandleRequestStarted(Method method, string url, Dictionary<string, string> headers, string body)
+		{
+			var id = _storage.Count + 1;
+			_storage.Add(id,new RequestInfo{method = method, url = url, headers = headers, body = body});
+			Debug.Log($"Request started: {id}: {JsonUtility.ToJson(_storage[id])}");
+			return id;
+		}
+		public void HandleRequestFinished(int id, bool success, string responseBody)
+		{
+			if (!_storage.TryGetValue(id, out RequestInfo value))
+			{
+				return;
+			}
+			value.status = success ? RequestStatus.Succeded : RequestStatus.Failed;
+			value.responseBody = responseBody;
+			Debug.Log($"Request finished: {id}: {JsonUtility.ToJson(value)}");
+		}
+		[Serializable]
+		public enum RequestStatus
+		{
+			Started,
+			Succeded,
+			Failed
+		}
+		[Serializable]
+		public class RequestInfo
+		{
+			public Method method;
+			public string url;
+			public Dictionary<string, string> headers;
+			public string body;
+			public RequestStatus status = RequestStatus.Started;
+			public string responseBody = string.Empty;
+		}
 	}
 
 	public static class ServiceRoutingResolutionExtensions
@@ -101,6 +147,7 @@ namespace Beamable.Api
 		protected AccessTokenStorage accessTokenStorage;
 		private IConnectivityService _connectivityService;
 		private IServiceRoutingResolution _routingKeyResolution;
+		private IRequesterStorage _requesterStorage;
 		private bool _disposed;
 		private bool internetConnectivity;
 		public string Host { get; set; }
@@ -174,6 +221,11 @@ namespace Beamable.Api
 			{
 				_routingKeyResolution = provider.GetService<IServiceRoutingResolution>();
 			}
+
+			if (provider.CanBuildService<IRequesterStorage>())
+			{
+				_requesterStorage = provider.GetService<IRequesterStorage>();
+			}
 		}
 
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
@@ -236,6 +288,7 @@ namespace Beamable.Api
 			}
 
 			var op = request.SendWebRequest();
+			var id = _requesterStorage?.HandleRequestStarted(method, url, headers, Encoding.UTF8.GetString(bodyBytes ?? new byte[]{})) ?? -1;
 			op.completed += _ =>
 			{
 				try
@@ -244,6 +297,7 @@ namespace Beamable.Api
 					if (request.responseCode >= 300 || request.IsNetworkError())
 					{
 						result.CompleteError(new HttpRequesterException(responsePayload));
+						_requesterStorage?.HandleRequestFinished(id, false, responsePayload);
 					}
 					else
 					{
@@ -251,6 +305,7 @@ namespace Beamable.Api
 							? JsonUtility.FromJson<T>(responsePayload)
 							: parser(responsePayload);
 						result.CompleteSuccess(parsedResult);
+						_requesterStorage?.HandleRequestFinished(id, true, responsePayload);
 					}
 				}
 				catch (Exception ex)
@@ -517,21 +572,26 @@ namespace Beamable.Api
 		   byte[] body,
 		   SDKRequesterOptions<T> opts)
 		{
+			var id = -1; // TODO This should be improved or at least tested for failed and retried requests.
 			return Promise.RetryPromise<T>(() =>
 			{
 				var result = new Promise<T>();
 				var request = PrepareWebRequester(contentType, body, opts);
 				var op = request.SendWebRequest();
-				op.completed += _ => HandleResponse<T>(result, request, opts);
+				id = _requesterStorage?.HandleRequestStarted(opts.Method, opts.Uri, new Dictionary<string, string>(),
+				                                             Encoding.UTF8.GetString(body ?? new byte[] { })) ?? -1;
+					op.completed += _ => HandleResponse<T>(result, request, opts, id);
 				return result;
 			}, (ex) =>
 			{
+				
 				if (ex?.Message?.ToLowerInvariant()?.Contains(SSL_ERROR.ToLowerInvariant()) ?? false)
 				{
 					// this is an SSL error, and from empirical observation, maybe it'll work if we try again...
 					PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri} -- trying again due to ssl error.");
 					return true;
 				}
+				_requesterStorage?.HandleRequestFinished(id, false, ex?.Message);
 				// the error is not a known retry case... 
 				return false;
 			});
@@ -641,7 +701,7 @@ namespace Beamable.Api
 			return request;
 		}
 
-		private void HandleResponse<T>(Promise<T> promise, UnityWebRequest request, SDKRequesterOptions<T> opts)
+		private void HandleResponse<T>(Promise<T> promise, UnityWebRequest request, SDKRequesterOptions<T> opts, int? id)
 		{
 			// swallow any responses if already disposed
 			if (_disposed)
@@ -649,10 +709,11 @@ namespace Beamable.Api
 				PlatformLogger.Log("<b>[PlatformRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
-
+			bool isSuccess = false;
+			string responsePayload = null;
 			try
 			{
-				var responsePayload = request.downloadHandler.text;
+				responsePayload = request.downloadHandler.text;
 
 
 				if (request.IsNetworkError())
@@ -707,6 +768,7 @@ namespace Beamable.Api
 						{
 							result = JsonUtility.FromJson<T>(responsePayload);
 						}
+						isSuccess = true;
 						promise.CompleteSuccess(result);
 					}
 					catch (Exception ex)
@@ -717,6 +779,7 @@ namespace Beamable.Api
 			}
 			finally
 			{
+				_requesterStorage?.HandleRequestFinished(id ?? -1, isSuccess, responsePayload);
 				request?.Dispose();
 			}
 		}
