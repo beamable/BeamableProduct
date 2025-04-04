@@ -21,6 +21,15 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool UseLatestDeployedManifest { get; set; }
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
+	public bool UseSequentialBuild { get; set; }
+	public string SlnFilePath;
+
+
+	public string SolutionFilePath
+	{
+		get => SlnFilePath;
+		set => SlnFilePath = value;
+	}
 }
 
 
@@ -40,7 +49,8 @@ public class ReleaseDeploymentCommand
 		DeployArgs.AddPlanOptions(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
-		
+		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
+
 		// TODO: is this really helpful?
 		AddOption(new Option<bool>(new string[]{"--from-latest-plan", "--latest-plan", "--last-plan", "-lp"}, "Use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
 	}
@@ -126,6 +136,10 @@ public class ReleaseDeploymentCommand
 			planPath = planPath
 		});
 
+		Log.Information(@$"Releasing plan to target:
+ HOST={args.AppContext.Host}
+ CID={args.AppContext.Cid}
+ PID={args.AppContext.Pid}");
 		var confirmationText = hasChanges
 			? "Are you sure you want to release the changes?"
 			: "You can still deploy the services, which will roll existing services. Do you want to continue?";

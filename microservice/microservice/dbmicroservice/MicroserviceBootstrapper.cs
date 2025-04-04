@@ -85,7 +85,7 @@ namespace Beamable.Server
 	    private static Task _localDiscoveryBroadcast;
 	    public static LogLevel LogLevel;
 
-	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, MicroserviceAttribute attr)
+	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, bool includeOtel)
 	    {
 		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 		    if (!LogUtil.TryParseSystemLogLevel(args.LogLevel, out LogLevel))
@@ -108,21 +108,19 @@ namespace Beamable.Server
 					    .AddZLoggerLogProcessor(debugLogProcessor);
 			    }
 
-			    builder.AddOpenTelemetry(logging =>
+			    if (includeOtel)
 			    {
-				    // https://signoz.io/blog/opentelemetry-dotnet-logs/
-				    logging.IncludeScopes = true;
-				    logging
-					    .SetResourceBuilder(_resourceBuilder)
-					    .AddOtlpExporter();
-				    
-			    });
-			    // builder.AddZLoggerLogProcessor(opts =>
-			    // {
-				   //  opts.IncludeScopes = true;
-				   //  var processor = new Logs.OtelZLogProcessor(args, _activityProvider);
-				   //  return processor;
-			    // });
+				    builder.AddOpenTelemetry(logging =>
+				    {
+					    // https://signoz.io/blog/opentelemetry-dotnet-logs/
+					    logging.IncludeScopes = true;
+					    logging
+						    .SetResourceBuilder(_resourceBuilder)
+						    .AddOtlpExporter();
+
+				    });
+			    }
+			    
 			    switch (args.LogOutputType)
 			    {
 				    case LogOutputType.DEFAULT when !inDocker:
@@ -131,14 +129,11 @@ namespace Beamable.Server
 					    {
 						    opts.UsePlainTextFormatter();
 					    });
-					    // logger = logConfig.WriteTo.Console(
-						   //  new MessageTemplateTextFormatter(
-							  //   "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+					    
 					    break;
 				    
 				    case LogOutputType.FILE:
 					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
-					    // logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
 					    break;
 	            
 				    case LogOutputType.STRUCTURED_AND_FILE:
@@ -148,9 +143,6 @@ namespace Beamable.Server
 					    });
 					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
 
-					    // logger = logConfig
-						   //  .WriteTo.Console(new MicroserviceLogFormatter())
-						   //  .WriteTo.File(args.LogOutputPath ?? "./service.log");
 					    break;
 				    case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
 				    case LogOutputType.STRUCTURED:
@@ -172,93 +164,6 @@ namespace Beamable.Server
 		    Debug.Instance = new MicroserviceDebug();
 		    _logger = BeamableZLoggerProvider.LogContext.Value = _loggerFactory.CreateLogger<TMicroservice>();
 	    }
-	    
-	  //   private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
-   //      {
-   //          var logLevel = args.LogLevel;
-			// var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
-   //
-			// LogUtil.TryParseLogLevel(logLevel, out var envLogLevel);
-   //
-   //          var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-   //          
-   //          
-   //          // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-   //          LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
-   //
-   //          // https://github.com/serilog/serilog/wiki/Configuration-Basics
-   //          var logConfig = new LoggerConfiguration()
-	  //           .MinimumLevel.ControlledBy(LogLevel)
-	  //           .Enrich.FromLogContext()
-	  //           .Destructure.ByTransforming<MicroserviceRequestContext>(ctx => new
-	  //           {
-		 //            cid = ctx.Cid,
-		 //            pid = ctx.Pid,
-		 //            path = ctx.Path,
-		 //            status = ctx.Status,
-		 //            id = ctx.Id,
-		 //            isEvent = ctx.IsEvent,
-		 //            userId = ctx.UserId,
-		 //            scopes = ctx.Scopes
-	  //           });
-   //
-   //          if (!disableLogTruncate)
-   //          {
-	  //           logConfig = logConfig
-		 //            .Enrich.With(new LogMsgSizeEnricher(args.LogTruncateLimit))
-		 //            .Destructure.ToMaximumCollectionCount(args.LogMaxCollectionSize)
-		 //            .Destructure.ToMaximumDepth(args.LogMaxDepth)
-		 //            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
-   //          }
-   //
-   //          var logger = logConfig;
-   //
-   //          DebugLogSink debugLogSink = null;
-   //          if (!inDocker)
-   //          {
-	  //           debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
-	  //           logConfig = logConfig.WriteTo.Sink(debugLogSink);
-   //          }
-   //          
-   //          switch (args.LogOutputType)
-   //          {
-	  //           case LogOutputType.DEFAULT when !inDocker:
-	  //           case LogOutputType.UNSTRUCTURED:
-		 //            logger = logConfig.WriteTo.Console(
-			//             new MessageTemplateTextFormatter(
-			// 	            "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
-		 //            break;
-	  //           case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
-	  //           case LogOutputType.STRUCTURED:
-		 //            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
-		 //            break;
-	  //           case LogOutputType.FILE:
-		 //            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
-		 //            break;
-	  //           
-	  //           case LogOutputType.STRUCTURED_AND_FILE:
-		 //            logger = logConfig
-			//             .WriteTo.Console(new MicroserviceLogFormatter())
-			//             .WriteTo.File(args.LogOutputPath ?? "./service.log");
-		 //            break;
-			// 	default:
-			// 		logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
-			// 		break;
-   //          }
-   //          
-   //          
-   //          Log.Logger = logger
-   //             .CreateLogger();
-   //
-   //          // use newtonsoft for JsonUtility
-   //          JsonUtilityConverter.Init();
-   //
-   //          BeamableLogProvider.Provider = new BeamableSerilogProvider();
-   //          Debug.Instance = new MicroserviceDebug();
-   //          BeamableSerilogProvider.LogContext.Value = Log.Logger;
-   //
-   //          return debugLogSink;
-   //      }
 
         public static void ConfigureUnhandledError()
         {
@@ -564,7 +469,7 @@ namespace Beamable.Server
 	        {
 		        try
 		        {
-					//_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
+					_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
 					var processExists = true;
 					do
 					{
@@ -586,12 +491,12 @@ namespace Beamable.Server
 					} while (processExists);
 					
 					// terminate. 
-					//_logger.LogInformation("Quitting because required process no longer exists");
+					_logger.LogInformation("Quitting because required process no longer exists");
 					Environment.Exit(0);
 		        }
 		        catch (Exception ex)
 		        {
-			        //_logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			        _logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
 		        }
 	        });
 	        
@@ -736,7 +641,9 @@ namespace Beamable.Server
 	        var envArgs = _args = new EnvironmentArgs();
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        
-	        //_logger.LogInformation($"Starting Prepare");
+	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
+
+	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
@@ -768,13 +675,13 @@ namespace Beamable.Server
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				//_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
+				_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
 				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        //_logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
+		        _logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
 		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
@@ -789,7 +696,7 @@ namespace Beamable.Server
 	        {
 		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
 	        }
-	        //_logger.ZLogInformation($"Running command {fileName} {arguments}");
+	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
 	        process.Start();
 	        process.BeginOutputReadLine();
 	        process.BeginErrorReadLine();
@@ -808,11 +715,10 @@ namespace Beamable.Server
 	     
 	        if (process.ExitCode != 0)
 	        {
-		        //_logger.ZLogError($"generate-env output:\n{sublogs}");
+		        _logger.ZLogError($"generate-env output:\n{sublogs}");
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
-	        //_logger.ZLogInformation($"environment:\n{result}");
-
+	        _logger.ZLogInformation($"environment:\n{result}");
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 	        if (parsedOutput.type != "stream")
@@ -849,7 +755,7 @@ namespace Beamable.Server
 		        });
 
 
-	        ConfigureZLogging<TMicroservice>(envArgs, attribute);
+	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: true);
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice

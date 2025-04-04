@@ -36,6 +36,7 @@ namespace Beamable.Api.CloudSaving
 		private PlatformRequester _requester;
 		private WaitForSecondsRealtime _delay;
 		private CoroutineService _coroutineService;
+		private readonly ServiceLock _serviceLock;
 		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
 		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
@@ -70,12 +71,22 @@ namespace Beamable.Api.CloudSaving
 		/// </summary>
 		public bool isInitializing = false;
 
-		public CloudSavingService(IPlatformService platform, PlatformRequester requester,
-		   CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This field is a guard that is true when the <see cref="Init"/> method is finished, and false otherwise.
+		/// </summary>
+		public bool IsInitialized = false;
+
+		public CloudSavingService(IPlatformService platform,
+		                          PlatformRequester requester,
+		                          CoroutineService coroutineService,
+		                          IDependencyProvider provider,
+		                          ServiceLock serviceLock) : base(provider, ServiceName)
 		{
 			_platform = platform;
 			_requester = requester;
 			_coroutineService = coroutineService;
+			_serviceLock = serviceLock;
 			_connectivityService = provider.GetService<IConnectivityService>();
 		}
 
@@ -90,6 +101,13 @@ namespace Beamable.Api.CloudSaving
 		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
 		public Promise<Unit> Init(int pollingIntervalSecs = 10)
 		{
+			
+			if (!_serviceLock.AttemptToLock(ServiceLock.CloudSavingServiceName, nameof(CloudSavingService)))
+			{
+				Debug.LogWarning($"Could not Initialize {nameof(CloudSavingService)} because another CloudSaving service is already initialized.");
+				return PromiseBase.SuccessfulUnit;
+			}
+			
 			if (isInitializing) { return _initDone; }
 
 			_initDone = new Promise<Unit>();
@@ -125,10 +143,34 @@ namespace Beamable.Api.CloudSaving
 				 );
 					_initDone.CompleteSuccess(PromiseBase.Unit);
 					isInitializing = false;
+					IsInitialized = true;
 					return _initDone;
 				});
 			});
 		}
+ 
+		/// <summary>
+		/// This method will force the upload of local save data to cloud save
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing if the upload was successful</returns>
+		public async Promise<bool> ForceUploadSave()
+		{
+			if (!_connectivityService.HasConnectivity)
+			{
+				Debug.LogWarning("Save not upload due to no connectivity");
+				return false;
+			}
+
+			if (!Directory.Exists(LocalCloudDataFullPath))
+			{
+				Debug.LogWarning("Save not upload as no local save had been found");
+				return false;
+			}
+
+			await UploadLocalSave();
+			return true;
+		}
+		
 		private Promise<Unit> ClearQueuesAndLocalManifest()
 		{
 			_pendingUploads.Clear();
@@ -168,20 +210,27 @@ namespace Beamable.Api.CloudSaving
 				{
 					continue;
 				}
-				_pendingUploads.Clear();
-				if (Directory.Exists(LocalCloudDataFullPath))
-				{
-					foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*", SearchOption.AllDirectories))
-					{
-						yield return SetPendingUploads(filepath);
-					}
-				}
 
-				if (_pendingUploads.Count > 0)
+				yield return UploadLocalSave();
+			}
+		}
+
+		private async Promise<Unit> UploadLocalSave()
+		{
+			_pendingUploads.Clear();
+			if (Directory.Exists(LocalCloudDataFullPath))
+			{
+				foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*", SearchOption.AllDirectories))
 				{
-					yield return UploadUserData();
+					await SetPendingUploads(filepath);
 				}
 			}
+
+			if (_pendingUploads.Count > 0)
+			{
+				await UploadUserData();
+			}
+			return await Promise<Unit>.Successful(PromiseBase.Unit);
 		}
 
 		private void InvokeError(string reason, Exception inner)
@@ -486,20 +535,27 @@ namespace Beamable.Api.CloudSaving
 				foreach (var kv in fileNameToKey)
 				{
 					PreSignedURL s3PresignedURL;
-					bool isSuccessful = s3Response.TryGetValue(kv.Value, out s3PresignedURL);
+					
 
-					if (isSuccessful)
+					if (s3Response.TryGetValue(kv.Value, out s3PresignedURL))
 					{
 						var fullPathToFile = kv.Key;
-						isSuccessful = promiseList.TryAdd(s3PresignedURL.url,
+						
+						var canAdd = promiseList.TryAdd(s3PresignedURL.url,
 														  new Func<Promise<Unit>>(
 															  () => GetOrPostObjectInS3(
 																  fullPathToFile, s3PresignedURL, method)));
-					}
 
-					if (!isSuccessful)
+						if (!canAdd)
+						{
+							Debug.LogWarning($"PreSigned URL is already being used, check if {s3PresignedURL.objectKey} is already added");
+						}
+						
+					}
+					else
 					{
-						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
+						string availableKeys = string.Join(" | ", s3Response.Keys);
+						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}. Available Keys are: {availableKeys}");
 					}
 				}
 
@@ -511,7 +567,14 @@ namespace Beamable.Api.CloudSaving
 				return Promise.ExecuteInBatch(10, promiseList.Values.ToList()).Map(_ => PromiseBase.Unit);
 			}).Error(delete =>
 			{
-				Directory.Delete(localCloudDataPath.temp, true);
+				#if UNITY_ANDROID || UNITY_IOS
+				Debug.LogWarning($"Temp Folder cannot be deleted on {Application.platform}, skipping it.");
+				#else
+				if (Directory.Exists(localCloudDataPath.temp))
+				{
+					Directory.Delete(localCloudDataPath.temp, true);
+				}
+				#endif
 			});
 		}
 
@@ -570,9 +633,16 @@ namespace Beamable.Api.CloudSaving
 			}
 			if (isError)
 			{
+				if (request.responseCode == 404)
+				{
+					// File not found in S3, skip Download and use LocalSave
+					promise.CompleteSuccess(PromiseBase.Unit);
+					yield return promise;
+					yield break;
+				}
 				_ProcessFilesPromiseList.Clear();
 				promise.Error(ProvideErrorCallback(nameof(HandleResponse)));
-				promise.CompleteError(new Exception($"Failed to process {filename}, stopping service."));
+				promise.CompleteError(new Exception($"Failed to download {filename}, stopping service."));
 				yield return promise;
 				yield break;
 			}
