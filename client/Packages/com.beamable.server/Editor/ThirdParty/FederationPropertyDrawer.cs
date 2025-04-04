@@ -30,10 +30,9 @@ namespace Beamable.Server.Editor
 		{
 			var usamService = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();
 
-			if (_filteredServiceEntries == null)
-			{
-				_filteredServiceEntries = usamService.latestManifest.services.FindAll(s => s.federations.Count > 0).ToList();
-			}
+			
+			_filteredServiceEntries = usamService.latestManifest.services.FindAll(s => s.federations.Count > 0).ToList();
+			
 
 			if (_filteredServiceEntries.Count == 0)
 			{
@@ -106,7 +105,6 @@ namespace Beamable.Server.Editor
 					if(_allowedInterfaces.Contains(federation.interfaceName))
 					{
 						_options.Add(new FederationOption { Microservice = descriptor.beamoId, Namespace = federation.federationId });
-						break;
 					}
 				}
 			}
