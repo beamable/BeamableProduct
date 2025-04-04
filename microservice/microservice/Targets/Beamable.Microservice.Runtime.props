@@ -63,5 +63,30 @@
             <Visible>false</Visible>
         </AdditionalFiles>
     </ItemGroup>
-    
+
+    <PropertyGroup>
+        <IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
+        <IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
+        <IsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</IsMacOS>
+        <RunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</RunningArchitecture>
+
+        <CollectorConfigPath>$(MSBuildThisFileDirectory)..\collector-files\clickhouse-config.yaml</CollectorConfigPath>
+        <CollectorExecutablePath Condition="$(IsWindows)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-amd64.exe</CollectorExecutablePath>
+        <CollectorExecutablePath Condition="$(IsWindows)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-arm64.exe</CollectorExecutablePath>
+        <CollectorExecutablePath Condition="$(IsLinux)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-amd64</CollectorExecutablePath>
+        <CollectorExecutablePath Condition="$(IsLinux)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-arm64</CollectorExecutablePath>
+        <CollectorExecutablePath Condition="$(IsMacOS)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-amd64</CollectorExecutablePath>
+        <CollectorExecutablePath Condition="$(IsMacOS)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-arm64</CollectorExecutablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(CollectorExecutablePath)" PackagePath="$(OutputPath)">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+
+        <None Include="$(CollectorConfigPath)" PackagePath="$(OutputPath)">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>
