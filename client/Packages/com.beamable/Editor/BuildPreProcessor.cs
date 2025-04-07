@@ -81,7 +81,7 @@ namespace Beamable.Editor
 				};
 				var applyAndContinueButton = new OptionDialogWindow.ButtonInfo()
 				{
-					Name = "Apply Fix and Continue",
+					Name = "Apply Editor Values and Continue",
 					OnClick = () =>
 					{
 						BeamEditorContext.Default.WriteConfig();
@@ -89,10 +89,8 @@ namespace Beamable.Editor
 					},
 					Color = new Color(0.29f, 1f, 0.31f),
 				};
-				// if (!OptionDialogWindow.ShowModal(title, joinMessage, continueBuildButton, cancelBuildButton,
-				//                                   applyAndContinueButton))
-				if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
-				                                 "Abort Build"))
+				if (!OptionDialogWindow.ShowModal(title, joinMessage, continueBuildButton, cancelBuildButton,
+				                                   applyAndContinueButton))
 				{
 					throw new BuildFailedException("Aborted build due to Beamable checks");
 				}
