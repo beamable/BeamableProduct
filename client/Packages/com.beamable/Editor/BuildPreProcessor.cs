@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Config;
 using Beamable.Content;
 using Beamable.Editor.Content;
+using Beamable.Editor.UI.OptionDialogWindow;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,13 +63,36 @@ namespace Beamable.Editor
 				Debug.LogWarning("Beamable wasn't able to detect if there was unpublished content, because the Beamable SDK wasn't initialized yet.");
 			}
 #endif
-
 			if (messages.Count > 0)
 			{
-				// EditorUtility.Dis
-				var title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
+				string title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
+				string joinMessage = string.Join("\n\n", messages);
+				var continueBuildButton = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Continue Build",
+					OnClick = () => true,
+					Color = new Color(0.08f, 0.44f, 0.82f)
+				};
+				var cancelBuildButton = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Abort Build",
+					OnClick = () => false,
+					Color = Color.gray,
+				};
+				var applyAndContinueButton = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Apply Fix and Continue",
+					OnClick = () =>
+					{
+						BeamEditorContext.Default.WriteConfig();
+						return true;
+					},
+					Color = new Color(0.29f, 1f, 0.31f),
+				};
+				// if (!OptionDialogWindow.ShowModal(title, joinMessage, continueBuildButton, cancelBuildButton,
+				//                                   applyAndContinueButton))
 				if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
-												 "Abort Build"))
+				                                 "Abort Build"))
 				{
 					throw new BuildFailedException("Aborted build due to Beamable checks");
 				}
@@ -141,12 +165,12 @@ popup, click the 'Save Config-Defaults' button.";
 			if (!cidsMatch || !pidsMatch)
 			{
 				warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
-The editor environment is using a cid=[{editorCid}] and pid=[{editorPid}]. These values are assigned in Toolbox.
-However, the built target will use a cid=[{runtimeCid}] and pid=[{runtimePid}]. These values are assigned in the config-defaults.txt file.
+The editor environment is using a <b>cid=[{editorCid}]</b> and <b>pid=[{editorPid}]</b>. These values are assigned in Toolbox.
+However, the built target will use a <b>cid=[{runtimeCid}]</b> and <b>pid=[{runtimePid}]</b>. These values are assigned in the config-defaults.txt file.
 These values do not match. This means that you are building the game
 for a different Beamable environment than the editor is currently using. Be careful! 
 In the Beamable Toolbox, click on the account icon, and then in the account summary
-popup, click the 'Save Config-Defaults' button.";
+popup, click the <b>'Save Config-Defaults' button.</b>";
 				Debug.LogWarning(warningMessage);
 				return false;
 			}
