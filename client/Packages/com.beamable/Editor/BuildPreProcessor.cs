@@ -134,22 +134,20 @@ namespace Beamable.Editor
 
 			if (string.IsNullOrEmpty(runtimeCid))
 			{
-				var error = $@"BEAMABLE ERROR: No CID was detected!
+				var error = $@"BEAMABLE ERROR: No <b>CID</b> was detected!
 Without a CID, the Beamable SDK will not be able to connect to any Beamable Cloud. 
 Please make sure you have a config-defaults.txt file in Assets/Beamable/Resources. 
-In the Beamable Toolbox, click on the account icon, and then in the account summary
-popup, click the 'Save Config-Defaults' button.";
+In the Unity Editor window in top-right corner, click on the Beamable Menu, then go to the Select Realm submenu and click the <b>Save to config-defaults</b> option.";
 				Debug.LogError(error);
 				throw new BuildFailedException(error);
 			}
 
 			if (string.IsNullOrEmpty(runtimePid))
 			{
-				var error = $@"BEAMABLE ERROR: No PID was detected!
+				var error = $@"BEAMABLE ERROR: No <b>PID</b> was detected!
 Without a PID, the Beamable SDK will not be able to connect to any Beamable Cloud. 
 Please make sure you have a config-defaults.txt file in Assets/Beamable/Resources. 
-In the Beamable Toolbox, click on the account icon, and then in the account summary
-popup, click the 'Save Config-Defaults' button.";
+In the Unity Editor window in top-right corner, click on the Beamable Menu, then go to the Select Realm submenu and click the <b>Save to config-defaults</b> option.";
 				Debug.LogError(error);
 				throw new BuildFailedException(error);
 			}
@@ -163,12 +161,11 @@ popup, click the 'Save Config-Defaults' button.";
 			if (!cidsMatch || !pidsMatch)
 			{
 				warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
-The editor environment is using a <b>cid=[{editorCid}]</b> and <b>pid=[{editorPid}]</b>. These values are assigned in Toolbox.
-However, the built target will use a <b>cid=[{runtimeCid}]</b> and <b>pid=[{runtimePid}]</b>. These values are assigned in the config-defaults.txt file.
+The editor environment is using a <b>cid=[{{editorCid}}]</b> and <b>pid=[{{editorPid}}]</b>. These values are accessible from Beamable Menu (top-right corner) in the Select Realm section.
+However, the built target will use a <b>cid=[{{runtimeCid}}]</b> and <b>pid=[{{runtimePid}}]</b>. These values are assigned in the config-defaults.txt file.
 These values do not match. This means that you are building the game
 for a different Beamable environment than the editor is currently using. Be careful! 
-In the Beamable Toolbox, click on the account icon, and then in the account summary
-popup, click the <b>'Save Config-Defaults' button.</b>";
+In the Unity Editor window in top-right corner, click on the Beamable Menu, then go to the Select Realm submenu and click the <b>Save to config-defaults</b> option.";
 				Debug.LogWarning(warningMessage);
 				return false;
 			}
