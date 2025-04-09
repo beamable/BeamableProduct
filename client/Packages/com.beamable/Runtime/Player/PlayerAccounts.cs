@@ -977,7 +977,20 @@ namespace Beamable.Player
 		/// <summary>
 		/// represents that the given credential is already in use by a different <see cref="PlayerAccount"/>
 		/// </summary>
-		CREDENTIAL_IS_ALREADY_TAKEN
+		CREDENTIAL_IS_ALREADY_TAKEN,
+		
+		/// <summary>
+		/// represents that the registration failed due to wrong realm configuration.
+		/// Can occur during third party login integration.
+		/// </summary>
+		INVALID_REALM_CONFIGURATION,
+		
+		/// <summary>
+		/// Represents error that is not covered by other values of this enum.
+		///  
+		/// </summary>
+		/// <remarks>If <see cref="RegistrationResult"/> contains this error it is useful to inspect the <see cref="RegistrationResult.innerException"/> field for more details.</remarks>
+		OTHER_ERROR,
 	}
 
 	/// <summary>
@@ -1673,13 +1686,13 @@ namespace Beamable.Player
 				catch (PlatformRequesterException ex)
 				{
 					res.innerException = ex;
-					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+					res.error = PlayerErrorFromPlatformError(ex.Error); // TODO TEST IT MORE
 					return res;
 				}
 			}
 			else
 			{
-				res.error = PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
+				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN; // TODO TEST IT MORE
 				return res;
 			}
 
@@ -1783,9 +1796,10 @@ namespace Beamable.Player
 				account.Update(user);
 				account.TryTriggerUpdate();
 			}
-			catch (PlatformRequesterException)
+			catch (PlatformRequesterException e)
 			{
-				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+				res.innerException = e;
+				res.error = PlayerErrorFromPlatformError(e.Error);
 				return res;
 			}
 			await Refresh();
@@ -1851,9 +1865,10 @@ namespace Beamable.Player
 				account.Update(user);
 				account.TryTriggerUpdate();
 			}
-			catch (RequesterException ex) when (ex.Status == 400 && ex.RequestError.error == "EmailAlreadyRegisteredError")
+			catch (PlatformRequesterException ex)
 			{
-				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+				res.innerException = ex;
+				res.error = PlayerErrorFromPlatformError(ex.Error);
 				return res;
 			}
 
@@ -1983,6 +1998,27 @@ namespace Beamable.Player
 				AccountManagementConfiguration.Instance.DisplayNameStat,
 				AccountManagementConfiguration.Instance.SubtextStat,
 				AccountManagementConfiguration.Instance.AvatarStat);
+		}
+
+		private static PlayerRegistrationError PlayerErrorFromPlatformError(PlatformError e)
+		{
+			if (e.status == 400 && (e.error.Equals("EmailAlreadyRegisteredError") || 
+			                        e.error.Equals("ThirdPartyAssociationAlreadyInUseError") || 
+			                        e.error.Equals("`")))
+			{
+				return PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+			}
+			if (e.error.Equals("DuplicateThirdPartyAssociationError"))
+			{
+				return PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
+			}
+			
+			if (e.error.Equals("InvalidClientSecretFile"))
+			{
+				return PlayerRegistrationError.INVALID_REALM_CONFIGURATION;
+			}
+			
+			return PlayerRegistrationError.OTHER_ERROR;
 		}
 
 		protected override async Promise PerformRefresh()
