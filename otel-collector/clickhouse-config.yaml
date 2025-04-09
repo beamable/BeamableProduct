@@ -44,8 +44,12 @@ exporters:
       #  name: "otel_metrics_histogram"
       #exponential_histogram: 
       #  name: "otel_metrics_exp_histogram"
+extensions:
+  servicediscovery:
+    custom_setting: "blablabla"  # use the fields defined in your Config struct
 
 service:
+  extensions: [servicediscovery]
   pipelines:
     logs:
       receivers: [otlp]
