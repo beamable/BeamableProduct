@@ -1668,31 +1668,28 @@ namespace Beamable.Player
 
 			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString(), ident.GetUniqueName());
 
-			if (externalIdentityAvailable)
-			{
-				try
-				{
-					var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName());
-					var user = await HandleResponse(authorizeRes);
-					if (user == null)
-					{
-						res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
-						return res;
-					}
-
-					account.Update(user);
-					account.TryTriggerUpdate();
-				}
-				catch (PlatformRequesterException ex)
-				{
-					res.innerException = ex;
-					res.error = PlayerErrorFromPlatformError(ex.Error); // TODO TEST IT MORE
-					return res;
-				}
-			}
-			else
+			if (!externalIdentityAvailable)
 			{
 				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN; // TODO TEST IT MORE
+				return res;
+			}
+			try
+			{
+				var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName());
+				var user = await HandleResponse(authorizeRes);
+				if (user == null)
+				{
+					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN; // IS IT? TODO TEST IT
+					return res;
+				}
+
+				account.Update(user);
+				account.TryTriggerUpdate();
+			}
+			catch (PlatformRequesterException ex)
+			{
+				res.innerException = ex;
+				res.error = PlayerErrorFromPlatformError(ex.Error); // TODO TEST IT MORE
 				return res;
 			}
 
