@@ -2004,7 +2004,7 @@ namespace Beamable.Player
 		{
 			if (e.status == 400 && (e.error.Equals("EmailAlreadyRegisteredError") || 
 			                        e.error.Equals("ThirdPartyAssociationAlreadyInUseError") || 
-			                        e.error.Equals("`")))
+			                        e.error.Equals("DeviceAlreadyInUseError")))
 			{
 				return PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 			}
