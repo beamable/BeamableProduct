@@ -46,6 +46,8 @@ public static class Diagnostics
 
 	public static class Srv
 	{
+		public const string DIAG_INVALID_ASYNC_VOID_ID = "BEAM_SRV_O006";
+
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new("BEAM_SRV_O001",
 				$"No {nameof(Microservice)} classes detected",
@@ -82,6 +84,14 @@ public static class Diagnostics
 			= new("BEAM_SRV_O005",
 				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
 				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				true);
+		
+		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod
+			= new(DIAG_INVALID_ASYNC_VOID_ID,
+				$"{nameof(Microservice)} Callable methods cannot be async voids",
+				$"{nameof(Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);

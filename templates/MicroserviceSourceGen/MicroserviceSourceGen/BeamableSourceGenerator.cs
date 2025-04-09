@@ -72,6 +72,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 		// Generate the partial declarations with the interfaces based on the federation configs
 		var isFedValid = true;
+		var isCallableMethodValids = true;
 
 		// Each partial declaration results in a Microservice info
 		// We should keep only the one that has the declared attribute here for now.
@@ -81,6 +82,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		foreach (MicroserviceInfo microserviceInfo in infos)
 		{
 			isFedValid &= ValidateFederations(context, microserviceInfo, config);
+			isCallableMethodValids &= ValidateCallableMethods(context, microserviceInfo);
 			if (!mergedInfos.Any(i => i.Name.Equals(microserviceInfo.Name)))
 			{
 				if (microserviceInfo.MicroserviceAttributeLocation != null)
@@ -310,6 +312,21 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				return isValid;
 			}
 		}
+
+		static bool ValidateCallableMethods(SourceProductionContext context, MicroserviceInfo info)
+		{
+			bool isValid = true;
+			foreach (var infoCallableMethod in info.CallableMethods)
+			{
+				if(infoCallableMethod is { isAsync: true, returnType: SpecialType.System_Void })
+				{
+					var err = Diagnostic.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod, info.MicroserviceClassLocation, infoCallableMethod.Name);
+					context.ReportDiagnostic(err);
+					isValid = false;
+				}
+			}
+			return isValid;
+		}
 	}
 
 	public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
@@ -322,6 +339,8 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		public Location MicroserviceAttributeLocation { get; }
 		public bool IsPartial { get; }
 		public List<(string Id, string ClassName, FederationInstanceConfig Federation, Location Location)> ImplementedFederations { get; }
+		
+		public List<(string Name, SpecialType returnType, bool isAsync)> CallableMethods { get; }
 
 		public MicroserviceInfo(INamedTypeSymbol type)
 		{
@@ -371,6 +390,19 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				));
 			}
 
+			// Gather all Callable methods
+			CallableMethods = new();
+			var members = type.GetMembers();
+			foreach (ISymbol member in members)
+			{
+				bool isCallableMethod = member.GetAttributes().Any(IsCallableAttribute);
+				if (!isCallableMethod || member is not IMethodSymbol methodSymbol)
+				{
+					continue;
+				}
+				CallableMethods.Add((methodSymbol.Name, methodSymbol.ReturnType.SpecialType, methodSymbol.IsAsync));
+			}
+			
 			// Check for the microservice attribute so we can validate its name does not have any invalid characters.
 			var serviceId = "";
 
@@ -391,7 +423,6 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			ServiceId = serviceId;
 		}
 
-
 		public bool Equals(MicroserviceInfo other)
 		{
 			return Namespace == other.Namespace
@@ -410,5 +441,21 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				return hashCode;
 			}
 		}
+	}
+	
+	public static bool IsCallableAttribute(AttributeData data)
+	{
+		// This check only detects the CallableAttribute and attributes that inherits it.
+		// This will not detect sub-types of sub-types.
+		INamedTypeSymbol attributeClass = data.AttributeClass;
+		if (attributeClass == null) return false;
+		string callableAttributeName = nameof(CallableAttribute);
+		string attr = nameof(Attribute);
+		if (attributeClass.Name == callableAttributeName)
+		{
+			return true;
+		}
+
+		return attributeClass.BaseType?.Name == callableAttributeName;
 	}
 }

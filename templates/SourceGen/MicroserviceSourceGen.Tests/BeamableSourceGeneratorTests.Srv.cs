@@ -206,4 +206,45 @@ public partial class SomeUserMicroservice : Microservice
 		// Ensure we have a single diagnostic error.
 		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.InvalidMicroserviceId));
 	}
+	
+	[Fact]
+	public void Test_Diagnostic_Srv_InvalidAsyncVoidCallableMethod()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+[Microservice(""some_user_service"")]
+public partial class SomeUserMicroservice : Microservice
+{
+	[ClientCallable]
+	public async void ClientTestAsyncCallable()
+	{
+	}
+
+	[ServerCallable]
+	public async void ServerTestAsyncCallable()
+	{
+	}
+
+	[Callable]
+	public async void TestAsyncCallable()
+	{
+	}
+}
+";
+		
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+
+		// We are testing the detection
+		PrepareForRun(new[] { cfg }, new[] { UserCode });
+
+		// Run generators and retrieve all results.
+		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+
+		// Ensure we have a single diagnostic error.
+		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.InvalidAsyncVoidCallableMethod));
+	}
 }
