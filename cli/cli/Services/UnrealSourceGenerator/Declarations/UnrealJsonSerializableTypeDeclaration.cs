@@ -519,10 +519,10 @@ class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : p
 
 public:
 
-	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|4 - Json"", DisplayName=""₢{nameof(NamespacedTypeName)}₢ To JSON String"")
+	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Json"", DisplayName=""₢{nameof(NamespacedTypeName)}₢ To JSON String"")
 	static FString ₢{nameof(NamespacedTypeName)}₢ToJsonString(const U₢{nameof(NamespacedTypeName)}₢* Serializable, const bool Pretty);
 
-	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|3 - Backend"", DisplayName=""Make ₢{nameof(NamespacedTypeName)}₢"", meta=(DefaultToSelf=""Outer"", AdvancedDisplay=""₢{nameof(_makeOptionalParamNames)}₢Outer"", NativeMakeFunc))
+	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", DisplayName=""Make ₢{nameof(NamespacedTypeName)}₢"", meta=(DefaultToSelf=""Outer"", AdvancedDisplay=""₢{nameof(_makeOptionalParamNames)}₢Outer"", NativeMakeFunc))
 	static U₢{nameof(NamespacedTypeName)}₢* Make(₢{nameof(_makeParams)}₢UObject* Outer);
 
 	₢{nameof(BREAK_UTILITY_DECLARATION)}₢
@@ -563,7 +563,7 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 
 ";
 
-	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|3 - Backend"", DisplayName=""Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
+	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", DisplayName=""Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
 	static void Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢);";
 
 	public const string BREAK_UTILITY_DEFINITION = $@"void U₢{nameof(NamespacedTypeName)}₢Library::Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢)
