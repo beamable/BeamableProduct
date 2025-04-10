@@ -987,7 +987,6 @@ namespace Beamable.Player
 		
 		/// <summary>
 		/// Represents error that is not covered by other values of this enum.
-		///  
 		/// </summary>
 		/// <remarks>If <see cref="RegistrationResult"/> contains this error it is useful to inspect the <see cref="RegistrationResult.innerException"/> field for more details.</remarks>
 		OTHER_ERROR,
