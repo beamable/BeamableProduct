@@ -1,4 +1,5 @@
 using Beamable.AccountManagement;
+using System.Linq;
 
 namespace Beamable.Editor.Modules.Account
 {
@@ -10,8 +11,6 @@ namespace Beamable.Editor.Modules.Account
 
 		static void EnableFacebook() => PlayerSettingsHelper.EnableFlag(BEAMABLE_FACEBOOK);
 		static void DisableFacebook() => PlayerSettingsHelper.DisableFlag(BEAMABLE_FACEBOOK);
-		static void EnableGooglePlayGames() => PlayerSettingsHelper.EnableFlag(BEAMABLE_GPGS);
-		static void DisableGooglePlayGames() => PlayerSettingsHelper.DisableFlag(BEAMABLE_GPGS);
 
 		static BeamableSocialsImporter()
 		{
@@ -55,15 +54,16 @@ namespace Beamable.Editor.Modules.Account
 			{
 				DisableFacebook();
 			}
-
-			if (config.GooglePlayGames)
+#if UNITY_ANDROID && !BEAMABLE_DISABLE_AUTO_GPGS_SYMBOL_UPDATE
+			if (System.AppDomain.CurrentDomain.GetAssemblies().Any(t => t.GetTypes().Any(type => type.FullName == "GooglePlayGames.GameInfo")))
 			{
-				EnableGooglePlayGames();
+				PlayerSettingsHelper.EnableFlag(BEAMABLE_GPGS);
 			}
 			else
 			{
-				DisableGooglePlayGames();
+				PlayerSettingsHelper.DisableFlag(BEAMABLE_GPGS);
 			}
+#endif
 		}
 
 	}
