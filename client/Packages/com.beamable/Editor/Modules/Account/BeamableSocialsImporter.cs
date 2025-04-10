@@ -6,7 +6,6 @@ namespace Beamable.Editor.Modules.Account
 	public class BeamableSocialsImporter : UnityEditor.AssetModificationProcessor
 	{
 		public const string BEAMABLE_FACEBOOK = "BEAMABLE_FACEBOOK";
-		public const string BEAMABLE_GPGS = "BEAMABLE_GPGS";
 		private const string ACCOUNT_CONFIG_PATH = "Assets/Beamable/Resources/AccountManagementConfiguration.asset";
 
 		static void EnableFacebook() => PlayerSettingsHelper.EnableFlag(BEAMABLE_FACEBOOK);
@@ -54,16 +53,6 @@ namespace Beamable.Editor.Modules.Account
 			{
 				DisableFacebook();
 			}
-#if UNITY_ANDROID && !BEAMABLE_DISABLE_AUTO_GPGS_SYMBOL_UPDATE
-			if (System.AppDomain.CurrentDomain.GetAssemblies().Any(t => t.GetTypes().Any(type => type.FullName == "GooglePlayGames.GameInfo")))
-			{
-				PlayerSettingsHelper.EnableFlag(BEAMABLE_GPGS);
-			}
-			else
-			{
-				PlayerSettingsHelper.DisableFlag(BEAMABLE_GPGS);
-			}
-#endif
 		}
 
 	}
