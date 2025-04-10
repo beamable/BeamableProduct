@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace Beamable.Common.Api.Auth
 {
-
 	public enum CredentialUsageStatus
 	{
 		// the credential is "available" to be used.
@@ -62,7 +61,7 @@ namespace Beamable.Common.Api.Auth
 			{
 				var resp = await _requester
 					.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available?email={encodedEmail}", null,
-					                               false);
+						false);
 
 				if (resp.available)
 				{
@@ -89,10 +88,10 @@ namespace Beamable.Common.Api.Auth
 			try
 			{
 				var resp = await _requester
-				       .Request<AvailabilityResponse>(
-					       Method.GET,
-					       $"{ACCOUNT_URL}/available/third-party{qb}", null,
-					       false);
+					.Request<AvailabilityResponse>(
+						Method.GET,
+						$"{ACCOUNT_URL}/available/third-party{qb}", null,
+						false);
 
 				if (resp.available)
 				{

@@ -171,7 +171,7 @@ namespace Beamable.Server.Generator
 			foreach (var method in allMethods)
 			{
 				var clientCallable = method.GetCustomAttribute<CallableAttribute>();
-				if (clientCallable == null)
+				if (clientCallable == null || clientCallable.Flags is CallableFlags.SkipGenerateClientFiles)
 				{
 					continue;
 				}

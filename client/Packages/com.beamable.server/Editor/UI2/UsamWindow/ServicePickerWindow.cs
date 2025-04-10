@@ -19,6 +19,8 @@ namespace Beamable.Editor.Microservice.UI2
 		const int buttonPadding = 2;
 		const int buttonYPadding = 7;
 
+		public static int ComputedHeight => elementHeight;
+
 		private const int clickablePadding = 20;
 
 		private void OnDestroy()

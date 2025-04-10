@@ -1179,7 +1179,8 @@ namespace Beamable.Server.Editor.Usam
 			var _ = _cli.ProjectOpen(new ProjectOpenArgs
 			{
 				onlyGenerate = onlyGenerate,
-				sln = SERVICES_SLN_PATH
+				sln = SERVICES_SLN_PATH,
+				fromUnity = true
 			}).Run();
 		}
 	}

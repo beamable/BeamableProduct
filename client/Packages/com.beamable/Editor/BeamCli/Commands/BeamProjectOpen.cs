@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Only generate the sln but do not open it</summary>
         public bool onlyGenerate;
+        /// <summary>Use a solution filter that hides projects that aren't writable in a Unity project</summary>
+        public bool fromUnity;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -25,6 +27,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.onlyGenerate != default(bool)))
             {
                 genBeamCommandArgs.Add(("--only-generate=" + this.onlyGenerate));
+            }
+            // If the fromUnity value was not default, then add it to the list of args.
+            if ((this.fromUnity != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--from-unity=" + this.fromUnity));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
