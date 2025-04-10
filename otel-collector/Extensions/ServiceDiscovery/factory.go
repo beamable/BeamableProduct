@@ -9,7 +9,9 @@ import (
 const typeStr = "servicediscovery"
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Port: "8181",
+	}
 }
 
 func NewFactory() extension.Factory {
@@ -24,7 +26,11 @@ func NewFactory() extension.Factory {
 func createExtension(
 	_ context.Context,
 	_ extension.Settings,
-	_ component.Config,
+	cfg component.Config,
 ) (extension.Extension, error) {
-	return &serviceDiscovery{}, nil
+	config := cfg.(*Config)
+
+	return &serviceDiscovery{
+		config:   config,
+	}, nil
 }

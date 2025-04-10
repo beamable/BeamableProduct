@@ -7,5 +7,6 @@ import (
 type Config struct {
 	component.Config
 
-	CustomSetting string `mapstructure:"custom_setting"`
+	Host string `mapstructure:"host"`
+	Port string `mapstructure:"port"`
 }

@@ -46,7 +46,8 @@ exporters:
       #  name: "otel_metrics_exp_histogram"
 extensions:
   servicediscovery:
-    custom_setting: "blablabla"  # use the fields defined in your Config struct
+    host: "0.0.0"
+    port: "8686"
 
 service:
   extensions: [servicediscovery]
