@@ -1673,10 +1673,11 @@ namespace Beamable.Player
 									challenge_token = response.challenge_token, solution = solution
 								});
 						}
-						catch(Exception e)
+						catch(PlatformRequesterException e)
 						{
 							res.innerException = e;
-							res.error = PlayerRegistrationError.FAILED_FEDERATED_AUTHORIZATION;
+							var error = PlayerErrorFromPlatformError(e.Error);
+							res.error = error == PlayerRegistrationError.OTHER_ERROR ? PlayerRegistrationError.FAILED_FEDERATED_AUTHORIZATION : error;
 							return res;
 						}
 						return await HandleResponse(solutionResponse);
