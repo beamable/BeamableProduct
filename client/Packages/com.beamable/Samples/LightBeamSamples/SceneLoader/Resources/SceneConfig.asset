@@ -53,6 +53,12 @@ MonoBehaviour:
     title: Loot Box
     sceneName: Sample_LootBox
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/LootBox/Sample_LootBox.unity
+  - label: cloudsaving
+    about: Contains a friendly user interface demonstrating how to use the Player
+      Cloud Saving Service.
+    title: Cloud Saving
+    sceneName: Sample_CloudSaving
+    scenePath: Packages/com.beamable/Samples/LightBeamSamples/CloudSaving/Sample_CloudSaving.unity
   editorScenes:
   - name: boot
     title: 
@@ -87,3 +93,8 @@ MonoBehaviour:
     about: Contains a friendly user interface demonstrating how to use a C#MS to
       create a Loot Box system.
     scene: {fileID: 102900000, guid: 316e018940e0d4900ba58ee614346c61, type: 3}
+  - name: cloudsaving
+    title: Cloud Saving
+    about: Contains a friendly user interface demonstrating how to use the Player
+      Cloud Saving Service.
+    scene: {fileID: 102900000, guid: b095fd13200fa74498971019fbbcba7f, type: 3}

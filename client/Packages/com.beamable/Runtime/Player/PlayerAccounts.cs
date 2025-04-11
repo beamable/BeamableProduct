@@ -1145,7 +1145,7 @@ namespace Beamable.Player
 			}
 
 			var statsService = GetStatsServiceForAccount(account);
-			await statsService.SetStats("public",
+			await statsService.SetStats(StatsAccessType.Public,
 										new Dictionary<string, string>
 										{
 											[key] = value

@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Text;
 using Beamable.Common.BeamCli;
 using cli.Services;
 using Microsoft.Build.Evaluation;
@@ -92,7 +93,8 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     private static readonly ProjectFileEditFunction[] ProjectFunctions = new ProjectFileEditFunction[]
     {
         EnsureAtLeastNet8,
-        EnsureUsingLatestMongo
+        EnsureUsingLatestMongo,
+        EnsureDockerIgnoreAllowsBeamApp
     };
     
     public static (List<CheckResultsForBeamoId>, FileCache) ComputeChecks<TArgs>(TArgs args) where TArgs : CommandArgs, IChecksArgs
@@ -118,11 +120,11 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
                 beamoId = beamoId
             };
 
-            var (allText, lines) = ReadLineNumbers(project.FullPath);
+            var (allText, lineNumberToIndex, lines) = ReadLineNumbers(project.FullPath, cache);
             cache[project.FullPath] = allText;
             foreach (var projectFunction in ProjectFunctions)
             {
-                var edit = projectFunction(beamoId, lines, project);
+                var edit = projectFunction(beamoId, lineNumberToIndex, lines, project, cache);
                 if (edit != null)
                 {
                     projectResults.fileEdits.Add(edit);
@@ -141,15 +143,17 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
         return (results, cache);
     }
     
-    static (string, Dictionary<int, int>) ReadLineNumbers(string path)
+    static (string, Dictionary<int, int>, List<string>) ReadLineNumbers(string path, FileCache cache)
     {
-        
         var allText = File.ReadAllText(path);
+        cache.Add(path, allText);
         var lineNumberToStringIndex = new Dictionary<int, int>
         {
             [0] = 0
         };
+        var lines = new List<string>();
         var lineNumber = 0;
+        var buffer = new StringBuilder();
         for (var i = 0; i < allText.Length - 1; i++)
         {
             var c = allText[i];
@@ -160,15 +164,76 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
                     lineNumber++;
                     lineNumberToStringIndex[lineNumber] = i; // do we need to +1 here for the extra character?
                     i++;
+                    lines.Add(buffer.ToString());
+                    buffer.Clear();
                     break;
                 case '\n':
                     lineNumber++;
-                    lineNumberToStringIndex[lineNumber] = i ; 
+                    lineNumberToStringIndex[lineNumber] = i; 
+                    lines.Add(buffer.ToString());
+                    buffer.Clear();
+                    break;
+                default:
+                    buffer.Append(c);
                     break;
             }
         }
 
-        return (allText, lineNumberToStringIndex);
+        if (allText.Length > 0)
+        {
+            buffer.Append(allText[^1]);
+            lines.Add(buffer.ToString());
+        }
+
+        return (allText, lineNumberToStringIndex, lines);
+    }
+
+    /// <summary>
+    /// As of CLI 4.1.2, the docker build context is the project folder, NOT the .beamable folder
+    /// and the .dockerignore file started getting used again. Sadly, the ignore file is
+    /// ignoring the /bin/beamApp folder
+    /// We need to add an explicit inclusion for this folder
+    /// </summary>
+    /// <param name="beamoId"></param>
+    /// <param name="lineNumberToIndex"></param>
+    /// <param name="project"></param>
+    /// <returns></returns>
+    static RequiredFileEdit EnsureDockerIgnoreAllowsBeamApp(string beamoId, Dictionary<int, int> _, List<string> __, 
+        Project project, FileCache cache)
+    {
+        // identify if there is a .dockerignore file...
+        var csProjFile = project.FullPath;
+        var folder = Path.GetDirectoryName(csProjFile);
+        var dockerIgnoreFile = Path.Combine(folder, ".dockerignore");
+
+        // if the file doesn't exist; then great, no modification is required!
+        if (!File.Exists(dockerIgnoreFile)) return null;
+
+        var (allText, lineNumberToIndex, lines) = ReadLineNumbers(dockerIgnoreFile, cache);
+        
+        foreach (var line in lines)
+        {
+            if (line == "!**/beamApp")
+            {
+                // hooray! The inclusion is allowed!
+                // TODO: note; if this was BEFORE the _exclusion_, then this check would fail.
+                return null;
+            }
+        }
+        
+        // sadly, we need to inject something into the file...
+        var edit = new RequiredFileEdit
+        {
+            filePath = dockerIgnoreFile,
+            code = $"{beamoId}_dockerIgnoreFix",
+            beamoId = beamoId,
+            title = "Adjust .dockerignore File",
+            description =
+                "As of CLI 4.1.2, the .dockerignore file needs a line to explicitly include the /bin/beamApp folder.",
+            replacementText = $"{Environment.NewLine}!**/beamApp"
+        };
+        edit.SetLocationAsAppend(lineNumberToIndex, allText);
+        return edit;
     }
 
     /// <summary>
@@ -176,8 +241,8 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     /// There is a security vulnerability.
     /// https://github.com/advisories/GHSA-7j9m-j397-g4wx
     /// </summary>
-    static RequiredFileEdit EnsureUsingLatestMongo(string beamoId, Dictionary<int, int> lineNumberToIndex,
-        Project project)
+    static RequiredFileEdit EnsureUsingLatestMongo(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, 
+        Project project, FileCache cache)
     {
 
         var packages = project.GetItems("PackageReference");
@@ -217,7 +282,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     /// As of CLI 4, it is invalid for the project to use anything less than net8.
     /// We stopped publishing nuget packages for net6 and 7. 
     /// </summary>
-    static RequiredFileEdit EnsureAtLeastNet8(string beamoId, Dictionary<int, int> lineNumberToIndex, Project project)
+    static RequiredFileEdit EnsureAtLeastNet8(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, Project project,FileCache cache)
     {
         var property = project.GetProperty("TargetFramework");
         if (property == null) return null;

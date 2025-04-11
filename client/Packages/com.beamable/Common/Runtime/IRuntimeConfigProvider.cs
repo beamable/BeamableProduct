@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Beamable.Common
@@ -13,7 +14,7 @@ namespace Beamable.Common
 	public interface IRuntimeConfigProvider
 	{
 		/// <summary>
-		/// The CID is the customer id, or organization id. 
+		/// The CID is the customer id, or organization id.
 		/// </summary>
 		string Cid { get; }
 
@@ -44,5 +45,11 @@ namespace Beamable.Common
 			Fallback = fallback;
 		}
 
+		/// <summary>
+		/// Validates whether the input is a valid PID value.
+		/// </summary>
+		/// <param name="input">The PID to validate.</param>
+		/// <returns>Boolean indicating whether the input is valid.</returns>
+		public static bool IsValidPid(string input) => Regex.IsMatch(input, @"^DE_\d+$");
 	}
 }
