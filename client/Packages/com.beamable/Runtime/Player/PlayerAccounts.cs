@@ -1669,7 +1669,7 @@ namespace Beamable.Player
 
 			if (!externalIdentityAvailable)
 			{
-				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN; // TODO TEST IT MORE
+				res.error = PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
 				return res;
 			}
 			try
@@ -1678,7 +1678,7 @@ namespace Beamable.Player
 				var user = await HandleResponse(authorizeRes);
 				if (user == null)
 				{
-					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN; // IS IT? TODO TEST IT
+					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 					return res;
 				}
 
@@ -1688,7 +1688,7 @@ namespace Beamable.Player
 			catch (PlatformRequesterException ex)
 			{
 				res.innerException = ex;
-				res.error = PlayerErrorFromPlatformError(ex.Error); // TODO TEST IT MORE
+				res.error = PlayerErrorFromPlatformError(ex.Error);
 				return res;
 			}
 
@@ -2000,7 +2000,8 @@ namespace Beamable.Player
 		{
 			if (e.status == 400 && (e.error.Equals("EmailAlreadyRegisteredError") || 
 			                        e.error.Equals("ThirdPartyAssociationAlreadyInUseError") || 
-			                        e.error.Equals("DeviceAlreadyInUseError")))
+			                        e.error.Equals("DeviceAlreadyInUseError")) ||
+									e.error.Equals("ExternalIdentityUnavailable"))
 			{
 				return PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 			}
