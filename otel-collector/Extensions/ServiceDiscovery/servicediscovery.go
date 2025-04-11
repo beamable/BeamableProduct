@@ -5,6 +5,7 @@ import (
 	"net"
 	"fmt"
 	"context"
+	"time"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -13,12 +14,8 @@ type serviceDiscovery struct {
 }
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
-	var url string
-	url = m.config.Host
-	url += ":"
-	url += m.config.Port
 
-	go StartUDPServer(url)
+	go StartUDPServer(m.config.Port)
 
 	return nil
 }
@@ -28,31 +25,33 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(url string) error {
-	log.Println("Service discovery started at address: ", url)
+func StartUDPServer(port string) {
+	log.Println("Service discovery started at port: ", port)
 
-	udpAddr, err := net.ResolveUDPAddr("udp", url)
+	broadcastAddr := "255.255.255.255:"
+	broadcastAddr += port
 
+	udpAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error: %w", err)
+		panic(err)
 	}
 
-	conn, err := net.ListenUDP("udp", udpAddr)
+	message := []byte("Collector is alive!\n")
+
+	conn, err := net.DialUDP("udp", nil, udpAddr)
 
 	if err != nil {
-		log.Println(err)
-		fmt.Errorf("Error: %w", err)
+		panic(err)
 	}
+	defer conn.Close()
 
-	for {
-		var buf [512]byte
-		_, addr, err := conn.ReadFromUDP(buf[0:])
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		_, err := conn.Write([]byte(message))
 		if err != nil {
-			log.Println(err)
-			return fmt.Errorf("Error: %w", err)
+			fmt.Println("Error sending message:", err)
 		}
-
-		conn.WriteToUDP([]byte("Collector is alive!\n"), addr)
 	}
 }

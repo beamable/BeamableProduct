@@ -636,7 +636,7 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
-	        await CollectorManager.StartCollector();
+	        _ = CollectorManager.StartCollector();
 
 	        var envArgs = _args = new EnvironmentArgs();
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
