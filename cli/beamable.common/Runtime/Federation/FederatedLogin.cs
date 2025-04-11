@@ -16,5 +16,33 @@ namespace Beamable.Common
 	public class FederatedAuthenticationResponse : ExternalAuthenticationResponse
 	{
 		// exists for typing purposes.
+
+		/// <summary>
+		/// Creates a successful response with the given user ID.
+		/// </summary>
+		/// <param name="userId">The user ID to associate with the response. This should be the external provider id, not the Beamable one.</param>
+		/// <returns>A successful response with the given user ID.</returns>
+		public static FederatedAuthenticationResponse Success(string userId)
+		{
+			return new FederatedAuthenticationResponse()
+			{
+				user_id = userId,
+			};
+		}
+
+        /// <summary>
+        /// Creates a pending validation response with the given challenge and challenge TTL.
+        /// </summary>
+        /// <param name="challenge">The challenge to associate with the response.</param>
+        /// <param name="challenge_ttl">The challenge TTL to associate with the response.</param>
+        /// <returns>A pending validation response with the given challenge and challenge TTL.</returns>
+		public static FederatedAuthenticationResponse PendingValidation(string challenge, int challenge_ttl)
+		{
+			return new FederatedAuthenticationResponse()
+			{
+				challenge = challenge,
+				challenge_ttl = challenge_ttl,
+			};
+		}
 	}
 }

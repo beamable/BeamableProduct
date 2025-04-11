@@ -942,8 +942,20 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class ExternalAuthenticationResponse
 	{
+	   /// <summary>
+	   /// The user ID associated with the external authentication.
+	   /// When provided, it indicates that the external authentication is linked to a specific user.
+	   /// </summary>
 		public string user_id;
+		/// <summary>
+		/// The challenge associated with the external authentication.
+		/// When provided, it indicates that the external authentication is pending verification.
+		/// </summary>
 		public string challenge;
+		/// <summary>
+		/// The time-to-live (TTL) of the challenge.
+		/// When provided, it indicates that the external authentication is pending verification.
+		/// </summary>
 		public int challenge_ttl;
 	}
 
