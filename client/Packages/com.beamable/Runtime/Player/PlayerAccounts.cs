@@ -986,6 +986,17 @@ namespace Beamable.Player
 		INVALID_REALM_CONFIGURATION,
 		
 		/// <summary>
+		/// Represents failed Federated Authorization.
+		/// </summary>
+		FAILED_FEDERATED_AUTHORIZATION,
+
+		/// <summary>
+		/// Represents error when federated identity returns challenge to respond to,
+		/// but no challengeHandler is provided.
+		/// </summary>
+		MISSING_FEDERATED_CHALLENGE_HANDLER,
+		
+		/// <summary>
 		/// Represents error that is not covered by other values of this enum.
 		/// </summary>
 		/// <remarks>If <see cref="RegistrationResult"/> contains this error it is useful to inspect the <see cref="RegistrationResult.innerException"/> field for more details.</remarks>
@@ -1641,27 +1652,42 @@ namespace Beamable.Player
 			var client = _provider.GetService<TService>();
 			var ident = new TCloudIdentity();
 
-			async Promise<User> HandleResponse(AttachExternalIdentityResponse response)
+			async Promise<RegistrationResult> HandleResponse(AttachExternalIdentityResponse response)
 			{
 				switch (response.result)
 				{
 					case "challenge":
 						if (challengeHandler == null)
 						{
-							throw new InvalidOperationException("A challenge was requested, but no challenge handler was provided.");
+							res.error = PlayerRegistrationError.MISSING_FEDERATED_CHALLENGE_HANDLER;
+							return res;
 						}
 						var solution = await challengeHandler.Invoke(response.challenge_token);
-						var solutionRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName(), new ChallengeSolution
+						AttachExternalIdentityResponse solutionResponse;
+						try
 						{
-							challenge_token = response.challenge_token,
-							solution = solution
-						});
-						return await HandleResponse(solutionRes);
+							solutionResponse = await service.AttachIdentity(
+								token, client.ServiceName, ident.GetUniqueName(),
+								new ChallengeSolution
+								{
+									challenge_token = response.challenge_token, solution = solution
+								});
+						}
+						catch(Exception e)
+						{
+							res.innerException = e;
+							res.error = PlayerRegistrationError.FAILED_FEDERATED_AUTHORIZATION;
+							return res;
+						}
+						return await HandleResponse(solutionResponse);
 					case "ok":
 						var user = await service.GetUser();
-						return user;
+						account.Update(user);
+						account.TryTriggerUpdate();
+						return res;
 					default:
-						return null;
+						res.error = PlayerRegistrationError.OTHER_ERROR;
+						return res;
 				}
 			}
 
@@ -1675,15 +1701,9 @@ namespace Beamable.Player
 			try
 			{
 				var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName());
-				var user = await HandleResponse(authorizeRes);
-				if (user == null)
-				{
-					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
-					return res;
-				}
-
-				account.Update(user);
-				account.TryTriggerUpdate();
+				var result = await HandleResponse(authorizeRes);
+				await Refresh();
+				return result;
 			}
 			catch (PlatformRequesterException ex)
 			{
@@ -1691,9 +1711,6 @@ namespace Beamable.Player
 				res.error = PlayerErrorFromPlatformError(ex.Error);
 				return res;
 			}
-
-			await Refresh();
-			return res;
 		}
 
 		/// <summary>
