@@ -3,8 +3,11 @@ using Beamable.Server;
 using Microservice.SourceGen.Tests.Dep;
 using Microservice.SourceGen.Tests.Utils;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -67,6 +70,49 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 
 		// We need to update the compilation with all the syntax trees
 		Compilation = Compilation.AddSyntaxTrees(csharpText.Select(s => CSharpSyntaxTree.ParseText(s)));
+	}
+	
+	private static void PrepareForRun(CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg, string userCode)
+	{
+		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
+		var serverCommonAssembly = Assembly.Load("Beamable.Server.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
+		var runtimeCommonAssembly = Assembly.Load("Unity.Beamable.Runtime.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
+		ctx.TestState.AdditionalReferences.Add(serverCommonAssembly);
+		ctx.TestState.AdditionalReferences.Add(runtimeCommonAssembly);
+
+		ctx.TestCode = userCode;
+		if (cfg != null)
+		{
+			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
+			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
+		}
+	}
+
+	private static void PrepareForRun<T>(CSharpCodeFixTest<ServicesAnalyzer, T, DefaultVerifier> ctx,
+		MicroserviceFederationsConfig? cfg, string userCode, string fixedCode, bool runOnce = true)
+		where T : CodeFixProvider, new()
+	{
+		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
+		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
+		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
+		ctx.TestState.AdditionalReferences.Add(serverAssembly);
+		ctx.TestState.AdditionalReferences.Add(runtimeAssembly);
+
+		ctx.TestCode = userCode;
+		ctx.FixedCode = fixedCode;
+		if (cfg != null)
+		{
+			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
+			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
+		}
+
+		if (runOnce)
+		{
+			ctx.NumberOfFixAllIterations = 0;
+			ctx.NumberOfFixAllInDocumentIterations = 0;
+			ctx.NumberOfFixAllInProjectIterations = 0;
+			ctx.NumberOfIncrementalIterations = 1;
+		}
 	}
 
 	public void Dispose()

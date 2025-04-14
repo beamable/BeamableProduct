@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using UnityEngine;
+using Location = Microsoft.CodeAnalysis.Location;
 using SourceProductionContext = Microsoft.CodeAnalysis.SourceProductionContext;
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -71,18 +72,12 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 
 		// Generate the partial declarations with the interfaces based on the federation configs
-		var isFedValid = true;
-		var isCallableMethodValids = true;
-
+		
 		// Each partial declaration results in a Microservice info
 		// We should keep only the one that has the declared attribute here for now.
-		// TODO: When we add ClientCallable signature validation, we'll need to apply it to each part of the class before moving along and
-		// TODO: validating that we only have a single microservice. 
 		var mergedInfos = new List<MicroserviceInfo>();
 		foreach (MicroserviceInfo microserviceInfo in infos)
 		{
-			isFedValid &= ValidateFederations(context, microserviceInfo, config);
-			isCallableMethodValids &= ValidateCallableMethods(context, microserviceInfo);
 			if (!mergedInfos.Any(i => i.Name.Equals(microserviceInfo.Name)))
 			{
 				if (microserviceInfo.MicroserviceAttributeLocation != null)
@@ -98,9 +93,6 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			context.ReportDiagnostic(err);
 			return;
 		}
-
-		if (!isFedValid)
-			return;
 
 		// Validate the microservice declaration.
 		var isMsValid = ValidateMicroserviceDeclaration(context, mergedInfos.ToImmutableArray());
@@ -179,156 +171,26 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				isValid = false;
 			}
 
-			if (!ValidateId(info.ServiceId))
-			{
-				var err = Diagnostic.Create(Diagnostics.Srv.InvalidMicroserviceId, info.MicroserviceAttributeLocation);
-				context.ReportDiagnostic(err);
-				isValid = false;
-			}
-
-			return isValid;
-
-			// First digit can't be a number
-			// Alphanumeric + "_"
-			static bool ValidateId(string id)
-			{
-				if (string.IsNullOrEmpty(id)) return false;
-				var isValid = true;
-				for (int charIdx = 0; charIdx < id.Length; charIdx++)
-				{
-					var currChar = id[charIdx];
-					if (charIdx == 0)
-					{
-						isValid &= char.IsLetter(currChar);
-					}
-					else
-					{
-						isValid &= char.IsLetterOrDigit(currChar) || currChar.Equals('_');
-					}
-				}
-
-				return isValid;
-			}
-		}
-
-		static bool ValidateFederations(SourceProductionContext context, MicroserviceInfo info, MicroserviceFederationsConfig federationConfig)
-		{
-			var isValid = true;
-			var federations = federationConfig.Federations;
-
-			Dictionary<string, (string Id, string Interface)> flatConfig = federations.SelectMany(kvp => kvp.Value.Select(f => (kvp.Key, f.Interface))).ToDictionary(x => $"{x.Key}/{x.Interface}");
-
-			var flatCode = info.ImplementedFederations.Where(f => f.Id != null).ToDictionary(x => $"{x.Id}/{x.Federation.Interface}");
-			var flatIds = flatConfig.Select(f => f.Value.Id).ToList();
-			flatIds.AddRange(flatCode.Where(f => f.Value.Id != null).Select(f => f.Value.Id));
-
-			foreach (var fed in info.ImplementedFederations)
-			{
-				if (fed.Id == null)
-				{
-					var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMissingAttribute, fed.Location, fed.Id);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-				
-				if (fed.Federation.Interface == FederationType.IFederatedPlayerInit.GetDisplayName())
-				{
-					// the namespace for IFederatedPlayerInit must be "default" (as of Jan 2025), 
-					//  because the backend does not care about the namespace used to register, 
-					//  and always uses the string, "default". 
-					// so, if the user has a non "default" value, flag an error.
-					if (fed.Id != "default")
-					{
-						var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMustBeDefault, fed.Location, fed.Id);
-						context.ReportDiagnostic(error);
-						isValid = false;
-					}
-				}
-			}
-
-			var flatIdSet = new HashSet<string>(flatIds);
-
-			var configsThatDoNotExistInCode = flatConfig.Keys.Except(flatCode.Keys).ToList();
-			var codeThatDoesNotExistInConfig = flatCode.Keys.Except(flatConfig.Keys).ToList();
-
-			foreach (var configKey in configsThatDoNotExistInCode)
-			{
-				var (fedId, fedInterface) = flatConfig[configKey];
-				isValid = false;
-				var error = Diagnostic.Create(
-					Diagnostics.Fed.ConfiguredFederationMissingFromCode,
-					info.MicroserviceClassLocation,
-					info.Name,
-					fedId,
-					fedInterface);
-				context.ReportDiagnostic(error);
-			}
-
-			foreach (var codeKey in codeThatDoesNotExistInConfig)
-			{
-				var (fedId, fedClassName, fedInstConfig, location) = flatCode[codeKey];
-				isValid = false;
-				var error = Diagnostic.Create(
-					Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig,
-					info.MicroserviceClassLocation,
-					info.Name,
-					fedId,
-					fedInstConfig.Interface);
-				context.ReportDiagnostic(error);
-			}
-
-			foreach (var id in flatIdSet)
-			{
-				if (!ValidateId(id))
-				{
-					// EMIT FEDERATION INVALID ID
-					var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationInvalidFederationId, info.MicroserviceClassLocation, info.Name, id);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-			}
-
-			return isValid;
-
-			// First digit can't be a number
-			// Alphanumeric + "_"
-			static bool ValidateId(string id)
-			{
-				if (string.IsNullOrEmpty(id)) return false;
-				var isValid = true;
-				for (int charIdx = 0; charIdx < id.Length; charIdx++)
-				{
-					var currChar = id[charIdx];
-					if (charIdx == 0)
-					{
-						isValid &= char.IsLetter(currChar);
-					}
-					else
-					{
-						isValid &= char.IsLetterOrDigit(currChar) || currChar.Equals('_');
-					}
-				}
-
-				return isValid;
-			}
-		}
-
-		static bool ValidateCallableMethods(SourceProductionContext context, MicroserviceInfo info)
-		{
-			bool isValid = true;
-			foreach (var infoCallableMethod in info.CallableMethods)
-			{
-				if(infoCallableMethod is { isAsync: true, returnType: SpecialType.System_Void })
-				{
-					var err = Diagnostic.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod, info.MicroserviceClassLocation, infoCallableMethod.Name);
-					context.ReportDiagnostic(err);
-					isValid = false;
-				}
-			}
 			return isValid;
 		}
 	}
 
+	public readonly record struct FederationInfo
+	{
+		public string Id { get; }
+		public string ClassName { get; }
+		public FederationInstanceConfig Federation { get; }
+		public Location Location { get; }
+
+		public FederationInfo(string id, string className, FederationInstanceConfig federation, Location location)
+		{
+			Id = id;
+			ClassName = className;
+			Federation = federation;
+			Location = location;
+		}
+	}
+	
 	public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
 	{
 		public string Namespace { get; }
@@ -338,9 +200,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		public bool HasMicroserviceAttribute { get; }
 		public Location MicroserviceAttributeLocation { get; }
 		public bool IsPartial { get; }
-		public List<(string Id, string ClassName, FederationInstanceConfig Federation, Location Location)> ImplementedFederations { get; }
+		public List<FederationInfo> ImplementedFederations { get; }
 		
-		public List<(string Name, SpecialType returnType, bool isAsync)> CallableMethods { get; }
+		public List<IMethodSymbol> CallableMethods { get; }
 
 		public MicroserviceInfo(INamedTypeSymbol type)
 		{
@@ -354,53 +216,18 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				.Any(syntax => syntax.GetSyntax() is ClassDeclarationSyntax declaration && declaration.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
 
 			// Gather all federation interfaces... so we can verify that they are declared in the Federation file.
-			ImplementedFederations = new();
-			foreach (INamedTypeSymbol i in type.Interfaces)
-			{
-				// We don't care about interfaces that are not inherited from IFederation
-				if (!i.Interfaces.Any(parentInterface => parentInterface.Name == nameof(IFederation)))
-					continue;
-
-				var federationInterfaceName = i.Name;
-				var id = "";
-
-				// Find the first type arg of the federation interface that implements IFederationId
-				var federationIdType = i.TypeArguments.First(t => t.Interfaces.Any(typeArgInterface => typeArgInterface.Name is nameof(IFederationId) or nameof(IThirdPartyCloudIdentity)));
-				var className = federationIdType.Name;
-
-				var fedAttribute = federationIdType
-					.GetAttributes()
-					.FirstOrDefault(a => a?.AttributeClass?.Name == nameof(FederationIdAttribute));
-
-				var fedValue = fedAttribute?.ConstructorArguments.FirstOrDefault();
-				if (fedValue == null)
-				{
-					id = null;
-				}
-				else
-				{
-					id = fedValue.Value.Value?.ToString();
-				}
-
-				ImplementedFederations.Add((
-					id!,
-					className,
-					new FederationInstanceConfig() { Interface = federationInterfaceName },
-					federationIdType.Locations[0]
-				));
-			}
+			ImplementedFederations = ServicesAnalyzer.GetFederationInterfaces(type);
 
 			// Gather all Callable methods
 			CallableMethods = new();
 			var members = type.GetMembers();
 			foreach (ISymbol member in members)
 			{
-				bool isCallableMethod = member.GetAttributes().Any(IsCallableAttribute);
-				if (!isCallableMethod || member is not IMethodSymbol methodSymbol)
+				if (member is not IMethodSymbol methodSymbol)
 				{
 					continue;
 				}
-				CallableMethods.Add((methodSymbol.Name, methodSymbol.ReturnType.SpecialType, methodSymbol.IsAsync));
+				CallableMethods.Add((methodSymbol));
 			}
 			
 			// Check for the microservice attribute so we can validate its name does not have any invalid characters.
@@ -441,21 +268,5 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				return hashCode;
 			}
 		}
-	}
-	
-	public static bool IsCallableAttribute(AttributeData data)
-	{
-		// This check only detects the CallableAttribute and attributes that inherits it.
-		// This will not detect sub-types of sub-types.
-		INamedTypeSymbol attributeClass = data.AttributeClass;
-		if (attributeClass == null) return false;
-		string callableAttributeName = nameof(CallableAttribute);
-		string attr = nameof(Attribute);
-		if (attributeClass.Name == callableAttributeName)
-		{
-			return true;
-		}
-
-		return attributeClass.BaseType?.Name == callableAttributeName;
 	}
 }
