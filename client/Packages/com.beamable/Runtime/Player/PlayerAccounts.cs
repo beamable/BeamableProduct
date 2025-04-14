@@ -80,7 +80,7 @@ namespace Beamable.Player
 		internal UserExtensions.StatCollection _stats;
 
 		/// <summary>
-		/// The alias of the current account. 
+		/// The alias of the current account.
 		/// This can be used as a display name.
 		/// To change the alias, use <see cref="SetAlias"/>
 		/// </summary>
@@ -651,7 +651,7 @@ namespace Beamable.Player
 		/// If an error occured while attempting to reset a <see cref="PlayerAccount"/>'s password,
 		/// then this value will be anything other than <see cref="PasswordResetError.NONE"/>.
 		/// If the <see cref="account"/> property is accessed while this value is not none, then it
-		/// will throw an exception. 
+		/// will throw an exception.
 		/// </summary>
 		public PasswordResetError error;
 
@@ -745,7 +745,7 @@ namespace Beamable.Player
 		/// If an error occured while attempting to confirm a <see cref="PlayerAccount"/>'s password,
 		/// then this value will be anything other than <see cref="PasswordResetConfirmError.NONE"/>.
 		/// If the <see cref="account"/> property is accessed while this value is not none, then it
-		/// will throw an exception. 
+		/// will throw an exception.
 		/// </summary>
 		public PasswordResetConfirmError error;
 
@@ -783,7 +783,7 @@ namespace Beamable.Player
 	/// Accounts can be recovered using the <see cref="PlayerAccounts.RecoverAccountWithEmail"/> method.
 	///
 	/// Use the <see cref="SwitchToAccount"/> method to switch to the recovered account.
-	/// </summary> 
+	/// </summary>
 	[Serializable]
 	public class PlayerRecoveryOperation
 	{
@@ -793,7 +793,7 @@ namespace Beamable.Player
 		/// If an error occured while attempting to recovery a <see cref="PlayerAccount"/>,
 		/// then this value will be anything other than <see cref="PlayerRecoveryError.NONE"/>.
 		/// If the <see cref="account"/> property is accessed while this value is not none, then it
-		/// will throw an exception. 
+		/// will throw an exception.
 		/// </summary>
 		public PlayerRecoveryError error;
 
@@ -805,7 +805,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// If the account already had a player id in the current realm, then this value be true.
 		/// When this value is false, it implies that the account exists in the CID scope, but not
-		/// in the current PID scope. 
+		/// in the current PID scope.
 		/// </summary>
 		public bool realmAlreadyHasGamerTag;
 
@@ -946,12 +946,12 @@ namespace Beamable.Player
 		UNKNOWN_CREDENTIALS,
 
 		/// <summary>
-		/// Represents that the given recovery did not specify enough information to login 
+		/// Represents that the given recovery did not specify enough information to login
 		/// </summary>
 		INSUFFICIENT_DATA,
 
 		/// <summary>
-		/// Represents that the given recovery did not work, but the error isn't classified. 
+		/// Represents that the given recovery did not work, but the error isn't classified.
 		/// </summary>
 		UNKNOWN_ERROR
 	}
@@ -978,13 +978,13 @@ namespace Beamable.Player
 		/// represents that the given credential is already in use by a different <see cref="PlayerAccount"/>
 		/// </summary>
 		CREDENTIAL_IS_ALREADY_TAKEN,
-		
+
 		/// <summary>
 		/// represents that the registration failed due to wrong realm configuration.
 		/// Can occur during third party login integration.
 		/// </summary>
 		INVALID_REALM_CONFIGURATION,
-		
+
 		/// <summary>
 		/// Represents failed Federated Authorization.
 		/// </summary>
@@ -995,7 +995,7 @@ namespace Beamable.Player
 		/// but no challengeHandler is provided.
 		/// </summary>
 		MISSING_FEDERATED_CHALLENGE_HANDLER,
-		
+
 		/// <summary>
 		/// Represents error that is not covered by other values of this enum.
 		/// </summary>
@@ -1325,7 +1325,7 @@ namespace Beamable.Player
 			await Refresh();
 			return res;
 		}
-		
+
 
 		public async Promise ResetPassword(string email)
 		{
@@ -1390,7 +1390,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// Removes all deviceID credentials from the given account.
 		/// An account could have multiple if the player used multiple devices.
-		/// 
+		///
 		/// By default, the deviceID is the `SystemInfo.deviceUniqueIdentifier` value.
 		/// However, it can be overriden by registering a custom <see cref="IDeviceIdResolver"/> instance.
 		/// </summary>
@@ -1629,7 +1629,7 @@ namespace Beamable.Player
 		/// <param name="challengeHandler">
 		/// The server may request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
 		/// the challenge string from the server, and it must solve the challenge and return the solution. The solution
-		/// will be given back to the server to validate identity. 
+		/// will be given back to the server to validate identity.
 		/// </param>
 		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
@@ -1676,8 +1676,7 @@ namespace Beamable.Player
 						catch(PlatformRequesterException e)
 						{
 							res.innerException = e;
-							var error = PlayerErrorFromPlatformError(e.Error);
-							res.error = error == PlayerRegistrationError.OTHER_ERROR ? PlayerRegistrationError.FAILED_FEDERATED_AUTHORIZATION : error;
+							res.error = PlayerErrorFromPlatformError(e.Error, PlayerRegistrationError.FAILED_FEDERATED_AUTHORIZATION);
 							return res;
 						}
 						return await HandleResponse(solutionResponse);
@@ -2014,28 +2013,6 @@ namespace Beamable.Player
 				AccountManagementConfiguration.Instance.AvatarStat);
 		}
 
-		private static PlayerRegistrationError PlayerErrorFromPlatformError(PlatformError e)
-		{
-			if (e.status == 400 && (e.error.Equals("EmailAlreadyRegisteredError") || 
-			                        e.error.Equals("ThirdPartyAssociationAlreadyInUseError") || 
-			                        e.error.Equals("DeviceAlreadyInUseError")) ||
-									e.error.Equals("ExternalIdentityUnavailable"))
-			{
-				return PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
-			}
-			if (e.error.Equals("DuplicateThirdPartyAssociationError"))
-			{
-				return PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
-			}
-			
-			if (e.error.Equals("InvalidClientSecretFile"))
-			{
-				return PlayerRegistrationError.INVALID_REALM_CONFIGURATION;
-			}
-			
-			return PlayerRegistrationError.OTHER_ERROR;
-		}
-
 		protected override async Promise PerformRefresh()
 		{
 			await _ctx.OnReady;
@@ -2122,6 +2099,34 @@ namespace Beamable.Player
 
 
 			SetData(next);
+		}
+
+		/// <summary>
+		/// Converts a platform error to a player registration error.
+		/// </summary>
+		/// <param name="e">The platform error.</param>
+		/// <param name="defaultError">The default error to return if no specific error is found.</param>
+		/// <returns>The player registration error.</returns>
+		private static PlayerRegistrationError PlayerErrorFromPlatformError(PlatformError e, PlayerRegistrationError defaultError = PlayerRegistrationError.OTHER_ERROR)
+		{
+			if (e.status == 400 && (e.error.Equals("EmailAlreadyRegisteredError") ||
+			                        e.error.Equals("ThirdPartyAssociationAlreadyInUseError") ||
+			                        e.error.Equals("DeviceAlreadyInUseError")) ||
+									e.error.Equals("ExternalIdentityUnavailable"))
+			{
+				return PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+			}
+			if (e.error.Equals("DuplicateThirdPartyAssociationError"))
+			{
+				return PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
+			}
+
+			if (e.error.Equals("InvalidClientSecretFile"))
+			{
+				return PlayerRegistrationError.INVALID_REALM_CONFIGURATION;
+			}
+
+			return defaultError;
 		}
 	}
 }
