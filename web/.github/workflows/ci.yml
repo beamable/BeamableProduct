@@ -1,0 +1,36 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v3
+
+      # Setup Node.js LTS version 22.14.0
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.14.0'
+
+      # Install pnpm package manager version 10.8.0 globally
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
+      # Install project dependencies using pnpm
+      - name: Install dependencies
+        run: pnpm install
+
+      # Run code linter
+      - name: Lint
+        run: pnpm lint
+
+      # Run the test suite
+      - name: Test
+        run: pnpm test
+
+      # Build and prepare release (upgrade version and build)
+      - name: Release
+        run: pnpm release

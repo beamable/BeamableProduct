@@ -1,0 +1,52 @@
+{
+  "name": "@beamable/sdk",
+  "version": "0.0.0",
+  "description": "Beamable Web SDK",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "unpkg": "dist/index.iife.js",
+  "types": "dist/index.d.ts",
+  "author": "Beamable",
+  "license": "MIT",
+  "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "setup-project": "node setup.mjs",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "lint": "eslint --ext .ts src tests",
+    "format": "prettier --write .",
+    "doc": "typedoc --out docs src",
+    "changeset": "changeset",
+    "release": "changeset version && pnpm build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0",
+    "@eslint/js": "^9.24.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.1",
+    "@typescript-eslint/parser": "^8.29.1",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
+    "typedoc": "^0.28.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js"
+    }
+  },
+  "keywords": [
+    "Beamable"
+  ],
+  "sideEffects": false
+}
