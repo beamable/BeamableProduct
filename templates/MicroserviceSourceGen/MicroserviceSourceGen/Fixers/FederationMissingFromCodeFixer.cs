@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Formatting;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Globalization;
@@ -54,10 +55,14 @@ public class FederationMissingFromCodeFixer : CodeFixProvider
 		var titleCaseFedID = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(fedId.ToLower());
 		string newFederationClassName = $"{titleCaseFedID}Federation";
 		
-		var newInterface = SyntaxFactory.ParseTypeName($"{fedInterface}<{newFederationClassName}>");
-		var updatedClass = microserviceClass.AddBaseListTypes(SyntaxFactory.SimpleBaseType(newInterface));
+		var newInterfaceType = SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName($"{fedInterface}<{newFederationClassName}>").WithTrailingTrivia(SyntaxFactory.Space));
+		BaseListSyntax baseList = microserviceClass.BaseList == null
+			? SyntaxFactory.BaseList(SyntaxFactory.SeparatedList<BaseTypeSyntax>().Add(newInterfaceType))
+			: microserviceClass.BaseList.AddTypes(newInterfaceType);
+		
+		var updatedClass = microserviceClass.WithBaseList(baseList);
 
-		editor.ReplaceNode(microserviceClass, updatedClass);
+		editor.ReplaceNode(microserviceClass, updatedClass.WithAdditionalAnnotations(Formatter.Annotation));
 
 		// Creating the new FederationID Class for the new Federation from Config file values.
 		var federationIdAttribute = FederationDefaultIDFixer.GenerateFederationIdAttribute(fedId);
