@@ -1,22 +1,24 @@
-name: CI
+name: Web SDK Release
 
 on:
-  push:
-    branches:
-      - wip/web-sdk
-  pull_request:
-    branches:
-      - wip/web-sdk
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release from'
+        required: true
+        default: 'wip/web-sdk'
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
     steps:
-      # Checkout the repository (runs in the root by default)
+      # Checkout the specified branch (default: wip/web-sdk)
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       # Setup Node.js LTS version 22.14.0
       - name: Use Node.js LTS
@@ -28,35 +30,26 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@10.8.0
 
-      # Install project dependencies using pnpm (runs from the web folder)
+      # Install project dependencies using pnpm
       - name: Install dependencies
         run: pnpm install
 
-      # Run code linter (runs from the web folder)
-      - name: Lint
-        run: pnpm lint
-
-      # Run the test suite (runs from the web folder)
-      - name: Test
-        run: pnpm test
-
-      # Build and prepare release (upgrade version and build from the web folder)
-      - name: Release
+      # Run the release command that bumps the version, updates the changelog, and builds the project.
+      - name: Run Release
         run: pnpm release
 
-      # Commit and push the changes made during release without re-triggering the workflow
-      - name: Commit release changes
+      # Commit and push the changes made by the release command.
+      - name: Commit Release Changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add -A
-          # Only commit if there are changes
           if ! git diff-index --quiet HEAD; then
-            git commit -m "ci(release): commit release changes [skip ci]"
-            git push origin HEAD:wip/web-sdk
+            # Using [skip ci] to avoid triggering another build.
+            git commit -m "ci(release): bump version and update changelog [skip ci]"
+            git push origin ${{ github.event.inputs.branch }}
           else
-            echo "No release changes to commit."
+            echo "No changes to commit."
           fi
         env:
-          # The built-in GITHUB_TOKEN automatically has permission to push changes.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
