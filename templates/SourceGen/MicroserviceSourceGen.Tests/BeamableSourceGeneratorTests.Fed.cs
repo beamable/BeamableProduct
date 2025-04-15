@@ -112,7 +112,9 @@ public partial class {|#0:SomeUserMicroservice|} : Microservice
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.FederationIdInvalidConfigFile)
 			.WithLocation(0)
-			.WithArguments("SomeUserMicroservice", @"my_f!*&@¨&*¨@!*&"));
+			.WithArguments(@"my_f!*&@¨&*¨@!*&"));
+		
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.FederationCodeGeneratedProperly));
 		
 		await ctx.RunAsync();
 	}
@@ -565,7 +567,7 @@ using Beamable.Common;
 namespace TestNamespace;
 
 #pragma warning disable BEAM_FED_O002
-// TODO: Remove this ID by running `dotnet beam fed remove SomeUserMicroservice my_federation IFederatedGameServer` from your project's root directory,
+// TODO: Remove this ID by running `dotnet beam fed remove SomeUserMicroservice my_federation IFederatedGameServer` from your project's root directory.
 
 [Microservice(""some_user_service"")]
 public partial class {|#0:SomeUserMicroservice|} : Microservice

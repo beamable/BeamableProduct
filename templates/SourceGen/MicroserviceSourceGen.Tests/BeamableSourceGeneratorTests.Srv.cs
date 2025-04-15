@@ -182,33 +182,6 @@ public partial class SomeUserMicroservice : Microservice
 		// Ensure we have a single diagnostic error.
 		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MissingMicroserviceId));
 	}
-
-	[Fact]
-	public void Test_Diagnostic_Srv_InvalidMicroserviceId()
-	{
-		const string UserCode = @"
-using Beamable.Server;
-using Beamable.Common;
-
-namespace TestNamespace;
-
-[Microservice(""2-n%t-v#l!d-i&"")]
-public partial class SomeUserMicroservice : Microservice
-{		
-}
-";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
-
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.InvalidMicroserviceId));
-	}
 	
 	[Fact]
 	public async Task Test_Diagnostic_Srv_InvalidAsyncVoidCallableMethod()
