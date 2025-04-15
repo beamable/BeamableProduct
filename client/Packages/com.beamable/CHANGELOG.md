@@ -5,8 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+##[Unreleased]
 
+### Added
+- Helper menu option for updating Realm configuration for GPGS integration.
+
+### Changed
+- `AccountManagementConfiguration` no longer overrides `BEAMABLE_GPGS` define symbol.
+
+### Fixed
+- CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
+- Improved error detection for attaching identity providers in `PlayerAccounts`.
+
+## [2.2.0] - 2025-04-04
 ### Added
 - New Implementation for CloudSavingAPI using `ICloudSavingService` as Player SDK. Accessible by `BeamContext.CloudSaving`.
 - New `BeamUnityFileUtils` static class to Handle File Operations.
@@ -16,10 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Upgrade CLI to 4.2.0
+- StatsService now supports accessing Private Client Stats.
+- Now `PlayerStat` class have the `AccessType` and `DomainType` of the Stat
+- Refactored methods on `IStatsApi` and `IMicroserviceStatsApi` for a better name and usage by adding Enums instead of string values as parameters. Old ones were marked as Obsolete.
 
 ### Fixed
-- Fixed an issue which attempting using Stats after refreshing `PlayerStats` did not returned updated values.
 - `CloudSavingService` could not initialize correctly if a save file could not be found in storage. If that happens that file will be ignored and the system will use the Local one, if exists.
+- Fixed an issue which attempting using Stats after refreshing `PlayerStats` did not returned updated values.
 
 ## [2.1.4] - 2025-03-26
 
