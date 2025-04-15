@@ -637,4 +637,67 @@ public partial class {|#0:SomeUserMicroservice|} : Microservice, IFederatedGameS
 		await ctx.RunAsync();
 	}
 	
+	[Fact]
+	public async Task Test_CodeFixer_Fed_FederationNotFoundInConfig_RemoveFederationInterface()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Experimental.Api.Lobbies;
+using Beamable.Common;
+
+namespace TestNamespace;
+[FederationId(""MyFederation"")]
+public class {|#0:MyFederation|} : IFederationId
+{
+}
+
+
+[Microservice(""SomeUserMicroservice"")]
+public class SomeUserMicroservice : Microservice, IFederatedLogin<MyFederation>
+{
+    public Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution)
+    {
+        throw new System.NotImplementedException();
+    }
+}
+";
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Experimental.Api.Lobbies;
+using Beamable.Common;
+
+namespace TestNamespace;
+[FederationId(""MyFederation"")]
+public class {|#0:MyFederation|} : IFederationId
+{
+}
+
+
+[Microservice(""SomeUserMicroservice"")]
+public class SomeUserMicroservice : Microservice
+{
+    public Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution)
+    {
+        throw new System.NotImplementedException();
+    }
+}
+";
+		
+		var cfg = new MicroserviceFederationsConfig();
+
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, FederationMissingFromSourceGenFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode);
+		ctx.NumberOfFixAllIterations = 1;
+		ctx.NumberOfFixAllInDocumentIterations = 1;
+		ctx.NumberOfFixAllInProjectIterations = 1;
+
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig)
+			.WithLocation(0).WithArguments("SomeUserMicroservice", "MyFederation", "IFederatedLogin"));
+		
+		ctx.FixedState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.FederationCodeGeneratedProperly));
+		
+		await ctx.RunAsync();
+	}
+	
 }

@@ -53,7 +53,7 @@ public class FederationIdNameFixer : CodeFixProvider
 	{
 		context.RegisterCodeFix(
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-				title: "Fix Federation ID name",
+				title: $"[{diagnostic.Descriptor.Title}] Fix Federation ID name",
 				createChangedDocument: c => FixFederationIdName(context.Document, literal, c),
 				equivalenceKey: "FixFederationIdName"),
 			diagnostic);

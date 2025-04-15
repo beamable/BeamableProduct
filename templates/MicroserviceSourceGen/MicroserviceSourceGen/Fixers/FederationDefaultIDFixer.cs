@@ -38,7 +38,7 @@ public class FederationDefaultIDFixer : CodeFixProvider
 		{
 			context.RegisterCodeFix(
 				Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-					title: "Set FederationId attribute to \"default\"",
+					title: $"[{diagnostic.Descriptor.Title}] Set FederationId attribute to \"default\"",
 					createChangedDocument: c => AddOrFixFederationIdAttribute(context.Document, classDecl, c),
 					equivalenceKey: "FixFederationIdDefault"),
 				diagnostic);

@@ -35,7 +35,7 @@ public class FederationDefaultFixer : CodeFixProvider
 		
 		context.RegisterCodeFix(
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-				title: $"[{diagnostic.Id}] No Code/Solution auto-fix for this, a Comment will be added to Guide the next steps.",
+				title: $"[{diagnostic.Descriptor.Title}] No Code/Solution auto-fix for this, a Comment will be added to Guide the next steps.",
 				createChangedDocument: c => AddCommentToGuideUser(context.Document, diagnosticSpan, diagnostic, c),
 				equivalenceKey: "AddGuideComment"),
 			diagnostic);
@@ -58,12 +58,8 @@ public class FederationDefaultFixer : CodeFixProvider
 		List<SyntaxTrivia> triviaComments = new();
 		triviaComments.Add(SyntaxFactory.Comment($"#pragma warning disable {diagnostic.Id}"));
 		triviaComments.Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
-		var diagnosticComments = GetFixMessages(diagnostic);
-		foreach (string diagnosticComment in diagnosticComments)
-		{
-			triviaComments.Add(SyntaxFactory.Comment($"// TODO: {diagnosticComment}"));
-			triviaComments.Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
-		}
+		triviaComments.Add(SyntaxFactory.Comment($"// TODO: {GetFixMessages(diagnostic)}"));
+		triviaComments.Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
 		
 		var comments = SyntaxFactory.TriviaList(triviaComments)
 			.AddRange(targetNode.GetLeadingTrivia());
@@ -73,50 +69,32 @@ public class FederationDefaultFixer : CodeFixProvider
 		return document.WithSyntaxRoot(newRoot);
 	}
 
-	private string[] GetFixMessages(Diagnostic diagnostic)
+	private string GetFixMessages(Diagnostic diagnostic)
 	{
-		object[] args;
-		string[] messages;
 		switch (diagnostic.Id)
 		{
 			case Diagnostics.Fed.DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID:
-				args = new object[] {
+
+				return string.Format(
+					"Add this ID by running `dotnet beam fed add {0} {1} {2}` from your project's root directory.",
 					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
 					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
 					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]
-				};
-				messages = new[]
-				{
-					"Add this ID by running `dotnet beam fed add {0} {1} {2}` from your project's root directory,",
-					"Or remove the {2} that references {1}  interface from the {0} Microservice class"
-				};
-				break;
+				);
+
 			case Diagnostics.Fed.CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID:
-				args = new object[]{
+				return string.Format(
+					"Remove this ID by running `dotnet beam fed remove {0} {1} {2}` from your project's root directory.",
 					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
 					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
-					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]
-				};
-				messages = new[]
-				{
-					"Remove this ID by running `dotnet beam fed remove {0} {1} {2}` from your project's root directory,"
-				};
-				break;
+					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]);
 			case Diagnostics.Fed.FEDERATION_ID_INVALID_CONFIG_FILE_ID:
 				string fedId = diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID];
 				string fixedFedId = FederationIdNameFixer.FixFederationIdName(fedId);
-				args = new object[] { fedId, fixedFedId };
-				messages = new[] { "Open `federations.json` from your project's root directory and rename {0} for {1}" };
-				break;
+				return
+					$"Open `federations.json` from your project's root directory and rename {fedId} for {fixedFedId}";
 			default:
-				return new []{diagnostic.GetMessage()};
+				return diagnostic.GetMessage();
 		}
-
-		for (int index = 0; index < messages.Length; index++)
-		{
-			string message = messages[index];
-			messages[index] = string.Format(message, args);
-		}
-		return messages;
 	}
 }

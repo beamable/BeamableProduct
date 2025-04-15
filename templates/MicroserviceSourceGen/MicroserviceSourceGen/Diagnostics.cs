@@ -117,6 +117,7 @@ public static class Diagnostics
 		public const string PROP_FEDERATION_ID = "FederationId";
 		public const string PROP_FEDERATION_INTERFACE = "FederationInterface";
 		public const string PROP_MICROSERVICE_NAME = "MicroserviceName";
+		public const string PROP_FEDERATION_CLASS_NAME = "FederationClassName";
 
 		public static readonly DiagnosticDescriptor DeclaredFederationMissingFromSourceGenConfig
 			= new(DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID,

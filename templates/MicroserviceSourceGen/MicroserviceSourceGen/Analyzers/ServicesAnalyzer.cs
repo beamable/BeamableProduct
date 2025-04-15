@@ -232,7 +232,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			var properties = ImmutableDictionary<string, string>.Empty
 				.Add(Diagnostics.Fed.PROP_FEDERATION_ID, federationInfo.Id)
 				.Add(Diagnostics.Fed.PROP_FEDERATION_INTERFACE, federationInfo.Federation.Interface)
-				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName);
+				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName)
+				.Add(Diagnostics.Fed.PROP_FEDERATION_CLASS_NAME, federationInfo.ClassName);
 			
 			isValid = false;
 			var error = Diagnostic.Create(
