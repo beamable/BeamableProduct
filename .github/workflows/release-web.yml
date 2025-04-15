@@ -43,3 +43,20 @@ jobs:
       # Build and prepare release (upgrade version and build from the web folder)
       - name: Release
         run: pnpm release
+
+      # Commit and push the changes made during release without re-triggering the workflow
+      - name: Commit release changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          # Only commit if there are changes
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "ci(release): commit release changes [skip ci]"
+            git push origin HEAD:wip/web-sdk
+          else
+            echo "No release changes to commit."
+          fi
+        env:
+          # The built-in GITHUB_TOKEN automatically has permission to push changes.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
