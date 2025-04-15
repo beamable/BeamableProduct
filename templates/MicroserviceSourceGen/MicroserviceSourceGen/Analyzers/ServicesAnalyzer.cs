@@ -200,9 +200,15 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		foreach (var configKey in configsThatDoNotExistInCode)
 		{
 			var (fedId, fedInterface) = flatConfig[configKey];
+			var properties = ImmutableDictionary<string, string>.Empty
+				.Add(Diagnostics.Fed.PROP_FEDERATION_ID, fedId)
+				.Add(Diagnostics.Fed.PROP_FEDERATION_INTERFACE, fedInterface)
+				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName);
+			
+			
 			if (!ValidateFederationId(fedId))
 			{
-				var invalidFedId = Diagnostic.Create(Diagnostics.Fed.FederationIdInvalidConfigFile, microserviceLocation, fedId);
+				var invalidFedId = Diagnostic.Create(Diagnostics.Fed.FederationIdInvalidConfigFile, microserviceLocation, properties, fedId);
 				reportDiagnostic(invalidFedId);
 				continue;
 			}
@@ -211,6 +217,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			var error = Diagnostic.Create(
 				Diagnostics.Fed.ConfiguredFederationMissingFromCode,
 				microserviceLocation,
+				properties,
 				microserviceName,
 				fedId,
 				fedInterface);
@@ -221,10 +228,17 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		{
 			string codeKey = codeFedInfo.Key;
 			var federationInfo = flatCode[codeKey];
+			
+			var properties = ImmutableDictionary<string, string>.Empty
+				.Add(Diagnostics.Fed.PROP_FEDERATION_ID, federationInfo.Id)
+				.Add(Diagnostics.Fed.PROP_FEDERATION_INTERFACE, federationInfo.Federation.Interface)
+				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName);
+			
 			isValid = false;
 			var error = Diagnostic.Create(
 				Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig,
 				codeFedInfo.Value.Location,
+				properties,
 				microserviceName,
 				federationInfo.Id,
 				federationInfo.Federation.Interface);

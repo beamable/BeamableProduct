@@ -114,6 +114,10 @@ public static class Diagnostics
 		public const string ERROR_PARSING_FEDERATION_CONFIG_FILE_ID = "BEAM_FED_O008";
 		public const string FEDERATION_ID_INVALID_CONFIG_FILE_ID = "BEAM_FED_O009";
 
+		public const string PROP_FEDERATION_ID = "FederationId";
+		public const string PROP_FEDERATION_INTERFACE = "FederationInterface";
+		public const string PROP_MICROSERVICE_NAME = "MicroserviceName";
+
 		public static readonly DiagnosticDescriptor DeclaredFederationMissingFromSourceGenConfig
 			= new(DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID,
 				$"Missing declared Federation in {nameof(MicroserviceFederationsConfig)}",

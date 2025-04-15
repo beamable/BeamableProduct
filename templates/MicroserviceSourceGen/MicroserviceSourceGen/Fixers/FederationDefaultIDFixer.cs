@@ -52,11 +52,7 @@ public class FederationDefaultIDFixer : CodeFixProvider
 		var hasFederationID = existingAttrs.Count(item => item.Name.ToString().Contains(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME)) > 0;
 
 		
-		var defaultLiteralSyntax = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal("default"));
-		var federationIdAttributeSyntax = SyntaxFactory.IdentifierName(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME);
-		var attributeArgumentSyntaxes = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AttributeArgument(defaultLiteralSyntax));
-		var attributeArguments = SyntaxFactory.AttributeArgumentList(attributeArgumentSyntaxes);
-		var attribute = SyntaxFactory.Attribute(federationIdAttributeSyntax).WithArgumentList(attributeArguments);
+		AttributeSyntax attribute = GenerateFederationIdAttribute();
 		AttributeListSyntax newAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(attribute));
 
 		ClassDeclarationSyntax newClassDecl;
@@ -82,5 +78,15 @@ public class FederationDefaultIDFixer : CodeFixProvider
 
 		var newRoot = root.ReplaceNode(classDecl, newClassDecl);
 		return document.WithSyntaxRoot(newRoot);
+	}
+
+	public static AttributeSyntax GenerateFederationIdAttribute(string attributeValue = "default")
+	{
+		var defaultLiteralSyntax = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(attributeValue));
+		var federationIdAttributeSyntax = SyntaxFactory.IdentifierName(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME);
+		var attributeArgumentSyntaxes = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AttributeArgument(defaultLiteralSyntax));
+		var attributeArguments = SyntaxFactory.AttributeArgumentList(attributeArgumentSyntaxes);
+		var attribute = SyntaxFactory.Attribute(federationIdAttributeSyntax).WithArgumentList(attributeArguments);
+		return attribute;
 	}
 }

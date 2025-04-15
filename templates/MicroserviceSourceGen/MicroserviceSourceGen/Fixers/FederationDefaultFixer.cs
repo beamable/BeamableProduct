@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
@@ -22,7 +23,6 @@ public class FederationDefaultFixer : CodeFixProvider
 		
 		Diagnostics.Fed.DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID,
 		Diagnostics.Fed.CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID,
-		Diagnostics.Fed.FEDERATION_CODE_GENERATED_PROPERLY_DIAGNOSTIC_ID,
 		Diagnostics.Fed.FEDERATION_ID_INVALID_CONFIG_FILE_ID
 	);
 
@@ -35,7 +35,7 @@ public class FederationDefaultFixer : CodeFixProvider
 		
 		context.RegisterCodeFix(
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-				title: $"[{diagnostic.Id}] No Code/Solution code for this, a Comment will be added to Guide the next steps.",
+				title: $"[{diagnostic.Id}] No Code/Solution auto-fix for this, a Comment will be added to Guide the next steps.",
 				createChangedDocument: c => AddCommentToGuideUser(context.Document, diagnosticSpan, diagnostic, c),
 				equivalenceKey: "AddGuideComment"),
 			diagnostic);
@@ -55,15 +55,68 @@ public class FederationDefaultFixer : CodeFixProvider
 		if (targetNode == null)
 			return document;
 
-		var comments = SyntaxFactory.TriviaList(
-			SyntaxFactory.Comment($"#pragma warning disable {diagnostic.Id}"),
-			SyntaxFactory.ElasticCarriageReturnLineFeed,
-			SyntaxFactory.Comment($"// TODO: {diagnostic.GetMessage()}"),
-			SyntaxFactory.ElasticCarriageReturnLineFeed
-		).AddRange(targetNode.GetLeadingTrivia());
+		List<SyntaxTrivia> triviaComments = new();
+		triviaComments.Add(SyntaxFactory.Comment($"#pragma warning disable {diagnostic.Id}"));
+		triviaComments.Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
+		var diagnosticComments = GetFixMessages(diagnostic);
+		foreach (string diagnosticComment in diagnosticComments)
+		{
+			triviaComments.Add(SyntaxFactory.Comment($"// TODO: {diagnosticComment}"));
+			triviaComments.Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
+		}
+		
+		var comments = SyntaxFactory.TriviaList(triviaComments)
+			.AddRange(targetNode.GetLeadingTrivia());
 		
 		var newNode = node.WithLeadingTrivia(comments);
 		var newRoot = root.ReplaceNode(targetNode, newNode);
 		return document.WithSyntaxRoot(newRoot);
+	}
+
+	private string[] GetFixMessages(Diagnostic diagnostic)
+	{
+		object[] args;
+		string[] messages;
+		switch (diagnostic.Id)
+		{
+			case Diagnostics.Fed.DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID:
+				args = new object[] {
+					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
+					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
+					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]
+				};
+				messages = new[]
+				{
+					"Add this ID by running `dotnet beam fed add {0} {1} {2}` from your project's root directory,",
+					"Or remove the {2} that references {1}  interface from the {0} Microservice class"
+				};
+				break;
+			case Diagnostics.Fed.CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID:
+				args = new object[]{
+					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
+					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
+					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]
+				};
+				messages = new[]
+				{
+					"Remove this ID by running `dotnet beam fed remove {0} {1} {2}` from your project's root directory,"
+				};
+				break;
+			case Diagnostics.Fed.FEDERATION_ID_INVALID_CONFIG_FILE_ID:
+				string fedId = diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID];
+				string fixedFedId = FederationIdNameFixer.FixFederationIdName(fedId);
+				args = new object[] { fedId, fixedFedId };
+				messages = new[] { "Open `federations.json` from your project's root directory and rename {0} for {1}" };
+				break;
+			default:
+				return new []{diagnostic.GetMessage()};
+		}
+
+		for (int index = 0; index < messages.Length; index++)
+		{
+			string message = messages[index];
+			messages[index] = string.Format(message, args);
+		}
+		return messages;
 	}
 }

@@ -545,7 +545,7 @@ public partial class {|#1:SomeUserMicroservice|} : Microservice, IFederatedGameS
 	}
 
 	[Fact]
-	public async Task Test_CodeFixer_Fed_FederationNotFoundInCode()
+	public async Task Test_CodeFixer_Fed_FederationNotFoundInCode_FederationDefaultFixer()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -565,7 +565,7 @@ using Beamable.Common;
 namespace TestNamespace;
 
 #pragma warning disable BEAM_FED_O002
-// TODO: You have configured federation, but the Microservice does not implement the required interface. Microservice=SomeUserMicroservice, Id=my_federation, Interface=IFederatedGameServer. Please remove this Id by running `dotnet beam fed remove SomeUserMicroservice my_federation IFederatedGameServer` from your project's root directory, Or add the IFederatedGameServer that references my_federation interface to the SomeUserMicroservice Microservice class.
+// TODO: Remove this ID by running `dotnet beam fed remove SomeUserMicroservice my_federation IFederatedGameServer` from your project's root directory,
 
 [Microservice(""some_user_service"")]
 public partial class {|#0:SomeUserMicroservice|} : Microservice
@@ -581,6 +581,58 @@ public partial class {|#0:SomeUserMicroservice|} : Microservice
 
 		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.ConfiguredFederationMissingFromCode)
 			.WithLocation(0).WithArguments("SomeUserMicroservice", "my_federation", "IFederatedGameServer"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Fed_FederationNotFoundInCode_CreateNewFederationIDAndImplementInterfaceFixer()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Experimental.Api.Lobbies;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+[Microservice(""some_user_service"")]
+public partial class {|#0:SomeUserMicroservice|} : Microservice
+{
+	public Promise<ServerInfo> CreateGameServer(Lobby lobby)
+    {
+        throw new System.NotImplementedException();
+    }		
+}
+";
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Experimental.Api.Lobbies;
+using Beamable.Common;
+
+namespace TestNamespace;
+[FederationId(""my_federation"")]
+public class My_FederationFederation : IFederationId
+{
+}
+[Microservice(""some_user_service"")]
+public partial class {|#0:SomeUserMicroservice|} : Microservice, IFederatedGameServer<My_FederationFederation>{
+	public Promise<ServerInfo> CreateGameServer(Lobby lobby)
+    {
+        throw new System.NotImplementedException();
+    }		
+}
+";
+		
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { @"my_federation", [new() { Interface = "IFederatedGameServer" }] } } };
+
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, FederationMissingFromCodeFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode);
+
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.ConfiguredFederationMissingFromCode)
+			.WithLocation(0).WithArguments("SomeUserMicroservice", "my_federation", "IFederatedGameServer"));
+		
+		ctx.FixedState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Fed.FederationCodeGeneratedProperly));
 		
 		await ctx.RunAsync();
 	}

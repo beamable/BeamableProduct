@@ -64,10 +64,7 @@ public class FederationIdNameFixer : CodeFixProvider
 	{
 		var currentValue = literal.Token.ValueText;
 
-		var sanitizedName = new string(currentValue.Where(c => char.IsLetterOrDigit(c) || c == '_').ToArray());
-		
-		var newValue = new string(sanitizedName.SkipWhile(c => !char.IsLetter(c)).ToArray());
-		if (string.IsNullOrWhiteSpace(newValue)) newValue = "default";
+		string newValue = FixFederationIdName(currentValue);
 
 		var newLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(newValue));
 
@@ -75,5 +72,14 @@ public class FederationIdNameFixer : CodeFixProvider
 		var newRoot = root.ReplaceNode(literal, newLiteral);
 
 		return document.WithSyntaxRoot(newRoot);
+	}
+
+	public static string FixFederationIdName(string currentValue)
+	{
+		var sanitizedName = new string(currentValue.Where(c => char.IsLetterOrDigit(c) || c == '_').ToArray());
+		
+		var newValue = new string(sanitizedName.SkipWhile(c => !char.IsLetter(c)).ToArray());
+		if (string.IsNullOrWhiteSpace(newValue)) newValue = "default";
+		return newValue;
 	}
 }
