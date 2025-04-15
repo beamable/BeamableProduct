@@ -63,6 +63,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Threading;
 using ZLogger;
 using Constants = Beamable.Common.Constants;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -636,8 +637,6 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
-	        _ = CollectorManager.StartCollector();
-
 	        var envArgs = _args = new EnvironmentArgs();
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        
@@ -646,7 +645,10 @@ namespace Beamable.Server
 	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-	        if (inDocker) return;
+	        if (inDocker)
+	        {
+		        return;
+	        }
 
 	        ConfigureRequiredProcessIdWatcher(envArgs);
 
@@ -735,11 +737,17 @@ namespace Beamable.Server
 	        {
 		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
 	        }
+        }
 
-	        envArgs = _args = new EnvironmentArgs();
+        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        {
+	        CancellationTokenSource tokenSource = new CancellationTokenSource();
+	        await CollectorManager.StartCollector(tokenSource.Token);
+
+	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
+	        var envArgs = _args = new EnvironmentArgs();
 	        //var resolvedCid = await ConfigureCid(envArgs);
 	        //_args.SetResolvedCid(resolvedCid);
-
 
 	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
 	        _resourceBuilder = ResourceBuilder.CreateEmpty()
@@ -755,14 +763,10 @@ namespace Beamable.Server
 		        });
 
 
-	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: true);
-        }
+	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true);
 
-        public static async Task Start<TMicroService>() where TMicroService : Microservice
-        {
 	        BeamableZLoggerProvider.LogContext.Value = _logger;
-	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = new EnvironmentArgs();
+
 
 	        ConfigureTelemetry(envArgs, attribute);
 

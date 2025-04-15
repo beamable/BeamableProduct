@@ -68,6 +68,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+<!--       TODO: rename all of these and put Beam prefix in it-->
         <IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
         <IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
         <IsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</IsMacOS>
@@ -83,6 +84,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+<!--        -->
         <None Include="$(CollectorExecutablePath)" PackagePath="$(OutputPath)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
