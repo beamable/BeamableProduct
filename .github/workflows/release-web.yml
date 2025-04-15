@@ -34,6 +34,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # Run code linter
+      - name: Lint
+        run: pnpm lint
+
+      # Run the test suite
+      - name: Test
+        run: pnpm test
+
       # Run the release command that bumps the version, updates the changelog, and builds the project.
       - name: Run Release
         run: pnpm release
