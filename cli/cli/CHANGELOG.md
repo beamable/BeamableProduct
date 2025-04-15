@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]
 ### Added
-- New Source Code Generator Validator to invalidate async void Callable methods.
 - New Code Analyzer to return compile time error for async void Callable methods.
-- New Code fixer to fix async void Callable methods on IDE
+- New Code Fixer to fix async void Callable methods on IDE
+- New Code Analyzer to validate Federations
+- New Code Fixer to Implement possible fixes for Federations
 
 ## [4.2.0] - 2025-04-04
 ### Changed
