@@ -17,6 +17,7 @@ namespace Beamable.Server
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
 		public IDependencyProvider Provider;
+		public ISignedRequester SignedRequester => Provider.GetService<ISignedRequester>();
 	}
 
 	/// <summary>
@@ -47,6 +48,11 @@ namespace Beamable.Server
 		/// </summary>
 		protected IBeamableRequester Requester;
 
+		/// <summary>
+		/// The <see cref="ISignedRequester"/> is a requesting abstraction that uses Beamable Signed Requests instead of
+		/// the secure websocket protocol
+		/// </summary>
+		protected ISignedRequester SignedRequester => _serviceProvider.GetService<ISignedRequester>();
 		/// <summary>
 		/// This type defines the %Microservice main entry point for %Beamable %Microservice features.
 		///

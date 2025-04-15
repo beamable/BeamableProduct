@@ -52,6 +52,9 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
+using Beamable.Server;
+using Beamable.Server.Common;
+using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.Project.Logs;
 using Command = System.CommandLine.Command;
@@ -160,6 +163,7 @@ public class App
 		// register services
 		services.AddSingleton<LoggingLevelSwitch>(LogLevel);
 		services.AddSingleton<IAppContext, DefaultAppContext>();
+		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<IAliasService, AliasService>();
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
@@ -188,6 +192,8 @@ public class App
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
 		services.AddSingleton<IFileOpenerService, FileOpenerService>();
+		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
+		services.AddSingleton<HttpSignedRequester>();
 		
 		OpenApiRegistration.RegisterOpenApis(services);
 
@@ -714,9 +720,9 @@ public class App
 				return next(ctx);
 			}
 
-			var provider = ctx.BindingContext.GetService<AppServices>();
-			var appContext = provider.GetService<IAppContext>();
-			var reporter = provider.GetService<IDataReporterService>();
+			var provider = ServiceProviderServiceExtensions.GetService<AppServices>(ctx.BindingContext);
+			var appContext = ServiceProviderServiceExtensions.GetService<IAppContext>(provider);
+			var reporter = ServiceProviderServiceExtensions.GetService<IDataReporterService>(provider);
 			var isPiping = appContext.UsePipeOutput || appContext.ShowRawOutput;
 			
 			if (!isPiping)
@@ -899,11 +905,11 @@ public class App
 					break;
 			}
 
-			var provider = context.BindingContext.GetService<AppServices>();
-			var appContext = provider.GetService<IAppContext>();
+			var provider = ServiceProviderServiceExtensions.GetService<AppServices>(context.BindingContext);
+			var appContext = ServiceProviderServiceExtensions.GetService<IAppContext>(provider);
 			if (appContext.UsePipeOutput || appContext.ShowRawOutput)
 			{
-				var reporter = provider.GetService<IDataReporterService>();
+				var reporter = ServiceProviderServiceExtensions.GetService<IDataReporterService>(provider);
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 

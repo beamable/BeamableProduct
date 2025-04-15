@@ -206,12 +206,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		}
 	}
 
-	public static async Task BuildAllLocalSource()
-	{
-		// create a temp solution file... 
-		
-	}
-
 	public static async Task<BuildImageSourceOutput> BuildLocalSource(
 		IDependencyProvider provider, 
 		string id, 
