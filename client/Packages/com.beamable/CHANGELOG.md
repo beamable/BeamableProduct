@@ -8,14 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ##[Unreleased]
 
 ### Added
-- Helper menu option for updating Realm configuration for GPGS integration
+- Helper menu option for updating Realm configuration for GPGS integration.
 
 ### Changed
 - `AccountManagementConfiguration` no longer overrides `BEAMABLE_GPGS` define symbol.
 
 ### Fixed
 - CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
-
+- Improved error detection for attaching identity providers in `PlayerAccounts`.
 
 ## [2.2.0] - 2025-04-04
 ### Added

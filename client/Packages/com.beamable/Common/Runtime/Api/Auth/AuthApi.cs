@@ -16,6 +16,10 @@ namespace Beamable.Common.Api.Auth
 
 		// this means that the credential is already bound to a playerId
 		ASSIGNED_TO_AN_ACCOUNT,
+		/// <summary>
+		/// This could mean one of two things - either the credentials provided were incorrect or the identity provider is not configured properly.
+		/// The former can happen while integrating third party identity providers.
+		/// </summary>
 		INVALID_CREDENTIAL
 	}
 
