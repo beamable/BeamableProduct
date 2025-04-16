@@ -741,8 +741,9 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
+	        _logger.ZLogInformation($"Starting otel collector discovery event...");
 	        CancellationTokenSource tokenSource = new CancellationTokenSource();
-	        await CollectorManager.StartCollector(tokenSource.Token);
+	        await CollectorManager.StartCollector(tokenSource.Token, _logger);
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = _args = new EnvironmentArgs();

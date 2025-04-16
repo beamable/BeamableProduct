@@ -68,28 +68,26 @@
     </ItemGroup>
 
     <PropertyGroup>
-<!--       TODO: rename all of these and put Beam prefix in it-->
-        <IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
-        <IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
-        <IsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</IsMacOS>
-        <RunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</RunningArchitecture>
+        <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>
+        <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>
+        <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>
+        <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>
 
-        <CollectorConfigPath>$(MSBuildThisFileDirectory)..\collector-files\clickhouse-config.yaml</CollectorConfigPath>
-        <CollectorExecutablePath Condition="$(IsWindows)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-amd64.exe</CollectorExecutablePath>
-        <CollectorExecutablePath Condition="$(IsWindows)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-arm64.exe</CollectorExecutablePath>
-        <CollectorExecutablePath Condition="$(IsLinux)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-amd64</CollectorExecutablePath>
-        <CollectorExecutablePath Condition="$(IsLinux)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-arm64</CollectorExecutablePath>
-        <CollectorExecutablePath Condition="$(IsMacOS)==true AND '$(RunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-amd64</CollectorExecutablePath>
-        <CollectorExecutablePath Condition="$(IsMacOS)==true AND '$(RunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-arm64</CollectorExecutablePath>
+        <BeamCollectorConfigPath>$(MSBuildThisFileDirectory)..\collector-files\clickhouse-config.yaml</BeamCollectorConfigPath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-amd64.exe</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-arm64.exe</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-amd64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-arm64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-amd64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-arm64</BeamCollectorExecutablePath>
     </PropertyGroup>
 
     <ItemGroup>
-<!--        -->
-        <None Include="$(CollectorExecutablePath)" PackagePath="$(OutputPath)">
+        <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
 
-        <None Include="$(CollectorConfigPath)" PackagePath="$(OutputPath)">
+        <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

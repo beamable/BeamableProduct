@@ -1,13 +1,17 @@
 using Beamable.Common;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ZLogger;
 
 namespace microservice.dbmicroservice;
 
@@ -72,23 +76,33 @@ public class CollectorManager
 		throw new Exception("Collector executable was not found.");
 	}
 
-	public static async Task StartCollector(CancellationToken token)
+	public static async Task StartCollector(CancellationToken token, ILogger logger)
 	{
 		//TODO Start a signed request to Beamo asking for credentials
 		//TODO Set credentials as environment variables
 
 		Promise connectedPromise = new Promise();
 
-		Task.Run(() => CollectorDiscovery(token, connectedPromise));
+		Task.Run(() => CollectorDiscovery(token, connectedPromise, logger));
 
 		await connectedPromise; // the first time we wait for the collector to be up before continuing
 	}
 
-	private static async Task CollectorDiscovery(CancellationToken token, Promise connectedPromise)
+	private static async Task CollectorDiscovery(CancellationToken token, Promise connectedPromise, ILogger logger)
 	{
-		// do some socket initialization
+		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
+		if(string.IsNullOrEmpty(port))
+		{
+			throw new Exception("There is no port configured for the collector discovery");
+		}
+
+		if (!Int32.TryParse(port, out int portNumber))
+		{
+			throw new Exception("Invalid value for port");
+		}
+
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-		var ed = new IPEndPoint(IPAddress.Any, 8686); //TODO figure a way to have this as config for both collector and microservice, environment variable / csproj property
+		var ed = new IPEndPoint(IPAddress.Any, portNumber);
 
 		socket.ReceiveTimeout = 10;
 		socket.ReceiveBufferSize = 4096;
@@ -108,7 +122,7 @@ public class CollectorManager
 					throw new Exception("The collector couldn't start, terminating the microservice.");
 				}
 
-				await StartCollectorProcess(token);
+				await StartCollectorProcess(token, logger);
 				alarmCounter++;
 			}
 			else
@@ -152,11 +166,11 @@ public class CollectorManager
 		return false;
 	}
 
-	public static async Task StartCollectorProcess(CancellationToken cts)
+	public static async Task StartCollectorProcess(CancellationToken cts, ILogger logger)
 	{
+		logger.ZLogInformation($"Starting otel collector process...");
 		var collectorExecutablePath = GetCollectorExecutablePath();
 		var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
-
 		using var process = new Process();
 
 		process.StartInfo.FileName = collectorExecutablePath;
@@ -166,6 +180,8 @@ public class CollectorManager
 		process.StartInfo.CreateNoWindow = true;
 		process.StartInfo.UseShellExecute = false;
 		process.EnableRaisingEvents = true;
+		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+
 
 		var result = "";
 		var sublogs = "";
@@ -176,6 +192,7 @@ public class CollectorManager
 		{
 			if (!string.IsNullOrEmpty(args.Data))
 			{
+				logger.ZLogInformation($"[Collector] {args.Data}");
 				sublogs += args.Data;
 				if (args.Data.Contains("Everything is ready. Begin running and processing data."))
 				{
@@ -186,6 +203,7 @@ public class CollectorManager
 
 		process.OutputDataReceived += (sender, args) =>
 		{
+			logger.ZLogInformation($"[Collector] {args.Data}");
 			if (!string.IsNullOrEmpty(args.Data))
 			{
 				result += args.Data;

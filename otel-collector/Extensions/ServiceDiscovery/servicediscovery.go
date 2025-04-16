@@ -15,7 +15,7 @@ type serviceDiscovery struct {
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 
-	go StartUDPServer(m.config.Port)
+	go StartUDPServer(m.config.Host, m.config.Port)
 
 	return nil
 }
@@ -25,10 +25,22 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(port string) {
-	log.Println("Service discovery started at port: ", port)
+func StartUDPServer(host string, port string) {
 
-	broadcastAddr := "255.255.255.255:"
+	if len(host) == 0 {
+		host := "255.255.255.255"
+        log.Println("Host is not configured, default it to: ", host)
+    }
+
+	if len(port) == 0 {
+		port := "8686"
+        log.Println("Port is not configured, default it to: ", port)
+    }
+
+	log.Println("Service discovery started at: ", host, ":", port)
+
+	broadcastAddr := host
+	broadcastAddr += ":"
 	broadcastAddr += port
 
 	udpAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
@@ -45,7 +57,7 @@ func StartUDPServer(port string) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(10 * time.Millisecond)
+	ticker := time.NewTicker(10 * time.Millisecond) //TODO put this in a config
 	defer ticker.Stop()
 
 	for range ticker.C {
