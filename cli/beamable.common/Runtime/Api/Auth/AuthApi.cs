@@ -947,8 +947,8 @@ namespace Beamable.Common.Api.Auth
 	public class ExternalAuthenticationResponse
 	{
 	   /// <summary>
-	   /// The user ID associated with the external authentication.
-	   /// When provided, it indicates that the external authentication is linked to a specific user.
+	   /// The user ID in the external system (wallet ID, OAuth ID, etc.)
+	   /// When provided, it indicates that the federation service identified the user and provided his external ID.
 	   /// </summary>
 		public string user_id;
 		/// <summary>
