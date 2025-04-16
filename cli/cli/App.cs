@@ -47,13 +47,12 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
-using Beamable.Server;
+using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.Project.Logs;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
-using ZLogger.Formatters;
 using Command = System.CommandLine.Command;
 
 namespace cli;
@@ -164,6 +163,7 @@ public class App
 		// register services
 		services.AddSingleton<BeamLogSwitch>(LogSwitch);
 		services.AddSingleton<IAppContext, DefaultAppContext>();
+		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<IAliasService, AliasService>();
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
@@ -192,6 +192,8 @@ public class App
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
 		services.AddSingleton<IFileOpenerService, FileOpenerService>();
+		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
+		services.AddSingleton<HttpSignedRequester>();
 		
 		OpenApiRegistration.RegisterOpenApis(services);
 

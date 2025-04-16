@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
@@ -8,9 +7,8 @@ using cli.Services;
 using Spectre.Console;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
-using System.CommandLine.IO;
 using Microsoft.Extensions.Logging;
-using UnityEngine;
+using Beamable.Server;
 
 namespace cli;
 
@@ -21,7 +19,7 @@ public class AppServices : IServiceProvider
 	public object GetService(Type serviceType) => duck.GetService(serviceType);
 }
 
-public interface IAppContext
+public interface IAppContext : IRealmInfo
 {
 	public bool IsDryRun { get; }
 	public BeamLogSwitch LogSwitch { get; }
@@ -153,7 +151,6 @@ public class DefaultAppContext : IAppContext
 	private string _cid, _pid, _host;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
-
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -337,4 +334,7 @@ public class DefaultAppContext : IAppContext
 		_token = new CliToken(response, _cid, _pid);
 	}
 
+	string IRealmInfo.CustomerID => _cid;
+
+	string IRealmInfo.ProjectName => _pid;
 }
