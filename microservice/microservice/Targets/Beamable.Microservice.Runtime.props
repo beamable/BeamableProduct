@@ -83,11 +83,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)">
+        <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
 
-        <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)">
+        <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

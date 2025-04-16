@@ -23,7 +23,6 @@ exporters:
     password: ${env:BEAM_CLICKHOUSE_PASSWORD}
     traces_table_name: otel_traces
     logs_table_name: otel_logs
-    create_schema: true
     timeout: 5s
     database: default
     sending_queue:
@@ -34,16 +33,16 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
     metrics_tables:
-      #gauge: 
-      #  name: "otel_metrics_gauge"
+      gauge: 
+        name: "otel_metrics_gauge"
       sum: 
         name: "otel_metrics_sum"
-      #summary: 
-      #  name: "otel_metrics_summary"
-      #histogram: 
-      #  name: "otel_metrics_histogram"
-      #exponential_histogram: 
-      #  name: "otel_metrics_exp_histogram"
+      summary: 
+        name: "otel_metrics_summary"
+      histogram: 
+        name: "otel_metrics_histogram"
+      exponential_histogram: 
+        name: "otel_metrics_exp_histogram"
 extensions:
   servicediscovery:
     host: ${env:BEAM_COLLECTOR_DISCOVERY_HOST}
