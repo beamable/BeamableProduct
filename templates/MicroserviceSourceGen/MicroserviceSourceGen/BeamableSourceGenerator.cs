@@ -50,7 +50,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 	private static void GenerateCode(SourceProductionContext context, (ImmutableArray<MicroserviceInfo> Left, ImmutableArray<(string, string)> Right) args)
 	{
-
+		// All the validations from this method were moved to their specific DiagnosticAnalyzer, which are the FederationAnalyzer and ServicesAnalyzer.
+		// This method isn't removed just to keep the reference from the IncrementalGenerator, but at the moment this class isn't doing much
+		// In the future we will use this method to generate the code
 	}
 
 	
