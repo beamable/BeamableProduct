@@ -25,11 +25,7 @@ public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
 			: type.ContainingNamespace.ToString();
 		Name = type.Name;
 
-		MicroserviceClassLocation =
-			type.DeclaringSyntaxReferences.FirstOrDefault().GetSyntax() is ClassDeclarationSyntax classDeclaration
-				? classDeclaration.Identifier.GetLocation()
-				: Location.None;
-		
+		MicroserviceClassLocation = type.Locations.FirstOrDefault();
 		
 		// Check if this is a partial class
 		IsPartial = type.DeclaringSyntaxReferences

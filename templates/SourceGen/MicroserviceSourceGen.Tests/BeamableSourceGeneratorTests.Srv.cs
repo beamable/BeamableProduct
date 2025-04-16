@@ -82,12 +82,12 @@ using Beamable.Common;
 namespace TestNamespace;
 
 [Microservice(""id"")]
-public class SomeUserMicroservice : Microservice
+public class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 
 [Microservice(""id2"")]
-public class {|#0:SomeOtherUserMicroservice|} : Microservice
+public class {|#1:SomeOtherUserMicroservice|} : Microservice
 {		
 }
 ";
@@ -100,7 +100,12 @@ public class {|#0:SomeOtherUserMicroservice|} : Microservice
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
 			.WithLocation(0)
-			.WithArguments("SomeOtherUserMicroservice, SomeUserMicroservice")
+			.WithArguments("SomeOtherUserMicroservice")
+			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
+		
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
+			.WithLocation(1)
+			.WithArguments("SomeUserMicroservice")
 			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
 		
 		await ctx.RunAsync();

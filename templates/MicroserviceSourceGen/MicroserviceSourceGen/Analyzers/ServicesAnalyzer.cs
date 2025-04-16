@@ -28,7 +28,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
 		context.RegisterSyntaxNodeAction(AnalyzeForAsyncVoidMethod, SyntaxKind.MethodDeclaration);
 		context.RegisterCompilationStartAction(ValidateMicroserviceClasses);
-		
+		context.EnableConcurrentExecution();
 	}
 	
 	private void ValidateMicroserviceClasses(CompilationStartAnalysisContext context)
@@ -62,7 +62,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			if (microserviceInfos.Count > 0 && mergedInfos.Count == 0)
 			{
-				var missingIdDiagnostic = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, microserviceInfos[0].MicroserviceClassLocation);
+				var lastItem = microserviceInfos.Last();
+				var missingIdDiagnostic = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, lastItem.MicroserviceClassLocation);
 				analysisContext.ReportDiagnostic(missingIdDiagnostic);
 				return;
 			}
@@ -80,13 +81,24 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			return;
 		}
 
-		var info = infos[0];
+		var info =  infos.Last();
 		if (infos.Length > 1)
 		{
-			var classNames = string.Join(", ", infos.Select(intoItem => intoItem.Name));
-			var extraLocations = infos.Select(intoItem => intoItem.MicroserviceClassLocation);
-			var error = Diagnostic.Create(Diagnostics.Srv.MultipleMicroserviceClassesDetected, info.MicroserviceClassLocation, extraLocations, classNames);
-			context.ReportDiagnostic(error);
+			foreach (var item in infos)
+			{
+				var otherClassNames = infos
+					.Where(i => i != item)
+					.Select(i => i.Name);
+		
+				var message = string.Join(", ", otherClassNames);
+				var diag = Diagnostic.Create(
+					Diagnostics.Srv.MultipleMicroserviceClassesDetected,
+					item.MicroserviceClassLocation,
+					message
+				);
+		
+				context.ReportDiagnostic(diag);
+			}
 			return;
 		}
 		
