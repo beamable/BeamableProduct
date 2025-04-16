@@ -1,7 +1,8 @@
 ﻿using Beamable.Common;
+using Beamable.Server;
 using Microsoft.CodeAnalysis;
 
-namespace Beamable.Server;
+namespace Beamable.Microservice.SourceGen;
 
 public static class Diagnostics
 {
@@ -30,7 +31,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor FailedToDeserializeSourceGenConfig
 			= new("BEAM_CFG_O003",
 				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized",
-				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized. Ex={{0}}. JSON={{1}}.",
+				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized. Error={{0}}.",
 				Category_Config,
 				DiagnosticSeverity.Error,
 				true);
@@ -55,48 +56,48 @@ public static class Diagnostics
 
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
-				$"No {nameof(Microservice)} classes detected",
-				$"No {nameof(Microservice)} classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project.",
+				$"No {nameof(Server.Microservice)} classes detected",
+				$"No {nameof(Server.Microservice)} classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor MultipleMicroserviceClassesDetected
 			= new(MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID,
-				$"Multiple {nameof(Microservice)} classes detected",
-				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project. ClassNames={{0}}.",
+				$"Multiple {nameof(Server.Microservice)} classes detected",
+				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project. ClassNames={{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor NonPartialMicroserviceClassDetected
 			= new(NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID,
-				$"Non-Partial {nameof(Microservice)} classes detected",
-				$"Non-Partial Microservice class detected. Make sure your {nameof(Microservice)} class is marked as `partial`.",
+				$"Non-Partial {nameof(Server.Microservice)} classes detected",
+				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor MissingMicroserviceId
 			= new(MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
-				$"{nameof(Microservice)} class is missing the microservice id",
-				$"{nameof(Microservice)} class is missing the microservice id",
+				$"{nameof(Server.Microservice)} class is missing the microservice id",
+				$"{nameof(Server.Microservice)} class is missing the microservice id",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor InvalidMicroserviceId
 			= new(INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID,
-				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
-				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
+				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
+				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod
 			= new(INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID,
-				$"{nameof(Microservice)} Callable methods cannot be async voids",
-				$"{nameof(Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
+				$"{nameof(Server.Microservice)} Callable methods cannot be async voids",
+				$"{nameof(Server.Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
@@ -171,22 +172,6 @@ public static class Diagnostics
 			= new(FEDERATION_ID_MUST_BE_DEFAULT_DIAGNOSTIC_ID,
 				$"IFederationId must be \"default\"",
 				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)} with a value of \"default\", Id={{0}}",
-				Category_Federations,
-				DiagnosticSeverity.Error,
-				true);
-		
-		public static readonly DiagnosticDescriptor FederationConfigFileNotFound
-			= new(FEDERATION_CONFIG_FILE_NOT_FOUND_ID,
-				@"Could not find federations.json file in your project",
-				@"Ensure if <ItemGroup><AdditionalFiles Include=""federations.json""/></ItemGroup> exists in your csproj file",
-				Category_Federations,
-				DiagnosticSeverity.Error,
-				true);
-		
-		public static readonly DiagnosticDescriptor ErrorParsingFederationConfigFile
-			= new(ERROR_PARSING_FEDERATION_CONFIG_FILE_ID,
-				@"Could not parse federations.json file",
-				$"Exception: {{0}}",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);

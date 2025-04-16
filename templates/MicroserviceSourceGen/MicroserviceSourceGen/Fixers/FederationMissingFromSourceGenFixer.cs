@@ -1,15 +1,15 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Beamable.Server;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using System.Collections.Immutable;
 using System.Composition;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Beamable.Server;
+namespace Beamable.Microservice.SourceGen.Fixers;
 
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FederationMissingFromSourceGenFixer)), Shared]
 public class FederationMissingFromSourceGenFixer : CodeFixProvider

@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,7 +13,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Beamable.Server;
+namespace Beamable.Microservice.SourceGen.Fixers;
 
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FederationMissingFromCodeFixer)), Shared]
 public class FederationMissingFromCodeFixer : CodeFixProvider

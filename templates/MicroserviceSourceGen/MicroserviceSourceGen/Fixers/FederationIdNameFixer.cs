@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Beamable.Microservice.SourceGen.Analyzers;
+using Beamable.Server;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Beamable.Server;
+namespace Beamable.Microservice.SourceGen.Fixers;
 
 /// <summary>
 /// This class is responsible for Fixing Federations IDS that are invalid (starts with number or if it contains special characters)

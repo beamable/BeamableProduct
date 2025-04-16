@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Microservice.SourceGen;
 using Beamable.Server;
 using Microservice.SourceGen.Tests.Dep;
 using Microservice.SourceGen.Tests.Utils;
@@ -11,11 +12,9 @@ using Microsoft.CodeAnalysis.Testing;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-using Xunit;
 
 namespace Microservice.SourceGen.Tests;
 
@@ -71,14 +70,11 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		// We need to update the compilation with all the syntax trees
 		Compilation = Compilation.AddSyntaxTrees(csharpText.Select(s => CSharpSyntaxTree.ParseText(s)));
 	}
-	
-	private static void PrepareForRun(CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg, string userCode)
+
+	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg,
+		string userCode) where T : DiagnosticAnalyzer, new()
 	{
-		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
-		var serverCommonAssembly = Assembly.Load("Beamable.Server.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
-		var runtimeCommonAssembly = Assembly.Load("Unity.Beamable.Runtime.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
-		ctx.TestState.AdditionalReferences.Add(serverCommonAssembly);
-		ctx.TestState.AdditionalReferences.Add(runtimeCommonAssembly);
+		AddAssemblyReferences(ctx.TestState);
 
 		ctx.TestCode = userCode;
 		if (cfg != null)
@@ -88,15 +84,11 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		}
 	}
 
-	private static void PrepareForRun<T>(CSharpCodeFixTest<ServicesAnalyzer, T, DefaultVerifier> ctx,
+	private static void PrepareForRun<TAnalyzer,TFixProvider>(CSharpCodeFixTest<TAnalyzer, TFixProvider, DefaultVerifier> ctx,
 		MicroserviceFederationsConfig? cfg, string userCode, string fixedCode, bool runOnce = true)
-		where T : CodeFixProvider, new()
+		where TFixProvider : CodeFixProvider, new() where TAnalyzer : DiagnosticAnalyzer, new()
 	{
-		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
-		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
-		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
-		ctx.TestState.AdditionalReferences.Add(serverAssembly);
-		ctx.TestState.AdditionalReferences.Add(runtimeAssembly);
+		AddAssemblyReferences(ctx.TestState);
 
 		ctx.TestCode = userCode;
 		ctx.FixedCode = fixedCode;
@@ -113,6 +105,15 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 			ctx.NumberOfFixAllInProjectIterations = 0;
 			ctx.NumberOfIncrementalIterations = 1;
 		}
+	}
+
+	private static void AddAssemblyReferences(SolutionState state)
+	{
+		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
+		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
+		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
+		state.AdditionalReferences.Add(serverAssembly!);
+		state.AdditionalReferences.Add(runtimeAssembly!);
 	}
 
 	public void Dispose()
