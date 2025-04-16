@@ -32,19 +32,19 @@ public struct UnrealEnumDeclaration
 
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
-UENUM(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Enums"")
+UENUM(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Enums"")
 enum class ₢{nameof(UnrealTypeName)}₢ : uint8
 {{
 	₢{nameof(EnumValues)}₢		
 }};
 
-UCLASS(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Enums"")
+UCLASS(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Enums"")
 class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 public:		
 	
-	UFUNCTION(BlueprintPure, meta = (DisplayName=""₢{nameof(NamespacedTypeName)}₢ To Serialization Name"", CompactNodeTitle = ""->""), Category=""Beam|₢{nameof(ServiceName)}₢|Enums"")
+	UFUNCTION(BlueprintPure, meta = (DisplayName=""₢{nameof(NamespacedTypeName)}₢ To Serialization Name"", CompactNodeTitle = ""->""), Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Enums"")
 	static FString ₢{nameof(NamespacedTypeName)}₢ToSerializationName(₢{nameof(UnrealTypeName)}₢ Value)
 	{{
 		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
@@ -56,7 +56,7 @@ public:
 		
 	}}
 
-	UFUNCTION(BlueprintPure, meta = (DisplayName=""Serialization Name To ₢{nameof(NamespacedTypeName)}₢"", CompactNodeTitle = ""->""), Category=""Beam|₢{nameof(ServiceName)}₢|Enums"")
+	UFUNCTION(BlueprintPure, meta = (DisplayName=""Serialization Name To ₢{nameof(NamespacedTypeName)}₢"", CompactNodeTitle = ""->""), Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Enums"")
 	static ₢{nameof(UnrealTypeName)}₢ SerializationNameTo₢{nameof(NamespacedTypeName)}₢(FString Value)
 	{{
 		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
