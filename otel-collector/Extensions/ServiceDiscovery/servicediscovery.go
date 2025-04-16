@@ -15,7 +15,7 @@ type serviceDiscovery struct {
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 
-	go StartUDPServer(m.config.Host, m.config.Port)
+	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay)
 
 	return nil
 }
@@ -25,17 +25,7 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(host string, port string) {
-
-	if len(host) == 0 {
-		host := "255.255.255.255"
-        log.Println("Host is not configured, default it to: ", host)
-    }
-
-	if len(port) == 0 {
-		port := "8686"
-        log.Println("Port is not configured, default it to: ", port)
-    }
+func StartUDPServer(host string, port string, delay int) {
 
 	log.Println("Service discovery started at: ", host, ":", port)
 
@@ -57,7 +47,7 @@ func StartUDPServer(host string, port string) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(10 * time.Millisecond) //TODO put this in a config
+	ticker := time.NewTicker(time.Duration(delay) * time.Millisecond) //TODO put this in a config
 	defer ticker.Stop()
 
 	for range ticker.C {

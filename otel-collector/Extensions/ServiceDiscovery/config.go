@@ -9,4 +9,5 @@ type Config struct {
 
 	Host string `mapstructure:"host"`
 	Port string `mapstructure:"port"`
+	DiscoveryDelay int `mapstructure:"discovery_delay"`
 }
