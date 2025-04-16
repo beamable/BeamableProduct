@@ -741,9 +741,20 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        _logger.ZLogInformation($"Starting otel collector discovery event...");
-	        CancellationTokenSource tokenSource = new CancellationTokenSource();
-	        await CollectorManager.StartCollector(tokenSource.Token, _logger);
+	        bool shouldStartStandardOtel = true;
+	        string ignoreStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_IGNORE_STANDARD_OTEL");
+
+	        if (ignoreStandardOtelEnv == "true")
+	        {
+		        shouldStartStandardOtel = false;
+	        }
+
+	        if (shouldStartStandardOtel)
+	        {
+		        _logger.ZLogInformation($"Starting otel collector discovery event...");
+		        CancellationTokenSource tokenSource = new CancellationTokenSource();
+		        await CollectorManager.StartCollector(tokenSource.Token, _logger);
+	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = _args = new EnvironmentArgs();
