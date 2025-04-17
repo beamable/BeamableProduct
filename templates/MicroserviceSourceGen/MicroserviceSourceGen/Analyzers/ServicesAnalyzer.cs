@@ -40,6 +40,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		context.RegisterCompilationEndAction(analysisContext =>
 		{
+			// Diagnostics generated after the compilation end do not appear as red squiggle in the code
+			// This happens because the SyntaxTree is already done, and it cannot be changed anymore with 
+			// diagnostics warning/suggestions/errors
 			if (microserviceInfos.Count == 0)
 			{
 				var err = Diagnostic.Create(Diagnostics.Srv.NoMicroserviceClassesDetected, null);
