@@ -48,7 +48,7 @@ public class FederationIdNameFixer : CodeFixProvider
 	
 	var federationAttribute = classNode.AttributeLists
 		.SelectMany(list => list.Attributes)
-		.FirstOrDefault(attr => attr.Name.ToString().Contains(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME));
+		.FirstOrDefault(attr => attr.Name.ToString().Contains(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME));
 
 	if (federationAttribute?.ArgumentList?.Arguments.Count > 0 &&
 	    federationAttribute.ArgumentList.Arguments[0].Expression is LiteralExpressionSyntax literal)

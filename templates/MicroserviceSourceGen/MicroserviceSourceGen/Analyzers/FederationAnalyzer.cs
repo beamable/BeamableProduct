@@ -21,7 +21,7 @@ namespace Beamable.Microservice.SourceGen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class FederationAnalyzer : DiagnosticAnalyzer
 {
-	
+	public const string FEDERATION_ATTRIBUTE_NAME = "FederationId";
 	
 	private MicroserviceFederationsConfig _sourceGenConfig;
 

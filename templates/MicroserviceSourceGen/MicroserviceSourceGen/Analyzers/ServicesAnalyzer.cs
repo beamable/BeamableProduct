@@ -17,7 +17,6 @@ namespace Beamable.Microservice.SourceGen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class ServicesAnalyzer : DiagnosticAnalyzer
 {
-	public const string FEDERATION_ATTRIBUTE_NAME = "FederationId";
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
 		ImmutableArray.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
 			Diagnostics.Srv.MultipleMicroserviceClassesDetected, Diagnostics.Srv.MissingMicroserviceId,
@@ -27,88 +26,73 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
 		context.RegisterSyntaxNodeAction(AnalyzeForAsyncVoidMethod, SyntaxKind.MethodDeclaration);
-		context.RegisterCompilationStartAction(ValidateMicroserviceClasses);
+		context.RegisterCompilationStartAction(ValidateMultipleMicroservices);
 		context.EnableConcurrentExecution();
 	}
 	
-	private void ValidateMicroserviceClasses(CompilationStartAnalysisContext context)
+	private void ValidateMultipleMicroservices(CompilationStartAnalysisContext context)
 	{
 		var microserviceInfos = new List<MicroserviceInfo>();
 		context.RegisterSymbolAction(symbolContext =>
 		{
-			var namedSymbol = (INamedTypeSymbol)symbolContext.Symbol;
-
-			if (namedSymbol.TypeKind != TypeKind.Class || namedSymbol.BaseType is not { Name: nameof(Server.Microservice) })
-			{
-				return;
-			}
-			microserviceInfos.Add(new MicroserviceInfo(namedSymbol));
-			
+			ValidateMicroservice(symbolContext, microserviceInfos);
 		}, SymbolKind.NamedType);
 		
 		context.RegisterCompilationEndAction(analysisContext =>
 		{
-			var mergedInfos = new List<MicroserviceInfo>();
-			foreach (MicroserviceInfo microserviceInfo in microserviceInfos)
+			if (microserviceInfos.Count == 0)
 			{
-				if (!mergedInfos.Any(i => i.Name.Equals(microserviceInfo.Name)))
-				{
-					if (microserviceInfo.MicroserviceAttributeLocation != null)
-					{
-						mergedInfos.Add(microserviceInfo);
-					}
-				}
+				var err = Diagnostic.Create(Diagnostics.Srv.NoMicroserviceClassesDetected, null);
+				analysisContext.ReportDiagnostic(err);
 			}
-			
-			if (microserviceInfos.Count > 0 && mergedInfos.Count == 0)
-			{
-				var lastItem = microserviceInfos.Last();
-				var missingIdDiagnostic = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, lastItem.MicroserviceClassLocation);
-				analysisContext.ReportDiagnostic(missingIdDiagnostic);
-				return;
-			}
-			
-			ValidateMicroserviceDeclaration(analysisContext, mergedInfos.ToImmutableArray());
 		});
 	}
 
-	private static void ValidateMicroserviceDeclaration(CompilationAnalysisContext context, ImmutableArray<MicroserviceInfo> infos)
+	private static void ValidateMicroservice(SymbolAnalysisContext symbolContext, List<MicroserviceInfo> microserviceInfos)
 	{
-		if (infos.Length == 0)
+		var namedSymbol = (INamedTypeSymbol)symbolContext.Symbol;
+
+		if (namedSymbol.TypeKind != TypeKind.Class || namedSymbol.BaseType is not { Name: nameof(Server.Microservice) })
 		{
-			var err = Diagnostic.Create(Diagnostics.Srv.NoMicroserviceClassesDetected, null);
-			context.ReportDiagnostic(err);
 			return;
+		}
+			
+		var classDeclarationSyntaxes = namedSymbol.DeclaringSyntaxReferences.Where(reference => reference.GetSyntax() is ClassDeclarationSyntax)
+			.Select(reference => reference.GetSyntax() as ClassDeclarationSyntax).ToList();
+		var location = classDeclarationSyntaxes.FirstOrDefault()?.Identifier.GetLocation();
+			
+		ImmutableArray<AttributeData> attributes = namedSymbol.GetAttributes();
+		if (!attributes.Any(att => att.AttributeClass is { Name: nameof(MicroserviceAttribute) }))
+		{
+			var missingIdDiagnostic = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, location);
+			symbolContext.ReportDiagnostic(missingIdDiagnostic);
 		}
 
-		var info =  infos.Last();
-		if (infos.Length > 1)
+		if (!classDeclarationSyntaxes.Any(syntax =>
+			    syntax.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword))))
 		{
-			foreach (var item in infos)
-			{
-				var otherClassNames = infos
-					.Where(i => i != item)
-					.Select(i => i.Name);
-		
-				var message = string.Join(", ", otherClassNames);
-				var diag = Diagnostic.Create(
-					Diagnostics.Srv.MultipleMicroserviceClassesDetected,
-					item.MicroserviceClassLocation,
-					message
-				);
-		
-				context.ReportDiagnostic(diag);
-			}
-			return;
+			var err = Diagnostic.Create(Diagnostics.Srv.NonPartialMicroserviceClassDetected, location);
+			symbolContext.ReportDiagnostic(err);
 		}
-		
-		if (!info.IsPartial)
+
+		if (!microserviceInfos.Any(i => i.Name.Equals(namedSymbol.Name)))
 		{
-			var err = Diagnostic.Create(Diagnostics.Srv.NonPartialMicroserviceClassDetected, info.MicroserviceClassLocation);
-			context.ReportDiagnostic(err);
+			microserviceInfos.Add(new MicroserviceInfo(namedSymbol));
+		}
+
+		if (microserviceInfos.Count(info => info.Name != namedSymbol.Name) >= 1)
+		{
+			var otherMicroservices = string.Join(", ",microserviceInfos.Select(info => info.Name).ToList());
+			var diag = Diagnostic.Create(
+				Diagnostics.Srv.MultipleMicroserviceClassesDetected,
+				location,
+				otherMicroservices
+			);
+		
+			symbolContext.ReportDiagnostic(diag);
 		}
 	}
-	
+
 	private static void AnalyzeForAsyncVoidMethod(SyntaxNodeAnalysisContext context)
 	{
 		var method = (MethodDeclarationSyntax)context.Node;

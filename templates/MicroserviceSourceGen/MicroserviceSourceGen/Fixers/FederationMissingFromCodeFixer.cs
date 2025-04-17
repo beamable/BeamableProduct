@@ -66,7 +66,7 @@ public class FederationMissingFromCodeFixer : CodeFixProvider
 		editor.ReplaceNode(microserviceClass, updatedClass.WithAdditionalAnnotations(Formatter.Annotation));
 
 		// Creating the new FederationID Class for the new Federation from Config file values.
-		var federationIdAttribute = FederationDefaultIDFixer.GenerateFederationIdAttribute(fedId);
+		var federationIdAttribute = FederationDefaultIDFixer.GenerateCustomAttributeWithArgument(fedId);
 		AttributeListSyntax newAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(federationIdAttribute));
 		
 		var fedIdClass =

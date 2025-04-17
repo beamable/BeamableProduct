@@ -51,10 +51,10 @@ public class FederationDefaultIDFixer : CodeFixProvider
 	{
 		var root = await document.GetSyntaxRootAsync(cancellationToken);
 		var existingAttrs = classDecl.AttributeLists.SelectMany(a => a.Attributes);
-		var hasFederationID = existingAttrs.Count(item => item.Name.ToString().Contains(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME)) > 0;
+		var hasFederationID = existingAttrs.Count(item => item.Name.ToString().Contains(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME)) > 0;
 
 		
-		AttributeSyntax attribute = GenerateFederationIdAttribute();
+		AttributeSyntax attribute = GenerateCustomAttributeWithArgument(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME);
 		AttributeListSyntax newAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(attribute));
 
 		ClassDeclarationSyntax newClassDecl;
@@ -70,7 +70,7 @@ public class FederationDefaultIDFixer : CodeFixProvider
 				var newAttrs = attrList.Attributes.Select(attr =>
 				{
 					string attributeName = attr.Name.ToString();
-					return attributeName.Contains(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME) ? attribute : attr;
+					return attributeName.Contains(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME) ? attribute : attr;
 				}).ToArray();
 				return SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(newAttrs));
 			});
@@ -82,10 +82,10 @@ public class FederationDefaultIDFixer : CodeFixProvider
 		return document.WithSyntaxRoot(newRoot);
 	}
 
-	public static AttributeSyntax GenerateFederationIdAttribute(string attributeValue = "default")
+	public static AttributeSyntax GenerateCustomAttributeWithArgument(string attributeName, string attributeValue = "default")
 	{
 		var defaultLiteralSyntax = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(attributeValue));
-		var federationIdAttributeSyntax = SyntaxFactory.IdentifierName(ServicesAnalyzer.FEDERATION_ATTRIBUTE_NAME);
+		var federationIdAttributeSyntax = SyntaxFactory.IdentifierName(attributeName);
 		var attributeArgumentSyntaxes = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AttributeArgument(defaultLiteralSyntax));
 		var attributeArguments = SyntaxFactory.AttributeArgumentList(attributeArgumentSyntaxes);
 		var attribute = SyntaxFactory.Attribute(federationIdAttributeSyntax).WithArgumentList(attributeArguments);
