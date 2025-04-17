@@ -62,9 +62,7 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
-        <AdditionalFiles Include="federations.json">
-            <Visible>false</Visible>
-        </AdditionalFiles>
+        <AdditionalFiles Include="federations.json" />
     </ItemGroup>
     
 </Project>
