@@ -5,6 +5,7 @@ using Beamable.Server;
 using Microservice.SourceGen.Tests.Dep;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -234,6 +235,59 @@ public partial class SomeUserMicroservice : Microservice
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
 			.WithLocation(2)
 			.WithArguments("TestAsyncCallable"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ReturnTypeInsideServerScope()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice {
+  public class DTO {
+    public int x;
+  }
+
+  [ClientCallable]
+  public async {|#0:Task<DTO>|} CallServiceAsync() {
+    return new DTO{ x = 1 };
+  }
+
+  [ClientCallable]
+  public {|#1:DTO|} CallService() {
+    return new DTO{ x = 1 };
+  }
+}";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodReturnTypeInsideMicroserviceScope)
+				.WithLocation(0)
+				.WithArguments("CallServiceAsync"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodReturnTypeInsideMicroserviceScope)
+				.WithLocation(1)
+				.WithArguments("CallService"));
+
+		string config = $@"
+is_global = true
+build_property.BeamValidateCallableTypesExistInSharedLibraries = true
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
 		
 		await ctx.RunAsync();
 	}

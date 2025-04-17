@@ -64,5 +64,9 @@
     <ItemGroup>
         <AdditionalFiles Include="federations.json" />
     </ItemGroup>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="BeamValidateCallableTypesExistInSharedLibraries" />
+    </ItemGroup>
     
 </Project>
