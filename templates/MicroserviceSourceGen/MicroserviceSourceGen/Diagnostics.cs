@@ -53,6 +53,7 @@ public static class Diagnostics
 		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
 		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
+		public const string CALLABLE_METHOD_RETURN_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
 
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
@@ -98,6 +99,14 @@ public static class Diagnostics
 			= new(INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID,
 				$"{nameof(Server.Microservice)} Callable methods cannot be async voids",
 				$"{nameof(Server.Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodReturnTypeInsideMicroserviceScope
+			= new(CALLABLE_METHOD_RETURN_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
+				$"{nameof(Server.Microservice)} Callable methods return cannot be inside microservice scope",
+				$"{nameof(Server.Microservice)} Callable methods return cannot be inside microservice scope",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
