@@ -20,7 +20,8 @@ namespace Beamable.Microservice.SourceGen.Analyzers;
 public class ServicesAnalyzer : DiagnosticAnalyzer
 {
 	private const string VALIDATE_CALLABLE_TYPES = "build_property.beamvalidatecallabletypesexistinsharedlibraries";
-	private static readonly string LibraryGeneratedPath = Path.Combine("BeamableProduct", "templates", "SourceGen");
+	private static readonly string LibraryGeneratedPath = Path.Combine("Library", "BeamableEditor", "GeneratedProjects");
+	
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
 		ImmutableArray.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
 			Diagnostics.Srv.MultipleMicroserviceClassesDetected, Diagnostics.Srv.MissingMicroserviceId,
