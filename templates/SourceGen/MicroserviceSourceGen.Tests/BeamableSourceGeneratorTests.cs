@@ -1,18 +1,20 @@
 using Beamable.Common;
+using Beamable.Microservice.SourceGen;
 using Beamable.Server;
 using Microservice.SourceGen.Tests.Dep;
 using Microservice.SourceGen.Tests.Utils;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-using Xunit;
 
 namespace Microservice.SourceGen.Tests;
 
@@ -67,6 +69,51 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 
 		// We need to update the compilation with all the syntax trees
 		Compilation = Compilation.AddSyntaxTrees(csharpText.Select(s => CSharpSyntaxTree.ParseText(s)));
+	}
+
+	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg,
+		string userCode) where T : DiagnosticAnalyzer, new()
+	{
+		AddAssemblyReferences(ctx.TestState);
+
+		ctx.TestCode = userCode;
+		if (cfg != null)
+		{
+			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
+			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
+		}
+	}
+
+	private static void PrepareForRun<TAnalyzer,TFixProvider>(CSharpCodeFixTest<TAnalyzer, TFixProvider, DefaultVerifier> ctx,
+		MicroserviceFederationsConfig? cfg, string userCode, string fixedCode, bool runOnce = true)
+		where TFixProvider : CodeFixProvider, new() where TAnalyzer : DiagnosticAnalyzer, new()
+	{
+		AddAssemblyReferences(ctx.TestState);
+
+		ctx.TestCode = userCode;
+		ctx.FixedCode = fixedCode;
+		if (cfg != null)
+		{
+			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
+			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
+		}
+
+		if (runOnce)
+		{
+			ctx.NumberOfFixAllIterations = 0;
+			ctx.NumberOfFixAllInDocumentIterations = 0;
+			ctx.NumberOfFixAllInProjectIterations = 0;
+			ctx.NumberOfIncrementalIterations = 1;
+		}
+	}
+
+	private static void AddAssemblyReferences(SolutionState state)
+	{
+		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
+		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
+		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
+		state.AdditionalReferences.Add(serverAssembly!);
+		state.AdditionalReferences.Add(runtimeAssembly!);
 	}
 
 	public void Dispose()

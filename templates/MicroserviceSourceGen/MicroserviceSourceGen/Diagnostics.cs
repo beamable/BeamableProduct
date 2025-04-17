@@ -1,7 +1,8 @@
 ﻿using Beamable.Common;
+using Beamable.Server;
 using Microsoft.CodeAnalysis;
 
-namespace Beamable.Server;
+namespace Beamable.Microservice.SourceGen;
 
 public static class Diagnostics
 {
@@ -30,7 +31,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor FailedToDeserializeSourceGenConfig
 			= new("BEAM_CFG_O003",
 				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized",
-				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized. Ex={{0}}. JSON={{1}}.",
+				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized. Error={{0}}.",
 				Category_Config,
 				DiagnosticSeverity.Error,
 				true);
@@ -46,42 +47,57 @@ public static class Diagnostics
 
 	public static class Srv
 	{
+		public const string NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O001";
+		public const string MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O002";
+		public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";
+		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
+		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
+		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
+
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
-			= new("BEAM_SRV_O001",
-				$"No {nameof(Microservice)} classes detected",
-				$"No {nameof(Microservice)} classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project.",
+			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
+				$"No {nameof(Server.Microservice)} classes detected",
+				$"No {nameof(Server.Microservice)} classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor MultipleMicroserviceClassesDetected
-			= new("BEAM_SRV_O002",
-				$"Multiple {nameof(Microservice)} classes detected",
-				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project. ClassNames={{0}}.",
+			= new(MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID,
+				$"Multiple {nameof(Server.Microservice)} classes detected",
+				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project. ClassNames={{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor NonPartialMicroserviceClassDetected
-			= new("BEAM_SRV_O003",
-				$"Non-Partial {nameof(Microservice)} classes detected",
-				$"Non-Partial Microservice class detected. Make sure your {nameof(Microservice)} class is marked as `partial`.",
+			= new(NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID,
+				$"Non-Partial {nameof(Server.Microservice)} classes detected",
+				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor MissingMicroserviceId
-			= new("BEAM_SRV_O004",
-				$"{nameof(Microservice)} class is missing the microservice id",
-				$"{nameof(Microservice)} class is missing the microservice id",
+			= new(MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
+				$"{nameof(Server.Microservice)} class is missing the microservice id",
+				$"{nameof(Server.Microservice)} class is missing the microservice id",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor InvalidMicroserviceId
-			= new("BEAM_SRV_O005",
-				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
-				$"{nameof(Microservice)} ids can only contain alphanumeric characters",
+			= new(INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID,
+				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
+				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				true);
+		
+		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod
+			= new(INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID,
+				$"{nameof(Server.Microservice)} Callable methods cannot be async voids",
+				$"{nameof(Server.Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
@@ -89,8 +105,23 @@ public static class Diagnostics
 
 	public static class Fed
 	{
+		public const string DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID = "BEAM_FED_O001";
+		public const string CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID = "BEAM_FED_O002";
+		public const string FEDERATION_CODE_GENERATED_PROPERLY_DIAGNOSTIC_ID = "BEAM_FED_O003";
+		public const string DECLARED_FEDERATION_INVALID_FEDERATION_ID_DIAGNOSTIC_ID = "BEAM_FED_O004";
+		public const string FEDERATION_ID_MISSING_ATTRIBUTE_DIAGNOSTIC_ID = "BEAM_FED_O005";
+		public const string FEDERATION_ID_MUST_BE_DEFAULT_DIAGNOSTIC_ID = "BEAM_FED_O006";
+		public const string FEDERATION_CONFIG_FILE_NOT_FOUND_ID = "BEAM_FED_O007";
+		public const string ERROR_PARSING_FEDERATION_CONFIG_FILE_ID = "BEAM_FED_O008";
+		public const string FEDERATION_ID_INVALID_CONFIG_FILE_ID = "BEAM_FED_O009";
+
+		public const string PROP_FEDERATION_ID = "FederationId";
+		public const string PROP_FEDERATION_INTERFACE = "FederationInterface";
+		public const string PROP_MICROSERVICE_NAME = "MicroserviceName";
+		public const string PROP_FEDERATION_CLASS_NAME = "FederationClassName";
+
 		public static readonly DiagnosticDescriptor DeclaredFederationMissingFromSourceGenConfig
-			= new("BEAM_FED_O001",
+			= new(DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID,
 				$"Missing declared Federation in {nameof(MicroserviceFederationsConfig)}",
 				$"Missing declared Federation in {nameof(MicroserviceFederationsConfig)}. Microservice={{0}}, Id={{1}}, Interface={{2}}." +
 				$" Please add this Id by running `dotnet beam fed add {{0}} {{1}} {{2}}` from your project's root directory. " +
@@ -100,7 +131,7 @@ public static class Diagnostics
 				true);
 		
 		public static readonly DiagnosticDescriptor ConfiguredFederationMissingFromCode
-			= new("BEAM_FED_O002",
+			= new(CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID,
 				$"{nameof(MicroserviceFederationsConfig)} contains Federations that do not exist in code",
 				$"You have configured federation, but the Microservice does not implement the required interface. Microservice={{0}}, Id={{1}}, Interface={{2}}. " +
 				$"Please remove this Id by running `dotnet beam fed remove {{0}} {{1}} {{2}}` from your project's root directory, " +
@@ -110,7 +141,7 @@ public static class Diagnostics
 				true);
 		
 		public static readonly DiagnosticDescriptor FederationCodeGeneratedProperly
-			= new("BEAM_FED_O003",
+			= new(FEDERATION_CODE_GENERATED_PROPERLY_DIAGNOSTIC_ID,
 				$"All federations we found are valid and we code-gen properly",
 				$"All federations we found are valid and we code-gen properly",
 				Category_Federations,
@@ -118,7 +149,7 @@ public static class Diagnostics
 				true);
 		
 		public static readonly DiagnosticDescriptor DeclaredFederationInvalidFederationId
-			= new("BEAM_FED_O004",
+			= new(DECLARED_FEDERATION_INVALID_FEDERATION_ID_DIAGNOSTIC_ID,
 				$"Invalid Federation Id detected",
 				$"The following {nameof(IFederationId)} is invalid. They must:" +
 				$" Start with a letter." +
@@ -128,19 +159,29 @@ public static class Diagnostics
 				true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMissingAttribute
-			= new("BEAM_FED_O005",
+			= new(FEDERATION_ID_MISSING_ATTRIBUTE_DIAGNOSTIC_ID,
 				$"IFederationId is missing FederationIdAttribute",
 				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)}. They must:" +
 				$" Start with a letter." +
-				$" Contain only alphanumeric characters and/or `_`. Id={{0}}.",
+				$" Contain only alphanumeric characters and/or `_`.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMustBeDefault
-			= new("BEAM_FED_O006",
+			= new(FEDERATION_ID_MUST_BE_DEFAULT_DIAGNOSTIC_ID,
 				$"IFederationId must be \"default\"",
 				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)} with a value of \"default\", Id={{0}}",
+				Category_Federations,
+				DiagnosticSeverity.Error,
+				true);
+		
+		public static readonly DiagnosticDescriptor FederationIdInvalidConfigFile
+			= new(FEDERATION_ID_INVALID_CONFIG_FILE_ID,
+				$"Invalid Federation Id detected on Config File",
+				$"The following {nameof(IFederationId)} is invalid. They must:" +
+				$" Start with a letter." +
+				$" Contain only alphanumeric characters and/or `_`. Id={{0}}.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);
