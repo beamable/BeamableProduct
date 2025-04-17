@@ -13,6 +13,10 @@ namespace Beamable.Common.Api.Auth
 
 		// this means that the credential is already bound to a playerId
 		ASSIGNED_TO_AN_ACCOUNT,
+		/// <summary>
+		/// This could mean one of two things - either the credentials provided were incorrect or the identity provider is not configured properly.
+		/// The former can happen while integrating third party identity providers.
+		/// </summary>
 		INVALID_CREDENTIAL
 	}
 
@@ -942,8 +946,20 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class ExternalAuthenticationResponse
 	{
+	   /// <summary>
+	   /// The user ID in the external system (wallet ID, OAuth ID, etc.)
+	   /// When provided, it indicates that the federation service identified the user and provided his external ID.
+	   /// </summary>
 		public string user_id;
+		/// <summary>
+		/// The challenge associated with the external authentication.
+		/// When provided, it indicates that the external authentication is pending verification.
+		/// </summary>
 		public string challenge;
+		/// <summary>
+		/// The time-to-live (TTL) of the challenge.
+		/// When provided, it indicates that the external authentication is pending verification.
+		/// </summary>
 		public int challenge_ttl;
 	}
 

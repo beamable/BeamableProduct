@@ -5,7 +5,7 @@ namespace Beamable.Server.Api.Analytics
 {
 	public class MicroserviceAnalyticsService : AnalyticsService, IMicroserviceAnalyticsService
 	{
-		public MicroserviceAnalyticsService(IUserContext context, IBeamableRequester requester) : base(context, requester)
+		public MicroserviceAnalyticsService(IUserContext context, ISignedRequester requester) : base(context, requester)
 		{}
 	}
 }

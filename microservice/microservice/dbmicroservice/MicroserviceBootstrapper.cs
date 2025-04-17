@@ -58,6 +58,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
+using Beamable.Tooling.Common;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
 using RankEntry = Beamable.Common.Api.Leaderboards.RankEntry;
@@ -277,6 +278,18 @@ namespace Beamable.Server
 				        p.GetService<IContentResolver>(),
 				        p.GetService<ReflectionCache>()
 			        ))
+			        .AddSingleton<ISignedRequesterConfig, DefaultSignedRequesterConfig>(() => new DefaultSignedRequesterConfig
+			        {
+				        Host = envArgs.Host
+					        .Replace("ws://", "http://")
+					        .Replace("wss://", "https://")
+					        .Replace("/socket/", "")
+					        .Replace("/socket", ""),
+				        RealmSecretGenerator = () => Promise<string>.Successful(envArgs.Secret)
+			        })
+			        .AddScoped(p => new HttpSignedRequester(p.GetService<ISignedRequesterConfig>(),
+				        p.GetService<IRealmInfo>(), p.GetService<RequestContext>()))
+			        .AddScoped<ISignedRequester>(p => p.GetService<HttpSignedRequester>())
 			        .AddSingleton<IMicroserviceContentApi>(p => p.GetService<ContentService>())
 			        .AddSingleton<IContentApi>(p => p.GetService<ContentService>())
 			        .AddSingleton<IContentResolver, DefaultContentResolver>()
@@ -284,7 +297,7 @@ namespace Beamable.Server
 			        .AddSingleton<IAliasService, AliasService>()
 			        .AddScoped<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
 			        .AddScoped<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
-			        .AddScoped<IMicroserviceAnalyticsService, MicroserviceAnalyticsService>()
+			        .AddScoped<IMicroserviceAnalyticsService, MicroserviceAnalyticsService>(p => new MicroserviceAnalyticsService(p.GetService<RequestContext>(), p.GetService<ISignedRequester>()))
 			        .AddScoped<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
 			        .AddScoped<IMicroserviceLeaderboardsApi, MicroserviceLeaderboardApi>()
 			        .AddScoped<IMicroserviceAnnouncementsApi, MicroserviceAnnouncementsApi>()
