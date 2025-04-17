@@ -124,6 +124,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			_ctx.Set(string.Empty, string.Empty, host);
 		}
 		
+		SaveExtraPathFiles(args);
 
 		{ // resolve the CID
 			cid = await GetCid(args);
@@ -157,6 +158,13 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		return true;
+	}
+
+	void SaveExtraPathFiles(InitCommandArgs args)
+	{
+		// save the extra-paths and the paths to ignore to the config folder
+		_configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
+		_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
 	}
 
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
@@ -200,10 +208,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 		}
 
-		{ // save the extra-paths and the paths to ignore to the config folder
-			_configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
-			_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
-		}
+		SaveExtraPathFiles(args);
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else _ctx.Set(string.Empty, string.Empty, _ctx.Host);

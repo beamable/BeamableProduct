@@ -18,28 +18,20 @@ namespace Beamable.Common
 		/// <summary>
 		/// The player's new token won't come back until this method completes
 		/// </summary>
-		/// <param name="player"></param>
+		/// <param name="account">The <see cref="Account"/> information for the player that is initiating. </param>
+		/// <param name="properties">The set of properties that were supplied as initProperties on the original request to
+		/// create a new token
+		/// </param>
 		/// <returns></returns>
-		Promise CreatePlayer(PlayerInitiation player);
+		Promise<PlayerInitResult> CreatePlayer(Account account, Dictionary<string, string> properties);
 	}
 
-	/// <summary>
-	/// The <see cref="PlayerInitiation"/> data contains the <see cref="Account"/> information
-	/// for the player that is initialization, as well as the initProperties provided in the
-	/// token creation request. 
-	/// </summary>
 	[Serializable]
-	public class PlayerInitiation
+	public class PlayerInitResult
 	{
 		/// <summary>
-		/// The <see cref="Account"/> information for the player that is initiating. 
+		/// an empty string.
 		/// </summary>
-		public Account account;
-		
-		/// <summary>
-		/// The set of properties that were supplied as initProperties on the original request to
-		/// create a new token
-		/// </summary>
-		public Dictionary<string, string> properties;
+		public string result;
 	}
 }

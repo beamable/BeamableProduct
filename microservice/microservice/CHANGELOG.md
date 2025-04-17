@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `[Callable]` methods have access to a `SignedRequester` property which may execute signed requests.
+
+### Fixed
+- `Analytics.SendAnalyticsEvent` calls now use signed requests 
+
+## [4.2.0] - 2025-04-04
+### Fixed
+- Fix local routing key in ServiceCallBuilder
+
+## [4.1.5] - 2025-03-26
+### Fixed
+- SSL bypass logic allows for custom host string containing `/` characters 
+
+## [4.1.4] - 2025-03-20
+no changes
+
+## [4.1.3] - 2025-03-07
+
+### Fixed
+- Content preloading uses configured host string in SSL logic, rather than hard coding "beamable.com"
+
 ## [4.1.0] - 2025-02-20
 
 ### Fixed

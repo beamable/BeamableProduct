@@ -27,7 +27,7 @@ namespace Beamable.Common.Api.Stats
 			UserContext = userContext;
 			Provider = provider;
 		}
-
+		
 		public void ClearCaches()
 		{
 			foreach (var kvp in caches)
@@ -36,11 +36,24 @@ namespace Beamable.Common.Api.Stats
 			}
 			caches.Clear();
 		}
-
-		public UserDataCache<Dictionary<string, string>> GetCache(string domain, string access, string type)
+		
+		public UserDataCache<Dictionary<string, string>> GetCache(StatsDomainType domain, StatsAccessType access)
 		{
-			string prefix = $"{domain}.{access}.{type}.";
+			string prefix = StatsApiHelper.GeneratePrefix(domain, access);
 			return GetCache(prefix);
+		}
+
+		public Promise<EmptyResponse> SetStats(StatsAccessType access, Dictionary<string, string> stats)
+		{
+			long gamerTag = UserContext.UserId;
+			string prefix = StatsApiHelper.GeneratePrefix(StatsDomainType.Client, access);
+			return BaseSetStats(stats, prefix, gamerTag);
+		}
+		
+		public Promise<Dictionary<string, string>> GetStats(StatsDomainType domain, StatsAccessType access, long id)
+		{
+			string prefix = StatsApiHelper.GeneratePrefix(domain, access);
+			return GetCache(prefix).Get(id);
 		}
 
 		public UserDataCache<Dictionary<string, string>> GetCache(string prefix)
@@ -58,25 +71,14 @@ namespace Beamable.Common.Api.Stats
 			return cache;
 		}
 
-		public Promise<EmptyResponse> SetStats(string access, Dictionary<string, string> stats)
+		public Promise<StatsSearchResponse> SearchStats(StatsDomainType domain, StatsAccessType access,
+			List<Criteria> criteria)
 		{
-			long gamerTag = UserContext.UserId;
-			string prefix = $"client.{access}.player.";
-			return Requester.Request<EmptyResponse>(
-			   Method.POST,
-			   $"/object/stats/{prefix}{gamerTag}/client/stringlist",
-			   new StatUpdates(stats)
-			).Then(_ => GetCache(prefix).Remove(gamerTag));
+			string domainType = StatsApiHelper.ParseDomainType(domain);
+			string accessValue = StatsApiHelper.ParseAccessValue(access);
+			return SearchStats(domainType, accessValue, "player", criteria);
 		}
-
-		public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long id)
-		{
-			string prefix = $"{domain}.{access}.{type}.";
-			return GetCache(prefix).Get(id);
-		}
-
-
-
+		
 		/// <summary>
 		/// <para>Supports searching for DBIDs by stat query. This method is useful e.g for friend search</para>
 		/// <para>IMPORTANT: This method only works for admin role</para>
@@ -154,9 +156,43 @@ namespace Beamable.Common.Api.Stats
 				"/basic/stats/search",
 				Json.Serialize(payload, new StringBuilder()));
 		}
+		
+		#region Obsolete Methods
+		
+		public UserDataCache<Dictionary<string, string>> GetCache(string domain, string access, string type)
+		{
+			string prefix = $"{domain}.{access}.{type}.";
+			return GetCache(prefix);
+		}
+
+		public Promise<EmptyResponse> SetStats(string access, Dictionary<string, string> stats)
+		{
+			long gamerTag = UserContext.UserId;
+			string prefix = $"client.{access}.player.";
+			return BaseSetStats(stats, prefix, gamerTag);
+		}
+
+		public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long id)
+		{
+			string prefix = $"{domain}.{access}.{type}.";
+			return GetCache(prefix).Get(id);
+		}
+		
+		#endregion
 
 		protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
 		   List<long> gamerTags);
+
+		
+		
+		private Promise<EmptyResponse> BaseSetStats(Dictionary<string, string> stats, string prefix, long gamerTag)
+		{
+			return Requester.Request<EmptyResponse>(
+				Method.POST,
+				$"/object/stats/{prefix}{gamerTag}/client/stringlist",
+				new StatUpdates(stats)
+			).Then(_ => GetCache(prefix).Remove(gamerTag));
+		}
 	}
 
 	[Serializable]
@@ -165,8 +201,7 @@ namespace Beamable.Common.Api.Stats
 		public long[] ids;
 	}
 
-
-
+	
 	/// <summary>
 	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.
 	/// </summary>

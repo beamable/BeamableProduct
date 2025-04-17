@@ -368,7 +368,7 @@ namespace Beamable
 
 		public static async Promise ImportDependencies()
 		{
-			AddressableAssetSettingsDefaultObject.GetSettings(true);
+			AddressableAssetSettingsDefaultObject.GetSettings(false);
 			await TextMeshProImporter.ImportEssentials();
 		}
 		
