@@ -749,12 +749,12 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        bool shouldStartStandardOtel = true;
-	        string ignoreStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_IGNORE_STANDARD_OTEL");
+	        bool shouldStartStandardOtel = false;
+	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
 
-	        if (ignoreStandardOtelEnv == "true")
+	        if (startStandardOtelEnv == "true")
 	        {
-		        shouldStartStandardOtel = false;
+		        shouldStartStandardOtel = true;
 	        }
 
 	        if (shouldStartStandardOtel)
