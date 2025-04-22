@@ -761,7 +761,8 @@ namespace Beamable.Server
 	        {
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        await CollectorManager.StartCollector(tokenSource.Token, _logger);
+		        //TODO change this to call the CLI start collector command
+		        //await CollectorManager.StartCollector(tokenSource.Token, _logger);
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();

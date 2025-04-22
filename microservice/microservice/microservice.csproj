@@ -74,41 +74,4 @@
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net9.0" Pack="True"/>
   </ItemGroup>
 
-  <!-- Add all binaries for the collector for all different supported platforms -->
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-windows-amd64.exe" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-windows-arm64.exe" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-linux-amd64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-linux-arm64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-darwin-amd64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-darwin-arm64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    
-    <None Include="$(MSBuildThisFileDirectory)Resources\clickhouse-config.yaml" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@ platforms=("windows/amd64" "windows/arm64" "linux/amd64" "linux/arm64" "darwin/a
 
 
 echo "Deleting old collector binaries..."
-rm ../microservice/microservice/Resources/*
+rm ../cli/cli/Resources/*
 
 cd beamable-collector/
 
@@ -18,12 +18,12 @@ for platform in "${platforms[@]}"; do
     fi
     
     echo "Building for $OS/$ARCH..."
-    GOOS=$OS GOARCH=$ARCH go build -o ../../microservice/microservice/Resources/$output
+    GOOS=$OS GOARCH=$ARCH go build -o ../../cli/cli/Resources/$output
 done
 
 cd ..
 
 echo "Copying config file to Resources folder..."
-cp clickhouse-config.yaml ../microservice/microservice/Resources/
+cp clickhouse-config.yaml ../cli/cli/Resources/
 
 echo "Collector build process completed!"
