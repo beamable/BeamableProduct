@@ -274,12 +274,12 @@ public partial class MyMicroservice : Microservice {
 		PrepareForRun(ctx, cfg, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.CallableMethodReturnTypeInsideMicroserviceScope)
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeInsideMicroserviceScope)
 				.WithLocation(0)
 				.WithArguments("CallServiceAsync"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.CallableMethodReturnTypeInsideMicroserviceScope)
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeInsideMicroserviceScope)
 				.WithLocation(1)
 				.WithArguments("CallService"));
 

@@ -103,10 +103,10 @@ public static class Diagnostics
 				DiagnosticSeverity.Error,
 				true);
 		
-		public static readonly DiagnosticDescriptor CallableMethodReturnTypeInsideMicroserviceScope
+		public static readonly DiagnosticDescriptor CallableMethodTypeInsideMicroserviceScope
 			= new(CALLABLE_METHOD_RETURN_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
-				$"{nameof(Server.Microservice)} Callable methods return cannot be inside microservice scope",
-				$"{nameof(Server.Microservice)} Callable methods return cannot be inside microservice scope",
+				$"{nameof(Server.Microservice)} Callable methods uses a Type that cannot be inside microservice scope",
+				$"{nameof(Server.Microservice)} Callable method {{0}} uses a Type that cannot be inside microservice scope. Type: {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
