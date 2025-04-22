@@ -12,7 +12,7 @@ dotnet --version
 dotnetbeam version # beam --version also works.
 ```
 
-
+---
 ## Quick Start
 
 Standalone Microservices require a `.beamable` workspace, so you either need to create one with [beam init](doc:cli-init), or use an existing one.
@@ -90,7 +90,7 @@ namespace Beamable.HelloWorld
 
 You can write new functions and tag them with `[ClientCallable]` to make them accessible on the Open API page. And now you know the basics of working with Beamable Standalone Microservices! 
 
-
+---
 ## Project Structure
 
 Each file in the Standalone Microservice has a valuable function that is important to understand. 
@@ -104,7 +104,7 @@ Each file in the Standalone Microservice has a valuable function that is importa
 | `MyProject/services/HelloWorld.csproj` | This file is the dotnet project file for your service. You can modify the `.csproj` file to customize your service. See the [Microservice Configuration Section](doc:cli-guide-microservice-configuration) section for more details                            |
 | `MyProject/BeamableServices.sln`       | This file is the dotnet solution file, and organizes your services. If you add additional services or storage databases, they will be tracked through the `.sln` file.                                                                                         |
 
-
+---
 ## Next Steps
 
 There are many topics to continue learning about Beamable Standalone Microservices,
@@ -116,4 +116,175 @@ There are many topics to continue learning about Beamable Standalone Microservic
 - [Beam CLI Commands for Managing Microservices](doc:cli-guide-microservice-cli-workflows)
 - [Microservice Routing and Client Usage](doc:cli-guide-microservice-routing)
 
+---
+## Possible Issues and Solutions
 
+### Multiple Microservice Classes Detected
+
+**Explanation**:  
+Only one `Microservice` class should exist per microservice project. Multiple classes marked with the `[Microservice]` attribute will cause conflicts in code generation and runtime behavior.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice {}
+
+[Microservice("MyOtherMicroservice")]
+public partial class MyOtherMicroservice : Microservice {}
+```
+
+**Example Error Message**:
+```
+Multiple Microservice classes detected. Make sure only a single class implementing Microservice exists in each service project. ClassNames=MyMicroservice, MyOtherMicroservice.
+```
+
+**Solutions**:
+- Ensure only one class is marked as a `Microservice` in your project.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice {}
+```
+
+---
+
+### Non-Partial Microservice Class Detected
+
+**Explanation**:  
+Microservice classes must be marked as `partial` to allow code generation tools to extend them.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public class MyMicroservice : Microservice {}
+```
+
+**Example Error Message**:
+```
+Non-Partial Microservice class detected. Make sure your Microservice class is marked as partial.
+```
+
+**Solutions**:
+- Add the `partial` modifier to the class.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice {}
+```
+
+---
+
+### Microservice Class Missing Microservice Id
+
+**Explanation**:  
+The `Microservice` class must include the `[Microservice("Id")]` attribute to define its identifier.
+
+**Example Code Triggering the Error**:
+```csharp
+public partial class MyMicroservice : Microservice {}
+```
+
+**Example Error Message**:
+```
+Microservice class is missing the microservice id
+```
+
+**Solutions**:
+- Add the `[Microservice("Id")]` attribute to the class.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice {}
+```
+
+---
+
+### Async Void Callable Methods
+
+**Explanation**:  
+Methods marked as `[Callable]`, `[ClientCallable]`, `[ServerCallable] ` should not be `async void`. Using `async void` makes it impossible to track errors or await completion.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    [Callable]
+    public async void CallMicroservice() {}
+}
+```
+
+**Example Error Message**:
+```
+Microservice Callable methods cannot be async voids. Ex: CallMicroservice.
+```
+
+**Solutions**:
+- Change the return type to `Task`.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    [Callable]
+    public async Task CallMicroservice() {}
+}
+```
+
+---
+
+### Invalid Type Usage in Callable Method
+
+**Explanation**:  
+Types used in `[ClientCallable]` methods must be available to both server and client. Declaring types inside the microservice class makes them inaccessible to the Unity client.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    public class DTO
+    {
+        public int x;
+    }
+
+    [ClientCallable]
+    public async Task<DTO> CallServiceAsync() => new DTO { x = 1 };
+
+    [ClientCallable]
+    public void CallService(DTO data) {}
+}
+```
+
+**Example Error Message**:
+```
+Microservice Callable method CallServiceAsync uses a Type that cannot be inside microservice scope. Type: DTO.
+```
+
+**Solutions**:
+- Move shared types (DTOs, Enums, etc.) to a shared project referenced by both Unity and the server.
+
+**Example of Solved Code** (Microservice):
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    [ClientCallable]
+    public async Task<DTO> CallServiceAsync() => new DTO { x = 1 };
+
+    [ClientCallable]
+    public void CallService(DTO data) {}
+}
+```
+
+**Shared Project Code**:
+```csharp
+public class DTO
+{
+    public int x;
+}
+```
