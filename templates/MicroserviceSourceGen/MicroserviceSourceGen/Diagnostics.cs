@@ -53,6 +53,9 @@ public static class Diagnostics
 		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
 		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
+		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
+		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
+		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
 
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
@@ -68,7 +71,8 @@ public static class Diagnostics
 				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project. ClassNames={{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#multiple-microservice-classes-detected",
+				isEnabledByDefault: true);
 
 		public static readonly DiagnosticDescriptor NonPartialMicroserviceClassDetected
 			= new(NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID,
@@ -76,7 +80,8 @@ public static class Diagnostics
 				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#non-partial-microservice-class-detected",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor MissingMicroserviceId
 			= new(MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
@@ -84,7 +89,8 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} class is missing the microservice id",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#microservice-class-missing-microservice-id",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor InvalidMicroserviceId
 			= new(INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID,
@@ -100,7 +106,35 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#async-void-callable-methods",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableTypeInsideMicroserviceScope
+			= new(CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
+				$"{nameof(Server.Microservice)} Callable methods uses a Type that cannot be inside microservice scope",
+				$"{nameof(Server.Microservice)} Callable method {{0}} uses a Type that cannot be inside microservice scope. Type: {{1}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-type-usage-in-callable-method",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodTypeIsNested
+			= new(CALLABLE_METHOD_TYPE_IS_NESTED_ID,
+				$"{nameof(Server.Microservice)} Callable methods uses a Type that is Nested",
+				$"{nameof(Server.Microservice)} Callable method {{1}} uses a Type that is Nested, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-types-usage-are-nested",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor ClassBeamGenerateSchemaAttributeIsNested
+			= new(CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID,
+				$"Type with [BeamGenerateSchema] attribute cannot be nested type",
+				$"Type {{0}} contains [BeamGenerateSchema] attribute and is a Nested type, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#beam-generated-schema-class-is-a-nested-type",
+				isEnabledByDefault: true);
 	}
 
 	public static class Fed
@@ -128,7 +162,8 @@ public static class Diagnostics
 				$"Or remove the {{2}} that references {{1}}  interface from the {{0}} Microservice class.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#missing-declared-federation-in-microservicefederationsconfig",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor ConfiguredFederationMissingFromCode
 			= new(CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID,
@@ -138,7 +173,8 @@ public static class Diagnostics
 				$"Or add the {{2}} that references {{1}} interface to the {{0}} Microservice class.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#microservicefederationsconfig-contains-federations-that-do-not-exist-in-code",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationCodeGeneratedProperly
 			= new(FEDERATION_CODE_GENERATED_PROPERLY_DIAGNOSTIC_ID,
@@ -156,7 +192,8 @@ public static class Diagnostics
 				$" Contain only alphanumeric characters and/or `_`. Microservice={{0}}, Id={{1}}.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#invalid-federation-id-detected",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMissingAttribute
 			= new(FEDERATION_ID_MISSING_ATTRIBUTE_DIAGNOSTIC_ID,
@@ -166,7 +203,8 @@ public static class Diagnostics
 				$" Contain only alphanumeric characters and/or `_`.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#ifederationid-is-missing-federationidattribute",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMustBeDefault
 			= new(FEDERATION_ID_MUST_BE_DEFAULT_DIAGNOSTIC_ID,
@@ -174,7 +212,8 @@ public static class Diagnostics
 				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)} with a value of \"default\", Id={{0}}",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#ifederationid-must-be-default",
+				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationIdInvalidConfigFile
 			= new(FEDERATION_ID_INVALID_CONFIG_FILE_ID,
@@ -184,7 +223,8 @@ public static class Diagnostics
 				$" Contain only alphanumeric characters and/or `_`. Id={{0}}.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				true);
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservice-federation#invalid-federation-id-detected-on-config-file",
+				isEnabledByDefault: true);
 		
 	}
 }
