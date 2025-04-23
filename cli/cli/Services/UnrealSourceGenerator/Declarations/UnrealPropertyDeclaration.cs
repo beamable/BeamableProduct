@@ -70,15 +70,13 @@ public struct UnrealPropertyDeclaration
 	public const string U_FIELD_DECLARATION =
 		$@"₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
-	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
-	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString(EGuidFormats::DigitsWithHyphensLower));";
-	public const string DATE_TIME_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToIso8601());";
-	
+	// Fallback for non-supported types
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
+	
+	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 	
 	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 
-	
 	
 	public const string UNREAL_JSON_FIELD_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
@@ -214,16 +212,8 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_SERIALIZE;
-
-		if (unrealType.IsUnrealGuid())
-			return GUID_U_PROPERTY_SERIALIZE;
-
-		if (unrealType.IsUnrealDateTime())
-			return DATE_TIME_U_PROPERTY_SERIALIZE;
-
-		if (unrealType.IsUnrealString() || unrealType.IsUnrealBool() ||
-		    unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
-		    unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
+		
+		if (unrealType.IsRawPrimitive())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}

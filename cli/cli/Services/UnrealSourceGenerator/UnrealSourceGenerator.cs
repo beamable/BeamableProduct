@@ -814,6 +814,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				// We skip the generation for this schema if we bump into a schema that maps to UNREAL_JSON.
 			}
+			else if (schemaUnrealType.IsRawPrimitive())
+			{
+				// We skip the generation for this schema if we bump into a schema that maps to RAW PRIMITIVE TYPE.
+			}
 			else
 			{
 				// Prepare the data for injection in the template string.
@@ -1348,15 +1352,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						if (response.Content.TryGetValue("application/json", out var jsonResponse))
 						{
-							if (jsonResponse.Schema.Reference != null)
+							var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
+							// Make the new property declaration for this field.
+							var unrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
+							
+							// Check if it don't exist in the schema and if it is NOT a raw primitive type 
+							if (jsonResponse.Schema.Reference != null && !unrealType.IsRawPrimitive())
 							{
-								var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
-								var ueType = unrealEndpoint.ResponseBodyUnrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
-								unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
-								unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
+								unrealEndpoint.ResponseBodyUnrealType = unrealType;
+								unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType);
+								unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(unrealType);
 
 								// Add the response type to a list of serializable types that we'll need to declare with an additional specific interface.
-								context.UnrealTypesUsedAsResponses.Add(new TypeRequestBody { UnrealType = ueType, Type = ResponseBodyType.Json, });
+								context.UnrealTypesUsedAsResponses.Add(new TypeRequestBody { UnrealType = unrealType, Type = ResponseBodyType.Json, });
 
 								using var sw = new StringWriter();
 								var writer = new OpenApiJsonWriter(sw);
@@ -1369,8 +1377,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							}
 							else
 							{
-								var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
-
 								// Prepare the wrapper around the primitive this endpoint returns as a response payload.
 								var wrapperBody = new UnrealJsonSerializableTypeDeclaration
 								{
@@ -1384,8 +1390,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									IsResponseBodyType = ResponseBodyType.PrimitiveWrapper,
 								};
 
-								// Make the new property declaration for this field.
-								var unrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
+						
 								var fieldName = "Value";
 								var propertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealType, fieldName, kSchemaGenerationBuilder);
 								var propertyDisplayName = propertyName;
@@ -2120,6 +2125,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case ("array", _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_ARRAY_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_ARRAY_STATSTYPE);
 
+	
 			case (_, _, _, _) when string.Equals(semType, "Cid", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID);
 			case (_, _, _, _) when string.Equals(semType, "Pid", StringComparison.InvariantCultureIgnoreCase):
@@ -2174,6 +2180,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					? appliedOverride
 					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenType}"));
 			}
+			case  ("object", _, "System.DateTime", _) :
+				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME);
+			case ("string", _, "System.Guid", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
 				var namespacedType = GetNamespacedTypeNameFromSchema(context, parentDoc, referenceId, isOptional, isCsvRow);
@@ -2480,6 +2490,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		if (unrealTypeName.IsUnrealDouble())
 			return new("Double");
+		
 
 		// F"AnyTypes"/E"AnyEnums" we just remove the F's/E's
 		if (char.IsUpper(unrealTypeName.AsStr[1]) && (unrealTypeName.IsUnrealStruct() || unrealTypeName.IsUnrealEnum()))
@@ -2522,6 +2533,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			return UNREAL_STRING;
 		if (namespacedWrappedType == "Guid")
 			return UNREAL_GUID;
+		if (namespacedWrappedType == "DateTime")
+			return UNREAL_DATE_TIME;
 		if (namespacedWrappedType == "JsonObject")
 			return UNREAL_JSON;
 
