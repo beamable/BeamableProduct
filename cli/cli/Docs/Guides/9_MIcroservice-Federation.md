@@ -16,7 +16,7 @@ beam init MyProject
 cd MyProject
 dotnet beam project new service HelloWorld
 ```
-
+---
 
 ## Federation
 
@@ -66,7 +66,7 @@ You should use the CLI to set the `federations.json` file, and it should look li
 ```json
 {"federations":{"myId":[{"interface":"IFederatedLogin"}]}}
 ```
-
+---
 ## CLI Commands
 
 The CLI offers a few commands to enable and disable federations for a service. The `beam fed` command suite allows you to read and write federation data. None of the commands will modify your C# source files, so you must always make sure the class signature of the `Microservice` aligns with the `federations.json` file. 
@@ -90,4 +90,169 @@ dotnet beam fed list
             
 ```
 
-The `beam fed add` and `beam fed remove` commands will modify the `federations.json` file one service and federation at a time. If you need to set all the federations at once, use the `beam fed set` command. 
+The `beam fed add` and `beam fed remove` commands will modify the `federations.json` file one service and federation at a time. If you need to set all the federations at once, use the `beam fed set` command.
+
+---
+
+## Possible Issues and Solutions
+
+### Missing declared Federation in MicroserviceFederationsConfig
+
+**Example Code Triggering the Error**:
+```csharp
+[FederationId("MyFederation")]
+public class MyFederation : IFederationId {}
+
+public partial class MyMicroservice : Microservice, IFederatedInventory<MyFederation> {}
+```
+
+**Example Config Triggering the Error**:
+```json
+{
+  "federations": {}
+}
+```
+
+**Example Error Message**:
+```
+Missing declared Federation in MicroserviceFederationsConfig. Microservice=MyMicroservice, Id=MyFederation, Interface=IFederatedInventory.
+```
+
+**Solutions**:
+- Add the federation via CLI:
+  ```
+  dotnet beam fed add MyMicroservice MyFederation IFederatedInventory
+  ```
+- Or remove the `IFederatedInventory` interface reference from the `MyMicroservice` Microservice class.
+
+---
+
+### MicroserviceFederationsConfig contains Federations that do not exist in code
+
+**Example Code Triggering the Error**:
+```csharp
+public partial class MyMicroservice : Microservice {}
+```
+
+**Example Config Triggering the Error**:
+```json
+{
+  "federations": {
+    "MyFederation": [
+      {
+        "interface": "IFederatedInventory"
+      }
+    ]
+  }
+}
+```
+
+**Example Error Message**:
+```
+You have configured federation, but the Microservice does not implement the required interface. Microservice=MyMicroservice, Id=MyFederation, Interface=IFederatedInventory.
+```
+
+**Solutions**:
+- Remove the federation via CLI:
+  ```
+  dotnet beam fed remove MyMicroservice MyFederation IFederatedInventory
+  ```
+- Or add the `IFederatedInventory` interface to the `MyMicroservice` Microservice class.
+
+---
+
+### Invalid Federation Id detected
+
+**Example Code Triggering the Error**:
+```csharp
+[FederationId("123-MyFederation")]
+public class MyFederation : IFederationId {}
+
+public partial class MyMicroservice : Microservice, IFederatedInventory<MyFederation> {}
+```
+
+**Example Error Message**:
+```
+The following IFederationId is invalid. They must: Start with a letter. Contain only alphanumeric characters and/or `_`. Microservice=MyMicroservice, Id=123-MyFederation.
+```
+
+**Solutions**:
+- Rename the federation ID to follow the format, e.g. `MyFederation`.
+
+---
+
+### IFederationId is missing FederationIdAttribute
+
+**Example Code Triggering the Error**:
+```csharp
+public class MyFederation : IFederationId {}
+```
+
+**Example Error Message**:
+```
+IFederationId is missing FederationIdAttribute
+```
+
+**Solutions**:
+- Add the attribute to your federation class:
+  ```csharp
+  [FederationId("MyFederation")]
+  public class MyFederation : IFederationId {}
+  ```
+
+---
+
+### IFederationId must be default
+
+**Example Code Triggering the Error**:
+```csharp
+public class MyFederation : IFederationId {}
+```
+
+**Example Message**:
+```
+The following IFederationId must be annotated with a FederationIdAttribute with a value of "default", Id=MyFederation
+```
+
+**Solutions**:
+- Update the federation interface:
+  ```csharp
+  [FederationId("default")]
+  public interface MyFederation : IFederationId {}
+  ```
+
+---
+
+### Invalid Federation Id detected on Config File
+
+**Example Config Triggering the Error**:
+```json
+{
+  "federations": {
+    "123-MyFederation": [
+      {
+        "interface": "IFederatedInventory"
+      }
+    ]
+  }
+}
+```
+
+**Example Message**:
+```
+The following IFederationId is invalid. They must: Start with a letter. Contain only alphanumeric characters and/or `_`. Id=123-MyFederation.
+```
+
+**Solutions**:
+- Edit your `federations.json` file to ensure the ID is valid:
+  ```json
+  {
+    "federations": {
+      "MyFederation": [
+        {
+          "interface": "IFederatedInventory"
+        }
+      ]
+    }
+  }
+  ```

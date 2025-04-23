@@ -5,6 +5,7 @@ using Beamable.Server;
 using Microservice.SourceGen.Tests.Dep;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -234,6 +235,91 @@ public partial class SomeUserMicroservice : Microservice
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
 			.WithLocation(2)
 			.WithArguments("TestAsyncCallable"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ReturnTypeInsideServerScope()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+
+	[Beamable.BeamGenerateSchema]
+	public class {|#0:DTO_Attribute|}
+	{
+		public int x;
+	}
+
+	public class DTO_Nested
+	{
+		public int x;
+	}
+
+	[ClientCallable]
+	public {|#1:DTO_Nested|} CallService_Nested() 
+	{
+		return new DTO_Nested{ x = 1 };
+	}
+
+	[ClientCallable]
+	public async {|#2:Task<DTO_MicroserviceScope>|} CallServiceAsync(DTO_MicroserviceScope {|#3:param|}) 
+	{
+	return new DTO_MicroserviceScope{ x = 1 };
+	}
+}
+
+public class DTO_MicroserviceScope 
+{
+    public int x;
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested)
+				.WithLocation(0)
+				.WithArguments("DTO_Attribute"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeIsNested)
+				.WithLocation(1)
+				.WithArguments("DTO_Nested", "CallService_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(1)
+				.WithArguments("CallService_Nested", "DTO_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(2)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(3)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+
+		string config = $@"
+is_global = true
+build_property.BeamValidateCallableTypesExistInSharedLibraries = true
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
 		
 		await ctx.RunAsync();
 	}

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer to validate Federations.
 - New Code Fixer to Implement possible fixes for Federations.
 - New Code Fixer to Solve Microservice classes missing Attribute or Partial keyword. 
+- New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
 
 ## [4.2.0] - 2025-04-04
 ### Changed

@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Microservice.SourceGen.Analyzers;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -66,7 +67,7 @@ public class FederationMissingFromCodeFixer : CodeFixProvider
 		editor.ReplaceNode(microserviceClass, updatedClass.WithAdditionalAnnotations(Formatter.Annotation));
 
 		// Creating the new FederationID Class for the new Federation from Config file values.
-		var federationIdAttribute = FederationDefaultIDFixer.GenerateCustomAttributeWithArgument(fedId);
+		var federationIdAttribute = FederationDefaultIDFixer.GenerateCustomAttributeWithArgument(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME,fedId);
 		AttributeListSyntax newAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(federationIdAttribute));
 		
 		var fedIdClass =
