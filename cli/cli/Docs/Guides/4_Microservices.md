@@ -247,17 +247,18 @@ Types used in `[ClientCallable]` methods must be available to both server and cl
 [Microservice("MyMicroservice")]
 public partial class MyMicroservice : Microservice 
 {
-    public class DTO
-    {
-        public int x;
-    }
-
-    [ClientCallable]
+        [ClientCallable]
     public async Task<DTO> CallServiceAsync() => new DTO { x = 1 };
 
     [ClientCallable]
     public void CallService(DTO data) {}
 }
+
+public class DTO
+{
+    public int x;
+}
+
 ```
 
 **Example Error Message**:
@@ -283,6 +284,91 @@ public partial class MyMicroservice : Microservice
 
 **Shared Project Code**:
 ```csharp
+public class DTO
+{
+    public int x;
+}
+```
+
+---
+
+### Callable Method Types usage are Nested
+
+**Explanation**:  
+Types used in `[ClientCallable]` methods must be declared in outer scope so the Source Code Generator can handle it properly.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    public class DTO
+    {
+        public int x;
+    }
+
+    [ClientCallable]
+    public void CallService(DTO data) {}
+}
+```
+
+**Example Error Message**:
+```
+{nameof(Server.Microservice)} Callable method CallService uses a Type that is Nested, which is not supported by the Source Code Generator. Please move DTO to outer scope.
+```
+
+**Solutions**:
+- Move named types used by `Callable` methods to a non-nested scope.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    [ClientCallable]
+    public void CallService(DTO data) {}
+}
+
+public class DTO
+{
+    public int x;
+}
+```
+
+---
+
+### Beam Generated Schema Class is a Nested Type
+
+**Explanation**:  
+Classes that uses the attribute `[BeamGenerateSchema]` cannot be declared as nested type because the Source Generator Cannot handle it.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice 
+{
+    [BeamGenerateSchema]
+    public class DTO
+    {
+        public int x;
+    }
+}
+```
+
+**Example Error Message**:
+```
+Type DTO contains [BeamGenerateSchema] attribute and is a Nested type, which is not supported by the Source Code Generator. Please move DTO to outer scope.
+```
+
+**Solutions**:
+- Move classes that contains `[BeamGenerateSchema]` attribute to a non-nested scope.
+
+**Example of Solved Code**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice { }
+
+[BeamGenerateSchema]
 public class DTO
 {
     public int x;

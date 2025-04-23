@@ -252,21 +252,38 @@ namespace TestNamespace;
 
 
 [Microservice(""MyMicroservice"")]
-public partial class MyMicroservice : Microservice {
-  public class DTO {
+public partial class MyMicroservice : Microservice 
+{
+
+	[Beamable.BeamGenerateSchema]
+	public class {|#0:DTO_Attribute|}
+	{
+		public int x;
+	}
+
+	public class DTO_Nested
+	{
+		public int x;
+	}
+
+	[ClientCallable]
+	public {|#1:DTO_Nested|} CallService_Nested() 
+	{
+		return new DTO_Nested{ x = 1 };
+	}
+
+	[ClientCallable]
+	public async {|#2:Task<DTO_MicroserviceScope>|} CallServiceAsync(DTO_MicroserviceScope {|#3:param|}) 
+	{
+	return new DTO_MicroserviceScope{ x = 1 };
+	}
+}
+
+public class DTO_MicroserviceScope 
+{
     public int x;
-  }
-
-  [ClientCallable]
-  public async {|#0:Task<DTO>|} CallServiceAsync() {
-    return new DTO{ x = 1 };
-  }
-
-  [ClientCallable]
-  public {|#1:DTO|} CallService() {
-    return new DTO{ x = 1 };
-  }
-}";
+}
+";
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
@@ -274,14 +291,29 @@ public partial class MyMicroservice : Microservice {
 		PrepareForRun(ctx, cfg, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeInsideMicroserviceScope)
+			new DiagnosticResult(Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested)
 				.WithLocation(0)
-				.WithArguments("CallServiceAsync"));
+				.WithArguments("DTO_Attribute"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeInsideMicroserviceScope)
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeIsNested)
 				.WithLocation(1)
-				.WithArguments("CallService"));
+				.WithArguments("DTO_Nested", "CallService_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(1)
+				.WithArguments("CallService_Nested", "DTO_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(2)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(3)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
 
 		string config = $@"
 is_global = true

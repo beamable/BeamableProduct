@@ -53,7 +53,9 @@ public static class Diagnostics
 		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
 		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
-		public const string CALLABLE_METHOD_RETURN_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
+		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
+		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
+		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
 
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
@@ -107,13 +109,31 @@ public static class Diagnostics
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#async-void-callable-methods",
 				isEnabledByDefault: true);
 		
-		public static readonly DiagnosticDescriptor CallableMethodTypeInsideMicroserviceScope
-			= new(CALLABLE_METHOD_RETURN_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
+		public static readonly DiagnosticDescriptor CallableTypeInsideMicroserviceScope
+			= new(CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
 				$"{nameof(Server.Microservice)} Callable methods uses a Type that cannot be inside microservice scope",
 				$"{nameof(Server.Microservice)} Callable method {{0}} uses a Type that cannot be inside microservice scope. Type: {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-type-usage-in-callable-method",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodTypeIsNested
+			= new(CALLABLE_METHOD_TYPE_IS_NESTED_ID,
+				$"{nameof(Server.Microservice)} Callable methods uses a Type that is Nested",
+				$"{nameof(Server.Microservice)} Callable method {{1}} uses a Type that is Nested, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-types-usage-are-nested",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor ClassBeamGenerateSchemaAttributeIsNested
+			= new(CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID,
+				$"Type with [BeamGenerateSchema] attribute cannot be nested type",
+				$"Type {{0}} contains [BeamGenerateSchema] attribute and is a Nested type, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#beam-generated-schema-class-is-a-nested-type",
 				isEnabledByDefault: true);
 	}
 
