@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "main"
+    paths:
+      - "client_installer/**"
   workflow_dispatch:
 
 jobs:
