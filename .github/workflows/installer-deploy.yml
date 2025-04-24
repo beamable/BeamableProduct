@@ -100,9 +100,11 @@ jobs:
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
           buildMethod: Build.Export
-      - name: Confirm
+      - name: List directory
+        working-directory: ${{ matrix.projectPath }}
         run: |
-          ls ./${{ matrix.projectPath }}
+          ls
         shell: bash
       - name: Upload
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./${{ matrix.projectPath }}/Beamable_SDK_Installer.unitypackage ${{secrets.AWS_BUCKET_BUILDS}} --acl public-read
+        working-directory: ${{ matrix.projectPath }}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./Beamable_SDK_Installer.unitypackage ${{secrets.AWS_BUCKET_BUILDS}} --acl public-read
