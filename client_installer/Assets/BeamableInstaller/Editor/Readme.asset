@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07df9645011542f28edcc5419377e5ab, type: 3}
+  m_Name: Readme
+  m_EditorClassIdentifier: 
+  icon: {fileID: 2800000, guid: 3164f0c73c6e74dcb9da404b47dbcee8, type: 3}
+  title: Welcome to the Beamable Package Installer
+  sections:
+  - heading: What is Beamable?
+    text: 'Beamable is the low-code option for rapidly adding social, commerce, and
+      content management features to your live game. Learn how to do that with Beamable''s
+      online product documentation. '
+    linkText: docs.beamable.com
+    url: https://docs.beamable.com
+    Action: 0
+  - heading: Installation
+    text: The Beamable SDK is provided through Unity Package Manager (UPM). The UPM
+      will set up the Beamable package registry in this project and install the latest
+      version of Beamable.
+    linkText: 
+    url: 
+    Action: 1
+  - heading: 
+    text: 
+    linkText: 
+    url: 
+    Action: 3
+  - heading: Remove the Installer
+    text: The Beamable SDK is successfully installed. The installer is no longer
+      needed.
+    linkText: 
+    url: 
+    Action: 2
+  - heading: Join our Discord
+    text: Join our Discord server to get real-time technical help, connect with a vibrant community of developers, 
+            and stay up to date with the latest in tech! Whether you're debugging a tricky problem, looking for feedback on a project,
+             or just want to chat with like-minded enthusiasts, our community is here to support you.
+    linkText: Discord
+    url: https://discord.gg/beamable
+    Action: 0
+  - heading: Got Feedback?
+    text: Let us know what you think or ask any questions you might have.
+    linkText: Contact Us
+    url: https://docs.beamable.com/discuss
+    Action: 0
+  loadedLayout: 1

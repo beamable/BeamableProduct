@@ -1,0 +1,17 @@
+{
+    "name": "Beamable.Installer.Tests",
+    "references": [
+        "Beamable.Installer",
+        "Beamable.Installer.SmallerJSON"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}
