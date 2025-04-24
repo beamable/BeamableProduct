@@ -108,3 +108,4 @@ jobs:
       - name: Upload
         working-directory: ${{ matrix.projectPath }}
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./Beamable_SDK_Installer.unitypackage ${{secrets.AWS_BUCKET_BUILDS}} --acl public-read
+
