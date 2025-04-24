@@ -42,7 +42,7 @@ public class FederationDefaultIDFixer : CodeFixProvider
 				Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
 					title: $"[{diagnostic.Descriptor.Title}] Set FederationId attribute to \"default\"",
 					createChangedDocument: c => AddOrFixFederationIdAttribute(context.Document, classDecl, c),
-					equivalenceKey: "FixFederationIdDefault"),
+					equivalenceKey: $"{diagnostic.Descriptor.Id}"),
 				diagnostic);
 		}
 	}
@@ -57,29 +57,24 @@ public class FederationDefaultIDFixer : CodeFixProvider
 		AttributeSyntax attribute = GenerateCustomAttributeWithArgument(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME);
 		AttributeListSyntax newAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(attribute));
 
-		ClassDeclarationSyntax newClassDecl;
-		 
-		if (!hasFederationID)
-		{
-			newClassDecl = classDecl.AddAttributeLists(newAttributeList);
-		}
-		else
-		{
-			var updatedLists = classDecl.AttributeLists.Select(attrList =>
-			{
-				var newAttrs = attrList.Attributes.Select(attr =>
-				{
-					string attributeName = attr.Name.ToString();
-					return attributeName.Contains(FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME) ? attribute : attr;
-				}).ToArray();
-				return SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(newAttrs));
-			});
-
-			newClassDecl = classDecl.WithAttributeLists(SyntaxFactory.List(updatedLists));
-		}
+		ClassDeclarationSyntax newClassDecl = hasFederationID
+			? UpdateClassAttribute(classDecl, FederationAnalyzer.FEDERATION_ATTRIBUTE_NAME, attribute)
+			: classDecl.AddAttributeLists(newAttributeList);
 
 		var newRoot = root.ReplaceNode(classDecl, newClassDecl);
 		return document.WithSyntaxRoot(newRoot);
+	}
+	
+	public static ClassDeclarationSyntax UpdateClassAttribute(ClassDeclarationSyntax classDecl, string attributeName, AttributeSyntax attribute)
+	{
+		var updatedLists = classDecl.AttributeLists.Select(attrList =>
+		{
+			var newAttrs = attrList.Attributes
+				.Select(attr => attr.Name.ToString().Contains(attributeName) ? attribute : attr).ToArray();
+			return SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(newAttrs));
+		});
+
+		return classDecl.WithAttributeLists(SyntaxFactory.List(updatedLists));
 	}
 
 	public static AttributeSyntax GenerateCustomAttributeWithArgument(string attributeName, string attributeValue = "default")

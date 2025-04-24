@@ -31,7 +31,7 @@ public class FederationMissingFromCodeFixer : CodeFixProvider
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
 				title: $"[{diagnostic.Descriptor.Title}] Create Federation and Implement {diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]}",
 				createChangedDocument: cancellationToken => FixMissingConfiguredFederationId(context.Document, diagnostic, cancellationToken),
-				equivalenceKey: "FixMissingFederation"),
+				equivalenceKey: $"{diagnostic.Descriptor.Id}"),
 			diagnostic);
 		return Task.CompletedTask;
 	}
