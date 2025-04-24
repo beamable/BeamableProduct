@@ -1,0 +1,106 @@
+name: Installer Pull Request CI
+
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "client_installer/**"
+
+jobs:
+  Test:
+    timeout-minutes: 30
+    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        projectPath:
+          - ./client_installer
+        testMode:
+          - playmode
+        unityVersion:
+          - 2019.4.17f1
+          - 2020.3.19f1
+          - 2021.3.29f1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Unity Folders
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        timeout-minutes: 20
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          customParameters: -warnaserror+
+          projectPath: ${{ matrix.projectPath }}
+          testMode: ${{ matrix.testMode }}
+          unityVersion: ${{ matrix.unityVersion }}
+          artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+          path: ${{ steps.tests.outputs.artifactsPath }}
+          retention-days: 1
+
+  Build:
+    name: Build for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows
+        unityVersion:
+          - 2019.4.17f1
+        projectPath:
+          - ./client_installer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+      - name: Cache Unity Folders
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ matrix.projectPath }}/Library
+            ${{ matrix.projectPath }}/Temp
+            ${{ matrix.projectPath }}/obj
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - uses: game-ci/unity-builder@v4
+        timeout-minutes: 30
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: ${{ matrix.projectPath }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          buildMethod: Build.Export
+      - name: Confirm
+        run: |
+          ls ./client_installer
+        shell: bash
