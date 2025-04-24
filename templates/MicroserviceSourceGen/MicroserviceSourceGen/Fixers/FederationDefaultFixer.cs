@@ -38,7 +38,7 @@ public class FederationDefaultFixer : CodeFixProvider
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
 				title: $"[{diagnostic.Descriptor.Title}] No Code/Solution auto-fix for this, a Comment will be added to Guide the next steps.",
 				createChangedDocument: c => AddCommentToGuideUser(context.Document, diagnosticSpan, diagnostic, c),
-				equivalenceKey: "AddGuideComment"),
+				equivalenceKey: $"{diagnostic.Descriptor.Id}"),
 			diagnostic);
 		
 		return Task.CompletedTask;

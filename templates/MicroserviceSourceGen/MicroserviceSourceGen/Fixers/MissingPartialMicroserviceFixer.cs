@@ -35,7 +35,7 @@ public class MissingPartialMicroserviceFixer : CodeFixProvider
 				Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
 					title: $"[{diagnostic.Descriptor.Title}] Add partial modifier",
 					createChangedDocument: c => FixAsyncCallable(context.Document, classDeclarationSyntax, c),
-					equivalenceKey: "AddPartialModifier"),
+					equivalenceKey: $"{diagnostic.Descriptor.Id}"),
 				diagnostic);
 		}
 		

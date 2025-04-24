@@ -38,9 +38,9 @@ public class AsyncVoidCallableFixer : CodeFixProvider
 		{
 			context.RegisterCodeFix(
 				Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
-					title: $"[{diagnostic.Descriptor.Title}] async void to async Task",
+					title: $"[{diagnostic.Descriptor.Id}] async void to async Task",
 					createChangedDocument: c => FixAsyncCallable(context.Document, methodDecl, c),
-					equivalenceKey: "ChangeAsyncVoidToTask"),
+					equivalenceKey: $"{diagnostic.Descriptor.Id}"),
 				diagnostic);
 		}
 		

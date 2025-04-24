@@ -397,4 +397,50 @@ public partial class SomeUserMicroservice : Microservice
 		
 		await ctx.RunAsync();
 	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Srv_InvalidMicroserviceID_NonMatchBeamIdProperty()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class {|#0:SomeUserMicroservice|} : Microservice
+{		
+}
+";
+		
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""OtherBeamID"")]
+public partial class SomeUserMicroservice : Microservice
+{		
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, InvalidMicroserviceAttributeFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MicroserviceIdInvalidFromCsProj)
+			.WithLocation(0)
+			.WithArguments("MyMicroservice", "OtherBeamID"));
+		
+		string config = $@"
+is_global = true
+build_property.beamid = OtherBeamID
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
+		await ctx.RunAsync();
+	}
 }
