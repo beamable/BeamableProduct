@@ -87,7 +87,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v4
         timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
