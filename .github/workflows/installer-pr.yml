@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
-      group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
+      group: installer-device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
       cancel-in-progress: true
     strategy:
       fail-fast: false
