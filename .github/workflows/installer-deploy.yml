@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "main"
+    paths:
+      - "client_installer/**"
   workflow_dispatch:
 
 jobs:
@@ -71,7 +73,7 @@ jobs:
         unityVersion:
           - 2019.4.17f1
         projectPath:
-          - ./client_installer
+          - client_installer
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,8 +102,7 @@ jobs:
           buildMethod: Build.Export
       - name: Confirm
         run: |
-          pwd
-          ls ./client_installer
+          ls ./${{ matrix.projectPath }}
         shell: bash
       - name: Upload
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./client_installer/Beamable_SDK_Installer.unitypackage ${{secrets.AWS_BUCKET_BUILDS}} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./${{ matrix.projectPath }}/Beamable_SDK_Installer.unitypackage ${{secrets.AWS_BUCKET_BUILDS}} --acl public-read
