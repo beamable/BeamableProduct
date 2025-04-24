@@ -20,10 +20,8 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 	{
 	}
 
-	public override Task Handle(StartCollectorCommandArgs args)
+	public override async Task Handle(StartCollectorCommandArgs args)
 	{
-		CollectorManager.StartCollectorProcess();
-
-		return Task.CompletedTask;
+		await CollectorManager.StartCollectorProcess(true, args.Lifecycle.Source);
 	}
 }

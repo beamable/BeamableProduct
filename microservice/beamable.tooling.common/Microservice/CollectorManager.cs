@@ -1,11 +1,11 @@
 using Beamable.Common;
+using microservice.Extensions;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
-using ZLogger;
 
 namespace cli.Services;
 
@@ -67,6 +67,12 @@ public class CollectorManager
 			return collectorFilePath;
 		}
 
+		collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", collectorFileName);
+		if (File.Exists(collectorFilePath))
+		{
+			return collectorFilePath;
+		}
+
 		throw new Exception("Collector executable was not found.");
 	}
 
@@ -116,7 +122,7 @@ public class CollectorManager
 					throw new Exception("The collector couldn't start, terminating the microservice.");
 				}
 
-				await StartCollectorProcess(cts);
+				await StartCollectorProcess(false, cts);
 				alarmCounter++;
 			}
 			else
@@ -138,13 +144,18 @@ public class CollectorManager
 
 		for (int i = 0; i < attemptsToConnect; i++)
 		{
+			if (token.IsCancellationRequested)
+			{
+				return false;
+			}
+
 			if (socket.Available == 0)
 			{
 				await Task.Delay(delayBeforeNewAttempt);
 				continue;
 			}
 
-			var byteCount = await socket.ReceiveAsync(buffer, token);
+			var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
 
 			if (byteCount == 0)
 			{
@@ -160,15 +171,50 @@ public class CollectorManager
 		return false;
 	}
 
-	public static async Task StartCollectorProcess(CancellationTokenSource cts)
+	public static async Task StartCollectorProcess(bool detach, CancellationTokenSource cts)
 	{
 		BeamableLogger.Log($"Starting otel collector process...");
 		var collectorExecutablePath = GetCollectorExecutablePath();
 		var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
+
+		if (!File.Exists(configPath))
+		{
+			configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources",configFileName);
+			if (!File.Exists(configPath))
+			{
+				throw new Exception("Could not find the collector configuration file");
+			}
+		}
+
 		using var process = new Process();
 
-		process.StartInfo.FileName = collectorExecutablePath;
-		process.StartInfo.Arguments = $"--config {configPath}";
+		var fileExe = collectorExecutablePath;
+		var arguments = $"--config {configPath}";
+
+		if (detach)
+		{
+			// it varies based on the os, but in general, when we are detaching, then
+			//  when THIS process exits, we don't want the child-process to exit.
+			//  The C# ProcessSDK makes that sort of difficult, but we can invoke programs
+			//  that themselves create separate process trees. Or, at least I think we can.
+
+			// in windows, this doesn't actually really _work_. It is put onto a background process,
+			//  and the main window may close for the parent, but the process is kept open
+			//  if you look in task-manager.
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				arguments = "/C " + $"{fileExe.EnquotePath()} {arguments}".EnquotePath('(', ')');
+				fileExe = "cmd.exe";
+			}
+			else
+			{
+				arguments = $"sh -c \"{fileExe} {arguments}\" &";
+				fileExe = "nohup";
+			}
+		}
+
+		process.StartInfo.FileName = fileExe;
+		process.StartInfo.Arguments = arguments;
 		process.StartInfo.RedirectStandardOutput = true;
 		process.StartInfo.RedirectStandardError = true;
 		process.StartInfo.CreateNoWindow = true;
