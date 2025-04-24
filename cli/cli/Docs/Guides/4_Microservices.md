@@ -374,3 +374,61 @@ public class DTO
     public int x;
 }
 ```
+---
+
+### Invalid Microservice ID
+
+**Explanation**:  
+Microservices IDs must match the `<BeamID>` property on csproj. If there is none `<BeamID>` property it needs to match the project's name.
+
+**Example Code Triggering the Error**:
+```csharp
+[Microservice("MyMicroservice")]
+public partial class MyMicroservice : Microservice {}
+```
+
+**Example CSProj Triggering the Error**:
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+    ...
+    <PropertyGroup Label="Beamable Settings">
+        ...
+        <BeamId>OtherBeamId</BeamId>
+        ...
+    </PropertyGroup>
+    ...
+</Project>
+```
+
+**Example Error Message**:
+```
+Microservice ID: `MyMicroservice` is invalid, it needs to be the same as <BeamId> csharp property (or as csproj name if none exist): `OtherBeamId`
+```
+
+**Solutions**:
+- Switch `Microservice` attribute parameter to use the same value as `<BeamId>`
+    **Example of Solved Code**:
+    ```csharp
+    [Microservice("OtherBeamId")]
+    public partial class MyMicroservice : Microservice { }
+    
+    [BeamGenerateSchema]
+    public class DTO
+    {
+        public int x;
+    }
+    ```
+- Update `<BeamId>` property to match the `Microservice` attribute value
+  **Example of Solved CSProj**:
+    ```xml
+    <Project Sdk="Microsoft.NET.Sdk">
+        ...
+        <PropertyGroup Label="Beamable Settings">
+            ...
+            <BeamId>MyMicroservice</BeamId>
+            ...
+        </PropertyGroup>
+        ...
+    </Project>
+    ```
+---

@@ -26,7 +26,7 @@ public class FederationMissingFromSourceGenFixer : CodeFixProvider
 			Microsoft.CodeAnalysis.CodeActions.CodeAction.Create(
 				$"[{diagnostic.Descriptor.Title}] Remove invalid Federation interface reference",
 				ct => RemoveFederationFromMicroservices(context.Document, diagnostic, ct),
-				"RemoveInvalidFederationInterface"),
+				$"{diagnostic.Descriptor.Id}"),
 			diagnostic);
 	}
 
