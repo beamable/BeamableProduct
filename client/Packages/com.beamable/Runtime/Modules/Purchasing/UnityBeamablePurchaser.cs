@@ -56,12 +56,17 @@ namespace Beamable.Purchasing
 			var paymentService = GetPaymentService();
 
 			var skuPromise = paymentService.GetSKUs();
-			return skuPromise.Error(e =>
+			return skuPromise.Recover(e =>
 			{
 				InitializationStatus = PurchasingInitializationStatus.ErrorFailedToGetSkus;
 				_initPromise.CompleteError(e);
+				return new GetSKUsResponse();
 			}).FlatMap(rsp =>
 			{
+				if (_initPromise.IsFailed)
+				{
+					return _initPromise;
+				}
 				var noSkusAvailable = rsp.skus.definitions.Count == 0;
 				if (noSkusAvailable)
 				{
