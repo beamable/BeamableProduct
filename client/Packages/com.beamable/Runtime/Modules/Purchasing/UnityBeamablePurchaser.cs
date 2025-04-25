@@ -50,6 +50,7 @@ namespace Beamable.Purchasing
 			{
 				return _initPromise;
 			}
+			_initPromise = new Promise<Unit>();
 			InitializationStatus = PurchasingInitializationStatus.InProgress;
 			_serviceProvider = provider;
 			var paymentService = GetPaymentService();
