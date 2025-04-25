@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Beamable.Microservice.SourceGen.Fixers;
 
 /// <summary>
-/// This class is responsible for Fixing async void <see cref="CallableAttribute"/> methods
+/// This class is responsible for Fixing Non Readonly Static Filed on <see cref="Microservice"/> classes
 /// The fix will appear on the IDE, allowing the user to Fix it automatically.
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MicroserviceNonReadonlyStaticFieldFixer)), Shared]
