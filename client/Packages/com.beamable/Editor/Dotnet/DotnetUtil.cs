@@ -92,7 +92,14 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-			if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Beamable Unity SDK requires dotnet sdk 8.0.302 to function properly. Please download the  SDK Installer and proceed with the installation before continuing.","Download", "Close"))
+			var installed = string.Empty;
+			if (CheckDotnetInfo(out Dictionary<string, string> versions))
+			{
+				installed = $" Currently installed: {string.Join(", ", versions.Keys)}.";
+			}
+			var message = $"Beamable Unity SDK requires Dotnet SDK {REQUIRED_INSTALL_VERSION} to function properly.{installed} Please download the SDK Installer and proceed with the installation before continuing.";
+			
+			if (EditorUtility.DisplayDialog("Dotnet Installation Required", message,"Download", "Close"))
         	{
 				Application.OpenURL(GetDotnetDownloadLink());
 				if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Waiting for dotnet installation before proceeding", "Ok"))
