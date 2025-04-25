@@ -54,6 +54,7 @@ func StartUDPServer(host string, port string, delay int) {
 		_, err := conn.Write([]byte(message))
 		if err != nil {
 			fmt.Println("Error sending message:", err)
+			panic(err)
 		}
 	}
 }

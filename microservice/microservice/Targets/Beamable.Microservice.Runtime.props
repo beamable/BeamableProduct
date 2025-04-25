@@ -66,4 +66,27 @@
             <Visible>false</Visible>
         </AdditionalFiles>
     </ItemGroup>
+
+    <ItemGroup>
+        <BeamBaseDownloadUrl Include="https://github.com/beamable/BeamableProduct/blob/issue/otel-cli/cli/cli/Resources/BEAM_FILE_NAME" />
+    </ItemGroup>
+
+    <PropertyGroup>
+
+        <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>
+        <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>
+        <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>
+        <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>
+
+        <BeamCollectorConfigFileName>clickhouse-config.yaml</BeamCollectorConfigFileName>
+        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorFileName>
+
+        <BeamCollectorUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamCollectorUrl>
+        <BeamCollectorConfigUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamCollectorConfigUrl>
+    </PropertyGroup>
 </Project>
