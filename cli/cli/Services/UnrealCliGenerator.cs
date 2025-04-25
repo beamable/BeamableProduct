@@ -462,6 +462,8 @@ public class UnrealCliGenerator : ICliGenerator
 				return UnrealSourceGenerator.UNREAL_STRING;
 			if (type == typeof(Guid))
 				return UnrealSourceGenerator.UNREAL_GUID;
+			if (type == typeof(DateTime))
+				return UnrealSourceGenerator.UNREAL_DATE_TIME;
 
 			return "";
 		}

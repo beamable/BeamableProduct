@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
 - New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
 - New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
+- Added support for generating FDateTime instead of FString in Unreal code generation.
+
+### Changed
+- Revise the categorization of all Blueprint nodes to enhance discoverability.
 
 ## [4.2.0] - 2025-04-04
 ### Changed
