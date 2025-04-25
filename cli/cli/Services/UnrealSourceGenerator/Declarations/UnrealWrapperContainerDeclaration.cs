@@ -12,6 +12,8 @@ public struct UnrealWrapperContainerDeclaration
 	public UnrealSourceGenerator.NamespacedType ValueNamespacedTypeName;
 	public string ValueUnrealTypeIncludeStatement;
 
+	public string ServiceName;
+
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
@@ -32,7 +34,7 @@ public struct UnrealWrapperContainerDeclaration
 
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 		
-USTRUCT(BlueprintType, Category=""Beam|Wrappers|Arrays"")
+USTRUCT(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Wrappers|Arrays"")
 struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamArray
 {{
 	GENERATED_BODY()
@@ -86,7 +88,7 @@ void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TArray<TShare
 
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
-USTRUCT(BlueprintType, Category=""Beam|Wrappers|Maps"")
+USTRUCT(BlueprintType, Category=""Beam|₢{nameof(ServiceName)}₢|Wrappers|Maps"")
 struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamMap
 {{
 	GENERATED_BODY()

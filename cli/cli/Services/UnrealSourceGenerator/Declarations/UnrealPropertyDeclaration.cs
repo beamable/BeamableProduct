@@ -70,19 +70,14 @@ public struct UnrealPropertyDeclaration
 	public const string U_FIELD_DECLARATION =
 		$@"₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
-	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
-	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString(EGuidFormats::DigitsWithHyphensLower));";
-
+	// Fallback for non-supported types
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	public const string INT8_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = static_cast<int8>(Bag->GetIntegerField(""₢{nameof(RawFieldName)}₢""));";
-	public const string INT16_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = static_cast<int16>(Bag->GetIntegerField(""₢{nameof(RawFieldName)}₢""));";
-	public const string INT32_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetIntegerField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	public const string INT64_U_PROPERTY_DESERIALIZE = @$"FDefaultValueHelper::ParseInt64(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
-	public const string BOOL_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetBoolField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	public const string FLOAT_U_PROPERTY_DESERIALIZE = @$"FDefaultValueHelper::ParseFloat(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
-	public const string DOUBLE_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetNumberField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	public const string GUID_U_PROPERTY_DESERIALIZE = $@"FGuid::Parse(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
+	
+	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
+	
+	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 
+	
 	public const string UNREAL_JSON_FIELD_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -217,14 +212,8 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_SERIALIZE;
-
-		if (unrealType.IsUnrealGuid())
-			return GUID_U_PROPERTY_SERIALIZE;
-
-
-		if (unrealType.IsUnrealString() || unrealType.IsUnrealBool() ||
-		    unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
-		    unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
+		
+		if (unrealType.IsRawPrimitive())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}
@@ -251,7 +240,7 @@ public struct UnrealPropertyDeclaration
 			{
 				return isSemType ? OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_WRAPPER_U_PROPERTY_DESERIALIZE;
 			}
-
+			
 			return isSemType ? OPTIONAL_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_U_PROPERTY_DESERIALIZE;
 		}
 
@@ -270,36 +259,12 @@ public struct UnrealPropertyDeclaration
 			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
-
+		
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_DESERIALIZE;
-
-		if (unrealType.IsUnrealString())
-			return STRING_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealByte())
-			return INT8_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealShort())
-			return INT16_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealInt())
-			return INT32_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealLong())
-			return INT64_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealBool())
-			return BOOL_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealFloat())
-			return FLOAT_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealDouble())
-			return DOUBLE_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.IsUnrealGuid())
-			return GUID_U_PROPERTY_DESERIALIZE;
+		
+		if (unrealType.IsRawPrimitive())
+			return UNREAL_RAW_PRIMITIVE_DESERIALIZE;
 
 		// Semantic types serialization
 		if (unrealType.IsAnySemanticType())
@@ -310,6 +275,8 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealStruct())
 			return U_STRUCT_U_PROPERTY_DESERIALIZE;
+			
+		
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}
