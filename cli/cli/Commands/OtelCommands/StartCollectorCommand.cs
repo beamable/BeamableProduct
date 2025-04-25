@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Server;
 using cli.Services;
 
 namespace cli.OtelCommands;
@@ -22,6 +23,6 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 
 	public override async Task Handle(StartCollectorCommandArgs args)
 	{
-		await CollectorManager.StartCollectorProcess(true, args.Lifecycle.Source);
+		await CollectorManager.StartCollectorProcess(true, BeamableZLoggerProvider.LogContext.Value, args.Lifecycle.Source);
 	}
 }

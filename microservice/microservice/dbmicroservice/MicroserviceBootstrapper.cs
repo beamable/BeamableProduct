@@ -61,6 +61,7 @@ using OpenTelemetry.Trace;
 using System.Threading;
 using ZLogger;
 using Beamable.Tooling.Common;
+using cli.Services;
 using Constants = Beamable.Common.Constants;
 using Otel = Beamable.Common.Constants.Features.Otel;
 using Debug = UnityEngine.Debug;
@@ -762,7 +763,16 @@ namespace Beamable.Server
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        //TODO change this to call the CLI start collector command
-		        //await CollectorManager.StartCollector(tokenSource.Token, _logger);
+
+		        // var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+		        // if (inDocker)
+		        // {
+			        await CollectorManager.StartCollector(tokenSource, _logger);
+		        // }
+		        // else
+		        // {
+			       //  //TODO call for CLI to start the collector
+		        // }
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();

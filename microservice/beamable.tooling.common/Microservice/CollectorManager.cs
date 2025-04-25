@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using ZLogger;
 
 namespace cli.Services;
 
@@ -101,6 +102,8 @@ public class CollectorManager
 			throw new Exception("Invalid value for port");
 		}
 
+		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
+
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 		var ed = new IPEndPoint(IPAddress.Any, portNumber);
 
@@ -121,14 +124,15 @@ public class CollectorManager
 				{
 					throw new Exception("The collector couldn't start, terminating the microservice.");
 				}
-
-				await StartCollectorProcess(false, cts);
+				logger.ZLogInformation($"Starting local process for collector, attempt number: {alarmCounter}");
+				await StartCollectorProcess(false, logger, cts);
 				alarmCounter++;
 			}
 			else
 			{
 				if (!connectedPromise.IsCompleted)
 				{
+					logger.ZLogInformation($"Found collector! Events can now be sent to collector");
 					connectedPromise.CompleteSuccess();
 				}
 				alarmCounter = 0;
@@ -171,9 +175,8 @@ public class CollectorManager
 		return false;
 	}
 
-	public static async Task StartCollectorProcess(bool detach, CancellationTokenSource cts)
+	public static async Task StartCollectorProcess(bool detach, ILogger logger, CancellationTokenSource cts)
 	{
-		BeamableLogger.Log($"Starting otel collector process...");
 		var collectorExecutablePath = GetCollectorExecutablePath();
 		var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
 
@@ -232,7 +235,7 @@ public class CollectorManager
 		{
 			if (!string.IsNullOrEmpty(args.Data))
 			{
-				BeamableLogger.Log($"[Collector] {args.Data}");
+				logger.ZLogInformation($"[Collector] {args.Data}");
 				sublogs += args.Data;
 				if (args.Data.Contains("Everything is ready. Begin running and processing data."))
 				{
@@ -243,13 +246,14 @@ public class CollectorManager
 
 		process.OutputDataReceived += (sender, args) =>
 		{
-			BeamableLogger.Log($"[Collector] {args.Data}");
 			if (!string.IsNullOrEmpty(args.Data))
 			{
+				logger.ZLogInformation($"[Collector] {args.Data}");
 				result += args.Data;
 			}
 		};
 
+		logger.ZLogInformation($"Starting process...");
 		process.Start();
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
