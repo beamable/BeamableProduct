@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
 
+### Fixed
+- Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
+
 ## [4.2.0] - 2025-04-04
 ### Changed
 - `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)

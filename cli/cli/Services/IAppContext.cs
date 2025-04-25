@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using cli.Options;
@@ -67,9 +68,9 @@ public interface IAppContext : IRealmInfo
 	/// As we add more context variables, this method is responsible for "figuring them out"
 	/// </summary>
 	/// <param name="bindingContext"></param>
-	void Apply(BindingContext bindingContext);
+	Task Apply(BindingContext bindingContext);
 
-	void Set(string cid, string pid, string host);
+	Task Set(string cid, string pid, string host);
 	void UpdateToken(TokenResponse response);
 }
 
@@ -157,6 +158,7 @@ public class DefaultAppContext : IAppContext
 	private string _cid, _pid, _host;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
+	private readonly IAliasService _aliasService;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -169,7 +171,7 @@ public class DefaultAppContext : IAppContext
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
-		PreferRemoteFederationOption routeMapOption)
+		PreferRemoteFederationOption routeMapOption, IAliasService aliasService)
 	{
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
@@ -190,6 +192,7 @@ public class DefaultAppContext : IAppContext
 		_routeMapOption = routeMapOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
+		_aliasService = aliasService;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 	}
 
@@ -264,7 +267,7 @@ public class DefaultAppContext : IAppContext
 		}
 	}
 
-	public void Apply(BindingContext bindingContext)
+	public async Task Apply(BindingContext bindingContext)
 	{
 		_bindingContext = bindingContext;
 		ShowRawOutput = bindingContext.ParseResult.GetValueForOption(_showRawOption);
@@ -290,17 +293,17 @@ public class DefaultAppContext : IAppContext
 
 		_configService.Init(bindingContext);
 
-		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))
+		if (!_configService.TryGetSetting(out string cid, bindingContext, _cidOption))
 		{
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!_configService.TryGetSetting(out _pid, bindingContext, _pidOption))
+		if (!_configService.TryGetSetting(out string pid, bindingContext, _pidOption))
 		{
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!_configService.TryGetSetting(out _host, bindingContext, _hostOption))
+		if (!_configService.TryGetSetting(out string host, bindingContext, _hostOption))
 		{
 			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
@@ -320,15 +323,24 @@ public class DefaultAppContext : IAppContext
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
-		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
-		Set(_cid, _pid, _host);
+		_token = new CliToken(accessToken, RefreshToken, cid, pid);
+		await Set(cid, pid, host);
 		
 
 	}
 
-	public void Set(string cid, string pid, string host)
+	public async Task Set(string cid, string pid, string host)
 	{
-		_cid = cid;
+		if (!string.IsNullOrEmpty(cid))
+		{
+			var aliasResolve = await _aliasService.Resolve(cid);
+			_cid = aliasResolve.Cid;
+		}
+		else
+		{
+			_cid = cid;
+		}
+
 		_pid = pid;
 		_host = host;
 		_token.Cid = _cid;
