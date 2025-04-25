@@ -195,6 +195,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 {
 	public UnrealType UnrealTypeName;
 	public NamespacedType NamespacedTypeName;
+	public string ServiceName;
 
 	public List<string> PropertyIncludes;
 	public List<UnrealPropertyDeclaration> UPropertyDeclarations;
@@ -421,6 +422,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 		processDictionary.Add(nameof(includeStatementPrefix), includeStatementPrefix);
 		processDictionary.Add(nameof(blueprintIncludeStatementPrefix), blueprintIncludeStatementPrefix);
 
+		processDictionary.Add(nameof(ServiceName), ServiceName);
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(UPropertyDeclarations), propertyDeclarations);
 		processDictionary.Add(nameof(PropertyIncludes), string.Join("\n", PropertyIncludes.Where(s => !string.IsNullOrEmpty(s)).Distinct()));
@@ -517,10 +519,10 @@ class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : p
 
 public:
 
-	UFUNCTION(BlueprintPure, Category=""Beam|Json"", DisplayName=""Beam - ₢{nameof(NamespacedTypeName)}₢ To JSON String"")
+	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Json"", DisplayName=""₢{nameof(NamespacedTypeName)}₢ To JSON String"")
 	static FString ₢{nameof(NamespacedTypeName)}₢ToJsonString(const U₢{nameof(NamespacedTypeName)}₢* Serializable, const bool Pretty);
 
-	UFUNCTION(BlueprintPure, Category=""Beam|Backend"", DisplayName=""Beam - Make ₢{nameof(NamespacedTypeName)}₢"", meta=(DefaultToSelf=""Outer"", AdvancedDisplay=""₢{nameof(_makeOptionalParamNames)}₢Outer"", NativeMakeFunc))
+	UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", DisplayName=""Make ₢{nameof(NamespacedTypeName)}₢"", meta=(DefaultToSelf=""Outer"", AdvancedDisplay=""₢{nameof(_makeOptionalParamNames)}₢Outer"", NativeMakeFunc))
 	static U₢{nameof(NamespacedTypeName)}₢* Make(₢{nameof(_makeParams)}₢UObject* Outer);
 
 	₢{nameof(BREAK_UTILITY_DECLARATION)}₢
@@ -561,7 +563,7 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 
 ";
 
-	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|Backend"", DisplayName=""Beam - Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
+	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", DisplayName=""Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
 	static void Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢);";
 
 	public const string BREAK_UTILITY_DEFINITION = $@"void U₢{nameof(NamespacedTypeName)}₢Library::Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢)

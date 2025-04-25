@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Semantics;
 using Docker.DotNet.Models;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -28,6 +29,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_FLOAT = new("float");
 	public static readonly UnrealType UNREAL_DOUBLE = new("double");
 	public static readonly UnrealType UNREAL_GUID = new("FGuid");
+	public static readonly UnrealType UNREAL_DATE_TIME = new("FDateTime");
 	public static readonly UnrealType UNREAL_JSON = new("TSharedPtr<FJsonObject>");
 	public static readonly UnrealType UNREAL_OPTIONAL = new("FOptional");
 	public static readonly UnrealType UNREAL_OPTIONAL_STRING = new($"{UNREAL_OPTIONAL}String");
@@ -39,6 +41,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_OPTIONAL_FLOAT = new($"{UNREAL_OPTIONAL}Float");
 	public static readonly UnrealType UNREAL_OPTIONAL_DOUBLE = new($"{UNREAL_OPTIONAL}Double");
 	public static readonly UnrealType UNREAL_OPTIONAL_GUID = new($"{UNREAL_OPTIONAL}Guid");
+	public static readonly UnrealType UNREAL_OPTIONAL_DATE_TIME = new($"{UNREAL_OPTIONAL}DateTime");
 	public static readonly UnrealType UNREAL_ARRAY = new("TArray");
 	public static readonly UnrealType UNREAL_OPTIONAL_ARRAY = new($"{UNREAL_OPTIONAL}ArrayOf");
 	public static readonly UnrealType UNREAL_WRAPPER_ARRAY = new("FArrayOf");
@@ -49,12 +52,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_U_OBJECT_PREFIX = new("U");
 	public static readonly UnrealType UNREAL_U_STRUCT_PREFIX = new("F");
 	public static readonly UnrealType UNREAL_U_POLY_WRAPPER_PREFIX = new("UOneOf_");
+	public static readonly UnrealType UNREAL_U_HTML_TEXT_RESPONSE_TYPE = new("UHtmlResponse*");
+	
 	public static readonly UnrealType UNREAL_U_BEAM_NODE_PREFIX = new("UK2BeamNode");
-
 	public static readonly UnrealType UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = new("UBeamPlainTextResponseBody*");
 	// End of Special Case Types
 
 
+	/// <summary>
+	/// These overrides are applied in <see cref="GetNamespacedServiceNameFromApiDoc"/> so that we can override the names of services
+	/// that'll exist in Unreal as a Categories for the BP. 
+	/// </summary>
+	public static readonly Dictionary<string, string> SERVICE_NAME_OVERRIDES;
+	
 	/// <summary>
 	/// These overrides are applied in <see cref="GetNamespacedTypeNameFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
 	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
@@ -74,6 +84,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// TODO: Over time, we should probably move this into its own partial file of this type.
 	/// </summary>
 	public static readonly Dictionary<string, UnrealType> POLYMORPHIC_WRAPPER_TYPE_OVERRIDES;
+	
 
 
 	// Start of Semantic Types
@@ -142,6 +153,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{ "UOneOf_UContentReference_UTextReference_UBinaryReference*", new("UBaseContentReference*") },
 			{ "UOneOf_UCronTrigger_UExactTrigger*", new("UBeamJobTrigger*") },
 			{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", new("UBeamJobType*") }
+		};
+
+		SERVICE_NAME_OVERRIDES = new()
+		{
+			{"PlayerParty","Party"},
+			{"Social", "Friends"},
 		};
 
 		UNREAL_ALL_SEMTYPES = new List<UnrealType>
@@ -677,7 +694,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		output.CsvResponseTypes.EnsureCapacity(context.Schemas.Count);
 		output.CsvRowTypes.EnsureCapacity(context.Schemas.Count);
 		output.PolymorphicWrappersDeclarations.EnsureCapacity(context.Schemas.Count);
-
+		
 		// Allocate a list to keep track of all Schema types that we have already declared.
 		var listOfAlreadyDeclaredTypes = new List<NamespacedType>(context.Schemas.Count);
 
@@ -693,10 +710,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			// Declare primitive optional and arrays
 			{
-				var wrapper = MakeWrapperDeclaration(context, new("FArrayOfString"));
+				var wrapper = MakeWrapperDeclaration(context, "Shared", new("FArrayOfString"));
 				output.ArrayWrapperTypes.Add(wrapper);
 
-				var optionalDeclaration = MakeOptionalDeclaration(context, UNREAL_OPTIONAL_STRING, UNREAL_STRING);
+				var optionalDeclaration = MakeOptionalDeclaration(context, "Shared", UNREAL_OPTIONAL_STRING, UNREAL_STRING);
 				output.OptionalTypes.Add(optionalDeclaration);
 			}
 
@@ -707,7 +724,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					var replacementUnrealType = context.AllReplacementTypes[i];
 					var replacementOptionalType = context.AllOptionalReplacementTypes[i];
 
-					var optionalDeclaration = MakeOptionalDeclaration(context, replacementOptionalType, replacementUnrealType);
+					var optionalDeclaration = MakeOptionalDeclaration(context, "Shared", replacementOptionalType, replacementUnrealType);
 					output.OptionalTypes.Add(optionalDeclaration);
 				}
 			}
@@ -720,6 +737,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			var schema = namedOpenApiSchema.Schema;
 			UnrealType schemaUnrealType = GetNonOptionalUnrealTypeForField(context, namedOpenApiSchema.Document, schema);
 			NamespacedType schemaNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType);
+			
+			GetNamespacedServiceNameFromApiDoc(namedOpenApiSchema.Document.Info, out var serviceTitle, out var serviceName);
+			
 			// Make sure we don't declare two types with the same name
 			if (listOfAlreadyDeclaredTypes.Contains(schemaNamespacedType)) continue;
 			listOfAlreadyDeclaredTypes.Add(schemaNamespacedType);
@@ -731,7 +751,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			if (schemaUnrealType.IsUnrealEnum())
 			{
 				var enumValuesNames = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList();
-				var enumDecl = MakeEnumDeclaration(schemaUnrealType, enumValuesNames);
+				var enumDecl = MakeEnumDeclaration(schemaUnrealType, enumValuesNames, serviceName);
 				output.EnumTypes.Add(enumDecl);
 			}
 			else if (IsCsvRowSchema(namedOpenApiSchema.Document, schema))
@@ -794,6 +814,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				// We skip the generation for this schema if we bump into a schema that maps to UNREAL_JSON.
 			}
+			else if (schemaUnrealType.IsRawPrimitive())
+			{
+				// We skip the generation for this schema if we bump into a schema that maps to RAW PRIMITIVE TYPE.
+			}
 			else
 			{
 				// Prepare the data for injection in the template string.
@@ -801,6 +825,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				{
 					UnrealTypeName = schemaUnrealType,
 					NamespacedTypeName = schemaNamespacedType,
+					ServiceName = serviceName,
 					PropertyIncludes = new List<string>(8),
 					UPropertyDeclarations = new List<UnrealPropertyDeclaration>(8),
 					JsonUtilsInclude = "",
@@ -825,7 +850,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// Check if this field is an poly wrapper field, or polymorphic array/map. If it is, we need to build up a new serializable type for it.
 					if (nonOverridenUnrealType.ContainsPolymorphicType())
 					{
-						var polyWrapperDecl = MakePolymorphicWrapperDeclaration(context, unrealType, nonOverridenUnrealType);
+						var polyWrapperDecl = MakePolymorphicWrapperDeclaration(context, serviceName, unrealType, nonOverridenUnrealType);
 						output.PolymorphicWrappersDeclarations.Add(polyWrapperDecl);
 					}
 
@@ -862,7 +887,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// Check if this is an optional type, if it is --- declare it. (We don't support optional arrays of poly wrappers)
 					if (unrealType.IsOptional())
 					{
-						var optionalDeclaration = MakeOptionalDeclaration(context, unrealType, nonOptionalUnrealType);
+						var optionalDeclaration = MakeOptionalDeclaration(context, serviceName, unrealType, nonOptionalUnrealType);
 
 						// Only add it if its not there already 
 						if (output.OptionalTypes.All(d => !d.UnrealTypeName.Equals(unrealType))) output.OptionalTypes.Add(optionalDeclaration);
@@ -900,7 +925,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// as such, we can find all of them by checking them against the NonOptionalUnrealType.
 					if (nonOptionalUnrealType.ContainsWrapperContainer())
 					{
-						var wrapper = MakeWrapperDeclaration(context, nonOptionalUnrealType);
+						var wrapper = MakeWrapperDeclaration(context, serviceName, nonOptionalUnrealType);
 
 						if (nonOptionalUnrealType.ContainsWrapperArray()) output.ArrayWrapperTypes.Add(wrapper);
 						if (nonOptionalUnrealType.ContainsWrapperMap()) output.MapWrapperTypes.Add(wrapper);
@@ -1218,6 +1243,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					}
 
 					unrealEndpoint.SelfUnrealType = $"U{unrealEndpoint.GlobalNamespacedEndpointName}Request*";
+					unrealEndpoint.ServiceName = serviceName;
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
@@ -1326,15 +1352,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						if (response.Content.TryGetValue("application/json", out var jsonResponse))
 						{
-							if (jsonResponse.Schema.Reference != null)
+							var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
+							// Make the new property declaration for this field.
+							var unrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
+							
+							// Check if it don't exist in the schema and if it is NOT a raw primitive type 
+							if (jsonResponse.Schema.Reference != null && !unrealType.IsRawPrimitive())
 							{
-								var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
-								var ueType = unrealEndpoint.ResponseBodyUnrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
-								unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
-								unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
+								unrealEndpoint.ResponseBodyUnrealType = unrealType;
+								unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType);
+								unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(unrealType);
 
 								// Add the response type to a list of serializable types that we'll need to declare with an additional specific interface.
-								context.UnrealTypesUsedAsResponses.Add(new TypeRequestBody { UnrealType = ueType, Type = ResponseBodyType.Json, });
+								context.UnrealTypesUsedAsResponses.Add(new TypeRequestBody { UnrealType = unrealType, Type = ResponseBodyType.Json, });
 
 								using var sw = new StringWriter();
 								var writer = new OpenApiJsonWriter(sw);
@@ -1347,13 +1377,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							}
 							else
 							{
-								var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
-
 								// Prepare the wrapper around the primitive this endpoint returns as a response payload.
 								var wrapperBody = new UnrealJsonSerializableTypeDeclaration
 								{
 									UnrealTypeName = new($"U{unrealEndpoint.GlobalNamespacedEndpointName}Response*"),
 									NamespacedTypeName = new($"{unrealEndpoint.GlobalNamespacedEndpointName}Response"),
+									ServiceName = serviceName,
 									PropertyIncludes = new List<string>(8),
 									UPropertyDeclarations = new List<UnrealPropertyDeclaration>(8),
 									JsonUtilsInclude = "",
@@ -1361,8 +1390,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									IsResponseBodyType = ResponseBodyType.PrimitiveWrapper,
 								};
 
-								// Make the new property declaration for this field.
-								var unrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
+						
 								var fieldName = "Value";
 								var propertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealType, fieldName, kSchemaGenerationBuilder);
 								var propertyDisplayName = propertyName;
@@ -1382,7 +1410,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								// Wrapper types can be directly returned from endpoints. In case this happens, we need to declare the wrapper types we found here.
 								if (unrealType.ContainsWrapperContainer())
 								{
-									var wrapper = MakeWrapperDeclaration(context, unrealType);
+									var wrapper = MakeWrapperDeclaration(context, serviceName, unrealType);
 
 									if (unrealType.ContainsWrapperArray()) output.ArrayWrapperTypes.Add(wrapper);
 									if (unrealType.ContainsWrapperMap()) output.MapWrapperTypes.Add(wrapper);
@@ -1410,6 +1438,17 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						}
 						else if (response.Content.TryGetValue("text/plain", out jsonResponse) || response.Content.Count == 0)
 						{
+							var ueType = unrealEndpoint.ResponseBodyUnrealType = UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE;
+							unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
+							unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
+
+							// We don't add this type to the list of response types as this type is NOT autogenerated.
+						}
+						else if (response.Content.TryGetValue("text/html", out jsonResponse) || response.Content.Count == 0)
+						{
+							// We currently don't treat it in the code gen, in the future we can replace it with the correct type
+							// It's just a copy from the text/plain
+							// The response is a string even thought is mark as a HTML
 							var ueType = unrealEndpoint.ResponseBodyUnrealType = UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE;
 							unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
 							unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
@@ -1468,7 +1507,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	///
 	/// It'll then handle converting that signature and generating the declaration data, including applying name overrides if they exist.
 	/// </summary>
-	private static UnrealJsonSerializableTypeDeclaration MakePolymorphicWrapperDeclaration(UEGenerationContext context, UnrealType unrealType, UnrealType nonOverridenUnrealType)
+	private static UnrealJsonSerializableTypeDeclaration MakePolymorphicWrapperDeclaration(UEGenerationContext context, string serviceName, UnrealType unrealType, UnrealType nonOverridenUnrealType)
 	{
 		UnrealType nonOverridenPolyWrapperType, overridenWrapperType;
 		if (nonOverridenUnrealType.IsPolymorphicType())
@@ -1503,6 +1542,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			UnrealTypeName = overridenWrapperType,
 			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(overridenWrapperType),
+			ServiceName = serviceName,
 			PolymorphicWrappedTypes = ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = context.PolymorphicWrappedSchemaExpectedTypeValues[s] }).ToList(),
 			UPropertyDeclarations = ptrWrappedTypes.Select(wrappedUnrealType => new UnrealPropertyDeclaration
 			{
@@ -1527,7 +1567,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	///
 	/// This function fills out a declaration that will ensure the file containing the FArrayOf|FMapOf type exists.
 	/// </summary>
-	private static UnrealWrapperContainerDeclaration MakeWrapperDeclaration(UEGenerationContext context, UnrealType nonOptionalUnrealType)
+	private static UnrealWrapperContainerDeclaration MakeWrapperDeclaration(UEGenerationContext context, string serviceName, UnrealType nonOptionalUnrealType)
 	{
 		var wrapper = new UnrealWrapperContainerDeclaration();
 		// If it's a TMap we want the second parameter, if it's an array we want the first template parameter. If its just the type, we use it.
@@ -1539,6 +1579,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		wrapper.ValueUnrealTypeName = GetWrappedUnrealTypeFromUnrealWrapperType(wrapper.UnrealTypeName);
 
 		wrapper.NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.UnrealTypeName);
+		wrapper.ServiceName = serviceName;
 		wrapper.UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(context, wrapper.UnrealTypeName);
 
 		wrapper.ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.ValueUnrealTypeName);
@@ -1552,11 +1593,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	///
 	/// This function will fill out the optional declaration as needed.
 	/// </summary>
-	private static UnrealOptionalDeclaration MakeOptionalDeclaration(UEGenerationContext context, UnrealType unrealType, UnrealType nonOptionalUnrealType)
+	private static UnrealOptionalDeclaration MakeOptionalDeclaration(UEGenerationContext context, string serviceName, UnrealType unrealType, UnrealType nonOptionalUnrealType)
 	{
 		return new UnrealOptionalDeclaration
 		{
 			UnrealTypeName = unrealType,
+			ServiceName = serviceName,
 			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
 			UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(context, unrealType),
 			ValueUnrealTypeName = nonOptionalUnrealType,
@@ -1571,8 +1613,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	///
 	/// With that unreal type and the list of possible values for the enum, it creates the declaration for it. 
 	/// </summary>
-	private static UnrealEnumDeclaration MakeEnumDeclaration(UnrealType unrealType, List<string> enumValuesNames) =>
-		new() { UnrealTypeName = unrealType, NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), EnumValues = enumValuesNames };
+	private static UnrealEnumDeclaration MakeEnumDeclaration(UnrealType unrealType, List<string> enumValuesNames, string serviceName) =>
+		new() { UnrealTypeName = unrealType, NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), EnumValues = enumValuesNames, ServiceName = serviceName};
 
 
 	/// <summary>
@@ -1689,7 +1731,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var serviceNames = parentDocInfo.Title.Split(" ");
 		serviceTitle = serviceNames.Length == 1 ? "Basic" : serviceNames[1].Sanitize().Capitalize();
 
-		serviceName = serviceNames[0].Sanitize().Capitalize();
+		string serviceNameCapitalize = serviceNames[0].Sanitize().Capitalize();
+		
+		if (!SERVICE_NAME_OVERRIDES.TryGetValue(serviceNameCapitalize, out serviceName))
+		{
+			serviceName = serviceNameCapitalize;
+		}
 	}
 
 	private static ServiceType GetServiceTypeFromDocTitle(string serviceTitle)
@@ -1942,10 +1989,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsUnrealFloat() => AsStr == UNREAL_FLOAT;
 		public bool IsUnrealDouble() => AsStr == UNREAL_DOUBLE;
 		public bool IsUnrealGuid() => AsStr == UNREAL_GUID;
+		public bool IsUnrealDateTime() => AsStr == UNREAL_DATE_TIME;
 		public bool IsUnrealString() => AsStr == UNREAL_STRING;
 
 		public bool IsNumericPrimitive() => IsUnrealByte() || IsUnrealShort() || IsUnrealInt() || IsUnrealLong() || IsUnrealFloat() || IsUnrealDouble();
 
+		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool();
+		
 		public bool IsUnrealArray() => AsStr.StartsWith(UNREAL_ARRAY);
 		public bool IsUnrealMap() => AsStr.StartsWith(UNREAL_MAP);
 		public bool IsUnrealEnum() => AsStr.StartsWith(UNREAL_U_ENUM_PREFIX);
@@ -1959,6 +2009,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsOptional() => AsStr.StartsWith(UNREAL_OPTIONAL);
 		public bool IsOptionalMap() => AsStr.StartsWith(UNREAL_OPTIONAL_MAP);
 		public bool IsOptionalArray() => AsStr.StartsWith(UNREAL_OPTIONAL_ARRAY);
+		public bool IsOptionalDateTime() => AsStr.StartsWith(UNREAL_OPTIONAL_DATE_TIME);
 		public bool IsOptionalBool() => AsStr.StartsWith(UNREAL_OPTIONAL_BOOL);
 
 		/// <summary>
@@ -2074,6 +2125,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case ("array", _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_ARRAY_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_ARRAY_STATSTYPE);
 
+	
 			case (_, _, _, _) when string.Equals(semType, "Cid", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID);
 			case (_, _, _, _) when string.Equals(semType, "Pid", StringComparison.InvariantCultureIgnoreCase):
@@ -2128,6 +2180,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					? appliedOverride
 					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenType}"));
 			}
+			case  ("object", _, "System.DateTime", _) :
+				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME);
+			case ("string", _, "System.Guid", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
 				var namespacedType = GetNamespacedTypeNameFromSchema(context, parentDoc, referenceId, isOptional, isCsvRow);
@@ -2308,6 +2364,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
 			}
+			case ("string", "date-time", _, _):
+			{
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME;
+			}
 			case ("string", "byte", _, _):
 			{
 				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_BYTE : UNREAL_BYTE;
@@ -2430,6 +2490,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		if (unrealTypeName.IsUnrealDouble())
 			return new("Double");
+		
 
 		// F"AnyTypes"/E"AnyEnums" we just remove the F's/E's
 		if (char.IsUpper(unrealTypeName.AsStr[1]) && (unrealTypeName.IsUnrealStruct() || unrealTypeName.IsUnrealEnum()))
@@ -2472,6 +2533,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			return UNREAL_STRING;
 		if (namespacedWrappedType == "Guid")
 			return UNREAL_GUID;
+		if (namespacedWrappedType == "DateTime")
+			return UNREAL_DATE_TIME;
 		if (namespacedWrappedType == "JsonObject")
 			return UNREAL_JSON;
 
@@ -2521,6 +2584,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.IsUnrealJson())
 				return @"#include ""Dom/JsonObject.h""";
+			
+			if(unrealType.IsRawPrimitive())
+				return @"#include ""Serialization/BeamJsonUtils.h""";
 			
 			if (context.ReplacementTypesIncludes.TryGetValue(unrealType, out var replacementTypeInclude))
 				return replacementTypeInclude;
@@ -2598,7 +2664,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		return "";
 
-		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString();
+		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime();
 	}
 }
 
