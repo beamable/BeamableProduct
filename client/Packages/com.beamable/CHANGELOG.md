@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+##[Unreleased]
+
+### Added
+- Helper menu option for updating Realm configuration for GPGS integration.
+- Information about already installed versions in information about missing Dotnet.
+- `Open portal for user` button in `BeamableBehaviour` inspector.
+
+### Changed
+- `AccountManagementConfiguration` no longer overrides `BEAMABLE_GPGS` define symbol.
+
+### Fixed
+- CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
+- Improved error detection for attaching identity providers in `PlayerAccounts`.
+
 ## [2.2.0] - 2025-04-04
 ### Added
 - New Implementation for CloudSavingAPI using `ICloudSavingService` as Player SDK. Accessible by `BeamContext.CloudSaving`.
