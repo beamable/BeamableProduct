@@ -7,5 +7,6 @@ namespace Beamable.Player.CloudSaving
 	public class CloudSavingManifest
 	{
 		public List<CloudSaveEntry> manifest = new();
+		public List<SavingFileEntry> savingFiles = new();
 	}
 }

@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -103,6 +104,8 @@ namespace Beamable.Player.CloudSaving
 			SetupFolders();
 
 			await LoadLocalManifest();
+
+			await ValidateSavingFiles();
 
 			await GetCloudData();
 
@@ -364,6 +367,42 @@ namespace Beamable.Player.CloudSaving
 				await BeamUnityFileUtils.ReadJsonContent(_localSaveInformation.ManifestPath,
 				                                         defaultObject: new CloudSavingManifest());
 			return PromiseBase.Unit;
+		}
+
+		private async Promise<Unit> ValidateSavingFiles()
+		{
+			if (_localManifest.savingFiles.Count == 0)
+				return PromiseBase.Unit;
+			foreach (var savingFile in _localManifest.savingFiles)
+			{
+				var tempFilePath = GetTempSavingFilePath(savingFile.FileName, savingFile.ExpectedChecksum);
+				if(!File.Exists(tempFilePath))
+					continue;
+				var fileInfo = new FileInfo(tempFilePath);
+				var fileCheckSum = GenerateFileCheckSum(fileInfo);
+				if (savingFile.ExpectedChecksum == fileCheckSum)
+				{
+					var finalFilePath = Path.Combine(_localSaveInformation.DataPath, savingFile.FileName);
+					fileInfo = MoveSavingFileToFinalDestination(tempFilePath, finalFilePath);
+					AddOrUpdateLocalManifestEntry(fileInfo);
+				}
+				else
+				{
+					BeamUnityFileUtils.ArchiveFile(tempFilePath, _localSaveInformation.ArchivePath);
+				}
+			}
+			_localManifest.savingFiles.Clear();
+			await WriteLocalManifest();
+			return PromiseBase.Unit;
+		}
+
+		private FileInfo MoveSavingFileToFinalDestination(string tempFilePath, string finalFilePath)
+		{
+			if (File.Exists(finalFilePath))
+			{
+				BeamUnityFileUtils.ArchiveFile(finalFilePath, _localSaveInformation.ArchivePath);
+			}
+			return BeamUnityFileUtils.MoveFile(tempFilePath, finalFilePath);
 		}
 
 		private async Promise<Unit> GetCloudManifest()
@@ -679,26 +718,43 @@ namespace Beamable.Player.CloudSaving
 				var exception = new Exception($"Could not do Operation, Cloud Saving Status is {ServiceStatus}");
 				return await Promise<Unit>.Failed(exception);
 			}
-
-			string filePath = Path.Combine(_localSaveInformation.DataPath, fileName);
-
+			// First save the file in the temporary folder so we don't overwrite the file
+			// This allow us to handle saving errors that the game is closed during file save and not corrupting the data
+			// For that we save the saving files to the manifest and we can check them during init
+			var fileExpectedCheckSum = GenerateCheckSum(contentData);
+			string tempFilePath = GetTempSavingFilePath(fileName, fileExpectedCheckSum);
+			string finalFilePath = Path.Combine(_localSaveInformation.DataPath, fileName);
+			
+			_localManifest.savingFiles.Add(new SavingFileEntry
+			{
+				FileName = fileName, ExpectedChecksum = fileExpectedCheckSum
+			});
+			await WriteLocalManifest();
+			
 			Promise<FileInfo> promise = contentData switch
 			{
-				string stringContent => BeamUnityFileUtils.WriteStringFile(filePath, stringContent),
-				byte[] byteContent => BeamUnityFileUtils.WriteBytesFile(filePath, byteContent),
-				_ => BeamUnityFileUtils.WriteJsonContent(filePath, contentData, _configuration.CustomSerializer)
+				string stringContent => BeamUnityFileUtils.WriteStringFile(tempFilePath, stringContent),
+				byte[] byteContent => BeamUnityFileUtils.WriteBytesFile(tempFilePath, byteContent),
+				_ => BeamUnityFileUtils.WriteJsonContent(tempFilePath, contentData, _configuration.CustomSerializer)
 			};
 
-			FileInfo fileInfo = await promise.Error(ProvideErrorCallback(nameof(BaseSaveData)));
-
+			await promise.Error(ProvideErrorCallback(nameof(BaseSaveData)));
+			var fileInfo = MoveSavingFileToFinalDestination(tempFilePath, finalFilePath);
+			
+			_localManifest.savingFiles.RemoveAll(item => item.FileName == fileName);
 			AddOrUpdateLocalManifestEntry(fileInfo);
 			if (saveLocalManifest)
 			{
-				await BeamUnityFileUtils.WriteJsonContent(_localSaveInformation.ManifestPath, _localManifest,
-				                                          prettyPrint: true);
+				await WriteLocalManifest();
 			}
-
 			return PromiseBase.Unit;
+		}
+
+		
+
+		private string GetTempSavingFilePath(string fileName, string fileExpectedCheckSum)
+		{
+			return Path.Combine(_localSaveInformation.TempFolderPath, $"{fileName}_{fileExpectedCheckSum}");
 		}
 
 		private Promise<T> BaseLoadData<T>(string fileName)
@@ -732,7 +788,7 @@ namespace Beamable.Player.CloudSaving
 			int contentLength = (int)fileInfo.Length;
 			long lastModified =
 				long.Parse(fileInfo.LastWriteTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
-			string checkSum = GenerateCheckSum(fileInfo);
+			string checkSum = GenerateFileCheckSum(fileInfo);
 
 			// Find Manifest Entries ignoring case and using invariant culture.
 			int findIndex = FindEntryFileInList(fileName, _localManifest.manifest);
@@ -755,7 +811,7 @@ namespace Beamable.Player.CloudSaving
 			return entries.FindIndex(x => string.Equals(x.key, fileName, StringComparison.InvariantCultureIgnoreCase));
 		}
 
-		private string GenerateCheckSum(FileInfo fileInfo)
+		private string GenerateFileCheckSum(FileInfo fileInfo)
 		{
 			using (var md5 = MD5.Create())
 			{
@@ -764,6 +820,27 @@ namespace Beamable.Player.CloudSaving
 				{
 					return BitConverter.ToString(md5.ComputeHash(stream)).Replace("-", string.Empty);
 				}
+			}
+		}
+
+		private string GenerateCheckSum<T>(T data)
+		{
+			byte[] inputBytes = data switch
+			{
+				string str => string.IsNullOrEmpty(str) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(str),
+				byte[] bytes => bytes,
+				_ => Encoding.UTF8.GetBytes(_configuration.CustomSerializer == null
+					                            ? JsonUtility.ToJson(data)
+					                            : _configuration.CustomSerializer(data))
+			};
+    
+			if(inputBytes.Length == 0)
+				return string.Empty;
+    
+			using (var md5 = MD5.Create())
+			{
+				byte[] hashBytes = md5.ComputeHash(inputBytes);
+				return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
 			}
 		}
 
@@ -949,8 +1026,13 @@ namespace Beamable.Player.CloudSaving
 			}
 
 			_localManifest = CloudManifest;
-			await BeamUnityFileUtils.WriteJsonContent(_localSaveInformation.ManifestPath, _localManifest,
-			                                          prettyPrint: true);
+			await WriteLocalManifest();
+		}
+		
+		private async Promise<FileInfo> WriteLocalManifest()
+		{
+			return await BeamUnityFileUtils.WriteJsonContent(_localSaveInformation.ManifestPath, _localManifest,
+			                                                 prettyPrint: true);
 		}
 
 		private void StopUpdateAndDownloadPromise()
