@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 
 namespace Beamable.Microservice.SourceGen.Fixers;
 
+/// <summary>
+/// This class is responsible for Fixing invalid microservice attribute either if it is missing or if it doesn't match BeamId
+/// The fix will appear on the IDE, allowing the user to Fix it automatically.
+/// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(InvalidMicroserviceAttributeFixer)), Shared]
 public class InvalidMicroserviceAttributeFixer : CodeFixProvider
 {

@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 
 namespace Beamable.Microservice.SourceGen.Fixers;
 
+/// <summary>
+/// This class is responsible for removing federation that exists on code but not on federations.json file.
+/// The fix will appear on the IDE, allowing the user to Fix it automatically.
+/// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FederationMissingFromSourceGenFixer)), Shared]
 public class FederationMissingFromSourceGenFixer : CodeFixProvider
 {

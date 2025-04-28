@@ -57,8 +57,10 @@ public static class Diagnostics
 		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
 		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
 		public const string MICROSERVICE_ID_INVALID_FROM_CS_PROJ_ID = "BEAM_SRV_0010";
+		public const string STATIC_FIELD_FOUND_IN_MICROSERVICE_ID = "BEAM_SRV_0011";
 
 		public const string PROP_BEAM_ID = "BeamId";
+		public const string PROP_FIELD_NAME = "FieldName";
 
 		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
 			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
@@ -145,6 +147,15 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} ID: `{{0}}` is invalid, it needs to be the same as <BeamId> csharp property (or as csproj name if none exists): `{{1}}`",
 				Category_Services,
 				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-microservice-id",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor StaticFieldFoundInMicroservice
+			= new(STATIC_FIELD_FOUND_IN_MICROSERVICE_ID,
+				$"Its not recommended to have non-readonly static field on Microservice as those field doesn't work as expected when scale horizontally",
+				$"Consider making {{0}} a readonly field. Otherwise the value may be inconsistent in production environments.",
+				Category_Services,
+				DiagnosticSeverity.Warning,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-microservice-id",
 				isEnabledByDefault: true);
 	}
