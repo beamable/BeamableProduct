@@ -68,7 +68,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <BeamBaseDownloadUrl Include="https://github.com/beamable/BeamableProduct/blob/issue/otel-cli/cli/cli/Resources/BEAM_FILE_NAME" />
+
+        <BeamBaseDownloadUrl Include="https://raw.githubusercontent.com/beamable/BeamableProduct/refs/heads/issue/otel-cli/cli/cli/Resources/BEAM_FILE_NAME" />
+
     </ItemGroup>
 
     <PropertyGroup>

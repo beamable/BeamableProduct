@@ -105,7 +105,7 @@ public class CollectorManager
 		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
 
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-		var ed = new IPEndPoint(IPAddress.Any, portNumber);
+		var ed = new IPEndPoint(IPAddress.Any, portNumber); //TODO change this to use the IP received through env var
 
 		socket.ReceiveTimeout = 10;
 		socket.ReceiveBufferSize = 4096;
@@ -211,8 +211,8 @@ public class CollectorManager
 			}
 			else
 			{
-				arguments = $"sh -c \"{fileExe} {arguments}\" &";
-				fileExe = "nohup";
+				arguments = $"--stdout --stderr -a {fileExe} --args {arguments}";
+				fileExe = "open";
 			}
 		}
 
@@ -235,7 +235,7 @@ public class CollectorManager
 		{
 			if (!string.IsNullOrEmpty(args.Data))
 			{
-				logger.ZLogInformation($"[Collector] {args.Data}");
+				//logger.ZLogInformation($"[Collector] {args.Data}");
 				sublogs += args.Data;
 				if (args.Data.Contains("Everything is ready. Begin running and processing data."))
 				{
@@ -248,17 +248,18 @@ public class CollectorManager
 		{
 			if (!string.IsNullOrEmpty(args.Data))
 			{
-				logger.ZLogInformation($"[Collector] {args.Data}");
+				//logger.ZLogInformation($"[Collector] {args.Data}");
 				result += args.Data;
 			}
 		};
 
 		logger.ZLogInformation($"Starting process...");
 		process.Start();
+
+		logger.ZLogInformation($"Collector PID: [{process.Id}]");
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 
 		await exitSignal;
-		await Task.Delay(1000);
 	}
 }

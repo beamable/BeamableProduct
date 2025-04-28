@@ -47,7 +47,7 @@ extensions:
   servicediscovery:
     host: ${env:BEAM_COLLECTOR_DISCOVERY_HOST}
     port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
-    discovery_delay: 10
+    discovery_delay: 100
 
 service:
   extensions: [servicediscovery]
