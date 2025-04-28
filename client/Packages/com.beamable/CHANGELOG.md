@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `AccountManagementConfiguration` no longer overrides `BEAMABLE_GPGS` define symbol.
+- Improved IAP Purchaser initialization flow.
 
 ### Fixed
 - CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
