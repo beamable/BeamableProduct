@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Helper menu option for updating Realm configuration for GPGS integration.
+- Information about already installed versions in information about missing Dotnet.
 - `Open portal for user` button in `BeamableBehaviour` inspector.
 
 ### Changed
