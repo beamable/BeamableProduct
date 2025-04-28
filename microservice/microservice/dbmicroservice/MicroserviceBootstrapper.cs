@@ -59,6 +59,10 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
 using Beamable.Tooling.Common;
+using Beamable.Tooling.Common.OpenAPI;
+using microservice.Common;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Extensions;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
 using RankEntry = Beamable.Common.Api.Leaderboards.RankEntry;
@@ -68,6 +72,9 @@ namespace Beamable.Server
     public static class MicroserviceBootstrapper
     {
 	    private const int MSG_SIZE_LIMIT = 1000;
+	    
+	    const string OPEN_API_SUFFIX = "_openApi.json";
+	    const string OPEN_API_FOLDER_NAME = "openApi";
 
 	    public static LoggingLevelSwitch LogLevel;
 	    public static ReflectionCache ReflectionCache;
@@ -612,8 +619,19 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+	        Type microserviceType = typeof(TMicroservice);
 	        
-	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+	        
+	        var environments = Environment.GetCommandLineArgs();
+	        
+	        // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
+	        if (environments.Contains("--generate-oapi"))
+	        {
+		        await GenerateOpenApiSpecification(microserviceType, attribute);
+		        return;
+	        }
+	        
 	        var envArgs = new EnvironmentArgs();
 
 	        _sink = ConfigureLogging(envArgs, attribute);
@@ -711,8 +729,43 @@ namespace Beamable.Server
 	        }
         }
 
+        private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
+        {
+	        var generator = new ServiceDocGenerator();
+		        
+	        var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out List<Type> _);
+		        
+	        var doc = generator.Generate(microserviceType, attribute, new AdminRoutes
+	        {
+		        MicroserviceAttribute = attribute,
+		        MicroserviceType = microserviceType
+	        }, false, extraSchemas.Select(t => t.type).ToArray());
+				
+	        var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+		       
+	        var beamableFolderPath = Environment.GetEnvironmentVariable("OPEN_API_OUTPUT_PATH") 
+	                                 ?? throw new InvalidOperationException("OPEN_API_OUTPUT_PATH environment variable not set");
+	        
+	        string directoryPath = Path.Combine(Path.GetFullPath(beamableFolderPath), OPEN_API_FOLDER_NAME);
+	        if (!Directory.Exists(directoryPath))
+	        {
+		        Directory.CreateDirectory(directoryPath);
+	        }
+
+	        
+	        await File.WriteAllTextAsync(Path.Combine(directoryPath, $"{attribute.MicroserviceName}{OPEN_API_SUFFIX}"), outputString);
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
+	        var environments = Environment.GetCommandLineArgs();
+	        // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
+	        if (environments.Contains("--generate-oapi"))
+	        {
+		        return;
+	        }
+
+
 	        BeamableSerilogProvider.LogContext.Value = Log.Logger;
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
