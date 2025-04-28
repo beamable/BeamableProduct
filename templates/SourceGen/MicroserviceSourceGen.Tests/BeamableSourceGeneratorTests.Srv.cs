@@ -325,6 +325,39 @@ build_property.BeamValidateCallableTypesExistInSharedLibraries = true
 	}
 	
 	[Fact]
+	public async Task Test_Diagnostic_Srv_NonReadonlyStaticField()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+
+	static string {|#0:TestField|} = ""Hello"";
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
+				.WithLocation(0)
+				.WithArguments("TestField"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
 	public async Task Test_CodeFixer_Srv_InvalidAsyncVoidCallableMethod()
 	{
 		const string UserCode = @"
@@ -440,6 +473,50 @@ is_global = true
 build_property.beamid = OtherBeamID
 ";
 		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Srv_NonReadonlyStaticField()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	static string {|#0:TestField|} = ""Hello"";
+}
+";
+		
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+    static readonly string TestField = ""Hello"";
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, MicroserviceNonReadonlyStaticFieldFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+		
+		ctx.TestState.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
+				.WithLocation(0)
+				.WithArguments("TestField"));
 		
 		await ctx.RunAsync();
 	}
