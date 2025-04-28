@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
 - Improved error detection for attaching identity providers in `PlayerAccounts`.
+- Fixed issue that CloudSaving could generate corrupted save files if the application was closed during saving process.
 
 ## [2.2.0] - 2025-04-04
 ### Added
