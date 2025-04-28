@@ -1,5 +1,6 @@
 Button.unity-button,
 Button {
+    min-height: 25px;
     background-image: none;
     border-radius: 3px;
     margin-bottom: 0px;
