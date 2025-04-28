@@ -167,11 +167,12 @@ namespace Beamable.Purchasing
 		/// <returns>Promise containing completed transaction.</returns>
 		public Promise<CompletedTransaction> StartPurchase(string listingSymbol, string skuSymbol)
 		{
+			var result = new Promise<CompletedTransaction>();
 			if (InitializationStatus != PurchasingInitializationStatus.Success)
 			{
-				return Promise<CompletedTransaction>.Failed(InitializationStatus.StatusToErrorCode());
+				result.CompleteError(InitializationStatus.StatusToErrorCode());
+				return result;
 			}
-			var result = new Promise<CompletedTransaction>();
 			_txid = 0;
 			_success = result.CompleteSuccess;
 			_fail = result.CompleteError;
@@ -445,7 +446,17 @@ namespace Beamable.Purchasing
 		/// </summary>
 		public string storeId;
 	}
-	
+
+	[BeamContextSystem]
+	public static class UnityBeamablePurchaserRegister
+	{
+		[RegisterBeamableDependencies]
+		public static void RegisterServices(IDependencyBuilder builder)
+		{
+			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+		}
+	}
+
 	public class UnityBeamablePurchaserUtil
 	{
 		/// <summary>
