@@ -1,3 +1,4 @@
+#if !BEAMABLE_NO_OPTIONAL_DRAWERS
 using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
@@ -72,3 +73,4 @@ namespace Beamable.Editor.Inspectors
         }
     }
 }
+#endif
