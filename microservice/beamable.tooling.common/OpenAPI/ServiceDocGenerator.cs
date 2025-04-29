@@ -106,6 +106,7 @@ public class ServiceDocGenerator
 
 		var interfaces = microserviceType.GetInterfaces();
 		var apiComponents = new OpenApiArray();
+		var v2ApiComponents = new OpenApiArray();
 
 		foreach (Type it in interfaces)
 		{
@@ -125,13 +126,21 @@ public class ServiceDocGenerator
 			var federatedType = it.GetGenericArguments()[0];
 			if (Activator.CreateInstance(federatedType) is IFederationId identity)
 			{
-				string componentName = $"{typeName}/{identity?.GetUniqueName()}";
-				apiComponents.Add(new OpenApiString(componentName));
+				string federationId = identity?.GetUniqueName();
+				apiComponents.Add(new OpenApiString($"{typeName}/{federationId}"));
+				v2ApiComponents.Add(new OpenApiObject
+				{
+					["interface"] = new OpenApiString(it.GetGenericTypeDefinition().FullName),
+					["federationId"] = new OpenApiString(federationId),
+					["federationClassName"] = new OpenApiString(federatedType.FullName),
+				});
 			}
 		}
 
 		const string federatedKey = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+		const string federatedKeyV2 = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY;
 		doc.Extensions.Add(federatedKey, apiComponents);
+		doc.Extensions.Add(federatedKeyV2, v2ApiComponents);
 
 		// We add to the list of schemas all complex types in method signatures and all extra schemas that were given to us (usually, this is any type that has BeamGenerateSchemaAttribute -- but we can pass
 		// in any serializable type here that follows microservice serialization rules).

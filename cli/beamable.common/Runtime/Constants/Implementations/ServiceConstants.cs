@@ -63,6 +63,7 @@ namespace Beamable.Common
 				public const float ROW_HEIGHT = 50;
 
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-federated-components-v2";
 
 
 				/// <summary>
