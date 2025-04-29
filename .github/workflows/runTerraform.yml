@@ -8,6 +8,7 @@ on:
         description: 'Environment'
         options:
           - main
+          - issue/otel
       apply_terraform:
         type: boolean
         description: 'Apply Terraform Changes'
