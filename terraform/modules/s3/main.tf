@@ -170,7 +170,7 @@ resource "aws_cloudfront_distribution" "collector" {
   enabled = true
 
   origin {
-    domain_name = aws_s3_bucket.otel-collector-ch.bucket.bucket_regional_domain_name
+    domain_name = aws_s3_bucket.otel-collector-ch.bucket_regional_domain_name
     origin_id   = local.s3_collector_origin_id
 
     s3_origin_config {
