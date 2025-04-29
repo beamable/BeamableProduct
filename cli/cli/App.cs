@@ -325,7 +325,9 @@ public class App
 
 		Commands.AddRootCommand<CollectorCommand>();
 		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
-		
+		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
+
 		Commands.AddRootCommand<ProjectCommand>();
 
 		Commands.AddSubCommand<OpenSolutionCommand, OpenSolutionCommandArgs, ProjectCommand>();

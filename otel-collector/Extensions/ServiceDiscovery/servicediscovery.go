@@ -31,7 +31,6 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		for logEntry := range m.logEventsChan {
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
-				fmt.Println("IVE ENTERED THE CONDITION!! HOORAY")
 				rd.Status = READY
 			}
 		}

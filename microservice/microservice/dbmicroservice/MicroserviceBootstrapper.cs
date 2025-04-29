@@ -764,15 +764,15 @@ namespace Beamable.Server
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        //TODO change this to call the CLI start collector command
 
-		        // var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-		        // if (inDocker)
-		        // {
-			        await CollectorManager.StartCollector(tokenSource, _logger);
-		        // }
-		        // else
-		        // {
-			       //  //TODO call for CLI to start the collector
-		        // }
+		        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+		        if (inDocker)
+		        {
+			        await CollectorManager.StartCollector(false, tokenSource, _logger);
+		        }
+		        else
+		        {
+			        await StartCollectorFromCLI();
+		        }
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
@@ -885,6 +885,56 @@ namespace Beamable.Server
             }
 
             await Task.Delay(-1);
+        }
+
+        private static async Task StartCollectorFromCLI()
+        {
+	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
+	        var beamProgram = GetBeamProgram();
+
+	        string arguments = $"{beamProgram} collector start";
+	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
+
+	        using var process = new Process();
+
+	        process.StartInfo.FileName = fileName;
+	        process.StartInfo.Arguments = arguments;
+	        process.StartInfo.RedirectStandardOutput = true;
+	        process.StartInfo.RedirectStandardError = true;
+	        process.StartInfo.CreateNoWindow = true;
+	        process.StartInfo.UseShellExecute = false;
+	        process.EnableRaisingEvents = true;
+	        process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+
+	        var result = "";
+	        var sublogs = "";
+	        //TODO: These events are still not working for some reason
+	        process.ErrorDataReceived += (sender, args) =>
+	        {
+		        _logger.ZLogTrace($"Start Collector (error): [{args.Data}]");
+		        if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
+	        };
+
+	        process.OutputDataReceived += (sender, args) =>
+	        {
+		        _logger.ZLogTrace($"Start Collector (log): [{args.Data}]");
+		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
+	        };
+
+	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
+	        process.Start();
+	        process.BeginOutputReadLine();
+	        process.BeginErrorReadLine();
+
+	        var exitSignal = new Promise();
+	        process.Exited += (sender, args) =>
+	        {
+		        exitSignal.CompleteSuccess();
+	        };
+
+	        await process.WaitForExitAsync();
+	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
+	        await exitSignal;
         }
     }
 }
