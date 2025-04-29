@@ -797,11 +797,25 @@ namespace Beamable.Server
 	        //var resolvedCid = await ConfigureCid(envArgs);
 	        //_args.SetResolvedCid(resolvedCid);
 
-	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        var activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        _activityProvider = activityProvider;
+	        
+	        var ctx = new DefaultAttributeContext
+	        {
+		        Attributes = new TelemetryAttributeCollection(),
+		        Args = envArgs
+	        };
+	        // TODO: allow customer to override the attributes
+
+	        // run the standard provider *AFTER* the user level stuff, so that
+	        //  standard beamable attributes overwrite conflicting user attributes.
+	        //  Ex: It is not valid for a user to override what "cid" does. 
+	        _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
+	        
 	        _resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace,
+		        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
 			        autoGenerateServiceInstanceId: false,
-			        serviceInstanceId: _activityProvider.ServiceId)
+			        serviceInstanceId: activityProvider.ServiceId)
 		        .AddAttributes(new Dictionary<string, object>()
 		        {
 			        [Otel.ATTR_CID] = envArgs.CustomerID,
