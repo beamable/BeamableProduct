@@ -240,6 +240,8 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     /// As of CLI 4, it is invalid to use MongoDB.Driver at 2.15.1.
     /// There is a security vulnerability.
     /// https://github.com/advisories/GHSA-7j9m-j397-g4wx
+    ///
+    /// As of CLI 5, it is required to be using at least 3.0.0 to support the OTEL instrumentation
     /// </summary>
     static RequiredFileEdit EnsureUsingLatestMongo(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, 
         Project project, FileCache cache)
@@ -255,16 +257,20 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
         if (versionTag == null) return null;
         
         var mongoVersion = versionTag.EvaluatedValue;
-        if (mongoVersion != "2.15.1") return null;
+        // if (mongoVersion != "2.15.1") return null;
+        if (mongoVersion.StartsWith("1") || mongoVersion.StartsWith("2"))
+        {
+            return null;
+        }
        
         var edit = new RequiredFileEdit
         {
             code = $"{beamoId}_updateMongo",
             filePath = project.FullPath,
             beamoId = beamoId,
-            title = "Upgrade Mongo Security Version",
-            description = $"The project is referencing a version of MongoDB.Diver with a known security vulnerability. It should be updated. ",
-            replacementText = "<PackageReference Include=\"MongoDB.Driver\" Version=\"2.19.2\"/>",
+            title = "Upgrade Mongo Version",
+            description = $"The project is referencing an older version of MongoDB.Diver. It must be upgraded to 3.3.0. ",
+            replacementText = "<PackageReference Include=\"MongoDB.Driver\" Version=\"3.3.0\"/>",
         };
         if (!edit.TrySetLocation(mongoPackage.Xml.Location, lineNumberToIndex, mongoPackage.Xml.OuterElement))
         {

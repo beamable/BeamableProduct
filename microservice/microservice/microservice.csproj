@@ -45,7 +45,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
     <PackageReference Include="System.Threading.RateLimiting" Version="9.0.1" />
-    <PackageReference Include="MongoDB.Driver" Version="2.19.2"/>
+    <PackageReference Include="MongoDB.Driver" Version="3.3.0"/>
 
     <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
     <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>

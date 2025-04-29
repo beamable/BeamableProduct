@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using MongoDB.Driver.Core.Extensions.DiagnosticSources;
 
 namespace Beamable.Server
 {
@@ -128,8 +129,17 @@ namespace Beamable.Server
 		private async Promise<IMongoDatabase> GetDatabaseByStorageName(string storageName)
 		{
 			var connStr = await GetConnectionString(storageName);
-			var client = new MongoClient(connStr);
 
+			var clientSettings = MongoClientSettings.FromConnectionString(connStr);
+			clientSettings.ClusterConfigurator = cb =>
+			{
+				cb.Subscribe(new DiagnosticsActivityEventSubscriber(new InstrumentationOptions
+				{
+					// TODO allow for configuration?
+				}));
+			};
+			var client = new MongoClient(clientSettings);
+			
 			var db = client.GetDatabase($"{_realmInfo.CustomerID}{_realmInfo.ProjectName}_{storageName}");
 			return db;
 		}

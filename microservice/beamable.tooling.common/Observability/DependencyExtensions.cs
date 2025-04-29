@@ -1,7 +1,7 @@
 using Beamable.Common.Dependencies;
 using Microsoft.Extensions.Logging;
 
-namespace microservice.Observability;
+namespace Beamable.Server;
 
 public static class DependencyExtensions
 {

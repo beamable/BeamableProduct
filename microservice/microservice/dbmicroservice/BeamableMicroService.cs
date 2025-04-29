@@ -30,9 +30,9 @@ using microservice.Common;
 using Newtonsoft.Json;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
-using microservice.Observability;
 using Microsoft.Extensions.Logging;
 using ZLogger;
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 #pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
@@ -116,7 +116,7 @@ namespace Beamable.Server
       private IConnection _connection;
       private Promise<IConnection> _webSocketPromise;
       private MicroserviceRequester _requester;
-      private DefaultActivityProvider _activityProvider;
+      private IActivityProvider _activityProvider;
       public SocketRequesterContext SocketContext => _socketRequesterContext;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
@@ -171,14 +171,19 @@ namespace Beamable.Server
       /// </summary>
       private bool _ranCustomUserInitializationHooks = false;
 
+
       public IServiceProvider Provider => _args.ServiceScope;
-      
+
+      public readonly string ConnectionId = Guid.NewGuid().ToString();
+      private SingletonDependencyList<ITelemetryAttributeProvider> _telemetryProviders;
+
 
       public async Task Start<TMicroService>(IMicroserviceArgs args)
          where TMicroService : Microservice
       {
          if (HasInitialized) return;
 
+       
          MicroserviceType = typeof(TMicroService);
          FederationComponents = FederatedComponentGenerator.FindFederatedComponents(MicroserviceType);
          
@@ -197,13 +202,22 @@ namespace Beamable.Server
 				builder.AddScoped(_socketRequesterContext);
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
+	         _socketRequesterContext.ActivityProvider = conf.ServiceScope.GetService<IActivityProvider>();
          });
 
-         Log.Debug(Constants.Features.Services.Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
+
+         _telemetryProviders = _args.ServiceScope.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
+         var connectionOtelTags = _telemetryProviders.CreateConnectionAttributes(_args, ConnectionId);
+         var _serviceLogScope = BeamableZLoggerProvider.LogContext.Value.BeginScope(connectionOtelTags);
+
+         
+         Log.Debug(Constants.Features.Services.Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
          RebuildRouteTable();
 
-         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
+         _activityProvider = Provider.GetService<IActivityProvider>();
+
+         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false, _activityProvider);
          _serviceShutdownTokenSource = new CancellationTokenSource();
          (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
 
@@ -216,7 +230,6 @@ namespace Beamable.Server
          var contentService = Provider.GetService<ContentService>();
          ContentApi.Instance.CompleteSuccess(contentService);
 
-         _activityProvider = Provider.GetService<DefaultActivityProvider>();
          
          // Connect and Run
          _webSocketPromise = AttemptConnection();
@@ -622,14 +635,14 @@ namespace Beamable.Server
       }
 
 
-      async Task HandlePlatformMessage(RequestContext ctx, BeamActivity parentActivity)
+      async Task HandlePlatformMessage(MicroserviceRequestContext ctx, BeamActivity activity)
       {
-	      using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_BEAM, parentActivity);
-	      activity.Start();
+	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_BEAM, parentActivity);
+	      // activity.Start();
 	      
 	      try
 	      {
-		      _socketRequesterContext.HandleMessage(ctx);
+		      _socketRequesterContext.HandleMessage(ctx, activity);
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
@@ -649,12 +662,13 @@ namespace Beamable.Server
       }
 
 
-      Microservice BuildServiceInstance(RequestContext ctx)
+      Microservice BuildServiceInstance(MicroserviceRequestContext ctx)
       {
 	      IDependencyProviderScope newScope = _args.ServiceScope.Fork(builder =>
 	      {
 		      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
 		      builder.AddScoped(ctx);
+		      builder.AddScoped<RequestContext>(ctx);
 		      builder.AddScoped(_args);
 	      });
 	      
@@ -676,16 +690,16 @@ namespace Beamable.Server
 	      return service;
       }
 
-      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity parentActivity)
+      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity)
       {
-	      using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
-		      parentActivity);
-	      activity.Start();
-	      
-
+	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
+		     //  parentActivity);
+	      // activity.Start();
 	      if (RefuseNewClientMessages)
 	      {
 		      Log.Warning("Received a message after service began draining. id={id}", ctx.Id);
+		      // TODO modify activity.
+		      activity.SetStatus(ActivityStatusCode.Error);
 		      return; // let this message die.
 	      }
 
@@ -789,10 +803,9 @@ namespace Beamable.Server
 
       async Task HandleWebsocketMessage(IConnection ws, JsonDocument document, Stopwatch sw)
       {
-	      using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS);
-
+	
 	      MicroserviceRequestContext ctx = null;
-	      using (var requestActivity = _activityProvider.Create(Constants.Features.Otel.TRACE_CONSTRUCT_CTX, activity))
+	      using (var requestActivity = _activityProvider.Create(Otel.TRACE_CONSTRUCT_CTX, importance: TelemetryImportance.VERBOSE))
 	      {
 		      if (!document.TryBuildRequestContext(_args, out ctx))
 		      {
@@ -803,41 +816,23 @@ namespace Beamable.Server
 		      requestActivity.SetStatus(ActivityStatusCode.Ok);
 	      }
 
-	      if (ctx.Headers.TryGetValue("x-datadog-parent-id", out var existingTraceId))
+	      BeamActivity parentActivity = BeamActivity.Noop;
+	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
 	      {
-		      if (ctx.Headers.TryGetValue("x-datadog-trace-id", out var existingSpanId))
-		      {
-			      // activity.SetTags(new Dictionary<string, object>
-			      // {
-				     //  ["dd.trace_id"] = existingSpanId
-			      // });
-			      //activity.SetParent(existingTraceId, existingSpanId);
-		      }
-		      //x-datadog-trace-id]=   8647374746544577818
-		      //{[x-datadog-parent-id]=7346329468965460460}
+		      parentActivity = existingListener.Activity;
 	      }
+	      
+	      
+	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
+	      MicroserviceRequester.ContextActivity.Value = activity;
+	      ctx.ActivityContext = activity;
+	      
 
-	      activity.SetTags(new Dictionary<string, object>
-	      {
-		      ["beam.request.playerId"] = ctx.UserId,
-		      ["beam.request.requestId"] = ctx.Id,
-		      ["beam.request.path"] = ctx.Path,
-		      ["beam.request.scopes"] = string.Join(",", ctx.Scopes),
-		      ["beam.request.isEvent"] = ctx.IsEvent,
-		      ["beam.request.pid"] = ctx.Pid,
-		      ["beam.request.cid"] = ctx.Cid,
-	      });
+		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(_args, ctx);
+	      activity.SetTags(extraOtelTags);
 
 	      var logger = BeamableZLoggerProvider.LogContext.Value = _args.ServiceScope.GetLogger<BeamableMicroService>();
-	      using var scope = logger.BeginScope(new Dictionary<string, object>
-	      {
-		      // TODO: allow customization
-		      ["beam.request.path"] = ctx.Path,
-		      ["beam.request.playerId"] = ctx.UserId,
-		      ["beam.request.requestId"] = ctx.Id,
-	      });
-	      // var reqLog = Log.ForContext("requestContext", ctx, true);
-	      // BeamableSerilogProvider.LogContext.Value = reqLog;
+	      using var scope = logger.BeginScope(extraOtelTags);
 	      
 	      try
 	      {
@@ -846,24 +841,16 @@ namespace Beamable.Server
 		      tokenSource.CancelAfter(TimeSpan.FromSeconds(_args.RequestCancellationTimeoutSeconds));
 		      if (_socketRequesterContext.IsPlatformMessage(ctx))
 		      {
-			      activity.AddEvent(new ActivityEvent("beam.request.typeIdentified", tags: new ActivityTagsCollection
-			      {
-				      ["beam.request.type"] = "beam"
-			      }));
 			      // the request is a platform request.
 			      await HandlePlatformMessage(ctx, activity);
 		      }
 		      else
 		      {
 			      // this is a client request. Handle the service method.
-			      activity.AddEvent(new ActivityEvent("beam.request.typeIdentified", tags: new ActivityTagsCollection
-			      {
-				      ["beam.request.type"] = "client"
-			      }));
 			      await HandleClientMessage(ctx, sw, activity);
 		      }
 
-		      activity.SetStatus(ActivityStatusCode.Ok);
+		      // activity.SetStatus(ActivityStatusCode.Ok);
 	      }
 	      finally
 	      {

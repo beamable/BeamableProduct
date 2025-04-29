@@ -26,7 +26,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The factory function to create service method instances.
 		/// </summary>
-		public Func<RequestContext, object> factory;
+		public Func<MicroserviceRequestContext, object> factory;
 
 		/// <summary>
 		/// The path prefix for the service methods.

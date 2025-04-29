@@ -50,7 +50,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
-using microservice.Observability;
+using Beamable.Common.Util;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
@@ -240,7 +240,7 @@ namespace Beamable.Server
 		        collection
 			        .AddScoped<T>()
 			        .AddSingleton(attribute)
-			        .AddSingleton(_activityProvider)
+			        .AddSingleton<IActivityProvider>(_activityProvider)
 			        .AddSingleton<ILoggerFactory>(_loggerFactory)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
@@ -263,7 +263,12 @@ namespace Beamable.Server
 				        return Instances[0].SocketContext;
 			        })
 			        .AddScoped(provider =>
-				        new MicroserviceRequester(provider.GetService<IMicroserviceArgs>(), provider.GetService<RequestContext>(), provider.GetService<SocketRequesterContext>(), true))
+				        new MicroserviceRequester(
+					        provider.GetService<IMicroserviceArgs>(), 
+					        provider.GetService<RequestContext>(), 
+					        provider.GetService<SocketRequesterContext>(), 
+					        true,
+					        provider.GetService<IActivityProvider>()))
 			        .AddScoped<IUserContext>(provider => provider.GetService<RequestContext>())
 			        .AddScoped<IMicroserviceAuthApi, ServerAuthApi>()
 			        .AddScoped<IMicroserviceStatsApi, MicroserviceStatsApi>()
@@ -320,6 +325,10 @@ namespace Beamable.Server
 				        StatsCacheFactory)
 			        .AddScoped<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
 			        .AddScoped<IBeamableServices>(ExtractSdks)
+			        
+			        // allow the DI system to get a list of all telemetry attribute providers...
+			        //  _INCLUDING_ the standard Beamable one, which should be registered _LAST_
+			        .AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
 			        ;
 		        OpenApiRegistration.RegisterOpenApis(collection);
 		        
@@ -365,6 +374,13 @@ namespace Beamable.Server
 				        throw;
 			        }
 		        }
+		        
+		        
+		        // inject services we want to configure *AFTER* the user-level. 
+		        //  these services are ones that we do not want the user to be able to override. 
+		        collection.AddSingleton(_standardBeamTelemetryAttributes);
+
+		        
 		        return collection;
 	        }
 	        catch (Exception ex)
@@ -600,18 +616,20 @@ namespace Beamable.Server
         }
 
         private static IMicroserviceArgs _args;
-        private static DefaultActivityProvider _activityProvider;
+        private static IActivityProvider _activityProvider;
         private static ResourceBuilder _resourceBuilder;
         private static ILoggerFactory _loggerFactory;
         private static DebugLogProcessor _debugLogProcessor;
         public static ILogger _logger;
+        private static readonly BeamStandardTelemetryAttributeProvider _standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
+
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
 			        .AddMeter(Otel.METER_NAME)
+			        .AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
-			        
 			        .SetResourceBuilder(_resourceBuilder)
 			        .AddOtlpExporter((c) =>
 			        {
@@ -625,6 +643,8 @@ namespace Beamable.Server
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
 			        .SetResourceBuilder(_resourceBuilder)
 			        .AddSource(Otel.METER_NAME)
+			        .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
+			        .SetSampler<TraceSampler>()
 			        .AddOtlpExporter((c) =>
 			        {
 				        c.ExportProcessorType = ExportProcessorType.Simple;
@@ -644,6 +664,14 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+
+	        var cliArgs = Environment.GetCommandLineArgs();
+	        if (cliArgs.Contains("--generate-client-please"))
+	        {
+		        // do something else
+		        Environment.Exit(0);
+	        }
+	        
 	        var envArgs = _args = new EnvironmentArgs();
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        
@@ -747,19 +775,28 @@ namespace Beamable.Server
 	        //_args.SetResolvedCid(resolvedCid);
 
 
-	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
-	        _resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace,
-			        autoGenerateServiceInstanceId: false,
-			        serviceInstanceId: _activityProvider.ServiceId)
-		        .AddAttributes(new Dictionary<string, object>()
-		        {
-			        [Otel.ATTR_CID] = envArgs.CustomerID,
-			        [Otel.ATTR_PID] = envArgs.ProjectName,
-			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
-			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
-		        });
+	        var activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        _activityProvider = activityProvider;
+	        
+	        var ctx = new DefaultAttributeContext
+	        {
+		        Attributes = new TelemetryAttributeCollection(),
+		        Args = envArgs
+	        };
+	        // TODO: allow customer to override the attributes
 
+	        // run the standard provider *AFTER* the user level stuff, so that
+	        //  standard beamable attributes overwrite conflicting user attributes.
+	        //  Ex: It is not valid for a user to override what "cid" does. 
+	        _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
+
+	        _resourceBuilder = ResourceBuilder.CreateEmpty()
+		        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
+			        autoGenerateServiceInstanceId: false,
+			        serviceInstanceId: activityProvider.ServiceId)
+		        .AddAttributes(ctx.Attributes.ToDictionary());
+	        
+	        
 
 	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: true);
         }

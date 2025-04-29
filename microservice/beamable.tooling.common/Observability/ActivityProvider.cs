@@ -7,10 +7,30 @@ using System.Threading;
 using Beamable.Common;
 using Beamable.Server;
 
-namespace microservice.Observability;
+namespace Beamable.Server;
 
 public interface IActivityProvider
 {
+    BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true,
+        TelemetryImportance importance = TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null);
+}
+
+public class NoopActivityProvider : IActivityProvider
+{
+    public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true,
+        TelemetryImportance importance = TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null)
+    {
+        return BeamActivity.Noop;
+    }
+}
+
+public static class ActivityProviderExtensions
+{
+    public static BeamActivity Create(this IActivityProvider provider, string operationName, bool autoStart = true,
+        TelemetryImportance importance = TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null)
+    {
+        return provider.Create(operationName, null, autoStart, importance, attributes);
+    }
 }
 
 public interface IActivityProviderArgs
@@ -24,15 +44,33 @@ public class BeamActivity : IDisposable
 
     public ActivityTraceId TraceId => _activity?.TraceId ?? default;
     public ActivitySpanId SpanId => _activity?.SpanId ?? default;
-    
+
+    public ActivityContext Context => _activity?.Context ?? default;
+
+    public ActivityContext Root
+    {
+        get
+        {
+            var p = _activity;
+            ActivityContext ctx = default;
+            while (p != null)
+            {
+                ctx = p.Context;
+                p = p.Parent;
+            }
+
+            return ctx;
+        }
+    }
+
     /// <summary>
     /// The activity provider returns null instances of <see cref="Activity"/>
     /// when there is no configured listener. 
     /// </summary>
     public bool IsReal => _activity != null;
-    
+
     public readonly static BeamActivity Noop = new BeamActivity(null);
-    
+
     public BeamActivity(Activity activity)
     {
         // activity CAN be null if there is no emitter. 
@@ -45,19 +83,35 @@ public class BeamActivity : IDisposable
         _activity.Start();
     }
 
-    public void SetTags(IEnumerable<KeyValuePair<string, object>> tags)
+    public void SetTags(TelemetryAttributeCollection attributes)
     {
         if (_activity == null) return;
-        foreach (var tag in tags)
+        var dict = attributes.ToDictionary();
+        foreach (var kvp in dict)
         {
-            _activity.SetTag(tag.Key, tag.Value);
+            _activity.SetTag(kvp.Key, kvp.Value);
         }
     }
 
-    public void SetTag(string tag, object value)
+    public void SetTag(TelemetryAttribute tag)
     {
         if (_activity == null) return;
-        _activity.SetTag(tag, value);
+        _activity.SetTag(tag.name, tag.type == TelemetryAttributeType.LONG ? tag.longValue : tag.stringValue);
+    }
+    
+    public bool TryGetTags(out IEnumerable<KeyValuePair<string, object>> tags)
+    {
+        tags = null;
+        if (_activity == null) return false;
+
+        tags = _activity.TagObjects;
+        return true;
+    }
+
+    public void SetDisplay(string name)
+    {
+        if (_activity == null) return;
+        _activity.DisplayName = name;
     }
 
     public void AddEvent(ActivityEvent evt)
@@ -78,12 +132,6 @@ public class BeamActivity : IDisposable
         _activity.Stop();
     }
 
-    public void SetParent(string traceId, string spanId)
-    {
-        _activity.SetParentId(ActivityTraceId.CreateFromUtf8String(Encoding.UTF8.GetBytes(traceId)),
-            ActivitySpanId.CreateFromUtf8String(Encoding.UTF8.GetBytes(spanId)));
-    }
-    
     public void Stop(ActivityStatusCode status)
     {
         if (_activity == null) return;
@@ -91,6 +139,30 @@ public class BeamActivity : IDisposable
         _activity.Stop();
     }
 
+    public void StopAndDispose(Exception ex)
+    {
+        if (_activity == null) return;
+        
+        // OTEL link for exception attributes. 
+        //  https://opentelemetry.io/docs/specs/semconv/attributes-registry/exception/
+        
+        _activity.SetStatus(ActivityStatusCode.Error);
+        _activity.SetTag("exception.type", ex.GetType().Name);
+        _activity.SetTag("exception.message", ex.Message);
+        _activity.SetTag("exception.stack", ex.StackTrace);
+
+        _activity.Stop();
+        _activity.Dispose();
+    }
+
+    public void StopAndDispose(ActivityStatusCode status)
+    {
+        if (_activity == null) return;
+        // _activity.SetStatus(status);
+        _activity.Stop();
+        _activity.Dispose();
+    }
+    
     public void Dispose()
     {
         if (_activity == null) return;
@@ -99,10 +171,9 @@ public class BeamActivity : IDisposable
     }
 }
 
-public class DefaultActivityProvider
+
+public class DefaultActivityProvider : IActivityProvider
 {
-    public AsyncLocal<BeamActivity> CurrentActivity = new AsyncLocal<BeamActivity>();
-    
     private ActivitySource _activitySource;
     private Meter _meter;
 
@@ -126,49 +197,31 @@ public class DefaultActivityProvider
         TestGauge = _meter.CreateGauge<long>("TestG");
     }
     
-    public BeamActivity Create(string operationName, bool autoStart=true)
-    {
-        // TODO: if configured not to; return a null activity
-        var activity = _activitySource.CreateActivity(operationName, ActivityKind.Server);
-       
-        var beamActivity = new BeamActivity(activity);
-        CurrentActivity.Value = beamActivity;
-        if (autoStart)
-        {
-            activity?.Start();
-        }
-        
-        return beamActivity;
-    }
-
-    public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true)
+    public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true, TelemetryImportance importance=TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null)
     {
         ActivityContext context = default;
-        if (parent.IsReal)
+        // Dictionary<string, object> tags = null;
+        if (parent?.IsReal ?? false)
         {
-            context = new ActivityContext(
-                parent.TraceId,
-                parent.SpanId,
-                ActivityTraceFlags.Recorded
-            );
+            context = parent.Context;
+            // parent.TryGetTags(out var parentTags);
+            // tags = parentTags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
-
-        return Create(operationName, context, autoStart);
-    }
-    public BeamActivity Create(string operationName, ActivityContext context, bool autoStart=true)
-    {
+        var tags = attributes?.ToDictionary() ?? new Dictionary<string, object>();
+        tags[Constants.Features.Otel.ATTR_TRACE_LEVEL] = importance;
+        
         var activity = _activitySource.CreateActivity(
             operationName, 
-            ActivityKind.Server, parentContext: context, idFormat: ActivityIdFormat.W3C);
+            ActivityKind.Server, 
+            parentContext: context, 
+            tags);
         
         var beamActivity = new BeamActivity(activity);
-        CurrentActivity.Value = beamActivity;
-        
         if (autoStart)
         {
             activity?.Start();
         }
+
         return beamActivity;
     }
-    
 }

@@ -17,7 +17,7 @@ public static class RouteTableGeneration
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
 	/// <param name="serviceFactory">A function to create instances of the microservice.</param>
 	/// <returns>A collection of service methods and associated routes.</returns>
-	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, AdminRoutes adminRoutes, Func<RequestContext, object> serviceFactory)
+	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, AdminRoutes adminRoutes, Func<MicroserviceRequestContext, object> serviceFactory)
 	{
 		var clientGenerator = new ServiceMethodProvider
 		{

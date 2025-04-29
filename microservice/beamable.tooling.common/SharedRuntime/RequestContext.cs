@@ -41,9 +41,11 @@ namespace Beamable.Server
 		/// The HTTP status code of the operation
 		/// </summary>
 		public int Status { get; }
+		
+		public BeamActivity ActivityContext { get; set; }
 
 		/// <summary>
-		/// The player id of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
+		/// The player id of the user that initiated this request. If no auth was included in this request, this access will fail with an exception. 
 		/// </summary>
 		public long UserId
 		{
@@ -53,6 +55,11 @@ namespace Beamable.Server
 				return _userId;
 			}
 		}
+
+		/// <summary>
+		/// The player id of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
+		/// </summary>
+		public long UnsafeUserId => _userId;
 
 		/// <summary>
 		/// The relative url path for the request

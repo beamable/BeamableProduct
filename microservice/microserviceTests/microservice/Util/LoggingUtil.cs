@@ -19,11 +19,10 @@ namespace microserviceTests.microservice.Util
         {
 	        BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 	        Debug.Instance = new MicroserviceDebug();
-	        // https://github.com/serilog/serilog/wiki/Configuration-Basics
-
 	        testLogs = new TestLogs();
 	        testFactory = LoggerFactory.Create(builder =>
 	        {
+		        builder.SetMinimumLevel(logLevel);
 		        builder.AddZLoggerLogProcessor(testLogs);
 	        });
 	        testLogger = testFactory.CreateLogger<TestLogs>();

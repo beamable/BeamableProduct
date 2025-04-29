@@ -5,7 +5,6 @@ using Beamable.Server;
 using Beamable.Server.Api.RealmConfig;
 using System;
 using System.Threading.Tasks;
-using microservice.Observability;
 using microserviceTests.microservice.Util;
 using Microsoft.Extensions.Logging;
 
@@ -35,9 +34,10 @@ namespace microserviceTests.microservice
 					// the activity provider will produce no-op activies unless 
 					//  the otel is _also_ set up; which for tests, we don't want
 					//  to do.
-					conf.Builder.RemoveIfExists<DefaultActivityProvider>();
-					conf.Builder.AddSingleton<DefaultActivityProvider>(p => 
-						new DefaultActivityProvider(p.GetService<IMicroserviceArgs>(), p.GetService<MicroserviceAttribute>()));
+					conf.Builder.RemoveIfExists<IActivityProvider>();
+					conf.Builder.AddSingleton<IActivityProvider, NoopActivityProvider>();
+					// conf.Builder.AddSingleton<DefaultActivityProvider>(p => 
+					// 	new DefaultActivityProvider(p.GetService<IMicroserviceArgs>(), p.GetService<MicroserviceAttribute>()));
 				}
 				{ 
 					// need to inject a custom log factory to talk to the test logs
