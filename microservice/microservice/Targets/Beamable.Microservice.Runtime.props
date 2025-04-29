@@ -66,5 +66,30 @@
             <Visible>false</Visible>
         </AdditionalFiles>
     </ItemGroup>
-    
+
+    <PropertyGroup>
+        <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>
+        <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>
+        <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>
+        <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>
+
+        <BeamCollectorConfigPath>$(MSBuildThisFileDirectory)..\collector-files\clickhouse-config.yaml</BeamCollectorConfigPath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-amd64.exe</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-arm64.exe</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-amd64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-arm64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-amd64</BeamCollectorExecutablePath>
+        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-arm64</BeamCollectorExecutablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+
+        <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>

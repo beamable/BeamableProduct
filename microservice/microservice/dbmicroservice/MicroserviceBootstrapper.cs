@@ -58,6 +58,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Threading;
 using ZLogger;
 using Beamable.Tooling.Common;
 using Constants = Beamable.Common.Constants;
@@ -680,7 +681,10 @@ namespace Beamable.Server
 	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-	        if (inDocker) return;
+	        if (inDocker)
+	        {
+		        return;
+	        }
 
 	        ConfigureRequiredProcessIdWatcher(envArgs);
 
@@ -769,21 +773,42 @@ namespace Beamable.Server
 	        {
 		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
 	        }
+        }
 
-	        envArgs = _args = new EnvironmentArgs();
+        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        {
+	        bool shouldStartStandardOtel = false;
+	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
+
+	        if (startStandardOtelEnv == "true")
+	        {
+		        shouldStartStandardOtel = true;
+	        }
+
+	        if (shouldStartStandardOtel)
+	        {
+		        _logger.ZLogInformation($"Starting otel collector discovery event...");
+		        CancellationTokenSource tokenSource = new CancellationTokenSource();
+		        await CollectorManager.StartCollector(tokenSource.Token, _logger);
+	        }
+
+	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
+	        var envArgs = _args = new EnvironmentArgs();
 	        //var resolvedCid = await ConfigureCid(envArgs);
 	        //_args.SetResolvedCid(resolvedCid);
 
-
-	        var activityProvider = new DefaultActivityProvider(envArgs, attribute);
-	        _activityProvider = activityProvider;
-	        
-	        var ctx = new DefaultAttributeContext
-	        {
-		        Attributes = new TelemetryAttributeCollection(),
-		        Args = envArgs
-	        };
-	        // TODO: allow customer to override the attributes
+	        _activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        _resourceBuilder = ResourceBuilder.CreateEmpty()
+		        .AddService(_activityProvider.ServiceName, _activityProvider.ServiceNamespace,
+			        autoGenerateServiceInstanceId: false,
+			        serviceInstanceId: _activityProvider.ServiceId)
+		        .AddAttributes(new Dictionary<string, object>()
+		        {
+			        [Otel.ATTR_CID] = envArgs.CustomerID,
+			        [Otel.ATTR_PID] = envArgs.ProjectName,
+			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
+			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
+		        });
 
 	        // run the standard provider *AFTER* the user level stuff, so that
 	        //  standard beamable attributes overwrite conflicting user attributes.
@@ -798,14 +823,10 @@ namespace Beamable.Server
 	        
 	        
 
-	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: true);
-        }
+	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true);
 
-        public static async Task Start<TMicroService>() where TMicroService : Microservice
-        {
 	        BeamableZLoggerProvider.LogContext.Value = _logger;
-	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = new EnvironmentArgs();
+
 
 	        ConfigureTelemetry(envArgs, attribute);
 
