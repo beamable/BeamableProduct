@@ -1,26 +1,27 @@
 <Project>
+    <ItemGroup>
+        <BeamBaseDownloadUrl Include="http://collectors.beamable.com/version/BEAM_VERSION/Resources/BEAM_FILE_NAME" />
+        <BeamDebugBaseDownloadUrl Include="$(MSBuildThisFileDirectory)../../Resources/BEAM_FILE_NAME" />
+    </ItemGroup>
+
     <PropertyGroup>
         <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>
         <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>
         <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>
         <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>
 
-        <BeamCollectorConfigPath>$(MSBuildThisFileDirectory)..\collector-files\clickhouse-config.yaml</BeamCollectorConfigPath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-amd64.exe</BeamCollectorExecutablePath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-windows-arm64.exe</BeamCollectorExecutablePath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-amd64</BeamCollectorExecutablePath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-linux-arm64</BeamCollectorExecutablePath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-amd64</BeamCollectorExecutablePath>
-        <BeamCollectorExecutablePath Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">$(MSBuildThisFileDirectory)..\collector-files\collector-darwin-arm64</BeamCollectorExecutablePath>
+        <BeamCollectorConfigFileName>clickhouse-config.yaml</BeamCollectorConfigFileName>
+        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorFileName>
+
+        <BeamCollectorUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamCollectorUrl>
+        <BeamCollectorConfigUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamCollectorConfigUrl>
+
+        <BeamDebugCollectorUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamDebugCollectorUrl>
+        <BeamDebugCollectorConfigUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamDebugCollectorConfigUrl>
     </PropertyGroup>
-
-    <ItemGroup>
-    <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    </ItemGroup>
 </Project>

@@ -17,7 +17,7 @@ for platform in "${platforms[@]}"; do
         output+=".exe"
     fi
     
-    echo "Building for $OS/$ARCH..."
+    echo "Building Otel Collector for $OS/$ARCH..."
     GOOS=$OS GOARCH=$ARCH go build -o ../../cli/cli/Resources/$output
 done
 

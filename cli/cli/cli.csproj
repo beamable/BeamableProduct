@@ -108,42 +108,22 @@
   </Target>
 
 
-  <!-- Add all binaries for the collector for all different supported platforms -->
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-windows-amd64.exe" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+  <ItemGroup Label="Pack Internal Beamable References: Net6.0">
+    <None Include="Targets/Beamable.Tools.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
+  </ItemGroup>
+  <ItemGroup Label="Pack Internal Beamable References: Net7.0">
+    <None Include="Targets/Beamable.Tools.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
+  </ItemGroup>
+  <ItemGroup Label="Pack Internal Beamable References: Net8.0">
+    <None Include="Targets/Beamable.Tools.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
+  </ItemGroup>
+  <ItemGroup Label="Pack Internal Beamable References: Net9.0">
+    <None Include="Targets/Beamable.Tools.Runtime.*" PackagePath="build/net9.0" Pack="True"/>
+  </ItemGroup>
 
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-windows-arm64.exe" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-linux-amd64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-linux-arm64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-darwin-amd64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\collector-darwin-arm64" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="$(MSBuildThisFileDirectory)Resources\clickhouse-config.yaml" PackagePath="build/collector-files">
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+  <ItemGroup Condition="$(PackageVersion.Contains('0.0.123'))==true">
+    <None Include="Resources/collector-*" PackagePath="Resources/" Pack="true"  />
+    <None Include="Resources/clickhouse-config.yaml" PackagePath="Resources/" Pack="true"  />
   </ItemGroup>
 
 </Project>

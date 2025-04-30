@@ -74,4 +74,9 @@
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net9.0" Pack="True"/>
   </ItemGroup>
 
+  <ItemGroup Condition="$(PackageVersion.Contains('0.0.123'))==true">
+    <None Include="../../cli/cli/Resources/collector-*" PackagePath="Resources/" Pack="true"  />
+    <None Include="../../cli/cli/Resources/clickhouse-config.yaml" PackagePath="Resources/" Pack="true"  />
+  </ItemGroup>
+
 </Project>

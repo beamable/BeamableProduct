@@ -68,9 +68,8 @@
     </ItemGroup>
 
     <ItemGroup>
-
-        <BeamBaseDownloadUrl Include="https://raw.githubusercontent.com/beamable/BeamableProduct/refs/heads/issue/otel-cli/cli/cli/Resources/BEAM_FILE_NAME" />
-
+        <BeamBaseDownloadUrl Include="http://collectors.beamable.com/version/BEAM_VERSION/Resources/BEAM_FILE_NAME" />
+        <BeamDebugBaseDownloadUrl Include="$(MSBuildThisFileDirectory)../../Resources/BEAM_FILE_NAME" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -90,5 +89,8 @@
 
         <BeamCollectorUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamCollectorUrl>
         <BeamCollectorConfigUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamCollectorConfigUrl>
+
+        <BeamDebugCollectorUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamDebugCollectorUrl>
+        <BeamDebugCollectorConfigUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamDebugCollectorConfigUrl>
     </PropertyGroup>
 </Project>
