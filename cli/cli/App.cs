@@ -50,6 +50,7 @@ using System.Reflection;
 using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.Project.Logs;
+using cli.OtelCommands;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
@@ -321,7 +322,12 @@ public class App
 		
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
-		
+
+		Commands.AddRootCommand<CollectorCommand>();
+		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
+
 		Commands.AddRootCommand<ProjectCommand>();
 
 		Commands.AddSubCommand<OpenSolutionCommand, OpenSolutionCommandArgs, ProjectCommand>();

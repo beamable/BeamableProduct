@@ -30,5 +30,19 @@
         </ItemGroup>
     </Target>
 
+    <Target Name="DownloadCollectorBinaries" BeforeTargets="Build">
+        <DownloadFile
+                SourceUrl="$(BeamCollectorUrl)"
+                DestinationFolder="$(OutputPath)">
+            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-collector" />
+        </DownloadFile>
+
+        <DownloadFile
+                SourceUrl="$(BeamCollectorConfigUrl)"
+                DestinationFolder="$(OutputPath)">
+            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-config" />
+        </DownloadFile>
+    </Target>
+
 
 </Project>

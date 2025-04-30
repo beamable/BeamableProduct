@@ -14,9 +14,14 @@ import (
 	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
+var logEventsChan = make(chan zapcore.Entry, 100)
+
 func main() {
+
 	info := component.BuildInfo{
 		Command:     "beamable-collector",
 		Description: "Beamable Otel Collector distribution",
@@ -25,7 +30,9 @@ func main() {
 
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
-		Factories: components,
+		Factories: func() (otelcol.Factories, error) {
+			return components(logEventsChan)
+		},
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				ProviderFactories: []confmap.ProviderFactory{
@@ -46,6 +53,11 @@ func main() {
     	},
 		ConverterModules: []string{
 		},
+		LoggingOptions: []zap.Option{
+            zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+                return &myInterceptingCore{core}
+            }),
+        },
 	}
 
 	if err := run(set); err != nil {
@@ -60,4 +72,20 @@ func runInteractive(params otelcol.CollectorSettings) error {
 	}
 
 	return nil
+}
+
+type myInterceptingCore struct {
+    zapcore.Core
+}
+
+func (c *myInterceptingCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+    ce = c.Core.Check(ent, ce)
+    if ce != nil {
+        select {
+        case logEventsChan <- ent:
+        default:
+            // If channel is full, drop the log to avoid blocking
+        }
+    }
+    return ce
 }

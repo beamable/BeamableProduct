@@ -17,20 +17,21 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	filelogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/beamable/BeamableProduct/servicediscovery"
+	"go.uber.org/zap/zapcore"
 )
 
-func components() (otelcol.Factories, error) {
+func components(logEventsChan <-chan zapcore.Entry) (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
-		servicediscovery.NewFactory(),
+		servicediscovery.NewFactory(logEventsChan),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
 	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
-	factories.ExtensionModules[servicediscovery.NewFactory().Type()] = "github.com/beamable/BeamableProduct/servicediscovery"
+	factories.ExtensionModules[servicediscovery.NewFactory(logEventsChan).Type()] = "github.com/beamable/BeamableProduct/servicediscovery"
 
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
