@@ -1,7 +1,7 @@
 # Beamable Custom Otel Collector
 
 Running `./build.sh` from this folder will build all binaries for the 6 supported platforms and copy
-those files to the `microservice` project inside `microservice/microservice/Resources/`.
+those files to the `cli` project inside `cli/cli/Resources/`.
 
 ## Schemas
 
