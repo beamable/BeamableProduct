@@ -22,7 +22,7 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 
 	public override async Task Handle(StartCollectorCommandArgs args)
 	{
-		AssertEnvironmentVars();
+		AssertEnvironmentVars();//TODO this requirement is just while we don't have a way to get credentials from beamo
 
 		var processId = await CollectorManager.StartCollector(true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
