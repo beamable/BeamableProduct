@@ -410,11 +410,7 @@ namespace Beamable.Editor.Content.Models
 
 				OnSelectedContentTypesChanged?.Invoke(_selectedContentTypes);
 
-				//  ******************************************************
-				//  NOTE: Every time the SelectedContentTypes is SET,
-				//        the SelectedContents is CLEARED
-				//  ******************************************************
-				ClearSelectedContents();
+				SelectedContents = SelectedContents.Where(_filteredContent.Contains).ToList();
 			}
 			get
 			{

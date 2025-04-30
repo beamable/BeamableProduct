@@ -38,7 +38,7 @@ namespace Beamable.Editor.Content.Components
 		/// <summary>
 		/// Indicates index when nothing is selected in the <see cref="ListView"/>
 		/// </summary>
-		private int NullIndex = -1;
+		private const int NullIndex = -1;
 
 		public ContentDataModel Model { get; set; }
 
@@ -78,7 +78,7 @@ namespace Beamable.Editor.Content.Components
 			_listView = CreateListView();
 			_mainVisualElement.Add(_listView);
 
-			Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
+			Model.OnSelectedContentChanged += list => UpdateListViewSelection(list.ToArray());
 			Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
 			Model.OnContentDeleted += Model_OnContentDeleted;
 			Model.OnManifestChanged += ManifestChanged;
@@ -219,7 +219,7 @@ namespace Beamable.Editor.Content.Components
 			//a click on an item does NOT call this handler - srivello
 			if (target.name.Contains("ContentViewport"))
 			{
-				SetSelectedIndexSafe(NullIndex);
+				SelectItemInInspectorWindow();
 			}
 		}
 
@@ -266,46 +266,15 @@ namespace Beamable.Editor.Content.Components
 			EditorGUIUtility.PingObject(unityObject.GetInstanceID());
 		}
 
-		/// <summary>
-		/// Set the selected <see cref="ListView"/> item like this.
-		/// This prevents an infinite UI loop.
-		/// </summary>
-		/// <param name="index"></param>
-		private void SetSelectedIndexSafe(int index)
+		private void UpdateListViewSelection(params ContentItemDescriptor[] contentItemDescriptors)
 		{
-			if (_listView.selectedIndex != index && index >= 0 && index < _listView.itemsSource.Count)
+			if (contentItemDescriptors == null || contentItemDescriptors.Length == 0)
 			{
-				_listView.selectedIndex = index;
-			}
-		}
-
-		/// <summary>
-		/// Lookup the <see cref="ContentVisualElement"/> by the <see cref="ContentItemDescriptor"/>
-		/// </summary>
-		/// <param name="contentItemDescriptor"></param>
-		/// <returns></returns>
-		private ContentVisualElement GetVisualItemByData(ContentItemDescriptor contentItemDescriptor)
-		{
-			List<VisualElement> visualElements = _listView.Children().ToList();
-
-			return (ContentVisualElement)visualElements.Find((VisualElement visualElement) =>
-			{
-				ContentVisualElement nextContentVisualElement = (ContentVisualElement)visualElement;
-				return string.Equals(nextContentVisualElement.ContentItemDescriptor?.Id, contentItemDescriptor?.Id);
-			});
-		}
-
-		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
-		{
-			var x = contentItemDescriptors.FirstOrDefault<ContentItemDescriptor>();
-
-			if (x == null)
-			{
-				SetSelectedIndexSafe(NullIndex);
+				_listView.ClearSelection();
 			}
 			else
 			{
-				SetSelectedIndexSafe(_listView.itemsSource.IndexOf(x));
+				_listView.SetSelection(contentItemDescriptors.Select(_listView.itemsSource.IndexOf));
 			}
 		}
 
@@ -316,12 +285,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void ContentVisualElement_OnRightMouseButtonClicked(ContentItemDescriptor contentItemDescriptor)
 		{
-			// Update selection to match the right clicked item
-			if (!(Model.SelectedContents?.Contains(contentItemDescriptor) ?? false))
-			{
-				var index = _listView.itemsSource.IndexOf(contentItemDescriptor);
-				SetSelectedIndexSafe(index);
-			}
+			UpdateListViewSelection(contentItemDescriptor);
 		}
 
 		private void AddCreateItemMenu(ContextualMenuPopulateEvent evt)
