@@ -79,7 +79,7 @@ public static class LogQueryParser
     {
         // var start = tokens.Advance();
 
-        var op = ParseOperation(tokens, ref logQuery, out _);
+        // var op = ParseOperation(tokens, ref logQuery, out _);
 
         throw new NotImplementedException();
         // return new LogQuery
@@ -122,276 +122,81 @@ public static class LogQueryParser
         }
     }
     
-    public static LogQueryOperation ParseOperation(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery, out bool needsFlip, int openParenCount=0 )
+    public static LogQueryOperation ParseOperation(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery)
     {
-        // every operation has a left-hand-side, an operation, and a right-hand-side. 
-        
-        // start by parsing the left, which MUST exist.
-        
-        SkipWhiteSpace(tokens);
-
-        var usedOpenParen = false;
-        needsFlip = false;
-        switch (tokens.Current.lexem)
-        {
-            // an open paren before the left value means the 
-            case LogQueryLexem.PAREN_OPEN:
-                usedOpenParen = true;
-                tokens.Advance();
-                break;
-        }
-        
-        var leftValue = ParseValue(tokens, ref logQuery);
-        IQueryValue rightValue = null;
-        
-        SkipWhiteSpace(tokens);
-
-        switch (tokens.Current.lexem)
-        {
-            // a close parent implies that the 
-            case LogQueryLexem.PAREN_CLOSE:
-                tokens.Advance();
-
-                if (usedOpenParen)
-                {
-                    // this close parent accounts for the open paren that was just used.
-                    //  this would be like if someone wrote (a) or b
-                    usedOpenParen = false;
-                }
-                else if (openParenCount > 0)
-                {
-                    // someone has written, 
-                    //  (a or b)
-                    
-                    // the next piece of parsing is the RIGHT side of the following, 
-                    //  (a or b) OP RIGHT
-                    
-                    // by default, it would be handled as 
-                    //  (a or (b OP RIGHT)
-                    //  which means we need to flip THIS right (aka, b), for 
-                    needsFlip = true;
-                }
-                else
-                {
-                    // there is a tailing close paren without any associated opening paren
-                    leftValue.Errors.Add("trailing close paren is not allowed");
-                }
-                
-                break;
-        }
-        
         SkipWhiteSpace(tokens);
         
-        // find the operation
+        // the left side MUST exist.
+        var left = ParseValue(tokens, ref logQuery);
+     
+        SkipWhiteSpace(tokens);
         if (!TryParseOperation(tokens, ref logQuery, out var opType))
         {
-            // when no operation is specified, the default is AND
             opType = LogQueryOperationType.AND;
         }
-        
         SkipWhiteSpace(tokens);
 
-        // try to find the right, which MAY exist.
+        // the right side MAY exist
         switch (tokens.Current.lexem)
         {
-            case LogQueryLexem.EOF:
-                // no right exists, so use a no-op
-                rightValue = new NoopTextValue(tokens.Current);
-                break;
-            
-            // case LogQueryLexem.PAREN_CLOSE:
-            //     // (a OR )
-            //     break;
-            //
-            
-            default:
-                // anything else is the start of a new value
-                // rightValue = ParseValue(tokens, ref logQuery);
-                var nextOpenCount = openParenCount;
-                if (usedOpenParen)
-                {
-                    nextOpenCount++;
-                }
-
-                if (needsFlip)
-                {
-                    nextOpenCount--;
-                }
-                
-                var rightOp = ParseOperation(tokens, ref logQuery, out var shouldFlip, nextOpenCount);
-                rightValue = rightOp;
-                if (shouldFlip)
-                {
-                    // a or (b and c)
-                    //  needs to become (a or b) and c
-                    
-                    // in op-lingo, 
-                    //  op(a or op(b and op(c and noop))) 
-                    //  op(op(a or b) and op(c and noop)))
-                    var oldLeft = leftValue;
-                    leftValue = new LogQueryOperation
-                    {
-                        Left = oldLeft,
-                        Right = rightOp.Left,
-                        Operation = opType,
-                        Errors = leftValue.Errors
-                    };
-                    opType = rightOp.Operation;
-                    rightValue = rightOp.Right;
-                }
-
-                for (var i = 0; i < nextOpenCount - 1; i++)
-                {
-                    // need to find the close parens...
-                    
-                }
-                break;
-        }
-        
-        return new LogQueryOperation
-        {
-            Left = leftValue,
-            Right = rightValue,
-            Operation = opType
-        };
-    }
-    
-    
-    public static LogQueryOperation ParseOperation2(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery, out bool needsFlip, int openParenCount=0 )
-    {
-        // every operation has a left-hand-side, an operation, and a right-hand-side. 
-        
-        // start by parsing the left, which MUST exist.
-        
-        SkipWhiteSpace(tokens);
-
-        var usedOpenParen = false;
-        needsFlip = false;
-        switch (tokens.Current.lexem)
-        {
-            // an open paren before the left value means the 
-            case LogQueryLexem.PAREN_OPEN:
-                usedOpenParen = true;
-                tokens.Advance();
-                break;
-        }
-        
-        var leftValue = ParseValue(tokens, ref logQuery);
-        IQueryValue rightValue = null;
-        
-        SkipWhiteSpace(tokens);
-
-        switch (tokens.Current.lexem)
-        {
-            // a close parent implies that the 
             case LogQueryLexem.PAREN_CLOSE:
-                tokens.Advance();
-
-                if (usedOpenParen)
-                {
-                    // this close parent accounts for the open paren that was just used.
-                    //  this would be like if someone wrote (a) or b
-                    usedOpenParen = false;
-                }
-                else if (openParenCount > 0)
-                {
-                    // someone has written, 
-                    //  (a or b)
-                    
-                    // the next piece of parsing is the RIGHT side of the following, 
-                    //  (a or b) OP RIGHT
-                    
-                    // by default, it would be handled as 
-                    //  (a or (b OP RIGHT)
-                    //  which means we need to flip THIS right (aka, b), for 
-                    needsFlip = true;
-                }
-                else
-                {
-                    // there is a tailing close paren without any associated opening paren
-                    leftValue.Errors.Add("trailing close paren is not allowed");
-                }
-                
-                break;
-        }
-        
-        SkipWhiteSpace(tokens);
-        
-        // find the operation
-        if (!TryParseOperation(tokens, ref logQuery, out var opType))
-        {
-            // when no operation is specified, the default is AND
-            opType = LogQueryOperationType.AND;
-        }
-        
-        SkipWhiteSpace(tokens);
-
-        // try to find the right, which MAY exist.
-        switch (tokens.Current.lexem)
-        {
             case LogQueryLexem.EOF:
-                // no right exists, so use a no-op
-                rightValue = new NoopTextValue(tokens.Current);
+                
+                return new LogQueryOperation
+                {
+                    Left = left,
+                    Right = new NoopTextValue(tokens.Current),
+                    Operation = opType
+                };
                 break;
-            
-            // case LogQueryLexem.PAREN_CLOSE:
-            //     // (a OR )
-            //     break;
-            //
             
             default:
-                // anything else is the start of a new value
-                // rightValue = ParseValue(tokens, ref logQuery);
-                var nextOpenCount = openParenCount;
-                if (usedOpenParen)
-                {
-                    nextOpenCount++;
-                }
+                var right = ParseOperation(tokens, ref logQuery);
 
-                if (needsFlip)
+                if (right.IsUnary)
                 {
-                    nextOpenCount--;
+                    return new LogQueryOperation
+                    {
+                        Left = left,
+                        Right = right.Left,
+                        Operation = opType
+                    };
                 }
                 
-                var rightOp = ParseOperation2(tokens, ref logQuery, out var shouldFlip, nextOpenCount);
-                rightValue = rightOp;
-                if (shouldFlip)
+                return new LogQueryOperation
                 {
-                    // a or (b and c)
-                    //  needs to become (a or b) and c
-                    
-                    // in op-lingo, 
-                    //  op(a or op(b and op(c and noop))) 
-                    //  op(op(a or b) and op(c and noop)))
-                    var oldLeft = leftValue;
-                    leftValue = new LogQueryOperation
-                    {
-                        Left = oldLeft,
-                        Right = rightOp.Left,
-                        Operation = opType,
-                        Errors = leftValue.Errors
-                    };
-                    opType = rightOp.Operation;
-                    rightValue = rightOp.Right;
-                }
-
-                for (var i = 0; i < nextOpenCount - 1; i++)
-                {
-                    // need to find the close parens...
-                    // (( a ))
-                }
-                break;
+                    Left = left,
+                    Right = right,
+                    Operation = opType
+                };
         }
-        
-        return new LogQueryOperation
-        {
-            Left = leftValue,
-            Right = rightValue,
-            Operation = opType
-        };
+
     }
+
     public static IQueryValue ParseValue(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery)
     {
+
+        switch (tokens.Current.lexem)
+        {
+            case LogQueryLexem.PAREN_OPEN:
+                tokens.Advance();
+                var op = ParseOperation(tokens, ref logQuery);
+
+                // expect that a closing paren must follow
+                if (tokens.Current.lexem == LogQueryLexem.PAREN_CLOSE)
+                {
+                    tokens.Advance(); // good!
+                }
+                else
+                {
+                    op.Errors.Add("expected a closing paren");
+                }
+                
+                return op;
+            default:
+                break;
+        }
+        
         var term = ParseValueTerm(tokens, ref logQuery);
 
         List<IQueryValue> additionalTerms = null;

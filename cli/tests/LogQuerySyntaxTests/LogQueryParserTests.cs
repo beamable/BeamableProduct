@@ -63,21 +63,28 @@ public class LogQueryParserTests
         Assert.AreEqual(expected, dbg, $"was actually\n{dbg}");
     }
 
-    [TestCase("*hello or world*", "op (comp (wild, lit (hello)) OR op (comp (lit (world), wild)))")]
+    [TestCase("service:tuna", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
+    [TestCase("*hello or world*", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
     [TestCase("hello", "op (lit (hello))")]
-    [TestCase("hello or toast", "op (lit (hello) OR op (lit (toast)))")]
+    [TestCase("(hello)", "op (op (lit (hello)))")]
+    [TestCase("((hello))", "op (op (op (lit (hello))))")]
+    [TestCase("(((hello)))", "op (op (op (op (lit (hello)))))")]
+    [TestCase("hello or toast", "op (lit (hello) OR lit (toast))")]
     [TestCase("hello and", "op (lit (hello))")]
-    [TestCase("(a or (b and c)) or d", "op (lit (a) OR op (op (lit (b) AND lit (c)) OR op (lit (d))))")]
-    [TestCase("a or (b and c) or d", "op (lit (a) OR op (op (lit (b) AND lit (c)) OR op (lit (d))))")]
-    [TestCase("goodbye or cruel and world", "op (lit (goodbye) OR op (lit (cruel) AND op (lit (world))))")]
-    [TestCase("goodbye or (cruel) and world", "op (lit (goodbye) OR op (lit (cruel) AND op (lit (world))))")]
-    [TestCase("goodbye or (cruel and world)", "op (lit (goodbye) OR op (op (lit (cruel) AND lit (world))))")]
-    [TestCase("(goodbye or cruel) and world", "op (op (lit (goodbye) OR lit (cruel)) AND op (lit (world)))")]
+    [TestCase("(a or (b and c)) or d", "op (op (lit (a) OR op (lit (b) AND lit (c))) OR lit (d))")]
+    [TestCase("a or (b and c) or d", "op (lit (a) OR op (op (lit (b) AND lit (c)) OR lit (d)))")]
+    
+    [TestCase("goodbye or cruel and world", "op (lit (goodbye) OR op (lit (cruel) AND lit (world)))")]
+    [TestCase("goodbye or (cruel) and world", "op (lit (goodbye) OR op (op (lit (cruel)) AND lit (world)))")]
+    [TestCase("goodbye or (cruel and world)", "op (lit (goodbye) OR op (lit (cruel) AND lit (world)))")]
+    [TestCase("(goodbye or cruel) and world", "op (op (lit (goodbye) OR lit (cruel)) AND lit (world))")]
+    
+    [TestCase("(\"tuna ) fish\" or salad) and \"bean ( soup\"", "op (op (lit (tuna ) fish) OR lit (salad)) AND lit (bean ( soup))")]
     public void ParseOperation(string queryText, string expected)
     {
         ReadOnlySpan<char> query = queryText;
         var tokens = LogQueryParser.Tokenize(ref query);
-        var value = LogQueryParser.ParseOperation(tokens, ref query, out _);
+        var value = LogQueryParser.ParseOperation(tokens, ref query);
         var dbg = value.DebugRender();
 
         var errors = value.GetAllErrors();
