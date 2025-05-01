@@ -51,12 +51,23 @@ public class CollectorManager
 	public const int ReceiveTimeout = 10;
 	public const int ReceiveBufferSize = 4096;
 
-	private const string configFileName = "clickhouse-config.yaml";
+	public static string CollectorDownloadUrl =
+		"https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME";
+
+	public static string configFileName = "clickhouse-config.yaml";
 	private const int attemptsToConnect = 10;
 	private const int attemptsBeforeFailing = 10;
 	private const int delayBeforeNewAttempt = 500;
 
 	public static string GetCollectorExecutablePath()
+	{
+		var collectorFileName = GetCollectorName();
+		var collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, collectorFileName);
+
+		return collectorFilePath;
+	}
+
+	public static string GetCollectorName()
 	{
 		var osArchSuffix = "";
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -100,20 +111,7 @@ public class CollectorManager
 		}
 
 		var collectorFileName = $"collector-{osArchSuffix}";
-		var collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, collectorFileName);
-
-		if (File.Exists(collectorFilePath))
-		{
-			return collectorFilePath;
-		}
-
-		collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", collectorFileName);
-		if (File.Exists(collectorFilePath))
-		{
-			return collectorFilePath;
-		}
-
-		throw new Exception("Collector executable was not found.");
+		return collectorFileName;
 	}
 
 	public static Socket GetSocket(string host, int portNumber)
@@ -265,6 +263,13 @@ public class CollectorManager
 	public static async Task StartCollectorProcess(bool detach, ILogger logger, CancellationTokenSource cts)
 	{
 		var collectorExecutablePath = GetCollectorExecutablePath();
+		logger.ZLogInformation($"Using Collector Executable Path: [{collectorExecutablePath}]");
+
+		if (!File.Exists(collectorExecutablePath))
+		{
+			throw new Exception($"Collector binary not found at: {collectorExecutablePath}");
+		}
+
 		var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
 
 		if (!File.Exists(configPath))

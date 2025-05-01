@@ -31,27 +31,40 @@
     </Target>
 
     <Target Name="DownloadCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==false">
+
         <Message Importance="high" Text="Downloading collector binaries from cloud..."/>
 
+        <CreateProperty Value="$(BeamCollectorUrl)">
+            <Output TaskParameter="Value" PropertyName="BeamUrlBin" />
+        </CreateProperty>
+
+        <CreateProperty Value="$(BeamCollectorConfigUrl)">
+            <Output TaskParameter="Value" PropertyName="BeamUrlConfig" />
+        </CreateProperty>
+
+        <Message Importance="normal" Text="BeamUrlBin $(BeamUrlBin)"/>
+        <Message Importance="normal" Text="BeamCollectorUrl $(BeamUrlConfig)"/>
+
         <PropertyGroup>
-            <BeamCollectorUrl>@(BeamCollectorUrl->Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamCollectorUrl>
+            <BeamUrlBin>$(BeamUrlBin.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlBin>
+            <BeamUrlConfig>$(BeamUrlConfig.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlConfig>
         </PropertyGroup>
 
         <DownloadFile
-                SourceUrl="$(BeamCollectorUrl)"
+                SourceUrl="$(BeamUrlBin)"
                 DestinationFolder="$(OutputPath)">
             <Output TaskParameter="DownloadedFile" ItemName="clickhouse-collector" />
         </DownloadFile>
 
         <DownloadFile
-                SourceUrl="$(BeamCollectorConfigUrl)"
+                SourceUrl="$(BeamUrlConfig)"
                 DestinationFolder="$(OutputPath)">
             <Output TaskParameter="DownloadedFile" ItemName="clickhouse-config" />
         </DownloadFile>
     </Target>
 
     <Target Name="DownloadDebugCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==true">
-        <Message Importance="high" Text="Downloading collector binaries from local source..."/>
+        <Message Importance="high" Text="[Microservice] Downloading collector binaries from local source..."/>
 
         <ItemGroup>
             <BeamDebugCollectorFile Include="$(BeamDebugCollectorUrl)">
