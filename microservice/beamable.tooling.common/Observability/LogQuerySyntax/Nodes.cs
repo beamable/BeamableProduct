@@ -153,14 +153,14 @@ public class NoopQueryPhrase : BaseLogNode, IQueryPhrase
 
 public class LogQueryPhrase : BaseLogNode, IQueryPhrase
 {
-    public IQueryType Left;
+    public IQueryValue Left;
     public IQueryValue Right;
     
     public override void DebugRender(StringBuilder sb)
     {
         sb.Append("phrase (");
         Left.DebugRender(sb);
-        sb.Append(":");
+        sb.Append(" : ");
         Right.DebugRender(sb);
         sb.Append(")");
     }
@@ -175,6 +175,22 @@ public class LogQueryPhrase : BaseLogNode, IQueryPhrase
 public interface IQueryType : ILogNode
 {
     
+}
+
+public class QueryType : BaseLogNode, IQueryType
+{
+    public LiteralTextValue content;
+    public override void DebugRender(StringBuilder sb)
+    {
+        sb.Append("type (");
+        content.DebugRender(sb);
+        sb.Append(")");
+    }
+
+    public override IEnumerable<ILogNode> EnumerateChildren()
+    {
+        yield return content;
+    }
 }
 
 public interface IQueryValue : ILogNode

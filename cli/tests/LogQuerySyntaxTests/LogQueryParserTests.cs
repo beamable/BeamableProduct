@@ -63,7 +63,6 @@ public class LogQueryParserTests
         Assert.AreEqual(expected, dbg, $"was actually\n{dbg}");
     }
 
-    [TestCase("service:tuna", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
     [TestCase("*hello or world*", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
     [TestCase("hello", "op (lit (hello))")]
     [TestCase("(hello)", "op (op (lit (hello)))")]
@@ -85,6 +84,21 @@ public class LogQueryParserTests
         ReadOnlySpan<char> query = queryText;
         var tokens = LogQueryParser.Tokenize(ref query);
         var value = LogQueryParser.ParseOperation(tokens, ref query);
+        var dbg = value.DebugRender();
+
+        var errors = value.GetAllErrors();
+        Assert.That(errors.Count, Is.Zero, $"parse errors, \n {string.Join(" \n", errors)}");
+        
+        Assert.AreEqual(expected, dbg, $"was actually\n{dbg}");
+    }
+    
+    [TestCase("service:tuna", "phrase (lit (service) : op (lit (tuna)))")]
+    [TestCase("service:tuna and b:c", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
+    public void ParsePhrase(string queryText, string expected)
+    {
+        ReadOnlySpan<char> query = queryText;
+        var tokens = LogQueryParser.Tokenize(ref query);
+        var value = LogQueryParser.ParsePhrase(tokens, ref query);
         var dbg = value.DebugRender();
 
         var errors = value.GetAllErrors();

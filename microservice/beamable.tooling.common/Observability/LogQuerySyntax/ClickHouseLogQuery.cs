@@ -173,6 +173,31 @@ public static class LogQueryParser
 
     }
 
+    public static IQueryPhrase ParsePhrase(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery)
+    {
+        var left = ParseValue(tokens, ref logQuery);
+
+        switch (tokens.Current.lexem)
+        {
+            case LogQueryLexem.COLON:
+                tokens.Advance(); // consume
+
+                var right = ParseOperation(tokens, ref logQuery);
+                return new LogQueryPhrase
+                {
+                    Left = left,
+                    Right = right
+                };
+                break;
+        }
+
+        return new LogQueryPhrase
+        {
+            Left = new NoopTextValue(tokens.Current),
+            Right = left
+        };
+    }
+
     public static IQueryValue ParseValue(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery)
     {
 
