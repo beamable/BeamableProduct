@@ -68,7 +68,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <BeamBaseDownloadUrl Include="http://collectors.beamable.com/version/BEAM_VERSION/Resources/BEAM_FILE_NAME" />
+        <BeamBaseDownloadUrl Include="https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME" />
         <BeamDebugBaseDownloadUrl Include="$(MSBuildThisFileDirectory)../../Resources/BEAM_FILE_NAME" />
     </ItemGroup>
 

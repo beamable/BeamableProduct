@@ -790,7 +790,6 @@ namespace Beamable.Server
 	        {
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        //TODO change this to call the CLI start collector command
 
 		        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 		        if (inDocker)
@@ -946,7 +945,7 @@ namespace Beamable.Server
 	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
 	        var beamProgram = GetBeamProgram();
 
-	        string arguments = $"{beamProgram} collector start";
+	        string arguments = $"{beamProgram} collector start --logs v";
 	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 
 	        using var process = new Process();
