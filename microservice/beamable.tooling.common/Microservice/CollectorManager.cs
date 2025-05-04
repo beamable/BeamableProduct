@@ -4,10 +4,13 @@ using microservice.Extensions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using Beamable.Common.Util;
+using Beamable.Server;
 using ZLogger;
 
 namespace cli.Services;
@@ -17,6 +20,12 @@ public class CollectorDiscoveryEntry
 {
 	public int pid;
 	public string status;
+}
+
+public class CollectorInfo
+{
+	public string filePath;
+	public string configFilePath;
 }
 
 public class CollectorStatus
@@ -51,9 +60,19 @@ public class CollectorManager
 	public const int ReceiveTimeout = 10;
 	public const int ReceiveBufferSize = 4096;
 
+
+	private const string KEY_VERSION = "BEAM_VERSION";
+	private const string KEY_FILE = "BEAM_FILE_NAME";
+
+	private const string COLLECTOR_DOWNLOAD_URL_TEMPLATE =
+		"https://collectors.beamable.com/version/" + KEY_VERSION + "/" + KEY_FILE;
+	
 	public static string CollectorDownloadUrl =
 		"https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME";
 
+	
+	
+	
 	public static string configFileName = "clickhouse-config.yaml";
 	private const int attemptsToConnect = 10;
 	private const int attemptsBeforeFailing = 10;
@@ -67,12 +86,30 @@ public class CollectorManager
 		return collectorFilePath;
 	}
 
-	public static string GetCollectorName()
+	public static OSPlatform GetCurrentPlatform()
 	{
-		var osArchSuffix = "";
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			switch (RuntimeInformation.OSArchitecture)
+			return OSPlatform.Windows;
+		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+		{
+			return OSPlatform.OSX;
+		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			return OSPlatform.Linux;
+		}
+		else
+		{
+			throw new NotImplementedException("Unknown OS Platform");
+		}
+	}
+	
+	public static string GetCollectorName(OSPlatform platform, Architecture arch)
+	{
+		var osArchSuffix = "";
+		if (platform == OSPlatform.Windows)
+		{
+			switch (arch)
 			{
 				case Architecture.X64:
 					osArchSuffix = "windows-amd64.exe";
@@ -81,9 +118,9 @@ public class CollectorManager
 					osArchSuffix = "windows-arm64.exe";
 					break;
 			}
-		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+		}else if (platform == OSPlatform.OSX)
 		{
-			switch (RuntimeInformation.OSArchitecture)
+			switch (arch)
 			{
 				case Architecture.X64:
 					osArchSuffix = "darwin-amd64";
@@ -92,9 +129,9 @@ public class CollectorManager
 					osArchSuffix = "darwin-arm64";
 					break;
 			}
-		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		} else if (platform == OSPlatform.Linux)
 		{
-			switch (RuntimeInformation.OSArchitecture)
+			switch (arch)
 			{
 				case Architecture.X64:
 					osArchSuffix = "linux-amd64";
@@ -114,6 +151,127 @@ public class CollectorManager
 		return collectorFileName;
 	}
 
+	public static string GetCollectorName()
+	{
+		var platform = GetCurrentPlatform();
+		var arch = RuntimeInformation.OSArchitecture;
+		return GetCollectorName(platform, arch);
+	}
+
+	public static string GetCollectorBasePathForCli()
+	{
+		/*
+		 * there are several common cases,
+		 * 1. this is the production CLI, like 5.0.0,
+		 * 2. this is the local CLI, like 0.0.123.x
+		 * 3. this is a test CLI, like 0.0.0 (when running from Rider, or Unit Test)
+		 * 4. this is a local dev Microservice , like 0.0.123.x
+		 * 5. this is a local prod Microservice, like 5.0.0
+		 * 6. this is a deployed dev Microservice, like 0.0.123.x
+		 * 7. this is a deployed prod Microservice, like 5.0.0
+		 *
+		 * ( the cases where the C#MS is local, but running in Docker, are treated as though they are deployed )
+		 * 
+		 * the dimensions are,
+		 * - CLI / Microservice
+		 * - VERSION (0.0.0, 0.0.123.x, 1+.0.0)
+		 * - DOCKER (yes, no)
+		 *
+		 * Here are some true facts, 
+		 * - When we are in the CLI, we can freely download a collector if it does not exist.
+		 * - When we are 0.0.0 or 0.0.123, we can expect that the collectors have been built as part of the dev cycle.
+		 * - When we are in 1+.0.0, we must use the collectors from the CDN
+		 * - We should always use a local file first instead of downloading it.
+		 * 
+		 * With that said, I think the guiding light is that,
+		 * - 
+		 * 
+		 */
+
+		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+		
+		if (version.StartsWith("0.0") || version == "1.0.0")
+		{
+			// if the version looks like a local dev version, then 
+			//  force the version to be THE local dev version
+			version = "0.0.123";
+		}
+		
+		string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+		var root = Path.Combine(localAppData, "beam", "collectors", version);
+		return root;
+	}
+
+	public static async Task<CollectorInfo> ResolveCollector(
+		string absBasePath,
+		bool allowDownload)
+	{
+		return await ResolveCollector(absBasePath, allowDownload, GetCurrentPlatform(), RuntimeInformation.OSArchitecture);
+	}
+	
+	public static async Task<CollectorInfo> ResolveCollector(
+		string absBasePath, 
+		bool allowDownload,
+		OSPlatform platform, 
+		Architecture arch)
+	{
+		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+		
+		var collectorName = GetCollectorName(platform, arch);
+		var collectorPath = Path.Combine(absBasePath, collectorName);
+		var configPath = Path.Combine(absBasePath, configFileName);
+
+		var itemsToDownload = new List<(string url, string filePath)>();
+		
+		if (!File.Exists(collectorPath) && allowDownload)
+		{
+			var collectorUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
+				.Replace(KEY_VERSION, version)
+				.Replace(KEY_FILE, collectorName + ".gz");
+			
+			itemsToDownload.Add(new (collectorUrl, collectorPath));
+		}
+
+		if (!File.Exists(configPath) && allowDownload)
+		{
+			var configUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
+				.Replace(KEY_VERSION, version)
+				.Replace(KEY_FILE, configFileName + ".gz");
+			itemsToDownload.Add(new (configUrl, configPath));
+		}
+
+		if (itemsToDownload.Count > 0)
+		{
+			var httpClient = new HttpClient();
+			var tasks = itemsToDownload
+				.Select(d => DownloadAndDecompressGzip(httpClient, d.url, d.filePath))
+				.ToList();
+			foreach (var t in tasks)
+			{
+				await t;
+			}
+		}
+
+		return new CollectorInfo
+		{
+			configFilePath = File.Exists(configPath) ? configPath : null,
+			filePath = File.Exists(collectorPath) ? collectorPath : null
+		};
+	}
+	
+	private static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath)
+	{
+		Log.Information($"Downloading {url} to {outputPath}");
+		using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+		response.EnsureSuccessStatusCode();
+
+		using var responseStream = await response.Content.ReadAsStreamAsync();
+		using var gzipStream = new GZipStream(responseStream, CompressionMode.Decompress);
+		using var outputFileStream = File.Create(outputPath);
+
+		await gzipStream.CopyToAsync(outputFileStream);
+	}
+	
 	public static Socket GetSocket(string host, int portNumber)
 	{
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);

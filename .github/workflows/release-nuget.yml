@@ -96,7 +96,7 @@ jobs:
       - name: Build Otel Collector
         working-directory: ./otel-collector
         run: |
-          bash ./build.sh
+          BUILD_OUTPUT="$GITHUB_WORKSPACE/collector-bin" bash ./build.sh
 
       - name: Install CLI
         working-directory: ./
@@ -149,11 +149,15 @@ jobs:
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
 
+      - name: Compress Collector Files
+        working-directory: "$GITHUB_WORKSPACE/collector-bin"
+        run: find . -type f ! -name '*.gz' -exec gzip -k -9 {} \;
+
       # Push the collector builds to s3 so that they can be downloaded by distros later
       - name: Upload Collector to S3
-        working-directory: ./cli/cli/Resources
+        working-directory: "$GITHUB_WORKSPACE/collector-bin"
         run: |
-          AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.VERSION }} --acl public-read
+          AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.VERSION }}  --exclude "*" --include "*.gz" --acl public-read
       
       # Invalidate the CDN for collector builds
       - name: Prepare Cloudfront Invalidation 

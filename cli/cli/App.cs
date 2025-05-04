@@ -49,8 +49,10 @@ using System.Diagnostics;
 using System.Reflection;
 using Beamable.Tooling.Common;
 using cli.CheckCommands;
+using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
 using cli.OtelCommands;
+using cli.OtelCommands.Grafana;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
@@ -327,6 +329,12 @@ public class App
 		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
+
+		Commands.AddRootCommand<GrafanaCommand>();
+		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
+		Commands.AddSubCommand<CheckGrafanaCommand, CheckGrafanaCommandArgs, GrafanaCommand>();
+		Commands.AddSubCommand<StopGrafanaCommand, StopGrafanaCommandArgs, GrafanaCommand>();
+
 
 		Commands.AddRootCommand<ProjectCommand>();
 
