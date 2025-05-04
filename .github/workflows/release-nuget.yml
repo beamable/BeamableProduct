@@ -96,7 +96,7 @@ jobs:
       - name: Build Otel Collector
         working-directory: ./otel-collector
         run: |
-          BUILD_OUTPUT="$(pwd)/../otel-bin" bash ./build.sh
+          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
 
       - name: Install CLI
         working-directory: ./
