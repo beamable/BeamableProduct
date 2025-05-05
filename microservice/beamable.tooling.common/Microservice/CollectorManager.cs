@@ -264,6 +264,8 @@ public class CollectorManager
 	private static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath)
 	{
 		Log.Information($"Downloading {url} to {outputPath}");
+		var folder = Path.GetDirectoryName(outputPath);
+		Directory.CreateDirectory(folder);
 		using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 		response.EnsureSuccessStatusCode();
 
