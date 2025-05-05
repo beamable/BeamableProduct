@@ -5,6 +5,7 @@ using cli.Utils;
 using CliWrap;
 
 namespace cli.OtelCommands;
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 public class StartGrafanaCommandArgs : CommandArgs
 {
@@ -28,10 +29,14 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
 
     public override async Task<StartGrafanaCommandResults> GetResult(StartGrafanaCommandArgs args)
     {
-        await StartGrafanaContainer(args.DependencyProvider, new ClickhouseConnectionStrings
+        var env = new ClickhouseConnectionStrings
         {
-            // TODO: enter these manually...
-        });
+            Host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_HOST),
+            UserName = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME),
+            Password = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD),
+        };
+        
+        await StartGrafanaContainer(args.DependencyProvider, env);
 
         return new StartGrafanaCommandResults();
     }
