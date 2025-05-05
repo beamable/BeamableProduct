@@ -74,11 +74,10 @@ namespace Beamable.Editor.Content.Components
 
 			EditorApplication.delayCall += () => { _headerVisualElement.EmitFlexValues(); };
 
-			//List
 			_listView = CreateListView();
 			_mainVisualElement.Add(_listView);
 
-			Model.OnSelectedContentChanged += list => UpdateListViewSelection(list.ToArray());
+			Model.OnSelectedContentChanged += UpdateListViewSelection;
 			Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
 			Model.OnContentDeleted += Model_OnContentDeleted;
 			Model.OnManifestChanged += ManifestChanged;
@@ -266,9 +265,9 @@ namespace Beamable.Editor.Content.Components
 			EditorGUIUtility.PingObject(unityObject.GetInstanceID());
 		}
 
-		private void UpdateListViewSelection(params ContentItemDescriptor[] contentItemDescriptors)
+		private void UpdateListViewSelection(IList<ContentItemDescriptor> contentItemDescriptors)
 		{
-			if (contentItemDescriptors == null || contentItemDescriptors.Length == 0)
+			if (contentItemDescriptors == null || contentItemDescriptors.Count == 0)
 			{
 				_listView.ClearSelection();
 			}
@@ -285,7 +284,10 @@ namespace Beamable.Editor.Content.Components
 
 		private void ContentVisualElement_OnRightMouseButtonClicked(ContentItemDescriptor contentItemDescriptor)
 		{
-			UpdateListViewSelection(contentItemDescriptor);
+			if(!Model.SelectedContents.Contains(contentItemDescriptor))
+			{
+				UpdateListViewSelection(new[] {contentItemDescriptor});
+			}
 		}
 
 		private void AddCreateItemMenu(ContextualMenuPopulateEvent evt)
