@@ -30,55 +30,55 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="DownloadCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==false">
+<!--    <Target Name="DownloadCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==false">-->
 
-        <Message Importance="high" Text="Downloading collector binaries from cloud..."/>
+<!--        <Message Importance="high" Text="Downloading collector binaries from cloud..."/>-->
 
-        <CreateProperty Value="$(BeamCollectorUrl)">
-            <Output TaskParameter="Value" PropertyName="BeamUrlBin" />
-        </CreateProperty>
+<!--        <CreateProperty Value="$(BeamCollectorUrl)">-->
+<!--            <Output TaskParameter="Value" PropertyName="BeamUrlBin" />-->
+<!--        </CreateProperty>-->
 
-        <CreateProperty Value="$(BeamCollectorConfigUrl)">
-            <Output TaskParameter="Value" PropertyName="BeamUrlConfig" />
-        </CreateProperty>
+<!--        <CreateProperty Value="$(BeamCollectorConfigUrl)">-->
+<!--            <Output TaskParameter="Value" PropertyName="BeamUrlConfig" />-->
+<!--        </CreateProperty>-->
 
-        <Message Importance="normal" Text="BeamUrlBin $(BeamUrlBin)"/>
-        <Message Importance="normal" Text="BeamCollectorUrl $(BeamUrlConfig)"/>
+<!--        <Message Importance="normal" Text="BeamUrlBin $(BeamUrlBin)"/>-->
+<!--        <Message Importance="normal" Text="BeamCollectorUrl $(BeamUrlConfig)"/>-->
 
-        <PropertyGroup>
-            <BeamUrlBin>$(BeamUrlBin.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlBin>
-            <BeamUrlConfig>$(BeamUrlConfig.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlConfig>
-        </PropertyGroup>
+<!--        <PropertyGroup>-->
+<!--            <BeamUrlBin>$(BeamUrlBin.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlBin>-->
+<!--            <BeamUrlConfig>$(BeamUrlConfig.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlConfig>-->
+<!--        </PropertyGroup>-->
 
-        <DownloadFile
-                SourceUrl="$(BeamUrlBin)"
-                DestinationFolder="$(OutputPath)">
-            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-collector" />
-        </DownloadFile>
+<!--        <DownloadFile-->
+<!--                SourceUrl="$(BeamUrlBin)"-->
+<!--                DestinationFolder="$(OutputPath)">-->
+<!--            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-collector" />-->
+<!--        </DownloadFile>-->
 
-        <DownloadFile
-                SourceUrl="$(BeamUrlConfig)"
-                DestinationFolder="$(OutputPath)">
-            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-config" />
-        </DownloadFile>
-    </Target>
+<!--        <DownloadFile-->
+<!--                SourceUrl="$(BeamUrlConfig)"-->
+<!--                DestinationFolder="$(OutputPath)">-->
+<!--            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-config" />-->
+<!--        </DownloadFile>-->
+<!--    </Target>-->
 
-    <Target Name="DownloadDebugCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==true">
-        <Message Importance="high" Text="[Microservice] Downloading collector binaries from local source..."/>
+<!--    <Target Name="DownloadDebugCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==true">-->
+<!--        <Message Importance="high" Text="[Microservice] Downloading collector binaries from local source..."/>-->
 
-        <ItemGroup>
-            <BeamDebugCollectorFile Include="$(BeamDebugCollectorUrl)">
-                <Visible>false</Visible>
-            </BeamDebugCollectorFile>
+<!--        <ItemGroup>-->
+<!--            <BeamDebugCollectorFile Include="$(BeamDebugCollectorUrl)">-->
+<!--                <Visible>false</Visible>-->
+<!--            </BeamDebugCollectorFile>-->
 
-            <AdditionaBeamDebugCollectorConfigFile Include="$(BeamDebugCollectorConfigUrl)">
-                <Visible>false</Visible>
-            </AdditionaBeamDebugCollectorConfigFile>
-        </ItemGroup>
+<!--            <AdditionaBeamDebugCollectorConfigFile Include="$(BeamDebugCollectorConfigUrl)">-->
+<!--                <Visible>false</Visible>-->
+<!--            </AdditionaBeamDebugCollectorConfigFile>-->
+<!--        </ItemGroup>-->
 
-        <Copy SourceFiles="@(BeamDebugCollectorFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
-        <Copy SourceFiles="@(AdditionaBeamDebugCollectorConfigFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
-    </Target>
+<!--        <Copy SourceFiles="@(BeamDebugCollectorFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />-->
+<!--        <Copy SourceFiles="@(AdditionaBeamDebugCollectorConfigFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />-->
+<!--    </Target>-->
 
 
 </Project>
