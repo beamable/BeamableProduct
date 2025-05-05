@@ -794,7 +794,7 @@ namespace Beamable.Server
 		        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 		        if (inDocker)
 		        {
-			        await CollectorManager.StartCollector(false, tokenSource, _logger);
+			        await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
 		        }
 		        else
 		        {

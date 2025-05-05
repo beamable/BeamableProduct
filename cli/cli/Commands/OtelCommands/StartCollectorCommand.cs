@@ -4,7 +4,7 @@ using cli.Services;
 using System.Net;
 
 namespace cli.OtelCommands;
-
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 [Serializable]
 public class StartCollectorCommandArgs : CommandArgs
@@ -32,64 +32,16 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 	{
 		AssertEnvironmentVars();//TODO this requirement is just while we don't have a way to get credentials from beamo
 
-		string executablePath = CollectorManager.GetCollectorExecutablePath();
-
-		if (!File.Exists(executablePath))
-		{
-			Log.Information($"Couldn't find collector at path: [{executablePath}]");
-			Log.Information($"Starting download of collector...");
-
-			var exeDownloadLink = CollectorManager.CollectorDownloadUrl.Replace("BEAM_VERSION", "0.0.0-PREVIEW.NIGHTLY-202504302222")
-				.Replace("BEAM_FILE_NAME", CollectorManager.GetCollectorName());
-
-			var configDownloadLink = CollectorManager.CollectorDownloadUrl.Replace("BEAM_VERSION", "0.0.0-PREVIEW.NIGHTLY-202504302222")
-				.Replace("BEAM_FILE_NAME", CollectorManager.configFileName);
-
-			List<CollectorItemToDownload> itemsToDownload = new List<CollectorItemToDownload>();
-
-			itemsToDownload.Add(new CollectorItemToDownload()
-			{
-				downloadUrl = exeDownloadLink,
-				filePath = executablePath
-			});
-
-			itemsToDownload.Add(new CollectorItemToDownload()
-			{
-				downloadUrl = configDownloadLink,
-				filePath = Path.Combine(Path.GetDirectoryName(executablePath), CollectorManager.configFileName)
-			});
-
-			using var client = new HttpClient();
-			client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-
-			try
-			{
-				foreach (var item in itemsToDownload)
-				{
-					using var response = await client.GetAsync(item.downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-					response.EnsureSuccessStatusCode();
-
-					await using var stream = await response.Content.ReadAsStreamAsync();
-					await using var fileStream = new FileStream(item.filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-					await stream.CopyToAsync(fileStream);
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error when downloading collector binaries. Message=[{ex.Message}] StackTrace=[{ex.StackTrace}]");
-			}
-
-			Log.Information($"Finished downloading of collector...");
-		}
-
-		var processId = await CollectorManager.StartCollector(true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
+		var basePath = CollectorManager.GetCollectorBasePathForCli();
+		var processId = await CollectorManager.StartCollector(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
 		Log.Information($"Collector with process id [{processId}] started successfully");
 	}
 
 	private void AssertEnvironmentVars()
 	{
-		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
+		CollectorManager.AddDefaultCollectorHostAndPortFallback();
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
 		if(string.IsNullOrEmpty(port))
 		{
 			throw new Exception("There is no port configured for the collector discovery");
@@ -100,23 +52,29 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_HOST");
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
 
 		if(string.IsNullOrEmpty(host))
 		{
 			throw new Exception("There is no host configured for the collector discovery");
 		}
 
-		var user = Environment.GetEnvironmentVariable("BEAM_CLICKHOUSE_USER");
+		var user = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
 		if(string.IsNullOrEmpty(user))
 		{
 			throw new Exception("There is no user configured for the collector startup");
 		}
 
-		var passd = Environment.GetEnvironmentVariable("BEAM_CLICKHOUSE_PASSWORD");
+		var passd = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
 		if(string.IsNullOrEmpty(passd))
 		{
 			throw new Exception("There is no password configured for the collector startup");
+		}
+		
+		var chHost = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
+		if(string.IsNullOrEmpty(chHost))
+		{
+			throw new Exception("There is no clickhouse endpoint configured for the collector startup");
 		}
 	}
 }

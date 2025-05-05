@@ -51,7 +51,7 @@ func StartUDPServer(host string, port string, delay int, rd *responseData) {
 	broadcastAddr += ":"
 	broadcastAddr += port
 
-	log.Println("Service discovery started at: ", broadcastAddr)
+	log.Println("Beam Service discovery started at: ", broadcastAddr)
 
 	udpAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
 	if err != nil {
@@ -68,7 +68,6 @@ func StartUDPServer(host string, port string, delay int, rd *responseData) {
 	ticker := time.NewTicker(time.Duration(delay) * time.Millisecond)
 	defer ticker.Stop()
 
-	time.Sleep(1 * time.Second)
 	for range ticker.C {
 		message, mErr := json.Marshal(rd)
 

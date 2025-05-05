@@ -6,6 +6,16 @@ namespace Beamable.Common
         {
             public static partial class Otel
             {
+                public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
+                public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";
+                public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
+                public const string ENV_COLLECTOR_HOST_DEFAULT_VALUE = "127.0.0.1"; // loopback
+
+                public const string ENV_COLLECTOR_CLICKHOUSE_ENDPOINT = "BEAM_CLICKHOUSE_ENDPOINT";
+                public const string ENV_COLLECTOR_CLICKHOUSE_USERNAME = "BEAM_CLICKHOUSE_USERNAME";
+                public const string ENV_COLLECTOR_CLICKHOUSE_PASSWORD = "BEAM_CLICKHOUSE_PASSWORD";
+                
+                
                 public const string DATADOG_PARENT_TRACE_ID_HEADER = "x-datadog-parent-id";
                 public const string DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id";
                 

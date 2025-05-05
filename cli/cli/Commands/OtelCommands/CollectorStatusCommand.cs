@@ -4,6 +4,7 @@ using cli.Services;
 
 namespace cli.OtelCommands;
 
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 [Serializable]
 public class CollectorStatusCommandArgs : CommandArgs
@@ -25,24 +26,16 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 	public override async Task Handle(CollectorStatusCommandArgs args)
 	{
-		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
-		if(string.IsNullOrEmpty(port))
-		{
-			throw new Exception("There is no port configured for the collector discovery");
-		}
-
+		CollectorManager.AddDefaultCollectorHostAndPortFallback();
+		
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
 		if (!Int32.TryParse(port, out int portNumber))
 		{
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_HOST");
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
-		}
-
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
+		
 		var socket = CollectorManager.GetSocket(host, portNumber);
 
 		CollectorStatus currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token);

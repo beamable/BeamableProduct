@@ -18,13 +18,14 @@ processors:
     send_batch_size: 5000
 exporters:
   clickhouse:
-    endpoint: https://cu2a26caj7.us-west-2.aws.clickhouse.cloud:8443
-    username: ${env:BEAM_CLICKHOUSE_USER}
+    endpoint: ${env:BEAM_CLICKHOUSE_ENDPOINT}
+    username: ${env:BEAM_CLICKHOUSE_USERNAME}
     password: ${env:BEAM_CLICKHOUSE_PASSWORD}
     traces_table_name: otel_traces
     logs_table_name: otel_logs
     timeout: 5s
     database: default
+    create_schema: false
     sending_queue:
       queue_size: 1000
     retry_on_failure:

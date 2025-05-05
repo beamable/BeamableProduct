@@ -1,3 +1,4 @@
+using System.Collections;
 using Beamable.Common;
 using Beamable.Server.Common;
 using microservice.Extensions;
@@ -12,6 +13,7 @@ using System.Text;
 using Beamable.Common.Util;
 using Beamable.Server;
 using ZLogger;
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 namespace cli.Services;
 
@@ -74,8 +76,8 @@ public class CollectorManager
 	
 	
 	public static string configFileName = "clickhouse-config.yaml";
-	private const int attemptsToConnect = 10;
-	private const int attemptsBeforeFailing = 10;
+	private const int attemptsToConnect = 3;
+	private const int attemptsBeforeFailing = 3;
 	private const int delayBeforeNewAttempt = 500;
 
 	public static string GetCollectorExecutablePath()
@@ -277,6 +279,7 @@ public class CollectorManager
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 		var ed = new IPEndPoint(IPAddress.Parse(host), portNumber);
 
+		Log.Verbose($"collector discovery acquiring socket address=[{ed}]");
 		socket.ReceiveTimeout = CollectorManager.ReceiveTimeout;
 		socket.ReceiveBufferSize = CollectorManager.ReceiveBufferSize;
 		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -285,22 +288,58 @@ public class CollectorManager
 		return socket;
 	}
 
-	public static async Task<int> StartCollector(bool detach, CancellationTokenSource cts, ILogger logger)
+	public static async Task<int> StartCollector(
+		string absBasePath, 
+		bool allowDownload,
+		bool detach, 
+		CancellationTokenSource cts, 
+		ILogger logger)
 	{
 		//TODO Start a signed request to Beamo asking for credentials
 
+		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
+		
+		
 		var connectedPromise = new Promise<int>();
 
-		Task.Run(() => CollectorDiscovery(detach, cts, connectedPromise, logger));
+		Task.Run(async () =>
+		{
+			try
+			{
+				await CollectorDiscovery(collectorInfo.filePath, detach, cts, connectedPromise, logger);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+				throw;
+			}
+		});
 
 		var collectorProcessId = await connectedPromise; // the first time we wait for the collector to be up before continuing
 
 		return collectorProcessId;
 	}
 
-	private static async Task CollectorDiscovery(bool detach, CancellationTokenSource cts, Promise<int> connectedPromise, ILogger logger)
+	public static void AddDefaultCollectorHostAndPortFallback()
 	{
-		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
+		if(string.IsNullOrEmpty(port))
+		{
+			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT, Otel.ENV_COLLECTOR_PORT_DEFAULT_VALUE);
+		}
+
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
+		if(string.IsNullOrEmpty(host))
+		{
+			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST, Otel.ENV_COLLECTOR_HOST_DEFAULT_VALUE);
+		}
+	}
+
+	private static async Task CollectorDiscovery(string collectorExecutablePath, bool detach, CancellationTokenSource cts, Promise<int> connectedPromise, ILogger logger)
+	{
+		AddDefaultCollectorHostAndPortFallback();
+		
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
 		if(string.IsNullOrEmpty(port))
 		{
 			throw new Exception("There is no port configured for the collector discovery");
@@ -311,7 +350,7 @@ public class CollectorManager
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_HOST");
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
 
 		if(string.IsNullOrEmpty(host))
 		{
@@ -324,9 +363,16 @@ public class CollectorManager
 
 		int alarmCounter = 0;
 
+		var collectorStatus = await IsCollectorRunning(socket, cts.Token);
+		if (!collectorStatus.isRunning)
+		{
+			logger.ZLogInformation($"Starting local process for collector");
+			await StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
+		}
+		
 		while (!cts.IsCancellationRequested) // Should we stop this after a number of attempts to find the collector?
 		{
-			var collectorStatus = await IsCollectorRunning(socket, cts.Token);
+			collectorStatus = await IsCollectorRunning(socket, cts.Token);
 
 			if (!collectorStatus.isRunning)
 			{
@@ -334,8 +380,6 @@ public class CollectorManager
 				{
 					throw new Exception("The collector couldn't start, terminating the microservice.");
 				}
-				logger.ZLogInformation($"Starting local process for collector, attempt number: {alarmCounter}");
-				await StartCollectorProcess(detach, logger, cts);
 				alarmCounter++;
 			}
 			else if (collectorStatus.isReady)
@@ -354,6 +398,7 @@ public class CollectorManager
 
 	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token)
 	{
+		// var socket = GetSocket("127.0.0.1", 8688);
 		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
 
 		for (int i = 0; i < attemptsToConnect; i++)
@@ -369,11 +414,13 @@ public class CollectorManager
 
 			if (socket.Available == 0)
 			{
+				Log.Information("Socket has no info");
 				await Task.Delay(delayBeforeNewAttempt);
 				continue;
 			}
 
 			var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
+			Log.Information($"Socket has bytes=[{byteCount}]");
 
 			if (byteCount == 0)
 			{
@@ -418,9 +465,9 @@ public class CollectorManager
 		};
 	}
 
-	public static async Task StartCollectorProcess(bool detach, ILogger logger, CancellationTokenSource cts)
+	public static async Task StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
 	{
-		var collectorExecutablePath = GetCollectorExecutablePath();
+		// var collectorExecutablePath = GetCollectorExecutablePath();
 		logger.ZLogInformation($"Using Collector Executable Path: [{collectorExecutablePath}]");
 
 		if (!File.Exists(collectorExecutablePath))
@@ -428,38 +475,44 @@ public class CollectorManager
 			throw new Exception($"Collector binary not found at: {collectorExecutablePath}");
 		}
 
-		var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
+		var configPath = Path.Combine(Path.GetDirectoryName(collectorExecutablePath), configFileName);
+		// var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
 
 		if (!File.Exists(configPath))
 		{
-			configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources",configFileName);
-			if (!File.Exists(configPath))
-			{
-				throw new Exception("Could not find the collector configuration file");
-			}
+			throw new Exception("Could not find the collector configuration file");
 		}
 
-		using var process = new Process();
+		var process = new Process(); // DO NOT use using- because we don't want it to go away!
 
 		var fileExe = collectorExecutablePath;
-		var arguments = $"--config {configPath}";
+		var arguments = $"--config {configPath.EnquotePath()}";
 
 		if (detach)
 		{
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
-				arguments = "/C " + $"{fileExe.EnquotePath()} {arguments}".EnquotePath('(', ')');
+				arguments = "/C " + $"{fileExe} {arguments}".EnquotePath('(', ')');
 				fileExe = "cmd.exe";
 			}
 			else
 			{
-				arguments = $"-a {fileExe} --args {arguments}";
+				// arguments = $"sh -c \"'{fileExe}' --config '{configPath}'\" &";
+				// fileExe = "nohup";	
+				
+				// process.StartInfo.FileName = "/bin/bash";
+				// process.StartInfo.Arguments = $"-c \"'{collectorExecutablePath}' --config {configFileName}\"";
+				// arguments = $"-c \"'{collectorExecutablePath}' --config {configFileName}\"";
+				// fileExe = "/bin/bash";
+				arguments = $"-a {fileExe.EnquotePath()} --args {arguments}";
 				fileExe = "open";
 			}
 		}
 
+		var workingDir = Path.GetDirectoryName(fileExe);
 		process.StartInfo.FileName = fileExe;
 		process.StartInfo.Arguments = arguments;
+		process.StartInfo.WorkingDirectory = Path.GetDirectoryName(fileExe);
 		process.StartInfo.RedirectStandardOutput = true;
 		process.StartInfo.RedirectStandardError = true;
 		process.StartInfo.CreateNoWindow = true;
@@ -468,11 +521,30 @@ public class CollectorManager
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
 		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
-		process.Start();
+
+		process.OutputDataReceived += (_, args) =>
+		{
+			// Console.WriteLine("");
+			Log.Verbose($"(collector) {args.Data}");
+		};
+		process.ErrorDataReceived += (_, args) =>
+		{
+			Log.Verbose($"(collector err) {args.Data}");
+		};
+		var started = process.Start();
+		if (!started)
+		{
+			throw new Exception("Failed to start collector");
+		}
+
+		Log.Information($"Started collector with process-id=[{process.Id}]");
 
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
+		// process.WaitForExit();
 
 		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
+		
+
 	}
 }

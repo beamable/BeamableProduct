@@ -5,7 +5,6 @@ package main
 
 import (
 	"log"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	envprovider "go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -21,7 +20,6 @@ import (
 var logEventsChan = make(chan zapcore.Entry, 100)
 
 func main() {
-
 	info := component.BuildInfo{
 		Command:     "beamable-collector",
 		Description: "Beamable Otel Collector distribution",
