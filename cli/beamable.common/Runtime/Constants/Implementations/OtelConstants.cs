@@ -11,6 +11,7 @@ namespace Beamable.Common
                 public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
                 public const string ENV_COLLECTOR_HOST_DEFAULT_VALUE = "127.0.0.1"; // loopback
 
+                public const string ENV_COLLECTOR_CLICKHOUSE_HOST = "BEAM_CLICKHOUSE_HOST";
                 public const string ENV_COLLECTOR_CLICKHOUSE_ENDPOINT = "BEAM_CLICKHOUSE_ENDPOINT";
                 public const string ENV_COLLECTOR_CLICKHOUSE_USERNAME = "BEAM_CLICKHOUSE_USERNAME";
                 public const string ENV_COLLECTOR_CLICKHOUSE_PASSWORD = "BEAM_CLICKHOUSE_PASSWORD";
