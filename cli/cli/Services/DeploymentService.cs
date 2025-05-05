@@ -474,7 +474,7 @@ public partial class DeployUtil
 		return final;
 	}
 
-	public static ManifestView MergeReplacement(ManifestView remote, ManifestView next)
+	public static ManifestView MergeReplacement(ManifestView remote, ManifestView next, HashSet<string> ignoredBeamoIds)
 	{
 		// create an additive plan first, 
 		// and then adjust the elements to handle "deletions" 
@@ -488,6 +488,9 @@ public partial class DeployUtil
 				var existsInNext = next.manifest.Any(x => x.serviceName == service.serviceName);
 				if (existsInNext) continue;
 
+				var ignored = ignoredBeamoIds.Contains(service.serviceName);
+				if (ignored) continue;
+
 				service.archived = true;
 				service.enabled = false;
 			}
@@ -499,6 +502,9 @@ public partial class DeployUtil
 			{
 				var existsInNext = nextStorages.Any(x => x.id == storage.id);
 				if (existsInNext) continue;
+				
+				var ignored = ignoredBeamoIds.Contains(storage.id);
+				if (ignored) continue;
 
 				storage.archived = true;
 				storage.enabled = false;
@@ -925,7 +931,7 @@ public partial class DeployUtil
 				next = MergeAdditive(remote, localManifest);
 				break;
 			case DeployMode.Replace:
-				next = MergeReplacement(remote, localManifest);
+				next = MergeReplacement(remote, localManifest, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
 				break;
 			default:
 				throw new NotImplementedException(
@@ -963,16 +969,10 @@ public partial class DeployUtil
 			//  it is the intersection of services that have differing imageIds in remote/local, 
 			//  AND those services that we just built locally. 
 			//  If a service was not built locally, then we must assume the image already exists remotely. 
-			var locallyBuiltServices = localBuildReports.Select(x => x.service).ToArray();
 			foreach (var serviceInManifest in next.manifest)
 			{
 				// find the service in the local and remote
-				var localService = locallyBuiltServices.FirstOrDefault(x => x == serviceInManifest.serviceName);
 				var remoteService = remote.manifest.FirstOrDefault(x => x.serviceName == serviceInManifest.serviceName);
-				
-				// If the service is enabled and it wasn't built locally, this is a bug.
-				if (serviceInManifest.enabled && localService == null)
-					throw new CliException($"local service=[{serviceInManifest.serviceName}] cannot be null. Locally available=[{string.Join(",", locallyBuiltServices)}]. Local Manifest=[{string.Join(",", localManifest.manifest.Select(x => x.serviceName))}] This is a beamable bug, please report.");
 				
 				// If an enabled service did not exist in the remote service OR any service had its imageId change relative to the one in the manifest, it means we have to upload this new image.  
 				if ((serviceInManifest.enabled && remoteService == null) || (remoteService != null && serviceInManifest.imageId != remoteService.imageId)) 
