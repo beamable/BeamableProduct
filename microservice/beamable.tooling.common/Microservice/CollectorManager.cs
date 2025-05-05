@@ -192,7 +192,7 @@ public class CollectorManager
 
 		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
 		
-		if (version.StartsWith("0.0") || version == "1.0.0")
+		if (version.StartsWith("0.0.123") || version == "1.0.0")
 		{
 			// if the version looks like a local dev version, then 
 			//  force the version to be THE local dev version
