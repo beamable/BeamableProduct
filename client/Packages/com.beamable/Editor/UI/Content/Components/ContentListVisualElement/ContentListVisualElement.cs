@@ -35,11 +35,6 @@ namespace Beamable.Editor.Content.Components
 		/// </summary>
 		private int ListViewItemHeight = 24;
 
-		/// <summary>
-		/// Indicates index when nothing is selected in the <see cref="ListView"/>
-		/// </summary>
-		private const int NullIndex = -1;
-
 		public ContentDataModel Model { get; set; }
 
 		private VisualElement _mainVisualElement;
