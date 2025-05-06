@@ -36,8 +36,7 @@ public class TsDeclarationsTests
 		const string expected = "import 'm';\n" +
 		                        "\n" +
 		                        "class X {\n" +
-		                        "}\n" +
-		                        "\n";
+		                        "}\n";
 		var file = new TsFile("file.ts")
 			.AddImport(new TsImport("m"))
 			.AddDeclaration(new TsClass("X"));

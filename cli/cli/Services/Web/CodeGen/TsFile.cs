@@ -59,7 +59,8 @@ public class TsFile : TsNode
 		foreach (TsNode decl in Declarations)
 		{
 			decl.Write(writer);
-			writer.WriteLine();
+			if (decl != Declarations.Last())
+				writer.WriteLine();
 		}
 	}
 }
