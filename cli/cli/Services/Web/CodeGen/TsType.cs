@@ -87,6 +87,13 @@ public abstract class TsType : TsNode
 	public static TsType BigInt => Of("bigint");
 
 	/// <summary>
+	/// The type of the value <c>Date</c>.
+	/// </summary>
+	/// <returns>A type expression for the given Date type.</returns>
+	/// <example><c>TsType.Date</c> is equivalent to <c>TsType.Of("Date")</c> and equals <c>Date</c>.</example>
+	public static TsType Date => Of("Date");
+
+	/// <summary>
 	/// Builds a type expression for the given named type.
 	/// </summary>
 	/// <param name="nameOrTypeParam">The name of the type or a type expression.</param>
