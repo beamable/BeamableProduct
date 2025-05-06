@@ -3,7 +3,7 @@ using cli.Services.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>
+public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>
 {
 	private ContentService _contentService;
 
@@ -13,36 +13,49 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(ContentTagCommand.CONTENT_ARGUMENT, (args, s) => args.content = s);
-		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.tag = s);
+		AddArgument(ContentTagCommand.FILTER_OPTION, (args, s) => args.Filter = s.Split(','));
+		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.Tags = s.Split(','));
+
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
-		AddOption(ContentTagCommand.REGEX_OPTION, (args, b) => args.treatAsRegex = b);
+		AddOption(ContentTagCommand.FILTER_TYPE_OPTION, (args, b) => args.FilterType = b);
 	}
 
-	public override Task Handle(ContentTagAddCommandArgs args)
+	public override async Task Handle(ContentTagRemoveCommandArgs args)
 	{
 		_contentService = args.ContentService;
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
 
-		foreach (var manifestId in args.ManifestIds)
+		var tasks = new List<Task<LocalContentFiles>>();
+		foreach (string manifestId in args.ManifestIds)
 		{
-			var local = _contentService.GetLocalCache(manifestId);
-
-			var contentIds = args.GetContentsList(local);
-			var removedValues = new List<string>();
-
-			foreach (var id in contentIds)
-			{
-				if (local.Tags.RemoveTagFromContent(id, args.tag))
-					removedValues.Add(id);
-			}
-
-			local.Tags.WriteToFile();
-			BeamableLogger.Log("Removed tag {ArgsTag} from content ({RemovedValuesCount}): {Join}", args.tag, removedValues.Count, string.Join(", ", removedValues));
+			tasks.Add(_contentService.GetAllContentFiles(null, manifestId, true));
 		}
 
-		return Task.CompletedTask;
+		// Get the files and filter them.
+		var filteredContentFiles = await Task.WhenAll(tasks);
+		for (int i = 0; i < filteredContentFiles.Length; i++)
+		{
+			LocalContentFiles file = filteredContentFiles[i];
+			_contentService.FilterLocalContentFiles(ref file, args.Filter, args.FilterType);
+			filteredContentFiles[i] = file;
+		}
+
+		// Save the added task to disk
+		var tagAddTasks = new List<Task>();
+		foreach (var f in filteredContentFiles)
+		{
+			tagAddTasks.Add(_contentService.RemoveTags(f, args.Tags));
+		}
+
+		await Task.WhenAll(tagAddTasks);
 	}
+}
+
+public class ContentTagRemoveCommandArgs : ContentTagCommandArgs
+{
+	public string[] Filter;
+	public string[] Tags;
+	public ContentFilterType FilterType;
 }

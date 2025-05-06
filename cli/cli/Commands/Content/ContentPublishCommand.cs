@@ -3,7 +3,7 @@ using cli.Services.Content;
 
 namespace cli.Content;
 
-public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, LocalContentState>
+public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, ContentPublishResult>
 {
 	private ContentService _contentService;
 
@@ -16,25 +16,28 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Lo
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToPublish = s);
 	}
 
-	public override async Task<LocalContentState> GetResult(ContentPublishCommandArgs args)
+	public override async Task<ContentPublishResult> GetResult(ContentPublishCommandArgs args)
 	{
 		_contentService = args.ContentService;
 
-		// Prepare the filters (makes sure all the given manifests exist.
-		var manifestsToPublish = await _contentService.PrepareManifestFilter(args.ManifestIdsToPublish);
+		// Prepare the filters --- makes sure all the given manifests exist.
+		var publishPromises = new List<Task>();
+		foreach (string manifestId in args.ManifestIdsToPublish)
+		{
+			publishPromises.Add(_contentService.PublishContent(manifestId));
+		}
 
-		// Publish the local state to the remove manifests
-		_ = await Promise.Sequence(manifestsToPublish.Select(m => _contentService.PublishContentAndManifest(m)).ToArray());
+		await Task.WhenAll(publishPromises);
 
-		// Get the local content state for all the requested manifests
-		var allLocalStates = await _contentService.GetLocalContentForManifests(manifestsToPublish);
-
-		// Builds the local content state from a list of local states
-		return _contentService.BuildLocalContentState(manifestsToPublish, allLocalStates);
+		return new();
 	}
 }
 
 public class ContentPublishCommandArgs : ContentCommandArgs
 {
 	public string[] ManifestIdsToPublish;
+}
+
+public class ContentPublishResult
+{
 }

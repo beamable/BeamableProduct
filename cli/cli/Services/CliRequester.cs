@@ -137,7 +137,7 @@ public class CliRequester : IRequester
 						{
 							Log.Debug(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_ctx.UpdateToken(rsp);
+							_ctx.SetToken(rsp);
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));

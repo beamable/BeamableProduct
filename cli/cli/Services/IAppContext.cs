@@ -69,8 +69,15 @@ public interface IAppContext : IRealmInfo
 	/// <param name="bindingContext"></param>
 	void Apply(BindingContext bindingContext);
 
+	/// <summary>
+	/// Sets a new cid/pid/host combination ONLY at runtime. Does not actually save this to disk.
+	/// </summary>
 	void Set(string cid, string pid, string host);
-	void UpdateToken(TokenResponse response);
+	
+	/// <summary>
+	/// Sets the active token that we use to make authenticated requests. Again, only at runtime. This does not affect the files inside the '.beamable' folder.
+	/// </summary>
+	void SetToken(TokenResponse response);
 }
 
 public class DefaultAppContext : IAppContext
@@ -288,7 +295,7 @@ public class DefaultAppContext : IAppContext
 		SetupOutputStrategy();
 
 
-		_configService.Init(bindingContext);
+		_configService.RefreshConfig();
 
 		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
@@ -322,8 +329,6 @@ public class DefaultAppContext : IAppContext
 
 		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
-		
-
 	}
 
 	public void Set(string cid, string pid, string host)
@@ -335,7 +340,7 @@ public class DefaultAppContext : IAppContext
 		_token.Pid = _pid;
 	}
 
-	public void UpdateToken(TokenResponse response)
+	public void SetToken(TokenResponse response)
 	{
 		_token = new CliToken(response, _cid, _pid);
 	}

@@ -236,6 +236,28 @@ namespace Beamable.Common.Scheduler
 
 				return j;
 			}
+			
+			public static Job Convert(JobDefinitionView job)
+			{
+				var retry = job.retryPolicy.GetOrThrow(() => new Exception("Job definition has no retry policy"));
+				var j = new Job()
+				{
+					id = job.id.GetOrThrow(() => new Exception("Job definition has no id.")),
+					action = job.jobAction.Convert(),
+					triggers = job.triggers.Select(t => t.Convert()).ToList(),
+					source =  job.source.GetOrElse(() => null),
+					name = job.name.GetOrThrow(() => new Exception("Job definition has no name")),
+					owner = job.owner.GetOrThrow(() => new Exception("Job definition has no owner")),
+					retryPolicy = new RetryPolicy
+					{
+						maxRetryCount = retry.maxRetryCount.GetOrThrow(() => new Exception("Retry policy has no maxRetryCount")),
+						retryDelayMs = retry.retryDelayMs.GetOrThrow(() => new Exception("Retry policy has no retryDelayMs")),
+						useExponentialBackoff = retry.useExponentialBackoff.GetOrThrow(() => new Exception("Retry policy has no useExponentialBackoff")),
+					}
+				};
+
+				return j;
+			}
 
 			public static JobDefinitionSaveRequest CreateSaveRequest(
 				string name,

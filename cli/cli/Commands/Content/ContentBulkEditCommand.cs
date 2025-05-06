@@ -13,7 +13,7 @@ public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IE
 
 	private ContentService _contentService;
 
-	public ContentBulkEditCommand() : base("bulk-edit", "Saves a serialized content properties JSON-blob into a manifest")
+	public ContentBulkEditCommand() : base("bulk-edit", "Saves a serialized content properties JSON-blob into a manifest (expects the blob to be in Beamable's Serialization Format)")
 	{
 	}
 
@@ -37,41 +37,35 @@ public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IE
 		var manifestId = args.ManifestIds[0];
 
 		// Tries to load the local content --- this command does not work unless the manifest is already known.
-		var localCache = _contentService.GetLocalCache(manifestId);
+		var localCache = await _contentService.GetAllContentFiles(null, manifestId, true);
 
 		// Invalid args
 		if (args.ContentIds.Length != args.ContentProperties.Length)
 			throw new CliException("Content Ids and Content Properties have different lengths. Please provide parallel arrays for these options.", 2, true);
 
-		var updatedDocuments = new List<ContentDocument>(args.ContentIds.Length);
+		var updatedDocuments = new List<ContentFile>(args.ContentIds.Length);
 		var notFoundIds = new List<string>(args.ContentIds.Length);
-		var invalidProperties = new List<(int idx, string id, string errMsg)>(args.ContentIds.Length);
 		for (int i = 0; i < args.ContentIds.Length; i++)
 		{
-			string id = args.ContentIds[i];
-			string properties = args.ContentProperties[i];
-
 			// This command does not create new content objects; so, we check if the given id already exists before proceeding.
-			if (localCache.GetContent(id) == null)
+			string id = args.ContentIds[i];
+			if (!localCache.PerIdContentFiles.TryGetValue(id, out ContentFile file))
 			{
 				notFoundIds.Add(id);
 				continue;
 			}
 
-			// Check if the property JSON is valid
-			JsonElement? propertiesJson;
-			try
-			{
-				propertiesJson = JsonSerializer.Deserialize<JsonElement>(properties);
-			}
-			catch (Exception e)
-			{
-				invalidProperties.Add((i, id, e.Message));
-				continue;
-			}
+			var newProperties = args.ContentProperties[i];
 
-			var contentToAdd = new ContentDocument() { id = id, properties = propertiesJson, };
-			updatedDocuments.Add(contentToAdd);
+			// Make sure this is serialized properly and sorted
+			var newPropsJson = JsonSerializer.Deserialize<JsonElement>(newProperties);
+			newPropsJson = JsonSerializer.SerializeToElement(newPropsJson, ContentService.GetContentFileSerializationOptions());
+
+			// Set this as the new JsonElement for the content file.
+			file.Properties = newPropsJson;
+
+			// Store the content file
+			updatedDocuments.Add(file);
 		}
 
 		// If we the given ids are non-existent, we notify the user.
@@ -81,17 +75,11 @@ public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IE
 			throw new CliException(err, 3, true);
 		}
 
-		// If we failed to parse any of the JSON, we notify the user.
-		if (invalidProperties.Count > 0)
-		{
-			var err = $"Failed to parse Content Properties. Parsing Errors:\n{string.Join("\n", invalidProperties.Select(ip => $"[{ip.idx}] {ip.id} -> {ip.errMsg}"))}";
-			throw new CliException(err, 4, true);
-		}
-
 		// Save the actual updated content
 		try
 		{
-			var updateTasks = updatedDocuments.Select(d => localCache.UpdateContent(d));
+			var contentFolder = _contentService.EnsureContentPathForRealmExists(args.AppContext.Pid, manifestId);
+			var updateTasks = updatedDocuments.Select(d => _contentService.SaveContentFile(contentFolder, d));
 			await Task.WhenAll(updateTasks);
 		}
 		catch (Exception e)

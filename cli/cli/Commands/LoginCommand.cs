@@ -23,9 +23,9 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	public bool saveToEnvironment;
 	public bool saveToFile;
 	public bool printToConsole;
-	public bool customerScoped;
+	public bool realmScoped;
 	public string refreshToken = "";
-	
+
 	public bool SaveToFile
 	{
 		get => saveToFile;
@@ -50,7 +50,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		SaveToFileOption.Bind(this);
-		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
@@ -70,7 +70,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 			var password = GetPassword(args);
 			try
 			{
-				response = await _authApi.Login(username, password, false, args.customerScoped)
+				response = await _authApi.Login(username, password, false, !args.realmScoped)
 					.ShowLoading("Authorizing...");
 			}
 			catch (RequesterException e) when (e.RequestError.status == 401) // for invalid credentials
@@ -110,6 +110,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 				return;
 			}
 		}
+
 		Successful = HandleResponse(args, response);
 	}
 
@@ -121,7 +122,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 			return false;
 		}
 
-		_ctx.UpdateToken(response);
+		_ctx.SetToken(response);
 
 		if (args.saveToEnvironment)
 		{
@@ -132,7 +133,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		if (args.saveToFile)
 		{
 			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-							   " do not add it to control version system. It should be used only locally.");
+			                   " do not add it to control version system. It should be used only locally.");
 			_configService.SaveTokenToFile(_ctx.Token);
 		}
 
@@ -140,6 +141,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		{
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
+
 		return true;
 	}
 

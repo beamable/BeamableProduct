@@ -23,20 +23,16 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using tests.Examples;
 
 namespace tests;
 
-public class Tests
+public class Tests : CLITest
 {
-	[SetUp]
-	public void Setup()
-	{
-	}
-
 	[Test]
 	public void PrintVersion()
 	{
-		var status = Cli.RunWithParams("--version");
+		var status = Run("--version");
 		Assert.AreEqual(0, status);
 	}
 
@@ -182,107 +178,136 @@ public class Tests
 	}
 
 	[Test]
-	public async Task GenerateStuff() // TODO: better name please
+	public void GenerateSocialBasic() // TODO: better name please
 	{
-		var status = await Cli.RunAsyncWithParams(builder =>
+		Mock<ISwaggerStreamDownloader>(mock =>
 		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("inventory"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryBasicOpenApi));
-
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("inventory"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryObjectOpenApi));
-
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("accounts"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountBasicOpenApi));
-
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("accounts"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountObjectOpenApi));
-
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("event-players"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.EventPlayersObjectApi));
-
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("social"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SocialBasicOpenApi));
+		});
 
-
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "social,t:basic");
-		Assert.AreEqual(0, status);
-	}
-
-
-	[Test]
-	public async Task GenerateContent()
-	{
-		var status = await Cli.RunAsyncWithParams(builder =>
-		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("content"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentBasicApi));
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
-		Assert.AreEqual(0, status);
-	}
-
-
-	[Test]
-	public async Task GenerateSession()
-	{
-		var status = await Cli.RunAsyncWithParams(builder =>
-		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("session"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SessionBasic));
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
+		var status = Run("oapi", "generate", "--filter", "social,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
 	
 	[Test]
-	public async Task GenerateBeamo()
+	public void GenerateInventoryBasic() // TODO: better name please
 	{
-		IBeamoApi x = null;
-		var status = await Cli.RunAsyncWithParams(builder =>
+		Mock<ISwaggerStreamDownloader>(mock =>
 		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("beamo"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.BeamoBasic));
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "beamo,t:basic", "--engine", "unity");
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("inventory"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryBasicOpenApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "inventory,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+	[Test]
+	public void GenerateInventoryObject() // TODO: better name please
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("inventory"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryObjectOpenApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "inventory,t:object", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+	
+	[Test]
+	public void GenerateAccountsBasic() // TODO: better name please
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("accounts"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountBasicOpenApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "accounts,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+	
+	[Test]
+	public void GenerateAccountsObject() // TODO: better name please
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("accounts"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountObjectOpenApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "accounts,t:object", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+	
+	[Test]
+	public void GenerateEventPlayersObject() // TODO: better name please
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("event-players"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.EventPlayersObjectApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "event-players,t:object", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+	[Test]
+	public void GenerateContent()
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("content"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentBasicApi));
+		});
+		
+		var status = Run("oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
 
 
 	[Test]
-	public async Task GenerateProtoActor()
+	public void GenerateSession()
 	{
-		var status = await Cli.RunAsyncWithParams(builder =>
+		Mock<ISwaggerStreamDownloader>(mock =>
 		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("session"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SessionBasic));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+	
+	[Test]
+	public void GenerateBeamo()
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("beamo"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.BeamoBasic));
+		});
+		var status = Run("oapi", "generate", "--filter", "beamo,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+
+	[Test]
+	public void GenerateProtoActor()
+	{
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("api"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ProtoActor));
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "t:api", "--engine", "unity", "--conflict-strategy", "RenameUncommonConflicts");
+		});
+		var status = Run("oapi", "generate", "--filter", "t:api", "--engine", "unity", "--conflict-strategy", "RenameUncommonConflicts");
 		Assert.AreEqual(0, status);
 	}
 
 	//dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --filter t:api --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Runtime/OpenApi2
-
-	[Test]
-	public async Task GenerateUnreal() // TODO: better name please
-	{
-		var status = await Cli.RunAsyncWithParams(builder =>
-		{
-			var mock = new Mock<ISwaggerStreamDownloader>();
-
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("content"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentObjectApi));
-
-			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
-		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unreal");
-		Assert.AreEqual(0, status);
-	}
 
 	public static Stream GenerateStreamFromString(string s)
 	{

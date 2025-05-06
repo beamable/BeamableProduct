@@ -1,9 +1,11 @@
 ﻿using cli.Services.Content;
+using System.CommandLine;
 
 namespace cli.Content;
 
-public class ContentResetCommand : AtomicCommand<ContentResetCommandArgs, LocalContentState>
+public class ContentResetCommand : AtomicCommand<ContentResetCommandArgs, ContentResetResult>
 {
+	private static ConfigurableOptionFlag DELETE_CREATED_OPTION = new("delete-created", "Deletes any created content. If filters are provided, will only delete the created content that matches the filter");
 	private ContentService _contentService;
 
 	public ContentResetCommand() : base("reset", "Sets local content to match remote one")
@@ -13,34 +15,38 @@ public class ContentResetCommand : AtomicCommand<ContentResetCommandArgs, LocalC
 	public override void Configure()
 	{
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToReset = s);
+		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, s) => args.FilterType = s);
+		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = s.Split(','));
+		AddOption(DELETE_CREATED_OPTION, (args, b) => args.DeleteCreatedContent = b);
 	}
 
-	public override async Task<LocalContentState> GetResult(ContentResetCommandArgs args)
+	public override async Task<ContentResetResult> GetResult(ContentResetCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		
-		// Prepare the filters (makes sure all the given manifests exist.
-		var manifestsToReset = await _contentService.PrepareManifestFilter(args.ManifestIdsToReset);
 
 		// Resets the content for all the given manifests
-		for (int i = 0; i < manifestsToReset.Length; i++)
+		var resetPromises = new List<Task>();
+		foreach (var manifestId in args.ManifestIdsToReset)
 		{
-			var localCache = _contentService.GetLocalCache(manifestsToReset[i]);
-
-			await localCache.UpdateTags();
-			_ = await localCache.PullContent();
-			await localCache.RemoveLocalOnlyContent();
+			resetPromises.Add(_contentService.ResetLocalContent(manifestId, args.Filter, args.FilterType, args.DeleteCreatedContent));
 		}
 
-		// Get the local content state for all the requested manifests
-		var allLocalStates = await _contentService.GetLocalContentForManifests(manifestsToReset);
+		await Task.WhenAll(resetPromises);
 
-		// Builds the local content state from a list of local states
-		return _contentService.BuildLocalContentState(manifestsToReset, allLocalStates);
+		return new();
 	}
 }
 
 public class ContentResetCommandArgs : ContentCommandArgs
 {
 	public string[] ManifestIdsToReset;
+
+	public ContentFilterType FilterType;
+	public string[] Filter;
+
+	public bool DeleteCreatedContent;
+}
+
+public class ContentResetResult
+{
 }

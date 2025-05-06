@@ -19,27 +19,28 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 		AddArgument(contentId, (args, i) => args.contentId = i);
 	}
 
-	public override Task Handle(ContentOpenCommandArgs args)
+	public override async Task Handle(ContentOpenCommandArgs args)
 	{
 		_contentService = args.ContentService;
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
-		
-		foreach (var manifestId in args.ManifestIds)
-		{
-			var localContent = _contentService.GetLocalCache(manifestId);
 
-			var path = string.IsNullOrWhiteSpace(args.contentId)
-				? localContent.ContentDirPath
-				: localContent.GetContentPath(args.contentId);
-			if (File.Exists(path))
+		// Get only the local files for all the given manifest ids.
+		var localManifests = await Task.WhenAll(args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(null, m, true)));
+
+		// Look for the given content id and open the file.
+		foreach (LocalContentFiles localFiles in localManifests)
+		{
+			foreach (ContentFile f in localFiles.ContentFiles)
 			{
-				new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
+				var path = f.Id == args.contentId ? f.LocalFilePath : Path.GetDirectoryName(f.LocalFilePath);
+				if (File.Exists(path))
+				{
+					new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
+				}
 			}
 		}
-		
-		return Task.CompletedTask;
 	}
 }
 
