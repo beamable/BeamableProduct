@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using cli.OtelCommands;
 using cli.Services;
 using cli.Utils;
 using CliWrap;
@@ -98,8 +99,8 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
             ? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
             : "";
         var runtimeArg = forceCpu
-            ? "--runtime unix-x64"
-            : "--use-current-runtime";
+            ? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
+            : $"--use-current-runtime ";
         var buildArgs = $"publish {slnPath} " +
                         $"--verbosity minimal " +
                         $"--no-self-contained {runtimeArg} " +

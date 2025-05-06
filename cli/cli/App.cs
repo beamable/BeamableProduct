@@ -329,7 +329,8 @@ public class App
 		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
-
+		Commands.AddSubCommand<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
+		
 		Commands.AddRootCommand<GrafanaCommand>();
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<CheckGrafanaCommand, CheckGrafanaCommandArgs, GrafanaCommand>();

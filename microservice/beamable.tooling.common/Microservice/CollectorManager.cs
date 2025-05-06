@@ -9,6 +9,8 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using Beamable.Common.Util;
 using Beamable.Server;
@@ -160,7 +162,7 @@ public class CollectorManager
 		return GetCollectorName(platform, arch);
 	}
 
-	public static string GetCollectorBasePathForCli()
+	public static string GetCollectorBasePathForCli(string version=null)
 	{
 		/*
 		 * there are several common cases,
@@ -190,8 +192,10 @@ public class CollectorManager
 		 * 
 		 */
 
-		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		
+		if (string.IsNullOrEmpty(version))
+		{
+			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+		}
 		if (version.StartsWith("0.0.123") || version == "1.0.0")
 		{
 			// if the version looks like a local dev version, then 
@@ -215,15 +219,19 @@ public class CollectorManager
 		string absBasePath, 
 		bool allowDownload,
 		OSPlatform platform, 
-		Architecture arch)
+		Architecture arch, 
+		string version=null)
 	{
-		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+		if (string.IsNullOrEmpty(version))
+		{
+			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+		}
 		
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
 		var configPath = Path.Combine(absBasePath, configFileName);
 
-		var itemsToDownload = new List<(string url, string filePath)>();
+		var itemsToDownload = new List<(string url, string filePath, bool makeExecutable)>();
 		
 		if (!File.Exists(collectorPath) && allowDownload)
 		{
@@ -231,7 +239,7 @@ public class CollectorManager
 				.Replace(KEY_VERSION, version)
 				.Replace(KEY_FILE, collectorName + ".gz");
 			
-			itemsToDownload.Add(new (collectorUrl, collectorPath));
+			itemsToDownload.Add(new (collectorUrl, collectorPath, true));
 		}
 
 		if (!File.Exists(configPath) && allowDownload)
@@ -239,14 +247,14 @@ public class CollectorManager
 			var configUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
 				.Replace(KEY_VERSION, version)
 				.Replace(KEY_FILE, configFileName + ".gz");
-			itemsToDownload.Add(new (configUrl, configPath));
+			itemsToDownload.Add(new (configUrl, configPath, false));
 		}
 
 		if (itemsToDownload.Count > 0)
 		{
 			var httpClient = new HttpClient();
 			var tasks = itemsToDownload
-				.Select(d => DownloadAndDecompressGzip(httpClient, d.url, d.filePath))
+				.Select(d => DownloadAndDecompressGzip(httpClient, d.url, d.filePath, d.makeExecutable))
 				.ToList();
 			foreach (var t in tasks)
 			{
@@ -261,7 +269,7 @@ public class CollectorManager
 		};
 	}
 	
-	private static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath)
+	private static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath, bool makeExecutable)
 	{
 		Log.Information($"Downloading {url} to {outputPath}");
 		var folder = Path.GetDirectoryName(outputPath);
@@ -274,7 +282,82 @@ public class CollectorManager
 		using var outputFileStream = File.Create(outputPath);
 
 		await gzipStream.CopyToAsync(outputFileStream);
+
+		if (makeExecutable)
+		{
+			if (!TryMakeExecutable(outputPath, out var error))
+			{
+				Log.Error($"Unable to mark {outputPath} as executable. Error=[{error}]");
+			}
+		}
 	}
+	
+	private static bool TryMakeExecutable(string filePath, out string error)
+    {
+        error = null;
+
+        if (!File.Exists(filePath))
+        {
+            error = $"File does not exist: {filePath}";
+            return false;
+        }
+
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // On Windows, executability is based on file extension (.exe, .bat, etc.).
+                string ext = Path.GetExtension(filePath).ToLowerInvariant();
+                if (ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com")
+                {
+                    return true;
+                }
+                else
+                {
+                    error = $"Windows does not consider '{ext}' files executable. Use a proper executable extension.";
+                    return false;
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                     RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "chmod",
+                        Arguments = $"+x \"{filePath}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    error = $"chmod failed with exit code {process.ExitCode}: {stderr.Trim()}";
+                    return false;
+                }
+
+                return true;
+            }
+            else
+            {
+                error = "Unsupported platform.";
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Unexpected error: {ex.Message}";
+            return false;
+        }
+    }
 	
 	public static Socket GetSocket(string host, int portNumber)
 	{

@@ -67,30 +67,45 @@
         </AdditionalFiles>
     </ItemGroup>
 
-    <ItemGroup>
-        <BeamBaseDownloadUrl Include="https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME" />
-        <BeamDebugBaseDownloadUrl Include="$(MSBuildThisFileDirectory)../../Resources/BEAM_FILE_NAME" />
-    </ItemGroup>
+    <PropertyGroup>
+        
+        <BeamPackagedVersion>@BUILD_VERSION@</BeamPackagedVersion>
+        
+        <BeamCollectorBaseUrl>
+            
+        </BeamCollectorBaseUrl>
+    </PropertyGroup>
+    
+<!--    <ItemGroup>-->
+<!--        <BeamBaseDownloadUrl Include="https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME" />-->
+<!--        <BeamDebugBaseDownloadUrl Include="$(MSBuildThisFileDirectory)../../Resources/BEAM_FILE_NAME" />-->
+<!--    </ItemGroup>-->
 
-<!--    <PropertyGroup>-->
+    <PropertyGroup>
 
-<!--        <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>-->
-<!--        <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>-->
-<!--        <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>-->
-<!--        <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>-->
+        <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>
+        <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>
+        <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>
+        <BeamRunningArchitecture Condition="'$(BeamRunningArchitecture)'==''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>
 
-<!--        <BeamCollectorConfigFileName>clickhouse-config.yaml</BeamCollectorConfigFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorFileName>-->
-<!--        <BeamCollectorFileName Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorFileName>-->
+        <BeamPlatform Condition="'$(BeamPlatform)'=='' AND '$(BeamIsWindows)'=='true'" >win</BeamPlatform>
+        <BeamPlatform Condition="'$(BeamPlatform)'=='' AND '$(BeamIsLinux)'=='true'" >lin</BeamPlatform>
+        <BeamPlatform Condition="'$(BeamPlatform)'=='' AND '$(BeamIsMacOS)'=='true'" >osx</BeamPlatform>
+        
+        <BeamCollectorConfigFileName>clickhouse-config.yaml</BeamCollectorConfigFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='win' AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='win' AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='lin' AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='lin' AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='osx' AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorFileName>
+        <BeamCollectorFileName Condition="'$(BeamPlatform)'=='osx' AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorFileName>
 
 <!--        <BeamCollectorUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamCollectorUrl>-->
 <!--        <BeamCollectorConfigUrl>@(BeamBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamCollectorConfigUrl>-->
 
 <!--        <BeamDebugCollectorUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorFileName)'))</BeamDebugCollectorUrl>-->
 <!--        <BeamDebugCollectorConfigUrl>@(BeamDebugBaseDownloadUrl->Replace('BEAM_FILE_NAME', '$(BeamCollectorConfigFileName)'))</BeamDebugCollectorConfigUrl>-->
-<!--    </PropertyGroup>-->
+    </PropertyGroup>
+
+
 </Project>

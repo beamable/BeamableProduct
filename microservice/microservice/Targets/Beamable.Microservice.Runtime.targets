@@ -6,6 +6,29 @@
         <OutputType Condition="'$(BeamProjectType)'=='service'">Exe</OutputType>
     </PropertyGroup>
 
+    <PropertyGroup>
+
+        
+        <BeamCollectorVersion Condition="'$(BeamCollectorVersion)'==''">$(BeamableVersion)</BeamCollectorVersion>
+        <BeamIsDevVersion Condition="$(BeamCollectorVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
+        
+        <BeamCollectorVersion Condition="'$(BeamIsDevVersion)'=='true'">0.0.123</BeamCollectorVersion>
+        
+        <BeamBaseDownloadUrl>https://collectors.beamable.com/version/$(BeamCollectorVersion)"</BeamBaseDownloadUrl>
+        <BeamCollectorBinaryDownloadUrl>$(BeamBaseDownloadUrl)/$(BeamCollectorFileName).gz</BeamCollectorBinaryDownloadUrl>
+        <BeamCollectorConfigDownloadUrl>$(BeamBaseDownloadUrl)/$(BeamCollectorConfigFileName).gz</BeamCollectorConfigDownloadUrl>
+        
+        <BeamCollectorFolder>$(LOCALAPPDATA)/beam/collectors/$(BeamCollectorVersion)</BeamCollectorFolder>
+        <BeamCollectorBinaryFilepath>$(BeamCollectorFolder)/$(BeamCollectorFileName)</BeamCollectorBinaryFilepath>
+        <BeamCollectorConfigFilepath>$(BeamCollectorFolder)/$(BeamCollectorConfigFileName)</BeamCollectorConfigFilepath>
+
+
+<!--        <PropertyGroup>-->
+            <BeamCollectorExists>false</BeamCollectorExists>
+            <BeamCollectorExists Condition="Exists($(BeamCollectorBinaryFilepath))">true</BeamCollectorExists>
+<!--        </PropertyGroup>-->
+    </PropertyGroup>
+
     <!-- This imports customer specific csproj files in the .beamable/temp/localDev project -->
     <Import Label="Load Beamable Local Developer Settings"
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
@@ -30,55 +53,32 @@
         </ItemGroup>
     </Target>
 
-<!--    <Target Name="DownloadCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==false">-->
+    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamDisableCollectorResolution)'!='true'">
 
-<!--        <Message Importance="high" Text="Downloading collector binaries from cloud..."/>-->
+        <PropertyGroup>
+            <ActualOutputDir>$(OutputPath)</ActualOutputDir>
+            <ActualOutputDir Condition="'$(ActualOutputDir)' == ''">$(PublishDir)</ActualOutputDir>
+        </PropertyGroup>
 
-<!--        <CreateProperty Value="$(BeamCollectorUrl)">-->
-<!--            <Output TaskParameter="Value" PropertyName="BeamUrlBin" />-->
-<!--        </CreateProperty>-->
+        <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
+        <Message Condition="'$(BeamCollectorExists)'!='true'"
+                 Importance="high"
+                 Text="Downloading collector!!... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
+        />
+        <Exec   Condition="'$(BeamCollectorExists)'!='true'"
+                Command="$(BeamableDotnetPath) $(BeamableTool) collector get --override-version $(BeamCollectorVersion) $(BeamCollectorPlatformArchArg)"
+                EnvironmentVariables=""/>
 
-<!--        <CreateProperty Value="$(BeamCollectorConfigUrl)">-->
-<!--            <Output TaskParameter="Value" PropertyName="BeamUrlConfig" />-->
-<!--        </CreateProperty>-->
+        <Message
+                Importance="high"
+                Text="Copying collector to output folder... "
+        />
+        <Copy
+                SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
+                DestinationFolder="$(ActualOutputDir)"
+                SkipUnchangedFiles="true"
+        />
 
-<!--        <Message Importance="normal" Text="BeamUrlBin $(BeamUrlBin)"/>-->
-<!--        <Message Importance="normal" Text="BeamCollectorUrl $(BeamUrlConfig)"/>-->
-
-<!--        <PropertyGroup>-->
-<!--            <BeamUrlBin>$(BeamUrlBin.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlBin>-->
-<!--            <BeamUrlConfig>$(BeamUrlConfig.Replace('BEAM_VERSION', '$(BeamableVersion)'))</BeamUrlConfig>-->
-<!--        </PropertyGroup>-->
-
-<!--        <DownloadFile-->
-<!--                SourceUrl="$(BeamUrlBin)"-->
-<!--                DestinationFolder="$(OutputPath)">-->
-<!--            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-collector" />-->
-<!--        </DownloadFile>-->
-
-<!--        <DownloadFile-->
-<!--                SourceUrl="$(BeamUrlConfig)"-->
-<!--                DestinationFolder="$(OutputPath)">-->
-<!--            <Output TaskParameter="DownloadedFile" ItemName="clickhouse-config" />-->
-<!--        </DownloadFile>-->
-<!--    </Target>-->
-
-<!--    <Target Name="DownloadDebugCollectorBinaries" AfterTargets="Build" Condition="$(BeamableVersion.Contains('0.0.123'))==true">-->
-<!--        <Message Importance="high" Text="[Microservice] Downloading collector binaries from local source..."/>-->
-
-<!--        <ItemGroup>-->
-<!--            <BeamDebugCollectorFile Include="$(BeamDebugCollectorUrl)">-->
-<!--                <Visible>false</Visible>-->
-<!--            </BeamDebugCollectorFile>-->
-
-<!--            <AdditionaBeamDebugCollectorConfigFile Include="$(BeamDebugCollectorConfigUrl)">-->
-<!--                <Visible>false</Visible>-->
-<!--            </AdditionaBeamDebugCollectorConfigFile>-->
-<!--        </ItemGroup>-->
-
-<!--        <Copy SourceFiles="@(BeamDebugCollectorFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />-->
-<!--        <Copy SourceFiles="@(AdditionaBeamDebugCollectorConfigFile)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />-->
-<!--    </Target>-->
-
+    </Target>
 
 </Project>

@@ -12,6 +12,7 @@ using System.CommandLine;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using cli.OtelCommands;
 using microservice.Extensions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -267,8 +268,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
 			: "";
 		var runtimeArg = forceCpu
-			? "--runtime unix-x64"
-			: "--use-current-runtime";
+			? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
+			: $"--use-current-runtime ";
 		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
