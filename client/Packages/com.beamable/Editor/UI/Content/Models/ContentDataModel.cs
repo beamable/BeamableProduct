@@ -243,12 +243,23 @@ namespace Beamable.Editor.Content.Models
 
 		}
 
-		private IList<ContentItemDescriptor> _selectedContent;
+		private IList<ContentItemDescriptor> _selectedContent = new List<ContentItemDescriptor>();
 		public IList<ContentItemDescriptor> SelectedContents
 		{
 			set
 			{
-				_selectedContent = value;
+				if (value == null || _selectedContent == null)
+				{
+					_selectedContent = new List<ContentItemDescriptor>();
+				}
+				else if (_selectedContent.SequenceEqual(value))
+				{
+					return;
+				}
+				else
+				{
+					_selectedContent = value;
+				}
 
 				if (IsDebugging)
 				{
@@ -262,12 +273,7 @@ namespace Beamable.Editor.Content.Models
 
 				OnSelectedContentChanged?.Invoke(_selectedContent);
 			}
-			get
-			{
-				_selectedContent = _selectedContent ?? new List<ContentItemDescriptor>();
-
-				return _selectedContent;
-			}
+			get => _selectedContent;
 		}
 
 		public void ClearSelectedContents()
@@ -295,7 +301,6 @@ namespace Beamable.Editor.Content.Models
 			}
 		}
 
-		private List<ContentItemDescriptor> _filteredContents = new List<ContentItemDescriptor>();
 		public List<ContentItemDescriptor> FilteredContents => _filteredContent;
 
 		public void RefreshFilteredContents()
@@ -410,11 +415,7 @@ namespace Beamable.Editor.Content.Models
 
 				OnSelectedContentTypesChanged?.Invoke(_selectedContentTypes);
 
-				//  ******************************************************
-				//  NOTE: Every time the SelectedContentTypes is SET,
-				//        the SelectedContents is CLEARED
-				//  ******************************************************
-				ClearSelectedContents();
+				SelectedContents = SelectedContents.Where(_filteredContent.Contains).ToList();
 			}
 			get
 			{
