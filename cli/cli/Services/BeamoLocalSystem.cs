@@ -111,7 +111,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache, fetchServerManifest);
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, useCache: useManifestCache, fetchServerManifest);
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -485,6 +485,12 @@ public class BeamoLocalManifest
 	/// </summary>
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
+	/// <summary>
+	/// This list contains the concatenation of all found `.beamignore` files in the workspace.
+	/// Each element is a beamoId. 
+	/// </summary>
+	public HashSet<string> LocallyIgnoredBeamoIds;
+	
 	/// <summary>
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>

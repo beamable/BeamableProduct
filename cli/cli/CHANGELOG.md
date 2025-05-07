@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2025-05-07
+### Added
+- `.beamignore` files may be used to ignore services and storages from the `beam deploy` commands. 
+- Hidden `--ignore-beam-ids` option can be used to ignore beam ids similar in addition to `.beamignore` files. [#4019](https://github.com/beamable/BeamableProduct/issues/4019)
+
+### Fixed
+- `beam deploy` commands no longer attempt to build non-existent source when `--merge` flag is used.
+
 ## [4.2.0] - 2025-04-04
 ### Changed
 - `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)
