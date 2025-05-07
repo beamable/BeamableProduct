@@ -57,7 +57,7 @@
 
         <PropertyGroup>
             <ActualOutputDir>$(OutputPath)</ActualOutputDir>
-            <ActualOutputDir Condition="'$(ActualOutputDir)' == ''">$(PublishDir)</ActualOutputDir>
+            <ActualOutputDir Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</ActualOutputDir>
         </PropertyGroup>
 
         <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
