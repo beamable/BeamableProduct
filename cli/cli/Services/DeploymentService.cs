@@ -61,6 +61,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	/// </summary>
 	public ManifestView manifest;
 	public DeploymentDiffSummary diff;
+	public Dictionary<string, List<string>> notes = new Dictionary<string, List<string>>();
 	public List<string> servicesToUpload = new List<string>();
 	public bool ranHealthChecks;
 	public int changeCount;
@@ -73,6 +74,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 		s.Serialize(nameof(diff), ref diff);
 		s.Serialize(nameof(changeCount), ref changeCount);
 		s.Serialize(nameof(ranHealthChecks), ref ranHealthChecks);
+		s.SerializeDictionary(nameof(notes), ref notes);
 		s.SerializeList(nameof(servicesToUpload), ref servicesToUpload);
 	}
 }
@@ -546,8 +548,10 @@ public partial class DeployUtil
 		return errors.Count == 0;
 	}
 
-	public static ManifestView EnsureEntriesHaveChecksums(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureEntriesHaveChecksums(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		// compute the checksums for all services and storages
 		foreach (var service in next.manifest)
@@ -559,12 +563,29 @@ public partial class DeployUtil
 		{
 			storage.ResetChecksum();
 		}
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
+	}
 
-		return next;
+	public struct ManifestTransformArgs
+	{
+		public ManifestView current;
+		public ManifestView remote;
+		public HashSet<string> ignoreIds;
+	}
+
+	public struct ManifestTransformOutput
+	{
+		public ManifestView next;
+		public Dictionary<string, List<string>> beamoIdToNotes;
 	}
 	
-	public static ManifestView RemoveDisabledServicesThatWereNeverDeployed(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput RemoveDisabledServicesThatWereNeverDeployed(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		var storagesToKeep = new HashSet<ServiceDependencyReference>();
 
@@ -606,11 +627,16 @@ public partial class DeployUtil
 		}
 		next.storageReference.Set(storages.ToArray());
 
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
 	}
 	
-	public static ManifestView EnsureArchivedServicesAreDisabled(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureArchivedServicesAreDisabled(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		// if a service or storage is archived, then it cannot be enabled. 
 		foreach (var service in next.manifest)
@@ -628,13 +654,18 @@ public partial class DeployUtil
 				storage.enabled = false;
 			}
 		}
-
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
 	}
 	
-	public static ManifestView EnsureOnlyActiveStoragesAreEnabled(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureOnlyActiveStoragesAreEnabled(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
+		var notes = new Dictionary<string, List<string>>();
 		// there is a rule on the backend that a storage can only be enabled 
 		//  IF there is an enabled service that is referencing that storage. 
 		//  The rule exists to prevent folks from having unreachable storages. 
@@ -668,11 +699,23 @@ public partial class DeployUtil
 					// this storage was referenced by an enabled service
 					continue;
 
+				if (!storage.enabled)
+					// the storage is ALREADY disabled; so no need to do anything.
+					continue; 
+				
 				storage.enabled = false;
+				notes[storage.id] = new List<string>
+				{
+					"Is being disabled because it was not referenced by any active service. "
+				};
 			}
 		}
 
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next,
+			beamoIdToNotes = notes
+		};
 	}
 
 	public static string GetPlanTempFolder(IDependencyProvider provider)
@@ -759,6 +802,20 @@ public partial class DeployUtil
 				            "Consider re-running a plan command with the `--health` option. ");
 			}
 		}
+
+		if (plan.notes?.Count > 0)
+		{
+			Log.Information("Notes:");
+			foreach (var kvp in plan.notes)
+			{
+				Log.Information($" {kvp.Key}");
+				foreach (var note in kvp.Value)
+				{
+					Log.Information($"   {note}");
+				}
+			}
+		}
+
 		switch (hasChanges, hasDetectedChanges)
 		{
 			case (true, true):
@@ -939,8 +996,10 @@ public partial class DeployUtil
 		}
 		
 		// process transforms
+		var notes = new Dictionary<string, List<string>>();
+		
 		{
-			var transforms = new List<Func<ManifestView, ManifestView, ManifestView>>
+			var transforms = new List<Func<ManifestTransformArgs, ManifestTransformOutput>>
 			{
 				RemoveDisabledServicesThatWereNeverDeployed,
 				EnsureArchivedServicesAreDisabled, 
@@ -950,7 +1009,23 @@ public partial class DeployUtil
 			for (var i = 0; i < transforms.Count; i++)
 			{
 				var r = .5f * ((i + 1f) / transforms.Count);
-				next = transforms[i](next, remote);
+				var output = transforms[i](new ManifestTransformArgs
+				{
+					current = next, remote = remote, ignoreIds = beamo.BeamoManifest.LocallyIgnoredBeamoIds
+				});
+				next = output.next;
+				if (output.beamoIdToNotes != null)
+				{
+					foreach (var kvp in output.beamoIdToNotes)
+					{
+						if (!notes.TryGetValue(kvp.Key, out var existingNotes))
+						{
+							notes[kvp.Key] = existingNotes = new List<string>();
+						}
+						existingNotes.AddRange(kvp.Value);
+					}
+				}
+				
 				progressHandler?.Invoke(MergingManifestProgressName, r);
 			}
 		}
@@ -1045,6 +1120,7 @@ public partial class DeployUtil
 			mode = args.DeployMode,
 			diff = diff,
 			manifest = next,
+			notes = notes,
 			servicesToUpload = servicesToUpload,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
