@@ -161,8 +161,8 @@ In the Unity Editor window in top-right corner, click on the Beamable Menu, then
 			if (!cidsMatch || !pidsMatch)
 			{
 				warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
-The editor environment is using a <b>cid=[{{editorCid}}]</b> and <b>pid=[{{editorPid}}]</b>. These values are accessible from Beamable Menu (top-right corner) in the Select Realm section.
-However, the built target will use a <b>cid=[{{runtimeCid}}]</b> and <b>pid=[{{runtimePid}}]</b>. These values are assigned in the config-defaults.txt file.
+The editor environment is using a <b>cid=[{editorCid}]</b> and <b>pid=[{editorPid}]</b>. These values are accessible from Beamable Menu (top-right corner) in the Select Realm section.
+However, the built target will use a <b>cid=[{runtimeCid}]</b> and <b>pid=[{runtimePid}]</b>. These values are assigned in the config-defaults.txt file.
 These values do not match. This means that you are building the game
 for a different Beamable environment than the editor is currently using. Be careful! 
 In the Unity Editor window in top-right corner, click on the Beamable Menu, then go to the Select Realm submenu and click the <b>Save to config-defaults</b> option.";

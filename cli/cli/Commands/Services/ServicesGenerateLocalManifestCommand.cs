@@ -28,7 +28,7 @@ public class ServicesGenerateLocalManifestCommand : AtomicCommand<ServicesGenera
 
 	public override async Task<ServicesGenerateLocalManifestCommandOutput> GetResult(ServicesGenerateLocalManifestCommandArgs args)
 	{
-		var manifest = await ProjectContextUtil.GenerateLocalManifest( args.AppContext.DotnetPath,  args.BeamoService, args.ConfigService);
+		var manifest = await ProjectContextUtil.GenerateLocalManifest( args.AppContext.DotnetPath,  args.BeamoService, args.ConfigService, args.AppContext.IgnoreBeamoIds);
 		return new ServicesGenerateLocalManifestCommandOutput
 		{
 			manifest = manifest
