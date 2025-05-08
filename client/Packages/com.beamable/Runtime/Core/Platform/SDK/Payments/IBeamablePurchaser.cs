@@ -17,6 +17,10 @@ namespace Beamable.Api.Payments
 	/// </summary>
 	public interface IBeamablePurchaser
 	{
+		/// <summary>
+		/// Purchaser initialization status.
+		/// </summary>
+		public PurchasingInitializationStatus InitializationStatus { get; }
 
 		/// <summary>
 		/// Begin initialization of Beamable purchasing.

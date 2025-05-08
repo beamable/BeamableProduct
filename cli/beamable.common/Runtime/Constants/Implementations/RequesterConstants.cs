@@ -21,7 +21,11 @@ namespace Beamable.Common
 			public const string HEADER_PID = "X-KS-PROJECTID";
 
 			public const string HEADER_SCOPE = "X-BEAM-SCOPE";
-
+			
+			public const string HEADER_SIGNATURE = "X-BEAM-SIGNATURE";
+			
+			public const string HEADER_GAMERTAG = "X-BEAM-GAMERTAG";
+			
 			/// <summary>
 			/// An authorization header
 			/// </summary>

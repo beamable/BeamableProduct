@@ -25,13 +25,16 @@ namespace Beamable.Purchasing
 #endif
 
 	{
+		public PurchasingInitializationStatus InitializationStatus { get; private set; } =
+			PurchasingInitializationStatus.NotInitialized;
+
 		private IStoreController _storeController;
 #pragma warning disable CS0649
 		private IAppleExtensions _appleExtensions;
 		private IGooglePlayStoreExtensions _googleExtensions;
 #pragma warning restore CS0649
 
-		private readonly Promise<Unit> _initPromise = new Promise<Unit>();
+		private Promise<Unit> _initPromise = new Promise<Unit>();
 		private long _txid;
 		private Action<CompletedTransaction> _success;
 		private Action<ErrorCode> _fail;
@@ -43,15 +46,31 @@ namespace Beamable.Purchasing
 
 		public Promise<Unit> Initialize(IDependencyProvider provider)
 		{
+			if (InitializationStatus == PurchasingInitializationStatus.InProgress)
+			{
+				return _initPromise;
+			}
+			_initPromise = new Promise<Unit>();
+			InitializationStatus = PurchasingInitializationStatus.InProgress;
 			_serviceProvider = provider;
 			var paymentService = GetPaymentService();
 
-			var skuPromise = paymentService.GetSKUs(); // XXX: This is failing, but nothing is listening for it.
-			return skuPromise.FlatMap(rsp =>
+			var skuPromise = paymentService.GetSKUs();
+			return skuPromise.Recover(e =>
 			{
+				InitializationStatus = PurchasingInitializationStatus.ErrorFailedToGetSkus;
+				_initPromise.CompleteError(e);
+				return new GetSKUsResponse();
+			}).FlatMap(rsp =>
+			{
+				if (_initPromise.IsFailed)
+				{
+					return _initPromise;
+				}
 				var noSkusAvailable = rsp.skus.definitions.Count == 0;
 				if (noSkusAvailable)
 				{
+					InitializationStatus = PurchasingInitializationStatus.CancelledNoSkusConfigured;
 					// If there are no SKUs available, we will short-circuit the rest of the init-flow.
 					// Most importantly, we don't call `UnityPurchasing.Initialize`, so that we don't receive the Purchase Finished callbacks.
 					_initPromise.CompleteSuccess(PromiseBase.Unit);
@@ -149,6 +168,11 @@ namespace Beamable.Purchasing
 		public Promise<CompletedTransaction> StartPurchase(string listingSymbol, string skuSymbol)
 		{
 			var result = new Promise<CompletedTransaction>();
+			if (InitializationStatus != PurchasingInitializationStatus.Success)
+			{
+				result.CompleteError(InitializationStatus.StatusToErrorCode());
+				return result;
+			}
 			_txid = 0;
 			_success = result.CompleteSuccess;
 			_fail = result.CompleteError;
@@ -222,6 +246,7 @@ namespace Beamable.Purchasing
 		/// <param name="extensions"></param>
 		public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
 		{
+			InitializationStatus = PurchasingInitializationStatus.Success;
 			InAppPurchaseLogger.Log("Successfully initialized IAP.");
 			_storeController = controller;
 #if !USE_STEAMWORKS || UNITY_EDITOR
@@ -243,15 +268,19 @@ namespace Beamable.Purchasing
 			switch (error)
 			{
 				case InitializationFailureReason.AppNotKnown:
+					InitializationStatus = PurchasingInitializationStatus.ErrorAppNotKnown;
 					InAppPurchaseLogger.Log("Is your App correctly uploaded on the relevant publisher console?");
 					break;
 				case InitializationFailureReason.PurchasingUnavailable:
+					InitializationStatus = PurchasingInitializationStatus.ErrorPurchasingUnavailable;
 					InAppPurchaseLogger.Log("Billing disabled!");
 					break;
 				case InitializationFailureReason.NoProductsAvailable:
+					InitializationStatus = PurchasingInitializationStatus.ErrorNoProductsAvailable;
 					InAppPurchaseLogger.Log("No products available for purchase!");
 					break;
 				default:
+					InitializationStatus = PurchasingInitializationStatus.ErrorUnknown;
 					InAppPurchaseLogger.Log("Unknown billing error: '{error}'");
 					break;
 			}
@@ -417,7 +446,17 @@ namespace Beamable.Purchasing
 		/// </summary>
 		public string storeId;
 	}
-	
+
+	[BeamContextSystem]
+	public static class UnityBeamablePurchaserRegister
+	{
+		[RegisterBeamableDependencies]
+		public static void RegisterServices(IDependencyBuilder builder)
+		{
+			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+		}
+	}
+
 	public class UnityBeamablePurchaserUtil
 	{
 		/// <summary>

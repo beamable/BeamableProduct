@@ -30,7 +30,12 @@ namespace Beamable.AccountManagement
 
 		public static AccountManagementConfiguration Instance => Get<AccountManagementConfiguration>();
 
-		public bool Facebook, Apple, Google, GooglePlayGames;
+		// ReSharper disable InconsistentNaming
+		public bool Facebook, Apple, Google;
+		[Tooltip("No longer used. Now it is controlled by the `BEAMABLE_GPGS` define symbol,")]
+		[Obsolete]
+		// ReSharper disable once UnusedMember.Global
+		public bool GooglePlayGames;
 
 		[Tooltip("Web App Google Client ID https://console.cloud.google.com/apis/credentials (note: Android needs web ID for auth)")]
 		public string GoogleClientID;
@@ -114,7 +119,10 @@ namespace Beamable.AccountManagement
 				case AuthThirdParty.Google:
 					// On non-iOS platforms, just honor the Google checkbox.
 					return Google;
-
+#if UNITY_ANDROID && BEAMABLE_GPGS
+				case AuthThirdParty.GoogleGamesServices:
+					return true;
+#endif
 #if UNITY_EDITOR
 				case AuthThirdParty.Apple:
 					return Apple;	

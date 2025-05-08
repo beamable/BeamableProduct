@@ -24,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string log;
         /// <summary>If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, then any global invocation of the beam tool will automatically redirect and call the local version. However, there will be a performance penalty due to the extra process invocation. This option flag will cause an error to occur instead of automatically redirecting the execution to a new process invocation. </summary>
         public bool noRedirect;
+        /// <summary>A set of beam ids that should be excluded from the local source code scans. When a beam id is ignored, it cannot be deployed or understood by the CLI. The final set of ignored beam ids is the summation of this option AND any .beamignore files found in the .beamable folder</summary>
+        public string[] ignoreBeamIds;
         /// <summary>By default, any local CLI invocation that should trigger a Federation of any type will prefer locally running Microservices. However, if you need the CLI to use the remotely running Microservices, use this option to ignore locally running services. </summary>
         public bool preferRemoteFederation;
         /// <summary>Show help for all commands</summary>
@@ -108,6 +110,15 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.noRedirect != default(bool)))
             {
                 genBeamCommandArgs.Add(("--no-redirect=" + this.noRedirect));
+            }
+            // If the ignoreBeamIds value was not default, then add it to the list of args.
+            if ((this.ignoreBeamIds != default(string[])))
+            {
+                for (int i = 0; (i < this.ignoreBeamIds.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--ignore-beam-ids=" + this.ignoreBeamIds[i]));
+                }
             }
             // If the preferRemoteFederation value was not default, then add it to the list of args.
             if ((this.preferRemoteFederation != default(bool)))
