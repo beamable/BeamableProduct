@@ -471,7 +471,11 @@ namespace Beamable.Common.Content
 
 		public new string ToString()
 		{
-			return HasNonEmptyValue ? $"OptionalString[{Value}]" : "OptionalString[None]";
+			if (!HasValue)
+			{
+				return "OptionalString[]";
+			}
+			return Value == null ? "OptionalString[null]" : $"OptionalString[\"{Value}\"]";
 		}
 	}
 
