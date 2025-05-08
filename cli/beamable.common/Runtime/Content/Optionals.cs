@@ -468,6 +468,11 @@ namespace Beamable.Common.Content
 
 
 		public bool HasNonEmptyValue => HasValue && !string.IsNullOrEmpty(Value);
+
+		public new string ToString()
+		{
+			return HasNonEmptyValue ? $"OptionalString[{Value}]" : "OptionalString[None]";
+		}
 	}
 
 	[System.Serializable]
