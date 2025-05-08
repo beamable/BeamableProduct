@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
+- `OptionalString` overrides `.ToString()` for easier print debugging.
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
