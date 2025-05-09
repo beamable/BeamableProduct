@@ -13,6 +13,9 @@
 		public const string LINK_LICENSE = "https://beamable.com/license";
 		public const string LINK_TERMS_OF_SERVICE = "https://beamable.com/tos";
 		public const string LINK_PRIVACY = "https://beamable.com/privacy";
+		
+		public const string OPEN_API_SUFFIX = "_openApi.json";
+		public const string OPEN_API_FOLDER_NAME = "openApi";
 
 		public static class Commons
 		{

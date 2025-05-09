@@ -362,6 +362,7 @@ public class App
 		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();

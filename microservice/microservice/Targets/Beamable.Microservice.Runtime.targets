@@ -19,7 +19,7 @@
 <!--    </Target>-->
 
     <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
-    <Target Name="generate-oapi" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND '$(DOTNET_RUNNING_IN_CONTAINER)'!='true'">
+    <Target Name="generate-oapi" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service'">
         <Message Text="Generating OAPI specifications" Importance="high" />
         <Exec Command="dotnet $(TargetPath) --generate-oapi" 
               EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(BeamableFolderPath)"

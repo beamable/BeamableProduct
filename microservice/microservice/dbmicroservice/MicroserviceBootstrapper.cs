@@ -73,8 +73,7 @@ namespace Beamable.Server
     {
 	    private const int MSG_SIZE_LIMIT = 1000;
 	    
-	    const string OPEN_API_SUFFIX = "_openApi.json";
-	    const string OPEN_API_FOLDER_NAME = "openApi";
+	    
 
 	    public static LoggingLevelSwitch LogLevel;
 	    public static ReflectionCache ReflectionCache;
@@ -746,14 +745,14 @@ namespace Beamable.Server
 	        var beamableFolderPath = Environment.GetEnvironmentVariable("OPEN_API_OUTPUT_PATH") 
 	                                 ?? throw new InvalidOperationException("OPEN_API_OUTPUT_PATH environment variable not set");
 	        
-	        string directoryPath = Path.Combine(Path.GetFullPath(beamableFolderPath), OPEN_API_FOLDER_NAME);
+	        string directoryPath = Path.Combine(Path.GetFullPath(beamableFolderPath), Constants.OPEN_API_FOLDER_NAME);
 	        if (!Directory.Exists(directoryPath))
 	        {
 		        Directory.CreateDirectory(directoryPath);
 	        }
 
 	        
-	        await File.WriteAllTextAsync(Path.Combine(directoryPath, $"{attribute.MicroserviceName}{OPEN_API_SUFFIX}"), outputString);
+	        await File.WriteAllTextAsync(Path.Combine(directoryPath, $"{attribute.MicroserviceName}{Constants.OPEN_API_SUFFIX}"), outputString);
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
