@@ -196,9 +196,8 @@ public static class WebSchema
 			}
 			else
 			{
-				tsClass.SetExtends(
-					new TsIdentifier(
-						$"Array<{OpenApiTsTypeMapper.Map(itemsSchema, ref itemsSchemaModules).Render()}>"));
+				var type = OpenApiTsTypeMapper.Map(itemsSchema, ref itemsSchemaModules).Render();
+				tsClass.SetExtends(new TsIdentifier($"Array<{type}>"));
 			}
 		}
 
