@@ -54,7 +54,7 @@ public class SwaggerService
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
 		// TODO: At the moment, this relies on pubnub and we are moving away from it; add this back in once done.
-		BeamableApis.ObjectService("chatV2").WithoutSDKs(TARGET_ENGINE_NAME_UNITY, TARGET_ENGINE_NAME_UNREAL),
+		BeamableApis.ObjectService("chatV2").WithoutSDKs(TARGET_ENGINE_NAME_UNITY, TARGET_ENGINE_NAME_UNREAL, TARGET_ENGINE_NAME_WEB),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
@@ -1081,6 +1081,7 @@ public class SwaggerService
 
 	public const string TARGET_ENGINE_NAME_UNITY = "unity";
 	public const string TARGET_ENGINE_NAME_UNREAL = "unreal";
+	public const string TARGET_ENGINE_NAME_WEB = "web";
 }
 
 public class BeamableApiDescriptor
