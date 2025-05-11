@@ -156,9 +156,15 @@ public abstract class TsType : TsNode
 	/// <param name="props">The properties of the object type.</param>
 	/// <returns>A type expression for the given object type.</returns>
 	/// <example>
-	/// <c>TsType.Object("foo", TsType.String, "bar", TsType.Number)</c> equals <c>{ foo: string; bar: number; }</c>.
+	/// <c>
+	/// TsType.Object("foo", TsType.String, PropType.Required, "bar", TsType.Number, PropType.Optional)
+	/// </c> equals
+	/// <code>{
+	///   foo: string;
+	///   bar?: number;
+	/// }</code>.
 	/// </example>
-	public static TsType Object(params (string name, TsType type)[] props) => new ObjectType(props);
+	public static TsType Object(params (string name, TsType type, PropType propType)[] props) => new ObjectType(props);
 
 	/// <summary>
 	/// Builds a type expression for the given mapped type.
@@ -196,7 +202,16 @@ public abstract class TsType : TsNode
 
 		public override void Write(TsCodeWriter w)
 		{
+			// add opening bracket if union type or intersection type
+			if (_elem is UnionType or IntersectionType)
+				w.Write("(");
+
 			_elem.Write(w);
+
+			// add closing bracket if union type or intersection type
+			if (_elem is UnionType or IntersectionType)
+				w.Write(")");
+
 			w.Write("[]");
 		}
 	}
@@ -296,23 +311,29 @@ public abstract class TsType : TsNode
 
 	private class ObjectType : TsType
 	{
-		private readonly (string name, TsType type)[] _props;
+		private readonly (string name, TsType type, PropType propType)[] _props;
 
-		public ObjectType((string, TsType)[] p) => _props = p;
+		public ObjectType((string, TsType, PropType)[] p) => _props = p;
 
 		public override void Write(TsCodeWriter w)
 		{
-			w.Write("{ ");
+			w.WriteLine("{ ");
+			w.Indent();
+
 			for (int i = 0; i < _props.Length; i++)
 			{
 				w.Write(_props[i].name);
+
+				if (_props[i].propType == PropType.Optional)
+					w.Write("?");
+
 				w.Write(": ");
 				_props[i].type.Write(w);
-				if (i < _props.Length - 1)
-					w.Write("; ");
+				w.WriteLine("; ");
 			}
 
-			w.Write(" }");
+			w.Outdent();
+			w.Write("}");
 		}
 	}
 
@@ -335,5 +356,11 @@ public abstract class TsType : TsNode
 			_val.Write(w);
 			w.Write(" }");
 		}
+	}
+
+	public enum PropType
+	{
+		Required,
+		Optional
 	}
 }

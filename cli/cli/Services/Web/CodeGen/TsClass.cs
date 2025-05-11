@@ -36,6 +36,11 @@ public class TsClass : TsNode
 	public List<TsProperty> Properties { get; } = new();
 
 	/// <summary>
+	/// The constructor of the class.
+	/// </summary>
+	public TsConstructor Constructor { get; private set; }
+
+	/// <summary>
 	/// The methods of the class.
 	/// </summary>
 	public List<TsMethod> Methods { get; } = new();
@@ -117,6 +122,17 @@ public class TsClass : TsNode
 	}
 
 	/// <summary>
+	/// Sets the constructor of the class.
+	/// </summary>
+	/// <param name="method">The method to add.</param>
+	/// <returns>The current <see cref="TsClass"/> instance for chaining.</returns>
+	public TsClass SetConstructor(TsConstructor constructor)
+	{
+		Constructor = constructor;
+		return this;
+	}
+
+	/// <summary>
 	/// Sets the base class of the class.
 	/// </summary>
 	/// <param name="baseClass">The base class to set.</param>
@@ -174,7 +190,12 @@ public class TsClass : TsNode
 		foreach (TsProperty prop in Properties)
 			prop.Write(writer);
 
-		if (Properties.Count > 0 && Methods.Count > 0)
+		if (Properties.Count > 0 && (Methods.Count > 0 || Constructor != null))
+			writer.WriteLine();
+
+		Constructor?.Write(writer);
+
+		if (Methods.Count > 0 && Constructor != null)
 			writer.WriteLine();
 
 		foreach (TsMethod method in Methods)

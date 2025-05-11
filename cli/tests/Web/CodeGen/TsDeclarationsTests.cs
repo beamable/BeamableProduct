@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using cli.Services.Web.CodeGen;
+using System.Collections.Generic;
 
 namespace tests.Web.CodeGen;
 
@@ -65,15 +66,39 @@ public class TsDeclarationsTests
 		const string expected =
 			"export abstract class Foo<T> extends Bar implements IFile {\n" +
 			"  p: number;\n" +
+			"  q: string;\n" +
+			"  \n" +
+			"  constructor(\n" +
+			"    p: number,\n" +
+			"    q: string\n" +
+			"  ) {\n" +
+			"    this.p = p;\n" +
+			"    this.q = q;\n" +
+			"  }\n" +
 			"  \n" +
 			"  m(): void {\n" +
 			"  }\n" +
 			"}\n";
+		var constructorBodies = new List<TsNode>
+		{
+			new TsAssignmentStatement(
+				new TsMemberAccessExpression(new TsIdentifier("this"), "p"),
+				new TsIdentifier("p")),
+			new TsAssignmentStatement(
+				new TsMemberAccessExpression(new TsIdentifier("this"), "q"),
+				new TsIdentifier("q"))
+		};
 		var cls = new TsClass("Foo")
 			.AddModifier(TsModifier.Export | TsModifier.Abstract)
 			.AddTypeParameter(new TsGenericParameter("T"))
 			.AddImplements(new TsIdentifier("IFile"))
 			.AddProperty(new TsProperty("p", TsType.Number))
+			.AddProperty(new TsProperty("q", TsType.String))
+			.SetConstructor(new TsConstructor()
+				.AddParameter(new TsConstructorParameter("p", TsType.Number))
+				.AddParameter(new TsConstructorParameter("q", TsType.String))
+				.AddBody(constructorBodies.ToArray())
+			)
 			.AddMethod(new TsMethod("m"))
 			.SetExtends(new TsIdentifier("Bar"));
 		var writer = new TsCodeWriter();
@@ -118,11 +143,13 @@ public class TsDeclarationsTests
 		const string expected = "export const enum E {\n" +
 		                        "  A,\n" +
 		                        "  B = 1,\n" +
+		                        "  C = \"2\"\n" +
 		                        "}\n";
 		var e = new TsEnum("E")
 			.AddModifier(TsModifier.Export)
 			.AddMember(new TsEnumMember("A"))
-			.AddMember(new TsEnumMember("B", "1"))
+			.AddMember(new TsEnumMember("B", "1", TsEnumMemberValueType.Number))
+			.AddMember(new TsEnumMember("C", "2"))
 			.AsConst();
 		var writer = new TsCodeWriter();
 		e.Write(writer);

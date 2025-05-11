@@ -232,4 +232,31 @@ public class TsStatementsTests
 		Assert.AreEqual(expected, writer.ToString());
 		Assert.AreEqual(expected, stmt.Render());
 	}
+
+	[Test]
+	public void ObjectDestructureStatement_WritesDestructure()
+	{
+		const string expected =
+			"const {\n" +
+			"  id,\n" +
+			"  createdTimeMillis,\n" +
+			"  updatedTimeMillis,\n" +
+			"  privilegedAccount,\n" +
+			"  external,\n" +
+			"  gamerTags,\n" +
+			"  thirdParties,\n" +
+			"  ...optionals\n" +
+			"} = init;\n";
+		string[] identifiers =
+		{
+			"id", "createdTimeMillis", "updatedTimeMillis", "privilegedAccount", "external", "gamerTags",
+			"thirdParties"
+		};
+		var stmt = new TsObjectDestructureStatement(identifiers, new TsIdentifier("init"))
+			.WithRest("optionals");
+		var writer = new TsCodeWriter();
+		stmt.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, stmt.Render());
+	}
 }

@@ -1,5 +1,11 @@
 namespace cli.Services.Web.CodeGen;
 
+public enum TsEnumMemberValueType
+{
+	String,
+	Number
+}
+
 /// <summary>
 /// Represents a TypeScript enum member.
 /// </summary>
@@ -21,19 +27,38 @@ public class TsEnumMember : TsNode
 	public string Value { get; }
 
 	/// <summary>
+	/// The type of the enum member value.
+	/// </summary>
+	public TsEnumMemberValueType ValueType { get; }
+
+	/// <summary>
 	/// Creates a new enum member.
 	/// </summary>
 	/// <param name="name">The name of the enum member.</param>
 	/// <param name="value">The value of the enum member.</param>
-	public TsEnumMember(string name, string value = null)
+	/// <param name="valueType">The value type of the enum member.</param>
+	public TsEnumMember(string name, string value = null,
+		TsEnumMemberValueType valueType = TsEnumMemberValueType.String)
 	{
 		Name = name;
 		Value = value;
+		ValueType = valueType;
 		Identifier = new TsIdentifier(name);
 	}
 
-	public override void Write(TsCodeWriter writer) =>
-		writer.WriteLine(Value != null ? $"{Name} = {Value}," : $"{Name},");
+	public override void Write(TsCodeWriter writer)
+	{
+		switch (ValueType)
+		{
+			case TsEnumMemberValueType.Number:
+				writer.Write(Value != null ? $"{Name} = {Value}" : $"{Name}");
+				break;
+			case TsEnumMemberValueType.String:
+			default:
+				writer.Write(Value != null ? $"{Name} = \"{Value}\"" : $"{Name}");
+				break;
+		}
+	}
 }
 
 /// <summary>
@@ -132,7 +157,18 @@ public class TsEnum : TsNode
 		writer.Indent();
 
 		foreach (TsEnumMember member in Members)
-			member.Write(writer);
+		{
+			if (member != Members.Last())
+			{
+				member.Write(writer);
+				writer.WriteLine(",");
+			}
+			else
+			{
+				member.Write(writer);
+				writer.WriteLine();
+			}
+		}
 
 		writer.Outdent();
 		writer.WriteLine("}");
