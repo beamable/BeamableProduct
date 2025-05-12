@@ -17,7 +17,7 @@ namespace Beamable.Server
 		/// This means that data here is completely isolated and exists per-request. One thing to keep in mind:
 		///   - If 2 Transient services, A and B, spawned for Request-1 ask for a Scoped service, C, both A and B will share C's instance.  
 		/// </summary>
-		void AddTransient<T>(ServiceFactory<T> factory);
+		void AddTransient<TService>(ServiceFactory<TService> factory);
 
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a singleton (shared data across all requests being processed).
@@ -25,21 +25,21 @@ namespace Beamable.Server
 		///  - If it's not read-only, you need to guarantee thread safety yourself.
 		///  - If it is read-only, you can access fields here without any fear.
 		/// </summary>
-		void AddSingleton<T>(ServiceFactory<T> factory);
+		void AddSingleton<TService>(ServiceFactory<TService> factory);
 
 
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a per-request singleton.
 		/// This means that data in Scoped services are shared between all Transient services being used by a request.
 		/// </summary>
-		void AddScoped<T>(ServiceFactory<T> factory);
+		void AddScoped<TService>(ServiceFactory<TService> factory);
 
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a per-request instance.
 		/// This means that data here is completely isolated and exists per-request. One thing to keep in mind:
 		///   - If 2 Transient services, A and B, spawned for Request-1 ask for a Scoped service, C, both A and B will share C's instance.  
 		/// </summary>
-		void AddTransient<T>();
+		void AddTransient<TService>();
 
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a singleton (shared data across all requests being processed).
@@ -50,13 +50,13 @@ namespace Beamable.Server
 		[Obsolete("There's currently an issue with this implementation. It'll be fixed in the future.\n" +
 				  "For now, manually create an instance of T and use the AddSingleton<T>(ServiceFactory<T>) overload to " +
 				  "register a factory method that returns your manually created instance.")]
-		void AddSingleton<T>();
+		void AddSingleton<TService>();
 
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a per-request singleton.
 		/// This means that data in Scoped services are shared between all Transient services being used by a request.
 		/// </summary>
-		void AddScoped<T>();
+		void AddScoped<TService>();
 
 		void AddTransient<TService, TImplementation>()
 		   where TService : class

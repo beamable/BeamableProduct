@@ -387,7 +387,7 @@ public class CollectorManager
 		
 		var connectedPromise = new Promise<int>();
 
-		Task.Run(async () =>
+		_ = Task.Run(async () =>
 		{
 			try
 			{

@@ -73,7 +73,8 @@ namespace Beamable.Server.Generator
 		/// <summary>
 		/// Define the class.
 		/// </summary>
-		/// <param name="serviceObject"></param>
+		/// <param name="descriptor"></param>
+		/// <param name="existingFederations"></param>
 		public ClientCodeGenerator(MicroserviceDescriptor descriptor, List<ExistingFederation> existingFederations)
 		{
 			_existingFederations = existingFederations;

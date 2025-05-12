@@ -13,7 +13,7 @@ namespace Beamable.Server
 		/// Configure the <see cref="Job"/> to run a C#MS function as the <see cref="Job.action"/>
 		/// </summary>
 		/// <param name="useLocal">
-		/// When running C#MS functions, the <see cref="useLocal"/> flag will indicate if
+		/// When running C#MS functions, the <paramref name="useLocal"/> flag will indicate if
 		/// the scheduled action should be forced to run against the C#MS that scheduled
 		/// the job, or always be forced to use the deployed C#MS.
 		///
@@ -65,7 +65,9 @@ namespace Beamable.Server
 		/// </summary>
 		/// <param name="cronBuilder">
 		/// A builder that will guide you through creating a valid NCronTab expression.
+		/// </param>
 
+		///<remarks>
 		/// <example>
 		/// <code>
 		/// c => c.AtSecond(0)
@@ -79,7 +81,8 @@ namespace Beamable.Server
 		/// c => c.Daily()
 		/// </code>
 		/// </example>
-		/// </param>
+		/// </remarks>
+
 		/// <returns></returns>
 		ISchedulerBuilderFinal OnCron(Func<ICronInitial, ICronComplete> cronBuilder);
 

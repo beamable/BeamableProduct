@@ -148,7 +148,6 @@ public static class LogQueryParser
                     Right = new NoopTextValue(tokens.Current),
                     Operation = opType
                 };
-                break;
             
             default:
                 var right = ParseOperation(tokens, ref logQuery);
@@ -188,7 +187,6 @@ public static class LogQueryParser
                     Left = left,
                     Right = right
                 };
-                break;
         }
 
         return new LogQueryPhrase
@@ -261,8 +259,6 @@ public static class LogQueryParser
     public static IQueryValue ParseValueTerm(LogQueryTokenCollection tokens, ref ReadOnlySpan<char> logQuery)
     {
         var start = tokens.Advance();
-        var foundEnd = false;
-
 
         switch (start.lexem)
         {
@@ -287,8 +283,6 @@ public static class LogQueryParser
                                     return new LiteralTextValue(start, escapedToken, "", "invalid escape sequence");
                             }
 
-                            break;
-
                         // we found the end of the string!
                         case LogQueryLexem.QUOTE:
                             return new LiteralTextValue(start, next,
@@ -298,13 +292,10 @@ public static class LogQueryParser
                         case LogQueryLexem.EOF:
                             return new LiteralTextValue(start, next, "", "expected to find a closing double-quote");
 
-                        // in-between quotes, all characters are valid.
-                        default:
-                            break;
+                       
                     }
                 }
 
-                break;
 
             case LogQueryLexem.WILDCARD:
                 return new WildcardTextValue(start);

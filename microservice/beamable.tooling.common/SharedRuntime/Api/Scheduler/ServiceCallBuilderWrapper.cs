@@ -17,11 +17,11 @@ namespace Beamable.Server
 	{
 		/// <summary>
 		/// Pick a C#MS method to execute as the <see cref="Job.action"/>.
-		/// The <see cref="expr"/> must be an expression that takes a <see cref="T"/> instance
+		/// The <paramref name="expr"/> must be an expression that takes a <typeparamref name="T"/> instance
 		/// and selects a method that is <see cref="ServerCallableAttribute"/>.
 		/// </summary>
 		/// <param name="expr">
-		/// An expression that takes an instance of <see cref="T"/> and selects a
+		/// An expression that takes an instance of <typeparamref name="T"/> and selects a
 		/// <see cref="ServerCallableAttribute"/> method. When the method is executed, if it takes
 		/// arguments, then those arguments need to passed as additional parameters. All parameters
 		/// will be serialized to JSON when the <see cref="Job"/> is saved, and stored
@@ -116,7 +116,7 @@ namespace Beamable.Server
 	}
 
 	/// <summary>
-	/// This exists to summarize the <see cref="IServiceCallBuilderGen"/> interface for methods
+	/// This exists to summarize the <see cref="IServiceCallBuilderGen{T,TTask,TResponse}"/> interface for methods
 	/// that return <see cref="Task"/> and <see cref="Promise"/>
 	/// 
 	/// </summary>

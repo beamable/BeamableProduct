@@ -15,7 +15,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The MongoDB driver won't automatically serialize structs correctly.
 		/// You'll need to manually register your structs with this function.
-		/// This function will enable serialization of the T, and List<T>
+		/// This function will enable serialization of the T, and List <typeparamref name="T"></typeparamref>
 		/// </summary>
 		/// <typeparam name="T">Some type of struct.</typeparam>
 		/// <returns>The same <see cref="IMongoSerializationService"/> instance to support method chaining</returns>

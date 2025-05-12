@@ -198,7 +198,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Try to read the X-KS-BEAM-SDK-VERSION header from the request.
 		/// The method will return false if the header was not present on the request.
-		/// If the method returns true, then the <see cref="beamableVersion"/> variable will be set to the sdk version that initiated this request
+		/// If the method returns true, then the <paramref name="beamableVersion"/> variable will be set to the sdk version that initiated this request
 		/// </summary>
 		/// <param name="beamableVersion">The variable that will be populated with the header information</param>
 		/// <returns>true if the header was found</returns>
@@ -211,7 +211,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Try to read the X-KS-GAME-VERSION header from the request.
 		/// The method will return false if the header was not present on the request.
-		/// If the method returns true, then the <see cref="clientVersion"/> variable will be set to the game version that initiated this request.
+		/// If the method returns true, then the <paramref name="clientVersion"/> variable will be set to the game version that initiated this request.
 		/// The game version is usually set in Unity by using the Application.version field
 		/// </summary>
 		/// <param name="clientVersion">The variable that will be populated with the header information</param>
@@ -225,7 +225,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Try to read the X-KS-USER-AGENT header from the request.
 		/// The method will return false if the header was not present on the request.
-		/// If the method returns true, then the <see cref="clientType"/> variable will be set to the type of client that initiated the request.
+		/// If the method returns true, then the <paramref name="clientType"/> variable will be set to the type of client that initiated the request.
 		/// Usually, this will be "Unity", or "Portal", or null.
 		/// </summary>
 		/// <param name="clientType">The variable that will be populated with the header information</param>
@@ -239,7 +239,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Try to read the X-KS-USER-AGENT-VERSION header from the request.
 		/// The method will return false if the header was not present on the request.
-		/// If the method returns true, then the <see cref="clientEngineVersion"/> variable will be set to the version of the client type.
+		/// If the method returns true, then the <paramref name="clientEngineVersion"/> variable will be set to the version of the client type.
 		/// This version number is specific to the value returned from the <see cref="TryGetClientType"/> method.
 		/// </summary>
 		/// <param name="clientEngineVersion">The variable that will be populated with the header information</param>

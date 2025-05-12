@@ -10,7 +10,6 @@ namespace Beamable.Server
 	public interface IServiceInitializer : IServiceProvider
 	{
 		/// <summary>
-		/// Gets a service registered during <see cref="BeamableMicroService.InitServices"/>.
 		/// If you intend to cache data on the service, you must use a singleton service for that.
 		/// This method can be used to explicitly guard against mistakenly getting a non-singleton service for cache-ing purposes.
 		/// <para/>
@@ -21,7 +20,6 @@ namespace Beamable.Server
 			where TService : class;
 
 		/// <summary>
-		/// Gets a service registered during <see cref="BeamableMicroService.InitServices"/>.
 		/// This assumes nothing about what you are using the service for and only guards against attempting to get a non-existent service. 
 		/// </summary>
 		TService GetService<TService>()

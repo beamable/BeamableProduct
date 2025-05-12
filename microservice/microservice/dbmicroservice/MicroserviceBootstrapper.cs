@@ -161,6 +161,7 @@ namespace Beamable.Server
 		    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		    Debug.Instance = new MicroserviceDebug();
 		    _logger = BeamableZLoggerProvider.LogContext.Value = _loggerFactory.CreateLogger<TMicroservice>();
+
 	    }
 
         public static void ConfigureUnhandledError()

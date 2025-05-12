@@ -1,4 +1,5 @@
 using System;
+using Beamable.Common;
 
 namespace Beamable.Server
 {

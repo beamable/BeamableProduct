@@ -33,9 +33,6 @@
       <ProjectReference Include="..\beamable.common\beamable.common.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
-        <PackageReference Include="MongoDB.Driver" Version="3.3.0"/>
-    </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.CodeDom" Version="6.0.0" />
     </ItemGroup>
@@ -48,12 +45,4 @@
         <None Include="SharedRuntime/**/*.cs" PackagePath="content/netstandard2.0/SharedRuntime" Pack="True" />
     </ItemGroup>
     
-    
-    <Target Name="CopyCodeToUnity" 
-            Condition="'$(BEAM_COPY_CODE_TO_UNITY)' == 'true' AND Exists('../../client/Packages/com.beamable') AND '$(TargetFramework)'=='net8.0'">
-        <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
-        <Exec Command="dotnet run -f net8.0 --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v --no-redirect --emit-log-streams --no-log-file"/>
-<!--        <Exec Command="dotnet run -f net8.0 &#45;&#45;project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) &#45;&#45; unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime &#45;&#45;logs v &#45;&#45;no-redirect &#45;&#45;emit-log-streams &#45;&#45;no-log-file"/>-->
-    </Target>
-
 </Project>

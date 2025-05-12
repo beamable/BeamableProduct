@@ -1,50 +1,53 @@
-using System.Runtime.CompilerServices;
+
 using Beamable.Common;
 using Microsoft.Extensions.Logging;
 using ZLogger;
+using System.Runtime.CompilerServices;
+
 
 namespace Beamable.Server
 {
 
+
     public static class Log
     {
+        
+        public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
+        
         public static void Debug(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogDebug(message);
+            Default.LogDebug(message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Debug(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogDebug(message, args);
+            Default.LogDebug(message, args);
         }
 
         
         public static void Error(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogError(message);
+            Default.LogError(message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Error(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogError(message, args);
+            Default.LogError(message, args);
         }
 
         
         public static void Fatal(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogCritical(message);
+            Default.LogCritical(message);
         }
         public static void Fatal(Exception ex, string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogCritical(ex, message);
+            Default.LogCritical(ex, message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Fatal(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogCritical(message, args);
+            Default.LogCritical(message, args);
         }
 
         
@@ -53,39 +56,35 @@ namespace Beamable.Server
             BeamableZLoggerProvider.LogContext.Value.LogTrace(message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Verbose(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogTrace(message, args);
+            Default.LogTrace(message, args);
         }
 
         
         public static void Information(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogInformation(message);
+            Default.LogInformation(message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Information(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogInformation(message, args);
+            Default.LogInformation(message, args);
         }
-
         
         public static void Warning(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogWarning(message);
+            Default.LogWarning(message);
         }
         
-        [Obsolete("Prefer ZLogger instead")]
         public static void Warning(string message, params object[] args)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogWarning(message, args);
+            Default.LogWarning(message, args);
         }
 
         public static void Write(LogLevel level, string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.Log(level, message);
+            Default.Log(level, message);
         }
     }
     
