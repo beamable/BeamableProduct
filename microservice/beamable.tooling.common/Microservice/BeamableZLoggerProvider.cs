@@ -35,6 +35,11 @@ namespace Beamable.Server
             Default.LogError(message, args);
         }
 
+        public static void Error(Exception ex, string message)
+        {
+            Default.LogError(ex, message);
+        }
+
         
         public static void Fatal(string message)
         {

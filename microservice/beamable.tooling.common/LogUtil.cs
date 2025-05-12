@@ -2,6 +2,77 @@ using Microsoft.Extensions.Logging;
 
 namespace Beamable.Server.Common;
 
+public class QueuedLogger : ILogger
+{
+
+	public struct LogMessage
+	{
+		public LogLevel logLevel;
+		public EventId eventId;
+		public object state;
+		public Exception exception;
+		public Func<object, Exception, string> formatter;
+	}
+
+	public Queue<LogMessage> messages;
+	protected long flushSignal;
+
+	public QueuedLogger(int initialCapacity = 1024)
+	{
+		messages = new Queue<LogMessage>(initialCapacity);
+	}
+	
+	public void Flush(ILogger target)
+	{
+		lock (messages)
+		{
+			Interlocked.Increment(ref flushSignal);
+			while (messages.Count > 0)
+			{
+				var message = messages.Dequeue();
+				
+				target.Log(
+					logLevel: message.logLevel, 
+					eventId: message.eventId, 
+					state: message.state, 
+					exception: message.exception, 
+					formatter: message.formatter
+					);
+			}
+			messages.Clear();
+		}
+		
+	}
+	
+	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+	{
+		if (Interlocked.Read(ref flushSignal) > 0)
+		{
+			throw new InvalidOperationException("Cannot write to queued logger because it has been flushed");
+		}
+		
+		lock (messages)
+		{
+			messages.Enqueue(new LogMessage
+			{
+				logLevel = logLevel, eventId = eventId, state = state, exception = exception, formatter = ((o, exception1) => formatter((TState)o, exception1))
+			});
+		}
+	}
+
+	public bool IsEnabled(LogLevel logLevel)
+	{
+		// always return true; because it is unknown which logs will be required on the flush target
+		return true;
+	}
+
+	public IDisposable BeginScope<TState>(TState state) where TState : notnull
+	{
+		throw new NotSupportedException("The queued logger cannot create a scope, because the temporal nature cannot be captured.");
+	}
+}
+
+
 /// <summary>
 /// Utility class for handling log level parsing and conversion.
 /// </summary>

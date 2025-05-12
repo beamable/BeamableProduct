@@ -1,9 +1,8 @@
 using System.CommandLine;
 using System.Text;
 using Beamable.Common.BeamCli;
-using cli.Services;
+using Beamable.Server;
 using Microsoft.Build.Evaluation;
-using Serilog;
 
 namespace cli.CheckCommands;
 

@@ -1,8 +1,8 @@
 using Beamable.Common.Semantics;
 using cli.Services;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 #pragma warning disable CS0649
 // ReSharper disable InconsistentNaming

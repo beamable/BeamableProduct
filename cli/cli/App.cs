@@ -47,6 +47,7 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
+using Beamable.Server.Common;
 using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
@@ -72,6 +73,8 @@ public class App
 	public IDependencyProviderScope CommandProvider { get; set; }
 
 	private Action<IDependencyBuilder> _serviceConfigurator;
+
+	private QueuedLogger _queuedLogger;
 
 	public App()
 	{
@@ -152,7 +155,6 @@ public class App
 		
 		
 		var logger = factory.CreateLogger<BeamableZLoggerProvider>();
-		BeamableZLoggerProvider.LogContext.Value = logger;
 		return logger;
 	}
 	
@@ -227,6 +229,12 @@ public class App
 			{
 				var logger = ConfigureZLogging(this, provider, configureLogger);
 				GlobalLogger = logger;
+				if (_queuedLogger == BeamableZLoggerProvider.LogContext.Value)
+				{
+					_queuedLogger.Flush(logger);
+				}
+				BeamableZLoggerProvider.LogContext.Value = logger;
+				
 			};
 		}
 		else
@@ -241,9 +249,18 @@ public class App
 						builder.AddZLoggerLogProcessor(new ReporterSink(provider));
 					});
 					var logger = factory.CreateLogger<BeamableZLoggerProvider>();
+					if (_queuedLogger == BeamableZLoggerProvider.LogContext.Value)
+					{
+						_queuedLogger.Flush(logger);
+					}
 					BeamableZLoggerProvider.LogContext.Value = logger;
 				}
 			};
+		}
+
+		if (BeamableZLoggerProvider.LogContext.Value == null)
+		{
+			BeamableZLoggerProvider.LogContext.Value = _queuedLogger = new QueuedLogger();
 		}
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));

@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Text.Json;
+using Beamable.Server;
 using cli.OtelCommands;
 using cli.Services;
 using cli.Utils;
 using CliWrap;
 using microservice.Extensions;
-using Serilog;
 using Task = System.Threading.Tasks.Task;
 
 namespace cli.Commands.Project;

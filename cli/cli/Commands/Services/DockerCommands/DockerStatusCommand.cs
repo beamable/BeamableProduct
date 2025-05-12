@@ -1,5 +1,4 @@
 using CliWrap;
-using Serilog;
 using System.CommandLine;
 using Beamable.Common.Dependencies;
 using cli.Services;

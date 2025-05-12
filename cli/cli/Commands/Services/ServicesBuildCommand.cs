@@ -3,15 +3,13 @@ using Beamable.Common.Dependencies;
 using cli.Dotnet;
 using cli.Services;
 using CliWrap;
-using CliWrap.Buffered;
-using MongoDB.Driver;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 using cli.OtelCommands;
 using microservice.Extensions;
 

@@ -1,11 +1,10 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
-using Beamable.Serialization;
 using cli.Commands.Project;
 using cli.Deployment.Services;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 

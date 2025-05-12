@@ -5,7 +5,6 @@ using cli.Services;
 using Docker.DotNet;
 using Moq;
 using NUnit.Framework;
-using Serilog.Formatting.Display;
 using Spectre.Console;
 using Spectre.Console.Testing;
 using System;

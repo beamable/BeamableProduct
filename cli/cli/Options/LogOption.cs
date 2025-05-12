@@ -1,6 +1,7 @@
-using Serilog.Events;
+
 using System.CommandLine;
 using System.CommandLine.Completions;
+using Microsoft.Extensions.Logging;
 
 namespace cli;
 
@@ -14,7 +15,7 @@ public class LogOption : ConfigurableOption
 	}
 
 	public override IEnumerable<CompletionItem> GetCompletions(CompletionContext context) =>
-		Enum.GetNames(typeof(LogEventLevel)).Select(name => new CompletionItem(name));
+		Enum.GetNames(typeof(LogLevel)).Select(name => new CompletionItem(name));
 }
 
 public class AllHelpOption : Option<bool>
