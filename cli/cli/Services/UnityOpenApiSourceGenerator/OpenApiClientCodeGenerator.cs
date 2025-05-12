@@ -16,7 +16,7 @@ namespace Beamable.Server.Generator
 		
 		private const string COMPONENT_INTERFACE_KEY = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY;
 		private const string COMPONENT_FEDERATION_CLASS_NAME_KEY = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
-		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = Constants.Features.Services.MICROSERVICE_IS_HIDDEN_METHOD_KEY;
+		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY;
 
 		private readonly string _serviceNamespaceClassName;
 		private readonly string _serviceName;

@@ -29,6 +29,7 @@ public class ServiceDocGenerator
 	private const string V2_COMPONENT_INTERFACE = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY;
 	private const string V2_COMPONENT_FEDERATION_ID = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY;
 	private const string V2_COMPONENT_FEDERATION_CLASS_NAME = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
+	private const string SCHEMA_IS_OPTIONAL_KEY = Constants.Features.Services.SCHEMA_IS_OPTIONAL_KEY;
 
 	private static OpenApiSecurityScheme _userSecurityScheme = new OpenApiSecurityScheme
 	{
@@ -203,16 +204,19 @@ public class ServiceDocGenerator
 				}
 
 				var isNullable = Nullable.GetUnderlyingType(parameterType) != null;
+				bool isOptional = parameterType.IsAssignableTo(typeof(Optional)) || method.ParameterInfos[i].IsOptional;
 				parameterSchema.Nullable = isNullable;
+				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isNullable || isOptional));
 				requestSchema.Properties[parameterName] = parameterSchema;
-				if (!parameterType.IsAssignableTo(typeof(Optional)) && !isNullable)
+				
+				if (!isOptional && !isNullable)
 				{
 					requestSchema.Required.Add(parameterName);
 				}
 			}
 
 			var openApiTags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } };
-			if (callableAttrs.Length > 0)
+			if (callableAttrs.Length > 0 && method.Tag != "Admin")
 			{
 				openApiTags.Add(new OpenApiTag { Name = Constants.Features.Services.MICROSERVICE_CALLABLE_METHOD_TAG });
 			}
@@ -265,13 +269,13 @@ public class ServiceDocGenerator
 				hiddenMethods.Add(method.Path);
 			}
 			
-			pathItem.Extensions.Add(Constants.Features.Services.MICROSERVICE_IS_HIDDEN_METHOD_KEY, new OpenApiBoolean(isHidden));
+			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(isHidden));
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
 		
 		var hiddenMethodsOapiArray = new OpenApiArray();
 		hiddenMethodsOapiArray.AddRange(hiddenMethods.Select(item => new OpenApiString(item)));
-		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_HIDDEN_METHODS_KEY, hiddenMethodsOapiArray);
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, hiddenMethodsOapiArray);
 
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		doc = new OpenApiStringReader().Read(outputString, out var diag);

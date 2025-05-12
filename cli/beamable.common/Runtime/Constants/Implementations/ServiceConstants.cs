@@ -65,8 +65,9 @@ namespace Beamable.Common
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-beamable-federated-components-v2";
 				public const string MICROSERVICE_CLASS_TYPE_KEY = "x-beamable-microservice-class-type";
-				public const string MICROSERVICE_HIDDEN_METHODS_KEY = "x-beamable-microservice-hidden-methods";
-				public const string MICROSERVICE_IS_HIDDEN_METHOD_KEY = "x-beamable-microservice-is-hidden-method";
+				public const string MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY = "x-beamable-microservice-methods-to-skip-generation";
+				public const string METHOD_SKIP_CLIENT_GENERATION_KEY = "x-beamable-method-skip-client-generation";
+				public const string SCHEMA_IS_OPTIONAL_KEY = "x-beamable-is-optional-schema";
 				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";
