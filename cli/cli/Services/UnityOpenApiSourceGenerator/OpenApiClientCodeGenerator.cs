@@ -416,6 +416,9 @@ namespace Beamable.Server.Generator
 				sourceWriter.Flush();
 				var source = sb.ToString();
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
+				// CodeDom code generated with the string value of primal types are created with a @ added as prefix,
+				// we need to remove it so Unity can compile
+				source = source.Replace("@", "");
 				return source;
 			}
 		}

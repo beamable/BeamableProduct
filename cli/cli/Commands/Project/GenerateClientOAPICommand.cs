@@ -25,18 +25,20 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 	public override Task<GenerateClientOapiCommandArgsResult> GetResult(GenerateClientOapiCommandArgs args)
 	{
 		var result = new GenerateClientOapiCommandArgsResult();
-		foreach (var openApiDoc in args.BeamoLocalSystem.BeamoManifest.MicroserviceOpenApiSpecifications)
+		if (!string.IsNullOrEmpty(args.outputDirectory))
 		{
-			var generator = new OpenApiClientCodeGenerator(openApiDoc);
-			if (!string.IsNullOrEmpty(args.outputDirectory))
+			foreach (var openApiDoc in args.BeamoLocalSystem.BeamoManifest.MicroserviceOpenApiSpecifications)
 			{
+				var generator = new OpenApiClientCodeGenerator(openApiDoc);
+
 				Directory.CreateDirectory(args.outputDirectory);
 				var outputPath = Path.Combine(args.outputDirectory, $"{openApiDoc.Info.Title}Client.cs");
 				generator.GenerateCSharpCode(outputPath);
 				result.outputsPaths.Add(outputPath);
+
 			}
 		}
-		
+
 		return Task.FromResult(result);
 	}
 }

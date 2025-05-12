@@ -10,13 +10,6 @@
     <Import Label="Load Beamable Local Developer Settings"
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
             Project="$(BeamableLocalDevProjectsGlob)"/>
-    
-    <!-- After the build completes, we should auto-generate client code to any linked projects -->
-<!--    <Target Name="generate-client" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)/generateClientFlag.txt">-->
-<!--        <Message Text="Generating client files..." Importance="high" />-->
-<!--        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll &#45;&#45;output-links $(Beam_GenerateClient_Args)" EnvironmentVariables="BEAM_DOTNET_MSBUILD_PATH=$(BEAM_DOTNET_MSBUILD_PATH)"/>-->
-<!--        <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>-->
-<!--    </Target>-->
 
     <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
     <Target Name="generate-oapi" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service'">
