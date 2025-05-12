@@ -38,6 +38,7 @@ public interface IAppContext : IRealmInfo
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
+	public HashSet<string> IgnoreBeamoIds { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
@@ -103,6 +104,7 @@ public class DefaultAppContext : IAppContext
 
 	public string DotnetPath { get; private set; }
 	public string DockerPath { get; private set; }
+	public HashSet<string> IgnoreBeamoIds { get; private set; }
 
 
 	/// <inheritdoc cref="IAppContext.ExecutingVersion"/>
@@ -194,6 +196,8 @@ public class DefaultAppContext : IAppContext
 		_dotnetPathOption = dotnetPathOption;
 		_aliasService = aliasService;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
+		IgnoreBeamoIds =
+			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}
 
 	void SetupOutputStrategy()

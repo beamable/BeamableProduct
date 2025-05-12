@@ -259,6 +259,7 @@ public class App
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton(PreferRemoteFederationOption.Instance);
 		Commands.AddSingleton(CidOption.Instance);
+		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
 		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton<ConfigDirOption>();
@@ -290,6 +291,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<NoForwardingOption>());
+			root.AddGlobalOption(IgnoreBeamoIdsOption.Instance);
 			root.AddGlobalOption(PreferRemoteFederationOption.Instance);
 			root.AddGlobalOption(AllHelpOption.Instance);;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);

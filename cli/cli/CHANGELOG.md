@@ -19,9 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
+- `OptionalString` overrides `.ToString()` for easier print debugging.
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
+
+## [4.3.0] - 2025-05-08
+### Added
+- `.beamignore` files may be used to ignore services and storages from the `beam deploy` commands. 
+- Hidden `--ignore-beam-ids` option can be used to ignore beam ids similar in addition to `.beamignore` files. [#4019](https://github.com/beamable/BeamableProduct/issues/4019)
+
+### Fixed
+- `beam deploy` commands no longer attempt to build non-existent source when `--merge` flag is used.
 
 ## [4.2.0] - 2025-04-04
 ### Changed
