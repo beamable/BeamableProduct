@@ -622,10 +622,10 @@ namespace Beamable.Server
 	        
 	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
 	        
-	        var environments = Environment.GetCommandLineArgs();
+	        var commandLineArgs = Environment.GetCommandLineArgs();
 	        
 	        // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
-	        if (environments.Contains("--generate-oapi"))
+	        if (commandLineArgs.Contains("--generate-oapi"))
 	        {
 		        await GenerateOpenApiSpecification(microserviceType, attribute);
 		        return;
@@ -757,9 +757,9 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        var environments = Environment.GetCommandLineArgs();
+	        var commandLineArgs = Environment.GetCommandLineArgs();
 	        // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
-	        if (environments.Contains("--generate-oapi"))
+	        if (commandLineArgs.Contains("--generate-oapi"))
 	        {
 		        return;
 	        }

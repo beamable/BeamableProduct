@@ -203,7 +203,7 @@ public class ServiceDocGenerator
 					parameterSchema.Description = comment ?? "";
 				}
 
-				var isNullable = Nullable.GetUnderlyingType(parameterType) != null;
+				bool isNullable = Nullable.GetUnderlyingType(parameterType) != null;
 				bool isOptional = parameterType.IsAssignableTo(typeof(Optional)) || method.ParameterInfos[i].IsOptional;
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
