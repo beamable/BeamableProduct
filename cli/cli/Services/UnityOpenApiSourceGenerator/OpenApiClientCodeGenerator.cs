@@ -1,11 +1,14 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Common;
+using cli;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Reflection;
 using System.Text;
+using TypeAttributes = System.Reflection.TypeAttributes;
+using ServiceConstants = Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Generator
 {
@@ -13,10 +16,20 @@ namespace Beamable.Server.Generator
 	{
 		private const string MICROSERVICE_CLIENTS_TYPE_NAME = "MicroserviceClients";
 		private const string MICROSERVICE_CLIENT_TYPE_NAME = "MicroserviceClient";
-		
-		private const string COMPONENT_INTERFACE_KEY = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY;
-		private const string COMPONENT_FEDERATION_CLASS_NAME_KEY = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
-		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY;
+
+		private const string COMPONENT_INTERFACE_KEY =
+			ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY;
+
+		private const string COMPONENT_FEDERATION_CLASS_NAME_KEY =
+			ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
+
+		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = ServiceConstants.METHOD_SKIP_CLIENT_GENERATION_KEY;
+
+		private const string SCHEMA_QUALIFIED_NAME_KEY =
+			ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME;
+
+		private const string SCHEMA_IS_OPTIONAL_KEY = ServiceConstants.SCHEMA_IS_OPTIONAL_KEY;
+		private const string SCHEMA_OPTIONAL_TYPE_NAME_KEY = ServiceConstants.SCHEMA_OPTIONAL_TYPE_NAME_KEY;
 
 		private readonly string _serviceNamespaceClassName;
 		private readonly string _serviceName;
@@ -29,6 +42,46 @@ namespace Beamable.Server.Generator
 		private const string PARAMETER_STRING = "Parameter";
 		private const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
 		private const string LIST_BASE_PREFIX = "System.Collections.Generic.List";
+		private const string NULLABLE_BASE = "System.Nullable<{0}>";
+
+		private static readonly Dictionary<string, string> OpenApiCSharpFullNameMap = new()
+		{
+			{ "int16", typeof(short).FullName },
+			{ "int32", typeof(int).FullName },
+			{ "int64", typeof(long).FullName },
+			{ "integer", typeof(int).FullName },
+			{ "float", typeof(float).FullName },
+			{ "double", typeof(double).FullName },
+			{ "decimal", typeof(decimal).FullName },
+			{ "number", typeof(double).FullName },
+			{ "boolean", typeof(bool).FullName },
+			{ "date", typeof(DateTime).FullName },
+			{ "date-time", typeof(DateTime).FullName },
+			{ "uuid", typeof(Guid).FullName },
+			{ "byte", typeof(byte).FullName },
+			{ "string", typeof(string).FullName }
+		};
+
+		private static readonly Dictionary<string, string> OpenApiCSharpNameMap = new()
+		{
+			{ "int16", "short" },
+			{ "int32", "int" },
+			{ "int64", "long" },
+			{ "integer", "int" },
+			{ "float", "float" },
+			{ "double", "double" },
+			{ "decimal", "decimal" },
+			{ "number", "double" },
+			{ "boolean", "bool" },
+			{ "uuid", typeof(Guid).FullName },
+			{ "byte", "byte" },
+			{ "string", "string" }
+		};
+
+		private static readonly List<string> CallableMethodsToGenerate = new()
+		{
+			nameof(CallableAttribute), nameof(ServerCallableAttribute), nameof(ClientCallableAttribute), nameof(AdminOnlyCallableAttribute)
+		};
 
 		private string ExtensionClassToFind => $"public class {TargetExtensionClassName}";
 		private string ExtensionClassToReplace => $"public static class {TargetExtensionClassName}";
@@ -45,21 +98,21 @@ namespace Beamable.Server.Generator
 			_targetUnit = new CodeCompileUnit();
 
 			_serviceNamespaceClassName =
-				document.Extensions.TryGetValue(Constants.Features.Services.MICROSERVICE_CLASS_TYPE_KEY,
+				document.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_CLASS_TYPE_KEY,
 					out var classTypeName) && classTypeName is OpenApiString classTypeString
 					? classTypeString.Value
 					: document.Info.Title;
 
 			_serviceName = document.Info.Title;
-			
+
 			CodeNamespace newNamespace = GenerateNamespace();
-			
+
 			var targetClass = new CodeTypeDeclaration(TargetClassName)
 			{
 				IsClass = true, TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed
 			};
 			targetClass.BaseTypes.Add(new CodeTypeReference(MICROSERVICE_CLIENT_TYPE_NAME));
-			
+
 			targetClass.Members.Add(new CodeConstructor()
 			{
 				Attributes = MemberAttributes.Public,
@@ -73,13 +126,12 @@ namespace Beamable.Server.Generator
 
 			var parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
-			parameterClass.CustomAttributes.Add(
-				new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 			parameterClass.TypeAttributes =
 				TypeAttributes.NotPublic | TypeAttributes.Sealed;
 
 			targetClass.Comments.Add(
-				new CodeCommentStatement($"<summary> A generated client for <see cref=\"{_serviceNamespaceClassName}\"/> </summary",
+				new CodeCommentStatement(
+					$"<summary> A generated client for <see cref=\"{_serviceNamespaceClassName}\"/> </summary",
 					true));
 
 			var extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
@@ -89,7 +141,7 @@ namespace Beamable.Server.Generator
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
 			};
-			
+
 			var registrationMethod = new CodeMemberMethod
 			{
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
@@ -124,12 +176,12 @@ namespace Beamable.Server.Generator
 
 			extensionClass.Members.Add(registrationMethod);
 			extensionClass.Members.Add(extensionMethod);
-			
+
 
 			AddServiceNameInterface(targetClass, document);
 			AddSpecificFederationsInterfaces(targetClass, document);
 			AddMethods(targetClass, parameterClass, document);
-			
+
 			newNamespace.Types.Add(targetClass);
 			newNamespace.Types.Add(parameterClass);
 			newNamespace.Types.Add(extensionClass);
@@ -145,7 +197,8 @@ namespace Beamable.Server.Generator
 			return newNamespace;
 		}
 
-		private void AddMethods(CodeTypeDeclaration targetClass, CodeTypeDeclaration parameterClass, OpenApiDocument document)
+		private void AddMethods(CodeTypeDeclaration targetClass, CodeTypeDeclaration parameterClass,
+			OpenApiDocument document)
 		{
 			Dictionary<string, string> addedParameters = new();
 			foreach ((string path, OpenApiPathItem item) in document.Paths)
@@ -156,11 +209,13 @@ namespace Beamable.Server.Generator
 				{
 					continue;
 				}
-				
+
 				string methodName = path.Replace("/", string.Empty);
 				foreach ((OperationType _, OpenApiOperation operation) in item.Operations)
 				{
-					if (operation.Tags.All(tag => tag.Name != Constants.Features.Services.MICROSERVICE_CALLABLE_METHOD_TAG))
+					if (!operation.Extensions.TryGetValue(ServiceConstants.OPERATION_CALLABLE_METHOD_TYPE_KEY,
+						    out var methodTypeExt) || methodTypeExt is not OpenApiString methodType ||
+					    !CallableMethodsToGenerate.Contains(methodType.Value))
 					{
 						continue;
 					}
@@ -192,14 +247,14 @@ namespace Beamable.Server.Generator
 
 		void AddSpecificFederationsInterfaces(CodeTypeDeclaration targetClass, OpenApiDocument document)
 		{
-			const string federatedComponent = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY;
-			if (document.Extensions.TryGetValue(federatedComponent, out var config) && 
+			const string federatedComponent = ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY;
+			if (document.Extensions.TryGetValue(federatedComponent, out var config) &&
 			    config is OpenApiArray federationsArray)
 			{
 				foreach (IOpenApiAny item in federationsArray)
 				{
 					var federationObject = (OpenApiObject)item;
-					
+
 
 					if (!federationObject.TryGetValue(COMPONENT_FEDERATION_CLASS_NAME_KEY, out var federationClass) ||
 					    federationClass is not OpenApiString federationClassString ||
@@ -209,9 +264,11 @@ namespace Beamable.Server.Generator
 						continue;
 					}
 
-					bool isFederatedLogin = fedInterfaceString.Value.Equals(typeof(IFederatedLogin<>).FullName);
-					bool isFederatedInventory = fedInterfaceString.Value.Equals(typeof(IFederatedInventory<>).FullName);
-					
+					bool isFederatedLogin =
+						fedInterfaceString.Value.Equals(typeof(IFederatedLogin<>).GetSanitizedFullName());
+					bool isFederatedInventory =
+						fedInterfaceString.Value.Equals(typeof(IFederatedInventory<>).GetSanitizedFullName());
+
 					if (isFederatedLogin || isFederatedInventory)
 					{
 						CodeTypeReference baseReference = isFederatedLogin
@@ -223,7 +280,7 @@ namespace Beamable.Server.Generator
 					}
 				}
 			}
-			
+
 		}
 
 		void AddServiceNameInterface(CodeTypeDeclaration targetClass, OpenApiDocument document)
@@ -269,10 +326,14 @@ namespace Beamable.Server.Generator
 			var serializationFields = new Dictionary<string, object>();
 			foreach ((string key, OpenApiSchema schema) in parameters)
 			{
-				var paramType = GetParsedType(schema);
+				var paramType = GetParsedType(schema, true);
 				var paramName = key;
 				paramsTypeName.TryAdd(paramType, GetParameterClassName(schema));
-				genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
+				CodeTypeReference param = new CodeTypeReference(paramType)
+				{
+					Options = CodeTypeReferenceOptions.GenericTypeParameter
+				};
+				genMethod.Parameters.Add(new CodeParameterDeclarationExpression(param, paramName));
 
 				var rawFieldName = $"raw_{paramName}";
 				var declare = new CodeParameterDeclarationExpression(typeof(object), rawFieldName);
@@ -291,7 +352,6 @@ namespace Beamable.Server.Generator
 			genMethod.Comments.Add(
 				new CodeCommentStatement($"<see cref=\"{_serviceNamespaceClassName}.{methodName}\"/>", true));
 			genMethod.Comments.Add(new CodeCommentStatement("</summary>", true));
-
 
 			var genericPromiseType = $"Beamable.Common.Promise<{GetParsedType(returnMethodType)}>";
 			genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
@@ -330,7 +390,7 @@ namespace Beamable.Server.Generator
 				new CodeMethodReferenceExpression(
 					new CodeThisReferenceExpression(),
 					"Request",
-					new CodeTypeReference[] { new(GetParsedType(returnMethodType)) }),
+					new CodeTypeReference[] { new(GetParsedType(returnMethodType, true)) }),
 				new CodeExpression[]
 				{
 					// first argument is the service name
@@ -351,37 +411,119 @@ namespace Beamable.Server.Generator
 			targetClass.Members.Add(genMethod);
 		}
 
-		private string GetParsedType(OpenApiSchema schema)
+		private string GetParsedType(OpenApiSchema schema, bool useFullName = false)
 		{
-			string schemaType = schema.Type;
-			
-			string nameBase = schema.Nullable && schemaType != "string" && schemaType != "object" && schemaType != "array" ? "System.Nullable<{0}>" : "{0}";
-			string typeValue = (schemaType, schema.Format) switch
+			var (typeName, isNullable, isOptional) = ResolveTypeInfo(schema);
+			var nameBase = GetTypeNameBase(schema, isNullable);
+
+			if (useFullName && !isNullable && !isOptional)
 			{
-				("integer", "int32") => "int",
-				("integer", "int64") => "long",
-				("integer", _) => "int",
-				("number", "float") => "float",
-				("number", "double") => "double",
-				("number", "decimal") => "decimal",
-				("number", _) => "double",
-				("string", "date") => "DateTime",
-				("string", "date-time") => "DateTime",
-				("string", "uuid") => "Guid",
-				("string", "byte") => "byte",
-				("string", _) => "string",
-				("boolean", _) => "bool",
-				("array", _) => schema.Items.Format == "byte" ? $"{GetParsedType(schema.Items)}[]" : $"{LIST_BASE_PREFIX}<{GetParsedType(schema.Items)}>",
-				_ => schema.Reference?.Id ?? "object"
+				return GetFullTypeName(schema, typeName);
+			}
+
+			return FormatTypeName(nameBase, typeName);
+		}
+
+		private (string typeName, bool isNullable, bool isOptional) ResolveTypeInfo(OpenApiSchema schema)
+		{
+			bool isOptional = schema.Extensions.TryGetValue(SCHEMA_IS_OPTIONAL_KEY, out var extension) &&
+			                  extension is OpenApiBoolean { Value: true };
+
+			bool isNullable = schema.Nullable && !(schema.Type == "string" && string.IsNullOrEmpty(schema.Type));
+
+			string typeName = GetBaseTypeName(schema);
+
+			return (typeName, isNullable, isOptional);
+		}
+
+		private string GetTypeNameBase(OpenApiSchema schema, bool isNullable)
+		{
+			if (schema.Extensions.TryGetValue(SCHEMA_OPTIONAL_TYPE_NAME_KEY, out var optionalNameExt) &&
+			    optionalNameExt is OpenApiString optionalName)
+			{
+				return optionalName.Value;
+			}
+
+			return isNullable ? NULLABLE_BASE : "{0}";
+		}
+
+		private string GetBaseTypeName(OpenApiSchema schema)
+		{
+			var mapToUse = OpenApiCSharpNameMap; // Default to short names
+			string valueToFind = !string.IsNullOrEmpty(schema.Format) ? schema.Format : schema.Type;
+
+			if (mapToUse.TryGetValue(valueToFind, out string typeValue))
+			{
+				return typeValue;
+			}
+
+			return schema.Type switch
+			{
+				"array" => GetArrayTypeName(schema),
+				_ => GetObjectType(schema)
 			};
-			return string.Format(nameBase,typeValue);
+		}
+
+		private string GetArrayTypeName(OpenApiSchema schema)
+		{
+			return schema.Items.Format == "byte"
+				? $"{GetParsedType(schema.Items, true)}[]"
+				: $"{LIST_BASE_PREFIX}<{GetParsedType(schema.Items)}>";
+		}
+
+		private static string GetObjectType(OpenApiSchema schema)
+		{
+			if (schema.Reference != null && !string.IsNullOrEmpty(schema.Reference.Id))
+			{
+				return schema.Reference.Id;
+			}
+
+			return schema.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var extension) &&
+			       extension is OpenApiString value
+				? value.Value
+				: "object";
+		}
+
+		private string GetFullTypeName(OpenApiSchema schema, string typeName)
+		{
+			if (OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
+			{
+				return fullName;
+			}
+
+			return typeName;
+		}
+
+		private string FormatTypeName(string nameBase, string typeName)
+		{
+			return nameBase.Contains("{0}")
+				? string.Format(nameBase, typeName)
+				: nameBase;
 		}
 
 		private string GetParameterClassName(OpenApiSchema schema, bool addParameterString = true)
 		{
-			string schemaType = schema.Type;
-			string nameBase = schema.Nullable && schemaType != "string" && schemaType != "object" ? "System_Nullable_{0}" : "{0}";
-			string parameterClassName = ((schemaType, schema.Format) switch
+			var (typeName, isNullable, _) = ResolveTypeInfo(schema);
+			var nameBase = GetParameterTypeNameBase(schema, isNullable);
+			var parameterClassName = GetParameterTypeName(schema);
+
+			return BuildParameterClassName(addParameterString, nameBase, parameterClassName);
+		}
+
+		private string GetParameterTypeNameBase(OpenApiSchema schema, bool isNullable)
+		{
+			if (schema.Extensions.TryGetValue(SCHEMA_OPTIONAL_TYPE_NAME_KEY, out var optionalNameExt) &&
+			    optionalNameExt is OpenApiString optionalName)
+			{
+				return optionalName.Value.Replace("<", "_").Replace(">", "");
+			}
+
+			return isNullable ? "System_Nullable_{0}" : "{0}";
+		}
+
+		private string GetParameterTypeName(OpenApiSchema schema)
+		{
+			return (schema.Type, schema.Format) switch
 			{
 				("integer", "int32") => typeof(int).GetTypeString(),
 				("integer", "int64") => typeof(long).GetTypeString(),
@@ -396,11 +538,26 @@ namespace Beamable.Server.Generator
 				("string", "byte") => typeof(byte).GetTypeString(),
 				("string", _) => typeof(string).GetTypeString(),
 				("boolean", _) => typeof(bool).GetTypeString(),
-				("array", _) => schema.Items.Format == "byte" ? $"System_Array_{GetParameterClassName(schema.Items, false)}" : $"{LIST_BASE_PREFIX}_{GetParameterClassName(schema.Items, false)}",
-				_ => schema.Reference?.Id ?? $"Object"
-			}).Replace(".", "_");
-			string prefix = addParameterString ? PARAMETER_STRING : "";
-			return $"{prefix}{string.Format(nameBase, parameterClassName)}";
+				("array", _) => GetParameterArrayTypeName(schema),
+				_ => GetObjectType(schema)
+			};
+		}
+
+		private string GetParameterArrayTypeName(OpenApiSchema schema)
+		{
+			return schema.Items.Format == "byte"
+				? $"System_Array_{GetParameterClassName(schema.Items, false)}"
+				: $"{LIST_BASE_PREFIX}_{GetParameterClassName(schema.Items, false)}";
+		}
+
+		private string BuildParameterClassName(bool addParameterString, string nameBase, string parameterClassName)
+		{
+			var sb = new StringBuilder();
+			if (addParameterString) sb.Append(PARAMETER_STRING);
+			sb.Append(nameBase.Contains("{0}")
+				? string.Format(nameBase, parameterClassName)
+				: nameBase);
+			return sb.ToString().Replace(".", "_");
 		}
 
 		private string GetCSharpCodeString()
@@ -418,7 +575,6 @@ namespace Beamable.Server.Generator
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
 				// CodeDom code generated with the string value of primal types are created with a @ added as prefix,
 				// we need to remove it so Unity can compile
-				source = source.Replace("@", "");
 				return source;
 			}
 		}

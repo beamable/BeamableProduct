@@ -30,6 +30,8 @@ public class ServiceDocGenerator
 	private const string V2_COMPONENT_FEDERATION_ID = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY;
 	private const string V2_COMPONENT_FEDERATION_CLASS_NAME = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
 	private const string SCHEMA_IS_OPTIONAL_KEY = Constants.Features.Services.SCHEMA_IS_OPTIONAL_KEY;
+	private const string SCHEMA_OPTIONAL_TYPE_KEY = Constants.Features.Services.SCHEMA_OPTIONAL_TYPE_NAME_KEY;
+	
 
 	private static OpenApiSecurityScheme _userSecurityScheme = new OpenApiSecurityScheme
 	{
@@ -137,7 +139,7 @@ public class ServiceDocGenerator
 				apiComponents.Add(new OpenApiString($"{typeName}/{federationId}"));
 				v2ApiComponents.Add(new OpenApiObject
 				{
-					[V2_COMPONENT_INTERFACE] = new OpenApiString(it.GetGenericTypeDefinition().FullName),
+					[V2_COMPONENT_INTERFACE] = new OpenApiString(it.GetGenericTypeDefinition().GetSanitizedFullName()),
 					[V2_COMPONENT_FEDERATION_ID] = new OpenApiString(federationId),
 					[V2_COMPONENT_FEDERATION_CLASS_NAME] = new OpenApiString(federatedType.FullName),
 				});
@@ -204,7 +206,7 @@ public class ServiceDocGenerator
 				}
 
 				bool isNullable = Nullable.GetUnderlyingType(parameterType) != null;
-				bool isOptional = parameterType.IsAssignableTo(typeof(Optional)) || method.ParameterInfos[i].IsOptional;
+				bool isOptional = parameterType.IsAssignableTo(typeof(Optional));
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
 				requestSchema.Properties[parameterName] = parameterSchema;
@@ -213,21 +215,31 @@ public class ServiceDocGenerator
 				{
 					requestSchema.Required.Add(parameterName);
 				}
+				else
+				{
+					var optionalTypeValue = new OpenApiString(parameterType.IsGenericType
+						? parameterType.GetGenericTypeDefinition().FullName.Replace("`1", "<{0}>")
+						: parameterType.FullName);
+					
+					parameterSchema.Extensions.Add(SCHEMA_OPTIONAL_TYPE_KEY, optionalTypeValue);
+				}
 			}
 
 			var openApiTags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } };
-			if (callableAttrs.Length > 0 && method.Tag != "Admin")
-			{
-				openApiTags.Add(new OpenApiTag { Name = Constants.Features.Services.MICROSERVICE_CALLABLE_METHOD_TAG });
-			}
 
 			var operation = new OpenApiOperation
 			{
 				Responses = new OpenApiResponses { ["200"] = response },
 				Description = comments.Remarks,
 				Summary = comments.Summary,
-				Tags = openApiTags
+				Tags = openApiTags,
 			};
+			if (callableAttrs.Length > 0 && method.Tag != "Admin")
+			{
+				operation.Extensions.Add(Constants.Features.Services.OPERATION_CALLABLE_METHOD_TYPE_KEY,
+					new OpenApiString(callableAttrs[0].GetType().Name));
+			}
+
 			if (method.ParameterInfos.Count > 0)
 			{
 				doc.Components.Schemas.Add(requestSchemaName, requestSchema);
