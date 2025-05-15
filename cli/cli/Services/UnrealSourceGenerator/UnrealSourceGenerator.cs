@@ -2709,19 +2709,11 @@ public static class StringExtensions
 		{
 			var key = replacementChain[i];
 			var value = replacementChainValues[i];
-			if (key.Contains("_makeParameterDeclaration") && !string.IsNullOrEmpty(value))
-			{
-				Console.WriteLine($"Make Parameter Declaration Found: {value}");
-			}
 
 			// Replace doesn't fail if key is not found, so we can just ask it to try to replace...
 			res = res.Replace(key, value);
 		}
 		
-		if (replacements.TryGetValue("RawFieldName", out var sampleTest) && sampleTest == "c")
-		{
-			Console.WriteLine("Optional");
-		}
 
 		return res;
 	}
