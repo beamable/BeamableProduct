@@ -11,12 +11,19 @@
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
             Project="$(BeamableLocalDevProjectsGlob)"/>
 
+    <Target Name="UpdateOpenApiOutputPath" BeforeTargets="Build;Publish" Condition="'$(BeamProjectType)'=='service'">
+        <Message Text="Setting the OpenApiOutputPath" Importance="high" />
+        <PropertyGroup>
+            <OpenApiOutputPath>$(OutputPath)</OpenApiOutputPath>
+            <OpenApiOutputPath Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</OpenApiOutputPath>
+        </PropertyGroup>
+    </Target>
+    
     <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
     <Target Name="generate-oapi" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service'">
-        <Message Text="Generating OAPI specifications" Importance="high" />
+        <Message Text="Generating OAPI specifications at location: $(OpenApiOutputPath)" Importance="high" />
         <Exec Command="dotnet $(TargetPath) --generate-oapi" 
-              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(BeamableFolderPath)"
-              WorkingDirectory="$(OutDir)"/>
+              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OpenApiOutputPath)"/>
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
     

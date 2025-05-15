@@ -512,11 +512,6 @@ public class BeamoLocalManifest
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
 	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
-	
-	/// <summary>
-	/// List of all OpenApiDocuments generated for project Microservices
-	/// </summary>
-	public List<OpenApiDocument> MicroserviceOpenApiSpecifications;
 
 	public void Clear()
 	{

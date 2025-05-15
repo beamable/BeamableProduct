@@ -745,14 +745,18 @@ namespace Beamable.Server
 	        var beamableFolderPath = Environment.GetEnvironmentVariable("OPEN_API_OUTPUT_PATH") 
 	                                 ?? throw new InvalidOperationException("OPEN_API_OUTPUT_PATH environment variable not set");
 	        
-	        string directoryPath = Path.Combine(Path.GetFullPath(beamableFolderPath), Constants.OPEN_API_FOLDER_NAME);
+	        Console.WriteLine($"GENERATE OPEN API >> Beam Folder Path: {beamableFolderPath}");
+	        
+	        string directoryPath = Path.GetFullPath(beamableFolderPath);
 	        if (!Directory.Exists(directoryPath))
 	        {
 		        Directory.CreateDirectory(directoryPath);
 	        }
+	        
+	        Console.WriteLine($"GENERATE OPEN API >> Path: {directoryPath}");
 
 	        
-	        await File.WriteAllTextAsync(Path.Combine(directoryPath, $"{attribute.MicroserviceName}{Constants.OPEN_API_SUFFIX}"), outputString);
+	        await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice

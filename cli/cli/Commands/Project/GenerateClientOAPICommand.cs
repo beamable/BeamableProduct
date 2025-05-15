@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Server.Generator;
+using cli.Services;
 using Newtonsoft.Json;
 using System.CommandLine;
 
@@ -25,18 +26,23 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 	public override Task<GenerateClientOapiCommandArgsResult> GetResult(GenerateClientOapiCommandArgs args)
 	{
 		var result = new GenerateClientOapiCommandArgsResult();
-		if (!string.IsNullOrEmpty(args.outputDirectory))
+		if (string.IsNullOrEmpty(args.outputDirectory))
 		{
-			foreach (var openApiDoc in args.BeamoLocalSystem.BeamoManifest.MicroserviceOpenApiSpecifications)
-			{
-				var generator = new OpenApiClientCodeGenerator(openApiDoc);
+			return Task.FromResult(result);
+		}
 
-				Directory.CreateDirectory(args.outputDirectory);
-				var outputPath = Path.Combine(args.outputDirectory, $"{openApiDoc.Info.Title}Client.cs");
-				generator.GenerateCSharpCode(outputPath);
-				result.outputsPaths.Add(outputPath);
+		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
+		foreach ((string _, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
+		{
+			var openApiDoc = localProtocol.OpenApiDoc;
+			if(openApiDoc == null)
+				continue;
+			var generator = new OpenApiClientCodeGenerator(openApiDoc);
 
-			}
+			Directory.CreateDirectory(args.outputDirectory);
+			var outputPath = Path.Combine(args.outputDirectory, $"{openApiDoc.Info.Title}Client.cs");
+			generator.GenerateCSharpCode(outputPath);
+			result.outputsPaths.Add(outputPath);
 		}
 
 		return Task.FromResult(result);

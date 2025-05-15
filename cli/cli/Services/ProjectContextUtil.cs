@@ -109,7 +109,6 @@ public static class ProjectContextUtil
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
 			ServiceGroupToBeamoIds = new Dictionary<string, string[]>(),
-			MicroserviceOpenApiSpecifications = new List<OpenApiDocument>()
 		};
 
 
@@ -254,32 +253,6 @@ public static class ProjectContextUtil
 
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
-
-		var openApiPath = Path.Join(configService.ConfigDirectoryPath, Beamable.Common.Constants.OPEN_API_FOLDER_NAME);
-		if (Directory.Exists(openApiPath))
-		{
-			var openApiStringReader = new OpenApiStringReader();
-			var openApiPaths = Directory.GetFiles(openApiPath, $"*{Beamable.Common.Constants.OPEN_API_SUFFIX}", SearchOption.TopDirectoryOnly);
-			foreach (string path in openApiPaths)
-			{
-				var fileContent = await File.ReadAllTextAsync(path);
-				var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
-				foreach (var warning in diagnostic.Warnings)
-				{
-					Log.Warning("found warning for {path}. {message} . from {pointer}", path, warning.Message,
-						warning.Pointer);
-					throw new OpenApiException($"invalid document {path} - {warning.Message} - {warning.Pointer}");
-				}
-
-				foreach (var error in diagnostic.Errors)
-				{
-					Log.Error("found ERROR for {path}. {message} . from {pointer}", path, error.Message,
-						error.Pointer);
-					throw new OpenApiException($"invalid document {path} - {error.Message} - {error.Pointer}");
-				}
-				manifest.MicroserviceOpenApiSpecifications.Add(openApiDocument);
-			}
-		}
 		
 		
 		sw.Stop();
@@ -687,6 +660,30 @@ public static class ProjectContextUtil
 					break;
 			}
 		}
+
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY);
+		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		if (File.Exists(openApiPath))
+		{
+			var openApiStringReader = new OpenApiStringReader();
+			var fileContent = File.ReadAllText(openApiPath);
+			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
+			foreach (var warning in diagnostic.Warnings)
+			{
+				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+					warning.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+			}
+
+			foreach (var error in diagnostic.Errors)
+			{
+				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+					error.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+			}
+			protocol.OpenApiDoc = openApiDocument;
+		}
+		
 		
 		return protocol;
 	}
