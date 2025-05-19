@@ -63,8 +63,18 @@ namespace Beamable.Common
 				public const float ROW_HEIGHT = 50;
 
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
-
-
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-beamable-federated-components-v2";
+				public const string MICROSERVICE_CLASS_TYPE_KEY = "x-beamable-microservice-class-type";
+				public const string MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY = "x-beamable-microservice-methods-to-skip-generation";
+				public const string METHOD_SKIP_CLIENT_GENERATION_KEY = "x-beamable-method-skip-client-generation";
+				public const string SCHEMA_IS_OPTIONAL_KEY = "x-beamable-is-optional-schema";
+				public const string SCHEMA_OPTIONAL_TYPE_NAME_KEY = "x-beamable-optional-type";
+				public const string OPERATION_CALLABLE_METHOD_TYPE_KEY = "x-beamable-operation-method-type";
+				
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY = "federationClassName";
+				
 				/// <summary>
 				/// OpenAPI extension that stores <see cref="System.Type.FullName"/> of a type used in the microservice "Callable" method signatures.
 				/// </summary>
@@ -96,6 +106,7 @@ namespace Beamable.Common
 
 				public const string GENERATOR_SUFFIX = "_generator";
 				public const string DOTNET_COMPILE_ERROR_SYMBOL = "error CS";
+				
 
 				public static class Logs
 				{

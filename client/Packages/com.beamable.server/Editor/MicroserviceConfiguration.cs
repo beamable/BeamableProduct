@@ -62,6 +62,9 @@ namespace Beamable.Server.Editor
 
 		[Tooltip("When a log would be printed to the Beam Services tab, if it is an error, should the log also be printed to the Unity console?")]
 		public bool LogErrorsToUnityConsole = true;
+		
+		[Tooltip("When true, it will use the Old Microservice Generator based on Reflection instead of the OpenApi.")]
+		public bool UseOldMicroserviceGenerator = false;
 
 	}
 	

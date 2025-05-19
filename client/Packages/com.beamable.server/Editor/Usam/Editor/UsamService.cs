@@ -137,6 +137,8 @@ namespace Beamable.Server.Editor.Usam
 		
 		[NonSerialized]
 		private ProjectGenerateClientWrapper _generateClientCommand;
+		[NonSerialized]
+		private ProjectGenerateClientOapiWrapper _generateClientOapiWrapper;
 
 		private MicroserviceReflectionCache.Registry _microserviceCache;
 		public MigrationPlan migrationPlan;
