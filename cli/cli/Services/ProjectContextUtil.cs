@@ -48,11 +48,13 @@ public static class ProjectContextUtil
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService,
+		BeamActivity rootActivity,
 		bool useCache=true,
 		bool fetchServerManifest=true)
 	{
 		ServiceManifest remote = new ServiceManifest();
-
+		using var activity = rootActivity.CreateChild("generateManifest");
+		
 		if (fetchServerManifest)
 		{
 			lock (_existingManifestLock)
@@ -238,6 +240,8 @@ public static class ProjectContextUtil
 
 		sw.Stop();
 		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
+		
+		activity.SetStatus(ActivityStatusCode.Ok);
 		return manifest;
 	}
 

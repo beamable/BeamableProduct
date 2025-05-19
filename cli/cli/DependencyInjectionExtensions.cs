@@ -6,8 +6,10 @@ using cli.Utils;
 	//using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using Beamable.Server;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.Text;
 
 namespace cli;
@@ -63,7 +65,8 @@ public static class DependencyInjectionExtensions
 				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
 				{
 				})}");
-				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
+				var bodyJson = Json.Serialize(args, new StringBuilder());
+				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {bodyJson}");
 				if (command is IResultProvider resultProvider)
 				{
 					args.Provider.GetService<IDataReporterService>();
@@ -88,6 +91,19 @@ public static class DependencyInjectionExtensions
 					}
 				}
 
+				var rootActivity = args.DependencyProvider.GetService<BeamActivity>();
+				rootActivity.SetDisplay($"invocation: {command.GetType().Name}");
+
+				var internalActivity = rootActivity as IInternalBeamActivity;
+				internalActivity.AddTagsDict(new Dictionary<string, object>
+				{
+					["beam.cli.config.base_path"] = args.ConfigService.BaseDirectory,
+					["beam.cli.app.docker_path"] = args.AppContext.DockerPath,
+					["beam.cli.app.dotnet_path"] = args.AppContext.DotnetPath,
+					["beam.cli.body"] = bodyJson,
+					["beam.cli.command"] = args.Provider.GetService<BindingContext>().ParseResult.Diagram(),
+				});
+				
 				await command.Handle(args);
 				
 			}), binder);

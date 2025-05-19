@@ -7,7 +7,13 @@ public static class Program
 		var app = new App();
 		app.Configure();
 		app.Build();
-		
-		return await app.RunAsync(args);
+		try
+		{
+			return await app.RunAsync(args);
+		}
+		finally
+		{
+			app.Flush();
+		}
 	}
 }

@@ -38,9 +38,15 @@ public interface IActivityProviderArgs
     string NamePrefix { get; }
 }
 
-public class BeamActivity : IDisposable
+public interface IInternalBeamActivity
+{
+    void AddTagsDict(Dictionary<string, object> tags);
+}
+
+public class BeamActivity : IDisposable, IInternalBeamActivity
 {
     private readonly Activity _activity;
+    private IActivityProvider _provider;
 
     public ActivityTraceId TraceId => _activity?.TraceId ?? default;
     public ActivitySpanId SpanId => _activity?.SpanId ?? default;
@@ -69,10 +75,12 @@ public class BeamActivity : IDisposable
     /// </summary>
     public bool IsReal => _activity != null;
 
-    public readonly static BeamActivity Noop = new BeamActivity(null);
+    public readonly static BeamActivity Noop = new BeamActivity(null, null);
 
-    public BeamActivity(Activity activity)
+    public BeamActivity(IActivityProvider provider, Activity activity)
     {
+        _provider = provider;
+        
         // activity CAN be null if there is no emitter. 
         _activity = activity;
     }
@@ -81,6 +89,11 @@ public class BeamActivity : IDisposable
     {
         if (_activity == null) return;
         _activity.Start();
+    }
+
+    public BeamActivity CreateChild(string operationName, bool autoStart=true)
+    {
+        return _provider.Create(operationName, this, autoStart);
     }
 
     public void SetTags(TelemetryAttributeCollection attributes)
@@ -143,16 +156,28 @@ public class BeamActivity : IDisposable
     {
         if (_activity == null) return;
         
-        // OTEL link for exception attributes. 
-        //  https://opentelemetry.io/docs/specs/semconv/attributes-registry/exception/
-        
-        _activity.SetStatus(ActivityStatusCode.Error);
-        _activity.SetTag("exception.type", ex.GetType().Name);
-        _activity.SetTag("exception.message", ex.Message);
-        _activity.SetTag("exception.stack", ex.StackTrace);
-
+        SetException(ex);
         _activity.Stop();
         _activity.Dispose();
+    }
+
+    public void SetException(Exception ex)
+    {
+        if (_activity == null) return;
+
+        // OTEL link for exception attributes. 
+        //  https://opentelemetry.io/docs/specs/semconv/attributes-registry/exception/
+        _activity.SetStatus(ActivityStatusCode.Error);
+        // _activity.SetTag("exception.type", ex.GetType().Name);
+        // _activity.SetTag("exception.message", ex.Message);
+        // _activity.SetTag("exception.stack", ex.StackTrace);
+        
+        // TODO: It seems that the otel standard wants "exception", but some tools like datadog want "error" :/
+        _activity.SetTag("error.type", ex.GetType().Name);
+        _activity.SetTag("error.message", ex.Message);
+        _activity.SetTag("error.stack", ex.StackTrace);
+
+
     }
 
     public void StopAndDispose(ActivityStatusCode status)
@@ -169,6 +194,16 @@ public class BeamActivity : IDisposable
         _activity.Stop();
         _activity.Dispose();
     }
+
+    void IInternalBeamActivity.AddTagsDict(Dictionary<string, object> tags)
+    {
+        if (_activity == null) return;
+
+        foreach (var kvp in tags)
+        {
+            _activity.SetTag(kvp.Key, kvp.Value);
+        }
+    }
 }
 
 
@@ -177,24 +212,34 @@ public class DefaultActivityProvider : IActivityProvider
     private ActivitySource _activitySource;
     private Meter _meter;
 
-    public Counter<long> TestCounter;
-    public Gauge<long> TestGauge;
-
     public readonly string ServiceName;
     public readonly string ServiceNamespace;
     public readonly string ServiceId;
-    
-    public DefaultActivityProvider(IActivityProviderArgs args, MicroserviceAttribute attribute)
+
+    public static DefaultActivityProvider CreateMicroServiceProvider(IActivityProviderArgs args, MicroserviceAttribute attribute)
     {
-        ServiceNamespace = attribute.MicroserviceName;
-        ServiceName = string.IsNullOrEmpty(args.NamePrefix) ? attribute.MicroserviceName : $"{attribute.MicroserviceName}.{args.NamePrefix}";
+        return new DefaultActivityProvider(Constants.Features.Otel.METER_SERVICE_NAME, 
+            string.IsNullOrEmpty(args.NamePrefix) ? attribute.MicroserviceName : $"{attribute.MicroserviceName}.{args.NamePrefix}",
+            attribute.MicroserviceName);
+    }
+
+    public static DefaultActivityProvider CreateCliServiceProvider()
+    {
+        return new DefaultActivityProvider(Constants.Features.Otel.METER_CLI_NAME,
+            "beam.cli", "cli");
+    }
+    
+    public DefaultActivityProvider(string meterName, string serviceName, string serviceNamepsace)
+    {
+        ServiceNamespace = serviceNamepsace;
+        ServiceName = serviceName;
         ServiceId = Guid.NewGuid().ToString();
         
-        _activitySource = new ActivitySource(Constants.Features.Otel.METER_NAME);
+        _activitySource = new ActivitySource(meterName);
         _meter = new Meter(_activitySource.Name);
-        
-        TestCounter = _meter.CreateCounter<long>("Test2", description: "a simple test");
-        TestGauge = _meter.CreateGauge<long>("TestG");
+        //
+        // TestCounter = _meter.CreateCounter<long>("Test2", description: "a simple test");
+        // TestGauge = _meter.CreateGauge<long>("TestG");
     }
     
     public BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true, TelemetryImportance importance=TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null)
@@ -216,7 +261,7 @@ public class DefaultActivityProvider : IActivityProvider
             parentContext: context, 
             tags);
         
-        var beamActivity = new BeamActivity(activity);
+        var beamActivity = new BeamActivity(this, activity);
         if (autoStart)
         {
             activity?.Start();

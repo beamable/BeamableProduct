@@ -6,6 +6,11 @@ namespace Beamable.Common
         {
             public static partial class Otel
             {
+                public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
+
+                public static bool CliTracesEnabled() =>
+                    string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+                
                 public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";
                 public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
@@ -83,7 +88,8 @@ namespace Beamable.Common
                 
                 
                 
-                public const string METER_NAME = "Beamable.Service.Core";
+                public const string METER_SERVICE_NAME = "Beamable.Service.Core";
+                public const string METER_CLI_NAME = "Beamable.Cli";
                 
                 public const string TRACE_REQUEST = "beam.request.outbound";
                 public const string TRACE_REQUEST_SEND = "beam.request.outbound.send";

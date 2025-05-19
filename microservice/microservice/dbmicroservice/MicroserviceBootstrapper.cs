@@ -629,15 +629,13 @@ namespace Beamable.Server
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
-			        .AddMeter(Otel.METER_NAME)
+			        .AddMeter(Otel.METER_SERVICE_NAME)
 			        .AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
 			        .SetResourceBuilder(_resourceBuilder)
 			        .AddOtlpExporter((c) =>
 			        {
-				        c.ExportProcessorType = ExportProcessorType.Simple;
-				        c.Protocol = OtlpExportProtocol.Grpc;
 			        })
 			        .Build()
 		        ;
@@ -645,13 +643,11 @@ namespace Beamable.Server
 			// TODO: keep references to providers so that we can force flush them at the shutdown
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
 			        .SetResourceBuilder(_resourceBuilder)
-			        .AddSource(Otel.METER_NAME)
+			        .AddSource(Otel.METER_SERVICE_NAME)
 			        .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .SetSampler<TraceSampler>()
 			        .AddOtlpExporter((c) =>
 			        {
-				        c.ExportProcessorType = ExportProcessorType.Simple;
-				        c.Protocol = OtlpExportProtocol.Grpc;
 			        })
 			        .Build()
 		        ;
@@ -808,7 +804,7 @@ namespace Beamable.Server
 	        //var resolvedCid = await ConfigureCid(envArgs);
 	        //_args.SetResolvedCid(resolvedCid);
 
-	        var activityProvider = new DefaultActivityProvider(envArgs, attribute);
+	        var activityProvider = DefaultActivityProvider.CreateMicroServiceProvider(envArgs, attribute);
 	        _activityProvider = activityProvider;
 	        
 	        var ctx = new DefaultAttributeContext
@@ -823,23 +819,6 @@ namespace Beamable.Server
 	        //  Ex: It is not valid for a user to override what "cid" does. 
 	        _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
 	        
-	        _resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
-			        autoGenerateServiceInstanceId: false,
-			        serviceInstanceId: activityProvider.ServiceId)
-		        .AddAttributes(new Dictionary<string, object>()
-		        {
-			        [Otel.ATTR_CID] = envArgs.CustomerID,
-			        [Otel.ATTR_PID] = envArgs.ProjectName,
-			        [Otel.ATTR_AUTHOR] = envArgs.AccountId,
-			        [Otel.ATTR_SDK_VERSION] = envArgs.SdkVersionExecution,
-		        });
-
-	        // run the standard provider *AFTER* the user level stuff, so that
-	        //  standard beamable attributes overwrite conflicting user attributes.
-	        //  Ex: It is not valid for a user to override what "cid" does. 
-	        _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
-
 	        _resourceBuilder = ResourceBuilder.CreateEmpty()
 		        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
 			        autoGenerateServiceInstanceId: false,

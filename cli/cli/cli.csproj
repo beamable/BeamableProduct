@@ -62,8 +62,9 @@
       <ExcludeAssets>compile</ExcludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-
   </ItemGroup>
+  
+  
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Csv" Version="2.0.93" />
@@ -87,6 +88,13 @@
     <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
     <PackageReference Include="ZLogger" Version="2.5.10" />
+
+    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+    
   </ItemGroup>
 
   <ItemGroup>

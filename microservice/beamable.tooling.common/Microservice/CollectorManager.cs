@@ -499,7 +499,6 @@ public class CollectorManager
 
 			if (socket.Available == 0)
 			{
-				Log.Information("Socket has no info");
 				await Task.Delay(delayBeforeNewAttempt);
 				continue;
 			}
@@ -552,7 +551,6 @@ public class CollectorManager
 
 	public static async Task StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
 	{
-		// var collectorExecutablePath = GetCollectorExecutablePath();
 		logger.ZLogInformation($"Using Collector Executable Path: [{collectorExecutablePath}]");
 
 		if (!File.Exists(collectorExecutablePath))
@@ -561,8 +559,6 @@ public class CollectorManager
 		}
 
 		var configPath = Path.Combine(Path.GetDirectoryName(collectorExecutablePath), configFileName);
-		// var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, configFileName);
-
 		if (!File.Exists(configPath))
 		{
 			throw new Exception("Could not find the collector configuration file");
@@ -582,13 +578,6 @@ public class CollectorManager
 			}
 			else
 			{
-				// arguments = $"sh -c \"'{fileExe}' --config '{configPath}'\" &";
-				// fileExe = "nohup";	
-				
-				// process.StartInfo.FileName = "/bin/bash";
-				// process.StartInfo.Arguments = $"-c \"'{collectorExecutablePath}' --config {configFileName}\"";
-				// arguments = $"-c \"'{collectorExecutablePath}' --config {configFileName}\"";
-				// fileExe = "/bin/bash";
 				arguments = $"-a {fileExe.EnquotePath()} --args {arguments}";
 				fileExe = "open";
 			}
@@ -609,7 +598,6 @@ public class CollectorManager
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			// Console.WriteLine("");
 			Log.Verbose($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
@@ -626,8 +614,6 @@ public class CollectorManager
 
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
-		// process.WaitForExit();
-
 		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
 		
 

@@ -55,15 +55,22 @@ using cli.Commands.Project.Logs;
 using cli.OtelCommands;
 using cli.OtelCommands.Grafana;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Spectre.Console;
 using ZLogger;
 using Command = System.CommandLine.Command;
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 namespace cli;
 
 public class App
 {
 	public static ILogger GlobalLogger;
+	public static ILoggerFactory GlobalLoggerFactory;
 	public BeamLogSwitch LogSwitch { get; set; } = new BeamLogSwitch
 	{
 		Level = LogLevel.Information
@@ -98,7 +105,7 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static ILogger ConfigureZLogging(App app, IDependencyProvider provider, Action<ILoggingBuilder> configurator)
+	private static (ILogger, ILoggerFactory) ConfigureZLogging(App app, IDependencyProvider provider, Action<ILoggingBuilder> configurator)
 	{
 		var appCtx = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
@@ -120,7 +127,20 @@ public class App
 				opts.UseBeamFormatter(appCtx);
 				return new SpectreZLoggerProcessor(appCtx.LogSwitch, opts);
 			});
-			
+
+			if (Otel.CliTracesEnabled())
+			{
+				// TODO: make the log level configurable via an option
+				builder.AddFilter<OpenTelemetryLoggerProvider>((logLevel) => logLevel >= LogLevel.Information);
+				builder.AddOpenTelemetry(opts =>
+				{
+					opts.IncludeScopes = true;
+					
+					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
+					opts.AddOtlpExporter();
+				});
+			}
+
 			// maybe write the logs to a file?
 			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
@@ -155,7 +175,8 @@ public class App
 		
 		
 		var logger = factory.CreateLogger<BeamableZLoggerProvider>();
-		return logger;
+		
+		return (logger, factory);
 	}
 	
 
@@ -199,6 +220,70 @@ public class App
 		services.AddSingleton<IFileOpenerService, FileOpenerService>();
 		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
 		services.AddSingleton<HttpSignedRequester>();
+
+		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
+		services.AddSingleton<ResourceBuilder>(p =>
+		{
+			var activityProvider = p.GetService<DefaultActivityProvider>();
+			var ctx = p.GetService<IAppContext>();
+
+
+			var dict = new Dictionary<string, object>()
+			{
+				[Otel.ATTR_SDK_VERSION] = BeamAssemblyVersionUtil.GetVersion<App>(),
+			};
+			if (!string.IsNullOrEmpty(ctx.Cid))
+			{
+				dict[Otel.ATTR_CID] = ctx.Cid;
+			}
+			if (!string.IsNullOrEmpty(ctx.Pid))
+			{
+				dict[Otel.ATTR_PID] = ctx.Pid;
+			}
+				
+			var resourceBuilder = ResourceBuilder.CreateEmpty()
+				.AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
+					autoGenerateServiceInstanceId: false,
+					serviceInstanceId: activityProvider.ServiceId)
+				.AddAttributes(dict);
+			
+			return resourceBuilder;
+		});
+		services.AddSingleton<TracerProvider>(p =>
+		{
+			var resourceBuilder = p.GetService<ResourceBuilder>();
+			if (Otel.CliTracesEnabled())
+			{
+				
+				return Sdk.CreateTracerProviderBuilder()
+					.SetResourceBuilder(resourceBuilder)
+					.AddHttpClientInstrumentation(opts =>
+					{
+						opts.RecordException = true;
+					})
+					.AddSource(Otel.METER_CLI_NAME)
+					.AddOtlpExporter()
+					.Build();
+			}
+			return null;
+		});
+		services.AddSingleton<MeterProvider>(p =>
+		{
+			var resourceBuilder = p.GetService<ResourceBuilder>();
+			if (Otel.CliTracesEnabled())
+			{
+				return Sdk.CreateMeterProviderBuilder()
+					.AddProcessInstrumentation()
+					.AddRuntimeInstrumentation()
+					.SetResourceBuilder(resourceBuilder)
+					.AddHttpClientInstrumentation()
+					.AddOtlpExporter()
+					.Build();
+			}
+
+			return null;
+		});
+
 		
 		OpenApiRegistration.RegisterOpenApis(services);
 
@@ -210,6 +295,22 @@ public class App
 		// no-op
 	};
 
+	private BeamActivity _activity;
+	private TracerProvider _traceProvider;
+	private MeterProvider _meterProvider;
+
+	public virtual void Flush()
+	{
+		_activity?.Stop();
+		_activity?.Dispose();
+		_traceProvider?.ForceFlush();
+		_traceProvider?.Shutdown();
+		_meterProvider?.ForceFlush();
+		_meterProvider?.Shutdown();
+		
+		GlobalLoggerFactory?.Dispose();
+	}
+
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
@@ -219,7 +320,7 @@ public class App
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
-
+		
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogSwitch = new BeamLogSwitch { Level = LogLevel.Information };
 
@@ -227,7 +328,7 @@ public class App
 		{
 			_setLogger = (provider) =>
 			{
-				var logger = ConfigureZLogging(this, provider, configureLogger);
+				(var logger, GlobalLoggerFactory) = ConfigureZLogging(this, provider, configureLogger);
 				GlobalLogger = logger;
 				if (_queuedLogger == BeamableZLoggerProvider.LogContext.Value)
 				{
@@ -244,7 +345,7 @@ public class App
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
 				{
-					var factory = LoggerFactory.Create(builder =>
+					var factory = GlobalLoggerFactory = LoggerFactory.Create(builder =>
 					{
 						builder.AddZLoggerLogProcessor(new ReporterSink(provider));
 					});
@@ -661,7 +762,10 @@ public class App
 		var root = CommandProvider.GetRequiredService<RootCommand>();
 
 		var helpBuilder = new HelpBuilder(LocalizationResources.Instance, 100);
-
+		_activity = null;
+		_traceProvider = null;
+		_meterProvider = null;
+		
 		helpBuilder.CustomizeLayout(c =>
 		{
 			
@@ -756,7 +860,8 @@ public class App
 		});
 
 		var commandLineBuilder = new CommandLineBuilder(root);
-
+		
+		
 		// this middleware pre-handles the --all-help option.
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -809,9 +914,10 @@ public class App
 				services.AddSingleton(ctx);
 				services.AddSingleton(ctx.BindingContext);
 				services.AddSingleton(helpBuilder);
+				services.AddSingleton<BeamActivity>(p => p.GetService<DefaultActivityProvider>().Create("invocation"));
 				ConfigureServices(services);
 			});
-
+			
 			{ // if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
 				Console.CancelKeyPress += (sender, eventArgs) =>
 				{
@@ -837,6 +943,11 @@ public class App
 
 			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 
+			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
+			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
+			var appContext = provider.GetRequiredService<IAppContext>();
+			appContext.Apply(ctx.BindingContext);
+			
 			// update log information before dependency injection is sealed.
 			{
 				_setLogger(provider);
@@ -846,92 +957,107 @@ public class App
 				}
 				
 			}
-
-
+			
 			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
-
-			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
-			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
-			var appContext = provider.GetRequiredService<IAppContext>();
-			appContext.Apply(ctx.BindingContext);
-
-			Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
-
-			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
-			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
-			var runningVersion = appContext.ExecutingVersion;
-			var localVersion = appContext.LocalProjectVersion;
-			var isCalledFromInsideBeamableProject = localVersion != null;
-			Log.Verbose($"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
-
-			var isMisalignedVersion = runningVersion != localVersion;
-			var areVersionsBothLocal = (runningVersion?.StartsWith("0.0.123") ?? false) && (localVersion?.StartsWith("0.0.123") ?? false);
-			var needsProxy = isMisalignedVersion && !areVersionsBothLocal;
-			if (isCalledFromInsideBeamableProject && needsProxy)
-			{
-				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
-				if (!preventRedirect)
-				{
-					await ProxyCommand(ctx, provider, runningVersion, localVersion);
-					return;
-				}
-			}
+			// resolve the root trace, must be done app context is applied with cli bindings 
+			_traceProvider = provider.GetService<TracerProvider>();
+			_meterProvider = provider.GetService<MeterProvider>();
 			
-			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
+			_activity = provider.GetService<BeamActivity>();
+			try
+			{
 
-			
-			var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
-			if (skip)
-			{
-				Log.Debug($"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
-			} else 
-			{
-				try
+				Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
+
+				// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
+				// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
+				var runningVersion = appContext.ExecutingVersion;
+				var localVersion = appContext.LocalProjectVersion;
+				var isCalledFromInsideBeamableProject = localVersion != null;
+				Log.Verbose(
+					$"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
+
+				var isMisalignedVersion = runningVersion != localVersion;
+				var areVersionsBothLocal = (runningVersion?.StartsWith("0.0.123") ?? false) &&
+				                           (localVersion?.StartsWith("0.0.123") ?? false);
+				var needsProxy = isMisalignedVersion && !areVersionsBothLocal;
+				if (isCalledFromInsideBeamableProject && needsProxy)
 				{
-					var beamoSystem = provider.GetService<BeamoLocalSystem>();
-					beamoSystem.InitManifest(useManifestCache: true).Wait();
-				}
-				catch (AggregateException aggregateException)
-				{
-					foreach (var ex in aggregateException.InnerExceptions)
+					var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
+					if (!preventRedirect)
 					{
-						Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+						await ProxyCommand(ctx, provider, runningVersion, localVersion);
+						return;
+					}
+				}
+
+				Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
+
+
+				var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
+				if (skip)
+				{
+					Log.Debug(
+						$"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
+				}
+				else
+				{
+					try
+					{
+						var beamoSystem = provider.GetService<BeamoLocalSystem>();
+						beamoSystem.InitManifest(useManifestCache: true).Wait();
+					}
+					catch (AggregateException aggregateException)
+					{
+						foreach (var ex in aggregateException.InnerExceptions)
+						{
+							Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+						}
+
+						throw;
 					}
 
-					throw;
-				}
-				
-				
-				{ // generate the route-map if we need to
-					if (!appContext.PreferRemoteFederation)
+
 					{
-						var federations = ListFederationsCommand.GetLocalFederations(appContext.Cid, appContext.Pid,
-							provider.GetService<BeamoLocalSystem>().BeamoManifest);
-						var routeMap = string.Join(",", federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
-						if (provider.CanBuildService<CliRequester>())
+						// generate the route-map if we need to
+						if (!appContext.PreferRemoteFederation)
 						{
-							var requester = provider.GetService<CliRequester>();
-							Log.Debug($"Setting routing header=[{routeMap}]");
-							requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] = routeMap;
+							var federations = ListFederationsCommand.GetLocalFederations(appContext.Cid, appContext.Pid,
+								provider.GetService<BeamoLocalSystem>().BeamoManifest);
+							var routeMap = string.Join(",",
+								federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
+							if (provider.CanBuildService<CliRequester>())
+							{
+								var requester = provider.GetService<CliRequester>();
+								Log.Debug($"Setting routing header=[{routeMap}]");
+								requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] =
+									routeMap;
+							}
 						}
 					}
+
 				}
 
+
+				Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
+				await next(ctx);
+				_activity.SetStatus(ActivityStatusCode.Ok);
+				sw.Stop();
+				Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
 			}
-
-
-			Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
-			await next(ctx);
-
-			sw.Stop();
-			Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
+			finally
+			{
+			
+			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);
+		
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
+			_activity?.SetException(ex);
 			switch (ex)
 			{
 				case RequesterException requesterException:
@@ -978,6 +1104,7 @@ public class App
 				var reporter = ServiceProviderServiceExtensions.GetService<IDataReporterService>(provider);
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
+			
 
 			if (appContext.ShouldUseLogFile)
 			{
@@ -992,6 +1119,8 @@ public class App
 				}
 			}
 		});
+		
+		
 		return commandLineBuilder.Build();
 	}
 
