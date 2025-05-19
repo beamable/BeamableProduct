@@ -3,9 +3,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using Beamable.Server.Common;
 using CliWrap;
-using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
-using Microsoft.Build.Locator;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
@@ -14,7 +12,9 @@ using System.Xml;
 using System.Xml.Linq;
 using Beamable.Common.Util;
 using microservice.Extensions;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
 
 namespace cli.Services;
 
@@ -108,7 +108,7 @@ public static class ProjectContextUtil
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
-			ServiceGroupToBeamoIds = new Dictionary<string, string[]>()
+			ServiceGroupToBeamoIds = new Dictionary<string, string[]>(),
 		};
 
 
@@ -253,7 +253,8 @@ public static class ProjectContextUtil
 
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
-
+		
+		
 		sw.Stop();
 		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
 		return manifest;
@@ -659,6 +660,30 @@ public static class ProjectContextUtil
 					break;
 			}
 		}
+
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY);
+		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		if (File.Exists(openApiPath))
+		{
+			var openApiStringReader = new OpenApiStringReader();
+			var fileContent = File.ReadAllText(openApiPath);
+			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
+			foreach (var warning in diagnostic.Warnings)
+			{
+				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+					warning.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+			}
+
+			foreach (var error in diagnostic.Errors)
+			{
+				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+					error.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+			}
+			protocol.OpenApiDoc = openApiDocument;
+		}
+		
 		
 		return protocol;
 	}

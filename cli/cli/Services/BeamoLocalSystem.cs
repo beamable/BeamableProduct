@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using microservice.Extensions;
+using Microsoft.OpenApi.Models;
 
 namespace cli.Services;
 
