@@ -200,8 +200,10 @@ namespace Beamable.Server
 
 				parameterNames[i] = parameterName;
 			}
-			var routingKey = _useLocal ? new OptionalString($"micro_{_ctx.ServiceName}:{_ctx.Prefix}") : new OptionalString();
-
+			bool hasLocalPrefix = !string.IsNullOrEmpty(_ctx.Prefix);
+			var routingKey = _useLocal && hasLocalPrefix
+				? new OptionalString($"micro_{_ctx.ServiceName}:{_ctx.Prefix}")
+				: new OptionalString();
 
 			return new ServiceMethodInfo { parameterNames = parameterNames, pathName = pathName, routingKey = routingKey };
 		}
