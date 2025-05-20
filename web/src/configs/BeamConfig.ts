@@ -1,5 +1,5 @@
 import { BeamEnvironmentType } from './BeamEnvironmentConfig';
-import { HttpRequester } from '../http/HttpRequester';
+import { HttpRequester } from '@/http/types/HttpRequester';
 
 /**
  * Configuration options for initializing the Beamable SDK.

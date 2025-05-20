@@ -50,7 +50,7 @@ export enum BeamEnvironmentType {
 /**
  * A mapping of Beam environment types to their configurations.
  */
-export const BeamEnvironmentConfig: Record<
+export const BeamEnvironment: Record<
   BeamEnvironmentType,
   BeamEnvironmentConfig
 > = {

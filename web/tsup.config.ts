@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import path from 'path';
 
 export default defineConfig({
   entry: ['src/index.ts'], // Entry file(s) for the library build
@@ -9,4 +10,12 @@ export default defineConfig({
   dts: true, // Generate TypeScript declaration (.d.ts) files
   format: ['esm', 'cjs', 'iife'], // Output formats: ES modules, CommonJS, and browser-friendly IIFE
   globalName: 'Beam', // Global variable name for IIFE builds (window.Beam)
+  esbuildOptions(options) {
+    // Map the '@' prefix to the 'src' directory so that
+    // imports like `import { foo } from '@/utils/foo'`
+    // resolve correctly at build time (matches tsconfig paths).
+    options.alias = {
+      '@': path.resolve(__dirname, 'src'),
+    };
+  },
 });
