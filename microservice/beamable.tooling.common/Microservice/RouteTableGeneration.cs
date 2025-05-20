@@ -22,9 +22,9 @@ public static class RouteTableGeneration
 		{
 			instanceType = microserviceType, factory = serviceFactory, pathPrefix = ""
 		};
-		var generators = adminRoutes == null
-			? new ServiceMethodProvider[] { clientGenerator }
-			: new ServiceMethodProvider[]
+		var providers = adminRoutes == null
+			? new[] { clientGenerator }
+			: new[]
 			{
 				new ServiceMethodProvider
 				{
@@ -33,16 +33,7 @@ public static class RouteTableGeneration
 				clientGenerator
 			};
 		
-		var collection = ServiceMethodHelper.Scan(serviceAttribute,
-			new ICallableGenerator[]
-			{
-				new FederatedLoginCallableGenerator(),
-				new FederatedInventoryCallbackGenerator(),
-				new FederatedGameServerCallableGenerator(),
-				new FederatedPlayerInitCallableGenerator()
-			},
-			generators
-			);
+		var collection = ServiceMethodHelper.Scan(serviceAttribute, providers);
 		return collection;
 	}
 }
