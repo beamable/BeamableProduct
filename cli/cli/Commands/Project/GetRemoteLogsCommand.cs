@@ -245,6 +245,12 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
                         continue;
                     }
 
+                    if (!logMessage.StartsWith("{"))
+                    {
+                        Log.Warning($"Found unstructured log message=[{logMessage}]");
+                        continue;
+                    }
+                    
                     var message = JsonSerializer.Deserialize<CloudWatchLogMessage>(logMessage, new JsonSerializerOptions(){IncludeFields = true});
                     if (!LogUtil.TryParseSystemLogLevel(message.level, out var logLevel))
                     {

@@ -93,7 +93,8 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     {
         EnsureAtLeastNet8,
         EnsureUsingLatestMongo,
-        EnsureDockerIgnoreAllowsBeamApp
+        EnsureDockerIgnoreAllowsBeamApp,
+        EnsureNoUsingSerilogCommands
     };
     
     public static (List<CheckResultsForBeamoId>, FileCache) ComputeChecks<TArgs>(TArgs args) where TArgs : CommandArgs, IChecksArgs
@@ -123,10 +124,14 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
             cache[project.FullPath] = allText;
             foreach (var projectFunction in ProjectFunctions)
             {
-                var edit = projectFunction(beamoId, lineNumberToIndex, lines, project, cache);
-                if (edit != null)
+                var edits = projectFunction(beamoId, lineNumberToIndex, lines, project, cache);
+                if (edits != null)
                 {
-                    projectResults.fileEdits.Add(edit);
+                    foreach (var edit in edits)
+                    {
+                        if (edit == null) continue;
+                        projectResults.fileEdits.Add(edit);
+                    }
                 }
             }
 
@@ -187,6 +192,44 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
         return (allText, lineNumberToStringIndex, lines);
     }
 
+
+    static List<RequiredFileEdit> EnsureNoUsingSerilogCommands(string beamoId, Dictionary<int, int> _, List<string> __,
+        Project project, FileCache cache)
+    {
+        var sources = project.GetItems("Compile");
+        var edits = new List<RequiredFileEdit>();
+        foreach (var source in sources)
+        {
+            var path = source.GetMetadataValue("FullPath");
+            if (string.IsNullOrEmpty(path)) continue;
+            var (allText, lineNumberToIndex, lines) = ReadLineNumbers(path, cache);
+
+            // foreach (var line in lines)
+            for (var lineIndex = 0 ; lineIndex < lines.Count - 1; lineIndex ++)
+            {
+                var line = lines[lineIndex];
+                if (!line.StartsWith("using Serilog")) continue;
+                
+                var edit = new RequiredFileEdit
+                {
+                    filePath = path,
+                    code = $"{beamoId}_removeSerilog",
+                    beamoId = beamoId,
+                    title = "Remove Serilog",
+                    description =
+                        "As of CLI 5.0.0, Serilog has been removed and should not be used. ",
+                    replacementText = $"using Beamable.Server;"
+                };
+                edit.SetLocationAsLineReplacement(lineNumberToIndex, lineIndex);
+                edits.Add(edit);
+            }
+        }
+
+        return edits;
+
+        return null;
+    }
+
     /// <summary>
     /// As of CLI 4.1.2, the docker build context is the project folder, NOT the .beamable folder
     /// and the .dockerignore file started getting used again. Sadly, the ignore file is
@@ -197,7 +240,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     /// <param name="lineNumberToIndex"></param>
     /// <param name="project"></param>
     /// <returns></returns>
-    static RequiredFileEdit EnsureDockerIgnoreAllowsBeamApp(string beamoId, Dictionary<int, int> _, List<string> __, 
+    static List<RequiredFileEdit> EnsureDockerIgnoreAllowsBeamApp(string beamoId, Dictionary<int, int> _, List<string> __, 
         Project project, FileCache cache)
     {
         // identify if there is a .dockerignore file...
@@ -232,7 +275,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
             replacementText = $"{Environment.NewLine}!**/beamApp"
         };
         edit.SetLocationAsAppend(lineNumberToIndex, allText);
-        return edit;
+        return new List<RequiredFileEdit> { edit };
     }
 
     /// <summary>
@@ -242,7 +285,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
     ///
     /// As of CLI 5, it is required to be using at least 3.0.0 to support the OTEL instrumentation
     /// </summary>
-    static RequiredFileEdit EnsureUsingLatestMongo(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, 
+    static List<RequiredFileEdit> EnsureUsingLatestMongo(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, 
         Project project, FileCache cache)
     {
 
@@ -280,14 +323,14 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
         //  the replacement blows away a new-line. 
         edit.endIndex -= 1;
             
-        return edit;
+        return new List<RequiredFileEdit> { edit };
     }
 
     /// <summary>
     /// As of CLI 4, it is invalid for the project to use anything less than net8.
     /// We stopped publishing nuget packages for net6 and 7. 
     /// </summary>
-    static RequiredFileEdit EnsureAtLeastNet8(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, Project project,FileCache cache)
+    static List<RequiredFileEdit> EnsureAtLeastNet8(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> _, Project project,FileCache cache)
     {
         var property = project.GetProperty("TargetFramework");
         if (property == null) return null;
@@ -311,7 +354,7 @@ public class CreateChecksCommand : StreamCommand<CreateChecksCommandArgs, CheckR
                 return null;
             }
             
-            return edit;
+            return new List<RequiredFileEdit> { edit };
         }
         
         return null;

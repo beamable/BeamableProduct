@@ -3,7 +3,7 @@ using Microsoft.Build.Evaluation;
 
 namespace cli.CheckCommands;
 
-public delegate RequiredFileEdit ProjectFileEditFunction(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> lines,
+public delegate List<RequiredFileEdit> ProjectFileEditFunction(string beamoId, Dictionary<int, int> lineNumberToIndex, List<string> lines,
     Project project, FileCache cache);
 
 public class FileCache : Dictionary<string, string>
@@ -34,6 +34,14 @@ public class RequiredFileEdit
         column = 0;
         startIndex = allText.Length;
         endIndex = startIndex;
+    }
+
+    public void SetLocationAsLineReplacement(Dictionary<int, int> lineNumberToIndex, int lineNumber)
+    {
+        line = lineNumber;
+        column = 0;
+        startIndex = lineNumberToIndex[lineNumber] + 1;
+        endIndex = lineNumberToIndex[lineNumber + 1]; // TODO: this would break if the line was the last line...
     }
     
     public bool TrySetLocation(ElementLocation location, Dictionary<int, int> lineNumberToIndex, string originalText)

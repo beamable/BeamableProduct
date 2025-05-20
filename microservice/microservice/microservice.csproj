@@ -62,17 +62,8 @@
   </ItemGroup>
 
   
-  <ItemGroup Label="Pack Internal Beamable References: Net6.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
+  <ItemGroup Label="Pack Internal Beamable References">
+    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build" Pack="True"/>
   </ItemGroup>
-  <ItemGroup Label="Pack Internal Beamable References: Net7.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
-  </ItemGroup>
-  <ItemGroup Label="Pack Internal Beamable References: Net8.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
-  </ItemGroup>
-  <ItemGroup Label="Pack Internal Beamable References: Net9.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net9.0" Pack="True"/>
-  </ItemGroup>
-
+  
 </Project>
