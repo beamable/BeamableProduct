@@ -1,0 +1,34 @@
+import { BeamEnvironmentType } from './BeamEnvironmentConfig';
+import { HttpRequester } from '../http/HttpRequester';
+
+/**
+ * Configuration options for initializing the Beamable SDK.
+ *
+ * @interface BeamConfig
+ */
+export interface BeamConfig {
+  /**
+   * The client identifier (CID) assigned to your Beamable account.
+   */
+  cid: string;
+
+  /**
+   * The project identifier (PID) associated with your Beamable project.
+   */
+  pid: string;
+
+  /**
+   * A human-readable alias for this configuration (e.g., 'demo-app').
+   */
+  alias: string;
+
+  /**
+   * The target Beamable environment in which requests will be sent.
+   */
+  environment: BeamEnvironmentType;
+
+  /**
+   * Optional custom HTTP requester to use instead of the default implementation.
+   */
+  requester?: HttpRequester;
+}
