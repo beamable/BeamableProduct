@@ -291,7 +291,6 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
-          ReleaseSharedCode=true dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
       
       - name: Prepare Config-Defaults
         run: |
