@@ -702,18 +702,8 @@ namespace Beamable.Server
 		        return;
 	        }
 	        
-	        var envArgs = new EnvironmentArgs();
-
-	        var cliArgs = Environment.GetCommandLineArgs();
-	        if (cliArgs.Contains("--generate-client-please"))
-	        {
-		        // do something else
-		        Environment.Exit(0);
-	        }
-	        
 	        var envArgs = _args = new EnvironmentArgs();
-	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
-	        
+	   
 	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
 
 	        _logger.LogInformation($"Starting Prepare");
@@ -845,13 +835,15 @@ namespace Beamable.Server
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
-        {			var commandLineArgs = Environment.GetCommandLineArgs();
+        {
+			var commandLineArgs = Environment.GetCommandLineArgs();
 	        // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
 	        if (commandLineArgs.Contains("--generate-oapi"))
 	        {
 		        return;
 	        }
-	        bool shouldStartStandardOtel = false;
+
+	        bool shouldStartStandardOtel = false;
 	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
 
 	        if (startStandardOtelEnv == "true")

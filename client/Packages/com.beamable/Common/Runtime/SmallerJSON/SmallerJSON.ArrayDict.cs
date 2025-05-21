@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@4.3.0-PREVIEW.RC2
-// https://www.nuget.org/packages/Beamable.Common/4.3.0-PREVIEW.RC2
+// this file was copied from nuget package Beamable.Common@4.3.0
+// https://www.nuget.org/packages/Beamable.Common/4.3.0
 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
