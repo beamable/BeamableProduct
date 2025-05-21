@@ -1,10 +1,9 @@
-﻿using cli.Services.Content;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.Text.Json;
 
 namespace cli.Content;
 
-public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IEmptyResult
+public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IEmptyResult, ISkipManifest
 {
 	private static readonly Option<string[]> CONTENT_ID_OPTION = new("--content-ids", Array.Empty<string>, "An array of existing content ids");
 
@@ -13,7 +12,9 @@ public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IE
 
 	private ContentService _contentService;
 
-	public ContentBulkEditCommand() : base("bulk-edit", "Saves a serialized content properties JSON-blob into a manifest (expects the blob to be in Beamable's Serialization Format)")
+	public ContentBulkEditCommand() : base("bulk-edit", "Saves a serialized content properties JSON-blob into a manifest (expects the blob to be in Beamable's Serialization Format). " +
+	                                                    "This command is not meant for manual usage. It is meant for CI/CD content enforcing use-cases." +
+	                                                    "Editing of content is to be made either via engine integrations OR via a JSON text-editor")
 	{
 	}
 
@@ -78,7 +79,7 @@ public class ContentBulkEditCommand : AppCommand<ContentBulkEditCommandArgs>, IE
 		// Save the actual updated content
 		try
 		{
-			var contentFolder = _contentService.EnsureContentPathForRealmExists(args.AppContext.Pid, manifestId);
+			var contentFolder = _contentService.EnsureContentPathForRealmExists(out _, args.AppContext.Pid, manifestId);
 			var updateTasks = updatedDocuments.Select(d => _contentService.SaveContentFile(contentFolder, d));
 			await Task.WhenAll(updateTasks);
 		}

@@ -4,15 +4,13 @@ using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Server;
 using cli.Dotnet;
-using cli.Services.Content;
 using Spectre.Console;
 using Spectre.Console.Json;
 using System.Text.Json;
 
 namespace cli.Content;
 
-public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
-	IResultSteam<DefaultStreamResultChannel, ContentPsCommandEvent>
+public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<DefaultStreamResultChannel, ContentPsCommandEvent>, ISkipManifest
 {
 	public int updateCount;
 
@@ -35,61 +33,31 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
 		var contentService = args.DependencyProvider.GetService<ContentService>();
 
 		// Declarations of the manifest variables we care about during this command's lifecycle.
-		Promise<ClientManifestJsonResponse> referenceManifest = null;
-		Promise<ClientManifestJsonResponse> latestReferenceManifest = null;
+		Promise<ClientManifestJsonResponse> latestManifest = contentApi.GetManifestPublicJson(manifestId);
+		await latestManifest;
 
-		// First, we make sure that we have a reference manifest id for this realm+manifest id combo.
-		// If we don't, we pull the content and update the reference id. This ensures we have a reference manifest and the local content is up-to-date.
-		// We also keep an in-memory reference for the latest manifest currently deployed.
-		var referenceManifestUid = contentService.GetCurrentReferenceManifestId(manifestId);
-		if (string.IsNullOrEmpty(referenceManifestUid)) referenceManifest = contentService.PullContent(manifestId);
-		else referenceManifest = contentApi.GetManifestPublicJson(manifestId, referenceManifestUid);
-		latestReferenceManifest = contentApi.GetManifestPublicJson(manifestId);
-
-
-		await referenceManifest;
-		await latestReferenceManifest;
-
-		// If the reference manifest is the latest manifest in the realm
-		var isHeadOfRealm = referenceManifest.GetResult().uid.Value == latestReferenceManifest.GetResult().uid.Value;
+		// If we are just creating the local representation for this realm+manifest combo, let's reset our state to match the remote state.
+		_ = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
+		if (created) await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId);
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.
 		// Full rebuild events expect the engine to discard their in-memory state for this realm+manifest id handle and rebuild the entire list of content entries.
-		var localContentAgainstReference = contentService.GetAllContentFiles(referenceManifest.GetResult(), manifestId);
-		var localContentAgainstLatest = contentService.GetAllContentFiles(latestReferenceManifest.GetResult(), manifestId);
-		await Task.WhenAll(localContentAgainstReference, localContentAgainstLatest);
+		var localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
+		await Task.WhenAll(localContentAgainstLatest);
 
 		// Prepare the content entries between our local state and the remote states that are relevant (our reference and the latest publish in the realm).
-		var entriesToEmitAgainstReference = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstReference.Result.ContentFiles);
-		var entriesToEmitAgainstLatest = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles);
+		var entriesToEmitAgainstLatest = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles)
+			.ToArray();
 
 		// Build and emit the event
 		var eventToEmit = new ContentPsCommandEvent()
 		{
 			EventType = ContentPsCommandEvent.EVT_TYPE_FullRebuild,
-			IsReferenceHeadInRealm = isHeadOfRealm,
-			RelevantManifestsAgainstReference = new()
-			{
-				new LocalContentManifest()
-				{
-					OwnerCid = cid,
-					OwnerPid = pid,
-					ManifestId = manifestId,
-					ReferenceManifestUid = referenceManifest.GetResult().uid,
-					LatestManifestUid = latestReferenceManifest.GetResult().uid,
-					Entries = entriesToEmitAgainstReference.ToArray(),
-				}
-			},
 			RelevantManifestsAgainstLatest = new()
 			{
 				new LocalContentManifest()
 				{
-					OwnerCid = cid,
-					OwnerPid = pid,
-					ManifestId = manifestId,
-					ReferenceManifestUid = referenceManifest.GetResult().uid,
-					LatestManifestUid = latestReferenceManifest.GetResult().uid,
-					Entries = entriesToEmitAgainstLatest.ToArray(),
+					OwnerCid = cid, OwnerPid = pid, ManifestId = manifestId, Entries = entriesToEmitAgainstLatest.ToArray(),
 				}
 			},
 			ToRemoveLocalEntries = new(),
@@ -111,33 +79,19 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
 					var allLocalDeletions = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasDeleted()).Select(fc => fc.ContentId);
 
 					// Get the list of all content that was NOT in the remote but WAS deleted locally.
-					var allLocalOnlyDeletions = allLocalDeletions.Except(referenceManifest.GetResult().entries.Select(e => e.contentId)).ToArray();
+					var allLocalOnlyDeletions = allLocalDeletions.Except(latestManifest.GetResult().entries.Select(e => e.contentId)).ToArray();
 
 					// Find the list of ids affected by the file changes
 					var allRelevantIds = batchedLocalFileChanges.AllFileChanges.SelectMany(fc => string.IsNullOrEmpty(fc.OldContentId) ? new[] { fc.ContentId } : new[] { fc.ContentId, fc.OldContentId });
 
 					// Refresh the local ContentFile objects based on the latest reference manifest
-					localContentAgainstReference = contentService.GetAllContentFiles(referenceManifest.GetResult(), manifestId);
-					localContentAgainstLatest = contentService.GetAllContentFiles(latestReferenceManifest.GetResult(), manifestId);
-					await Task.WhenAll(localContentAgainstReference, localContentAgainstLatest);
+					localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
+					await localContentAgainstLatest;
 
 					// Prepare a new Manifest to push out with only the changed entries.
 					var fileChangeManifestToEmit = new ContentPsCommandEvent()
 					{
 						EventType = ContentPsCommandEvent.EVT_TYPE_ChangedContent,
-						IsReferenceHeadInRealm = referenceManifest.GetResult().uid.Value == latestReferenceManifest.GetResult().uid.Value,
-						RelevantManifestsAgainstReference = new()
-						{
-							new LocalContentManifest()
-							{
-								OwnerCid = cid,
-								OwnerPid = pid,
-								ManifestId = manifestId,
-								ReferenceManifestUid = referenceManifest.GetResult().uid,
-								LatestManifestUid = latestReferenceManifest.GetResult().uid,
-								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstReference.Result.ContentFiles.Where(c => allRelevantIds.Contains(c.Id))).ToArray(),
-							}
-						},
 						RelevantManifestsAgainstLatest = new()
 						{
 							new LocalContentManifest()
@@ -145,21 +99,15 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
 								OwnerCid = cid,
 								OwnerPid = pid,
 								ManifestId = manifestId,
-								ReferenceManifestUid = referenceManifest.GetResult().uid,
-								LatestManifestUid = latestReferenceManifest.GetResult().uid,
-								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles.Where(c => allRelevantIds.Contains(c.Id))).ToArray(),
+								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles.Where(c => allRelevantIds.Contains(c.Id))
+								).ToArray(),
 							}
 						},
 						ToRemoveLocalEntries = new()
 						{
 							new()
 							{
-								OwnerCid = cid,
-								OwnerPid = pid,
-								ManifestId = manifestId,
-								ReferenceManifestUid = referenceManifest.GetResult().uid,
-								LatestManifestUid = latestReferenceManifest.GetResult().uid,
-								Entries = allLocalOnlyDeletions.Select(id => new LocalContentManifestEntry() { FullId = id, CurrentStatus = -1 }).ToArray(),
+								OwnerCid = cid, OwnerPid = pid, ManifestId = manifestId, Entries = allLocalOnlyDeletions.Select(id => new LocalContentManifestEntry() { FullId = id, CurrentStatus = -1 }).ToArray(),
 							}
 						}
 					};
@@ -179,37 +127,20 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
 				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, tokenSource.Token))
 				{
 					// Fetch the newest manifest
-					var postPublishReferenceManifestId = contentService.GetCurrentReferenceManifestId(manifestId);
-					var latestReferenceManifestId = remoteContentPublished.ReferenceUid;
+					var latestManifestId = remoteContentPublished.ReferenceUid;
 
 					// Refresh both the reference manifest and the latest manifests.
-					referenceManifest = contentApi.GetManifestPublicJson(manifestId, postPublishReferenceManifestId);
-					latestReferenceManifest = contentApi.GetManifestPublicJson(manifestId, latestReferenceManifestId);
-					await referenceManifest;
-					await latestReferenceManifest;
+					latestManifest = contentApi.GetManifestPublicJson(manifestId, latestManifestId);
+					await latestManifest;
 
 					// Rebuild the content against the new manifests.
-					localContentAgainstReference = contentService.GetAllContentFiles(referenceManifest.GetResult(), manifestId);
-					localContentAgainstLatest = contentService.GetAllContentFiles(latestReferenceManifest.GetResult(), manifestId);
-					await Task.WhenAll(localContentAgainstReference, localContentAgainstLatest);
+					localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
+					await localContentAgainstLatest;
 
 					// Prepare a new Manifest to push out with only the changed entries.
 					var remotePublishManifestToEmit = new ContentPsCommandEvent()
 					{
 						EventType = ContentPsCommandEvent.EVT_TYPE_RemotePublished,
-						IsReferenceHeadInRealm = referenceManifest.GetResult().uid.Value == latestReferenceManifest.GetResult().uid.Value,
-						RelevantManifestsAgainstReference = new()
-						{
-							new LocalContentManifest()
-							{
-								OwnerCid = cid,
-								OwnerPid = pid,
-								ManifestId = manifestId,
-								ReferenceManifestUid = referenceManifest.GetResult().uid,
-								LatestManifestUid = latestReferenceManifest.GetResult().uid,
-								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstReference.Result.ContentFiles).ToArray(),
-							}
-						},
 						RelevantManifestsAgainstLatest = new()
 						{
 							new LocalContentManifest()
@@ -217,9 +148,8 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>,
 								OwnerCid = cid,
 								OwnerPid = pid,
 								ManifestId = manifestId,
-								ReferenceManifestUid = referenceManifest.GetResult().uid,
-								LatestManifestUid = latestReferenceManifest.GetResult().uid,
-								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles).ToArray(),
+								Entries = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles
+								).ToArray(),
 							}
 						},
 						ToRemoveLocalEntries = new(),
@@ -281,15 +211,10 @@ public class ContentPsCommandEvent
 	public int EventType;
 
 	/// <summary>
-	/// This is just a utility that informs us whether the reference realm we are working on top of is the latest one deployed to the realm.
-	/// In git terms... whether our current "local branch head" is the same as the remote's branch head.
+	/// List of manifests and entry data relevant to <see cref="EVT_TYPE_FullRebuild"/> and <see cref="EVT_TYPE_RemotePublished"/>.
+	/// This contains what our local files look like related to the most recent published manifest.
 	/// </summary>
-	public bool IsReferenceHeadInRealm;
-
-	/// <summary>
-	/// List of manifests and entry data relevant to the event being emitted.
-	/// </summary>
-	public List<LocalContentManifest> RelevantManifestsAgainstReference;
+	public List<LocalContentManifest> RelevantManifestsAgainstLatest;
 
 	/// <summary>
 	/// Contains a list of entries to be removed from the in-memory state, both relative to our reference manifest and our latest manifest.
@@ -304,12 +229,6 @@ public class ContentPsCommandEvent
 	/// Only relevant when <see cref="EventType"/> is <see cref="EVT_TYPE_ChangedContent"/>.
 	/// </summary>
 	public List<LocalContentManifest> ToRemoveLocalEntries;
-
-	/// <summary>
-	/// List of manifests and entry data relevant to <see cref="EVT_TYPE_FullRebuild"/> and <see cref="EVT_TYPE_RemotePublished"/>.
-	/// This contains what our local files look like related to the most recent published manifest.
-	/// </summary>
-	public List<LocalContentManifest> RelevantManifestsAgainstLatest;
 }
 
 [CliContractType, Serializable]
@@ -317,10 +236,7 @@ public class LocalContentManifest
 {
 	public string OwnerCid;
 	public string OwnerPid;
-
 	public string ManifestId;
-	public string ReferenceManifestUid;
-	public string LatestManifestUid;
 
 	public LocalContentManifestEntry[] Entries;
 }
@@ -364,4 +280,9 @@ public struct LocalContentManifestEntry
 	/// This is empty when the file is deleted locally.
 	/// </summary>
 	public string JsonFilePath;
+
+	/// <summary>
+	/// ID of the last published manifest to which this content was ever sync'ed. 
+	/// </summary>
+	public string ReferenceManifestUid;
 }

@@ -418,7 +418,7 @@ public class UnrealCliGenerator : ICliGenerator
 						subType = subType.GetElementType()!;
 				}
 
-				if ((subType.IsClass || subType.IsValueType) && !subType.IsPrimitive && subType != typeof(string))
+				if ((subType.IsClass || subType.IsValueType) && !subType.IsPrimitive && subType != typeof(string) && subType != typeof(DateTime))
 				{
 					FindDataDeclarations(subType, newDataTypes, streamChannel, new UnrealSourceGenerator.UnrealType());
 				}

@@ -6,10 +6,11 @@ using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Content;
 using Beamable.Serialization;
-using cli.Services.Content;
 using cli.Utils;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -31,8 +32,11 @@ public struct RemoteContentPublished
 {
 	public string OwnerCid;
 	public string OwnerPid;
-	public string PublisherGamerTag;
+	public string PublisherAccountId;
+	public string PublisherEmail;
 	public string ReferenceUid;
+
+	public ContentSyncReport AutoSyncReport;
 }
 
 public struct ChangedContentFile
@@ -52,51 +56,6 @@ public struct ChangedContentFile
 	public bool WasChanged() => !WasCreated() && !WasDeleted() && FullFilePath == OldFullFilePath;
 }
 
-/// <summary>
-/// Helper struct built by <see cref="ContentService.GetAllContentFiles"/>.
-/// </summary>
-public struct LocalContentFiles
-{
-	public string ManifestId;
-	public ClientManifestJsonResponse ReferenceManifest;
-	public List<ContentFile> ContentFiles;
-	public Dictionary<string, ContentFile> PerIdContentFiles;
-}
-
-/// <summary>
-/// Filters that can be applied to <see cref="ContentService.FilterLocalContentFiles"/> to get a subset of content files.
-/// </summary>
-public enum ContentFilterType
-{
-	/// <summary>
-	/// Matches the given array of filters as though they were fully formed ContentIds.
-	/// </summary>
-	ExactIds,
-
-	/// <summary>
-	/// Matches the given array of filters as though they were fully formed ContentTypeIds.
-	/// The comparison is a StartsWith so... 'items' will return ANY item or its subclasses.
-	/// </summary>
-	TypeHierarchy,
-
-	/// <summary>
-	/// Matches the given array of filters as though they were fully formed ContentTypeIds.
-	/// The comparison is an equals so... 'items' will return only content files that are exactly of the `items` content type (no subclasses).
-	/// </summary>
-	TypeHierarchyStrict,
-
-	/// <summary>
-	/// Matches the given array of filters as though they were C# regexes.
-	/// </summary>
-	Regexes,
-
-	/// <summary>
-	/// Matches the given array of filters as though they were tags.
-	/// Any content file that has any of the filter tags will be included in the filtered list.
-	/// </summary>
-	Tags,
-}
-
 public class ContentService
 {
 	private const int ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST = 3;
@@ -104,40 +63,55 @@ public class ContentService
 	private readonly CliRequester _requester;
 	private readonly ConfigService _config;
 	private readonly IContentApi _contentApi;
+	private readonly IAccountsApi _accountsApi;
 
 	private readonly Channel<ChangedContentFile> _channelChangedContentFiles;
 	private readonly Channel<RemoteContentPublished> _channelRemoteContentPublishes;
-	private readonly ThreadLocal<Random> _rng;
 
-	public ContentService(CliRequester requester, ConfigService config, IContentApi api)
+	private static readonly ConcurrentDictionary<string, ClientManifestJsonResponse> _cachedManifests = new();
+	private static readonly ConcurrentDictionary<long, string> _cachedAccountEmails = new();
+
+
+	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi)
 	{
 		_requester = requester;
 		_config = config;
 		_contentApi = api;
-
-		_rng = new ThreadLocal<Random>(() => new Random(DateTime.Now.Millisecond));
+		_accountsApi = accountsApi;
 
 		_channelChangedContentFiles = Channel.CreateUnbounded<ChangedContentFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 		_channelRemoteContentPublishes = Channel.CreateUnbounded<RemoteContentPublished>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 	}
 
 	private string RootContentPath => Path.Combine(_config.ConfigDirectoryPath!, Constants.CONTENT_DIRECTORY);
-	private string ContentLocalConfigPath => Path.Combine(_config.ConfigTempDirectoryPath!, Constants.CONFIG_LOCAL_CONTENT);
 
 	private IEnumerable<string> GetPidsWithCachedLocalContent() => Directory.EnumerateDirectories(RootContentPath);
+	private string GetCacheKeyForManifest(string cid, string pid, string manifestId, string manifestUid) => $"{cid}₢{pid}₢{manifestId}₢{manifestUid}";
 
-	public string EnsureContentPathForRealmExists(string pid, string manifest = "global")
+	public string EnsureContentPathForRealmExists(out bool created, string pid, string manifest = "global")
 	{
+		created = false;
+
 		var path = Path.Combine(RootContentPath, pid, manifest);
-		if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+		if (!Directory.Exists(path))
+		{
+			Directory.CreateDirectory(path);
+			created = true;
+		}
+
 		return path;
 	}
 
 	public async IAsyncEnumerable<LocalContentFileChanges> ListenToLocalContentFileChanges(string pid, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default)
 	{
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+
+		// Set up the file watcher...
 		var watcher = new FileSystemWatcher();
 		watcher.BeginInit();
-		watcher.Path = EnsureContentPathForRealmExists(pid, manifestId);
+		watcher.Path = contentFolder;
 		watcher.IncludeSubdirectories = true;
 		watcher.Filter = "*.*";
 		watcher.EnableRaisingEvents = true;
@@ -146,11 +120,6 @@ public class ContentService
 		watcher.Renamed += async (_, e) => await OnLocalRealmContentFilesChanged(e);
 		watcher.Changed += async (_, e) => await OnLocalRealmContentFilesChanged(e);
 		watcher.EndInit();
-
-		// TODO: Get the local reference manifest for this guy and... we keep track
-		// TODO: Usage of the Content PS command is:
-		// TODO:  - Every time you change the local reference, you need to stop and re-run this command.
-		// TODO:  - Must be run ONCE per realm you care about.
 
 		// Keep waiting for messages from the set up file watcher.
 		var reader = _channelChangedContentFiles.Reader;
@@ -244,11 +213,19 @@ public class ContentService
 		// Subscribe to the content refresh notification for the realm we are targeting.
 		var listenTask = Task.Run(async () =>
 		{
-			var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.refresh" }, token);
-			await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
+			try
 			{
-				OnContentPublished(message.body);
-			}, token);
+				var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest" }, token);
+				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
+				{
+					OnContentPublished(message.body);
+				}, token);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+				throw;
+			}
 		}, token);
 
 		// Loop while we are listing to the published changes on this realm and emit an event out of this enumerable every time we get one. 
@@ -272,56 +249,90 @@ public class ContentService
 
 		void OnContentPublished(object o)
 		{
-			Task.Run(() =>
+			Task.Run(async () =>
 			{
-				var payload = o as IDictionary<string, object>;
-
-				object delayRaw;
-				var publishedManifestId = "";
-				var delay = 0;
-				if (payload != null)
+				try
 				{
-					if (payload.TryGetValue("delay", out delayRaw))
-					{
-						_ = int.TryParse(delayRaw!.ToString(), out delay);
-					}
+					var payload = (JObject)o;
 
-					if (payload.TryGetValue("scopes", out var cool))
+					var categories = payload.Property("categories")!.Value.Values<string>().ToArray();
+					var manifestInfo = payload.Property("manifest")!.Value.ToObject<JObject>();
+
+					var publishedManifestId = manifestInfo.Property("id")!.Value.ToObject<string>();
+					var manifestUid = manifestInfo.Property("uid")!.Value.ToObject<string>();
+					var manifestChecksum = manifestInfo.Property("checksum")!.Value.ToObject<string>();
+					var createdTimestamp = manifestInfo.Property("created")!.Value.ToObject<long>();
+					var publisherAccountId = manifestInfo.Property("publisherAccountId")!.Value.ToObject<long>();
+
+
+					// We only emit an event if the published manifest matches the id we care about.
+					if (manifestId == publishedManifestId)
 					{
-						if (cool is List<object> listOfScopes)
+						var emailFetchTask = GetAccountEmail(publisherAccountId);
+						var manifestFetchTask = GetManifest(publishedManifestId, manifestUid);
+
+						var email = await emailFetchTask;
+						var newManifest = await manifestFetchTask;
+
+						// Let's sync the local content without synching created or modified files and ignoring conflicts.
+						var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false);
+
+						// Put this on the channel so it gets picked up below.
+						_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
 						{
-							if (listOfScopes.Count > 0 && listOfScopes[0] is string manifestIdRaw)
-							{
-								publishedManifestId = manifestIdRaw;
-							}
-						}
+							OwnerCid = _requester.Cid,
+							OwnerPid = _requester.Pid,
+							PublisherAccountId = publisherAccountId.ToString(),
+							PublisherEmail = email,
+							AutoSyncReport = syncReport,
+						});
 					}
 				}
-
-				BeamableLogger.Log($"Got notification that content was published! PUBLISH={JsonSerializer.Serialize(o)}");
-				// We only emit an event if the published manifest matches the id we care about.
-				if (manifestId == publishedManifestId)
+				catch (Exception e)
 				{
-					//var asd = await GetEmail()
-					// Put this on the channel so it gets picked up below.
-					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished() { OwnerCid = _requester.Cid, OwnerPid = _requester.Pid, PublisherGamerTag = "0", });
+					Log.Error(e, "Something went wrong when auto-synchronizing a remote publish with the local files.");
+					throw;
 				}
 			}, token);
+		}
+	}
 
-			static async Task<string> GetEmail(long accountId, ConcurrentDictionary<long, string> accountIdToEmail, IAccountsApi accountApi)
+	/// <summary>
+	/// This gets and caches the manifest with the given Id and UID. If a blank UID is provided, this will fetch the latest manifest (the latest manifest is un-cacheable).
+	/// </summary>
+	private async Task<ClientManifestJsonResponse> GetManifest(string manifestId = "global", string manifestUid = "")
+	{
+		var cacheKey = GetCacheKeyForManifest(_requester.Cid, _requester.Pid, manifestId, manifestUid);
+		if (!_cachedManifests.TryGetValue(cacheKey, out var manifest))
+		{
+			if (string.IsNullOrEmpty(manifestUid))
 			{
-				if (accountId == 0) return "";
-				if (accountIdToEmail.TryGetValue(accountId, out var email))
-				{
-					return email;
-				}
+				manifest = await _contentApi.GetManifestPublicJson(manifestId);
 
-				accountIdToEmail[accountId] = email = await accountApi
-					.GetFind(accountId.ToString())
-					.Map(res => res.email.GetOrElse(""));
-				return email;
+				var specificCacheKey = GetCacheKeyForManifest(_requester.Cid, _requester.Pid, manifestId, manifest.uid.GetOrElse(""));
+				_cachedManifests[specificCacheKey] = manifest;
+			}
+			else
+			{
+				_cachedManifests[cacheKey] = manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
 			}
 		}
+
+		return manifest;
+	}
+
+	private async Task<string> GetAccountEmail(long accountId)
+	{
+		if (accountId == 0) return "";
+		if (_cachedAccountEmails.TryGetValue(accountId, out var email))
+		{
+			return email;
+		}
+
+		_cachedAccountEmails[accountId] = email = await _accountsApi
+			.GetFind(accountId.ToString())
+			.Map(res => res.email.GetOrElse(""));
+		return email;
 	}
 
 	/// <summary>
@@ -330,26 +341,31 @@ public class ContentService
 	/// If you provide a manifest, please make sure the <paramref name="manifestId"/> matches the given manifest.
 	///
 	/// The list of content files is a union (by content id) of:
-	/// - Each content in the reference manifest.
+	/// - Each content in the <paramref name="latestManifest"/>.
 	/// - Each content file existent locally.
 	///
 	/// This means that it'll contain created, deleted, modified and up-to-date content alike.
-	/// It gives you a full picture of the local content files relative to the given manifest.
+	/// It gives you a full picture of the local content files relative to the given <paramref name="latestManifest"/>.
 	///
-	/// When <paramref name="getLocalStateOnly"/> is set, the resulting <see cref="ContentFile.ReferenceContent"/> will be empty and the <see cref="LocalContentFiles.ContentFiles"/> will ONLY contain the
-	/// files that exist locally. Use this flag to get the list of 
+	/// When <paramref name="getLocalStateOnly"/> is set, the resulting <see cref="ContentFile.ReferenceContent"/> will be empty and
+	/// the <see cref="LocalContentFiles.ContentFiles"/> will ONLY contain the files that exist locally. In this case, the <see cref="ContentFile.GetStatus"/> is NOT semantically correct.
+	/// As in, you can't use its value for anything.
+	///
+	/// If this is ever called on a manifest/realm combination for which we have no local folder, we will synchronize that folder with that realm's latest manifest before computing the <see cref="LocalContentFiles"/>.
+	/// This ONLY happens if <paramref name="getLocalStateOnly"/> is false. 
 	/// </summary>
-	public async Task<LocalContentFiles> GetAllContentFiles(ClientManifestJsonResponse referenceManifest = null, string manifestId = "global", bool getLocalStateOnly = false)
+	public async Task<LocalContentFiles> GetAllContentFiles(ClientManifestJsonResponse latestManifest = null, string manifestId = "global", bool getLocalStateOnly = false)
 	{
 		// Initialize the local files
-		var localFiles = new LocalContentFiles() { ManifestId = manifestId, ReferenceManifest = referenceManifest, ContentFiles = new(1024), };
+		var localFiles = new LocalContentFiles() { ManifestId = manifestId, TargetManifest = latestManifest, ContentFiles = new(1024), };
 
 		// If no reference manifest was provided, let's fetch the latest Manifest.
-		if (!getLocalStateOnly) localFiles.ReferenceManifest ??= await _contentApi.GetManifestPublicJson(manifestId);
-		else localFiles.ReferenceManifest ??= new();
+		if (!getLocalStateOnly) localFiles.TargetManifest ??= await GetManifest(manifestId);
+		else localFiles.TargetManifest ??= new() { entries = Array.Empty<ClientContentInfoJson>(), };
 
-		// Gets the path to the content folder from which we'll be reading.
-		var contentFolder = EnsureContentPathForRealmExists(_requester.Pid, manifestId);
+		// Whenever we try to get the local state in relation to the remote one --- if we had never sync'ed before, we do a sync before computing the state. 
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		if (created && !getLocalStateOnly) await SyncLocalContent(localFiles.TargetManifest, manifestId, ContentFilterType.ExactIds, Array.Empty<string>(), true);
 
 		// Build a list of tasks for computing a ContentFile structure for each relevant content id in this manifest.  
 		var tasks =
@@ -360,23 +376,24 @@ public class ContentService
 					var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
 
 					var id = Path.GetFileNameWithoutExtension(fp);
-					var checksum = CalculateChecksum(json.GetProperty(ContentFile.JSON_NAME_PROPERTIES).GetRawText());
-					var referenceContent = localFiles.ReferenceManifest.entries.FirstOrDefault(e => e.contentId == id);
+					var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
+					var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
 					var contentFile = new ContentFile()
 					{
 						Id = id,
 						LocalFilePath = fp,
-						Properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES),
+						Properties = properties,
 						Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 						FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-						PropertiesChecksum = checksum,
 						ReferenceContent = referenceContent,
 					};
+					contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+
 					return contentFile;
 				})
 				// We'll also have on entry for each entry in the reference manifest that is NOT represented in the local files.
 				.Concat(
-					localFiles.ReferenceManifest.entries.Where(e =>
+					localFiles.TargetManifest.entries.Where(e =>
 					{
 						var expectedPath = Path.Combine(contentFolder, $"{e.contentId}.json");
 						return !File.Exists(expectedPath);
@@ -386,7 +403,11 @@ public class ContentService
 						LocalFilePath = "",
 						Properties = default,
 						Tags = JsonSerializer.SerializeToElement(e.tags),
-						FetchedFromManifestUid = "",
+
+						// For deletions, this is set as the reference manifest because it doesn't matter what the reference manifest was before deletion.
+						// If someone publishes a manifest that has this guy in it, we'll auto sync it back up.
+						// Using the target manifest uid, simplifies other cases (such as the initial sync) so we use this. 
+						FetchedFromManifestUid = localFiles.TargetManifest.uid.GetOrElse(""),
 						PropertiesChecksum = e.version,
 						ReferenceContent = e
 					}))
@@ -397,6 +418,17 @@ public class ContentService
 		{
 			localFiles.ContentFiles = (await Task.WhenAll(tasks)).ToList();
 			localFiles.PerIdContentFiles = localFiles.ContentFiles.ToDictionary(g => g.Id, g => g);
+
+			// Gather all the distinct reference manifests.
+			localFiles.ReferenceManifestUids = localFiles.ContentFiles.Select(c => c.FetchedFromManifestUid).ToHashSet();
+
+			// Fetch all the different reference manifests in parallel if we want not only the local state
+			if (!getLocalStateOnly)
+			{
+				var allRefsPromises = localFiles.ReferenceManifestUids.Select(rm => GetManifest(manifestId, rm)).ToArray();
+				localFiles.ReferenceManifests = (await Task.WhenAll(allRefsPromises)).ToDictionary(g => g.uid.Value, g => g);
+			}
+
 			return localFiles;
 		}
 		catch (Exception e)
@@ -424,22 +456,25 @@ public class ContentService
 	public async Task PublishContent(string manifestId = "global")
 	{
 		// Get the latest manifest id and generate the diff against local files. 
-		var latestManifest = await _contentApi.GetManifestPublicJson(manifestId);
+		var latestManifest = await GetManifest(manifestId);
 		var localAgainstLatest = await GetAllContentFiles(latestManifest, manifestId);
 
+		// Check for conflicts against the latest one.
+		ComputeCorrectSyncOp(localAgainstLatest, false, out var conflicted, out _, out _);
 
 		// If we have any conflicting modifications over the latest remote manifest, let's block the publish.  
-		if (localAgainstLatest.ContentFiles.Any(f => f.GetStatus() is ContentStatus.ModifiedOverRemote))
+		if (conflicted.Any())
 		{
 			throw new CliException(
-				"Your changes were made against an older manifest. Please pull changes and re-apply your local ones before publishing. If you don't you'd be overriding other developer's changes (we're working on removing this limitation).",
+				"You have conflicting changes that were made against an older manifest. " +
+				$"Please run `dotnet beam content sync --force --filters {string.Join(",", conflicted)}` (this will discard all your local changes for the conflicting files)." +
+				$"If you'd like, you can then re-apply your local ones before publishing. ",
 				ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST, true);
 		}
 
 		// Now, we compute our status against the latest manifest and get ONLY the files that weren't deleted (these are the ones that will be included in the new manifest).
-		var localContent = await GetAllContentFiles(latestManifest, manifestId);
-		var changedContent = localContent.ContentFiles
-			.Where(c => c.GetStatus() is not ContentStatus.Deleted)
+		var changedContent = localAgainstLatest.ContentFiles
+			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted))
 			.Select(c =>
 			{
 				// Build the properties from the local data.
@@ -456,11 +491,11 @@ public class ContentService
 					if (val.TryGetProperty(nameof(ContentMeta.text), out var textProp))
 						meta.text = OptionalString.FromString(textProp.GetString());
 
-					// if (val.TryGetProperty(nameof(ContentMeta.link), out var linkProp))
-					// 	meta.link = OptionalString.FromString(linkProp.GetString());
+					if (val.TryGetProperty("$link", out var linkProp) || val.TryGetProperty("link", out linkProp))
+						meta.Link = OptionalString.FromString(linkProp.GetString());
 
-					// if (val.TryGetProperty(nameof(ContentMeta.links), out var linksProp))
-					// 	meta.links = new OptionalArrayOfString(linksProp.EnumerateArray().Select(j => j.GetString()));
+					if (val.TryGetProperty("$links", out var linksProp) || val.TryGetProperty("link", out linksProp))
+						meta.Links = new OptionalArrayOfString(linksProp.EnumerateArray().Select(j => j.GetString()));
 
 					properties.Add(key, meta);
 				}
@@ -520,137 +555,61 @@ public class ContentService
 	}
 
 	/// <summary>
-	/// Downloads the content files for the manifest with the given <paramref name="referenceManifestUid"/> and changes the local reference manifest (this is like which "commit" we are working against in the git analogy)
-	/// to that uid.
-	///
-	/// This will only download the files that are modified or deleted relative to the given <see cref="referenceManifestUid"/>. 
-	/// This also triggers <see cref="ListenToLocalContentFileChanges"/> as this function writes to the content folder.
-	///
-	/// If no <paramref name="referenceManifestUid"/> is provided, it'll download the latest one.
-	///
-	/// If any errors occur while modifying the local files, we'll revert the local files back to their previous state, and we WON'T update the reference manifest uid.
-	/// 
-	/// Finally, this also updates the local user's reference manifest (we keep track of this for future diff'ing).
-	/// </summary>
-	public async Promise<ClientManifestJsonResponse> PullContent(string manifestId = "global", string referenceManifestUid = null)
-	{
-		// Fetches the manifest.
-		var optReferenceId = referenceManifestUid == null ? new Optional<string>() : (Optional<string>)referenceManifestUid;
-		var targetManifest = await _contentApi.GetManifestPublicJson(manifestId, optReferenceId);
-
-		// Load up all the content files for this pid
-		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId);
-
-		// Get the list of modified and deleted content (if given a list of content ids, will ONLY download the given ids).
-		var contentToDownload = localContentRelativeToNewManifest.ContentFiles.Where(c => c.GetStatus() is ContentStatus.Deleted or ContentStatus.Modified).ToArray();
-
-		// Download and overwrite the local content for things that have changed based on the hash or don't exist.
-		var downloadPromises = contentToDownload.Select(async c =>
-		{
-			Log.Verbose("Downloading content with id. ID={Id}", c.Id);
-			return (localContent: c, downloadedContent: await _requester.CustomRequest(Method.GET, c.ReferenceContent.uri, parser: s => JsonSerializer.Deserialize<JsonElement>(s)));
-		}).ToArray();
-
-		// Let's try to download all the content paired with the local ContentFile representation.
-		(ContentFile localContent, JsonElement downloadedContent)[] downloadedContent;
-		try
-		{
-			downloadedContent = await Task.WhenAll(downloadPromises);
-		}
-		catch (Exception e)
-		{
-			// Let's just print out all the exceptions
-			if (e is AggregateException ae)
-			{
-				foreach (var aeInnerException in ae.InnerExceptions)
-				{
-					Log.Error(aeInnerException, "Error when loading content file");
-				}
-			}
-			else
-			{
-				Log.Error(e, "Error when saving content files. Undoing pull operation. EXCEPTION={Exception}", e.ToString());
-			}
-
-			throw;
-		}
-
-
-		// Makes sure the content folder for the current realm exists.
-		var contentFolder = EnsureContentPathForRealmExists(_requester.Pid, manifestId);
-
-		// Save the downloaded content to disk.
-		var saveTasks = new List<Task>();
-		foreach (var (c, j) in downloadedContent)
-		{
-			var contentFile = c;
-			contentFile.Properties = j.GetProperty("properties");
-			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
-		}
-
-		// If any problem happens while we are saving to disk, let's undo the pull operation and log out the exceptions.
-		try
-		{
-			await Task.WhenAll(saveTasks);
-		}
-		catch (Exception e)
-		{
-			// Let's just print out all the exceptions
-			if (e is AggregateException ae)
-			{
-				foreach (var aeInnerException in ae.InnerExceptions)
-				{
-					Log.Error(aeInnerException, "Error when saving content files. Undoing pull operation. EXCEPTION={Exception}", aeInnerException.ToString());
-				}
-			}
-			else
-			{
-				Log.Error(e, "Error when saving content files. Undoing pull operation. EXCEPTION={Exception}", e.ToString());
-			}
-
-			// If any content failed, we re-write undo all the changes by re-serializing all the local content that we had before we downloaded.
-			// This makes the operation atomic.
-			var undoPullTasks = localContentRelativeToNewManifest.ContentFiles.Where(c => c.GetStatus() is ContentStatus.Modified or ContentStatus.Deleted).Select(async contentFile =>
-			{
-				var fileName = Path.Combine(contentFolder, $"{contentFile.Id}.json");
-				var fileContents = JsonSerializer.Serialize(contentFile, GetContentFileSerializationOptions());
-				await File.WriteAllTextAsync(fileName, fileContents);
-			}).ToArray();
-			await Task.WhenAll(undoPullTasks);
-
-			throw;
-		}
-
-		return targetManifest;
-	}
-
-	/// <summary>
 	/// Compares the local state of each <see cref="ContentFile"/> to the given <paramref name="referenceManifestUid"/> and resets the local file content to whatever that content was at that version.
 	/// If no <paramref name="referenceManifestUid"/> is provided, it'll use whatever is stored at <see cref="LocalContentConfig.LatestManifestDownloaded"/> for determining the <see cref="ContentFile.GetStatus"/> results.
 	///
 	/// The filters are applied in accordance to <see cref="ContentFilterType"/>'s semantics.
 	/// When <paramref name="deleteCreated"/> is true, this will ALSO delete any local only files.
 	/// </summary>
-	public async Promise<ClientManifestJsonResponse> ResetLocalContent(string manifestId, string[] filters, ContentFilterType filterType, bool deleteCreated = false, string referenceManifestUid = null)
+	public async Task SyncLocalContent(string manifestId,
+		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
+		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true,
+		string referenceManifestUid = "")
 	{
-		// Fetches the manifest.
-		var targetManifest = await _contentApi.GetManifestPublicJson(manifestId, string.IsNullOrEmpty(referenceManifestUid) ? new Optional<string>() : (Optional<string>)referenceManifestUid);
+		var targetManifest = await GetManifest(manifestId, referenceManifestUid);
+		await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts);
+	}
+
+	/// <summary>
+	/// <inheritdoc cref="SyncLocalContent(string,string[],cli.Content.ContentFilterType,bool,string)"/>
+	/// </summary>
+	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
+		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
+		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true)
+	{
+		var report = new ContentSyncReport();
+		filters ??= Array.Empty<string>();
 
 		// Load up all the content files for this pid and filter them accordingly.
+		var targetManifestUid = targetManifest.uid.GetOrElse("");
 		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId);
 		FilterLocalContentFiles(ref localContentRelativeToNewManifest, filters, filterType);
 
+		// Computes helper sets so that we can know about what can be auto-synchronized and what is in conflict. 
+		ComputeCorrectSyncOp(localContentRelativeToNewManifest, syncModified, out HashSet<string> conflicts, out var autoSync, out var canUpdateReferenceWithoutDownload);
+
 		// Get the list of modified and deleted content to re-download from the target manfiest
 		// If given a list of content ids, will ONLY download the given ids
+		// When ignore conflicts is true, we won't download content that is currently in conflict.
 		var contentToDownload = localContentRelativeToNewManifest.ContentFiles
-			.Where(c => c.GetStatus() is ContentStatus.Deleted or ContentStatus.Modified)
+			.Where(c => forceSyncConflicts ? autoSync.Contains(c.Id) || conflicts.Contains(c.Id) : autoSync.Contains(c.Id))
 			.ToArray();
 
 		// Get the list of created content we need to delete (if requested).
 		var contentToDelete = localContentRelativeToNewManifest.ContentFiles
-			.Where(c => deleteCreated && c.GetStatus() is ContentStatus.Created)
+			.Where(c => syncCreated && c.GetStatus().HasFlag(ContentStatus.Created))
 			.ToArray();
+
+		// Get the list of content that is up-to-date but the referenceManifestUid is not pointing at the latest one (so we can update the reference).
+		var contentToUpdateManifestReference = localContentRelativeToNewManifest.ContentFiles
+			.Where(c => canUpdateReferenceWithoutDownload.Contains(c.Id))
+			.ToArray();
+
+		// Update our sync report with what we intended to do
+		report.ConflictingContents = conflicts.ToArray();
+		report.AutoSynchedContents = autoSync.ToArray();
+		report.ReferenceUpdatedContents = canUpdateReferenceWithoutDownload.ToArray();
+		report.DeletedCreatedContents = contentToDelete.Select(c => c.Id).ToArray();
 
 		// Download and overwrite the local content for things that have changed based on the hash or don't exist.
 		var downloadPromises = contentToDownload.Select(async c =>
@@ -687,7 +646,9 @@ public class ContentService
 		}
 
 		// Makes sure the content folder for the current realm exists.
-		var contentFolder = EnsureContentPathForRealmExists(_requester.Pid, manifestId);
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
 
 		// Save the downloaded content to disk.
 		var saveTasks = new List<Task>();
@@ -696,7 +657,16 @@ public class ContentService
 			var contentFile = c;
 			contentFile.Properties = j.GetProperty("properties");
 			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-			contentFile.FetchedFromManifestUid = targetManifest.uid.Value;
+			contentFile.FetchedFromManifestUid = targetManifestUid;
+			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
+		}
+
+		// Make the Up-to-Date content files reference the manifest to which we just synchronized.
+		foreach (var c in contentToUpdateManifestReference)
+		{
+			var contentFile = c;
+			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+			contentFile.FetchedFromManifestUid = targetManifestUid;
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
 		}
 
@@ -704,6 +674,7 @@ public class ContentService
 		try
 		{
 			await Task.WhenAll(saveTasks);
+			return report;
 		}
 		catch (Exception e)
 		{
@@ -722,24 +693,80 @@ public class ContentService
 
 			// If any content failed, we re-write undo all the changes by re-serializing all the local content that we had before we downloaded.
 			// This makes the operation atomic.
-			var undoPullTasks = contentToDownload.Union(contentToDelete).Where(c => c.GetStatus() is ContentStatus.Modified or ContentStatus.Deleted).Select(async contentFile =>
-			{
-				var fileName = Path.Combine(contentFolder, $"{contentFile.Id}.json");
-				var fileContents = JsonSerializer.Serialize(contentFile, GetContentFileSerializationOptions());
-				await File.WriteAllTextAsync(fileName, fileContents);
-			}).ToArray();
+			var undoPullTasks = contentToDownload.Union(contentToDelete)
+				.Where(c => c.GetStatus().HasFlag(ContentStatus.Deleted) | c.GetStatus().HasFlag(ContentStatus.Modified))
+				.Select(async contentFile =>
+				{
+					var fileName = Path.Combine(contentFolder, $"{contentFile.Id}.json");
+					var fileContents = JsonSerializer.Serialize(contentFile, GetContentFileSerializationOptions());
+					await File.WriteAllTextAsync(fileName, fileContents);
+				}).ToArray();
+
 			await Task.WhenAll(undoPullTasks);
 
-			throw;
+			report.Error = "Something went wrong when synchronizing your local content. Please look at the logs for details.";
+			return report;
 		}
+	}
 
-		return targetManifest;
+	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
+		out HashSet<string> canUpdateReferenceToTargetWithoutDownload)
+	{
+		conflictedContent = new();
+		canAutoSync = new();
+		canUpdateReferenceToTargetWithoutDownload = new();
+		for (var i = 0; i < file.ContentFiles.Count; i++)
+		{
+			var contentFile = file.ContentFiles.ElementAt(i);
+			var referenceContentFile = contentFile.ChangeReference(file.ReferenceManifests[contentFile.FetchedFromManifestUid]);
+
+			var statusAgainstTarget = contentFile.GetStatus();
+			var statusAgainstReference = referenceContentFile.GetStatus();
+
+			// A conflict occurs whenever all of these are true:
+			// A. A local change existed against our reference manifest.
+			var localChangeExisted = statusAgainstReference == ContentStatus.Modified;
+			// B. The local changed content that we have does not match the one in the new target manifest
+			var localChangeDoesNotMatch = statusAgainstTarget == ContentStatus.Modified;
+			// C. There is a change between our reference manifest and the new target manifest.
+			var wasChangedFromReference = localChangeExisted && localChangeDoesNotMatch && contentFile.ReferenceContent.checksum.GetOrElse("") != referenceContentFile.ReferenceContent.checksum.GetOrElse("");
+			
+			// If all the above is true, this is a conflict.
+			var wasConflict = localChangeExisted && localChangeDoesNotMatch && wasChangedFromReference;
+			if (wasConflict)
+			{
+				conflictedContent.Add(contentFile.Id);
+			}
+			// If there was no conflict, we can decide whether we are allowed to download the content from the new target.
+			else
+			{
+				// This happens when any one of these are true:
+				// A. A local change had not been made against the reference manifest -- which means that we can fetch the new content if it is modified.
+				var caseA = statusAgainstReference is ContentStatus.UpToDate && statusAgainstTarget is ContentStatus.Modified;
+				// B. The content is deleted locally against our reference manifest AND there was a change between our reference manifest and the new target manifest.
+				var caseB = statusAgainstTarget is ContentStatus.Deleted;
+				// C. If we want to syncModified and the status against target is modified
+				var caseC = allowModifiedInAutoSync && statusAgainstTarget is ContentStatus.Modified;
+				// If either of the above cases are true, we can auto-sync this content.
+				if (caseA || caseB || caseC) canAutoSync.Add(contentFile.Id);
+
+				// We also need to check if we can to update the reference manifest uid without downloading the content.
+				// A. Our local content is up-to-date against the target AND it doesn't reference the target.
+				var isManifestReferenceWrong = contentFile.FetchedFromManifestUid != file.TargetManifest.uid.GetOrElse("");
+				caseA = statusAgainstTarget is ContentStatus.UpToDate && isManifestReferenceWrong;
+				// B. Our local content has changes relative to our current reference AND it was not a conflict. 
+				caseB = statusAgainstReference is ContentStatus.Modified && isManifestReferenceWrong;
+				// C. Our local content does not exist in the reference manifest AND it was not a conflict (it just shows up as a creation now referencing the latest manifest) 
+				caseC = statusAgainstReference is ContentStatus.Created && isManifestReferenceWrong;
+				if (caseA || caseB || caseC) canUpdateReferenceToTargetWithoutDownload.Add(contentFile.Id);
+			}
+		}
 	}
 
 	/// <summary>
 	/// Given a <see cref="LocalContentFiles"/> list, filters its content list based on some filter semantics.
 	/// </summary>
-	public void FilterLocalContentFiles(ref LocalContentFiles file, string[] filters, ContentFilterType filterType)
+	public static void FilterLocalContentFiles(ref LocalContentFiles file, string[] filters, ContentFilterType filterType)
 	{
 		Func<ContentFile, bool> filterFunc;
 		switch (filterType)
@@ -782,13 +809,13 @@ public class ContentService
 	/// <inheritdoc cref="AddTags(cli.Content.LocalContentFiles,string[])"/>
 	/// </summary>
 	public async Task AddTag(ContentFile f, string tag) =>
-		await AddTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, ReferenceManifest = null, }, new[] { tag });
+		await AddTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, TargetManifest = null, }, new[] { tag });
 
 	/// <summary>
 	/// <inheritdoc cref="AddTags(cli.Content.LocalContentFiles,string[])"/>
 	/// </summary>
 	public async Task AddTags(ContentFile f, string[] tags) =>
-		await AddTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, ReferenceManifest = null, }, tags);
+		await AddTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, TargetManifest = null, }, tags);
 
 	/// <summary>
 	/// Adds the given tags to each content file in the list of <see cref="LocalContentFiles"/>.
@@ -798,7 +825,10 @@ public class ContentService
 	/// </summary>
 	public async Task AddTags(LocalContentFiles localContentFiles, string[] tags)
 	{
-		var contentFolder = EnsureContentPathForRealmExists(_requester.Pid, localContentFiles.ManifestId);
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, localContentFiles.ManifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+
 		var saveTasks = new List<Task>();
 		foreach (var contentFile in localContentFiles.ContentFiles)
 		{
@@ -818,13 +848,13 @@ public class ContentService
 	/// <inheritdoc cref="Beamable.Api.Autogenerated.Models.RemoveTags"/>
 	/// </summary>
 	public async Task RemoveTag(ContentFile f, string tag) =>
-		await RemoveTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, ReferenceManifest = null, }, new[] { tag });
+		await RemoveTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, TargetManifest = null, }, new[] { tag });
 
 	/// <summary>
 	/// <inheritdoc cref="Beamable.Api.Autogenerated.Models.RemoveTags"/>
 	/// </summary>
 	public async Task RemoveTags(ContentFile f, string[] tags) =>
-		await RemoveTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, ReferenceManifest = null, }, tags);
+		await RemoveTags(new LocalContentFiles() { ContentFiles = new() { f }, PerIdContentFiles = new() { { f.Id, f } }, TargetManifest = null, }, tags);
 
 	/// <summary>
 	/// Removes the given tags to each content file in the list of <paramref name="localContentFiles"/>.
@@ -834,7 +864,10 @@ public class ContentService
 	/// </summary>
 	public async Task RemoveTags(LocalContentFiles localContentFiles, string[] tags)
 	{
-		var contentFolder = EnsureContentPathForRealmExists(_requester.Pid, localContentFiles.ManifestId);
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, localContentFiles.ManifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+
 		var saveTasks = new List<Task>();
 		foreach (var contentFile in localContentFiles.ContentFiles)
 		{
@@ -857,7 +890,10 @@ public class ContentService
 	public async Task SaveContentFile(ContentFile f, string manifestId = "", string pid = null)
 	{
 		pid ??= _requester.Pid;
-		var contentFolder = EnsureContentPathForRealmExists(pid, manifestId);
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+
 		await SaveContentFile(contentFolder, f);
 	}
 
@@ -887,7 +923,8 @@ public class ContentService
 				Hash = file.PropertiesChecksum,
 				Tags = file.Tags.EnumerateArray().Select(ae => ae.GetString() ?? "").ToArray(),
 				CurrentStatus = (int)file.GetStatus(),
-				JsonFilePath = file.LocalFilePath
+				JsonFilePath = file.LocalFilePath,
+				ReferenceManifestUid = file.FetchedFromManifestUid,
 			};
 		});
 	}
@@ -896,7 +933,7 @@ public class ContentService
 	/// Serializes just the <see cref="ContentFile.Properties"/> object.
 	/// We need this because we compute checksums ignoring tags.
 	/// </summary>
-	public static string SerializeProperties(in ContentFile file) => JsonSerializer.Serialize(file.Properties, new JsonSerializerOptions { WriteIndented = false });
+	public static string SerializeProperties(in ContentFile file) => JsonSerializer.Serialize(file.Properties, GetContentFileSerializationOptions(false));
 
 	/// <summary>
 	/// Our ContentId is a '.'-separated string whose final component is a name and the substring before it, its type hierarchy.
@@ -911,18 +948,18 @@ public class ContentService
 	public static string GetContentName(in ContentFile file) => file.Id[(file.Id.LastIndexOf('.') + 1)..];
 
 	/// <summary>
-	/// Computes the MD5 checksum we use for content-file diff'ing by hashing the serialized <see cref="ContentFile.Properties"/>.
-	/// Serialization of the properties must use <see cref="GetContentFileSerializationOptions"/> to ensure field ordering. 
+	/// Computes the SHA1 checksum we use for content-file diff'ing by hashing the serialized <see cref="ContentFile.Properties"/>.
+	/// Serialization of the properties must use <see cref="GetContentFileSerializationOptions"/> (with indent as false)  to ensure field ordering. 
 	/// </summary>
 	public static string CalculateChecksum(in ContentFile file) => CalculateChecksum(SerializeProperties(in file));
 
 	/// <summary>
 	/// <inheritdoc cref="CalculateChecksum(in cli.Content.ContentFile)"/> 
 	/// </summary>
-	public static string CalculateChecksum(string serializedPropertiesJson)
+	public static string CalculateChecksum(string propertiesJsonWithoutIndent)
 	{
-		var bytes = Encoding.UTF8.GetBytes(serializedPropertiesJson);
-		var hash = MD5.HashData(bytes);
+		var bytes = Encoding.UTF8.GetBytes(propertiesJsonWithoutIndent);
+		var hash = SHA1.HashData(bytes);
 		var checksum = Convert.ToHexString(hash).ToLower();
 		return checksum;
 	}
@@ -956,6 +993,38 @@ public class ContentService
 			}
 		};
 	}
+
+	public async Task<bool> ContentExistByIds(string[] contentIds)
+	{
+		var asd = await GetAllContentFiles(getLocalStateOnly: true);
+		FilterLocalContentFiles(ref asd, contentIds, ContentFilterType.ExactIds);
+		return asd.ContentFiles.Select(c => c.Id).Intersect(contentIds).Count() == contentIds.Length;
+	}
+}
+
+public class ContentSyncReport
+{
+	public bool Success => string.IsNullOrEmpty(Error);
+
+	public string Error;
+
+	public string[] ConflictingContents;
+	public string[] AutoSynchedContents;
+	public string[] ReferenceUpdatedContents;
+	public string[] DeletedCreatedContents;
+}
+
+/// <summary>
+/// Helper struct built by <see cref="ContentService.GetAllContentFiles"/> that represents a "local manifest in relation to a published manifest".
+/// </summary>
+public struct LocalContentFiles
+{
+	public string ManifestId;
+	public ClientManifestJsonResponse TargetManifest;
+	public List<ContentFile> ContentFiles;
+	public Dictionary<string, ContentFile> PerIdContentFiles;
+	public HashSet<string> ReferenceManifestUids;
+	public Dictionary<string, ClientManifestJsonResponse> ReferenceManifests;
 }
 
 [Serializable]
@@ -969,14 +1038,7 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonIgnore] public string LocalFilePath;
 	[JsonIgnore] public string PropertiesChecksum;
 	[JsonIgnore] public ClientContentInfoJson ReferenceContent;
-
-	public ContentStatus GetStatus()
-	{
-		if (ReferenceContent == null) return ContentStatus.Created;
-		if (Properties.ValueKind == JsonValueKind.Undefined || Tags.ValueKind == JsonValueKind.Undefined) return ContentStatus.Deleted;
-		if (ReferenceContent.checksum != PropertiesChecksum || IsTagsDiff()) return ContentStatus.Modified;
-		return ContentStatus.UpToDate;
-	}
+	[JsonIgnore] public bool IsInConflictWithLatest;
 
 	[JsonPropertyName(JSON_NAME_PROPERTIES)]
 	public JsonElement Properties;
@@ -986,25 +1048,46 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonPropertyName(JSON_NAME_REFERENCE_MANIFEST_ID)]
 	public string FetchedFromManifestUid;
 
+
+	public ContentStatus GetStatus()
+	{
+		ContentStatus ret;
+		if (ReferenceContent == null) ret = ContentStatus.Created;
+		else if (Properties.ValueKind == JsonValueKind.Undefined || Tags.ValueKind == JsonValueKind.Undefined) ret = ContentStatus.Deleted;
+		else if (ReferenceContent.checksum != PropertiesChecksum || IsTagsDiff()) ret = ContentStatus.Modified;
+		else ret = ContentStatus.UpToDate;
+		return ret;
+	}
+
+	public ContentFile ChangeReference(ClientManifestJsonResponse newReferenceManifest)
+	{
+		var copy = this;
+		copy.ReferenceContent = newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
+		return copy;
+	}
+
 	public string[] GetTagsArray() => Tags.EnumerateArray().Select(f => f.GetString()).ToArray();
 
 	public bool IsTagsDiff()
 	{
 		var status = GetTagStatus();
-		return !status.Values.Any(s => s is not TagStatus.LocalAndRemote);
+		return status.Count != 0 && !status.Values.Any(s => s is not TagStatus.LocalAndRemote);
 	}
 
-	public string GetStatusString() =>
-		GetStatus() switch
-		{
-			ContentStatus.Created => "[green]created[/]",
-			ContentStatus.Deleted => "[red]deleted[/]",
-			ContentStatus.Modified => "[yellow]modified[/]",
-			ContentStatus.UpToDate => "up to date",
-			_ => throw new ArgumentOutOfRangeException(nameof(GetStatus), GetStatus(), null)
-		};
+	public string GetStatusString()
+	{
+		var status = GetStatus();
+		var applyPrefix = IsInConflictWithLatest;
+		var prefix = applyPrefix ? "[red]conflict[/] - " : "";
+		if (status.HasFlag(ContentStatus.Created)) return $"{prefix}[green]created[/]";
+		if (status.HasFlag(ContentStatus.Deleted)) return $"{prefix}[red]deleted[/]";
+		if (status.HasFlag(ContentStatus.Modified)) return $"{prefix}[yellow]modified[/]";
+		if (status.HasFlag(ContentStatus.UpToDate)) return $"{prefix}up to date";
 
-	public OrderedDictionary<string, TagStatus> GetTagStatus()
+		throw new ArgumentOutOfRangeException(nameof(GetStatus), GetStatus(), null);
+	}
+
+	public Dictionary<string, TagStatus> GetTagStatus()
 	{
 		var remoteTags = ReferenceContent?.tags ?? Array.Empty<string>();
 		var localTags = Tags.EnumerateArray().Select(j => j.GetString()).ToArray();
@@ -1013,7 +1096,7 @@ public struct ContentFile : IEquatable<ContentFile>
 		var localOnlyTags = localTags.Except(remoteTags);
 		var bothTags = localTags.Intersect(remoteTags);
 
-		var res = new OrderedDictionary<string, TagStatus>();
+		var res = new Dictionary<string, TagStatus>();
 		foreach (var t in bothTags) res.Add(t, TagStatus.LocalAndRemote);
 		foreach (var t in remoteOnlyTags) res.Add(t, TagStatus.RemoteOnly);
 		foreach (var t in localOnlyTags) res.Add(t, TagStatus.LocalOnly);
@@ -1035,10 +1118,50 @@ public struct ContentFile : IEquatable<ContentFile>
 [CliContractType, Flags]
 public enum ContentStatus
 {
-	Created = 0,
-	Deleted = 1 << 0,
-	Modified = 1 << 1,
-	UpToDate = 1 << 2,
+	Invalid = 0,
+	Created = 1 << 0,
+	Deleted = 1 << 1,
+	Modified = 1 << 2,
+	UpToDate = 1 << 3,
+}
 
-	ModifiedOverRemote = 1 << 31,
+public enum TagStatus
+{
+	LocalOnly,
+	RemoteOnly,
+	LocalAndRemote
+}
+
+/// <summary>
+/// Filters that can be applied to <see cref="ContentService.FilterLocalContentFiles"/> to get a subset of content files.
+/// </summary>
+public enum ContentFilterType
+{
+	/// <summary>
+	/// Matches the given array of filters as though they were fully formed ContentIds.
+	/// </summary>
+	ExactIds,
+
+	/// <summary>
+	/// Matches the given array of filters as though they were fully formed ContentTypeIds.
+	/// The comparison is a StartsWith so... 'items' will return ANY item or its subclasses.
+	/// </summary>
+	TypeHierarchy,
+
+	/// <summary>
+	/// Matches the given array of filters as though they were fully formed ContentTypeIds.
+	/// The comparison is an equals so... 'items' will return only content files that are exactly of the `items` content type (no subclasses).
+	/// </summary>
+	TypeHierarchyStrict,
+
+	/// <summary>
+	/// Matches the given array of filters as though they were C# regexes.
+	/// </summary>
+	Regexes,
+
+	/// <summary>
+	/// Matches the given array of filters as though they were tags.
+	/// Any content file that has any of the filter tags will be included in the filtered list.
+	/// </summary>
+	Tags,
 }

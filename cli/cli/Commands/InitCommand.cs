@@ -354,7 +354,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
-		var gameSelection = AnsiConsole.Prompt(
+		var gameSelection = args.Quiet ? gameChoices.First() : AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("What [green]game[/] are you using?")
 				.AddChoices(gameChoices)
@@ -366,8 +366,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		var realmChoices = realms
 			.Where(r => !r.Archived)
 			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
-		var realmSelection = AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
+		var realmSelection = args.Quiet ? 
+			realms.Where(r => r.Depth == 2).OrderBy(r =>r.Pid).Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}").First() :
+			AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
 				.AddBeamHightlight()

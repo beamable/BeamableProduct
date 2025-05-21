@@ -1,5 +1,4 @@
 ﻿using Beamable.Common;
-using cli.Services.Content;
 
 namespace cli.Content.Tag;
 
@@ -13,11 +12,11 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(ContentTagCommand.FILTER_OPTION, (args, s) => args.Filter = s.Split(','));
 		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.Tags = s.Split(','));
 
+		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, b) => args.FilterType = b);
+		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = string.IsNullOrEmpty(s) ? Array.Empty<string>() : s.Split(','));
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
-		AddOption(ContentTagCommand.FILTER_TYPE_OPTION, (args, b) => args.FilterType = b);
 	}
 
 	public override async Task Handle(ContentTagRemoveCommandArgs args)
@@ -38,7 +37,7 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>
 		for (int i = 0; i < filteredContentFiles.Length; i++)
 		{
 			LocalContentFiles file = filteredContentFiles[i];
-			_contentService.FilterLocalContentFiles(ref file, args.Filter, args.FilterType);
+			ContentService.FilterLocalContentFiles(ref file, args.Filter, args.FilterType);
 			filteredContentFiles[i] = file;
 		}
 

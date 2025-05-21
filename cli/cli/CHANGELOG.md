@@ -14,9 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Fixer to Solve Microservice classes missing Attribute or Partial keyword. 
 - New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
 - New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
-- Added support for generating FDateTime instead of FString in Unreal code generation.
+- Added support for generating `FDateTime` instead of `FString` in Unreal code generation.
+- Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`. 
+  The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
+- Added `beam org realms` command that prints out a list of all available realms for the requesting user. 
+
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
+- `beam me` command now also gives you back your active token information
+- `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
+- `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.  
 
 ## [4.2.0] - 2025-04-04
 ### Changed

@@ -25,7 +25,6 @@ using cli.Options;
 using cli.PlayerCommands;
 using cli.Portal;
 using cli.Services;
-using cli.Services.Content;
 using cli.Services.HttpServer;
 using cli.TempCommands;
 using cli.TokenCommands;
@@ -451,6 +450,7 @@ public class App
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
+		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
 
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
@@ -492,7 +492,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBulkEditCommand, ContentBulkEditCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
-		Commands.AddSubCommandWithHandler<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSyncCommand, ContentSyncCommandArgs, ContentCommand>();
 
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();

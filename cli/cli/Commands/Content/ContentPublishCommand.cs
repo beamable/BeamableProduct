@@ -1,9 +1,8 @@
 ﻿using Beamable.Common;
-using cli.Services.Content;
 
 namespace cli.Content;
 
-public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, ContentPublishResult>
+public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, ContentPublishResult>, ISkipManifest
 {
 	private ContentService _contentService;
 

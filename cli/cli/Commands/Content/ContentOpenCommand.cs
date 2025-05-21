@@ -1,10 +1,9 @@
-﻿using cli.Services.Content;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.Diagnostics;
 
 namespace cli.Content;
 
-public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
+public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>, ISkipManifest
 {
 	private ContentService _contentService;
 
@@ -14,9 +13,9 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 
 	public override void Configure()
 	{
-		var contentId = new Argument<string>(nameof(ContentOpenCommandArgs.contentId));
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
-		AddArgument(contentId, (args, i) => args.contentId = i);
+		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, f) => args.FilterType = f);
+		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = string.IsNullOrEmpty(s) ? Array.Empty<string>() : s.Split(','));
 	}
 
 	public override async Task Handle(ContentOpenCommandArgs args)
@@ -26,19 +25,44 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
 
+		// If no filter was provided, we just open the content folders directly
+		if (args.Filter.Length == 0)
+		{
+			foreach (var m in args.ManifestIds)
+			{
+				var dir = args.ContentService.EnsureContentPathForRealmExists(out _, args.AppContext.Pid, m);
+				if (File.Exists(dir))
+				{
+					new Process { StartInfo = new ProcessStartInfo(dir) { UseShellExecute = true } }.Start();
+				}
+			}
+		}
+
 		// Get only the local files for all the given manifest ids.
 		var localManifests = await Task.WhenAll(args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(null, m, true)));
+		var filterTasks = localManifests.ToList().Select((_, i) =>
+		{
+			var lmIdx = i;
+			return Task.Run(() =>
+			{
+				var lm = localManifests[lmIdx];
+				ContentService.FilterLocalContentFiles(ref lm, args.Filter, args.FilterType);
+				return lm;
+			});
+		});
+
+		// Get only the filtered list of content
+		var filteredManifests = await Task.WhenAll(filterTasks);
 
 		// Look for the given content id and open the file.
-		foreach (LocalContentFiles localFiles in localManifests)
+		foreach (LocalContentFiles localFiles in filteredManifests)
 		{
-			foreach (ContentFile f in localFiles.ContentFiles)
+			for (int i = 0; i < localFiles.ContentFiles.Count; i++)
 			{
-				var path = f.Id == args.contentId ? f.LocalFilePath : Path.GetDirectoryName(f.LocalFilePath);
-				if (File.Exists(path))
-				{
-					new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
-				}
+				ContentFile f = localFiles.ContentFiles[i];
+				var path = f.LocalFilePath;
+				Debug.Assert(File.Exists(path), "If you see this, please run the command again with ´--logs v´ and send the logs (in `.beamable/temp`) to beamable.");
+				Process.Start(new ProcessStartInfo(path) { UseShellExecute = true, Arguments = $"-{(i == 0 ? "-n" : "-r")}" });
 			}
 		}
 	}
@@ -46,5 +70,6 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 
 public class ContentOpenCommandArgs : ContentCommandArgs
 {
-	public string contentId;
+	public string[] Filter;
+	public ContentFilterType FilterType;
 }

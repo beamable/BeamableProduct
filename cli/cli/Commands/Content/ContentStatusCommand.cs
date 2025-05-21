@@ -1,5 +1,4 @@
-﻿using cli.Services.Content;
-using Spectre.Console;
+﻿using Spectre.Console;
 
 namespace cli.Content;
 
@@ -28,9 +27,8 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
 
-		var localContentFileTasks = args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(null, m)).ToArray();
+		var localContentFileTasks = args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(manifestId: m)).ToArray();
 		var localContentFiles = await Task.WhenAll(localContentFileTasks);
-
 
 		for (var i = 0; i < localContentFiles.Length; i++)
 		{
