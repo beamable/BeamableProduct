@@ -31,17 +31,20 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.MultipleMicroserviceClassesDetected, Diagnostics.Srv.MissingMicroserviceId,
 			Diagnostics.Srv.NonPartialMicroserviceClassDetected, Diagnostics.Srv.NoMicroserviceClassesDetected,
 			Diagnostics.Srv.CallableTypeInsideMicroserviceScope, Diagnostics.Srv.CallableMethodTypeIsNested,
-			Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested, Diagnostics.Srv.MicroserviceIdInvalidFromCsProj);
+			Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested, Diagnostics.Srv.MicroserviceIdInvalidFromCsProj,
+			Diagnostics.Srv.StaticFieldFoundInMicroservice);
 	
 	public override void Initialize(AnalysisContext context)
 	{
 		context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
 		context.RegisterSyntaxNodeAction(AnalyzeCallableMethods, SyntaxKind.MethodDeclaration);
+		context.RegisterSyntaxNodeAction(AnalyzeFields, SyntaxKind.FieldDeclaration);
 		context.RegisterSymbolAction(AnalyzeNestedTypes, SymbolKind.NamedType);
 		context.RegisterCompilationStartAction(OnCompilationStart);
 		context.EnableConcurrentExecution();
 	}
 
+	
 	private void AnalyzeNestedTypes(SymbolAnalysisContext context)
 	{
 		var namedSymbol = (INamedTypeSymbol)context.Symbol;
@@ -186,6 +189,38 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			context.ReportDiagnostic(diagnostic);
 		}
 	}
+	
+	private void AnalyzeFields(SyntaxNodeAnalysisContext context)
+	{
+		var field = (FieldDeclarationSyntax)context.Node;
+		
+		
+		var classDeclaration = field.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+		if (classDeclaration?.BaseList == null ||
+		    !classDeclaration.BaseList.Types.Any(item => item.ToString().Contains(nameof(Server.Microservice))))
+		{
+			return;
+		}
+
+		if (!field.Modifiers.Any(SyntaxKind.StaticKeyword) ||
+		    field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword))
+		{
+			return;
+		}
+		
+		
+		SyntaxToken identifier = field.Declaration.Variables.First().Identifier;
+		string fieldName = identifier.ToString();
+
+		var props = new Dictionary<string, string> { { Diagnostics.Srv.PROP_FIELD_NAME, fieldName } }
+			.ToImmutableDictionary();
+		
+		var diagnostic = Diagnostic.Create(Diagnostics.Srv.StaticFieldFoundInMicroservice,
+			identifier.GetLocation(), properties: props, fieldName);
+		context.ReportDiagnostic(diagnostic);
+
+	}
+
 
 	private static bool IsAsyncVoid(IMethodSymbol methodSymbol)
 	{

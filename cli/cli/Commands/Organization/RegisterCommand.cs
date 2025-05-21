@@ -55,7 +55,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneComma
 
 		// new DefaultAppContext()
 		// new CliRequester(args.AppContext);
-		args.AppContext.Set(null, null, args.AppContext.Host);
+		await args.AppContext.Set(null, null, args.AppContext.Host);
 		args.AppContext.SetToken(null);
 
 		try

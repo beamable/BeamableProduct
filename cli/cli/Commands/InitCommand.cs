@@ -121,7 +121,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		{ // set the host string from existing value or given parameter, and then reset cid/pid
 			host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
-			_ctx.Set(string.Empty, string.Empty, host);
+			await _ctx.Set(string.Empty, string.Empty, host);
 		}
 		
 		SaveExtraPathFiles(args);
@@ -211,11 +211,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		SaveExtraPathFiles(args);
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
-		else _ctx.Set(string.Empty, string.Empty, _ctx.Host);
+		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
-		_ctx.Set(cid, string.Empty, host);
+		await _ctx.Set(cid, string.Empty, host);
 
 		if (!AliasHelper.IsCid(cid))
 		{
@@ -274,7 +274,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		//  then just returning the pid and auth
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
 		{
-			_ctx.Set(cid, _ctx.Pid, host);
+			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);
 			_configService.FlushConfig();
 			_configService.CreateIgnoreFile();
@@ -287,7 +287,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		// If we have a given pid, let's login there.
 		if (!string.IsNullOrEmpty(args.pid))
 		{
-			_ctx.Set(cid, args.pid, host);
+			await _ctx.Set(cid, args.pid, host);
 
 			
 			var didLogin = !args.SaveToFile || await Login(args);
@@ -306,7 +306,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			return didLogin;
 		}
 
-		_ctx.Set(cid, null, host);
+		await _ctx.Set(cid, null, host);
 		_configService.SetWorkingDir(_ctx.WorkingDirectory);
 		_configService.FlushConfig();
 		_configService.CreateIgnoreFile();
@@ -318,9 +318,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			return false;
 		}
 
-		_ctx.Set(cid, pid, host);
-		
-		// Set the realm
+
+		await _ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);
 		_configService.FlushConfig();
 		
