@@ -60,7 +60,14 @@ public class BeamInitFlows : CLITest
 				.ReturnsPromise(new AliasResolve
 				{
 					Alias = new OptionalString(alias),
-					Cid = new OptionalString("123")
+					Cid = new OptionalString(cid)
+				})
+				.Verifiable();
+			mock.Setup(x => x.Resolve(cid))
+				.ReturnsPromise(new AliasResolve
+				{
+					Alias = new OptionalString(alias),
+					Cid = new OptionalString(cid)
 				})
 				.Verifiable();
 		});

@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server.Common;
 using Docker.DotNet.Models;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Beamable.Server;
 
@@ -239,6 +240,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
+	public OpenApiDocument OpenApiDoc;
 
 	public int InstanceCount = 1;
 	

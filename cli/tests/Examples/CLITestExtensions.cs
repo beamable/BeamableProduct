@@ -50,6 +50,14 @@ public class CLITestExtensions : CLITest
 						Cid = new OptionalString("123")
 					})
 					.Verifiable();
+				
+				mock.Setup(x => x.Resolve("123"))
+					.ReturnsPromise(new AliasResolve
+					{
+						Alias = new OptionalString(alias),
+						Cid = new OptionalString("123")
+					})
+					.Verifiable();
 			});
 		
 		if (mockAdminMe)

@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- New Code Analyzer to return compile time error for async void Callable methods.
+- New Code Fixer to fix async void Callable methods on IDE.
+- New Code Analyzer to validate Federations.
+- New Code Fixer to Implement possible fixes for Federations.
+- New Code Fixer to Solve Microservice classes missing Attribute or Partial keyword. 
+- New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
+- New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
+- New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
+- Added support for generating FDateTime instead of FString in Unreal code generation.
+- New Microservice Client Code Generator for Unity that used OAPI for the generation.
+
+### Changed
+- Revise the categorization of all Blueprint nodes to enhance discoverability.
+- `OptionalString` overrides `.ToString()` for easier print debugging.
+- Changes on MicroserviceBootstrapper to allow the creation of OAPI document after building the Microservice
+
+### Fixed
+- Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
+
+## [4.3.0] - 2025-05-08
+### Added
+- `.beamignore` files may be used to ignore services and storages from the `beam deploy` commands. 
+- Hidden `--ignore-beam-ids` option can be used to ignore beam ids similar in addition to `.beamignore` files. [#4019](https://github.com/beamable/BeamableProduct/issues/4019)
+
+### Fixed
+- `beam deploy` commands no longer attempt to build non-existent source when `--merge` flag is used.
+
 ## [4.2.0] - 2025-04-04
 ### Changed
 - `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)

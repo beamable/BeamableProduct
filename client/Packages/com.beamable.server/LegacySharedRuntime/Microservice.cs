@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Server.Common@4.2.0
-// https://www.nuget.org/packages/Beamable.Server.Common/4.2.0
+// this file was copied from nuget package Beamable.Server.Common@4.3.0-PREVIEW.RC2
+// https://www.nuget.org/packages/Beamable.Server.Common/4.3.0-PREVIEW.RC2
 
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -20,6 +20,7 @@ namespace Beamable.Server
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
 		public IDependencyProvider Provider;
+		public ISignedRequester SignedRequester => Provider.GetService<ISignedRequester>();
 	}
 
 	/// <summary>
@@ -50,6 +51,11 @@ namespace Beamable.Server
 		/// </summary>
 		protected IBeamableRequester Requester;
 
+		/// <summary>
+		/// The <see cref="ISignedRequester"/> is a requesting abstraction that uses Beamable Signed Requests instead of
+		/// the secure websocket protocol
+		/// </summary>
+		protected ISignedRequester SignedRequester => _serviceProvider.GetService<ISignedRequester>();
 		/// <summary>
 		/// This type defines the %Microservice main entry point for %Beamable %Microservice features.
 		///

@@ -62,6 +62,10 @@ using OpenTelemetry.Trace;
 using System.Threading;
 using ZLogger;
 using Beamable.Tooling.Common;
+using Beamable.Tooling.Common.OpenAPI;
+using microservice.Common;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Extensions;
 using cli.Services;
 using ZLogger.Formatters;
 using Constants = Beamable.Common.Constants;
@@ -74,6 +78,8 @@ namespace Beamable.Server
     public static class MicroserviceBootstrapper
     {
 	    private const int MSG_SIZE_LIMIT = 1000;
+	    
+	    
 
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
@@ -683,6 +689,20 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+	        Type microserviceType = typeof(TMicroservice);
+	        
+	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+	        
+	        var commandLineArgs = Environment.GetCommandLineArgs();
+	        
+	        // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
+	        if (commandLineArgs.Contains("--generate-oapi"))
+	        {
+		        await GenerateOpenApiSpecification(microserviceType, attribute);
+		        return;
+	        }
+	        
+	        var envArgs = new EnvironmentArgs();
 
 	        var cliArgs = Environment.GetCommandLineArgs();
 	        if (cliArgs.Contains("--generate-client-please"))
@@ -793,9 +813,45 @@ namespace Beamable.Server
 	        }
         }
 
-        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
         {
-	        bool shouldStartStandardOtel = false;
+	        var generator = new ServiceDocGenerator();
+		        
+	        var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out List<Type> _);
+		        
+	        var doc = generator.Generate(microserviceType, attribute, new AdminRoutes
+	        {
+		        MicroserviceAttribute = attribute,
+		        MicroserviceType = microserviceType
+	        }, false, extraSchemas.Select(t => t.type).ToArray());
+				
+	        var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+		       
+	        var beamableFolderPath = Environment.GetEnvironmentVariable("OPEN_API_OUTPUT_PATH") 
+	                                 ?? throw new InvalidOperationException("OPEN_API_OUTPUT_PATH environment variable not set");
+	        
+	        Console.WriteLine($"GENERATE OPEN API >> Beam Folder Path: {beamableFolderPath}");
+	        
+	        string directoryPath = Path.GetFullPath(beamableFolderPath);
+	        if (!Directory.Exists(directoryPath))
+	        {
+		        Directory.CreateDirectory(directoryPath);
+	        }
+	        
+	        Console.WriteLine($"GENERATE OPEN API >> Path: {directoryPath}");
+
+	        
+	        await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
+        }
+
+        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        {			var commandLineArgs = Environment.GetCommandLineArgs();
+	        // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
+	        if (commandLineArgs.Contains("--generate-oapi"))
+	        {
+		        return;
+	        }
+	        bool shouldStartStandardOtel = false;
 	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
 
 	        if (startStandardOtelEnv == "true")

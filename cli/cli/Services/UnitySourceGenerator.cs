@@ -472,8 +472,16 @@ public static class UnityHelper
 		{
 			authHeaderRequired = operation.Value.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 		}
-
-
+		
+		/// Summary description
+		methodComments.Add("<summary>");
+		if (!string.IsNullOrWhiteSpace(operation.Value.Summary))
+		{
+			methodComments.Add(operation.Value.Summary);
+			methodComments.Add(string.Empty);
+		}
+		methodComments.Add($"{httpMethod} call to `{uri}` endpoint.");
+		methodComments.Add("</summary>");
 
 		var requiredParams = new List<CodeParameterDeclarationExpression>();
 		var optionalParams = new List<CodeParameterDeclarationExpression>();

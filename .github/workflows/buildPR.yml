@@ -8,6 +8,7 @@ on:
       - 'productio*'
     paths-ignore:
       - 'rfc/**'
+      - 'client_installer/**'
 
 env:
   DOCKER_REGISTRY: ghcr.io

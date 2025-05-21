@@ -58,6 +58,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	/// </summary>
 	public ManifestView manifest;
 	public DeploymentDiffSummary diff;
+	public Dictionary<string, List<string>> notes = new Dictionary<string, List<string>>();
 	public List<string> servicesToUpload = new List<string>();
 	public bool ranHealthChecks;
 	public int changeCount;
@@ -70,6 +71,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 		s.Serialize(nameof(diff), ref diff);
 		s.Serialize(nameof(changeCount), ref changeCount);
 		s.Serialize(nameof(ranHealthChecks), ref ranHealthChecks);
+		s.SerializeDictionary(nameof(notes), ref notes);
 		s.SerializeList(nameof(servicesToUpload), ref servicesToUpload);
 	}
 }
@@ -471,7 +473,7 @@ public partial class DeployUtil
 		return final;
 	}
 
-	public static ManifestView MergeReplacement(ManifestView remote, ManifestView next)
+	public static ManifestView MergeReplacement(ManifestView remote, ManifestView next, HashSet<string> ignoredBeamoIds)
 	{
 		// create an additive plan first, 
 		// and then adjust the elements to handle "deletions" 
@@ -485,6 +487,9 @@ public partial class DeployUtil
 				var existsInNext = next.manifest.Any(x => x.serviceName == service.serviceName);
 				if (existsInNext) continue;
 
+				var ignored = ignoredBeamoIds.Contains(service.serviceName);
+				if (ignored) continue;
+
 				service.archived = true;
 				service.enabled = false;
 			}
@@ -496,6 +501,9 @@ public partial class DeployUtil
 			{
 				var existsInNext = nextStorages.Any(x => x.id == storage.id);
 				if (existsInNext) continue;
+				
+				var ignored = ignoredBeamoIds.Contains(storage.id);
+				if (ignored) continue;
 
 				storage.archived = true;
 				storage.enabled = false;
@@ -537,8 +545,10 @@ public partial class DeployUtil
 		return errors.Count == 0;
 	}
 
-	public static ManifestView EnsureEntriesHaveChecksums(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureEntriesHaveChecksums(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		// compute the checksums for all services and storages
 		foreach (var service in next.manifest)
@@ -550,12 +560,29 @@ public partial class DeployUtil
 		{
 			storage.ResetChecksum();
 		}
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
+	}
 
-		return next;
+	public struct ManifestTransformArgs
+	{
+		public ManifestView current;
+		public ManifestView remote;
+		public HashSet<string> ignoreIds;
+	}
+
+	public struct ManifestTransformOutput
+	{
+		public ManifestView next;
+		public Dictionary<string, List<string>> beamoIdToNotes;
 	}
 	
-	public static ManifestView RemoveDisabledServicesThatWereNeverDeployed(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput RemoveDisabledServicesThatWereNeverDeployed(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		var storagesToKeep = new HashSet<ServiceDependencyReference>();
 
@@ -597,11 +624,16 @@ public partial class DeployUtil
 		}
 		next.storageReference.Set(storages.ToArray());
 
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
 	}
 	
-	public static ManifestView EnsureArchivedServicesAreDisabled(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureArchivedServicesAreDisabled(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
 		// if a service or storage is archived, then it cannot be enabled. 
 		foreach (var service in next.manifest)
@@ -619,13 +651,18 @@ public partial class DeployUtil
 				storage.enabled = false;
 			}
 		}
-
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next
+		};
 	}
 	
-	public static ManifestView EnsureOnlyActiveStoragesAreEnabled(ManifestView current, ManifestView remote)
+	public static ManifestTransformOutput EnsureOnlyActiveStoragesAreEnabled(ManifestTransformArgs args)
 	{
+		var current = args.current;
+		var remote = args.remote;
 		var next = current.Copy();
+		var notes = new Dictionary<string, List<string>>();
 		// there is a rule on the backend that a storage can only be enabled 
 		//  IF there is an enabled service that is referencing that storage. 
 		//  The rule exists to prevent folks from having unreachable storages. 
@@ -659,11 +696,23 @@ public partial class DeployUtil
 					// this storage was referenced by an enabled service
 					continue;
 
+				if (!storage.enabled)
+					// the storage is ALREADY disabled; so no need to do anything.
+					continue; 
+				
 				storage.enabled = false;
+				notes[storage.id] = new List<string>
+				{
+					"Is being disabled because it was not referenced by any active service. "
+				};
 			}
 		}
 
-		return next;
+		return new ManifestTransformOutput
+		{
+			next = next,
+			beamoIdToNotes = notes
+		};
 	}
 
 	public static string GetPlanTempFolder(IDependencyProvider provider)
@@ -750,6 +799,20 @@ public partial class DeployUtil
 				            "Consider re-running a plan command with the `--health` option. ");
 			}
 		}
+
+		if (plan.notes?.Count > 0)
+		{
+			Log.Information("Notes:");
+			foreach (var kvp in plan.notes)
+			{
+				Log.Information($" {kvp.Key}");
+				foreach (var note in kvp.Value)
+				{
+					Log.Information($"   {note}");
+				}
+			}
+		}
+
 		switch (hasChanges, hasDetectedChanges)
 		{
 			case (true, true):
@@ -922,7 +985,7 @@ public partial class DeployUtil
 				next = MergeAdditive(remote, localManifest);
 				break;
 			case DeployMode.Replace:
-				next = MergeReplacement(remote, localManifest);
+				next = MergeReplacement(remote, localManifest, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
 				break;
 			default:
 				throw new NotImplementedException(
@@ -930,8 +993,10 @@ public partial class DeployUtil
 		}
 		
 		// process transforms
+		var notes = new Dictionary<string, List<string>>();
+		
 		{
-			var transforms = new List<Func<ManifestView, ManifestView, ManifestView>>
+			var transforms = new List<Func<ManifestTransformArgs, ManifestTransformOutput>>
 			{
 				RemoveDisabledServicesThatWereNeverDeployed,
 				EnsureArchivedServicesAreDisabled, 
@@ -941,7 +1006,23 @@ public partial class DeployUtil
 			for (var i = 0; i < transforms.Count; i++)
 			{
 				var r = .5f * ((i + 1f) / transforms.Count);
-				next = transforms[i](next, remote);
+				var output = transforms[i](new ManifestTransformArgs
+				{
+					current = next, remote = remote, ignoreIds = beamo.BeamoManifest.LocallyIgnoredBeamoIds
+				});
+				next = output.next;
+				if (output.beamoIdToNotes != null)
+				{
+					foreach (var kvp in output.beamoIdToNotes)
+					{
+						if (!notes.TryGetValue(kvp.Key, out var existingNotes))
+						{
+							notes[kvp.Key] = existingNotes = new List<string>();
+						}
+						existingNotes.AddRange(kvp.Value);
+					}
+				}
+				
 				progressHandler?.Invoke(MergingManifestProgressName, r);
 			}
 		}
@@ -960,16 +1041,10 @@ public partial class DeployUtil
 			//  it is the intersection of services that have differing imageIds in remote/local, 
 			//  AND those services that we just built locally. 
 			//  If a service was not built locally, then we must assume the image already exists remotely. 
-			var locallyBuiltServices = localBuildReports.Select(x => x.service).ToArray();
 			foreach (var serviceInManifest in next.manifest)
 			{
 				// find the service in the local and remote
-				var localService = locallyBuiltServices.FirstOrDefault(x => x == serviceInManifest.serviceName);
 				var remoteService = remote.manifest.FirstOrDefault(x => x.serviceName == serviceInManifest.serviceName);
-				
-				// If the service is enabled and it wasn't built locally, this is a bug.
-				if (serviceInManifest.enabled && localService == null)
-					throw new CliException($"local service=[{serviceInManifest.serviceName}] cannot be null. Locally available=[{string.Join(",", locallyBuiltServices)}]. Local Manifest=[{string.Join(",", localManifest.manifest.Select(x => x.serviceName))}] This is a beamable bug, please report.");
 				
 				// If an enabled service did not exist in the remote service OR any service had its imageId change relative to the one in the manifest, it means we have to upload this new image.  
 				if ((serviceInManifest.enabled && remoteService == null) || (remoteService != null && serviceInManifest.imageId != remoteService.imageId)) 
@@ -1042,6 +1117,7 @@ public partial class DeployUtil
 			mode = args.DeployMode,
 			diff = diff,
 			manifest = next,
+			notes = notes,
 			servicesToUpload = servicesToUpload,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count

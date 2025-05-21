@@ -191,7 +191,7 @@ public class App
 		services.AddSingleton<IAppContext, DefaultAppContext>();
 		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
-		services.AddSingleton<IAliasService, AliasService>();
+		services.AddSingleton<IAliasService, AliasService>(p => new AliasService(new NoAuthHttpRequester()));
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		services.AddSingleton<CliRequester, CliRequester>();
 		services.AddSingleton<IRequester>(p => p.GetService<CliRequester>());
@@ -384,6 +384,7 @@ public class App
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton(PreferRemoteFederationOption.Instance);
 		Commands.AddSingleton(CidOption.Instance);
+		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
 		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton<ConfigDirOption>();
@@ -415,6 +416,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<NoForwardingOption>());
+			root.AddGlobalOption(IgnoreBeamoIdsOption.Instance);
 			root.AddGlobalOption(PreferRemoteFederationOption.Instance);
 			root.AddGlobalOption(AllHelpOption.Instance);;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
@@ -499,6 +501,7 @@ public class App
 		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
