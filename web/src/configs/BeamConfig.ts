@@ -1,4 +1,4 @@
-import { BeamEnvironmentType } from './BeamEnvironmentConfig';
+import { BeamEnvironmentName } from './BeamEnvironmentConfig';
 import { HttpRequester } from '@/http/types/HttpRequester';
 
 /**
@@ -7,28 +7,18 @@ import { HttpRequester } from '@/http/types/HttpRequester';
  * @interface BeamConfig
  */
 export interface BeamConfig {
-  /**
-   * The client identifier (CID) assigned to your Beamable account.
-   */
+  /** The client identifier (CID) assigned to your Beamable account. */
   cid: string;
 
-  /**
-   * The project identifier (PID) associated with your Beamable project.
-   */
+  /** The project identifier (PID) associated with your Beamable project. */
   pid: string;
 
-  /**
-   * A human-readable alias for this configuration (e.g., 'demo-app').
-   */
+  /** A human-readable alias for the CID (e.g., 'demo-app'). */
   alias: string;
 
-  /**
-   * The target Beamable environment in which requests will be sent.
-   */
-  environment: BeamEnvironmentType;
+  /** The target Beamable environment name in which requests will be sent. */
+  environmentName: BeamEnvironmentName;
 
-  /**
-   * Optional custom HTTP requester to use instead of the default implementation.
-   */
+  /** Optional custom HTTP requester to use instead of the default implementation. */
   requester?: HttpRequester;
 }

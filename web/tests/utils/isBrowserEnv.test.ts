@@ -1,4 +1,3 @@
-// isBrowserEnv.spec.ts
 import { describe, it, expect, afterEach } from 'vitest';
 import { isBrowserEnv } from '@/utils/isBrowserEnv';
 
