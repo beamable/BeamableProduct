@@ -49,12 +49,6 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 
 		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
-		
-		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
-			"content/netstandard2.0/SharedRuntime/", Path.Combine(infoServer.packageFolder, "SharedRuntime"));
-		
-		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
-			"content/netstandard2.0/Runtime/Common/", Path.Combine(infoServer.packageFolder, "Runtime/Common"));
 
 	}
 	
