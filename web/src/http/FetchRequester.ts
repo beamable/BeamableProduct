@@ -6,11 +6,11 @@ import { HttpMethod } from './types/HttpMethod';
 
 export class FetchRequester implements HttpRequester {
   private readonly timeout: number;
-  private readonly baseUrl?: string;
   private readonly defaultHeaders: Record<string, string>;
   private readonly withCredentials: boolean;
   private readonly fetchImpl: typeof fetch;
-  private readonly authProvider?: () => Promise<string> | string;
+  private tokenProvider?: () => Promise<string> | string;
+  private baseUrl?: string;
 
   constructor(config: FetchRequesterConfig = {}) {
     this.timeout = config.timeout ?? 10_000; // defaults to 10 seconds
@@ -18,7 +18,7 @@ export class FetchRequester implements HttpRequester {
     this.defaultHeaders = config.defaultHeaders ?? {};
     this.withCredentials = config.withCredentials ?? false;
     this.fetchImpl = config.customFetch ?? fetch;
-    this.authProvider = config.authProvider;
+    this.tokenProvider = config.tokenProvider;
 
     if (typeof this.fetchImpl !== 'function') {
       throw new Error(
@@ -78,10 +78,26 @@ export class FetchRequester implements HttpRequester {
     }
   }
 
+  setBaseUrl(url: string): void {
+    this.baseUrl = url;
+  }
+
+  setDefaultHeader(key: string, value?: string): void {
+    if (typeof value === 'string') {
+      this.defaultHeaders[key] = value;
+    } else {
+      delete this.defaultHeaders[key];
+    }
+  }
+
+  setTokenProvider(provider: () => Promise<string> | string) {
+    this.tokenProvider = provider;
+  }
+
   private async AddAuthHeader(
     requestHeaders: Record<string, string>,
   ): Promise<void> {
-    const token = await this.authProvider?.();
+    const token = await this.tokenProvider?.();
     if (!token) return;
 
     requestHeaders['Authorization'] = `Bearer ${token}`;

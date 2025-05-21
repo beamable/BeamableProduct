@@ -1,8 +1,6 @@
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { BeamConfig } from '@/configs/BeamConfig';
-import {
-  BeamEnvironmentConfig,
-} from '@/configs/BeamEnvironmentConfig';
+import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 import { FetchRequester } from '@/http/FetchRequester';
 import { isBrowserEnv } from '@/utils/isBrowserEnv';
 import { BrowserTokenStorage } from '@/platform/browser/BrowserTokenStorage';
@@ -16,40 +14,56 @@ export class Beam {
   private readonly cid: string;
   private readonly pid: string;
   private readonly alias: string;
-  private readonly envConfig: BeamEnvironmentConfig;
+  private readonly realm: string;
+  private envConfig: BeamEnvironmentConfig;
   private tokenStorage: TokenStorage;
   private requester: HttpRequester;
 
   constructor(config: BeamConfig) {
+    const env = config.environment;
     this.cid = config.cid;
     this.pid = config.pid;
     this.alias = config.alias;
-    this.envConfig = BeamEnvironment.get(config.environmentName);
+    this.realm = config.realm;
+    this.envConfig = BeamEnvironment.get(env);
     this.tokenStorage = isBrowserEnv()
       ? new BrowserTokenStorage()
       : new MemoryTokenStorage();
+
+    const defaultHeaders = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-BEAM-SCOPE': `${this.cid}.${this.pid}`,
+    };
+
+    const tokenProvider = async () =>
+      (await this.tokenStorage.getToken()) ?? '';
+
+    const customRequester = config.requester;
+    if (customRequester) {
+      customRequester.setBaseUrl(this.envConfig.apiUrl);
+      customRequester.setTokenProvider(tokenProvider);
+      Object.entries(defaultHeaders).forEach(([key, value]) => {
+        customRequester.setDefaultHeader(key, value);
+      });
+    }
+
     this.requester =
-      config.requester ??
+      customRequester ??
       new FetchRequester({
         baseUrl: this.envConfig.apiUrl,
-        defaultHeaders: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'X-BEAM-SCOPE': `${this.cid}.${this.pid}`,
-        },
-        authProvider: async () => (await this.tokenStorage.getToken()) ?? '',
+        defaultHeaders,
+        tokenProvider,
       });
   }
 
   /**
    * Returns a concise, human-readable summary of this Beam instance’s core configuration.
-   *
-   * @returns A string of the form
-   *   `Beam(config: cid=<cid>, pid=<pid>, alias=<alias>)`
+   * @returns A string of the form `Beam(config: cid=<cid>, pid=<pid>, alias=<alias>, realm=<realm>)`
    */
   toString(): string {
-    const { cid, pid, alias } = this;
-    return `Beam(config: cid=${cid}, pid=${pid}, alias=${alias})`;
+    const { cid, pid, alias, realm } = this;
+    return `Beam(config: cid=${cid}, pid=${pid}, alias=${alias}, realm=${realm})`;
   }
 
   // Tuna login sample demo for Chris
@@ -72,8 +86,8 @@ export class Beam {
         password,
       }),
     };
-    const res = await this.requester.request<TokenResponse>(req);
 
+    const res = await this.requester.request<TokenResponse>(req);
     console.log(res.body);
   }
 }

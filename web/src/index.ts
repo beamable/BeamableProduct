@@ -1,3 +1,5 @@
 export * from '@/core/Beam';
 export * from '@/configs/BeamConfig';
-export { BeamEnvironmentType } from '@/configs/BeamEnvironmentConfig';
+export * from '@/http/types/HttpRequester';
+export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
+export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';

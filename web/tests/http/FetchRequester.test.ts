@@ -67,7 +67,7 @@ describe('FetchRequester', () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
     const requester = new FetchRequester({
       customFetch: fetchMock,
-      authProvider: () => 'TOKEN_123',
+      tokenProvider: () => 'TOKEN_123',
     });
 
     await requester.request({

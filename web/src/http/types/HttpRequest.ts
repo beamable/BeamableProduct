@@ -1,12 +1,9 @@
 /**
  * Describes the configuration for an HTTP request.
- *
  * @template TReq - The expected type of the request body.
  */
 export interface HttpRequest<TReq = any> {
-  /**
-   * The full URL to which the HTTP request will be sent.
-   */
+  /** The full URL to which the HTTP request will be sent. */
   url: string;
 
   /**
@@ -15,14 +12,10 @@ export interface HttpRequest<TReq = any> {
    */
   method?: string;
 
-  /**
-   * A collection of HTTP headers to include with the request.
-   */
+  /** A collection of HTTP headers to include with the request. */
   headers?: Record<string, string>;
 
-  /**
-   * The payload to send with the request, of type TReq.
-   */
+  /** The payload to send with the request, of type TReq. */
   body?: TReq;
 
   /**

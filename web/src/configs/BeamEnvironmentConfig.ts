@@ -1,6 +1,5 @@
 /**
  * Configuration settings for a Beamable environment.
- *
  * @interface BeamEnvironmentConfig
  */
 export interface BeamEnvironmentConfig {
