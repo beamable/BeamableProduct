@@ -58,7 +58,7 @@ namespace Beamable.Server
         
         public static void Verbose(string message)
         {
-            BeamableZLoggerProvider.LogContext.Value.LogTrace(message);
+            Default.LogTrace(message);
         }
         
         public static void Verbose(string message, params object[] args)

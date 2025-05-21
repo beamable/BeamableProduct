@@ -12,6 +12,8 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
 using ZLogger;
@@ -30,33 +32,6 @@ public class CollectorInfo
 {
 	public string filePath;
 	public string configFilePath;
-}
-
-public class CollectorStatus
-{
-	public bool isRunning; // If this is true, it means the collector is running, but not necessarily ready to receive data
-	public bool isReady;
-	public int pid;
-
-	public bool Equals(CollectorStatus otherStatus)
-	{
-		if (otherStatus.isReady != isReady)
-		{
-			return false;
-		}
-
-		if (otherStatus.isRunning != isRunning)
-		{
-			return false;
-		}
-
-		if (otherStatus.pid != pid)
-		{
-			return false;
-		}
-
-		return true;
-	}
 }
 
 public class CollectorManager

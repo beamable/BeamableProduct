@@ -347,6 +347,7 @@ public class App
 				{
 					var factory = GlobalLoggerFactory = LoggerFactory.Create(builder =>
 					{
+						builder.SetMinimumLevel(LogLevel.Trace);
 						builder.AddZLoggerLogProcessor(new ReporterSink(provider));
 					});
 					var logger = factory.CreateLogger<BeamableZLoggerProvider>();

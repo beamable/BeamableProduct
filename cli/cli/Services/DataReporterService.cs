@@ -103,7 +103,7 @@ public class ReporterSink : IAsyncLogProcessor
 	
 	public void Post(IZLoggerEntry log)
 	{
-		if (_logSwitch.Level >= log.LogInfo.LogLevel) return;
+		if (_logSwitch.Level > log.LogInfo.LogLevel) return;
 		
 		lock (key)
 		{

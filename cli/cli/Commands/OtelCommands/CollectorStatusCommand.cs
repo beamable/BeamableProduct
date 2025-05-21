@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using cli.Dotnet;
 using cli.Services;
