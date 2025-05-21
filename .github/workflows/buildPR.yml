@@ -194,7 +194,6 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
-          ReleaseSharedCode=true dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
