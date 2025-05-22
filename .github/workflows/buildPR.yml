@@ -319,6 +319,7 @@ jobs:
           sudo apt clean
           docker rmi $(docker images -q) || true
           docker system prune -af || true
+          rm -rf /opt/hostedtoolcache
           df -h
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
