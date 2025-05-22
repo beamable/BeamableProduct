@@ -192,6 +192,14 @@ namespace microserviceTests.microservice
          return pr;
       }
 
+      [ServerCallable]
+      public Promise PromiseServerTestMethod()
+      {
+	      var promise = new Promise();
+	      promise.CompleteSuccess();
+	      return promise;
+      }
+
       [ClientCallable]
       public string MethodWithJSON_AsParameter(string jsonString)
       {
