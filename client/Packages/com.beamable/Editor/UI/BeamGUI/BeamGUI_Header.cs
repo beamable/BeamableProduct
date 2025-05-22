@@ -84,7 +84,8 @@ namespace Beamable.Editor.Util
 		                                int xOffset=0,
 		                                int iconPadding=0,
 		                                Color backgroundColor=default,
-		                                bool drawBorder=true)
+		                                bool drawBorder=true,
+		                                Rect? forcedRect = null)
 		{
 			var isDisabled = !GUI.enabled;
 			Color startColor = GUI.color;
@@ -93,7 +94,7 @@ namespace Beamable.Editor.Util
 				GUI.color = Color.Lerp(startColor, Color.clear, .3f);
 			}
 			
-			var rect = GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle(),  GUILayout.Width(width), GUILayout.ExpandHeight(true));
+			var rect = forcedRect ?? GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle(),  GUILayout.Width(width), GUILayout.ExpandHeight(true));
 			rect = new Rect(rect.x + padding, rect.y + padding + yPadding, rect.width - padding * 2, rect.height - padding * 2 - yPadding * 2);
 
 			rect = new Rect(rect.x - xOffset, rect.y, rect.width, rect.height);
@@ -116,12 +117,11 @@ namespace Beamable.Editor.Util
 				GUI.DrawTexture(texRect, icon, ScaleMode.ScaleToFit);
 			}
 
-			{ // draw the label
+			if (!string.IsNullOrEmpty(label)) // draw the label
+			{
 				var labelRect = new Rect(rect.x, rect.yMax - 15, rect.width, 15);
-				GUI.Label(labelRect, new GUIContent(label), new GUIStyle(EditorStyles.miniLabel)
-				{
-					alignment = TextAnchor.MiddleCenter
-				});
+				GUI.Label(labelRect, new GUIContent(label),
+				          new GUIStyle(EditorStyles.miniLabel) {alignment = TextAnchor.MiddleCenter});
 			}
 
 			if (drawBorder)

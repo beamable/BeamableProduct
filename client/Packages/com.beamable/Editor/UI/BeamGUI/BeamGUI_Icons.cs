@@ -23,6 +23,14 @@ namespace Beamable.Editor.Util
 		public static Texture iconLogoHeader;
 		public static Texture iconShadowSoftA;
 		public static Texture iconLocked;
+		public static Texture iconPlus;
+		public static Texture iconCheck;
+		public static Texture iconUpload;
+		public static Texture iconDownload;
+		public static Texture iconMenuOptions;
+		public static Texture iconTag;
+		public static Texture iconType;
+		public static Texture iconStatus;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -186,6 +194,46 @@ namespace Beamable.Editor.Util
 			if (iconPlay == null)
 			{
 				iconPlay = EditorGUIUtility.FindTexture("PlayButton");
+			}
+
+			if (iconPlus == null)
+			{
+				iconPlus = EditorGUIUtility.IconContent("d_Toolbar Plus@2x").image;
+			}
+
+			if (iconCheck == null)
+			{
+				iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+			}
+
+			if (iconUpload == null)
+			{
+				iconUpload = EditorGUIUtility.IconContent("Update-Available@2x").image;
+			}
+			
+			if (iconDownload == null)
+			{
+				iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
+			}
+
+			if (iconMenuOptions == null)
+			{
+				iconMenuOptions = EditorGUIUtility.IconContent("d__Menu@2x").image;
+			}
+
+			if (iconTag == null)
+			{
+				iconTag = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Tag.png");
+			}
+
+			if (iconType == null)
+			{
+				iconType = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Type.png");
+			}
+
+			if (iconStatus == null)
+			{
+				iconStatus = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Statuses.png");
 			}
 		}
 	}
