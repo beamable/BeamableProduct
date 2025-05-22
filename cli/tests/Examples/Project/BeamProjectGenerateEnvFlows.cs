@@ -5,7 +5,6 @@ using cli.Services;
 using cli.Utils;
 using Docker.DotNet.Models;
 using NUnit.Framework;
-using Serilog.Sinks.Spectre.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;

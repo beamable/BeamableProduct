@@ -8,9 +8,9 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
-using Serilog;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 using UnityEngine;
 
 namespace cli;
@@ -215,7 +215,7 @@ public class SwaggerService
 				if (string.IsNullOrEmpty(schemaName)) continue;
 
 				// Log out the ref count found.
-				Log.Logger.Verbose($"{namedOpenApiSchemaHandle.OwnerDoc.Info.Title}-{namedOpenApiSchemaHandle.SchemaName} Found Ref Count = {schemaRecursiveRefs[namedOpenApiSchemaHandle].Count}");
+				Log.Verbose($"{namedOpenApiSchemaHandle.OwnerDoc.Info.Title}-{namedOpenApiSchemaHandle.SchemaName} Found Ref Count = {schemaRecursiveRefs[namedOpenApiSchemaHandle].Count}");
 
 				list.Add(new NamedOpenApiSchema
 				{

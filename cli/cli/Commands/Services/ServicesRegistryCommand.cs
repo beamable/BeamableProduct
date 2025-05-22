@@ -1,10 +1,5 @@
 ﻿using cli.Services;
-using Newtonsoft.Json;
-using Serilog.Events;
 using Spectre.Console;
-using Spectre.Console.Rendering;
-using System.CommandLine;
-
 namespace cli;
 
 public class ServicesRegistryCommandArgs : LoginCommandArgs
