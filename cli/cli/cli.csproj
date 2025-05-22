@@ -58,7 +58,7 @@
   <ItemGroup>
     <PackageReference Include="NBomber" Version="4.1.0" />
     <PackageReference Include="NBomber.Http" Version="4.1.0" />
-    <PackageReference Include="Serilog" Version="2.10.0">
+    <PackageReference Include="Serilog" Version="2.10.0" Condition="'$(BeamBuild)'!='true'">
       <ExcludeAssets>compile</ExcludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

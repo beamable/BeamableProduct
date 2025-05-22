@@ -34,8 +34,8 @@ PREVIOUS_VERSION=0.0.123.$PREVIOUS_BUILD_NUMBER
 SOLUTION=./build/LocalBuild/LocalBuild.sln
 TMP_BUILD_OUTPUT="TempBuild"
 
-BUILD_ARGS="--configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:Warn=0" #-
-PACK_ARGS="--configuration Release --no-build -o $TMP_BUILD_OUTPUT -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:SKIP_GENERATION=true"
+BUILD_ARGS="--configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:Warn=0 -p:BeamBuild=true" #-
+PACK_ARGS="--configuration Release --no-build -o $TMP_BUILD_OUTPUT -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:SKIP_GENERATION=true -p:BeamBuild=true"
 PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
