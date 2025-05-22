@@ -19,7 +19,7 @@ public class StartGrafanaCommandResults
 
 public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartGrafanaCommandResults>
 {
-    public StartGrafanaCommand() : base("open", "Opens a local Grafana installation to inspect telemetry data. ")
+    public StartGrafanaCommand() : base("open", "Opens a local Grafana installation to inspect telemetry data ")
     {
     }
 

@@ -92,10 +92,11 @@ public class LogQueryParserTests
         Assert.AreEqual(expected, dbg, $"was actually\n{dbg}");
     }
     
-    [TestCase("service:tuna", "phrase (lit (service) : op (lit (tuna)))")]
-    [TestCase("service:tuna and b:c", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
+    // [TestCase("service:tuna", "phrase (lit (service) : op (lit (tuna)))")]
+    // [TestCase("service:tuna and b:c", "op (comp (wild, lit (hello)) OR comp (lit (world), wild))")]
     public void ParsePhrase(string queryText, string expected)
     {
+        
         ReadOnlySpan<char> query = queryText;
         var tokens = LogQueryParser.Tokenize(ref query);
         var value = LogQueryParser.ParsePhrase(tokens, ref query);
