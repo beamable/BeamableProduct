@@ -1,7 +1,6 @@
 ﻿using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
-
 namespace cli;
 
 public class CliToken : IAccessToken

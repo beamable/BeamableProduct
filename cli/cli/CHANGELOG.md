@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-[Unreleased]
+## [Unreleased]
 ### Added
 - New Code Analyzer to return compile time error for async void Callable methods.
 - New Code Fixer to fix async void Callable methods on IDE.
@@ -16,10 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
 - New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
 - Added support for generating FDateTime instead of FString in Unreal code generation.
+- New Microservice Client Code Generator for Unity that used OAPI for the generation.
 
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
 - `OptionalString` overrides `.ToString()` for easier print debugging.
+- Changes on MicroserviceBootstrapper to allow the creation of OAPI document after building the Microservice
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.

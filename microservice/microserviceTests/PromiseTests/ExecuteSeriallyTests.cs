@@ -4,11 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
-using Beamable.Server;
-using Core.Server.Common;
-using microserviceTests.microservice.Util;
 using NUnit.Framework;
-using Serilog;
 namespace microserviceTests.PromiseTests
 {
    [TestFixture]

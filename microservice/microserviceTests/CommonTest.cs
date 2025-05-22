@@ -6,8 +6,6 @@ using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
-using Serilog.Events;
-using Serilog.Sinks.TestCorrelator;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,6 +14,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace microserviceTests;
 
@@ -84,7 +84,6 @@ public sealed class PreventExecutionContextLeaksAttribute : Attribute, IWrapSetU
 
 public class CommonTest
 {
-	protected ITestCorrelatorContext logContext;
 	protected bool allowErrorLogs;
 
 	private Task timeoutTask;
@@ -107,14 +106,7 @@ public class CommonTest
 		localTime.Restart();
 		// set content static variables...
 		ContentApi.Instance = new Promise<IContentApi>();
-		// BeamableMicroService._contentService = null;
-
-		// hacky way to clear the test log context
-		var field = typeof(TestCorrelator).GetField("ContextGuidDecoratedLogEvents", BindingFlags.Static | BindingFlags.NonPublic);
-		var fieldVal = field.GetValue(null);
-		var clearMethod = fieldVal.GetType().GetMethod("Clear", BindingFlags.Public | BindingFlags.Instance);
-		clearMethod.Invoke(fieldVal, new object[] { });
-
+		
 		// set up logging
 		LoggingUtil.InitTestCorrelator();
 
@@ -147,7 +139,7 @@ public class CommonTest
 			foreach (var log in GetLogs().ToList())
 			{
 				
-				Console.WriteLine($"l=[{log.Level}]" + log.RenderMessage());
+				Console.WriteLine($"l=[{log.LogInfo.LogLevel}]" + log.ToString());
 			}
 			Console.WriteLine("End of log stream");
 		}
@@ -165,28 +157,28 @@ public class CommonTest
 		}
 	}
 
-	protected IEnumerable<LogEvent> GetLogs()
+	protected IEnumerable<IZLoggerEntry> GetLogs()
 	{
-		return TestCorrelator.GetLogEventsFromCurrentContext();
-		// return TestCorrelator.GetLogEventsFromContextGuid(logContext.Guid);
+		return LoggingUtil.testLogs.allLogs;
 	}
 
-	protected IEnumerable<LogEvent> GetBadLogs()
+	protected IEnumerable<IZLoggerEntry> GetBadLogs()
 	{
-		return GetLogs().Where(l => l.Level == LogEventLevel.Error || l.Level == LogEventLevel.Fatal);
+		return GetLogs().Where(l => 
+			l.LogInfo.LogLevel >= LogLevel.Error);
 	}
 
 	protected void AssertBadLogCountContains(string contains, int expectedCount = 1)
 	{
 		var logCount = GetLogs().Count(l =>
-			l.RenderMessage().Contains(contains));
+			l.ToString().Contains(contains));
 		Assert.AreEqual(expectedCount, logCount);
 	}
 
 	protected void AssertBadLogCountContains<T>(int expectedCount = 1) where T : Exception
 	{
 		AssertBadLogCountContains(
-			$"Exception \"{typeof(T).Name}\"",
+			$"Exception {typeof(T).Name}",
 			expectedCount);
 	}
 

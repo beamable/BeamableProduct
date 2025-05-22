@@ -13,8 +13,8 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
-using Serilog;
 using System.Reflection;
+using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
 
@@ -26,6 +26,12 @@ public class ServiceDocGenerator
 	private const string JSON_CONTENT_TYPE = "application/json";
 	private const string SCOPE = "scope";
 	private const string USER = "user";
+	private const string V2_COMPONENT_INTERFACE = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY;
+	private const string V2_COMPONENT_FEDERATION_ID = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY;
+	private const string V2_COMPONENT_FEDERATION_CLASS_NAME = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
+	private const string SCHEMA_IS_OPTIONAL_KEY = Constants.Features.Services.SCHEMA_IS_OPTIONAL_KEY;
+	private const string SCHEMA_OPTIONAL_TYPE_KEY = Constants.Features.Services.SCHEMA_OPTIONAL_TYPE_NAME_KEY;
+	
 
 	private static OpenApiSecurityScheme _userSecurityScheme = new OpenApiSecurityScheme
 	{
@@ -80,16 +86,19 @@ public class ServiceDocGenerator
 		for (var i = methods.Count - 1; i >= 0; i--)
 		{
 			// IF the caller is asking for the Client-Code-Gen spec, we skip out the federated and hidden methods.
+			
 			if (forClientCodeGeneration)
 			{
-				var isFederatedMethod = methods[i].IsFederatedCallbackMethod;
-				var attrs = methods[i].Method.GetCustomAttributes(typeof(CallableAttribute), true);
-				var isHidden = attrs.Length > 0 && ((CallableAttribute)attrs[0]).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
-				if(isFederatedMethod || isHidden)
+				var method = methods[i];
+				var isFederatedMethod = method.IsFederatedCallbackMethod;
+				if (!isFederatedMethod)
 				{
-					Log.Debug("Removing federated callback {MethodName} that made through the check", methods[i].Method.Name);
-					methods.RemoveAt(i);
+					continue;
 				}
+
+				Log.Debug("Removing federated callback {MethodName} that made through the check",
+					method.Method.Name);
+				methods.RemoveAt(i);
 			}
 		}
 		
@@ -106,6 +115,7 @@ public class ServiceDocGenerator
 
 		var interfaces = microserviceType.GetInterfaces();
 		var apiComponents = new OpenApiArray();
+		var v2ApiComponents = new OpenApiArray();
 
 		foreach (Type it in interfaces)
 		{
@@ -125,13 +135,22 @@ public class ServiceDocGenerator
 			var federatedType = it.GetGenericArguments()[0];
 			if (Activator.CreateInstance(federatedType) is IFederationId identity)
 			{
-				string componentName = $"{typeName}/{identity?.GetUniqueName()}";
-				apiComponents.Add(new OpenApiString(componentName));
+				string federationId = identity?.GetUniqueName();
+				apiComponents.Add(new OpenApiString($"{typeName}/{federationId}"));
+				v2ApiComponents.Add(new OpenApiObject
+				{
+					[V2_COMPONENT_INTERFACE] = new OpenApiString(it.GetGenericTypeDefinition().GetSanitizedFullName()),
+					[V2_COMPONENT_FEDERATION_ID] = new OpenApiString(federationId),
+					[V2_COMPONENT_FEDERATION_CLASS_NAME] = new OpenApiString(federatedType.FullName),
+				});
 			}
 		}
-
-		const string federatedKey = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
-		doc.Extensions.Add(federatedKey, apiComponents);
+		
+		
+		
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY, apiComponents);
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY, v2ApiComponents);
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_CLASS_TYPE_KEY, new OpenApiString(microserviceType.ToString()));
 
 		// We add to the list of schemas all complex types in method signatures and all extra schemas that were given to us (usually, this is any type that has BeamGenerateSchemaAttribute -- but we can pass
 		// in any serializable type here that follows microservice serialization rules).
@@ -139,18 +158,20 @@ public class ServiceDocGenerator
 		foreach (var type in allTypes.Concat(extraSchemas))
 		{
 			var schema = SchemaGenerator.Convert(type);
-			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}" );
 			
 			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
 			var key = SchemaGenerator.GetQualifiedReferenceName(type);
 			if(!doc.Components.Schemas.ContainsKey(key))
 				doc.Components.Schemas.Add(key, schema);
 			else
-				Log.Debug("Tried to add Schema more than once. Type={TypeName}, SchemaKey={Key}", type.FullName, key);
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}");
 		}
-
+		var hiddenMethods = new List<string>();
 		foreach (var method in methods)
 		{
+			var callableAttrs = method.Method.GetCustomAttributes(typeof(CallableAttribute), true);
+			
 			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
@@ -175,7 +196,8 @@ public class ServiceDocGenerator
 			};
 			for (var i = 0; i < method.ParameterInfos.Count; i++)
 			{
-				var parameterSchema = SchemaGenerator.Convert(method.ParameterInfos[i].ParameterType, 0);
+				Type parameterType = method.ParameterInfos[i].ParameterType;
+				var parameterSchema = SchemaGenerator.Convert(parameterType, 0);
 				var parameterName = method.ParameterNames[i];
 
 				if (parameterNameToComment.TryGetValue(parameterName, out var comment))
@@ -183,17 +205,41 @@ public class ServiceDocGenerator
 					parameterSchema.Description = comment ?? "";
 				}
 
+				bool isNullable = Nullable.GetUnderlyingType(parameterType) != null;
+				bool isOptional = parameterType.IsAssignableTo(typeof(Optional));
+				parameterSchema.Nullable = isNullable;
+				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
 				requestSchema.Properties[parameterName] = parameterSchema;
-				if (!method.ParameterInfos[i].ParameterType.IsAssignableTo(typeof(Optional)))
+				
+				if (!isOptional)
 				{
 					requestSchema.Required.Add(parameterName);
 				}
+				else
+				{
+					var optionalTypeValue = new OpenApiString(parameterType.IsGenericType
+						? parameterType.GetGenericTypeDefinition().FullName.Replace("`1", "<{0}>")
+						: parameterType.FullName);
+					
+					parameterSchema.Extensions.Add(SCHEMA_OPTIONAL_TYPE_KEY, optionalTypeValue);
+				}
 			}
+
+			var openApiTags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } };
 
 			var operation = new OpenApiOperation
 			{
-				Responses = new OpenApiResponses { ["200"] = response }, Description = comments.Remarks, Summary = comments.Summary, Tags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } }
+				Responses = new OpenApiResponses { ["200"] = response },
+				Description = comments.Remarks,
+				Summary = comments.Summary,
+				Tags = openApiTags,
 			};
+			if (callableAttrs.Length > 0 && method.Tag != "Admin")
+			{
+				operation.Extensions.Add(Constants.Features.Services.OPERATION_CALLABLE_METHOD_TYPE_KEY,
+					new OpenApiString(callableAttrs[0].GetType().Name));
+			}
+
 			if (method.ParameterInfos.Count > 0)
 			{
 				doc.Components.Schemas.Add(requestSchemaName, requestSchema);
@@ -201,22 +247,47 @@ public class ServiceDocGenerator
 				{
 					Content = new Dictionary<string, OpenApiMediaType>
 					{
-						[JSON_CONTENT_TYPE] = new OpenApiMediaType { Schema = new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = requestSchemaName } } }
+						[JSON_CONTENT_TYPE] = new()
+						{
+							Schema = new OpenApiSchema
+							{
+								Type = "object",
+								Reference = new OpenApiReference
+								{
+									Type = ReferenceType.Schema, Id = requestSchemaName
+								}
+							}
+						}
 					}
 				};
 			}
 
 
-			var pathItem = new OpenApiPathItem { Operations = new Dictionary<OperationType, OpenApiOperation> { [OperationType.Post] = operation } };
+			var pathItem = new OpenApiPathItem
+			{
+				Operations = new Dictionary<OperationType, OpenApiOperation> { [OperationType.Post] = operation }
+			};
 			var securityReq = new OpenApiSecurityRequirement { [_scopeSecuritySchemeReference] = new List<string>() };
 			operation.Security.Add(securityReq);
 			if (method.RequireAuthenticatedUser)
 			{
 				securityReq[_userSecuritySchemeReference] = new List<string>();
 			}
+			
 
+			var isHidden = callableAttrs.Length > 0 && ((CallableAttribute)callableAttrs[0]).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
+			if (isHidden)
+			{
+				hiddenMethods.Add(method.Path);
+			}
+			
+			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(isHidden));
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
+		
+		var hiddenMethodsOapiArray = new OpenApiArray();
+		hiddenMethodsOapiArray.AddRange(hiddenMethods.Select(item => new OpenApiString(item)));
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, hiddenMethodsOapiArray);
 
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		doc = new OpenApiStringReader().Read(outputString, out var diag);
@@ -245,7 +316,7 @@ public class ServiceDocGenerator
 		foreach (var type in schemas)
 		{
 			var schema = SchemaGenerator.Convert(type);
-			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}");
 			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
 

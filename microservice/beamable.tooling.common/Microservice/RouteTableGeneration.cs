@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using Beamable.Server;
 using microservice.Common;
 
@@ -16,15 +17,15 @@ public static class RouteTableGeneration
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
 	/// <param name="serviceFactory">A function to create instances of the microservice.</param>
 	/// <returns>A collection of service methods and associated routes.</returns>
-	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, AdminRoutes adminRoutes, Func<RequestContext, object> serviceFactory)
+	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, AdminRoutes adminRoutes, Func<MicroserviceRequestContext, object> serviceFactory)
 	{
 		var clientGenerator = new ServiceMethodProvider
 		{
 			instanceType = microserviceType, factory = serviceFactory, pathPrefix = ""
 		};
-		var generators = adminRoutes == null
-			? new ServiceMethodProvider[] { clientGenerator }
-			: new ServiceMethodProvider[]
+		var providers = adminRoutes == null
+			? new[] { clientGenerator }
+			: new[]
 			{
 				new ServiceMethodProvider
 				{
@@ -33,16 +34,7 @@ public static class RouteTableGeneration
 				clientGenerator
 			};
 		
-		var collection = ServiceMethodHelper.Scan(serviceAttribute,
-			new ICallableGenerator[]
-			{
-				new FederatedLoginCallableGenerator(),
-				new FederatedInventoryCallbackGenerator(),
-				new FederatedGameServerCallableGenerator(),
-				new FederatedPlayerInitCallableGenerator()
-			},
-			generators
-			);
+		var collection = ServiceMethodHelper.Scan(serviceAttribute, providers);
 		return collection;
 	}
 }

@@ -1,18 +1,15 @@
-﻿using Beamable.Common;
-using Beamable.Common.Semantics;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Text.RegularExpressions;
+using Beamable.Common;
+using Beamable.Server;
 using Docker.DotNet.Models;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
-using Serilog;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Text.RegularExpressions;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
@@ -1220,6 +1217,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			foreach ((string endpointPath, OpenApiPathItem endpoint) in openApiDocument.Paths)
 			{
+
+				// If the method is hidden we should not Generate Client Code for it
+				if (endpoint.Extensions.TryGetValue(METHOD_SKIP_CLIENT_GENERATION_KEY, out var isHidden) &&
+				    isHidden is OpenApiBoolean { Value: true })
+				{
+					continue;
+				}
+				
 				foreach ((OperationType operationType, OpenApiOperation endpointData) in endpoint.Operations)
 				{
 					var unrealEndpoint = new UnrealEndpointDeclaration();
@@ -2704,6 +2709,7 @@ public static class StringExtensions
 			// Replace doesn't fail if key is not found, so we can just ask it to try to replace...
 			res = res.Replace(key, value);
 		}
+		
 
 		return res;
 	}

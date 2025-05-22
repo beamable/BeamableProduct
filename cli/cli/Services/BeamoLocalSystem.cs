@@ -7,11 +7,11 @@ using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
-using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using microservice.Extensions;
+using Microsoft.OpenApi.Models;
 
 namespace cli.Services;
 
@@ -111,8 +111,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, useCache: useManifestCache, fetchServerManifest);
-	}
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
 	{

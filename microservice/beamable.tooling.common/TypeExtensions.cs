@@ -15,4 +15,11 @@ public static class TypeExtensions
 	{
 		return other.IsAssignableFrom(type);
 	}
+
+	public static string GetSanitizedFullName(this Type type)
+	{
+		if (type.FullName != null && type.FullName.Contains("`"))
+			return type.FullName.Split('`')[0];
+		return type.FullName;
+	}
 }
