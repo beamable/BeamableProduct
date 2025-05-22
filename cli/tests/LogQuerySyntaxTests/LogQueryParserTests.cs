@@ -40,7 +40,7 @@ public class LogQueryParserTests
         var collection = LogQueryParser.Tokenize(querySpan);
         var dumped = collection.Dump();
         
-        Assert.AreEqual(expectedDump.Trim(), dumped.Trim(), $"'{query}' actually tokenizes to \n{dumped}");
+        Assert.AreEqual(expectedDump.Replace("\n", Environment.NewLine).Trim(), dumped.Trim(), $"'{query}' actually tokenizes to \n{dumped}");
     }
 
     [TestCase("hello", "lit (hello)")]
