@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading;
 
@@ -42,7 +43,7 @@ public class MicroserviceRequestContext : RequestContext
 	/// Gets a value indicating whether the cancellation token is canceled.
 	/// </summary>
 	public override bool IsCancelled => CancellationToken.IsCancellationRequested;
-
+	
 	/// <summary>
 	/// Gets the request body as a string.
 	/// </summary>

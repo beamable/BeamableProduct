@@ -8,7 +8,6 @@ using Beamable.Server;
 using Beamable.Server.Common;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;

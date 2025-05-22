@@ -4,9 +4,9 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 

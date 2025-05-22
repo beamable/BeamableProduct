@@ -1,10 +1,8 @@
-using Beamable.Common.BeamCli;
-using cli.Services.HttpServer;
-using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
 using System.Text;
-using UnityEngine;
+using Beamable.Server;
+using cli.Services.HttpServer;
+using Newtonsoft.Json;
 
 namespace cli.CliServerCommand;
 

@@ -1,38 +1,24 @@
-using Serilog.Core;
-using Serilog.Events;
-using Serilog.Formatting;
 using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Threading.Channels;
+using System.Threading.Tasks;
+using ZLogger;
 
 namespace Beamable.Server.Common;
 
-/// <summary>
-/// Custom log sink that captures log messages and provides a way to retrieve them.
-/// </summary>
-public class DebugLogSink : ILogEventSink
+public class DebugLogProcessor : IAsyncLogProcessor
 {
-
-
+	
 	public ConcurrentDictionary<string, Channel<string>> subscriberToLogs =
 		new ConcurrentDictionary<string, Channel<string>>();
 
-	private readonly ITextFormatter _formatProvider;
-	private const int MAX_MESSAGE_BUFFER = 30;
-	private readonly StringWriter _writer;
 	
-	/// <summary>
-	/// Initializes a new instance of the <see cref="DebugLogSink"/> class with the specified text formatter.
-	/// </summary>
-	/// <param name="formatProvider">The text formatter used to format log messages.</param>
-	public DebugLogSink(ITextFormatter formatProvider)
+	public DebugLogProcessor()
 	{
-		_writer = new StringWriter();
 		
-		_formatProvider = formatProvider;
 	}
-
+	
+	
 	public void ReleaseSubscription(string name)
 	{
 		lock (subscriberToLogs)
@@ -67,25 +53,19 @@ public class DebugLogSink : ILogEventSink
 		}
 	}
 	
-	/// <summary>
-	/// Emits a log event to the sink, capturing the log message.
-	/// </summary>
-	/// <param name="logEvent">The log event to be emitted.</param>
-	public void Emit(LogEvent logEvent)
+	public ValueTask DisposeAsync()
 	{
-		_writer.GetStringBuilder().Clear();
-		_formatProvider.Format(logEvent, _writer);
-		_writer.Flush();
-		var str = _writer.GetStringBuilder().ToString();
+		return ValueTask.CompletedTask;
+	}
 
+	public void Post(IZLoggerEntry log)
+	{
 		lock (subscriberToLogs)
 		{
 			foreach (var kvp in subscriberToLogs)
 			{
-				kvp.Value.Writer.TryWrite(str);
+				kvp.Value.Writer.TryWrite(log.ToString());
 			}
 		}
-		
-		
 	}
 }

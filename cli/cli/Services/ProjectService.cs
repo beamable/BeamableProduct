@@ -4,11 +4,11 @@ using cli.Dotnet;
 using cli.Unreal;
 using CliWrap;
 using Microsoft.CodeAnalysis.Sarif;
-using Serilog;
 using Spectre.Console;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 using microservice.Extensions;
 
 namespace cli.Services;

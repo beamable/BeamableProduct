@@ -1,7 +1,5 @@
 using Beamable.Server;
 using cli.Services.HttpServer;
-using cli.Utils;
-using Serilog;
 using System.CommandLine;
 
 namespace cli.CliServerCommand;

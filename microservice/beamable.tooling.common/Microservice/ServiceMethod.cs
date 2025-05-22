@@ -48,7 +48,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Factory function to create an instance of the service method's target.
 		/// </summary>
-		public Func<RequestContext, object> InstanceFactory;
+		public Func<MicroserviceRequestContext, object> InstanceFactory;
 
 		/// <summary>
 		/// The set of required scopes for accessing the service method.
@@ -114,7 +114,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Executes the service method with the provided request context and parameter provider.
 		/// </summary>
-		public async Task<object> Execute(RequestContext ctx, IParameterProvider parameterProvider)
+		public async Task<object> Execute(MicroserviceRequestContext ctx, IParameterProvider parameterProvider)
 		{
 			var args = GetArgs(ctx, parameterProvider);
 			var target = InstanceFactory(ctx);

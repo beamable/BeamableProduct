@@ -1,9 +1,9 @@
 using Beamable.Common;
 using cli.Services;
 using cli.Utils;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 

@@ -1,13 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using System.Text;
+using Beamable.Server;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;

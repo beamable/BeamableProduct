@@ -3,13 +3,13 @@ using cli.Unreal;
 using Markdig;
 using Markdig.Syntax;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 
 namespace cli.Services;
 

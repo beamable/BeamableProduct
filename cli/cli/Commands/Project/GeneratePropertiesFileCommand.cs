@@ -1,6 +1,5 @@
-using cli.Services;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Dotnet;
 

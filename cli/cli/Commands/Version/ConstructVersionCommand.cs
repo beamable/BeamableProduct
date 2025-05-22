@@ -1,10 +1,7 @@
 using Beamable.Common;
-using Beamable.Serialization.SmallerJSON;
 using cli.Services;
-using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
-using System.Text;
+using Beamable.Server;
 
 namespace cli.Version;
 

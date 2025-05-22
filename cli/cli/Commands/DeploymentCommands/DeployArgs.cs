@@ -1,8 +1,8 @@
 using Beamable.Common.Content;
 using Beamable.Serialization;
 using cli.Deployment.Services;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 

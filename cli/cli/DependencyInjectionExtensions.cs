@@ -1,14 +1,15 @@
-using Beamable.Common.BeamCli;
+
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using cli.Services;
 using cli.Utils;
-using Microsoft.Extensions.DependencyInjection;
+	//using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
-using System.CommandLine.Help;
+using System.CommandLine.Binding;
+using Beamable.Server;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.Text;
 
 namespace cli;
@@ -52,21 +53,23 @@ public static class DependencyInjectionExtensions
 		{
 			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
 			var factory = new CommandFactory<TCommand>();
-			var root = commandProvider.GetRequiredService<TBaseCommand>();
-			var command = commandProvider.GetRequiredService<TCommand>();
+			var root = commandProvider.GetService<TBaseCommand>();
+			var command = commandProvider.GetService<TCommand>();
 
 			command.CommandProvider = commandProvider;
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
-			command.SetHandler(async (TArgs args) =>
+			command.SetHandler(new Func<TArgs, Task>( async (TArgs args) =>
 			{
 
 				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
 				{
 				})}");
-				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
+				var bodyJson = Json.Serialize(args, new StringBuilder());
+				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {bodyJson}");
 				if (command is IResultProvider resultProvider)
 				{
+					args.Provider.GetService<IDataReporterService>();
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
 				}
 
@@ -88,9 +91,22 @@ public static class DependencyInjectionExtensions
 					}
 				}
 
+				var rootActivity = args.DependencyProvider.GetService<BeamActivity>();
+				rootActivity.SetDisplay($"invocation: {command.GetType().Name}");
+
+				var internalActivity = rootActivity as IInternalBeamActivity;
+				internalActivity.AddTagsDict(new Dictionary<string, object>
+				{
+					["beam.cli.config.base_path"] = args.ConfigService.BaseDirectory,
+					["beam.cli.app.docker_path"] = args.AppContext.DockerPath,
+					["beam.cli.app.dotnet_path"] = args.AppContext.DotnetPath,
+					["beam.cli.body"] = bodyJson,
+					["beam.cli.command"] = args.Provider.GetService<BindingContext>().ParseResult.Diagram(),
+				});
+				
 				await command.Handle(args);
 				
-			}, binder);
+			}), binder);
 			root.AddCommand(command);
 			return factory;
 		});

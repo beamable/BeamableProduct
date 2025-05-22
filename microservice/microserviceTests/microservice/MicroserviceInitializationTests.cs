@@ -1,20 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
-using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
-using Beamable.Server.Api.Calendars;
-using Beamable.Server.Api.Content;
-using Beamable.Server.Content;
 using microservice;
-using microserviceTests.microservice.Util;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using Serilog.Events;
-using UnityEngine;
 
 namespace microserviceTests.microservice
 {

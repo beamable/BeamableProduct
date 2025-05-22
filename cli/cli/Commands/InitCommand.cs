@@ -3,14 +3,12 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Services;
 using cli.Utils;
-using CliWrap;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
-using microservice.Extensions;
+using Beamable.Server;
 using Command = System.CommandLine.Command;
 
 namespace cli;

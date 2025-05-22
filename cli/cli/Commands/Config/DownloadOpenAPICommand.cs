@@ -1,8 +1,8 @@
 using JetBrains.Annotations;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli;
 

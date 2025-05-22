@@ -9,7 +9,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
-using Serilog;
 using System.Diagnostics;
 using static Beamable.Common.Constants.Features.Content;
 

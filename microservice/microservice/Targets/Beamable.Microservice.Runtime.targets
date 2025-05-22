@@ -6,6 +6,26 @@
         <OutputType Condition="'$(BeamProjectType)'=='service'">Exe</OutputType>
     </PropertyGroup>
 
+    <PropertyGroup>
+
+        
+        <BeamCollectorVersion Condition="'$(BeamCollectorVersion)'==''">$(BeamableVersion)</BeamCollectorVersion>
+        <BeamIsDevVersion Condition="$(BeamCollectorVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
+        
+        <BeamCollectorVersion Condition="'$(BeamIsDevVersion)'=='true'">0.0.123</BeamCollectorVersion>
+        
+        <BeamBaseDownloadUrl>https://collectors.beamable.com/version/$(BeamCollectorVersion)"</BeamBaseDownloadUrl>
+        <BeamCollectorBinaryDownloadUrl>$(BeamBaseDownloadUrl)/$(BeamCollectorFileName).gz</BeamCollectorBinaryDownloadUrl>
+        <BeamCollectorConfigDownloadUrl>$(BeamBaseDownloadUrl)/$(BeamCollectorConfigFileName).gz</BeamCollectorConfigDownloadUrl>
+        
+        <BeamCollectorFolder>$(LOCALAPPDATA)/beam/collectors/$(BeamCollectorVersion)</BeamCollectorFolder>
+        <BeamCollectorBinaryFilepath>$(BeamCollectorFolder)/$(BeamCollectorFileName)</BeamCollectorBinaryFilepath>
+        <BeamCollectorConfigFilepath>$(BeamCollectorFolder)/$(BeamCollectorConfigFileName)</BeamCollectorConfigFilepath>
+        
+        <BeamCollectorExists>false</BeamCollectorExists>
+        <BeamCollectorExists Condition="Exists($(BeamCollectorBinaryFilepath))">true</BeamCollectorExists>
+    </PropertyGroup>
+
     <!-- This imports customer specific csproj files in the .beamable/temp/localDev project -->
     <Import Label="Load Beamable Local Developer Settings"
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
@@ -39,5 +59,32 @@
         </ItemGroup>
     </Target>
 
+    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamEnableCollectorResolution)'=='true'">
+
+        <PropertyGroup>
+            <ActualOutputDir>$(OutputPath)</ActualOutputDir>
+            <ActualOutputDir Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</ActualOutputDir>
+        </PropertyGroup>
+
+        <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
+        <Message Condition="'$(BeamCollectorExists)'!='true'"
+                 Importance="high"
+                 Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
+        />
+        <Exec   Condition="'$(BeamCollectorExists)'!='true'"
+                Command="$(BeamableDotnetPath) $(BeamableTool) collector get --override-version $(BeamCollectorVersion) $(BeamCollectorPlatformArchArg)"
+                EnvironmentVariables=""/>
+
+        <Message
+                Importance="high"
+                Text="Copying collector to output folder... "
+        />
+        <Copy
+                SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
+                DestinationFolder="$(ActualOutputDir)"
+                SkipUnchangedFiles="true"
+        />
+
+    </Target>
 
 </Project>

@@ -1,0 +1,21 @@
+apiVersion: 1
+datasources:
+  - name: Beamable Telemetry
+    type: grafana-clickhouse-datasource
+    access: proxy
+    jsonData:
+      defaultDatabase: default
+      protocol: native
+      port: 9440
+      secure: true
+      host: $BEAM_CLICKHOUSE_HOST
+      username: $BEAM_CLICKHOUSE_USERNAME
+      tlsSkipVerify: false
+      logs:
+        defaultDatabase: default # default log database.
+        defaultTable: otel_logs  # default log table. If you're using OTel, this should be set to "otel_logs".
+        
+        otelEnabled: true  # set to true if OTel is enabled.
+        otelVersion: latest # the otel collector schema version to be used. Versions are displayed in the UI, but "latest" will use latest available version in the plugin.
+    secureJsonData:
+      password: $BEAM_CLICKHOUSE_PASSWORD

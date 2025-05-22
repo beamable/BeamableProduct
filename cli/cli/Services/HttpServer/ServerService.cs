@@ -3,13 +3,12 @@ using Beamable.Common.Dependencies;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
-using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace cli.Services.HttpServer;
 
@@ -418,7 +417,7 @@ public class ServerReporterService : IDataReporterService
 					catch (HttpListenerException)
 					{
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-						TaskLocalLog.Instance.globalLogger.Verbose("monitor found that client is no longer connected; cancelling app lifecycle.");
+						App.GlobalLogger.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
 						break;
 					}
@@ -427,7 +426,7 @@ public class ServerReporterService : IDataReporterService
 			catch (Exception ex)
 			{
 				// remember, async void methods don't report exceptions automatically, so always log it to save brain later.
-				TaskLocalLog.Instance.globalLogger.Error($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				App.GlobalLogger.ZLogError($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 			}
 		});
 	} 
@@ -448,7 +447,7 @@ public class ServerReporterService : IDataReporterService
 		catch (HttpListenerException ex)
 		{
 			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-			TaskLocalLog.Instance.globalLogger.Verbose("client is no longer connected; cancelling app lifecycle." + ex.Message);
+			App.GlobalLogger.LogTrace("client is no longer connected; cancelling app lifecycle." + ex.Message);
 			_lifecycle.Cancel();
 		}
 	}

@@ -36,7 +36,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 						{
 							var id = (threadNumber * cycleCount) + i;
 							var req = new WebsocketRequest { id = id };
-							context.AddListener(req, uri, dumbParser);
+							context.AddListener(req, uri, dumbParser, null);
 							await Task.Yield();
 						}
 

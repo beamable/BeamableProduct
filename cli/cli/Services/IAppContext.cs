@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
@@ -6,16 +5,11 @@ using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using cli.Options;
 using cli.Services;
-using cli.Utils;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
-using System.CommandLine.IO;
+using Microsoft.Extensions.Logging;
 using Beamable.Server;
-using UnityEngine;
 
 namespace cli;
 
@@ -29,7 +23,7 @@ public class AppServices : IServiceProvider
 public interface IAppContext : IRealmInfo
 {
 	public bool IsDryRun { get; }
-	public LogEventLevel LogLevel { get; }
+	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
 	public string Pid { get; }
 	public string Host { get; }
@@ -90,7 +84,7 @@ public class DefaultAppContext : IAppContext
 	private readonly CliEnvironment _environment;
 	private readonly ShowRawOutput _showRawOption;
 	private readonly ShowPrettyOutput _showPrettyOption;
-	private readonly LoggingLevelSwitch _logSwitch;
+	private readonly BeamLogSwitch _logSwitch;
 	private readonly UnmaskLogsOption _unmaskLogsOption;
 	private readonly NoLogFileOption _noLogFileOption;
 	private readonly PreferRemoteFederationOption _routeMapOption;
@@ -166,12 +160,12 @@ public class DefaultAppContext : IAppContext
 	public string Host => _host;
 	public string RefreshToken => _refreshToken;
 	public string WorkingDirectory => _configService.WorkingDirectory;
-	public LogEventLevel LogLevel { get; private set; }
+	public BeamLogSwitch LogSwitch => _logSwitch;
 
 	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
-		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
+		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
 		PreferRemoteFederationOption routeMapOption, IAliasService aliasService)
 	{
@@ -203,7 +197,7 @@ public class DefaultAppContext : IAppContext
 	void SetupOutputStrategy()
 	{
 		// by default, set logs to INFO
-		_logSwitch.MinimumLevel = LogEventLevel.Information;
+		_logSwitch.Level = LogLevel.Information;
 
 		TextWriter spectreOutput = Console.Error;
 		var invisibleStream = new StringWriter();
@@ -211,7 +205,7 @@ public class DefaultAppContext : IAppContext
 		if (ShowRawOutput)
 		{
 			// when --raw is included, there are no logs by default
-			_logSwitch.MinimumLevel = LogEventLevel.Fatal;
+			_logSwitch.Level = LogLevel.Critical;
 
 			// the user has asked for raw output, which means by default, pretty must be request.
 			if (ShowPrettyOutput)
@@ -259,14 +253,14 @@ public class DefaultAppContext : IAppContext
 			{
 				// do nothing.
 			}
-			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
+			else if (LogUtil.TryParseSystemLogLevel(logLevelOption, out var level))
 			{
-				_logSwitch.MinimumLevel = level;
+				_logSwitch.Level = level;
 			}
 			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
-					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+					 LogUtil.TryParseSystemLogLevel(_environment.LogLevel, out level))
 			{
-				_logSwitch.MinimumLevel = level;
+				_logSwitch.Level = level;
 			}
 		}
 	}

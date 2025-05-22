@@ -1,6 +1,7 @@
 using LoxSmoke.DocXml;
-using Serilog;
 using System.Reflection;
+using beamable.tooling.common.Microservice;
+using ZLogger;
 
 namespace Beamable.Server.Common.XmlDocs;
 
@@ -14,7 +15,7 @@ public static class DocsLoader
 		var xmlPath = asm.Location.Replace(".dll", ".xml");
 		if (!File.Exists(xmlPath))
 		{
-			Log.Verbose($"Unable to find xml docs for asm=[{asm.Location}].");
+			BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Unable to find xml docs for asm=[{asm.Location}].");
 			return null;
 		}
 

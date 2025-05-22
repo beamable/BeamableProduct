@@ -5,8 +5,11 @@ using Beamable.Server.Common;
 using microservice.Common;
 using microservice.Extensions;
 using Newtonsoft.Json;
-using Serilog;
+
 using System.Text;
+using Beamable.Common.Dependencies;
+using beamable.tooling.common.Microservice;
+using ZLogger;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
@@ -24,7 +27,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The factory function to create service method instances.
 		/// </summary>
-		public Func<RequestContext, object> factory;
+		public Func<MicroserviceRequestContext, object> factory;
 
 		/// <summary>
 		/// The path prefix for the service methods.
@@ -296,15 +299,15 @@ namespace Beamable.Server
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
 
-         Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
-
+         BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"{Logs.SCANNING_CLIENT_PREFIX} {type.Name}");
+        
          var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
          foreach (var method in allMethods)
          {
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            Log.Debug($"Skipped {method.Name}");
+	            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipped {method.Name}");
 	            continue;
             }
 
@@ -326,7 +329,8 @@ namespace Beamable.Server
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;
 
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
+            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found {method.Name} for {servicePath}");
+
             
             var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
             var isVoid = method.ReturnType == typeof(void);

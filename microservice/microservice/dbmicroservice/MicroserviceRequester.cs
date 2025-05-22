@@ -9,10 +9,11 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Pooling;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
-using Core.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using System.Diagnostics;
+using Beamable.Common.Dependencies;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace Beamable.Server
 {
@@ -74,6 +75,9 @@ namespace Beamable.Server
    public interface IWebsocketResponseListener
    {
       long Id { get; set; }
+      string Path { get; set; }
+      string Method { get; set; }
+      BeamActivity Activity { get; set; }
       void Resolve(RequestContext ctx);
    }
    public class WebsocketResponseListener<T> : IWebsocketResponseListener
@@ -81,9 +85,10 @@ namespace Beamable.Server
       public Promise<T> OnDone;
 
       public long Id { get; set; }
+      public string Path { get; set; }
       public string Uri { get; set; }
       public string Method { get; set; }
-
+      public BeamActivity Activity { get; set; }
       public Func<string, T> Parser { get; set; }
 
       public void Resolve(RequestContext ctx)
@@ -117,10 +122,13 @@ namespace Beamable.Server
             try
             {
                var result = Parser(ctx.Body);
+               ctx.ActivityContext?.StopAndDispose(ActivityStatusCode.Ok);
                OnDone.CompleteSuccess(result);
+
             }
             catch (Exception ex)
             {
+               ctx.ActivityContext?.StopAndDispose(ex);
                OnDone.CompleteError(ex);
             }
          }
@@ -133,6 +141,7 @@ namespace Beamable.Server
 	   private readonly Func<Promise<IConnection>> _socketGetter;
       public Promise<IConnection> Socket => _socketGetter();
 
+      public IActivityProvider ActivityProvider { get; set; }
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
       private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
       private long _lastRequestId = 0;
@@ -172,7 +181,7 @@ namespace Beamable.Server
 
 	      if (Daemon.AuthorizationCounter <= 0)
 	      {
-		      Log.Verbose($"Waiting for authorization, but auth is already done. message=[{message}]");
+		      BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Waiting for authorization, but auth is already done. message=[{message}]");
 		      return;
 	      }
 
@@ -187,7 +196,7 @@ namespace Beamable.Server
 		      }
 		      await Task.Delay(100);
 	      }
-	      Log.Verbose($"Leaving wait for send. message=[{message}]");
+         BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
       }
 
       public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
@@ -216,16 +225,12 @@ namespace Beamable.Server
          }
          // all attempts have failed : (
          var finalEx = new SocketClosedException(failures);
-         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", finalEx.GetType().Name,
-            finalEx.Message,
-            finalEx.Source, finalEx.StackTrace);
+         BeamableZLoggerProvider.LogContext.Value.ZLogError($"Exception {finalEx.GetType().Name}: {finalEx.Message} - {finalEx.Source} \n {finalEx.StackTrace}");
 
          for (var i = 0 ; i < failures.Count; i ++)
          {
             var failure = failures[i];
-            BeamableSerilogProvider.LogContext.Value.Error("  Failure {i} {type}: {message} - {source} \n {stack}", i, finalEx.GetType().Name,
-               failure.Message,
-               failure.Source, failure.StackTrace);
+            BeamableZLoggerProvider.LogContext.Value.ZLogError($"  Failure {i} {finalEx.GetType().Name}: {failure.Message} - {failure.Source} \n {failure.StackTrace}");
          }
 
          throw finalEx;
@@ -276,12 +281,18 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public void HandleMessage(RequestContext ctx)
+      public void HandleMessage(RequestContext ctx, BeamActivity parentActivity=null)
       {
+         if (parentActivity == null)
+         {
+            parentActivity = BeamActivity.Noop;
+         }
+         
          if (ctx.IsEvent)
          {
-
             var eventName = ctx.Path.Substring("event/".Length);
+            parentActivity.SetDisplay($"On{eventName}");
+
             if (TryGetEventSubscriptions(eventName, out var subscriptions))
             {
                var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
@@ -298,10 +309,11 @@ namespace Beamable.Server
             // this is a response to some pending request...
             try
             {
+               parentActivity.SetDisplay($"Response ({ctx.Id})");
                listener.Resolve(ctx);
             }
             finally
-            {
+            {               
                Remove(ctx.Id);
             }
          }
@@ -312,13 +324,13 @@ namespace Beamable.Server
       }
 
 
-      public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser)
+      public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity)
       {
          var requestId = GetNextRequestId();
          if (_pendingMessages.ContainsKey(requestId))
          {
-            BeamableSerilogProvider.Instance.Debug("The request {id} was already taken", requestId);
-            return AddListener(req, uri, parser); // try again.
+            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"The request {requestId} was already taken");
+            return AddListener(req, uri, parser, parentActivity); // try again.
          }
 
          var promise = new Promise<T>();
@@ -330,7 +342,9 @@ namespace Beamable.Server
             OnDone = promise,
             Parser = parser,
             Uri = uri,
-            Method = req.method
+            Method = req.method,
+            Path = req.path,
+            Activity = parentActivity
          };
 
          if (!_pendingMessages.TryAdd(requestId, listener))
@@ -362,6 +376,7 @@ namespace Beamable.Server
       protected readonly RequestContext _requestContext;
 
       private readonly SocketRequesterContext _socketContext;
+      private readonly IActivityProvider _activityProvider;
       private readonly bool _waitForAuthorization;
 
       // TODO how do we handle Timeout errors?
@@ -369,12 +384,19 @@ namespace Beamable.Server
       public string Cid => _requestContext.Cid;
       public string Pid => _requestContext.Pid;
 
-      public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext, bool waitForAuthorization)
+      // [Obsolete]
+      public MicroserviceRequester(
+         IMicroserviceArgs env, 
+         RequestContext requestContext, 
+         SocketRequesterContext socketContext,  
+         bool waitForAuthorization,
+         IActivityProvider activityProvider)
       {
          _env = env;
          _requestContext = requestContext;
          _socketContext = socketContext;
          _waitForAuthorization = waitForAuthorization;
+         _activityProvider = activityProvider;
       }
 
       public IAccessToken AccessToken { get; }
@@ -416,18 +438,22 @@ namespace Beamable.Server
          return _socketContext.SendMessageSafely(msg);
       }
 
+      public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 	      Func<string, T> parser = null, bool useCache = false)
       {
 // TODO: What do we do about includeAuthHeader?
          // TODO: What do we do about useCache?
-
+          
+         
+         var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
+         
          // peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
          if (uri.StartsWith('/'))
          {
             uri = uri.Substring(1);
          }
-
+         
          if (body == null)
          {
             body = new { }; // empty object.
@@ -465,7 +491,7 @@ namespace Beamable.Server
             req.from = _requestContext.UserId;
          }
 
-         var firstAttempt = _socketContext.AddListener(req, uri, parser);
+         var firstAttempt = _socketContext.AddListener(req, uri, parser, activity);
 
          var dict = new ArrayDict
          {
@@ -475,6 +501,16 @@ namespace Beamable.Server
             [nameof(req.from)] = req.from,
             [nameof(req.body)] = bodyWrapper
          };
+         activity.SetDisplay($"{method} {req.path} ({req.id})");
+         activity.SetTags(new TelemetryAttributeCollection()
+            .With(TelemetryAttributes.RequestPath(req.path))
+            .With(TelemetryAttributes.RequestPlayerId(req.from ?? 0))
+            .With(TelemetryAttributes.ConnectionRequestId(req.id)));
+         
+         var requestActivity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST_SEND, activity);
+
+         requestActivity.SetDisplay($"Request ({req.id})");
+
          var msg = "";
          using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
          {
@@ -482,30 +518,39 @@ namespace Beamable.Server
          }
 
          var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
-         Log.Debug("sending request " + truncatedMsg);
+         BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
-	         {
-		         return firstAttempt.RecoverWith(ex =>
-			         {
-				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
-				         {
-					         // need to wait for authentication to finish...
-					         Log.Debug($"Request {{id}} and {truncatedMsg} failed with 403. Will reauth and and retry.", req.id);
+            {
+               requestActivity.StopAndDispose(ActivityStatusCode.Ok);
+               
+               return firstAttempt.RecoverWith(ex =>
+               {
+                  if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+                  {
+                     // need to wait for authentication to finish...
+                     BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
+                        $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
 
-					         _socketContext.Daemon.WakeAuthThread();
-					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
-					         return waitForAuth
-							         .FlatMap(x =>
-								         Request(method, uri, body, includeAuthHeader, parser, useCache))
-						         ;
-				         }
+                     _socketContext.Daemon.WakeAuthThread();
+                     var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+                     return waitForAuth
+                           .FlatMap(x =>
+                              Request(method, uri, body, includeAuthHeader, parser, useCache))
+                        ;
+                  }
 
-				         _socketContext.Daemon.BumpRequestProcessedCounter();
-				         throw ex;
-			         });
-	         })
-	         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
+                  _socketContext.Daemon.BumpRequestProcessedCounter();
+                  activity.StopAndDispose(ex);
+                  requestActivity.StopAndDispose(ex);
+                  throw ex;
+               });
+            })
+	         .Then(_ =>
+            {
+               activity.StopAndDispose(ActivityStatusCode.Ok);
+               _socketContext.Daemon.BumpRequestProcessedCounter();
+            });
       }
 
       /// <summary>

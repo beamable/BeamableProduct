@@ -3,12 +3,9 @@ using Beamable.Common.BeamCli;
 using cli.Services;
 using cli.Utils;
 using Errata;
-using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.CommandLine;
-using System.Text;
+using Beamable.Server;
 
 namespace cli;
 

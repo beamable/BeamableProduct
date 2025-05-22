@@ -6,16 +6,13 @@ using cli.Services;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
 using Spectre.Console.Json;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using System.Text;
-using UnityEngine;
 
 namespace cli;
 

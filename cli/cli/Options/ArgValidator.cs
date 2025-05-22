@@ -1,4 +1,3 @@
-using Serilog;
 using System.CommandLine.Parsing;
 
 namespace cli

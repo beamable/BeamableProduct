@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server.Common;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Serilog.Events;
 #pragma warning disable CS0649
 
 namespace Beamable.Server.Api.RealmConfig
@@ -40,12 +40,12 @@ namespace Beamable.Server.Api.RealmConfig
       public void UpdateLogLevel()
       {
 	      var level = GetLogLevel();
-	      MicroserviceBootstrapper.LogLevel.MinimumLevel = level;
+	      MicroserviceBootstrapper.LogLevel = level;
       }
 
-      private LogEventLevel GetLogLevel()
+      private LogLevel GetLogLevel()
       {
-	      LogUtil.TryParseLogLevel(_args.LogLevel, out var defaultLevel);
+	      LogUtil.TryParseSystemLogLevel(_args.LogLevel, out var defaultLevel);
 	      if (!_config.TryGetValue(Constants.Features.Services.REALM_CONFIG_SERVICE_LOG_NAMESPACE,
 		          out var logInfo))
 	      {
@@ -62,7 +62,7 @@ namespace Beamable.Server.Api.RealmConfig
 		      return defaultLevel;
 	      }
 	      
-	      if (LogUtil.TryParseLogLevel(logLevel, out var serilogLogLevel))
+	      if (LogUtil.TryParseSystemLogLevel(logLevel, out var serilogLogLevel))
 	      {
 		      return serilogLogLevel;
 	      }

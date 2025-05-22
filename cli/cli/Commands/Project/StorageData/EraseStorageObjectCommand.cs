@@ -1,8 +1,4 @@
 using Beamable.Common.BeamCli.Contracts;
-using cli.Services;
-using CliWrap;
-using Docker.DotNet.Models;
-using Serilog;
 using System.CommandLine;
 
 namespace cli.Commands.Project.StorageData;

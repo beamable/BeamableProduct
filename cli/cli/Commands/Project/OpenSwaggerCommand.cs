@@ -1,12 +1,10 @@
-using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Semantics;
-using cli.FederationCommands;
 using cli.Services;
 using cli.Utils;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Dotnet;
 

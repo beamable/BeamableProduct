@@ -1,8 +1,8 @@
 ﻿using cli.Unreal;
-using Serilog;
 using System.Collections;
 using System.CommandLine;
 using System.CommandLine.Help;
+using Beamable.Server;
 
 namespace cli.Services;
 

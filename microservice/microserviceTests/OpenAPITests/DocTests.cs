@@ -12,6 +12,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using microserviceTests.microservice.Util;
 
 namespace microserviceTests.OpenAPITests;
 
@@ -21,6 +22,7 @@ public class DocTests
 	[Test]
 	public void TestMethodScanning()
 	{
+		LoggingUtil.InitTestCorrelator();
 		var gen = new ServiceDocGenerator();
 		var doc = gen.Generate<DocService>(null);
 		

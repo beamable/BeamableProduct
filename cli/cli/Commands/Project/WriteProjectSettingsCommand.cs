@@ -1,13 +1,10 @@
 using Beamable.Common.BeamCli.Contracts;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Services;
-using Serilog;
 using System.CommandLine;
-using System.CommandLine.Parsing;
-using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 

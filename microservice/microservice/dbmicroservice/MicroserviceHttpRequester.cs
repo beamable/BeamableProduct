@@ -3,7 +3,6 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;

@@ -1,21 +1,17 @@
-﻿using Beamable.Common;
-using Beamable.Server.Api.Usage;
+﻿using Beamable.Server.Api.Usage;
 using Beamable.Server.Common;
-using Beamable.Server.Ecs;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using Newtonsoft.Json;
-using Serilog;
+
 using Swan.Logging;
 using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
 using System.Threading;
-using static Beamable.Common.Constants.Features.Services;
+using ZLogger;
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace Beamable.Server {
@@ -26,7 +22,7 @@ namespace Beamable.Server {
 		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
-		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogSink debugLogSink)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogProcessor debugLogSink)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
@@ -43,10 +39,10 @@ namespace Beamable.Server {
 		public class SampleController : WebApiController 
 		{
 			private readonly BeamableMicroService _beamableService;
-			private readonly DebugLogSink _debugLogSink;
+			private readonly DebugLogProcessor _debugLogSink;
 			private IUsageApi _ecsService;
 
-			public SampleController(BeamableMicroService service, DebugLogSink debugLogSink)
+			public SampleController(BeamableMicroService service, DebugLogProcessor debugLogSink)
 			{
 				_ecsService = service.Provider.GetService<IUsageApi>();
 				_beamableService = service;
