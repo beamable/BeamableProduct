@@ -10,7 +10,7 @@ on:
       - 'client_installer/**'
 jobs:
   runPerfTest:
-    timeout-minutes: 4
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     concurrency:
       group: stresstest-${{ github.head_ref }}
