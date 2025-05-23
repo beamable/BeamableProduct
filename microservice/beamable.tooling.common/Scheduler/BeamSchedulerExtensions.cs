@@ -56,7 +56,7 @@ public static class BeamSchedulerExtensions
         [EnumeratorCancellation] CancellationToken cancellationToken=default
         )
     {
-        OptionalString cursor = OptionalString.Empty;
+        OptionalString cursor = OptionalString.None;
         int pageNumber = 0;
 
         while (pageNumber == 0 || cursor?.HasNonEmptyValue == true)
