@@ -436,6 +436,7 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalString : Optional<string>
 	{
+		public static OptionalString None => new OptionalString();
 		public static OptionalString FromString(string value)
 		{
 			var optional = new OptionalString();

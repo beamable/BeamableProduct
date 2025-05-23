@@ -20,9 +20,17 @@ namespace Beamable.Common.Scheduler
 		string ServiceName { get; }
 	}
 
-	public class BeamScheduler
+	public interface InternalBeamScheduler
+	{
+		public IBeamSchedulerApi Api { get; }
+	}
+	
+	public class BeamScheduler : InternalBeamScheduler
 	{
 		private readonly IBeamSchedulerApi _api;
+
+		IBeamSchedulerApi InternalBeamScheduler.Api => _api;
+		
 		public IBeamSchedulerContext SchedulerContext { get; }
 
 		public BeamScheduler(IBeamSchedulerApi api, IBeamSchedulerContext schedulerContext)
@@ -112,15 +120,18 @@ namespace Beamable.Common.Scheduler
 		/// <param name="source">Filter <see cref="Job"/>s by the <see cref="Job.source"/> field.</param>
 		/// <param name="name">Filter <see cref="Job"/>s by the <see cref="Job.name"/> field.</param>
 		/// <returns>A list of <see cref="Job"/></returns>
+		[Obsolete("Prefer GetAllJobs")]
 		public async Promise<List<Job>> GetJobs(
 			OptionalInt limit = null,
 			OptionalString source = null,
 			OptionalString name = null)
 		{
 			var res = await _api.GetJobs(limit, name, source);
+			
 			var jobs = res.Select(Utility.Convert).ToList();
 			return jobs;
 		}
+
 
 		/// <inheritdoc cref="GetJob(String)"/>
 		public async Promise<Job> GetJob(Job job) => await GetJob(job?.id);
@@ -183,6 +194,7 @@ namespace Beamable.Common.Scheduler
 		{
 			// TODO: Is it possible to specify the jobID ahead of time? 
 			var req = Utility.CreateSaveRequest(name, source, action, triggers, retryPolicy);
+			
 			var res = await _api.PostJob(req);
 			var job = Utility.Convert(res);
 			return job;
@@ -215,11 +227,14 @@ namespace Beamable.Common.Scheduler
 					timestamp = activity.timestamp.GetOrThrow(() => new Exception("JobActivity needs timestamp")).ToString("O")
 				};
 			}
+			
+			
 			public static Job Convert(JobDefinition job)
 			{
 				var retry = job.retryPolicy.GetOrThrow(() => new Exception("Job definition has no retry policy"));
 				var j = new Job()
 				{
+					suspendedAt = job.suspendedAt,
 					id = job.id.GetOrThrow(() => new Exception("Job definition has no id.")),
 					action = job.jobAction.Convert(),
 					triggers = job.triggers.Select(t => t.Convert()).ToList(),
@@ -236,13 +251,38 @@ namespace Beamable.Common.Scheduler
 
 				return j;
 			}
+			
+			public static Job Convert(JobDefinitionView job)
+			{
+				var retry = job.retryPolicy.GetOrThrow(() => new Exception("Job definition has no retry policy"));
+				var j = new Job()
+				{
+					suspendedAt = job.suspendedAt,
+					id = job.id.GetOrThrow(() => new Exception("Job definition has no id.")),
+					action = job.jobAction.Convert(),
+					triggers = job.triggers.Select(t => t.Convert()).ToList(),
+					source =  job.source.GetOrElse(() => null),
+					name = job.name.GetOrThrow(() => new Exception("Job definition has no name")),
+					owner = job.owner.GetOrThrow(() => new Exception("Job definition has no owner")),
+					retryPolicy = new RetryPolicy
+					{
+						maxRetryCount = retry.maxRetryCount.GetOrThrow(() => new Exception("Retry policy has no maxRetryCount")),
+						retryDelayMs = retry.retryDelayMs.GetOrThrow(() => new Exception("Retry policy has no retryDelayMs")),
+						useExponentialBackoff = retry.useExponentialBackoff.GetOrThrow(() => new Exception("Retry policy has no useExponentialBackoff")),
+					}
+				};
+
+				return j;
+			}
+			
 
 			public static JobDefinitionSaveRequest CreateSaveRequest(
 				string name,
 				string source,
 				ISchedulableAction action,
 				ISchedulerTrigger[] triggers,
-				RetryPolicy retryPolicy = null)
+				RetryPolicy retryPolicy = null,
+				bool isUnique=false)
 			{
 				if (retryPolicy == null)
 				{
@@ -250,6 +290,7 @@ namespace Beamable.Common.Scheduler
 				}
 				return new JobDefinitionSaveRequest
 				{
+					isUnique = new OptionalBool(isUnique),
 					name = new OptionalString(name),
 					source = new OptionalString(source),
 					jobAction = action.Convert(),
@@ -427,6 +468,16 @@ namespace Beamable.Common.Scheduler
 		/// should be rescheduled in the event of a failure.
 		/// </summary>
 		public RetryPolicy retryPolicy;
+
+		/// <summary>
+		/// A job automatically suspends after 50 repeat failures.
+		/// </summary>
+		public OptionalDateTime suspendedAt;
+
+		/// <summary>
+		/// A job automatically suspends after 50 repeat failures.
+		/// </summary>
+		public bool IsSuspended => suspendedAt.HasValue;
 
 		/// <summary>
 		/// The <see cref="ISchedulableAction"/> is the thing that will execute when the <see cref="triggers"/>
