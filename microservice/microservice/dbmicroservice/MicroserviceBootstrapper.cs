@@ -728,6 +728,25 @@ namespace Beamable.Server
 	        }
         }
 
+        public static void ForceUseRemoteDependencies<TMicroservice>() where TMicroservice : Microservice
+        {
+	        Type microserviceType = typeof(TMicroservice);
+	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+	        var serviceName = attribute.MicroserviceName;
+
+	        var depsNames = Environment.GetEnvironmentVariable($"BEAM_DEPS_{serviceName}");
+
+	        if (!string.IsNullOrEmpty(depsNames))
+	        {
+		        var deps = depsNames.Split(",");
+
+		        foreach (string dep in deps)
+		        {
+			        Environment.SetEnvironmentVariable($"STORAGE_CONNSTR_{dep}", "");
+		        }
+	        }
+        }
+
         private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
         {
 	        var generator = new ServiceDocGenerator();

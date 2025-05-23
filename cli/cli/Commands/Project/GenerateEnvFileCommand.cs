@@ -109,6 +109,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		var accountId = user.id; //note; the admin/me call returns an accountId; but the /me returns a gamerTag
 		
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
+
 		
 		var output = new GenerateEnvFileOutput
 		{
@@ -132,10 +133,16 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		var service = manifest.ServiceDefinitions.FirstOrDefault(service => service.BeamoId == args.serviceId);
 		if (service != null)
 		{
+			var deps = args.BeamoLocalSystem.GetDependencies(service.BeamoId);
+			if (deps.Count > 0)
+			{
+				var singleStringDeps = string.Join(",", deps.Select(d => d.name).ToList());
+				output.envVars.Add(EnvVarOutput.Create($"BEAM_DEPS_{service.BeamoId}", singleStringDeps));
+			}
 
 			try
 			{
-				await AppendDependencyVars();
+				await AppendDependencyVars(deps);
 			}
 			catch (Exception) when (args.autoDeploy)
 			{
@@ -147,14 +154,14 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				await args.BeamoLocalSystem.InitManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();
-				await AppendDependencyVars();
+				await AppendDependencyVars(deps);
 			}
 
 		}
 
-		async Promise AppendDependencyVars()
+		async Promise AppendDependencyVars(List<DependencyData> deps)
 		{
-			var deps = args.BeamoLocalSystem.GetDependencies(service.BeamoId);
+
 			foreach (var dependency in deps)
 			{
 				try
