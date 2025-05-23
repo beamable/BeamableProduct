@@ -27,6 +27,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public bool includePrefix = true;
 	public int instanceCount = 1;
 	public ServiceName serviceId;
+	public bool autoDeploy;
 	public int autoRemoveInstancesExceptProcessId;
 }
 
@@ -44,6 +45,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
+		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
 		AddOption(new Option<int>("--remove-all-except-pid",  "When enabled, automatically stop all other local instances of this service"), (args, i) => args.autoRemoveInstancesExceptProcessId = i);
 	}
 
@@ -130,14 +132,22 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		var service = manifest.ServiceDefinitions.FirstOrDefault(service => service.BeamoId == args.serviceId);
 		if (service != null)
 		{
+
 			try
 			{
 				await AppendDependencyVars();
 			}
-			catch (Exception)
+			catch (Exception) when (args.autoDeploy)
 			{
-				// Do nothing, if the dependency is not running locally, then we will let it fall back to a remote deployed storage
-				// The microservice should go kaboom in case it also doesn't have the dependency running remotely (or not if it doesn't use it at all)
+				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
+				await args.BeamoLocalSystem.StartListeningToDocker();
+				var dependencies = args.BeamoLocalSystem.GetDependencies(service.BeamoId);
+				Log.Information("Starting " + string.Join(",", dependencies.Select(d => d.name).ToList()) + " " + sw.ElapsedMilliseconds);
+				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.Select(dep => dep.name).ToArray());
+				await args.BeamoLocalSystem.InitManifest();
+				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
+				await args.BeamoLocalSystem.StopListeningToDocker();
+				await AppendDependencyVars();
 			}
 
 		}

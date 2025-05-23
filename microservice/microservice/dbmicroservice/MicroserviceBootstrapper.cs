@@ -643,7 +643,7 @@ namespace Beamable.Server
 
 	        var serviceName = attribute.MicroserviceName;
 	        
-	        customArgs ??= ".";
+	        customArgs ??= ". --auto-deploy";
 			
 	        using var process = new Process();
 
