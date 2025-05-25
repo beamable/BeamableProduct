@@ -15,11 +15,8 @@ export interface BeamConfig {
   /** A human-readable alias for the CID (e.g., 'demo-app'). */
   alias: string;
 
-  /** The game realm to target */
-  realm: string;
-
-  /** The target Beamable environment name in which requests will be sent. */
-  environment: BeamEnvironmentName;
+  /** The target Beamable environment in which requests will be sent. Defaults to `'Prod'` */
+  environment?: BeamEnvironmentName;
 
   /** Optional custom HTTP requester to use instead of the default implementation. */
   requester?: HttpRequester;

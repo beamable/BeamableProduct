@@ -14,7 +14,6 @@ export class Beam {
   private readonly cid: string;
   private readonly pid: string;
   private readonly alias: string;
-  private readonly realm: string;
   private envConfig: BeamEnvironmentConfig;
   private tokenStorage: TokenStorage;
   private requester: HttpRequester;
@@ -24,8 +23,7 @@ export class Beam {
     this.cid = config.cid;
     this.pid = config.pid;
     this.alias = config.alias;
-    this.realm = config.realm;
-    this.envConfig = BeamEnvironment.get(env);
+    this.envConfig = BeamEnvironment.get(env ?? 'Prod');
     this.tokenStorage = isBrowserEnv()
       ? new BrowserTokenStorage()
       : new MemoryTokenStorage();
@@ -52,18 +50,18 @@ export class Beam {
       customRequester ??
       new FetchRequester({
         baseUrl: this.envConfig.apiUrl,
-        defaultHeaders,
+        defaultHeaders, // More default headers e.g user-agent etc see PlatformRequester
         tokenProvider,
       });
   }
 
   /**
    * Returns a concise, human-readable summary of this Beam instance’s core configuration.
-   * @returns A string of the form `Beam(config: cid=<cid>, pid=<pid>, alias=<alias>, realm=<realm>)`
+   * @returns A string of the form `Beam(config: cid=<cid>, pid=<pid>, alias=<alias>)`
    */
   toString(): string {
-    const { cid, pid, alias, realm } = this;
-    return `Beam(config: cid=${cid}, pid=${pid}, alias=${alias}, realm=${realm})`;
+    const { cid, pid, alias } = this;
+    return `Beam(config: cid=${cid}, pid=${pid}, alias=${alias})`;
   }
 
   // Tuna login sample demo for Chris
