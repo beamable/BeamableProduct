@@ -1,7 +1,6 @@
+using Beamable.Server;
 using cli.Commands.Project;
 using Newtonsoft.Json;
-using Serilog;
-using UnityEngine;
 
 namespace cli.Services;
 

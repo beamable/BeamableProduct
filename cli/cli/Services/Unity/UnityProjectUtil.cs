@@ -1,8 +1,8 @@
 using Beamable.Common.BeamCli.Contracts;
 using cli.UnityCommands;
 using Newtonsoft.Json;
-using Serilog;
 using System.IO.Compression;
+using Beamable.Server;
 
 namespace cli.Services.Unity;
 

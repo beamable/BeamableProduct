@@ -1,6 +1,4 @@
 using cli.Services;
-using Serilog;
-using System.CommandLine;
 
 namespace cli.Version;
 

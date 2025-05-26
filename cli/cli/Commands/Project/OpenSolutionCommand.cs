@@ -1,9 +1,7 @@
 using cli.Services;
 using CliWrap;
-using Serilog;
 using System.CommandLine;
-using System.Diagnostics;
-using Beamable.Common.Dependencies;
+using Beamable.Server;
 using microservice.Extensions;
 
 namespace cli.Commands.Project;

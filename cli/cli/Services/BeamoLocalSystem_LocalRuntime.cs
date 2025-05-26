@@ -5,8 +5,8 @@
 
 using Beamable.Common;
 using Docker.DotNet.Models;
-using Serilog;
 using System.Text;
+using Beamable.Server;
 
 namespace cli.Services;
 

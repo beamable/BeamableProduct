@@ -13,8 +13,8 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
-using Serilog;
 using System.Reflection;
+using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
 
@@ -158,14 +158,14 @@ public class ServiceDocGenerator
 		foreach (var type in allTypes.Concat(extraSchemas))
 		{
 			var schema = SchemaGenerator.Convert(type);
-			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}" );
 			
 			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
 			var key = SchemaGenerator.GetQualifiedReferenceName(type);
 			if(!doc.Components.Schemas.ContainsKey(key))
 				doc.Components.Schemas.Add(key, schema);
 			else
-				Log.Debug("Tried to add Schema more than once. Type={TypeName}, SchemaKey={Key}", type.FullName, key);
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}");
 		}
 		var hiddenMethods = new List<string>();
 		foreach (var method in methods)
@@ -316,7 +316,7 @@ public class ServiceDocGenerator
 		foreach (var type in schemas)
 		{
 			var schema = SchemaGenerator.Convert(type);
-			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}");
 			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
 

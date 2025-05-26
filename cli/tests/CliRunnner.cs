@@ -1,8 +1,8 @@
 using Beamable.Common.Dependencies;
 using cli;
-using Serilog;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace tests;
 
@@ -16,7 +16,7 @@ public static class Cli
 		app.Build();
 		return app.Run(args);
 	}
-	public static int RunWithParams(Action<IDependencyBuilder>? configurator, Func<LoggerConfiguration, ILogger> configureLogger, params string[] args)
+	public static int RunWithParams(Action<IDependencyBuilder>? configurator, Action<ILoggingBuilder> configureLogger, params string[] args)
 	{
 		var app = new App();
 		app.Configure(configurator, configureLogger: configureLogger);

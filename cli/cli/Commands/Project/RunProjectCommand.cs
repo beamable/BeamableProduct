@@ -2,10 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
 using cli.Dotnet;
 using cli.Services;
-using CliWrap;
 using Newtonsoft.Json;
-using Serilog;
-using Serilog.Events;
 using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
@@ -13,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using microservice.Extensions;
+using Beamable.Server;
+using Microsoft.Extensions.Logging;
 
 namespace cli.Commands.Project;
 
@@ -329,7 +328,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				if (line == null) return;
 				onLog?.Invoke(new ProjectRunLogData
 				{
-					rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+					rawLogMessage = line, jsonData = null, forcedLogLevel = LogLevel.Error
 				});
 			};
 			proc.OutputDataReceived += (sender, eventArgs) =>
@@ -364,7 +363,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						// this is a build failure message.
 						onLog?.Invoke(new ProjectRunLogData
 						{
-							rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+							rawLogMessage = line, jsonData = null, forcedLogLevel = LogLevel.Error
 						});
 					}
 					else
@@ -438,7 +437,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		}
 		catch (Exception e)
 		{
-			Log.Error(e, e.Message);
+			Log.Error(e.Message);
 		}
 	}
 
@@ -464,19 +463,19 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		public bool IsJson => jsonData != null;
 
-		public LogEventLevel? forcedLogLevel;
+		public LogLevel? forcedLogLevel;
 		
-		public LogEventLevel JsonLogLevel
+		public LogLevel JsonLogLevel
 		{
 			get
 			{
 				if (!IsJson) 
-					return LogEventLevel.Fatal;
+					return LogLevel.Critical;
 				if (!jsonData.TryGetValue("__l", out var logLevel))
-					return LogEventLevel.Fatal;
+					return LogLevel.Critical;
 
-				if (!LogUtil.TryParseLogLevel(logLevel.ToString(), out var level))
-					return LogEventLevel.Fatal;
+				if (!LogUtil.TryParseSystemLogLevel(logLevel.ToString(), out var level))
+					return LogLevel.Critical;
 					
 				return level;
 			}
