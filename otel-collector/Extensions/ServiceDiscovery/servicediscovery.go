@@ -26,10 +26,12 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 	rd := responseData{
 		Status: NOT_READY,
 		Pid:    os.Getpid(),
+		Logs:   []zapcore.Entry{},
 	}
 
 	go func() {
 		for logEntry := range m.logEventsChan {
+			rd.Logs = append(rd.Logs, logEntry)
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
 				rd.Status = READY
 			}
@@ -75,10 +77,10 @@ func StartUDPServer(host string, port string, delay int, rd *responseData) {
 			fmt.Println("Error deserializing message!", mErr)
 		}
 
-		_, err := conn.Write(message)
-		fmt.Println(string(message))
-		if err != nil {
-			fmt.Println("Error sending message:", err)
-		}
+		conn.Write(message)
+		// TODO this should be smarter, like: if N errors happened in a row, then quit the app
+		// if err != nil {
+		// 	fmt.Println("Error sending message:", err)
+		// }
 	}
 }

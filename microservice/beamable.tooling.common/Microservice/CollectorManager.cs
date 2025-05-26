@@ -9,10 +9,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Text;
-using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
@@ -22,10 +19,31 @@ using Otel = Beamable.Common.Constants.Features.Otel;
 namespace cli.Services;
 
 [Serializable]
+public class CollectorZapcoreEntry
+{
+	public string Level { get; set; }
+	public DateTime Time { get; set; }
+	public string LoggerName { get; set; }
+	public string Message { get; set; }
+	public CollectorCaller Caller { get; set; }
+	public string Stack { get; set; }
+}
+
+[Serializable]
+public class CollectorCaller
+{
+	public bool Defined { get; set; }
+	public ulong PC { get; set; }
+	public string File { get; set; }
+	public int Line { get; set; }
+}
+
+[Serializable]
 public class CollectorDiscoveryEntry
 {
 	public int pid;
 	public string status;
+	public CollectorZapcoreEntry[] logs;
 }
 
 public class CollectorInfo

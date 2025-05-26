@@ -882,6 +882,7 @@ namespace Beamable.Server
 		        }
 		        else
 		        {
+			        //TODO This flow should implement the discovery of the collector as well
 			        await StartCollectorFromCLI();
 		        }
 	        }
