@@ -88,7 +88,7 @@ public struct UnrealPropertyDeclaration
 		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), U₢{nameof(PropertyNamespacedType)}₢Library::₢{nameof(PropertyNamespacedType)}₢ToSerializationName(₢{nameof(PropertyName)}₢));";
 
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE =
-		$@"₢{nameof(PropertyName)}₢ = U₢{nameof(PropertyNamespacedType)}₢Library::SerializationNameTo₢{nameof(PropertyNamespacedType)}₢(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")));";
+		$@"₢{nameof(PropertyName)}₢ = U₢{nameof(PropertyNamespacedType)}₢Library::SerializationFieldTo₢{nameof(PropertyNamespacedType)}₢(Bag->TryGetField(TEXT(""₢{nameof(RawFieldName)}₢"")));";
 
 	public const string U_STRUCT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
