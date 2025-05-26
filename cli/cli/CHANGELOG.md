@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
 - New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
 - Added support for generating FDateTime instead of FString in Unreal code generation.
+- Added support for Int32 and FString on Enum deserialization in Unreal code generation.
 - New Microservice Client Code Generator for Unity that used OAPI for the generation.
 
 ### Changed

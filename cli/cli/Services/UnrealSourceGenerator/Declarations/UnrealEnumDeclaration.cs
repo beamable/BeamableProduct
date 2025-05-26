@@ -71,7 +71,34 @@ public:
 		ensureAlways(false); //  This should be impossible!
 		return ₢{nameof(UnrealTypeName)}₢();
 	}}	
-}};
 
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName=""Serialization Index To ₢{nameof(NamespacedTypeName)}₢"", CompactNodeTitle = ""->""), Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Enums"")
+	static ₢{nameof(UnrealTypeName)}₢ SerializationIndexTo₢{nameof(NamespacedTypeName)}₢(int Value)
+	{{
+		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
+
+		return static_cast<₢{nameof(UnrealTypeName)}₢>(Enum->GetValueByIndex(Value));
+	}}	
+
+
+	static  ₢{nameof(UnrealTypeName)}₢ SerializationFieldTo₢{nameof(NamespacedTypeName)}₢(TSharedPtr<FJsonValue> Field)
+	{{
+		if (!Field)
+		{{
+			ensureAlways(false); //  This should be impossible!
+			return ₢{nameof(UnrealTypeName)}₢();
+		}}
+		
+		if (Field->Type == EJson::Number)
+		{{
+			return SerializationIndexTo₢{nameof(NamespacedTypeName)}₢(static_cast<int32>(Field->AsNumber()));
+		}}
+		else
+		{{
+			return SerializationNameTo₢{nameof(NamespacedTypeName)}₢(Field->AsString());
+		}}
+	}}
+}};
 ";
 }
