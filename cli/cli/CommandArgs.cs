@@ -4,6 +4,7 @@ using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Services.Content;
 using Microsoft.Extensions.DependencyInjection;
+using BeamActivity = Beamable.Server.BeamActivity;
 
 namespace cli;
 
@@ -36,6 +37,7 @@ public abstract class CommandArgs
 	public ProjectService ProjectService => Provider.GetService<ProjectService>();
 
 	public AppLifecycle Lifecycle => Provider.GetService<AppLifecycle>();
+	public BeamActivity RootActivity => Provider.GetService<BeamActivity>();
 
 }
 

@@ -74,6 +74,10 @@ cat > $TEMPLATE_DOTNET_CONFIG_PATH << EOF
 }
 EOF
 
+# Builds all the otel collector binaries
+cd ./otel-collector/
+./build.sh
+cd ..
 
 # TODO: Consider running this as part of a post-pull git action
 # TODO: Should this run the `sync-rider-run-settings.sh` script? (probably)

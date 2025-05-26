@@ -5,8 +5,8 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
 using cli.Services;
 using Moq;
-using Serilog.Events;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using tests.MoqExtensions;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
@@ -28,7 +28,7 @@ public class CLITestExtensions : CLITest
 		bool mockAdminMe=true)
 	{
 		base.Setup();
-		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
+		_logSwitch.Level = LogLevel.Trace;
 
 		if (mockBeamoManifest)
 		{

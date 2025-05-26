@@ -1,9 +1,4 @@
-﻿using cli.Services;
-using cli.Utils;
-using Newtonsoft.Json;
-using Serilog.Events;
-using Spectre.Console;
-using Spectre.Console.Rendering;
+﻿
 using System.CommandLine;
 
 namespace cli;

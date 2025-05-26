@@ -65,6 +65,6 @@ public class ErrorTests : CommonTest
 			await Task.Delay(10); // wait for the uncaught promises...
 		}
 		var logs = GetBadLogs().ToList();
-		Assert.IsNotEmpty(logs.Select(l => l.RenderMessage()));
+		Assert.IsNotEmpty(logs.Select(l => l.ToString()));
 	}
 }

@@ -48,6 +48,22 @@
   <PropertyGroup>
     <DefineConstants>BEAMABLE_DEVELOPER</DefineConstants>
   </PropertyGroup>
+
+  <!-- NOTICE: Don't use Serilog!
+       As of May 2025, we don't use Serilog as our main log tool. However, the NBomber 
+       library _does_ use the tool... That is fine, we just need to clarify to nuget that
+       our code shouldn't be allowed to reference Serilog. Otherwise, we'd accidentally 
+       develop a dependency on it. 
+   -->
+  <ItemGroup>
+    <PackageReference Include="NBomber" Version="4.1.0" />
+    <PackageReference Include="NBomber.Http" Version="4.1.0" />
+    <PackageReference Include="Serilog" Version="2.10.0" Condition="'$(BeamBuild)'!='true'">
+      <ExcludeAssets>compile</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  
   
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.0" />
@@ -56,18 +72,13 @@
     <PackageReference Include="Errata" Version="0.12.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
     <PackageReference Include="Markdig" Version="0.31.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.17" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.14" />
-    <PackageReference Include="NBomber" Version="4.1.0" />
-    <PackageReference Include="NBomber.Http" Version="4.1.0" />
+    
+
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Sarif.Sdk" Version="4.4.0" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
-    <PackageReference Include="Serilog.Enrichers.Sensitive" Version="1.7.3" />
-    <PackageReference Include="Serilog.Formatting.Compact" Version="2.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-    <PackageReference Include="Serilog.Sinks.Spectre" Version="0.4.1" />
     <PackageReference Include="SharpZipLib" Version="1.3.3" />
     <PackageReference Include="Spectre.Console" Version="0.48.0" />
     <PackageReference Include="Spectre.Console.Json" Version="0.47.0" />
@@ -76,6 +87,14 @@
     <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="ZLogger" Version="2.5.10" />
+
+    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+    
   </ItemGroup>
 
   <ItemGroup>
@@ -97,6 +116,10 @@
     <EmbeddedResource Include="Docs\**\*.md" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
@@ -106,5 +129,45 @@
     <!-- Windows-Based -->
     <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net9.0\')" Command=".\$(OutputPath)net9.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
   </Target>
+
+<!--  <PropertyGroup Condition="$(PackageVersion.Contains('0.0.123'))==true OR '$(PackageVersion)'==''">-->
+<!--    <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>-->
+<!--    <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>-->
+<!--    <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>-->
+<!--    <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>-->
+
+<!--    <BeamCollectorConfig>clickhouse-config.yaml</BeamCollectorConfig>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorExecutable>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorExecutable>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorExecutable>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorExecutable>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorExecutable>-->
+<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorExecutable>-->
+
+<!--    <BeamCollectorExecutablePath>Resources\$(BeamCollectorExecutable)</BeamCollectorExecutablePath>-->
+<!--    <BeamCollectorConfigPath>Resources\$(BeamCollectorConfig)</BeamCollectorConfigPath>-->
+
+<!--  </PropertyGroup>-->
+
+<!--  <ItemGroup Condition="$(PackageVersion.Contains('0.0.123'))==true  OR '$(PackageVersion)'==''">-->
+<!--    <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">-->
+<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--      <TargetPath>$(BeamCollectorExecutable)</TargetPath>-->
+<!--    </None>-->
+
+<!--    <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">-->
+<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--      <TargetPath>$(BeamCollectorConfig)</TargetPath>-->
+<!--    </None>-->
+<!--  </ItemGroup>-->
+  
+  <ItemGroup>
+    <Content Include="Commands/OtelCommands/Grafana/ContainerFiles/**/*">
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Resources/Grafana/%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+<!--      <PackagePath>a</PackagePath>-->
+    </Content>
+  </ItemGroup>
 
 </Project>

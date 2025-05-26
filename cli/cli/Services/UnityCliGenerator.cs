@@ -9,13 +9,13 @@ using Beamable.Common.Tournaments;
 using Beamable.Experimental.Common.Calendars;
 using Beamable.Server.Common;
 using cli.Unreal;
-using Serilog;
 using System.CodeDom;
 using System.CommandLine;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Beamable.Server;
 
 namespace cli.Services;
 
