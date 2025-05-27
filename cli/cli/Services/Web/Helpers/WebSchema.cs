@@ -143,17 +143,16 @@ public static class WebSchema
 	private static TsConstructor BuildConstructor(List<TsProperty> tsRequiredProps, List<TsProperty> tsOptionalProps,
 		TsTypeAlias tsTypeAll)
 	{
-		var initIdentifier = new TsIdentifier("init");
-		var optionalsIdentifier = new TsIdentifier("optionals");
+		var init = new TsIdentifier("init");
+		var optionals = new TsIdentifier("optionals");
 		// create a constructor parameter for the init object
-		var tsConstructorParam = new TsConstructorParameter(initIdentifier.Identifier,
-			TsType.Of(tsTypeAll.Name));
+		var tsConstructorParam = new TsConstructorParameter(init.Identifier, TsType.Of(tsTypeAll.Name));
 		// destructure the init parameter to get the required properties
 		var objDestructure = new TsObjectDestructureStatement(
-			tsRequiredProps.Select(p => p.Name).ToArray(), initIdentifier);
+			tsRequiredProps.Select(p => p.Name).ToArray(), init);
 
 		if (tsOptionalProps.Count > 0)
-			objDestructure.WithRest(optionalsIdentifier.Identifier);
+			objDestructure.WithRest(optionals.Identifier);
 
 		// create assignments for the required properties
 		var initRequiredProps = tsRequiredProps
@@ -167,7 +166,7 @@ public static class WebSchema
 		var initOptionalProps = new TsExpressionStatement(new TsInvokeExpression(
 			new TsIdentifier("Object.assign"),
 			new TsIdentifier("this"),
-			optionalsIdentifier));
+			optionals));
 		var tsConstructor = new TsConstructor()
 			.AddParameter(tsConstructorParam)
 			.AddBody(objDestructure);
