@@ -874,17 +874,7 @@ namespace Beamable.Server
 	        {
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-
-		        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-		        if (inDocker)
-		        {
-			        await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
-		        }
-		        else
-		        {
-			        //TODO This flow should implement the discovery of the collector as well
-			        await StartCollectorFromCLI();
-		        }
+		        await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();

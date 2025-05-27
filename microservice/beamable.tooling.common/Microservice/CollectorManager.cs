@@ -13,6 +13,7 @@ using System.Text;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
+using beamable.tooling.common.Microservice;
 using ZLogger;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
@@ -377,7 +378,6 @@ public class CollectorManager
 
 		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
 		
-		
 		var connectedPromise = new Promise<int>();
 
 		_ = Task.Run(async () =>
@@ -389,6 +389,7 @@ public class CollectorManager
 			catch (Exception ex)
 			{
 				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+				Environment.Exit(1);
 				throw;
 			}
 		});
