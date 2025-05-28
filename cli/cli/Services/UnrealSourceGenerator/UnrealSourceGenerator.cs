@@ -2443,7 +2443,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <summary>
 	/// Makes a UnrealType from a NamespacedType that the caller knows should become a F_____.
 	/// </summary>
-	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId) => new($"E{referenceId.AsStr.Capitalize()}");
+	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId) => new($"EBeam{referenceId.AsStr.Capitalize()}");
 
 	/// <summary>
 	/// Checks if the given schema should be interpreted a CSV-Response's Row schema. 
