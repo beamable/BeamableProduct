@@ -85,10 +85,10 @@ public struct UnrealPropertyDeclaration
 		$@"UBeamJsonUtils::DeserializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string U_ENUM_U_PROPERTY_SERIALIZE =
-		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), U₢{nameof(PropertyNamespacedType)}₢Library::₢{nameof(PropertyNamespacedType)}₢ToSerializationName(₢{nameof(PropertyName)}₢));";
+		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), UBeamJsonUtils::EnumToSerializationName(₢{nameof(PropertyName)}₢));";
 
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE =
-		$@"₢{nameof(PropertyName)}₢ = U₢{nameof(PropertyNamespacedType)}₢Library::SerializationFieldTo₢{nameof(PropertyNamespacedType)}₢(Bag->TryGetField(TEXT(""₢{nameof(RawFieldName)}₢"")));";
+		$@"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 
 	public const string U_STRUCT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
 - Added support for generating FDateTime instead of FString in Unreal code generation.
 - Added support for Int32 and FString on Enum deserialization in Unreal code generation.
+- Enums in the Unreal code gen is now EBeam[ENUM_NAME] instead of E[ENUM_NAME]. We decided to update our enums to avoid potential conflicts with external code enums.
 - New Microservice Client Code Generator for Unity that used OAPI for the generation.
 
 ### Changed
