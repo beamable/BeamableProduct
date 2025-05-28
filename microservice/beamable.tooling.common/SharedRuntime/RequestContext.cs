@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using beamable.tooling.common.Microservice;
 
 namespace Beamable.Server
 {
@@ -85,6 +86,46 @@ namespace Beamable.Server
 		/// HTTP headers associated with this request
 		/// </summary>
 		public virtual RequestHeaders Headers { get; }
+		
+		
+		private BeamRequestContext _beamContext;
+		
+		/// <summary>
+		/// Microservice requests start at the Beamable Gateway, and the Gateway provides the request
+		/// with a bunch of information. However, the information <b>is not</b> type safe.
+		/// </summary>
+		/// <exception cref="Exception"></exception>
+		public BeamRequestContext BeamContext
+		{
+			get
+			{
+				if (_beamContext != null) return _beamContext;
+
+				if (!Headers.TryGetValue(Constants.Requester.HEADER_BEAM_RC, out var base64))
+				{
+					throw new Exception(
+						$"Request did not include request context header, {Constants.Requester.HEADER_BEAM_RC}");
+				}
+				if (!BeamRequestContext.TryParse(base64, out _beamContext, out var ex))
+				{
+					throw ex;
+				}
+
+				return _beamContext;
+			}
+		}
+
+		/// <summary>
+		/// The accountId is a user's id at the CID level, not the PID level. Most of the time you should
+		/// be using <see cref="UserId"/>
+		/// </summary>
+		public long AccountId => BeamContext.accountId;
+		
+		/// <summary>
+		/// The root project id. Most of the time you should be using <see cref="Pid"/>
+		/// </summary>
+		public string GamePid => BeamContext.gameId;
+
 
 		public bool HasScopes(IEnumerable<string> scopes) => HasScopes(scopes.ToArray());
 		public bool HasScopes(params string[] scopes)
@@ -155,7 +196,9 @@ namespace Beamable.Server
 		/// </summary>
 		public bool IsInvalidUser => _userId < 0;
 
-		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes = null, IDictionary<string, string> headers = null)
+		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, 
+			HashSet<string> scopes = null, 
+			IDictionary<string, string> headers = null)
 		{
 			Cid = cid;
 			Pid = pid;
@@ -192,7 +235,6 @@ namespace Beamable.Server
 	{
 		public RequestHeaders(IDictionary<string, string> dictionary = null) : base(dictionary ?? new Dictionary<string, string>())
 		{
-
 		}
 
 		/// <summary>
