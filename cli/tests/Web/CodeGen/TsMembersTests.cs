@@ -120,4 +120,15 @@ public class TsMembersTests
 		Assert.AreEqual(expected, writer.ToString());
 		Assert.AreEqual(expected, p.Render());
 	}
+
+	[Test]
+	public void ArrayDestructureParameter_WritesPattern()
+	{
+		var param = new TsArrayDestructureParameter("a", "b", "c");
+		var writer = new TsCodeWriter();
+		param.Write(writer);
+		const string expected = "[a, b, c]";
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, param.Render());
+	}
 }

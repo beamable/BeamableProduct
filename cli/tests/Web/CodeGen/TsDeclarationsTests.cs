@@ -78,6 +78,9 @@ public class TsDeclarationsTests
 			"  \n" +
 			"  m(): void {\n" +
 			"  }\n" +
+			"  \n" +
+			"  n(): void {\n" +
+			"  }\n" +
 			"}\n";
 		var constructorBodies = new List<TsNode>
 		{
@@ -100,6 +103,7 @@ public class TsDeclarationsTests
 				.AddBody(constructorBodies.ToArray())
 			)
 			.AddMethod(new TsMethod("m"))
+			.AddMethod(new TsMethod("n"))
 			.SetExtends(new TsIdentifier("Bar"));
 		var writer = new TsCodeWriter();
 		cls.Write(writer);

@@ -36,6 +36,11 @@ public class TsMethod : TsNode
 	public List<TsNode> Body { get; } = new();
 
 	/// <summary>
+	/// The comments preceding the method.
+	/// </summary>
+	public List<TsComment> Comments { get; } = new();
+
+	/// <summary>
 	/// The modifiers of the method. Valid flags are: <see cref="TsModifier.Export"/>,
 	/// <see cref="TsModifier.Default"/>, <see cref="TsModifier.Async"/>,
 	/// <see cref="TsModifier.Override"/>, <see cref="TsModifier.Abstract"/>,
@@ -51,6 +56,19 @@ public class TsMethod : TsNode
 	{
 		Name = name;
 		Identifier = new TsIdentifier(name);
+	}
+
+	/// <summary>
+	/// Adds a comment before the method.
+	/// </summary>
+	/// <param name="comment">
+	/// The comment to add.
+	/// </param>
+	/// <returns>The current <see cref="TsMethod"/> instance for chaining.</returns>
+	public TsMethod AddComment(TsComment comment)
+	{
+		Comments.Add(comment);
+		return this;
 	}
 
 	/// <summary>
@@ -116,6 +134,9 @@ public class TsMethod : TsNode
 	public override void Write(TsCodeWriter writer)
 	{
 		ValidateModifiers();
+
+		foreach (TsComment comment in Comments)
+			comment.Write(writer);
 
 		if (Modifiers.HasFlag(TsModifier.Public))
 			writer.Write($"{TsModifierExtensions.Public} ");

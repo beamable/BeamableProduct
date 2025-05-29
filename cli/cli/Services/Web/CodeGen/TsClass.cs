@@ -199,7 +199,16 @@ public class TsClass : TsNode
 			writer.WriteLine();
 
 		foreach (TsMethod method in Methods)
+		{
 			method.Write(writer);
+
+			if (Methods.Count <= 1)
+				continue;
+
+			// Add a blank line after each method except the last one
+			if (method != Methods.Last())
+				writer.WriteLine();
+		}
 
 		writer.Outdent();
 		writer.WriteLine("}");

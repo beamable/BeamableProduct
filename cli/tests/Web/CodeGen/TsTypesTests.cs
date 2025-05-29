@@ -75,6 +75,53 @@ public class TsTypesTests
 	}
 
 	[Test]
+	public void InvokeExpression_WritesTypedCallWithTypeArgumentsAndArgs()
+	{
+		var call = new TsInvokeExpression(new TsIdentifier("f"), new TsLiteralExpression(1))
+			.AddTypeArgument(TsType.String)
+			.AddTypeArgument(TsType.Boolean);
+		Assert.AreEqual("f<string, boolean>(1)", call.Render());
+	}
+
+	[Test]
+	public void InvokeExpression_WritesTypedCallWithTypeArgumentsOnly()
+	{
+		var call = new TsInvokeExpression(new TsIdentifier("f"))
+			.AddTypeArgument(TsType.Number);
+		Assert.AreEqual("f<number>()", call.Render());
+	}
+
+	[Test]
+	public void ObjectLiteralExpression_WritesMembers()
+	{
+		var obj = new TsObjectLiteralExpression()
+			.AddMember(new TsIdentifier("a"), new TsLiteralExpression(1))
+			.AddMember(new TsIdentifier("b"), new TsLiteralExpression("two"));
+		const string expected = "{\n" +
+		                        "  a: 1,\n" +
+		                        "  b: \"two\"\n" +
+		                        "}";
+		Assert.AreEqual(expected, obj.Render());
+	}
+
+	[Test]
+	public void EmptyObjectLiteralExpression_WritesEmptyBraces()
+	{
+		Assert.AreEqual("{}", new TsObjectLiteralExpression().Render());
+	}
+
+	[Test]
+	public void ObjectLiteralExpression_AddMemberOverload_WorksWithMember()
+	{
+		var member = new TsObjectLiteralMember(new TsIdentifier("c"), new TsLiteralExpression(true));
+		var obj = new TsObjectLiteralExpression().AddMember(member);
+		const string expected = "{\n" +
+		                        "  c: true\n" +
+		                        "}";
+		Assert.AreEqual(expected, obj.Render());
+	}
+
+	[Test]
 	public void UnaryExpression_PrefixAndPostfix_WritesOperator()
 	{
 		var pre = new TsUnaryExpression(new TsIdentifier("a"), TsUnaryOperatorType.Not);
@@ -102,5 +149,51 @@ public class TsTypesTests
 		Assert.AreEqual("number & string", TsType.Intersection(TsType.Number, TsType.String).Render());
 		Assert.AreEqual("number | undefined", TsType.Optional(TsType.Number).Render());
 		Assert.AreEqual("CustomType", TsType.Of("CustomType").Render());
+	}
+
+	[Test]
+	public void ArrowExpression_WritesArrowExpression()
+	{
+		var single = new TsArrowExpression(new TsFunctionParameter("x", TsType.Number), new TsIdentifier("y"));
+		var writer1 = new TsCodeWriter();
+		single.Write(writer1);
+		const string expected1 = "(x: number) => y";
+		Assert.AreEqual(expected1, writer1.ToString());
+		Assert.AreEqual(expected1, single.Render());
+
+		var multiple = new TsArrowExpression(
+			new[] { new TsFunctionParameter("a", TsType.String), new TsFunctionParameter("b", TsType.Boolean) },
+			new TsLiteralExpression(42));
+		var writer2 = new TsCodeWriter();
+		multiple.Write(writer2);
+		const string expected2 = "(a: string, b: boolean) => 42";
+		Assert.AreEqual(expected2, writer2.ToString());
+		Assert.AreEqual(expected2, multiple.Render());
+	}
+
+	[Test]
+	public void TemplateSpan_WritesPlaceholderAndTail()
+	{
+		var span = new TsTemplateSpan(new TsLiteralExpression(123), "tail");
+		var writer = new TsCodeWriter();
+		span.Write(writer);
+		const string expected = "${123}tail";
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, span.Render());
+	}
+
+	[Test]
+	public void TemplateLiteralExpression_WritesTemplateLiteral()
+	{
+		var spans = new[]
+		{
+			new TsTemplateSpan(new TsIdentifier("a"), "A"), new TsTemplateSpan(new TsLiteralExpression(1), "")
+		};
+		var expr = new TsTemplateLiteralExpression("head", spans);
+		var writer = new TsCodeWriter();
+		expr.Write(writer);
+		const string expected = "`head${a}A${1}`";
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, expr.Render());
 	}
 }

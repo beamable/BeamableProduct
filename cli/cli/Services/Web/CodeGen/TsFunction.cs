@@ -36,6 +36,11 @@ public class TsFunction : TsNode
 	public List<TsNode> Body { get; } = new();
 
 	/// <summary>
+	/// The comments preceding the function.
+	/// </summary>
+	public List<TsComment> Comments { get; } = new();
+
+	/// <summary>
 	/// The modifiers of the function. Valid flags are: <see cref="TsModifier.Export"/>,
 	/// <see cref="TsModifier.Default"/>, <see cref="TsModifier.Declare"/>,
 	/// <see cref="TsModifier.Async"/>.
@@ -50,6 +55,19 @@ public class TsFunction : TsNode
 	{
 		Name = name;
 		Identifier = new TsIdentifier(name);
+	}
+
+	/// <summary>
+	/// Adds a comment before the function.
+	/// </summary>
+	/// <param name="comment">
+	/// The comment to add.
+	/// </param>
+	/// <returns>The current <see cref="TsFunction"/> instance for chaining.</returns>
+	public TsFunction AddComment(TsComment comment)
+	{
+		Comments.Add(comment);
+		return this;
 	}
 
 	/// <summary>
@@ -114,6 +132,9 @@ public class TsFunction : TsNode
 	public override void Write(TsCodeWriter writer)
 	{
 		ValidateModifiers();
+
+		foreach (TsComment comment in Comments)
+			comment.Write(writer);
 
 		// export → default / declare → async
 		if (Modifiers.HasFlag(TsModifier.Export))
