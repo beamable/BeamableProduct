@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed issue that CloudSaving could generate corrupted save files if the application was closed during saving process.
 - Fixed incorrect `MailMessage` `expires` field parsing.
-- Fixed issue with `WebSocketConnection` not sending updates after reconnection. 
+- Fixed issue with `WebSocketConnection` not sending updates after reconnection.
+- Improve IAP error detection.
 
 ### Change
 - Able to use the new Client Code Generator from CLI that uses OpenAPI instead of the old one that uses Reflection
