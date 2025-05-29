@@ -32,6 +32,25 @@ type responseData struct {
 	Logs   []zapcore.Entry `json:"logs"`
 }
 
+type RingBufferLogs struct {
+	Data []zapcore.Entry
+	Size int
+}
+
+func NewRingBufferLogs(size int) *RingBufferLogs {
+	return &RingBufferLogs{
+		Data: make([]zapcore.Entry, 0, size),
+		Size: size,
+	}
+}
+
+func (q *RingBufferLogs) Append(entry zapcore.Entry) {
+	if len(q.Data) >= q.Size {
+		q.Data = q.Data[1:]
+	}
+	q.Data = append(q.Data, entry)
+}
+
 func (s Status) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.String())
 }

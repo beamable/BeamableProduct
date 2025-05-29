@@ -29,15 +29,17 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 		Logs:   []zapcore.Entry{},
 	}
 
+	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)
+
 	go func() {
 		for logEntry := range m.logEventsChan {
-			rd.Logs = append(rd.Logs, logEntry)
+			ringBuffer.Append(logEntry)
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
 				rd.Status = READY
 			}
 		}
 	}()
-	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd)
+	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd, &ringBuffer.Data)
 
 	return nil
 }
@@ -47,7 +49,7 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(host string, port string, delay int, rd *responseData) {
+func StartUDPServer(host string, port string, delay int, rd *responseData, logs *[]zapcore.Entry) {
 
 	broadcastAddr := host
 	broadcastAddr += ":"
@@ -71,6 +73,8 @@ func StartUDPServer(host string, port string, delay int, rd *responseData) {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		rd.Logs = *logs
+
 		message, mErr := json.Marshal(rd)
 
 		if mErr != nil {
