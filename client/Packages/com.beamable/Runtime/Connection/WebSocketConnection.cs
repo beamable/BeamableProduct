@@ -52,10 +52,6 @@ namespace Beamable.Connection
 				DoConnect();
 			}
 
-#if !UNITY_WEBGL || UNITY_EDITOR
-			_dispatchMessagesRoutine = DispatchMessages();
-			_coroutineService.StartCoroutine(_dispatchMessagesRoutine);
-#endif
 			return _onConnectPromise;
 		}
 
@@ -79,6 +75,11 @@ namespace Beamable.Connection
 			CreateWebSocket();
 			_onConnectPromise = new Promise();
 			Task _ = _webSocket.Connect();
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+			_dispatchMessagesRoutine = DispatchMessages();
+			_coroutineService.StartCoroutine(_dispatchMessagesRoutine);
+#endif
 		}
 
 		private void Reconnect()
