@@ -7,7 +7,8 @@ import (
 type Config struct {
 	component.Config
 
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
-	DiscoveryDelay int `mapstructure:"discovery_delay"`
+	Host           string `mapstructure:"host"`
+	Port           string `mapstructure:"port"`
+	DiscoveryDelay int    `mapstructure:"discovery_delay"`
+	LogsBufferSize int    `mapstructure:"logs_buffer_size"`
 }
