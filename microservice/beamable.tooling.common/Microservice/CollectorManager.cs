@@ -22,29 +22,38 @@ namespace cli.Services;
 [Serializable]
 public class CollectorZapcoreEntry
 {
-	public string Level { get; set; }
-	public DateTime Time { get; set; }
-	public string LoggerName { get; set; }
-	public string Message { get; set; }
-	public CollectorCaller Caller { get; set; }
-	public string Stack { get; set; }
+	public string Level;
+	public DateTime Time;
+	public string LoggerName;
+
+	public string Message;
+
+	public CollectorCaller Caller;
+
+	public string Stack;
+
 }
 
 [Serializable]
 public class CollectorCaller
 {
-	public bool Defined { get; set; }
-	public ulong PC { get; set; }
-	public string File { get; set; }
-	public int Line { get; set; }
+	public bool Defined;
+
+	public long PC;
+
+	public string File;
+
+	public int Line;
+
+	public string Function;
 }
 
 [Serializable]
 public class CollectorDiscoveryEntry
 {
-	public int pid;
 	public string status;
-	public CollectorZapcoreEntry[] logs;
+	public int pid;
+	public List<CollectorZapcoreEntry> logs;
 }
 
 public class CollectorInfo
@@ -75,6 +84,8 @@ public class CollectorManager
 	private const int attemptsToConnect = 3;
 	private const int attemptsBeforeFailing = 3;
 	private const int delayBeforeNewAttempt = 500;
+
+	public static CollectorStatus CollectorStatus;
 
 	public static string GetCollectorExecutablePath()
 	{
@@ -353,12 +364,12 @@ public class CollectorManager
         }
     }
 	
-	public static Socket GetSocket(string host, int portNumber)
+	public static Socket GetSocket(string host, int portNumber, ILogger logger)
 	{
 		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 		var ed = new IPEndPoint(IPAddress.Parse(host), portNumber);
 
-		Log.Verbose($"collector discovery acquiring socket address=[{ed}]");
+		logger.LogInformation($"collector discovery acquiring socket address=[{ed}]");
 		socket.ReceiveTimeout = CollectorManager.ReceiveTimeout;
 		socket.ReceiveBufferSize = CollectorManager.ReceiveBufferSize;
 		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -388,7 +399,10 @@ public class CollectorManager
 			}
 			catch (Exception ex)
 			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace} All Collector Logs=[\n{
+					string.Join("\n", CollectorStatus.logs.Select(l => $"{l.Level} - {l.Message}").ToList())
+				}]");
+
 				Environment.Exit(1);
 				throw;
 			}
@@ -438,12 +452,12 @@ public class CollectorManager
 
 		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
 
-		var socket = GetSocket(host, portNumber);
+		var socket = GetSocket(host, portNumber, logger);
 
 		int alarmCounter = 0;
 
-		var collectorStatus = await IsCollectorRunning(socket, cts.Token);
-		if (!collectorStatus.isRunning)
+		CollectorStatus = await IsCollectorRunning(socket, cts.Token, logger);
+		if (!CollectorStatus.isRunning)
 		{
 			logger.ZLogInformation($"Starting local process for collector");
 			await StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
@@ -451,9 +465,9 @@ public class CollectorManager
 		
 		while (!cts.IsCancellationRequested) // Should we stop this after a number of attempts to find the collector?
 		{
-			collectorStatus = await IsCollectorRunning(socket, cts.Token);
+			CollectorStatus = await IsCollectorRunning(socket, cts.Token, logger);
 
-			if (!collectorStatus.isRunning)
+			if (!CollectorStatus.isRunning)
 			{
 				if (alarmCounter > attemptsBeforeFailing)
 				{
@@ -461,12 +475,12 @@ public class CollectorManager
 				}
 				alarmCounter++;
 			}
-			else if (collectorStatus.isReady)
+			else if (CollectorStatus.isReady)
 			{
 				if (!connectedPromise.IsCompleted)
 				{
 					logger.ZLogInformation($"Found collector! Events can now be sent to collector");
-					connectedPromise.CompleteSuccess(collectorStatus.pid);
+					connectedPromise.CompleteSuccess(CollectorStatus.pid);
 				}
 				alarmCounter = 0;
 			}
@@ -475,9 +489,8 @@ public class CollectorManager
 		}
 	}
 
-	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token)
+	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
 	{
-		// var socket = GetSocket("127.0.0.1", 8688);
 		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
 
 		for (int i = 0; i < attemptsToConnect; i++)
@@ -498,7 +511,6 @@ public class CollectorManager
 			}
 
 			var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
-			Log.Information($"Socket has bytes=[{byteCount}]");
 
 			if (byteCount == 0)
 			{
@@ -528,18 +540,22 @@ public class CollectorManager
 					continue;
 
 			}
+			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message }).ToList();
 			return new CollectorStatus()
 			{
 				isRunning = true,
 				isReady = collector.status == "READY",
-				pid = collector.pid
+				pid = collector.pid,
+				logs = logs
 			};
 		}
 
 		return new CollectorStatus()
 		{
 			isRunning = false,
-			isReady = false
+			isReady = false,
+			pid = 0,
+			logs = CollectorStatus.logs
 		};
 	}
 
@@ -592,11 +608,11 @@ public class CollectorManager
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector) {args.Data}");
+			logger.ZLogInformation($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector err) {args.Data}");
+			logger.ZLogInformation($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
@@ -604,7 +620,7 @@ public class CollectorManager
 			throw new Exception("Failed to start collector");
 		}
 
-		Log.Information($"Started collector with process-id=[{process.Id}]");
+		logger.ZLogInformation($"Started collector with process-id=[{process.Id}]");
 
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
