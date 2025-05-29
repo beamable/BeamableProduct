@@ -58,8 +58,6 @@ namespace Beamable.Editor.Util
 				                                }, GUILayout.ExpandWidth(true),
 				                                GUILayout.Height(30));
 				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
-				
-				EditorGUILayout.Space(1, true);
 
 				drawLowBarGui.Invoke();
 				

@@ -13,22 +13,33 @@ namespace Editor.UI2.Utils
     {
         private List<Action> _actions = new();
         private SearchData contentSearchData;
-        private static Dictionary<string, bool> _toggleStates = new();
-        private static List<string> _items;
-        private static Vector2 _scrollPosition;
+        private Action<string, bool> _onChangeItem;
+        private Dictionary<string, bool> _items;
+        private Vector2 _scrollPosition;
+
+        public Action<string, bool> OnChangeItem
+        {
+	        get => _onChangeItem;
+	        set => _onChangeItem = value;
+        }
+
+        public Dictionary<string, bool> Items
+        {
+	        get => _items;
+	        set => _items = value;
+        }
 
         public ToggleListWindow()
         {
             contentSearchData = new SearchData() { onEndCheck = Repaint };
         }
         
-        public static void Show(Rect buttonRect, Vector2 windowSize, List<string> items, Dictionary<string, bool> states)
+        public static void Show(Rect buttonRect, Vector2 windowSize, Dictionary<string, bool> items, Action<string, bool> onChangeItem = null)
         {
-            _items = items;
-            _toggleStates = states;
-            
             var window = CreateInstance<ToggleListWindow>();
             window.titleContent = new GUIContent("Search Options");
+            window.Items = new Dictionary<string, bool>(items);
+            window.OnChangeItem = onChangeItem;
             window.ShowAsDropDown(buttonRect.GetRectProperPosition(), windowSize);
             window.Focus();
         }
@@ -44,15 +55,16 @@ namespace Editor.UI2.Utils
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
             
             // Draw filtered items with toggles
-            var filtered = GetFilteredItems(contentSearchData.searchText, _items);
+            var filtered = GetFilteredItems(contentSearchData.searchText, _items.Keys.ToList());
             foreach (var item in filtered)
             {
-                bool state = _toggleStates[item];
+                bool state = _items[item];
                 state = EditorGUILayout.ToggleLeft(item, state);
-                if (state != _toggleStates[item])
+                if (state != _items[item])
                 {
-                    _toggleStates[item] = state;
+	                _items[item] = state;
                     GUI.changed = true;
+                    _onChangeItem?.Invoke(item, state);
                 }
             }
             
@@ -76,7 +88,7 @@ namespace Editor.UI2.Utils
             }
         }
 
-        private static List<string> GetFilteredItems(string search, List<string> menuItems)
+        private static IEnumerable<string> GetFilteredItems(string search, IEnumerable<string> menuItems)
         {
             if (string.IsNullOrEmpty(search))
                 return menuItems;

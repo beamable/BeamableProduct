@@ -23,7 +23,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 	[Serializable]
 	public class LogView
 	{
-		private SearchData _searchData;
+		public SearchData _searchData;
 		
 		public int selectedIndex;
 		public Vector2 logScroll;
@@ -611,7 +611,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			{
 				EditorGUI.BeginChangeCheck();
 				var searchClearRect = new Rect(searchRect.xMax - searchRect.height - 2, searchRect.y,
-				                               searchRect.width, searchRect.height);
+				                               searchRect.height, searchRect.height);
 
 				EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
 				var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);

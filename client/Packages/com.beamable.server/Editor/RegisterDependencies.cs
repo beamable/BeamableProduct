@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor;
 using Beamable.Server.Editor.Usam;
+using Editor.CliContentManager;
 
 namespace Beamable.Server.Editor
 {
@@ -14,6 +15,7 @@ namespace Beamable.Server.Editor
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddGlobalStorage<UsamService, SessionStorageLayer>();
+			builder.AddGlobalStorage<CliContentService, SessionStorageLayer>();
 			builder.AddSingleton(() => MicroserviceConfiguration.Instance);
 			builder.AddSingleton<CommonAreaService>();
 		}
