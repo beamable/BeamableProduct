@@ -7,14 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Callable methods can have `void` signatures
+- Scheduler can invoke callable methods that return `Promise` with more than 1 argument
+
 ### Added
 - Beam scheduler jobs have a new `SuspendedAt` property
-- Add the ability to use remote storage in local microservices. Can be done by calling `MicroserviceBootstrapper.ForceUseRemoteDependencies<TMicroservice>()`
-in the `Program.cs` right after the call for `await MicroserviceBootstrapper.Prepare<TMicroservice>()`.
+- `BeamScheduler.GetSuspendedJobs()` returns recently suspended jobs
+- Beam scheduler jobs can be unique
+- Add the ability to use remote storage in local microservices. Can be done by calling `MicroserviceBootstrapper.ForceUseRemoteDependencies<TMicroservice>()` in the `Program.cs` right after the call for `await MicroserviceBootstrapper.Prepare<TMicroservice>()`.
 - Callable methods' `Context` field have access to `AccountId`, `GamePid`, and `BeamContext` properties.
 
 ### Changed
 - `BeamScheduler.GetJobs` is obsolete and `GetAllJobs` should be used instead
+- `BeamScheduler.GetJobActivity` is obsolete and `GetAllJobActivity` should be used instead
 
 ## [4.3.0] - 2025-05-08
 

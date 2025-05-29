@@ -216,24 +216,32 @@ namespace Beamable.Server
 
 		public ISchedulerBuilderTrigger Run<TArg1, TArg2>(Expression<Func<T, Func<TArg1, TArg2, Promise>>> expr, TArg1 arg1, TArg2 arg2)
 		{
-			throw new NotImplementedException();
+			var call = _serviceCallBuilder.Run(expr, arg1, arg2);
+			_setAction(call);
+			return _builder;
 		}
 
 		public ISchedulerBuilderTrigger Run<TArg1, TArg2, TArg3>(Expression<Func<T, Func<TArg1, TArg2, TArg3, Promise>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3)
 		{
-			throw new NotImplementedException();
+			var call = _serviceCallBuilder.Run(expr, arg1, arg2, arg3);
+			_setAction(call);
+			return _builder;
 		}
 
 		public ISchedulerBuilderTrigger Run<TArg1, TArg2, TArg3, TArg4>(Expression<Func<T, Func<TArg1, TArg2, TArg3, TArg4, Promise>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3,
 			TArg4 arg4)
 		{
-			throw new NotImplementedException();
+			var call = _serviceCallBuilder.Run(expr, arg1, arg2, arg3, arg4);
+			_setAction(call);
+			return _builder;
 		}
 
 		public ISchedulerBuilderTrigger Run<TArg1, TArg2, TArg3, TArg4, TArg5>(Expression<Func<T, Func<TArg1, TArg2, TArg3, TArg4, TArg5, Promise>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3,
 			TArg4 arg4, TArg5 arg5)
 		{
-			throw new NotImplementedException();
+			var call = _serviceCallBuilder.Run(expr, arg1, arg2, arg3, arg4, arg5);
+			_setAction(call);
+			return _builder;
 		}
 	}
 }
