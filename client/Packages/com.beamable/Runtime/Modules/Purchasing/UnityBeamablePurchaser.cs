@@ -391,7 +391,15 @@ namespace Beamable.Purchasing
 
 				if (err == null)
 				{
-					return;
+					var platformException = ex as PlatformRequesterException;
+					if (platformException != null)
+					{
+						err = new ErrorCode(platformException.Error);
+					}
+					else
+					{
+						return;
+					}
 				}
 
 				var retryable = err.Code >= 500 || err.Code == 429 || err.Code == 0;   // Server error or rate limiting or network error
