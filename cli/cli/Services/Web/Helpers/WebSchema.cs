@@ -2,7 +2,6 @@ using cli.Services.Web.CodeGen;
 using cli.Unreal;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
-using System.Text.RegularExpressions;
 
 namespace cli.Services.Web.Helpers;
 
@@ -27,7 +26,7 @@ public static class WebSchema
 				continue;
 
 			var enumMemberName = enumMember.Value;
-			var safeEnumMemberName = SanitizeIdentifier(enumMemberName);
+			var safeEnumMemberName = StringHelper.ToSafeIdentifier(enumMemberName);
 			var tsEnumMember = new TsEnumMember(safeEnumMemberName.Capitalize(), safeEnumMemberName);
 			tsEnum.AddMember(tsEnumMember);
 		}
@@ -249,17 +248,5 @@ public static class WebSchema
 		// ensure imports are in a consistent alphabetical order
 		foreach (var tsImport in tsImports.OrderBy(i => i.Module, StringComparer.Ordinal))
 			tsFile.AddImport(tsImport);
-	}
-
-	/// <summary>
-	/// Sanitizes a raw string to a valid TypeScript identifier.
-	/// Replaces invalid characters with underscores and prefixes leading digits.
-	/// </summary>
-	private static string SanitizeIdentifier(string value)
-	{
-		var sanitized = Regex.Replace(value, "[^A-Za-z0-9_]", "_");
-		if (!string.IsNullOrEmpty(sanitized) && char.IsDigit(sanitized[0]))
-			sanitized = "_" + sanitized;
-		return sanitized;
 	}
 }
