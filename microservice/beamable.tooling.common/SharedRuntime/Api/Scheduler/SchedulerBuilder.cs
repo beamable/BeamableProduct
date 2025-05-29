@@ -137,8 +137,15 @@ namespace Beamable.Server
 		/// By default, if no value is given, this will be the current C#MS service name.
 		/// </para>
 		/// </param>
+		/// 
+		/// <param name="isUnique">
+		/// When true, forces this job to only create once
+		/// </param>
 		/// <returns>A scheduled <see cref="Job"/></returns>
-		Promise<Job> Save(string name, string source = null);
+		Promise<Job> Save(string name, string source = null, bool isUnique=false);
+		
+		/// <inheritdoc cref="Save"/>
+		Promise<Job> SaveUnique(string name, string source = null);
 	}
 
 	public class SchedulerBuilder : ISchedulerBuilderSetup, ISchedulerBuilderFinal
@@ -225,14 +232,18 @@ namespace Beamable.Server
 			return this;
 		}
 
-
-		public async Promise<Job> Save(string name, string source = null)
+		public Promise<Job> SaveUnique(string name, string source = null)
+		{
+			return Save(name, source, true);
+		}
+		
+		public async Promise<Job> Save(string name, string source = null, bool isUnique=false)
 		{
 			if (string.IsNullOrEmpty(source))
 			{
 				source = _scheduler.SchedulerContext.ServiceName;
 			}
-			return await _scheduler.CreateJob(name, source, _action, _triggers.ToArray(), _retry);
+			return await _scheduler.CreateJob(name, source, _action, _triggers.ToArray(), _retry, isUnique);
 		}
 	}
 
