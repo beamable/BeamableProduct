@@ -3,9 +3,9 @@ using Beamable.Common.Semantics;
 using cli.Services;
 using cli.Utils;
 using Docker.DotNet;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 

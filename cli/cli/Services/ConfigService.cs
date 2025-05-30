@@ -5,10 +5,11 @@ using Beamable.Serialization.SmallerJSON;
 using cli.Options;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine.Binding;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 
 namespace cli;
 

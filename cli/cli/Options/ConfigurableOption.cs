@@ -1,4 +1,4 @@
-using Serilog;
+using Beamable.Server;
 using System.CommandLine;
 using System.Diagnostics;
 

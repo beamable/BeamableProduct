@@ -4,10 +4,6 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.BeamCli;
 using Beamable.Server;
 using cli.Utils;
-using Newtonsoft.Json;
-using Spectre.Console;
-using Spectre.Console.Json;
-using UnityEngine;
 
 namespace cli;
 

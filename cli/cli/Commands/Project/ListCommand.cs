@@ -1,6 +1,6 @@
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Server;
 using cli.Services;
-using Serilog;
 
 namespace cli.Commands.Project;
 

@@ -1,13 +1,11 @@
-using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
 using cli.Utils;
 using JetBrains.Annotations;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using Beamable.Server;
 
 namespace cli;
 

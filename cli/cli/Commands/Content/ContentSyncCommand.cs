@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.BeamCli;
+using Beamable.Server;
 using System.CommandLine;
 
 namespace cli.Content;
@@ -47,6 +48,7 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 		}
 
 		var res = await Task.WhenAll(resetPromises);
+		Log.Information("COOLS");
 		return new() { Reports = res };
 	}
 }

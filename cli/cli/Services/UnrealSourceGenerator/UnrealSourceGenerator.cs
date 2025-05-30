@@ -1,19 +1,15 @@
-﻿using Beamable.Common;
-using Beamable.Common.Semantics;
-using Docker.DotNet.Models;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Interfaces;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Writers;
-using Newtonsoft.Json;
-using Serilog;
-using System.Collections;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Common;
+using Beamable.Server;
+using Docker.DotNet.Models;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
+using Newtonsoft.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
@@ -2447,7 +2443,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <summary>
 	/// Makes a UnrealType from a NamespacedType that the caller knows should become a F_____.
 	/// </summary>
-	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId) => new($"E{referenceId.AsStr.Capitalize()}");
+	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId) => new($"EBeam{referenceId.AsStr.Capitalize()}");
 
 	/// <summary>
 	/// Checks if the given schema should be interpreted a CSV-Response's Row schema. 

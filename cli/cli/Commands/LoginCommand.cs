@@ -3,11 +3,8 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
-using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.Text;
+using Beamable.Server;
 
 namespace cli;
 

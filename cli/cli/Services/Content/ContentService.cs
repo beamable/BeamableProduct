@@ -5,9 +5,9 @@ using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Content;
 using Beamable.Serialization;
+using Beamable.Server;
 using cli.Utils;
 using Newtonsoft.Json.Linq;
-using Serilog;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -766,7 +766,7 @@ public class ContentService
 			}
 			else
 			{
-				Log.Error(e, "Error when downloading content files. EXCEPTION={Exception}", e.ToString());
+				Log.Error(e, $"Error when downloading content files. EXCEPTION={e}");
 			}
 
 			throw;
@@ -815,12 +815,12 @@ public class ContentService
 			{
 				foreach (var aeInnerException in ae.InnerExceptions)
 				{
-					Log.Error(aeInnerException, "Error when saving content files. Undoing pull operation. EXCEPTION={Exception}", aeInnerException.ToString());
+					Log.Fatal(aeInnerException, $"Error when saving content files. Undoing pull operation. EXCEPTION={aeInnerException}");
 				}
 			}
 			else
 			{
-				Log.Error(e, "Error when saving content files. Undoing pull operation. EXCEPTION={Exception}", e.ToString());
+				Log.Fatal(e, $"Error when saving content files. Undoing pull operation. EXCEPTION={e}");
 			}
 
 			// If any content failed, we re-write undo all the changes by re-serializing all the local content that we had before we downloaded.
