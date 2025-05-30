@@ -21,6 +21,16 @@ namespace Beamable.Common.Api
 		/// Indicates when the <see cref="Token"/> will expire.
 		/// </summary>
 		DateTime ExpiresAt { get; }
+		
+		/// <summary>
+		/// Indicates when the token expires in relation to the <see cref="IssuedAt"/> time.
+		/// </summary>
+		public long ExpiresIn { get; }
+		
+		/// <summary>
+		/// Indicates when the token was issued.
+		/// </summary>
+		public DateTime IssuedAt { get; }
 
 		/// <summary>
 		/// The customer organization that this token is valid for.

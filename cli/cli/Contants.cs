@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 public static class Constants
 {
 	public const string CONFIG_FOLDER = ".beamable";
+	public const string CONFIG_LOCAL_OVERRIDES_DIRECTORY = $"{TEMP_FOLDER}/overrides";
 	public const string CONTENT_DIRECTORY = "content";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
 	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
@@ -29,12 +30,15 @@ public static class Constants
 	/// </summary>
 	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "local-services-runtime-cache.json";
 
-
 	public const int CMD_RESULT_CONFIG_RESOLUTION_CONFLICT = 701;
 
 	public const string TEMP_FOLDER = "temp";
 
-	public static readonly string[] TEMP_FILES = new[] { CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_RUNTIME_FILE_NAME };
+	public static readonly string[] TEMP_FILES = new[]
+	{
+		CONFIG_TOKEN_FILE_NAME, 
+		BEAMO_LOCAL_RUNTIME_FILE_NAME,
+	};
 
 	public const string PLATFORM_DEV = "https://dev.api.beamable.com";
 	public const string PLATFORM_STAGING = "https://staging.api.beamable.com";
@@ -51,7 +55,7 @@ public static class Constants
 	/// <summary>
 	/// Keys that are required to exist in Config File used by <see cref="ConfigService"/>.
 	/// </summary>
-	public static readonly string[] REQUIRED_CONFIG_KEYS = new[] { CONFIG_PLATFORM, CONFIG_CID, CONFIG_PID };
+	public static readonly string[] REQUIRED_CONFIG_KEYS = new[] { CONFIG_PLATFORM, CONFIG_CID, };
 
 
 	public static readonly OrderedDictionary RENAMED_FILES = new()

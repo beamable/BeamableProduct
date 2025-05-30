@@ -81,6 +81,11 @@ namespace Beamable.Common
 			/// </summary>
 			public const string HEADER_APPLICATION_VERSION = "X-KS-GAME-VERSION";
 
+			/// <summary>
+			/// The header that beamable internals include to represent the request's context
+			/// </summary>
+			public const string HEADER_BEAM_RC = "x-obj-rc";
+
 		}
 	}
 }

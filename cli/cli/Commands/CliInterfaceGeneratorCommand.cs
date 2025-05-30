@@ -15,7 +15,7 @@ public class CliInterfaceGeneratorCommandArgs : CommandArgs
 	public bool Concat;
 	public string Engine;
 }
-public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
+public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

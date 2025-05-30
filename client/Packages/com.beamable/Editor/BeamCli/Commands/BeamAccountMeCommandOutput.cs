@@ -14,5 +14,12 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<string> thirdPartyAppAssociations;
         public System.Collections.Generic.List<string> deviceIds;
         public System.Collections.Generic.List<BeamAccountMeExternalIdentity> external;
+        public string tokenCid;
+        public string tokenPid;
+        public string accessToken;
+        public string refreshToken;
+        public System.DateTime tokenExpiration;
+        public System.DateTime tokenIssuedAt;
+        public long tokenExpiresIn;
     }
 }

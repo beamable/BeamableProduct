@@ -345,6 +345,7 @@ public class ServerService
 		using var inputStream = new StreamReader(networkRequestStream);
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
 		var input = await inputStream.ReadToEndAsync();
+		Log.Verbose("Raw input received: " + input);
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
 		cliInvocations.Add(input);
 		Log.Verbose("virtualizing " + req.commandLine);
@@ -365,7 +366,7 @@ public class ServerService
 		int exitCode = -1;
 		try
 		{
-			exitCode = await app.RunWithSingleString(req.commandLine);
+			exitCode = await app.RunWithSingleString(req.commandLine, args.useCustomSplitter);
 		}
 		catch (Exception ex)
 		{

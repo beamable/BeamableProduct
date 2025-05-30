@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] withoutGroup;
         /// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
         public string[] withGroup;
+        /// <summary>Listens to the given process id. Terminates this long-running command when the it no longer is running</summary>
+        public int requireProcessId;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -50,6 +52,11 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
                 }
+            }
+            // If the requireProcessId value was not default, then add it to the list of args.
+            if ((this.requireProcessId != default(int)))
+            {
+                genBeamCommandArgs.Add(("--require-process-id=" + this.requireProcessId));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

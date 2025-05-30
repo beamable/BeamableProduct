@@ -100,16 +100,10 @@ public class SetLocalSettingsIFederatedGameServerCommand : AtomicCommand<SetLoca
 
 		// Validate the given ids. 
 		{
-			var notFoundContentIds = new List<string>();
-			foreach (string contentId in args.ContentIds)
+			var existFilters = await args.ContentService.ContentExistByIds(args.ContentIds);
+			if (!existFilters)
 			{
-				if (!args.ContentService.GetLocalCache("global").HasContent(contentId))
-					notFoundContentIds.Add(contentId);
-			}
-
-			if (notFoundContentIds.Count > 0)
-			{
-				throw new CliException("Given content does not exist locally so we can't set it as a filter.", 2, true);
+				throw new CliException($"At least one of the given content filters don't exist locally so we can't set it as a filter.", 2, true);
 			}
 		}
 
