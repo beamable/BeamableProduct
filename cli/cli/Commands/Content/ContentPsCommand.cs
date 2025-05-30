@@ -70,6 +70,8 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 				}
 			},
 			ToRemoveLocalEntries = new(),
+			PublisherAccountId = "",
+			PublisherEmail = "",
 			SyncReports = new(),
 		};
 		this.SendResults(eventToEmit);
@@ -161,6 +163,8 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 										.ToArray(),
 								}
 							},
+							PublisherAccountId = "",
+							PublisherEmail = "",
 							SyncReports = new(),
 						};
 
