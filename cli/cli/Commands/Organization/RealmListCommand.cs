@@ -27,6 +27,8 @@ public struct OrgRealmData
 	public string Pid;
 	public string ParentPid;
 
+	public string ProjectName;
+	
 	public string RealmName;
 	public string RealmSecret;
 
@@ -65,11 +67,11 @@ public class RealmListCommand : AtomicCommand<RealmsListCommandArgs, RealmsListC
 		try
 		{
 			var customer = await args.Provider.GetService<IRealmsApi>().GetCustomer();
-			var game = await args.Provider.GetService<IRealmsApi>().GetGame(args.AppContext.Pid).ShowLoading("Sending Request...");
+			var game = await args.Provider.GetService<IRealmsApi>().GetGame(args.AppContext.Pid);
 			var orgRealmData = game.projects.Where(r => args.IncludeArchived || !r.archived).Select(r =>
 			{
 				var rd = new OrgRealmData();
-				rd.Cid = r.cid.GetOrElse(0).ToString();
+				rd.Cid = args.AppContext.Cid;
 				rd.Pid = r.pid;
 				rd.RealmName = r.projectName;
 				rd.RealmSecret = r.secret.GetOrElse("");
@@ -77,6 +79,7 @@ public class RealmListCommand : AtomicCommand<RealmsListCommandArgs, RealmsListC
 
 				var parentRealm = r.parent.GetOrElse("");
 				rd.IsProduction = string.IsNullOrEmpty(parentRealm);
+				var projectName = rd.IsProduction ? r.projectName : "";
 
 				// We count how many parents this realm has --- 1 means its the staging realm; two means it's a dev realm.
 				var parentCount = 0;
@@ -85,10 +88,13 @@ public class RealmListCommand : AtomicCommand<RealmsListCommandArgs, RealmsListC
 					parentCount += 1;
 					var p = game.projects.First(p => p.pid == parentRealm);
 					parentRealm = p.parent.GetOrElse("");
+
+					projectName = string.IsNullOrEmpty(parentRealm) ? p.projectName : "";
 				}
 
 				rd.IsStaging = parentCount == 1;
 				rd.IsDev = parentCount > 1;
+				rd.ProjectName = projectName;
 				return rd;
 			}).ToArray();
 

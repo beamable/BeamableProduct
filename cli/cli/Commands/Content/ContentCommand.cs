@@ -10,7 +10,7 @@ public class ContentCommand : CommandGroup
 
 	
 	public static readonly Option<string> FILTER_OPTION =
-		new("--filter", () => "", "Accepts different strings to filter which content files will be affected. See the `filter-type` option.");
+		new("--filter", () => "", "Accepts different strings to filter which content files will be affected. See the `filter-type` option");
 
 	public static readonly Option<ContentFilterType> FILTER_TYPE_OPTION =
 		new("--filter-type",

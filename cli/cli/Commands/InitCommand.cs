@@ -32,7 +32,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;
-	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
 	private bool _retry = false;
@@ -132,7 +131,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				try
 				{
-					var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+					var aliasResolve = await args.AliasService.Resolve(cid).ShowLoading("Resolving alias...");
 					cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 				}
 				catch (RequesterException)
@@ -176,7 +175,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
-		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
 
 		
@@ -221,7 +219,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			try
 			{
-				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+				var aliasResolve = await args.AliasService.Resolve(cid).ShowLoading("Resolving alias...");
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 			}
 			catch (RequesterException)
@@ -300,10 +298,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 			else
 			{
-				_configService.RemoveConfigFolderContent();
+				throw new CliException("Failed to log in.");
 			}
-
-			return didLogin;
 		}
 
 		await _ctx.Set(cid, null, host);
@@ -313,11 +309,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		var pid = await PickGameAndRealm(args);
 		if (string.IsNullOrWhiteSpace(pid))
-		{
-			_configService.RemoveConfigFolderContent();
-			return false;
-		}
-
+			throw new CliException("Failed to find a realm to target.");
 
 		await _ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);

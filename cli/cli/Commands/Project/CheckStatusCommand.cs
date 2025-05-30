@@ -20,6 +20,7 @@ namespace cli;
 public class CheckStatusCommandArgs : CommandArgs
 {
 	public bool watch;
+	public int requireProcessId;
 	public List<string> services;
 	public List<string> withServiceTags = new List<string>();
 	public List<string> withoutServiceTags = new List<string>();
@@ -50,7 +51,7 @@ public class ServicesForRouteCollection
 	public List<ServiceInstance> instances = new List<ServiceInstance>();
 	public List<FederationInstance> federations = new();
 }
-	
+
 [Serializable]
 public class ServiceInstance
 {
@@ -116,7 +117,6 @@ public static class ServiceInstanceExtensions
 
 public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckStatusServiceResult>
 {
-
 	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
 	}
@@ -128,12 +128,16 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
+
+		AddOption(new RequireProcessIdOption(), (args, i) => args.requireProcessId = i);
 	}
 
 	public int updateCount;
 
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
+		RequireProcessIdOption.ConfigureRequiredProcessIdWatcher(args.requireProcessId);
+
 		ProjectCommand.FinalizeServicesArg(args,
 			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
@@ -165,6 +169,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				latestUpdate = update;
 				continue;
 			}
+
 			if (first)
 			{
 				// put a clock on, and emit this event if nothing else shows up...
@@ -183,25 +188,22 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				updateCount++;
 				Report(update);
 			}
-			
 		}
 
 		if (!args.watch)
 		{
 			Report(latestUpdate);
 		}
-
 	}
-	
-	
+
+
 	void Report(CheckStatusServiceResult update)
 	{
-		
 		SendResults(update);
 		var table = new Table();
 		table.Border(TableBorder.Simple);
 		void AddColumn(string header) => table.AddColumn($"[bold]{header}[/]");
-		
+
 		void AddRow(ServiceStatus service, ServicesForRouteCollection route, ServiceInstance instance)
 		{
 			var infoValue = "";
@@ -209,21 +211,21 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				infoValue = $"health={instance.latestHostEvent.healthPort},pid={instance.latestHostEvent.processId}";
 			}
-		
+
 			if (instance?.latestDockerEvent != null)
 			{
 				if (service.serviceType == "service")
 				{
 					infoValue =
-						$"health={instance.latestDockerEvent.healthPort},container={instance.latestDockerEvent.containerId.Substring(0,12)}";
+						$"health={instance.latestDockerEvent.healthPort},container={instance.latestDockerEvent.containerId.Substring(0, 12)}";
 				}
 				else
 				{
 					infoValue =
-						$"data={instance.latestDockerEvent.dataPort},container={instance.latestDockerEvent.containerId.Substring(0,12)}";
+						$"data={instance.latestDockerEvent.dataPort},container={instance.latestDockerEvent.containerId.Substring(0, 12)}";
 				}
 			}
-		
+
 			var originValue = "";
 			if (instance?.latestHostEvent != null) originValue = "local";
 			if (instance?.latestDockerEvent != null) originValue = "docker";
@@ -232,19 +234,19 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				service.service,
 				service.serviceType,
 				originValue,
-				instance?.startedByAccountEmail ?? "<?>" ,
+				instance?.startedByAccountEmail ?? "<?>",
 				infoValue,
 				string.Join(",", route?.federations?.SelectMany(f => f.FederationTypes?.Select(ft => $"{f.FederationId}/{ft}")) ?? Array.Empty<string>())
 			);
 		}
-		
+
 		AddColumn("beamoId");
 		AddColumn("type");
 		AddColumn("origin");
 		AddColumn("email");
 		AddColumn("info");
 		AddColumn("federations");
-		
+
 		foreach (var service in update.services)
 		{
 			foreach (var route in service.availableRoutes)
@@ -258,6 +260,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				}
 			}
 		}
+
 		Log.Information($"Updated at {DateTimeOffset.Now:T}");
 		AnsiConsole.Write(table);
 	}
@@ -311,28 +314,30 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
-						new ()
+						new()
 						{
 							knownToBeRunning = false,
 							routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
-							federations = definition.Protocol is BeamoProtocolType.HttpMicroservice ? definition.FederationsConfig.Federations.Select(kvp => new FederationInstance()
-							{
-								FederationId = kvp.Key,
-								FederationTypes = kvp.Value.Select(f => f.Interface).ToArray(),
-								LocalSettings = kvp.Value.Select(f =>
+							federations = definition.Protocol is BeamoProtocolType.HttpMicroservice
+								? definition.FederationsConfig.Federations.Select(kvp => new FederationInstance()
 								{
-									var key = FederationUtils.BuildLocalSettingKey(f.Interface, kvp.Key);
-									if (manifest.HttpMicroserviceLocalProtocols[definition.BeamoId].Settings.TryGetSetting(key, out var settingsJsonVal))
-										return settingsJsonVal;
-									
-									return "{}";
-								}).ToArray(),
-							}).ToList() : new List<FederationInstance>(),
+									FederationId = kvp.Key,
+									FederationTypes = kvp.Value.Select(f => f.Interface).ToArray(),
+									LocalSettings = kvp.Value.Select(f =>
+									{
+										var key = FederationUtils.BuildLocalSettingKey(f.Interface, kvp.Key);
+										if (manifest.HttpMicroserviceLocalProtocols[definition.BeamoId].Settings.TryGetSetting(key, out var settingsJsonVal))
+											return settingsJsonVal;
+
+										return "{}";
+									}).ToArray(),
+								}).ToList()
+								: new List<FederationInstance>(),
 						}
 					},
 					groups = definition.ServiceGroupTags,
 				};
-				
+
 				result.services.Add(status);
 			}
 		}
@@ -372,7 +377,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					federations = discoveryEvent switch
 					{
 						DockerServiceEvent dockerEvt => dockerEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
-						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(), 
+						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						RemoteServiceEvent remoteEvt => remoteEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						_ => throw new ArgumentOutOfRangeException()
 					}
@@ -385,7 +390,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// Make sure the collection is defined as "running" now.
 				collection.knownToBeRunning = true;
-				
+
 				// generate an instance to describe this event.
 				instance = new ServiceInstance
 				{
@@ -427,10 +432,10 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// the instance existed in our state, but now it is being stopped, so we should remove it
 				collection.instances.Remove(instance);
-				
+
 				// Make sure the collection as "knownToBeRunning" now.
 				collection.knownToBeRunning = collection.instances.Count > 0;
-				
+
 				yield return result;
 
 				// TODO: include a changelog in the update

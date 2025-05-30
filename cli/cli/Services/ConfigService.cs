@@ -3,14 +3,10 @@ using Beamable.Common.Api;
 using Beamable.Common.Util;
 using Beamable.Serialization.SmallerJSON;
 using cli.Options;
-using cli.Services;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 

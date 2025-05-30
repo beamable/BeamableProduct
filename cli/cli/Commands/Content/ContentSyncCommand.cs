@@ -1,4 +1,5 @@
-﻿using System.CommandLine;
+﻿using Beamable.Common.BeamCli;
+using System.CommandLine;
 
 namespace cli.Content;
 
@@ -38,15 +39,15 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 		_contentService = args.ContentService;
 
 		// Resets the content for all the given manifests
-		var resetPromises = new List<Task>();
+		var resetPromises = new List<Task<ContentSyncReport>>();
 		foreach (var manifestId in args.ManifestIdsToReset)
 		{
-			resetPromises.Add(_contentService.SyncLocalContent(manifestId, args.FilterType, args.Filter, args.SyncCreated, args.SyncModified, args.SyncConflicts, args.TargetManifestUid));
+			var task = _contentService.SyncLocalContent(manifestId, args.FilterType, args.Filter, args.SyncCreated, args.SyncModified, args.SyncConflicts, args.TargetManifestUid);
+			resetPromises.Add(task);
 		}
 
-		await Task.WhenAll(resetPromises);
-
-		return new();
+		var res = await Task.WhenAll(resetPromises);
+		return new() { Reports = res };
 	}
 }
 
@@ -63,6 +64,8 @@ public class ContentSyncCommandArgs : ContentCommandArgs
 	public string TargetManifestUid;
 }
 
+[CliContractType]
 public class ContentSyncResult
 {
+	public ContentSyncReport[] Reports;
 }

@@ -39,20 +39,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>, ISkipManif
 		}
 
 		// Get only the local files for all the given manifest ids.
-		var localManifests = await Task.WhenAll(args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(null, m, true)));
-		var filterTasks = localManifests.ToList().Select((_, i) =>
-		{
-			var lmIdx = i;
-			return Task.Run(() =>
-			{
-				var lm = localManifests[lmIdx];
-				ContentService.FilterLocalContentFiles(ref lm, args.Filter, args.FilterType);
-				return lm;
-			});
-		});
-
-		// Get only the filtered list of content
-		var filteredManifests = await Task.WhenAll(filterTasks);
+		var filteredManifests = await Task.WhenAll(args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(null, m, args.FilterType, args.Filter, true)));
 
 		// Look for the given content id and open the file.
 		foreach (LocalContentFiles localFiles in filteredManifests)

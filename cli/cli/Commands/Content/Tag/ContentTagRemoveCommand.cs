@@ -29,26 +29,20 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>
 		var tasks = new List<Task<LocalContentFiles>>();
 		foreach (string manifestId in args.ManifestIds)
 		{
-			tasks.Add(_contentService.GetAllContentFiles(null, manifestId, true));
+			tasks.Add(_contentService.GetAllContentFiles(null, manifestId, args.FilterType, args.Filter, true));
 		}
 
 		// Get the files and filter them.
 		var filteredContentFiles = await Task.WhenAll(tasks);
-		for (int i = 0; i < filteredContentFiles.Length; i++)
-		{
-			LocalContentFiles file = filteredContentFiles[i];
-			ContentService.FilterLocalContentFiles(ref file, args.Filter, args.FilterType);
-			filteredContentFiles[i] = file;
-		}
 
 		// Save the added task to disk
-		var tagAddTasks = new List<Task>();
+		var tagRemoveTasks = new List<Task>();
 		foreach (var f in filteredContentFiles)
 		{
-			tagAddTasks.Add(_contentService.RemoveTags(f, args.Tags));
+			tagRemoveTasks.Add(_contentService.RemoveTags(f, args.Tags));
 		}
 
-		await Task.WhenAll(tagAddTasks);
+		await Task.WhenAll(tagRemoveTasks);
 	}
 }
 
