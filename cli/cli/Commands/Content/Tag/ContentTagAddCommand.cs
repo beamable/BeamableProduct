@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Content;
 
 namespace cli.Content.Tag;
 

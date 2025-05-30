@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.BeamCli;
+using Beamable.Common.Content;
 using Beamable.Server;
 using System.CommandLine;
 

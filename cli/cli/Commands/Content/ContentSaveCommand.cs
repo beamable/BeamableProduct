@@ -1,4 +1,5 @@
-﻿using Beamable.Server;
+﻿using Beamable.Common.Content;
+using Beamable.Server;
 using System.CommandLine;
 
 namespace cli.Content;
