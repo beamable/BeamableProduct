@@ -13,6 +13,7 @@ namespace Beamable.Server
     {
         
         public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
+        public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
         
         public static void Debug(string message)
         {
@@ -96,6 +97,7 @@ namespace Beamable.Server
     public class BeamableZLoggerProvider : BeamableLogProvider
     {
         public static AsyncLocal<ILogger> LogContext = new AsyncLocal<ILogger>();
+        public static ILogger GlobalLogger;
 
         /// <summary>
         /// Gets the singleton instance of <see cref="BeamableZLoggerProvider"/>.
