@@ -332,8 +332,8 @@ public class App
 				{
 					_queuedLogger.Flush(logger);
 				}
-				BeamableZLoggerProvider.LogContext.Value = logger;
 				
+				BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
 			};
 		}
 		else
@@ -353,14 +353,14 @@ public class App
 					{
 						_queuedLogger.Flush(logger);
 					}
-					BeamableZLoggerProvider.LogContext.Value = logger;
+					BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
 				}
 			};
 		}
 
 		if (BeamableZLoggerProvider.LogContext.Value == null)
 		{
-			BeamableZLoggerProvider.LogContext.Value = _queuedLogger = new QueuedLogger();
+			BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = _queuedLogger = new QueuedLogger();
 		}
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
@@ -675,7 +675,7 @@ public class App
 		{ // construct some fake log setup so that we can log before the actual logs are initilaized. 
 			var factory = LoggerFactory.Create(builder => { builder.AddZLoggerLogProcessor(logBuffer); });
 			var logger = factory.CreateLogger<App>();
-			BeamableZLoggerProvider.LogContext.Value = logger;
+			BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
 		}
 		Commands.AddSingleton(logBuffer);
 		
@@ -931,7 +931,7 @@ public class App
 					
 					// prevent the application from shutting down immediately after a CTRL+C appears, 
 					eventArgs.Cancel = true;
-					Log.Debug("Starting graceful shutdown...");
+					Log.Global.LogDebug("Starting graceful shutdown...");
 					
 					// give the CLI stuff a chance to shutdown gracefully
 					var lifecycle = provider.GetService<AppLifecycle>();
@@ -942,7 +942,7 @@ public class App
 					{
 						const int GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT = 250;
 						await Task.Delay(GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT);
-						Log.Debug("Done waiting for graceful shutdown...");
+						Log.Global.LogDebug("Done waiting for graceful shutdown...");
 						Environment.Exit(0);
 					});
 				};
