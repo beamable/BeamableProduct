@@ -40,7 +40,7 @@ PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
 dotnet build $SOLUTION $BUILD_ARGS
-dotnet build cli/beamable.common -f net8.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true
+#dotnet build cli/beamable.common -f net8.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
