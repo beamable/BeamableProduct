@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ContentPublishArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return all manifests</summary>
+        /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
@@ -50,7 +50,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class ContentPublishWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual ContentPublishWrapper OnStreamLocalContentState(System.Action<ReportDataPoint<BeamLocalContentState>> cb)
+        public virtual ContentPublishWrapper OnStreamContentPublishResult(System.Action<ReportDataPoint<BeamContentPublishResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

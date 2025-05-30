@@ -15,15 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
 - New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
 - New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
-- Added support for generating FDateTime instead of FString in Unreal code generation.
 - Added support for Int32 and FString on Enum deserialization in Unreal code generation.
 - Enums in the Unreal code gen is now EBeam[ENUM_NAME] instead of E[ENUM_NAME]. We decided to update our enums to avoid potential conflicts with external code enums.
 - New Microservice Client Code Generator for Unity that used OAPI for the generation.
-
+- Added support for generating `FDateTime` instead of `FString` in Unreal code generation.
+- Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`.
+  The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
+- Added `beam org realms` command that prints out a list of all available realms for the requesting user.
+- New `beam content` command pallet for SAMS and Engine-integration usage.
+ 
 ### Changed
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
 - `OptionalString` overrides `.ToString()` for easier print debugging.
 - Changes on MicroserviceBootstrapper to allow the creation of OAPI document after building the Microservice
+- `beam me` command now also gives you back your active token information
+- `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
+- `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.

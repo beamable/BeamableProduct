@@ -32,7 +32,7 @@ public class GetTokenListElement
 	public string token;
 }
 
-public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTokenListCommandOutput>
+public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTokenListCommandOutput>, ISkipManifest
 {
 	public GetTokenListCommand() : base("list", "List tokens for a player or account")
 	{

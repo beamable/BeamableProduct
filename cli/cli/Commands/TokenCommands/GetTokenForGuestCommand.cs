@@ -20,7 +20,7 @@ public class GetTokenForGuestCommandOutput
 	public string[] scopes;
 	public string tokenType;
 }
-public class GetTokenForGuestCommand : AtomicCommand<GetTokenForGuestCommandArgs, GetTokenForGuestCommandOutput>
+public class GetTokenForGuestCommand : AtomicCommand<GetTokenForGuestCommandArgs, GetTokenForGuestCommandOutput>, ISkipManifest
 {
 	public GetTokenForGuestCommand() : base("new-guest", "Create a new guest token")
 	{

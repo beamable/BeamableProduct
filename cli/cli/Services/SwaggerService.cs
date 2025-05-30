@@ -523,6 +523,7 @@ public class SwaggerService
 			tasks.Add(Task.Run(async () =>
 			{
 				var url = $"{_context.Host}/{api.RelativeUrl}";
+				Log.Information("Downloading OAPI: {url}", url);
 				try
 				{
 					var stream = await downloader.GetStreamAsync(url);

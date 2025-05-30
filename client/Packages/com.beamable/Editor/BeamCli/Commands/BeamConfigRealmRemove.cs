@@ -30,13 +30,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ConfigRealmRemoveWrapper ConfigRealmRemove(ConfigRealmArgs realmArgs, ConfigRealmRemoveArgs removeArgs)
+        public virtual ConfigRealmRemoveWrapper ConfigRealmRemove(ConfigArgs configArgs, ConfigRealmArgs realmArgs, ConfigRealmRemoveArgs removeArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("config");
+            genBeamCommandArgs.Add(configArgs.Serialize());
             genBeamCommandArgs.Add("realm");
             genBeamCommandArgs.Add(realmArgs.Serialize());
             genBeamCommandArgs.Add("remove");

@@ -30,13 +30,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ConfigRealmWrapper ConfigRealm(ConfigRealmArgs realmArgs)
+        public virtual ConfigRealmWrapper ConfigRealm(ConfigArgs configArgs, ConfigRealmArgs realmArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("config");
+            genBeamCommandArgs.Add(configArgs.Serialize());
             genBeamCommandArgs.Add("realm");
             genBeamCommandArgs.Add(realmArgs.Serialize());
             // Create an instance of an IBeamCommand

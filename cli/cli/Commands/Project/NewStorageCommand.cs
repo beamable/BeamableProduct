@@ -75,8 +75,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			}
 		}
 
-		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetWorkingDir(newMicroserviceInfo.SolutionDirectory);
 
 		await args.BeamoLocalSystem.InitManifest();
 

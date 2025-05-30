@@ -282,7 +282,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				startCount = currentAssemblies.Count;
 				foreach (var currentAssembly in currentAssemblies)
 				{
-					Log.Verbose($"exanding types from {currentAssembly.FullName}");
+					Log.Verbose($"expanding types from {currentAssembly.FullName}");
 					var _ = currentAssembly.GetExportedTypes();
 				}
 

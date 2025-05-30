@@ -136,7 +136,7 @@ public class CliRequester : IRequester
 						{
 							Log.Debug(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_ctx.UpdateToken(rsp);
+							_ctx.SetToken(rsp);
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
@@ -177,7 +177,7 @@ public class CliRequester : IRequester
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
-		client.DefaultRequestHeaders.Add("X-DE-SCOPE", customerScoped ? cid : $"{cid}.{pid}");
+		client.DefaultRequestHeaders.Add("X-BEAM-SCOPE", string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}");
 
 		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
 		{

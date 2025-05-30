@@ -749,6 +749,7 @@ public static partial class OpenApiFixtures
     },
     ""openapi"": ""3.0.2""
 }";
+
 	#region proto-actor
 
 	public const string ProtoActor = @"{
@@ -3390,6 +3391,7 @@ public static partial class OpenApiFixtures
     ""url"": ""https://docs.beamable.com""
   }
 }";
+
 	#endregion
 
 	#region content basic
@@ -5094,627 +5096,671 @@ public static partial class OpenApiFixtures
     ""openapi"": ""3.0.2""
 }
 ";
+
 	#endregion
 
 	#region event-players object
 
 	public const string EventPlayersObjectApi = @"
 {
-    ""openapi"": ""3.0.1"",
-    ""info"": {
-        ""title"": ""event-players object"",
-        ""contact"": {
-            ""name"": ""Beamable Support"",
-            ""url"": ""https://api.beamable.com"",
-            ""email"": ""support@beamable.com""
-        },
-        ""version"": ""1.0""
-    },
-    ""servers"": [
-        {
-            ""url"": ""https://api.beamable.com""
-        }
-    ],
-    ""paths"": {
-        ""/object/event-players/{objectId}/claim-entitlements"": {
-            ""post"": {
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""required"": true,
-                        ""schema"": {
-                            ""type"": ""string""
-                        }
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/EventClaimEntitlementsRequest""
-                            }
-                        }
-                    }
-                },
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/CommonResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/event-players/{objectId}/"": {
-            ""get"": {
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""required"": true,
-                        ""schema"": {
-                            ""type"": ""string""
-                        }
-                    }
-                ],
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EventPlayerView""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": []
-                    }
-                ]
-            }
-        },
-        ""/object/event-players/{objectId}/claim"": {
-            ""post"": {
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""required"": true,
-                        ""schema"": {
-                            ""type"": ""string""
-                        }
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/EventClaimRequest""
-                            }
-                        }
-                    }
-                },
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EventClaimResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": []
-                    }
-                ]
-            }
-        },
-        ""/object/event-players/{objectId}/score"": {
-            ""put"": {
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""required"": true,
-                        ""schema"": {
-                            ""type"": ""string""
-                        }
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/EventScoreRequest""
-                            }
-                        }
-                    }
-                },
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/CommonResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": []
-                    }
-                ]
-            }
-        }
-    },
-    ""components"": {
-        ""schemas"": {
-            ""EventInventoryRewardItem"": {
-                ""type"": ""object"",
-                ""properties"": {
-                    ""id"": {
-                        ""type"": ""string""
-                    },
-                    ""properties"": {
-                        ""type"": ""object""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""ItemCreateRequest"": {
-                ""type"": ""object"",
-                ""properties"": {
-                    ""contentId"": {
-                        ""type"": ""string""
-                    },
-                    ""properties"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/ItemProperty""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventClaimResponse"": {
-                ""title"": ""Event Claim Response"",
-                ""type"": ""object"",
-                ""properties"": {
-                    ""view"": {
-                        ""$ref"": ""#/components/schemas/EventPlayerStateView""
-                    },
-                    ""gameRspJson"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventPlayerView"": {
-                ""title"": ""Event Player View"",
-                ""type"": ""object"",
-                ""properties"": {
-                    ""running"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventPlayerStateView""
-                        }
-                    },
-                    ""done"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventPlayerStateView""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventClaimEntitlementsRequest"": {
-                ""title"": ""Event Claim Entitlements Request"",
-                ""type"": ""object"",
-                ""properties"": {
-                    ""eventId"": {
-                        ""type"": ""string""
-                    },
-                    ""generators"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EntitlementGenerator""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""CommonResponse"": {
-                ""title"": ""Common Response"",
-                ""type"": ""object"",
-                ""properties"": {
-                    ""result"": {
-                        ""type"": ""string""
-                    },
-                    ""data"": {
-                        ""type"": ""object""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventRewardState"": {
-                ""required"": [
-                    ""min"",
-                    ""earned"",
-                    ""claimed""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""pendingInventoryRewards"": {
-                        ""$ref"": ""#/components/schemas/EventInventoryPendingRewards""
-                    },
-                    ""currencies"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventInventoryRewardCurrency""
-                        }
-                    },
-                    ""pendingCurrencyRewards"": {
-                        ""type"": ""object""
-                    },
-                    ""pendingItemRewards"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/ItemCreateRequest""
-                        }
-                    },
-                    ""items"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventInventoryRewardItem""
-                        }
-                    },
-                    ""min"": {
-                        ""type"": ""number""
-                    },
-                    ""max"": {
-                        ""type"": ""number""
-                    },
-                    ""earned"": {
-                        ""type"": ""boolean""
-                    },
-                    ""claimed"": {
-                        ""type"": ""boolean""
-                    },
-                    ""pendingEntitlementRewards"": {
-                        ""type"": ""object""
-                    },
-                    ""obtain"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRewardObtain""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventScoreRequest"": {
-                ""title"": ""Event Score Request"",
-                ""required"": [
-                    ""score""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""eventId"": {
-                        ""type"": ""string""
-                    },
-                    ""score"": {
-                        ""type"": ""number""
-                    },
-                    ""increment"": {
-                        ""type"": ""boolean""
-                    },
-                    ""stats"": {
-                        ""type"": ""object""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EntitlementGenerator"": {
-                ""type"": ""object"",
-                ""properties"": {
-                    ""quantity"": {
-                        ""type"": ""integer""
-                    },
-                    ""claimWindow"": {
-                        ""$ref"": ""#/components/schemas/EntitlementClaimWindow""
-                    },
-                    ""params"": {
-                        ""type"": ""object""
-                    },
-                    ""symbol"": {
-                        ""type"": ""string""
-                    },
-                    ""specialization"": {
-                        ""type"": ""string""
-                    },
-                    ""action"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventRewardObtain"": {
-                ""required"": [
-                    ""count""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""symbol"": {
-                        ""type"": ""string""
-                    },
-                    ""count"": {
-                        ""type"": ""integer""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventClaimRequest"": {
-                ""title"": ""Event Claim Request"",
-                ""type"": ""object"",
-                ""properties"": {
-                    ""eventId"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventInventoryRewardCurrency"": {
-                ""required"": [
-                    ""amount""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""id"": {
-                        ""type"": ""string""
-                    },
-                    ""amount"": {
-                        ""type"": ""integer""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventInventoryPendingRewards"": {
-                ""required"": [
-                    ""empty""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""currencies"": {
-                        ""type"": ""object""
-                    },
-                    ""items"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/ItemCreateRequest""
-                        }
-                    },
-                    ""empty"": {
-                        ""type"": ""boolean""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventPlayerStateView"": {
-                ""required"": [
-                    ""score"",
-                    ""rank"",
-                    ""running"",
-                    ""secondsRemaining""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""name"": {
-                        ""type"": ""string""
-                    },
-                    ""running"": {
-                        ""type"": ""boolean""
-                    },
-                    ""allPhases"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventPlayerPhaseView""
-                        }
-                    },
-                    ""rank"": {
-                        ""type"": ""integer""
-                    },
-                    ""score"": {
-                        ""type"": ""number""
-                    },
-                    ""currentPhase"": {
-                        ""$ref"": ""#/components/schemas/EventPlayerPhaseView""
-                    },
-                    ""secondsRemaining"": {
-                        ""type"": ""integer""
-                    },
-                    ""id"": {
-                        ""type"": ""string""
-                    },
-                    ""leaderboardId"": {
-                        ""type"": ""string""
-                    },
-                    ""rankRewards"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRewardState""
-                        }
-                    },
-                    ""groupRewards"": {
-                        ""$ref"": ""#/components/schemas/EventPlayerGroupState""
-                    },
-                    ""scoreRewards"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRewardState""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EntitlementClaimWindow"": {
-                ""required"": [
-                    ""open"",
-                    ""close""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""open"": {
-                        ""type"": ""integer""
-                    },
-                    ""close"": {
-                        ""type"": ""integer""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventPlayerPhaseView"": {
-                ""required"": [
-                    ""durationSeconds""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""name"": {
-                        ""type"": ""string""
-                    },
-                    ""durationSeconds"": {
-                        ""type"": ""integer""
-                    },
-                    ""rules"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRule""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""ItemProperty"": {
-                ""type"": ""object"",
-                ""properties"": {
-                    ""name"": {
-                        ""type"": ""string""
-                    },
-                    ""value"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventRule"": {
-                ""type"": ""object"",
-                ""properties"": {
-                    ""rule"": {
-                        ""type"": ""string""
-                    },
-                    ""value"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false
-            },
-            ""EventPlayerGroupState"": {
-                ""required"": [
-                    ""groupScore"",
-                    ""groupRank""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                    ""groupScore"": {
-                        ""type"": ""number""
-                    },
-                    ""groupId"": {
-                        ""type"": ""string""
-                    },
-                    ""rankRewards"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRewardState""
-                        }
-                    },
-                    ""groupRank"": {
-                        ""type"": ""integer""
-                    },
-                    ""scoreRewards"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""$ref"": ""#/components/schemas/EventRewardState""
-                        }
-                    }
-                },
-                ""additionalProperties"": false
-            }
-        },
-        ""securitySchemes"": {
-            ""userRequired"": {
-                ""type"": ""apiKey"",
-                ""description"": ""Gamer Tag of the player."",
-                ""name"": ""X-DE-GAMERTAG"",
-                ""in"": ""header""
-            },
-            ""scope"": {
-                ""type"": ""apiKey"",
-                ""description"": ""Customer and project scope. This should contain the '<customer-id>.<project-id>'."",
-                ""name"": ""X-DE-SCOPE"",
-                ""in"": ""header""
-            },
-            ""api"": {
-                ""type"": ""apiKey"",
-                ""description"": ""Signed Request authentication using project secret key."",
-                ""name"": ""X-DE-SIGNATURE"",
-                ""in"": ""header""
-            },
-            ""user"": {
-                ""type"": ""http"",
-                ""description"": ""Bearer authentication with an player access token in the Authorization header."",
-                ""scheme"": ""bearer"",
-                ""bearerFormat"": ""Bearer <Access Token>""
-            }
-        }
-    },
-    ""externalDocs"": {
-        ""description"": ""Beamable Documentation"",
-        ""url"": ""https://docs.beamable.com""
+  ""info"": {
+    ""title"": ""event-players object"",
+    ""version"": ""1.0"",
+    ""contact"": {
+      ""name"": ""Beamable Support"",
+      ""url"": ""https://api.beamable.com"",
+      ""email"": ""support@beamable.com""
     }
+  },
+  ""servers"": [
+    {
+      ""url"": ""https://api.beamable.com""
+    }
+  ],
+  ""paths"": {
+    ""/object/event-players/{objectId}/"": {
+      ""get"": {
+        ""responses"": {
+          ""200"": {
+            ""description"": """",
+            ""content"": {
+              ""application/json"": {
+                ""schema"": {
+                  ""$ref"": ""#/components/schemas/EventPlayerView""
+                }
+              }
+            }
+          },
+          ""400"": {
+            ""description"": ""Bad Request""
+          }
+        },
+        ""parameters"": [
+          {
+            ""name"": ""objectId"",
+            ""in"": ""path"",
+            ""schema"": {
+              ""type"": ""string""
+            },
+            ""description"": ""Gamertag of the player.Underlying objectId type is integer in format int64."",
+            ""required"": true,
+            ""x-beamable-object-id"": {
+              ""type"": ""integer"",
+              ""format"": ""int64""
+            }
+          }
+        ],
+        ""security"": [
+          {
+            ""user"": []
+          },
+          {
+            ""server"": []
+          }
+        ]
+      },
+      ""parameters"": [
+        {
+          ""name"": ""X-BEAM-SCOPE"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Customer and project scope. This should be in the form of '\u003Ccustomer-id\u003E.\u003Cproject-id\u003E'."",
+          ""required"": true
+        },
+        {
+          ""name"": ""X-BEAM-GAMERTAG"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Override the Gamer Tag of the player. This is generally inferred by the auth token."",
+          ""required"": false
+        }
+      ]
+    },
+    ""/object/event-players/{objectId}/claim"": {
+      ""post"": {
+        ""responses"": {
+          ""200"": {
+            ""description"": """",
+            ""content"": {
+              ""application/json"": {
+                ""schema"": {
+                  ""$ref"": ""#/components/schemas/EventClaimResponse""
+                }
+              }
+            }
+          },
+          ""400"": {
+            ""description"": ""Bad Request""
+          }
+        },
+        ""parameters"": [
+          {
+            ""name"": ""objectId"",
+            ""in"": ""path"",
+            ""schema"": {
+              ""type"": ""string""
+            },
+            ""description"": ""Gamertag of the player.Underlying objectId type is integer in format int64."",
+            ""required"": true,
+            ""x-beamable-object-id"": {
+              ""type"": ""integer"",
+              ""format"": ""int64""
+            }
+          }
+        ],
+        ""requestBody"": {
+          ""content"": {
+            ""application/json"": {
+              ""schema"": {
+                ""$ref"": ""#/components/schemas/EventClaimRequest""
+              }
+            }
+          }
+        },
+        ""security"": [
+          {
+            ""user"": []
+          },
+          {
+            ""server"": []
+          }
+        ]
+      },
+      ""parameters"": [
+        {
+          ""name"": ""X-BEAM-SCOPE"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Customer and project scope. This should be in the form of '\u003Ccustomer-id\u003E.\u003Cproject-id\u003E'."",
+          ""required"": true
+        },
+        {
+          ""name"": ""X-BEAM-GAMERTAG"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Override the Gamer Tag of the player. This is generally inferred by the auth token."",
+          ""required"": false
+        }
+      ]
+    },
+    ""/object/event-players/{objectId}/score"": {
+      ""put"": {
+        ""responses"": {
+          ""200"": {
+            ""description"": """",
+            ""content"": {
+              ""application/json"": {
+                ""schema"": {
+                  ""$ref"": ""#/components/schemas/CommonResponse""
+                }
+              }
+            }
+          },
+          ""400"": {
+            ""description"": ""Bad Request""
+          }
+        },
+        ""parameters"": [
+          {
+            ""name"": ""objectId"",
+            ""in"": ""path"",
+            ""schema"": {
+              ""type"": ""string""
+            },
+            ""description"": ""Gamertag of the player.Underlying objectId type is integer in format int64."",
+            ""required"": true,
+            ""x-beamable-object-id"": {
+              ""type"": ""integer"",
+              ""format"": ""int64""
+            }
+          }
+        ],
+        ""requestBody"": {
+          ""content"": {
+            ""application/json"": {
+              ""schema"": {
+                ""$ref"": ""#/components/schemas/EventScoreRequest""
+              }
+            }
+          }
+        },
+        ""security"": [
+          {
+
+          }
+        ]
+      },
+      ""parameters"": [
+        {
+          ""name"": ""X-BEAM-SCOPE"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Customer and project scope. This should be in the form of '\u003Ccustomer-id\u003E.\u003Cproject-id\u003E'."",
+          ""required"": true
+        },
+        {
+          ""name"": ""X-BEAM-GAMERTAG"",
+          ""in"": ""header"",
+          ""schema"": {
+            ""type"": ""string""
+          },
+          ""description"": ""Override the Gamer Tag of the player. This is generally inferred by the auth token."",
+          ""required"": false
+        }
+      ]
+    }
+  },
+  ""components"": {
+    ""schemas"": {
+      ""EventInventoryRewardItem"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""id"": {
+            ""type"": ""string""
+          },
+          ""properties"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          }
+        },
+        ""required"": [
+          ""id""
+        ]
+      },
+      ""ItemCreateRequest"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""contentId"": {
+            ""type"": ""string""
+          },
+          ""properties"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/ItemProperty""
+            }
+          }
+        },
+        ""required"": [
+          ""contentId"",
+          ""properties""
+        ]
+      },
+      ""EventClaimResponse"": {
+        ""properties"": {
+          ""view"": {
+            ""$ref"": ""#/components/schemas/EventPlayerStateView""
+          },
+          ""gameRspJson"": {
+            ""type"": ""string""
+          }
+        },
+        ""additionalProperties"": false,
+        ""title"": ""Event Claim Response"",
+        ""type"": ""object"",
+        ""required"": [
+          ""view"",
+          ""gameRspJson""
+        ]
+      },
+      ""EventPlayerView"": {
+        ""properties"": {
+          ""running"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventPlayerStateView""
+            }
+          },
+          ""done"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventPlayerStateView""
+            }
+          }
+        },
+        ""additionalProperties"": false,
+        ""title"": ""Event Player View"",
+        ""type"": ""object"",
+        ""required"": [
+          ""running"",
+          ""done""
+        ]
+      },
+      ""CommonResponse"": {
+        ""properties"": {
+          ""result"": {
+            ""type"": ""string""
+          },
+          ""data"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          }
+        },
+        ""additionalProperties"": false,
+        ""title"": ""Common Response"",
+        ""type"": ""object"",
+        ""required"": [
+          ""result"",
+          ""data""
+        ]
+      },
+      ""EventRewardState"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""pendingInventoryRewards"": {
+            ""$ref"": ""#/components/schemas/EventInventoryPendingRewards""
+          },
+          ""currencies"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventInventoryRewardCurrency""
+            }
+          },
+          ""pendingCurrencyRewards"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          },
+          ""pendingItemRewards"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/ItemCreateRequest""
+            }
+          },
+          ""items"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventInventoryRewardItem""
+            }
+          },
+          ""min"": {
+            ""type"": ""number"",
+            ""format"": ""double""
+          },
+          ""max"": {
+            ""type"": ""number"",
+            ""format"": ""double""
+          },
+          ""earned"": {
+            ""type"": ""boolean""
+          },
+          ""claimed"": {
+            ""type"": ""boolean""
+          },
+          ""pendingEntitlementRewards"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          },
+          ""obtain"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRewardObtain""
+            }
+          }
+        },
+        ""required"": [
+          ""min"",
+          ""earned"",
+          ""claimed"",
+          ""pendingInventoryRewards""
+        ]
+      },
+      ""EventScoreRequest"": {
+        ""properties"": {
+          ""eventId"": {
+            ""type"": ""string""
+          },
+          ""score"": {
+            ""type"": ""number"",
+            ""format"": ""double""
+          },
+          ""increment"": {
+            ""type"": ""boolean""
+          },
+          ""stats"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          }
+        },
+        ""additionalProperties"": false,
+        ""title"": ""Event Score Request"",
+        ""type"": ""object"",
+        ""required"": [
+          ""eventId"",
+          ""score""
+        ]
+      },
+      ""EventRewardObtain"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""symbol"": {
+            ""type"": ""string""
+          },
+          ""count"": {
+            ""type"": ""integer"",
+            ""format"": ""int32""
+          }
+        },
+        ""required"": [
+          ""symbol"",
+          ""count""
+        ]
+      },
+      ""EventClaimRequest"": {
+        ""properties"": {
+          ""eventId"": {
+            ""type"": ""string""
+          }
+        },
+        ""additionalProperties"": false,
+        ""title"": ""Event Claim Request"",
+        ""type"": ""object"",
+        ""required"": [
+          ""eventId""
+        ]
+      },
+      ""EventInventoryRewardCurrency"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""id"": {
+            ""type"": ""string""
+          },
+          ""amount"": {
+            ""type"": ""integer"",
+            ""format"": ""int64""
+          }
+        },
+        ""required"": [
+          ""id"",
+          ""amount""
+        ]
+      },
+      ""EventInventoryPendingRewards"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""currencies"": {
+            ""type"": ""object"",
+            ""additionalProperties"": {
+              ""type"": ""string""
+            }
+          },
+          ""items"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/ItemCreateRequest""
+            }
+          },
+          ""empty"": {
+            ""type"": ""boolean""
+          }
+        },
+        ""required"": [
+          ""empty""
+        ]
+      },
+      ""EventPlayerStateView"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""name"": {
+            ""type"": ""string""
+          },
+          ""running"": {
+            ""type"": ""boolean""
+          },
+          ""allPhases"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventPlayerPhaseView""
+            }
+          },
+          ""rank"": {
+            ""type"": ""integer"",
+            ""format"": ""int64""
+          },
+          ""score"": {
+            ""type"": ""number"",
+            ""format"": ""double""
+          },
+          ""currentPhase"": {
+            ""$ref"": ""#/components/schemas/EventPlayerPhaseView""
+          },
+          ""secondsRemaining"": {
+            ""type"": ""integer"",
+            ""format"": ""int64""
+          },
+          ""id"": {
+            ""type"": ""string""
+          },
+          ""leaderboardId"": {
+            ""type"": ""string""
+          },
+          ""rankRewards"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRewardState""
+            }
+          },
+          ""groupRewards"": {
+            ""$ref"": ""#/components/schemas/EventPlayerGroupState""
+          },
+          ""scoreRewards"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRewardState""
+            }
+          }
+        },
+        ""required"": [
+          ""id"",
+          ""name"",
+          ""leaderboardId"",
+          ""score"",
+          ""rank"",
+          ""scoreRewards"",
+          ""rankRewards"",
+          ""running"",
+          ""secondsRemaining"",
+          ""allPhases""
+        ]
+      },
+      ""EventPlayerPhaseView"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""name"": {
+            ""type"": ""string""
+          },
+          ""durationSeconds"": {
+            ""type"": ""integer"",
+            ""format"": ""int64""
+          },
+          ""rules"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRule""
+            }
+          }
+        },
+        ""required"": [
+          ""name"",
+          ""durationSeconds"",
+          ""rules""
+        ]
+      },
+      ""ItemProperty"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""name"": {
+            ""type"": ""string""
+          },
+          ""value"": {
+            ""type"": ""string""
+          }
+        },
+        ""required"": [
+          ""name"",
+          ""value""
+        ]
+      },
+      ""EventRule"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""rule"": {
+            ""type"": ""string""
+          },
+          ""value"": {
+            ""type"": ""string""
+          }
+        },
+        ""required"": [
+          ""rule"",
+          ""value""
+        ]
+      },
+      ""EventPlayerGroupState"": {
+        ""type"": ""object"",
+        ""additionalProperties"": false,
+        ""properties"": {
+          ""groupScore"": {
+            ""type"": ""number"",
+            ""format"": ""double""
+          },
+          ""groupId"": {
+            ""type"": ""string""
+          },
+          ""rankRewards"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRewardState""
+            }
+          },
+          ""groupRank"": {
+            ""type"": ""integer"",
+            ""format"": ""int64""
+          },
+          ""scoreRewards"": {
+            ""type"": ""array"",
+            ""items"": {
+              ""$ref"": ""#/components/schemas/EventRewardState""
+            }
+          }
+        },
+        ""required"": [
+          ""groupScore"",
+          ""groupRank"",
+          ""scoreRewards"",
+          ""rankRewards""
+        ]
+      }
+    },
+    ""securitySchemes"": {
+      ""server"": {
+        ""type"": ""apiKey"",
+        ""name"": ""X-DE-SIGNATURE"",
+        ""in"": ""header"",
+        ""description"": ""Signed Request authentication using project secret key.""
+      },
+      ""user"": {
+        ""type"": ""http"",
+        ""description"": ""Bearer authentication with an player access token in the Authorization header."",
+        ""scheme"": ""bearer"",
+        ""bearerFormat"": ""Bearer \u003CAccess Token\u003E""
+      }
+    }
+  },
+  ""security"": [],
+  ""externalDocs"": {
+    ""description"": ""Beamable Documentation"",
+    ""url"": ""https://docs.beamable.com""
+  },
+  ""openapi"": ""3.0.2""
 }";
 
 	#endregion

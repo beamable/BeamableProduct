@@ -1,8 +1,8 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using cli.Content;
 using cli.Services;
-using cli.Services.Content;
 using Microsoft.Extensions.DependencyInjection;
 using BeamActivity = Beamable.Server.BeamActivity;
 

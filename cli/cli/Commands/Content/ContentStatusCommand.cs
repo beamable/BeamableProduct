@@ -1,9 +1,11 @@
-﻿using cli.Services.Content;
+﻿using Spectre.Console;
 
 namespace cli.Content;
 
 public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 {
+	const int DEFAULT_TABLE_LIMIT = 100;
+
 	private ContentService _contentService;
 
 	public ContentStatusCommand() : base("status", "Show current status of the content")
@@ -24,9 +26,60 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
-		
-		foreach (string id in args.ManifestIds) 
-			await _contentService.DisplayStatusTable(id, args.showUpToDate, args.limit, args.skip);
+
+		var localContentFileTasks = args.ManifestIds.Select(async m => await _contentService.GetAllContentFiles(manifestId: m)).ToArray();
+		var localContentFiles = await Task.WhenAll(localContentFileTasks);
+
+		for (var i = 0; i < localContentFiles.Length; i++)
+		{
+			var files = localContentFiles[i];
+			DisplayStatusTable(files, args.showUpToDate, args.limit, args.skip);
+		}
+	}
+
+	public static void DisplayStatusTable(LocalContentFiles files, bool showUpToDate, int limit, int skipAmount)
+	{
+		var totalCount = files.ContentFiles.Count;
+		var table = new Table();
+		table.AddColumn("Current status");
+		table.AddColumn("ID");
+		table.AddColumn(new TableColumn("tags").RightAligned());
+
+		var toShow = files.ContentFiles;
+		if (!showUpToDate)
+		{
+			toShow = toShow.Where(content => content.GetStatus() is not ContentStatus.UpToDate).ToList();
+		}
+
+		if (!showUpToDate && toShow.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[green]Your local content is up to date with remote.[/]");
+			return;
+		}
+
+
+		var paginatedToShow = toShow.Skip(skipAmount).Take(limit > 0 ? limit : DEFAULT_TABLE_LIMIT).ToList();
+		foreach (var content in paginatedToShow)
+		{
+			var tags = content.GetTagStatus().Select(pair =>
+			{
+				switch (pair.Value)
+				{
+					case TagStatus.LocalOnly:
+						return $"[green][[+]]{pair.Key}[/]";
+					case TagStatus.RemoteOnly:
+						return $"[red][[-]]{pair.Key}[/]";
+					case TagStatus.LocalAndRemote:
+						return pair.Key;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			});
+			table.AddRow(content.GetStatusString(), content.Id, string.Join(",", tags));
+		}
+
+		AnsiConsole.Write(table);
+		AnsiConsole.WriteLine($"Content: {paginatedToShow.Count} out of {totalCount}");
 	}
 }
 

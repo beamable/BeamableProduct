@@ -75,7 +75,7 @@ public class CLITestExtensions : CLITest
 		if (mockAuth)
 			Mock<IAuthApi>(mock =>
 			{
-				mock.Setup(x => x.Login(userName, password, false, false))
+				mock.Setup(x => x.Login(userName, password, false, true))
 					.ReturnsPromise(new TokenResponse
 					{
 						refresh_token = "refresh",

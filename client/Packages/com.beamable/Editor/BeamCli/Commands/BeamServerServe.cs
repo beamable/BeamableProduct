@@ -14,6 +14,12 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool autoIncPort;
         /// <summary>The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer</summary>
         public int selfDestructSeconds;
+        /// <summary>Listens to the given process id. Terminates this long-running command when the it no longer is running</summary>
+        public int requireProcessId;
+        /// <summary>When true, will use custom logic to split the command line given to the server via HTTP request.
+        ///The default splitter (from Microsoft) does NOT allow you to pass in JSON blobs as arguments.
+        ///The custom splitter does its best to support all our commands correctly and accept json blobs as arguments</summary>
+        public bool customSplitter;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -38,6 +44,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.selfDestructSeconds != default(int)))
             {
                 genBeamCommandArgs.Add(("--self-destruct-seconds=" + this.selfDestructSeconds));
+            }
+            // If the requireProcessId value was not default, then add it to the list of args.
+            if ((this.requireProcessId != default(int)))
+            {
+                genBeamCommandArgs.Add(("--require-process-id=" + this.requireProcessId));
+            }
+            // If the customSplitter value was not default, then add it to the list of args.
+            if ((this.customSplitter != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--custom-splitter=" + this.customSplitter));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

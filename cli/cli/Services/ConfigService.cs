@@ -27,14 +27,53 @@ public class ConfigService
 {
 	private readonly CliEnvironment _environment;
 	private readonly ConfigDirOption _configDirOption;
-	public string WorkingDirectory => _dir;
-	public bool? DirectoryExists { get; private set; }
-	[CanBeNull] public string ConfigDirectoryPath { get; private set; }
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public string WorkingDirectory => _workingDirectory;
+
+	/// <summary>
+	/// Path to the folder containing the <see cref="ConfigDirectoryPath"/>.
+	/// </summary>
 	public string BaseDirectory => Path.GetDirectoryName(ConfigDirectoryPath);
 
-	[CanBeNull] private Dictionary<string, string> _config;
+	/// <summary>
+	/// Whether we are operating inside a "Beamable" context or not. This is defined by whether we have a <see cref="Constants.CONFIG_FOLDER"/> in our parent directory chain.
+	/// </summary>
+	public bool? DirectoryExists { get; private set; }
 
-	private string _dir;
+	/// <summary>
+	/// When <see cref="DirectoryExists"/>, this holds the path to the <see cref="Constants.CONFIG_FOLDER"/>.
+	/// </summary>
+	[CanBeNull]
+	public string ConfigDirectoryPath { get; private set; }
+	
+	/// <summary>
+	/// When <see cref="DirectoryExists"/>, this holds the path to the <see cref="Constants.CONFIG_FOLDER"/>/<see cref="Constants.TEMP_FOLDER"/>.
+	/// </summary>
+	[CanBeNull]
+	public string ConfigTempDirectoryPath { get; private set; }
+
+	/// <summary>
+	/// When <see cref="DirectoryExists"/>, this holds the path to the <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
+	/// </summary>
+	[CanBeNull]
+	public string ConfigLocalOverridesDirectoryPath { get; private set; }
+
+
+	/// <summary>
+	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/>.
+	/// </summary>
+	private Dictionary<string, string> _config;
+
+	/// <summary>
+	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/> that lives inside the <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
+	/// </summary>
+	private Dictionary<string, string> _configLocalOverrides;
+
+	private string _workingDirectory;
+
 	private BindingContext _bindingCtx;
 	private string WorkingDirectoryFullPath => Path.GetFullPath(WorkingDirectory);
 
@@ -43,26 +82,100 @@ public class ConfigService
 		_bindingCtx = bindingCtx;
 		_environment = environment;
 		_configDirOption = configDirOption;
+
+		_config = new();
+		_configLocalOverrides = new();
 	}
 
-	public void SetupBasePath(BindingContext bindingContext)
+	/// <summary>
+	/// Changes the <see cref="_workingDirectory"/> and recomputes <see cref="DirectoryExists"/>, the <see cref="ConfigDirectoryPath"/> and <see cref="ConfigLocalOverridesDirectoryPath"/>
+	/// based on the new <see cref="_workingDirectory"/>.
+	/// 
+	/// If a null/empty string is provided, this will use the <see cref="Directory.GetCurrentDirectory"/>.
+	/// </summary>
+	public void SetWorkingDir(string dir = null)
 	{
-		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
+		// If no directory is provided, assume the current directory is the working directory.
+		if (string.IsNullOrEmpty(dir) && !TryGetSetting(out dir, _bindingCtx, _configDirOption))
 		{
-			_dir = Directory.GetCurrentDirectory();
+			dir = Directory.GetCurrentDirectory();
 		}
-		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
+		_workingDirectory = dir;
+
+		// We try to find a ".beamable" folder going up the hierarchy from the working directory.
+		DirectoryExists = TryToFindBeamableFolder(_workingDirectory, out var configPath);
+
+		// If the directory exists in our hierarchy, let's set that as the config path.
+		// Otherwise, we set it as whatever the working directory is.
+		configPath = DirectoryExists.HasValue && DirectoryExists.Value ? configPath : _workingDirectory;
+
+		// If the config path is not a ".beamable" folder, we append it.
+		// This means that --- outside of a "Beamable Context", the config path is '_workingDirectory/.beamable'
+		// (which means that if/when we flush the config, that's where the .beamable context will be created).
+		// This is a useful property to have on this function due to how our initialization is set up. 
+		if (!configPath.EndsWith(Constants.CONFIG_FOLDER))
+			configPath = Path.Combine(configPath, Constants.CONFIG_FOLDER);
+
+		// Compute the Config and Local Overrides Path based off the found configPath.
 		ConfigDirectoryPath = configPath;
+		ConfigTempDirectoryPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER);
+		ConfigLocalOverridesDirectoryPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY);
 	}
-	
-	public void Init(BindingContext bindingContext)
+
+	/// <summary>
+	/// Reloads the files at <see cref="ConfigDirectoryPath"/> and <see cref="ConfigLocalOverridesDirectoryPath"/> and parses them out while validating. 
+	/// This is a no-op when called outside a valid beamable context (as in, if <see cref="DirectoryExists"/> is `false`).  
+	/// </summary>
+	public void RefreshConfig()
 	{
-		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
+		if (DirectoryExists.GetValueOrDefault(false))
 		{
-			_dir = Directory.GetCurrentDirectory();
+			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+			{
+				Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
+			}
+
+			MigrateOldConfigIfExists();
+
+			_ = ReadConfigFile(ConfigDirectoryPath, false, true, out _config);
+			_ = ReadConfigFile(ConfigLocalOverridesDirectoryPath, true, false, out _configLocalOverrides);
+		}
+	}
+
+
+	/// <summary>
+	/// This commands goes through RENAMED_FILES dictionary and looks for files in config with obsolete names and renames
+	/// them to currently used names.
+	/// </summary>
+	private void MigrateOldConfigIfExists()
+	{
+		foreach (string key in Constants.RENAMED_DIRECTORIES.Keys)
+		{
+			var oldPath = GetConfigPath(key);
+			var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
+
+			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
+			if (Directory.Exists(newPath))
+				continue;
+
+			// If the old path exists and the new path doesn't, we move the old path into the new path.
+			if (Directory.Exists(oldPath))
+				Directory.Move(oldPath, newPath!);
 		}
 
-		RefreshConfig();
+		foreach (string key in Constants.RENAMED_FILES.Keys)
+		{
+			var oldPath = GetConfigPath(key);
+			var newPath = GetConfigPath(Constants.RENAMED_FILES[key] as string);
+
+			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
+			if (File.Exists(newPath))
+				continue;
+
+			// If the old Path is there, we simply move it to the NewPath
+			if (File.Exists(oldPath))
+				File.Move(oldPath, newPath!);
+		}
 	}
 
 	/// <summary>
@@ -73,8 +186,11 @@ public class ConfigService
 	public bool IsPathInBeamableDirectory(string path)
 	{
 		var fullPath = Path.GetFullPath(path);
-		var parent = Path.GetDirectoryName(ConfigDirectoryPath);
-		if (parent == "") parent = ".";
+
+		var parent = BaseDirectory;
+		if (string.IsNullOrEmpty(parent))
+			parent = ".";
+
 		return fullPath.StartsWith(Path.GetFullPath(parent));
 	}
 
@@ -87,7 +203,7 @@ public class ConfigService
 		var path = BaseDirectory;
 		if (string.IsNullOrEmpty(path))
 		{
-			path = _dir;
+			path = _workingDirectory;
 		}
 
 		return Path.GetFullPath(path);
@@ -185,9 +301,7 @@ public class ConfigService
 
 	public void SaveDataFile<T>(string fileName, T data)
 	{
-	
-		var json = JsonConvert.SerializeObject(data,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+		var json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		var file = GetConfigPath(fileName);
 		var dir = Path.GetDirectoryName(file);
 		Directory.CreateDirectory(dir);
@@ -196,6 +310,7 @@ public class ConfigService
 	}
 
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
+
 	public List<string> LoadPathsToIgnoreFromFile()
 	{
 		var paths = LoadDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE);
@@ -244,12 +359,6 @@ public class ConfigService
 		}
 	}
 
-	public void SetTempWorkingDir(string dir)
-	{
-		_dir = dir;
-		SetBeamableDirectory(_dir);
-	}
-
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
@@ -259,7 +368,7 @@ public class ConfigService
 	public const string CONFIG_FILE_PATHS_TO_IGNORE = "project-paths-to-ignore.json";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
-	
+
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
@@ -294,13 +403,13 @@ public class ConfigService
 		{
 			rootPath = ".";
 		}
-		
+
 		searchPaths.Add(rootPath);
-		
+
 		foreach (var extra in extraPaths)
 		{
 			if (string.IsNullOrEmpty(extra)) continue;
-			
+
 			if (Path.IsPathRooted(extra))
 			{
 				searchPaths.Add(extra);
@@ -311,9 +420,8 @@ public class ConfigService
 				searchPaths.Add(full);
 			}
 		}
-
 	}
-	
+
 	/// <summary>
 	/// 'extra project paths' tells the CLI to scan additional directories for .csproj files.
 	/// These paths can be stored in a config file in the .beamable folder, or can be given
@@ -332,12 +440,12 @@ public class ConfigService
 		{
 			allPaths.AddRange(cliPaths);
 		}
+
 		return allPaths;
 	}
-	
-	
-	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
-		string defaultValue = null)
+
+
+	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option
 		value = context.ParseResult.GetValueForOption(option);
@@ -361,6 +469,17 @@ public class ConfigService
 	[CanBeNull]
 	public string GetConfigString(string key, [CanBeNull] string defaultValue = null)
 	{
+		if (_configLocalOverrides?.TryGetValue(key, out var value) ?? false)
+		{
+			return value;
+		}
+
+		return GetConfigStringIgnoreOverride(key, defaultValue);
+	}
+	
+	[CanBeNull]
+	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null)
+	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
 		{
 			return value;
@@ -369,23 +488,47 @@ public class ConfigService
 		return defaultValue;
 	}
 
+	/// <summary>
+	/// Use this in conjunction with <see cref="FlushLocalOverrides"/> to flush a configuration setting that will NOT be version controlled AND takes precedence over the <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/>.
+	/// </summary>
+	public string SetLocalOverride(string key, string value)
+	{
+		if (_configLocalOverrides != null) _configLocalOverrides[key] = value;
+		return _configLocalOverrides[key];
+	}
+
+	/// <summary>
+	/// Use this along with <see cref="FlushLocalOverrides"/> to remove a local override with the given key. 
+	/// </summary>
+	public bool DeleteLocalOverride(string key)
+	{
+		return _configLocalOverrides.Remove(key);
+	}
+
+	/// <summary>
+	/// Use this along with <see cref="FlushConfig"/> to flush a configuration setting that WILL be Version Controlled AND is overriden by files in <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
+	/// </summary>
 	public string SetConfigString(string key, string value)
 	{
 		if (_config != null) _config[key] = value;
 		return _config[key];
 	}
 
-	public void SetBeamableDirectory(string dir)
-	{
-		ConfigDirectoryPath = Path.Combine(dir, Constants.CONFIG_FOLDER);
-	}
-
 	public void FlushConfig()
 	{
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
-		var json = JsonConvert.SerializeObject(_config,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+
+		// Flush the config
+		var json = JsonConvert.SerializeObject(_config, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+		if (!IsConfigValid(_config, true, out var missingRequiredKeys))
+		{
+			var err = "Config is not valid.";
+			err += missingRequiredKeys.Count == 0 ? "" : $"\nMissing Keys: {string.Join(",", missingRequiredKeys)}";
+			err += $"\nFull Json Below:\n{json}";
+			throw new CliException(err);
+		}
+
 		if (!Directory.Exists(ConfigDirectoryPath))
 		{
 			Directory.CreateDirectory(ConfigDirectoryPath);
@@ -401,6 +544,28 @@ public class ConfigService
 	}
 
 	/// <summary>
+	/// Calling this function allows you to set the local config overrides.
+	/// </summary>
+	public void FlushLocalOverrides()
+	{
+		if (string.IsNullOrEmpty(ConfigLocalOverridesDirectoryPath))
+			throw new CliException("No beamable project exists. Please use beam init");
+
+		// Flush the overrides
+		var json = JsonConvert.SerializeObject(_configLocalOverrides, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+		if (!IsConfigValid(_configLocalOverrides, false, out _))
+			throw new CliException($"Config overrides are not valid. Overrides:\n{json}");
+
+		if (!Directory.Exists(ConfigLocalOverridesDirectoryPath))
+		{
+			Directory.CreateDirectory(ConfigLocalOverridesDirectoryPath);
+		}
+
+		string fullPath = Path.Combine(ConfigLocalOverridesDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		File.WriteAllText(fullPath, json);
+	}
+
+	/// <summary>
 	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
 	/// </summary>
 	public void EnforceDotNetToolsManifest(out string pathToToolsManifest)
@@ -409,7 +574,7 @@ public class ConfigService
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
+		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath)!.ToString();
 		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
 
 		// Create the sibling ".config" folder if its not there.
@@ -483,7 +648,7 @@ public class ConfigService
 	{
 		return TryGetProjectBeamableCLIVersion(ConfigDirectoryPath, out version);
 	}
-	
+
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
@@ -495,10 +660,11 @@ public class ConfigService
 			return false;
 		}
 
-		bool foundFile = false;
+		// Loop until we find the file OR we get to the disk root.
 		string currentPath = configDirectoryPath;
-		while (!foundFile)
+		while (true)
 		{
+			// If we have no parents (reached the root dir), we simply step out.
 			var parent = Path.GetDirectoryName(currentPath);
 			if (string.IsNullOrEmpty(parent))
 			{
@@ -506,6 +672,7 @@ public class ConfigService
 				return false;
 			}
 
+			// If we found the path, hurray... other-wise, look one level up.
 			var possibleConfigFilePath = Path.Combine(parent, ".config", "dotnet-tools.json");
 			if (File.Exists(possibleConfigFilePath))
 			{
@@ -542,7 +709,14 @@ public class ConfigService
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		string ignoreFilePath = GetIgnoreFilePath(system);
+		var ignoreFilePath = system switch
+		{
+			Vcs.Git => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
+			Vcs.SVN => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
+			Vcs.P4 => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
+			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
+		};
+
 		if (File.Exists(ignoreFilePath) && !forceCreate)
 			return;
 
@@ -565,7 +739,7 @@ public class ConfigService
 	public bool ReadTokenFromFile(out CliToken response)
 	{
 		response = null;
-		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		var fullPath = GetActiveTokenFilePath();
 		if (!File.Exists(fullPath)) return false;
 
 		try
@@ -584,26 +758,27 @@ public class ConfigService
 
 	public void SaveTokenToFile(IAccessToken response)
 	{
-		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = GetActiveTokenFilePath();
 		var dir = Path.GetDirectoryName(fullPath);
-		Directory.CreateDirectory(dir);
-		var json = JsonConvert.SerializeObject(response,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+		Directory.CreateDirectory(dir!);
+		var json = JsonConvert.SerializeObject(response, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		File.WriteAllText(fullPath, json);
 	}
 
 	public void DeleteTokenFile()
 	{
-		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = GetActiveTokenFilePath();
 		if (File.Exists(fullPath))
 		{
 			File.Delete(fullPath);
 		}
 	}
 
+	public string GetActiveTokenFilePath() => Path.Combine(ConfigDirectoryPath!, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+
 	public void RemoveConfigFolderContent()
 	{
-		if (TryToFindBeamableConfigFolder(out var path))
+		if (TryToFindBeamableFolder(_workingDirectory, out var path))
 		{
 			var directory = new DirectoryInfo(path);
 			foreach (FileInfo file in directory.GetFiles())
@@ -618,60 +793,9 @@ public class ConfigService
 		}
 	}
 
-	public void RefreshConfig()
-	{
-		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
-		ConfigDirectoryPath = configPath;
-		if (DirectoryExists.GetValueOrDefault(false))
-		{
-			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
-			{
-				Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
-			}
-
-			MigrateOldConfigIfExists();
-		}
-
-		TryToReadConfigFile(ConfigDirectoryPath, out _config);
-	}
-
 	/// <summary>
-	/// This commands goes through RENAMED_FILES dictionary and looks for files in config with obsolete names and renames
-	/// them to currently used names.
+	/// Utility function that goes up from the relative path looking for a folder with the name <see cref="Constants.CONFIG_FOLDER"/>.
 	/// </summary>
-	private void MigrateOldConfigIfExists()
-	{
-		foreach (string key in Constants.RENAMED_DIRECTORIES.Keys)
-		{
-			var oldPath = GetConfigPath(key);
-			var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
-
-			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
-			if (Directory.Exists(newPath))
-				continue;
-
-			// If the old path exists and the new path doesn't, we move the old path into the new path.
-			if (Directory.Exists(oldPath))
-				Directory.Move(oldPath, newPath!);
-		}
-
-		foreach (string key in Constants.RENAMED_FILES.Keys)
-		{
-			var oldPath = GetConfigPath(key);
-			var newPath = GetConfigPath(Constants.RENAMED_FILES[key] as string);
-
-			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
-			if (File.Exists(newPath))
-				continue;
-
-			// If the old Path is there, we simply move it to the NewPath
-			if (File.Exists(oldPath))
-				File.Move(oldPath, newPath!);
-		}
-	}
-
-	bool TryToFindBeamableConfigFolder(out string result) => TryToFindBeamableFolder(_dir, out result);
-
 	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
 		result = string.Empty;
@@ -698,42 +822,49 @@ public class ConfigService
 		return false;
 	}
 
-	bool TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
+	/// <summary>
+	/// Takes in a folder path and tries to load
+	/// </summary>
+	/// <param name="folderPath"></param>
+	/// <param name="result"></param>
+	/// <exception cref="CliException"></exception>
+	private static bool ReadConfigFile(string folderPath, bool isOptional, bool enforceRequiredFields, out Dictionary<string, string> result)
 	{
-		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		string fullPath = Path.Combine(folderPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
 		if (!File.Exists(fullPath))
 		{
+			if (isOptional)
+			{
+				return true;
+			}
+
+			BeamableLogger.LogWarning($"Config file was not found at {fullPath}!");
 			return false;
 		}
 
 		var content = File.ReadAllText(fullPath);
 		result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
 
-		return IsConfigValid(result);
-	}
-
-	string GetIgnoreFilePath(Vcs system) =>
-		system switch
+		if (!IsConfigValid(result, enforceRequiredFields, out var missingRequiredKeys))
 		{
-			Vcs.Git => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
-			Vcs.SVN => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
-			Vcs.P4 => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
-			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
-		};
+			BeamableLogger.LogWarning($"Config file did not have the expected keys: {string.Join(",", missingRequiredKeys)}!");
+			return false;
+		}
 
-	static bool IsConfigValid(Dictionary<string, string> dict)
-	{
-		if (dict == null || dict.Count == 0) return false;
-
-		return Constants.REQUIRED_CONFIG_KEYS.All(dict.Keys.Contains);
+		return true;
 	}
 
-	static bool HaveSameContent(string pathFirst, string pathSecond)
+	/// <summary>
+	/// Takes in a "Config" dictionary (mapped to <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/> contents) and see if it has all the required keys for the CLI to function at all.
+	/// </summary>
+	public static bool IsConfigValid(Dictionary<string, string> dict, bool enforceRequiredFields, out List<string> missingRequiredKeys)
 	{
-		using var md5 = MD5.Create();
-		var first = md5.ComputeHash(File.ReadAllBytes(pathFirst));
-		var second = md5.ComputeHash(File.ReadAllBytes(pathSecond));
-		return first.SequenceEqual(second);
+		missingRequiredKeys = Constants.REQUIRED_CONFIG_KEYS.ToList();
+		if (dict == null || (dict.Count == 0 && enforceRequiredFields))
+			return false;
+
+		missingRequiredKeys = missingRequiredKeys.Except(dict.Keys).ToList();
+		return !enforceRequiredFields || missingRequiredKeys.Count == 0;
 	}
 }

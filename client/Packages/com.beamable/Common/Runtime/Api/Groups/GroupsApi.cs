@@ -550,6 +550,10 @@ namespace Beamable.Common.Api.Groups
 		/// This will correlate to the resulting group's <see cref="Group.maxSize"/>.
 		/// <b>WARNING!</b> This field cannot be updated later.
 		/// </summary>
+		/// <remarks>
+		/// Maximum size of the group on the backend side is 50.
+		/// When the backend is called with bigger value, size of the created group would be 50.
+		/// </remarks>
 		public int maxSize;
 
 		public GroupCreateRequest(string name, string tag, string enrollmentType, long requirement, int maxSize)

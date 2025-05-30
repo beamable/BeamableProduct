@@ -23,6 +23,8 @@ namespace Beamable.Api
 		public string Token { get; private set; }
 		public string RefreshToken { get; }
 		public DateTime ExpiresAt { get; set; }
+		public long ExpiresIn { get; }
+		public DateTime IssuedAt { get; }
 		public string Cid { get; }
 		public string Pid { get; }
 
@@ -48,10 +50,14 @@ namespace Beamable.Api
 			{
 				_neverExpires = true;
 				ExpiresAt = DateTime.MaxValue;
+				ExpiresIn = int.MaxValue;
+				IssuedAt = DateTime.UtcNow;
 			}
 			else
 			{
 				ExpiresAt = DateTime.UtcNow.AddMilliseconds(expiresAt);
+				ExpiresIn = expiresAt;
+				IssuedAt = DateTime.UtcNow;
 			}
 		}
 
@@ -66,10 +72,14 @@ namespace Beamable.Api
 			if (long.TryParse(expiresAtISO, out var fileTimeUtc))
 			{
 				ExpiresAt = DateTime.FromFileTimeUtc(fileTimeUtc);
+				ExpiresIn = (long) (ExpiresAt - DateTime.UnixEpoch).Duration().TotalMilliseconds;
+				IssuedAt = DateTime.UnixEpoch;
 			}
 			else
 			{
 				ExpiresAt = DateTime.Parse(expiresAtISO, CultureInfo.InvariantCulture);
+				ExpiresIn = (long) (ExpiresAt - DateTime.UnixEpoch).Duration().TotalMilliseconds;
+				IssuedAt = DateTime.UnixEpoch;
 			}
 		}
 
