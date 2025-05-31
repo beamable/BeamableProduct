@@ -6,6 +6,23 @@ using static cli.Services.Web.Helpers.OpenApiMethodNameGenerator;
 
 namespace cli.Services.Web.Helpers;
 
+public record BuildAndAddMethodParams(
+	TsClass TsClass,
+	Dictionary<string, TsImport> TsImports,
+	List<TsEnum> Enums,
+	string MethodName,
+	List<TsFunctionParameter> RequiredParams,
+	TsFunctionParameter BodyParam,
+	List<TsFunctionParameter> OptionalParams,
+	string RequiresAuthRemarks,
+	string DeprecatedDoc,
+	List<string> ParamCommentList,
+	string ResponseType,
+	List<TsNode> MethodBodyStatements,
+	List<string> Modules,
+	List<OpenApiParameter> HeaderParams
+);
+
 public static class WebApi
 {
 	public static List<GeneratedFileDescriptor> GenerateApiModules(IReadOnlyList<OpenApiDocument> ctxDocuments,
@@ -77,15 +94,23 @@ public static class WebApi
 	{
 		foreach (var (apiEndpoint, pathItem) in document.Paths)
 		{
+			var pathLevelParams = pathItem.Parameters ?? Enumerable.Empty<OpenApiParameter>();
+			var headerParams = pathLevelParams
+				.Where(p => p.In == ParameterLocation.Header)
+				// Exclude 'X-BEAM-SCOPE' header; it is set by default via the Beam Web SDK.
+				.Where(p => p.Name != "X-BEAM-SCOPE")
+				.ToList();
+
 			foreach (var (httpMethod, operation) in pathItem.Operations)
 			{
-				ProcessOperation(apiEndpoint, httpMethod, operation, tsImports, tsClass, enums);
+				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsClass, enums);
 			}
 		}
 	}
 
 	private static void ProcessOperation(string apiEndpoint, OperationType httpMethod, OpenApiOperation operation,
-		Dictionary<string, TsImport> tsImports, TsClass tsClass, List<TsEnum> enums)
+		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, TsClass tsClass,
+		List<TsEnum> enums)
 	{
 		if (!TryGetMediaTypeAndResponseType(operation, out var responseType))
 			return;
@@ -93,18 +118,22 @@ public static class WebApi
 		AddResponseTypeImport(tsImports, responseType);
 
 		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation);
+		var deprecatedDoc = DetermineIfDeprecated(operation);
 		var apiMethodType = httpMethod.ToString().ToUpper();
 		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
 
 		var payload = new TsIdentifier("payload");
 		var queries = new TsIdentifier("queries");
+		var headers = new TsIdentifier("headers");
 		var modules = new List<string>();
 		var requiredParams = new List<TsFunctionParameter>();
 		var optionalParams = new List<TsFunctionParameter>();
 		var paramCommentList = new List<string>();
 		var methodBodyStatements = new List<TsNode>();
 		var queryOptionalStatements = new List<TsNode>();
+		var headerOptionalStatements = new List<TsNode>();
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
+		var headersObjectLiteral = new TsObjectLiteralExpression();
 
 		var endpoint = new TsVariable("endpoint").WithInitializer(new TsLiteralExpression(apiEndpoint));
 		methodBodyStatements.Add(endpoint);
@@ -117,6 +146,8 @@ public static class WebApi
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
 
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpoint);
+		AddHeaderParametersStatements(headerParams, methodBodyStatements, headers, headerOptionalStatements,
+			headersObjectLiteral, paramCommentList);
 		AddQueryParameterStatements(apiParameters, queries, queryOptionalStatements, queriesObjectLiteral);
 
 		TsVariable queryStringDeclaration = null;
@@ -126,13 +157,16 @@ public static class WebApi
 				out queryStringDeclaration);
 		}
 
-		var requestDeclaration = AddHttpRequestStatements(methodBodyStatements, payload, hasRequestBody, requiresAuth,
-			apiMethodType, endpoint, queryStringDeclaration);
+		var hasHeaders = headerParams.Count > 0;
+		var requestDeclaration = AddHttpRequestStatements(methodBodyStatements, payload, hasRequestBody, hasHeaders,
+			requiresAuth, apiMethodType, endpoint, queryStringDeclaration);
 
 		AddApiCallStatements(methodBodyStatements, responseType, requestDeclaration);
 
-		BuildAndAddMethod(tsClass, tsImports, enums, methodName, requiredParams, bodyParam, optionalParams,
-			requiresAuthRemarks, paramCommentList, responseType, methodBodyStatements, modules);
+		var @params = new BuildAndAddMethodParams(tsClass, tsImports, enums, methodName, requiredParams, bodyParam,
+			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
+			modules, headerParams);
+		BuildAndAddMethod(@params);
 	}
 
 	private static bool TryGetMediaTypeAndResponseType(OpenApiOperation operation, out string responseType)
@@ -171,6 +205,16 @@ public static class WebApi
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;
 		return (requiresAuth, remarks);
+	}
+
+	private static string DetermineIfDeprecated(OpenApiOperation operation)
+	{
+		if (!operation.Deprecated)
+			return string.Empty;
+
+		const string deprecatedComment =
+			"@deprecated\nThis API method is deprecated and may be removed in future versions.\n\n";
+		return deprecatedComment;
 	}
 
 	private static TsFunctionParameter AddBodyParameterIfExist(OpenApiOperation operation,
@@ -276,25 +320,62 @@ public static class WebApi
 		}
 	}
 
+	private static void AddHeaderParametersStatements(List<OpenApiParameter> headerParams,
+		List<TsNode> methodBodyStatements, TsIdentifier headersIdentifier, List<TsNode> headerOptionalStatements,
+		TsObjectLiteralExpression headersObjectLiteral, List<string> paramCommentList)
+	{
+		foreach (var param in headerParams)
+		{
+			var paramNameIdentifier = new TsIdentifier(param.Name.Split('-').Last().ToLower());
+			paramCommentList.Add(
+				$"@param {paramNameIdentifier.Identifier} - {param.Description ?? $"The `{param.Name}` header to include in the API request."}");
+			if (param.Required)
+			{
+				var member =
+					new TsObjectLiteralMember(new TsLiteralExpression(param.Name), paramNameIdentifier);
+				headersObjectLiteral.AddMember(member);
+			}
+			else
+			{
+				var headerAssignment = new TsAssignmentStatement(
+					new TsMemberAccessExpression(headersIdentifier, param.Name, false),
+					paramNameIdentifier);
+				var queryMemberOptional =
+					new TsConditionalStatement(new TsBinaryExpression(paramNameIdentifier,
+							TsBinaryOperatorType.NotEqualTo, new TsLiteralExpression("undefined")))
+						.AddThen(headerAssignment);
+				headerOptionalStatements.Add(queryMemberOptional);
+			}
+		}
+
+		var headersVar = new TsVariable("headers").AsConst()
+			.AsType(TsUtilityType.Record(TsType.String, TsType.String))
+			.WithInitializer(headersObjectLiteral);
+		methodBodyStatements.Add(new TsBlankLine());
+		methodBodyStatements.Add(new TsComment("Create the header parameters object"));
+		methodBodyStatements.Add(headersVar);
+		methodBodyStatements.AddRange(headerOptionalStatements);
+	}
+
 	private static void AddQueryParameterStatements(List<OpenApiParameter> apiParameters,
 		TsIdentifier queriesIdentifier, List<TsNode> queryOptionalStatements,
 		TsObjectLiteralExpression queriesObjectLiteral)
 	{
 		foreach (var param in apiParameters.Where(p => p.In == ParameterLocation.Query))
 		{
-			var queryParamToString = new TsMemberAccessExpression(new TsIdentifier(param.Name),
-				new TsInvokeExpression(new TsIdentifier("toString")).Render());
+			var queryParamToStringInvocation =
+				new TsInvokeExpression(new TsIdentifier("String"), new TsIdentifier(param.Name));
 			if (param.Required)
 			{
 				var member = new TsObjectLiteralMember(new TsLiteralExpression(param.Name),
-					queryParamToString);
+					queryParamToStringInvocation);
 				queriesObjectLiteral.AddMember(member);
 			}
 			else
 			{
 				var queryAssignment = new TsAssignmentStatement(
 					new TsMemberAccessExpression(queriesIdentifier, param.Name, false),
-					queryParamToString);
+					queryParamToStringInvocation);
 				var queryMemberOptional =
 					new TsConditionalStatement(new TsBinaryExpression(new TsIdentifier(param.Name),
 							TsBinaryOperatorType.NotEqualTo, new TsLiteralExpression("undefined")))
@@ -341,11 +422,12 @@ public static class WebApi
 	}
 
 	private static TsVariable AddHttpRequestStatements(List<TsNode> methodBodyStatements,
-		TsIdentifier payloadIdentifier, bool hasRequestBody, bool requiresAuth, string apiMethodType,
+		TsIdentifier payloadIdentifier, bool hasRequestBody, bool hasHeaders, bool requiresAuth, string apiMethodType,
 		TsVariable endpoint, TsVariable queryStringDeclaration)
 	{
 		var urlKey = new TsIdentifier("url");
 		var methodKey = new TsIdentifier("method");
+		var headersKey = new TsIdentifier("headers");
 		var bodyKey = new TsIdentifier("body");
 		var withAuthKey = new TsIdentifier("withAuth");
 		var requestUrl = queryStringDeclaration != null
@@ -357,6 +439,9 @@ public static class WebApi
 		var requestObjectLiteral = new TsObjectLiteralExpression()
 			.AddMember(new TsObjectLiteralMember(urlKey, requestUrl))
 			.AddMember(new TsObjectLiteralMember(methodKey, requestMethod));
+
+		if (hasHeaders)
+			requestObjectLiteral.AddMember(headersKey, new TsIdentifier("headers"));
 
 		if (hasRequestBody)
 		{
@@ -391,34 +476,44 @@ public static class WebApi
 		methodBodyStatements.Add(apiMethodCallReturn);
 	}
 
-	private static void BuildAndAddMethod(TsClass tsClass, Dictionary<string, TsImport> tsImports,
-		List<TsEnum> enums, string methodName, List<TsFunctionParameter> requiredParams,
-		TsFunctionParameter bodyParam, List<TsFunctionParameter> optionalParams, string requiresAuthRemarks,
-		List<string> paramCommentList, string responseType, List<TsNode> methodBodyStatements,
-		List<string> modules)
+	private static void BuildAndAddMethod(BuildAndAddMethodParams p)
 	{
-		var paramComments = paramCommentList.Count > 0
-			? string.Join("\n", paramCommentList) + "\n"
+		var paramComments = p.ParamCommentList.Count > 0
+			? string.Join("\n", p.ParamCommentList) + "\n"
 			: string.Empty;
 		var tsMethodReturnType = TsType.Generic("Promise",
-			TsType.Generic("HttpResponse", TsType.Of(responseType)));
+			TsType.Generic("HttpResponse", TsType.Of(p.ResponseType)));
 		var tsMethodComment = new TsComment(
-			$"{requiresAuthRemarks}{paramComments}@returns {{{tsMethodReturnType.Render()}}} A promise containing the HttpResponse of {responseType}",
+			$"{p.RequiresAuthRemarks}{p.DeprecatedDoc}{paramComments}@returns {{{tsMethodReturnType.Render()}}} A promise containing the HttpResponse of {p.ResponseType}",
 			TsCommentStyle.Doc);
-		var tsMethod = new TsMethod(methodName)
+		var tsMethod = new TsMethod(p.MethodName)
 			.SetReturnType(tsMethodReturnType)
 			.AddModifier(TsModifier.Async)
 			.AddComment(tsMethodComment);
-		foreach (var requiredParam in requiredParams)
+		// add required path and query parameters
+		foreach (var requiredParam in p.RequiredParams)
 			tsMethod.AddParameter(requiredParam);
-		if (bodyParam != null)
-			tsMethod.AddParameter(bodyParam);
-		foreach (var optionalParam in optionalParams)
+
+		// add required header parameters
+		foreach (var headerParam in p.HeaderParams.Where(p => p.Required))
+			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name, TsType.String));
+
+		// add body parameter if exists
+		if (p.BodyParam != null)
+			tsMethod.AddParameter(p.BodyParam);
+
+		// add optional query parameters
+		foreach (var optionalParam in p.OptionalParams)
 			tsMethod.AddParameter(optionalParam);
 
-		AddModuleImports(tsImports, modules, enums);
-		tsMethod.AddBody(methodBodyStatements.ToArray());
-		tsClass.AddMethod(tsMethod);
+		// add optional header parameters
+		foreach (var headerParam in p.HeaderParams.Where(p => !p.Required))
+			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name.Split('-').Last().ToLower(), TsType.String)
+				.AsOptional());
+
+		AddModuleImports(p.TsImports, p.Modules, p.Enums);
+		tsMethod.AddBody(p.MethodBodyStatements.ToArray());
+		p.TsClass.AddMethod(tsMethod);
 	}
 
 	private static void AddModuleImports(Dictionary<string, TsImport> tsImports, List<string> modules,
