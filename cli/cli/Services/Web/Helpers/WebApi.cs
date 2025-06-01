@@ -139,7 +139,8 @@ public static class WebApi
 		methodBodyStatements.Add(endpoint);
 
 		var hasRequestBody = false;
-		var bodyParam = AddBodyParameterIfExist(operation, payload, modules, paramCommentList, ref hasRequestBody);
+		var bodyParam = AddBodyParameterIfExist(operation, payload, modules, paramCommentList, ref hasRequestBody,
+			out var requestType);
 
 		var apiParameters = operation.Parameters.ToList();
 		SortApiParameters(apiParameters);
@@ -159,9 +160,9 @@ public static class WebApi
 
 		var hasHeaders = headerParams.Count > 0;
 		var requestDeclaration = AddHttpRequestStatements(methodBodyStatements, payload, hasRequestBody, hasHeaders,
-			requiresAuth, apiMethodType, endpoint, queryStringDeclaration);
+			requiresAuth, apiMethodType, endpoint, queryStringDeclaration, requestType);
 
-		AddApiCallStatements(methodBodyStatements, responseType, requestDeclaration);
+		AddApiCallStatements(methodBodyStatements, responseType, requestType, requestDeclaration);
 
 		var @params = new BuildAndAddMethodParams(tsClass, tsImports, enums, methodName, requiredParams, bodyParam,
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
@@ -219,19 +220,21 @@ public static class WebApi
 
 	private static TsFunctionParameter AddBodyParameterIfExist(OpenApiOperation operation,
 		TsIdentifier payloadIdentifier, List<string> modules, List<string> paramCommentList,
-		ref bool hasRequestBody)
+		ref bool hasRequestBody, out TsType requestType)
 	{
 		TsFunctionParameter bodyParam = null;
 		if (operation.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ??
 		    false)
 		{
 			var requestSchema = requestMediaType.Schema;
-			var requestType = OpenApiTsTypeMapper.Map(requestSchema, ref modules);
+			requestType = OpenApiTsTypeMapper.Map(requestSchema, ref modules);
 			hasRequestBody = true;
 			paramCommentList.Add(
 				$"@param {payloadIdentifier.Identifier} - The `{requestType.Render()}` instance to use for the API request");
 			bodyParam = new TsFunctionParameter(payloadIdentifier.Identifier, requestType);
 		}
+		else
+			requestType = null;
 
 		return bodyParam;
 	}
@@ -423,7 +426,7 @@ public static class WebApi
 
 	private static TsVariable AddHttpRequestStatements(List<TsNode> methodBodyStatements,
 		TsIdentifier payloadIdentifier, bool hasRequestBody, bool hasHeaders, bool requiresAuth, string apiMethodType,
-		TsVariable endpoint, TsVariable queryStringDeclaration)
+		TsVariable endpoint, TsVariable queryStringDeclaration, TsType requestType)
 	{
 		var urlKey = new TsIdentifier("url");
 		var methodKey = new TsIdentifier("method");
@@ -444,18 +447,13 @@ public static class WebApi
 			requestObjectLiteral.AddMember(headersKey, new TsIdentifier("headers"));
 
 		if (hasRequestBody)
-		{
-			var stringifyPayload =
-				new TsInvokeExpression(new TsMemberAccessExpression(new TsIdentifier("JSON"), "stringify"),
-					payloadIdentifier);
-			requestObjectLiteral.AddMember(bodyKey, stringifyPayload);
-		}
+			requestObjectLiteral.AddMember(bodyKey, payloadIdentifier);
 
 		if (requiresAuth)
 			requestObjectLiteral.AddMember(withAuthKey, new TsLiteralExpression(true));
 
 		var requestDeclaration = new TsVariable("req").AsConst()
-			.AsType(TsType.Of("HttpRequest"))
+			.AsType(requestType != null ? TsType.Generic("HttpRequest", requestType) : TsType.Of("HttpRequest"))
 			.WithInitializer(requestObjectLiteral);
 		methodBodyStatements.Add(new TsBlankLine());
 		methodBodyStatements.Add(new TsComment("Create the HTTP request object"));
@@ -463,13 +461,17 @@ public static class WebApi
 		return requestDeclaration;
 	}
 
-	private static void AddApiCallStatements(List<TsNode> methodBodyStatements, string responseType,
+	private static void AddApiCallStatements(List<TsNode> methodBodyStatements, string responseType, TsType requestType,
 		TsVariable requestDeclaration)
 	{
 		var theRequester = new TsMemberAccessExpression(new TsIdentifier("this"), "requester");
 		var theRequestFn = new TsMemberAccessExpression(theRequester, "request");
 		var apiMethodCall = new TsInvokeExpression(theRequestFn, requestDeclaration.Identifier)
 			.AddTypeArgument(TsType.Of(responseType));
+
+		if (requestType != null)
+			apiMethodCall.AddTypeArgument(requestType);
+
 		var apiMethodCallReturn = new TsReturnStatement(apiMethodCall);
 		methodBodyStatements.Add(new TsBlankLine());
 		methodBodyStatements.Add(new TsComment("Make the API request"));
