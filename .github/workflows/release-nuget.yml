@@ -109,12 +109,11 @@ jobs:
       - name: Check CLI
         run: |
           beam version
-          beam config
+          beam version construct 0 0 0 --nightly --logs v
 
       - name: Get Version Number (Nightly)
         if: ${{ inputs.releaseType == 'nightly' }} 
         run: |
-          beam version construct 0 0 0 --nightly --logs v
           beam version construct 0 0 0 --nightly > version.txt
       
       - name: Get Version Number (RC)
