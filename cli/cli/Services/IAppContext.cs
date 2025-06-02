@@ -338,9 +338,7 @@ public class DefaultAppContext : IAppContext
 	{
 		if (!string.IsNullOrEmpty(cid))
 		{
-			Log.Information($"Getting alias for cid=[{cid}]");
 			var aliasResolve = await _aliasService.Resolve(cid);
-			Log.Information($"found alias=[{aliasResolve.Alias}] cid=[{cid}]");
 			_cid = aliasResolve.Cid;
 		}
 		else
