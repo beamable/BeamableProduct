@@ -39,7 +39,7 @@ public class InvalidTokenErrorOutput : ErrorOutput
 }
 
 public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, GetTokenDetailsCommandOutput>,
-	IReportException<InvalidTokenErrorOutput>
+	IReportException<InvalidTokenErrorOutput>, ISkipManifest
 {
 	public GetTokenDetailsCommand() : base("inspect", "Get token information")
 	{

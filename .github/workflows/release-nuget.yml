@@ -111,7 +111,9 @@ jobs:
 
       - name: Get Version Number (Nightly)
         if: ${{ inputs.releaseType == 'nightly' }} 
-        run: beam version construct 0 0 0 --nightly > version.txt
+        run: |
+          beam version construct 0 0 0 --nightly --logs v
+          beam version construct 0 0 0 --nightly > version.txt
       
       - name: Get Version Number (RC)
         if: ${{ inputs.releaseType == 'rc' }} 

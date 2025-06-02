@@ -98,7 +98,7 @@ public partial class BeamoLocalSystem
 	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{
 		// Load or create the local manifest
-		if (_configService.BaseDirectory == null)
+		if (!_configService.DirectoryExists.GetValueOrDefault(false))
 		{
 			Log.Verbose("Beamo is initializing local manifest, but since no beamable folder exists, an empty manifest is being produced. ");
 			BeamoManifest = new BeamoLocalManifest

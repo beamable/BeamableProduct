@@ -45,6 +45,8 @@ public class SignedRequestAccessTokenShim : IAccessToken
     public string Token => null;
     public string RefreshToken => null;
     public DateTime ExpiresAt => DateTime.MaxValue;
+    public long ExpiresIn => long.MaxValue;
+    public DateTime IssuedAt => DateTime.Now;
     public string Cid { get; set; }
     public string Pid { get; set; }
 }
