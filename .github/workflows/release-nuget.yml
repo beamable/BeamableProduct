@@ -107,7 +107,9 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
       - name: Check CLI
-        run: beam version
+        run: |
+          beam version
+          beam config
 
       - name: Get Version Number (Nightly)
         if: ${{ inputs.releaseType == 'nightly' }} 
