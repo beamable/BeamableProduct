@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@4.3.0-PREVIEW.RC2
-// https://www.nuget.org/packages/Beamable.Common/4.3.0-PREVIEW.RC2
+// this file was copied from nuget package Beamable.Common@4.3.0
+// https://www.nuget.org/packages/Beamable.Common/4.3.0
 
 #if UNITY_2018_1_OR_NEWER || BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 #define BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES

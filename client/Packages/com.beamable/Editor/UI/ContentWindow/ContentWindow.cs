@@ -48,12 +48,12 @@ namespace Editor.UI2.ContentWindow
 			BuildHeaderFilters();
 			
 			BuildContentTypeHierarchy();
+
+			BuildItemsHierarchy();
 			
 			BuildHeaderStyles();
 			
 			BuildContentStyles();
-			
-			BuildItemsPanelStyles();
 		}
 
 		protected override void DrawGUI()
@@ -100,6 +100,14 @@ namespace Editor.UI2.ContentWindow
 			GUILayout.Box(GUIContent.none, horizontalLineStyle,
 			              GUILayout.ExpandWidth(true),
 			              GUILayout.Height(1f));
+		}
+		
+		private Texture2D CreateColorTexture(Color color)
+		{
+			var texture = new Texture2D(1, 1);
+			texture.SetPixel(0, 0, color);
+			texture.Apply();
+			return texture;
 		}
 	}
 }

@@ -11,7 +11,7 @@ namespace Editor.UI2.ContentWindow
 		private const float CONTENT_GROUP_PANEL_WIDTH = 250;
 		private const float CONTENT_GROUP_INDENT_WIDTH = 15f;
 		private Vector2 _contentGroupScrollPos;
-		private string _selectedContentType;
+		private string _selectedContentType = string.Empty;
 		
 		private readonly Dictionary<string, List<string>> _contentTypeHierarchy = new();
 		private readonly Dictionary<string, bool> _groupExpandedStates = new();
@@ -46,6 +46,7 @@ namespace Editor.UI2.ContentWindow
 					}
 					
 					_groupExpandedStates.TryAdd(currentPath, false);
+					_itemsExpandedStates.TryAdd(currentPath, false);
 				}
 			}
 		}
