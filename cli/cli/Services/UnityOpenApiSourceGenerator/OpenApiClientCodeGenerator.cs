@@ -230,12 +230,11 @@ namespace Beamable.Server.Generator
 					{
 						continue;
 					}
-
-					var responseSchema = responseType.Schema.GetEffective(document);
+					
 					var requestSchema = requestType.Schema.GetEffective(document);
 					var parameters = requestSchema.Properties.ToDictionary(itemKey => itemKey.Key,
 						itemValue => itemValue.Value.GetEffective(document));
-					AddCallableMethod(targetClass, methodName, parameters, responseSchema, addedParameters);
+					AddCallableMethod(targetClass, methodName, parameters, responseType, addedParameters);
 				}
 			}
 
@@ -314,7 +313,7 @@ namespace Beamable.Server.Generator
 		}
 
 		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName,
-			IDictionary<string, OpenApiSchema> parameters, OpenApiSchema returnMethodType,
+			IDictionary<string, OpenApiSchema> parameters, OpenApiMediaType returnMediaType,
 			Dictionary<string, string> paramsTypeName)
 		{
 			// Declaring a ToString method
@@ -353,7 +352,22 @@ namespace Beamable.Server.Generator
 				new CodeCommentStatement($"<see cref=\"{_serviceNamespaceClassName}.{methodName}\"/>", true));
 			genMethod.Comments.Add(new CodeCommentStatement("</summary>", true));
 
-			var genericPromiseType = $"Beamable.Common.Promise<{GetParsedType(returnMethodType)}>";
+			string returnTypeString;
+			OpenApiString qualifiedNameString = null;
+			bool hasQualifiedName = returnMediaType.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var qualifiedExtension) &&
+			                   qualifiedExtension is OpenApiString;
+			if (hasQualifiedName)
+			{
+				qualifiedNameString = (OpenApiString)qualifiedExtension;
+				returnTypeString = qualifiedNameString.Value;
+			}
+			else
+			{
+				returnTypeString = GetParsedType(returnMediaType.Schema);
+			}
+
+
+			string genericPromiseType = $"Beamable.Common.Promise<{returnTypeString}>";
 			genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
 
 			// Declaring a return statement for method ToString.
@@ -386,11 +400,12 @@ namespace Beamable.Server.Generator
 				);
 			}
 
+			string parsedType = hasQualifiedName ? qualifiedNameString.Value : GetParsedType(returnMediaType.Schema, true);
 			var requestInvokeExpr = new CodeMethodInvokeExpression(
 				new CodeMethodReferenceExpression(
 					new CodeThisReferenceExpression(),
 					"Request",
-					new CodeTypeReference[] { new(GetParsedType(returnMethodType, true)) }),
+					new CodeTypeReference[] { new(parsedType) }),
 				new CodeExpression[]
 				{
 					// first argument is the service name

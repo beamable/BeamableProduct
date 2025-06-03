@@ -177,14 +177,13 @@ public class ServiceDocGenerator
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
-
+			
 			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, 0);
+			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
-				var schema = SchemaGenerator.Convert(returnType);
-				doc.Components.Schemas.Add(openApiSchema.Reference.Id, schema);
+				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetFullTypeName()));
 			}
-			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
 			if (!IsEmptyResponseType(returnType))
 			{
