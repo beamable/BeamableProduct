@@ -178,7 +178,13 @@ public class ServiceDocGenerator
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
 
-			var returnJson = new OpenApiMediaType { Schema = SchemaGenerator.Convert(returnType, 0) };
+			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, 0);
+			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
+			{
+				var schema = SchemaGenerator.Convert(returnType);
+				doc.Components.Schemas.Add(openApiSchema.Reference.Id, schema);
+			}
+			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
 			if (!IsEmptyResponseType(returnType))
 			{

@@ -22,4 +22,17 @@ public static class TypeExtensions
 			return type.FullName.Split('`')[0];
 		return type.FullName;
 	}
+	
+	public static string GetFullTypeName(this Type type)
+	{
+		if (!type.IsGenericType)
+			return type.FullName ?? type.Name; 
+		
+		string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
+		
+		var genericArgs = type.GetGenericArguments();
+		string args = string.Join(", ", genericArgs.Select(GetFullTypeName));
+
+		return $"{typeName}<{args}>";
+	}
 }
