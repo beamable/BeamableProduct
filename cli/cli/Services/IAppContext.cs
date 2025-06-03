@@ -136,7 +136,7 @@ public class DefaultAppContext : IAppContext
 	public bool TryGetTempLogFilePath(out string logFile)
 	{
 		logFile = null;
-		if (string.IsNullOrEmpty(_configService.ConfigDirectoryPath))
+		if (! (_configService.DirectoryExists ?? false))
 		{
 			// there is no .beamable folder
 			return false;
@@ -345,7 +345,6 @@ public class DefaultAppContext : IAppContext
 		{
 			_cid = cid;
 		}
-
 		_pid = pid;
 		_host = host;
 		_token.Cid = _cid;
