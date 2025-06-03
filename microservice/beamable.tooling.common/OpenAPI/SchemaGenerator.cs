@@ -218,7 +218,7 @@ public class SchemaGenerator
 				if (sanitizeGenericType)
 				{
 					schema.Extensions[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] =
-						new OpenApiString(runtimeType.Assembly.GetName().Version.ToString());
+						new OpenApiString(runtimeType.GetGenericSanitizedFullName());
 				}
 				
 				if (depth == 0) return schema;

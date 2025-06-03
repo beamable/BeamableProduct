@@ -397,6 +397,13 @@ namespace Beamable.Server.Generator
 
 		private string GetParsedType(OpenApiSchema schema, bool useFullName = false)
 		{
+
+			if (schema.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME,
+				    out var extensionType) && extensionType is OpenApiString forcedTypeName)
+			{
+				return forcedTypeName.Value;
+			}
+			
 			var (typeName, isNullable, isOptional) = ResolveTypeInfo(schema);
 			var nameBase = GetTypeNameBase(schema, isNullable);
 
@@ -461,7 +468,7 @@ namespace Beamable.Server.Generator
 			{
 				return schema.Reference.Id;
 			}
-
+			
 			return schema.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var extension) &&
 			       extension is OpenApiString value
 				? value.Value
