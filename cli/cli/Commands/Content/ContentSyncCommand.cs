@@ -48,8 +48,7 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 			resetPromises.Add(task);
 		}
 
-		var res = await Task.WhenAll(resetPromises);
-		Log.Information("COOLS");
+		var res = await Task.WhenAll(resetPromises);		
 		return new() { Reports = res };
 	}
 }

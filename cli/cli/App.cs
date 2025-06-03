@@ -640,6 +640,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentSaveCommand, ContentSaveCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSyncCommand, ContentSyncCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentResolveConflictCommand, ContentResolveConflictCommandArgs, ContentCommand>();
 
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
