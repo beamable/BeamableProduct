@@ -710,9 +710,9 @@ namespace Beamable.Server
 	        }
 	        
 	        var envArgs = _args = new EnvironmentArgs();
-	   
+	        
 	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
-
+	        
 	        _logger.LogInformation($"Starting Prepare");
 
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
