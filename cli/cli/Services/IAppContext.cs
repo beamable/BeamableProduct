@@ -336,16 +336,15 @@ public class DefaultAppContext : IAppContext
 
 	public async Task Set(string cid, string pid, string host)
 	{
-		// if (!string.IsNullOrEmpty(cid))
-		// {
-		// 	var aliasResolve = await _aliasService.Resolve(cid);
-		// 	_cid = aliasResolve.Cid;
-		// }
-		// else
-		// {
-		// 	_cid = null;
-		// }
-		_cid = cid;
+		if (!string.IsNullOrEmpty(cid))
+		{
+			var aliasResolve = await _aliasService.Resolve(cid);
+			_cid = aliasResolve.Cid;
+		}
+		else
+		{
+			_cid = cid;
+		}
 		_pid = pid;
 		_host = host;
 		_token.Cid = _cid;
