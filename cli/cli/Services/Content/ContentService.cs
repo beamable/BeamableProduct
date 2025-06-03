@@ -711,9 +711,7 @@ public class ContentService
 
 		// Fetch our local state relative to the new target manfest.
 		// We either filter after we load into memory OR before, based on whether that's possible.
-		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId, filterType, filters, allowAutoSyncModified: true);
-
-		// Computes helper sets so that we can know about what can be auto-synchronized and what is in conflict.
+		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId, filterType, filters, allowAutoSyncModified: syncModified);
 
 		// Get the list of modified and deleted content to re-download from the target manfiest
 		// If given a list of content ids, will ONLY download the given ids
@@ -1137,6 +1135,7 @@ public class ContentService
 			}
 			else
 			{
+				// TODO: try/catch on 404 to setup a dummy manifet with the given ids.
 				_cachedManifests[cacheKey] = manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
 			}
 		}
