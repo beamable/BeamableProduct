@@ -36,12 +36,12 @@ public class RequiredFileEdit
         endIndex = startIndex;
     }
 
-    public void SetLocationAsLineReplacement(Dictionary<int, int> lineNumberToIndex, int lineNumber)
+    public void SetLocationAsLineReplacement(Dictionary<int, int> lineNumberToIndex, int lineNumber, int extraLines=0)
     {
         line = lineNumber;
         column = 0;
         startIndex = lineNumberToIndex[lineNumber] + 1;
-        endIndex = lineNumberToIndex[lineNumber + 1]; // TODO: this would break if the line was the last line...
+        endIndex = lineNumberToIndex[lineNumber + 1 + extraLines]; // TODO: this would break if the line was the last line...
     }
     
     public bool TrySetLocation(ElementLocation location, Dictionary<int, int> lineNumberToIndex, string originalText)
