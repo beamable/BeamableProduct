@@ -294,7 +294,7 @@ namespace Beamable.Server.Generator
 			var serializationFields = new Dictionary<string, object>();
 			foreach ((string key, OpenApiSchema schema) in parameters)
 			{
-				var paramType = GetParsedType(schema);
+				var paramType = GetParsedType(schema, true);
 				var paramName = key;
 				paramsTypeName.TryAdd(paramType, GetParameterClassName(schema));
 				CodeTypeReference param = new CodeTypeReference(paramType)
@@ -564,8 +564,6 @@ namespace Beamable.Server.Generator
 				sourceWriter.Flush();
 				var source = sb.ToString();
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
-				// CodeDom code generated with the string value of primal types are created with a @ added as prefix,
-				// we need to remove it so Unity can compile
 				return source;
 			}
 		}
