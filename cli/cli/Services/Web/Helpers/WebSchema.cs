@@ -7,6 +7,15 @@ namespace cli.Services.Web.Helpers;
 
 public static class WebSchema
 {
+	public static readonly TsFile SCHEMA_BARREL_FILE = new("index");
+
+	public static void BuildSchemaBarrel(GeneratedFileDescriptor fileDescriptor, bool isEnum)
+	{
+		var fileName = Path.GetFileNameWithoutExtension(fileDescriptor.FileName);
+		var tsExport = new TsExport(isEnum ? $"./enums/{fileName}" : $"./{fileName}");
+		SCHEMA_BARREL_FILE.AddExport(tsExport);
+	}
+
 	public static GeneratedFileDescriptor GenerateSchemaEnum(NamedOpenApiSchema namedSchema, List<TsEnum> enums)
 	{
 		var schema = namedSchema.Schema;
@@ -60,17 +69,16 @@ public static class WebSchema
 		var (tsRequiredProps, tsOptionalProps) = CreateProperties(schema, props, mapPropertyToModule);
 		var tsAllProps = tsRequiredProps.Concat(tsOptionalProps).ToList();
 
-		var (tsTypeRequired, tsTypeOptional, tsTypeAll) =
-			CreateTypeAliases(schemaRefId, tsRequiredProps, tsOptionalProps);
+		var tsTypeAll = CreateTypeAlias(schemaRefId, tsRequiredProps, tsOptionalProps);
 
-		var tsConstructor = BuildConstructor(tsRequiredProps, tsOptionalProps, tsTypeAll);
+		var tsConstructor = BuildConstructor(tsRequiredProps, tsOptionalProps, tsTypeAll, itemsSchema, tsClass);
+		var tsToJsonMethod = BuildToJsonMethod(tsAllProps, tsTypeAll, tsClass);
+		var tsFromJsonMethod = BuildFromJsonMethod(tsAllProps, tsTypeAll, tsClass);
 
-		BuildClassAndImports(tsClass, tsImports, tsAllProps, tsConstructor, schema, itemsSchema, itemsSchemaModules,
-			enums,
-			mapPropertyToModule);
+		BuildClassAndImports(tsClass, tsImports, tsAllProps, tsConstructor, tsToJsonMethod, tsFromJsonMethod,
+			schema, itemsSchema, itemsSchemaModules, enums, mapPropertyToModule);
 
-		PrepareFile(tsFile, tsImports, tsRequiredProps, tsOptionalProps, tsTypeRequired, tsTypeOptional, tsTypeAll,
-			tsClass);
+		PrepareFile(tsFile, tsImports, tsRequiredProps, tsOptionalProps, tsTypeAll, tsClass);
 
 		return new GeneratedFileDescriptor { FileName = $"schemas/{tsFile.FileName}.ts", Content = tsFile.Render() };
 	}
@@ -104,43 +112,22 @@ public static class WebSchema
 		return (tsRequiredProps, tsOptionalProps);
 	}
 
-	private static (TsTypeAlias tsTypeRequired, TsTypeAlias tsTypeOptional, TsTypeAlias tsTypeAll)
-		CreateTypeAliases(string schemaRefId, List<TsProperty> tsRequiredProps, List<TsProperty> tsOptionalProps)
+	private static TsTypeAlias CreateTypeAlias(string schemaRefId, List<TsProperty> tsRequiredProps,
+		List<TsProperty> tsOptionalProps)
 	{
-		// type alias for required properties
-		var tsTypeRequired = new TsTypeAlias($"{schemaRefId}Required")
-			.SetType(TsType.Object(
-				tsRequiredProps.Select(p => (p.Name, p.Type, TsType.PropType.Required)).ToArray()));
-		// type alias for optional properties
-		var tsTypeOptional = new TsTypeAlias($"{schemaRefId}Optional")
-			.SetType(TsType.Object(
-				tsOptionalProps.Select(p => (p.Name, p.Type, TsType.PropType.Optional)).ToArray()));
 		// type alias for all properties
-		var tsTypeAll = new TsTypeAlias($"{schemaRefId}Props").AddModifier(TsModifier.Export);
+		var required = tsRequiredProps.Select(p => (p.Name, p.Type, TsType.PropType.Required));
+		var optional = tsOptionalProps.Select(p => (p.Name, p.Type, TsType.PropType.Optional));
+		var all = required.Concat(optional);
+		var tsTypeAll = new TsTypeAlias($"{schemaRefId}Props")
+			.AddModifier(TsModifier.Export)
+			.SetType(TsType.Object(all.ToArray()));
 
-		switch (tsRequiredProps.Count)
-		{
-			case > 0 when tsOptionalProps.Count > 0:
-				tsTypeAll.SetType(
-					TsType.Intersection(TsType.Of(tsTypeRequired.Name), TsType.Of(tsTypeOptional.Name)));
-				break;
-			case > 0:
-				tsTypeAll.SetType(TsType.Of(tsTypeRequired.Name));
-				break;
-			default:
-			{
-				tsTypeAll.SetType(tsOptionalProps.Count > 0
-					? TsType.Of(tsTypeOptional.Name)
-					: TsType.Object());
-				break;
-			}
-		}
-
-		return (tsTypeRequired, tsTypeOptional, tsTypeAll);
+		return tsTypeAll;
 	}
 
 	private static TsConstructor BuildConstructor(List<TsProperty> tsRequiredProps, List<TsProperty> tsOptionalProps,
-		TsTypeAlias tsTypeAll)
+		TsTypeAlias tsTypeAll, OpenApiSchema itemsSchema, TsClass tsClass)
 	{
 		var init = new TsIdentifier("init");
 		var optionals = new TsIdentifier("optionals");
@@ -168,7 +155,15 @@ public static class WebSchema
 			optionals));
 		var tsConstructor = new TsConstructor()
 			.AddParameter(tsConstructorParam)
-			.AddBody(objDestructure);
+			.AddComment(new TsComment(
+				$"Creates an instance of `{tsClass.Name}`.\n" +
+				$"@param {{{tsTypeAll.Name}}} {init.Identifier} The initialization properties for the `{tsClass.Name}` instance.",
+				TsCommentStyle.Doc));
+
+		if (itemsSchema != null)
+			tsConstructor.AddBody(new TsExpressionStatement(new TsInvokeExpression(new TsIdentifier("super"))));
+
+		tsConstructor.AddBody(objDestructure);
 
 		if (tsRequiredProps.Count > 0)
 			tsConstructor.AddBody(new TsBlankLine()).AddBody(initRequiredProps);
@@ -179,10 +174,48 @@ public static class WebSchema
 		return tsConstructor;
 	}
 
-	private static void BuildClassAndImports(TsClass tsClass, List<TsImport> tsImports,
-		List<TsProperty> tsAllProps, TsConstructor tsConstructor, OpenApiSchema schema,
-		OpenApiSchema itemsSchema, List<string> itemsSchemaModules,
-		List<TsEnum> enums, Dictionary<string, List<string>> mapPropertyToModule)
+	private static TsMethod BuildToJsonMethod(List<TsProperty> tsAllProps, TsTypeAlias tsTypeAll, TsClass tsClass)
+	{
+		var tsToJsonMethod = new TsMethod("toJSON").SetReturnType(TsType.Of(tsTypeAll.Name));
+		var returnObject = new TsObjectLiteralExpression();
+
+		foreach (var tsProp in tsAllProps)
+			returnObject.AddMember(tsProp.Identifier,
+				new TsMemberAccessExpression(new TsIdentifier("this"), tsProp.Name));
+
+		var returnCall = new TsReturnStatement(returnObject);
+		tsToJsonMethod.AddBody(returnCall);
+		tsToJsonMethod.AddComment(new TsComment(
+			$"Plain object of the `{tsClass.Name}` instance.\n" +
+			$"@returns {{{tsTypeAll.Name}}} The plain object of type `{tsTypeAll.Name}`.",
+			TsCommentStyle.Doc));
+		return tsToJsonMethod;
+	}
+
+	private static TsMethod BuildFromJsonMethod(List<TsProperty> tsAllProps, TsTypeAlias tsTypeAll, TsClass tsClass)
+	{
+		var tsFromJsonMethod = new TsMethod("fromJSON")
+			.AddModifier(TsModifier.Static)
+			.AddParameter(new TsFunctionParameter("obj", TsType.Unknown))
+			.SetReturnType(TsType.Of(tsClass.Name));
+		var constructorInvocation =
+			new TsInvokeExpression(new TsIdentifier($"new {tsClass.Name}"),
+				new TsIdentifier($"obj as {tsTypeAll.Name}"));
+
+		var returnCall = new TsReturnStatement(constructorInvocation);
+		tsFromJsonMethod.AddBody(returnCall);
+		tsFromJsonMethod.AddComment(new TsComment(
+			$"Creates an instance of `{tsClass.Name}` from a plain object.\n" +
+			$"@param {{{TsType.Unknown.Render()}}} obj The plain object to convert.\n" +
+			$"@returns {{{tsClass.Name}}} A new `{tsClass.Name}` instance.",
+			TsCommentStyle.Doc));
+		return tsFromJsonMethod;
+	}
+
+	private static void BuildClassAndImports(TsClass tsClass, List<TsImport> tsImports, List<TsProperty> tsAllProps,
+		TsConstructor tsConstructor, TsMethod tsToJsonMethod, TsMethod tsFromJsonMethod, OpenApiSchema schema,
+		OpenApiSchema itemsSchema, List<string> itemsSchemaModules, List<TsEnum> enums,
+		Dictionary<string, List<string>> mapPropertyToModule)
 	{
 		if (itemsSchema != null)
 		{
@@ -201,7 +234,7 @@ public static class WebSchema
 
 		foreach (var tsProp in tsAllProps)
 		{
-			tsClass.AddProperty(tsProp).SetConstructor(tsConstructor);
+			tsClass.AddProperty(tsProp);
 
 			if (!mapPropertyToModule.TryGetValue(tsProp.Name, out var modules))
 				continue;
@@ -223,6 +256,10 @@ public static class WebSchema
 			});
 		}
 
+		tsClass.SetConstructor(tsConstructor)
+			.AddMethod(tsToJsonMethod)
+			.AddMethod(tsFromJsonMethod);
+
 		// add imports for each distinct item type module
 		itemsSchemaModules.Distinct().ToList().ForEach(module =>
 		{
@@ -231,17 +268,9 @@ public static class WebSchema
 		});
 	}
 
-	private static void PrepareFile(TsFile tsFile, List<TsImport> tsImports,
-		List<TsProperty> tsRequiredProps, List<TsProperty> tsOptionalProps,
-		TsTypeAlias tsTypeRequired, TsTypeAlias tsTypeOptional, TsTypeAlias tsTypeAll,
-		TsClass tsClass)
+	private static void PrepareFile(TsFile tsFile, List<TsImport> tsImports, List<TsProperty> tsRequiredProps,
+		List<TsProperty> tsOptionalProps, TsTypeAlias tsTypeAll, TsClass tsClass)
 	{
-		if (tsRequiredProps.Count > 0)
-			tsFile.AddDeclaration(tsTypeRequired);
-
-		if (tsOptionalProps.Count > 0)
-			tsFile.AddDeclaration(tsTypeOptional);
-
 		// add the type alias declaration for all properties and class definition to the file
 		tsFile.AddDeclaration(tsTypeAll).AddDeclaration(tsClass);
 
