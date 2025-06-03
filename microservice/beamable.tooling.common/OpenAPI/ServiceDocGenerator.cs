@@ -182,7 +182,7 @@ public class ServiceDocGenerator
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
-				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetFullTypeName()));
+				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetGenericSanitizedFullName()));
 			}
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
 			if (!IsEmptyResponseType(returnType))
@@ -214,7 +214,15 @@ public class ServiceDocGenerator
 				bool isOptional = parameterType.IsAssignableTo(typeof(Optional));
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
-				requestSchema.Properties[parameterName] = parameterSchema;
+				
+				if (parameterSchema.Reference != null && !doc.Components.Schemas.ContainsKey(parameterSchema.Reference.Id))
+				{
+					requestSchema.Properties[parameterName]=  SchemaGenerator.Convert(parameterType, 1, true);
+				}
+				else
+				{
+					requestSchema.Properties[parameterName] = parameterSchema;
+				}
 				
 				if (!isOptional)
 				{

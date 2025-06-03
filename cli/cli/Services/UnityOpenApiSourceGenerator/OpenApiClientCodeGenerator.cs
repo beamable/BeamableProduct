@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
+using Beamable.Tooling.Common.OpenAPI.Utils;
 using cli;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -44,39 +45,7 @@ namespace Beamable.Server.Generator
 		private const string LIST_BASE_PREFIX = "System.Collections.Generic.List";
 		private const string NULLABLE_BASE = "System.Nullable<{0}>";
 
-		private static readonly Dictionary<string, string> OpenApiCSharpFullNameMap = new()
-		{
-			{ "int16", typeof(short).FullName },
-			{ "int32", typeof(int).FullName },
-			{ "int64", typeof(long).FullName },
-			{ "integer", typeof(int).FullName },
-			{ "float", typeof(float).FullName },
-			{ "double", typeof(double).FullName },
-			{ "decimal", typeof(decimal).FullName },
-			{ "number", typeof(double).FullName },
-			{ "boolean", typeof(bool).FullName },
-			{ "date", typeof(DateTime).FullName },
-			{ "date-time", typeof(DateTime).FullName },
-			{ "uuid", typeof(Guid).FullName },
-			{ "byte", typeof(byte).FullName },
-			{ "string", typeof(string).FullName }
-		};
-
-		private static readonly Dictionary<string, string> OpenApiCSharpNameMap = new()
-		{
-			{ "int16", "short" },
-			{ "int32", "int" },
-			{ "int64", "long" },
-			{ "integer", "int" },
-			{ "float", "float" },
-			{ "double", "double" },
-			{ "decimal", "decimal" },
-			{ "number", "double" },
-			{ "boolean", "bool" },
-			{ "uuid", typeof(Guid).FullName },
-			{ "byte", "byte" },
-			{ "string", "string" }
-		};
+		
 
 		private static readonly List<string> CallableMethodsToGenerate = new()
 		{
@@ -325,7 +294,7 @@ namespace Beamable.Server.Generator
 			var serializationFields = new Dictionary<string, object>();
 			foreach ((string key, OpenApiSchema schema) in parameters)
 			{
-				var paramType = GetParsedType(schema, true);
+				var paramType = GetParsedType(schema);
 				var paramName = key;
 				paramsTypeName.TryAdd(paramType, GetParameterClassName(schema));
 				CodeTypeReference param = new CodeTypeReference(paramType)
@@ -464,7 +433,7 @@ namespace Beamable.Server.Generator
 
 		private string GetBaseTypeName(OpenApiSchema schema)
 		{
-			var mapToUse = OpenApiCSharpNameMap; // Default to short names
+			var mapToUse = OpenApiUtils.OpenApiCSharpNameMap; // Default to short names
 			string valueToFind = !string.IsNullOrEmpty(schema.Format) ? schema.Format : schema.Type;
 
 			if (mapToUse.TryGetValue(valueToFind, out string typeValue))
@@ -501,7 +470,7 @@ namespace Beamable.Server.Generator
 
 		private string GetFullTypeName(OpenApiSchema schema, string typeName)
 		{
-			if (OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
+			if (OpenApiUtils.OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
 			{
 				return fullName;
 			}
