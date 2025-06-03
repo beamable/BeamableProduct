@@ -10,7 +10,7 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 {
 	private ContentService _contentService;
 
-	public ContentResolveConflictCommand() : base("resolve", "Synchronizes the local content matching the filters to the latest content stored in the realm")
+	public ContentResolveConflictCommand() : base("resolve", "Resolve between local changes ore realm based changes")
 	{
 	}
 
