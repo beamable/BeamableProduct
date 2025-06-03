@@ -7,9 +7,14 @@ namespace Beamable.Common
             public static partial class Otel
             {
                 public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
+                public const string ENV_CLI_ENABLE_TELEMETRY = "BEAM_TELEMETRY";
 
                 public static bool CliTracesEnabled() =>
-                    string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+                    // need to opt in
+                    !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_ENABLE_TELEMETRY))
+                 
+                    // and the NO option needs to be left empty
+                    && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
                 
                 public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";

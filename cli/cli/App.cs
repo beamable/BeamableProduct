@@ -299,14 +299,18 @@ public class App
 
 	public virtual void Flush()
 	{
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_CLI_FLUSH")))
+		{
+			return;
+		}
+		
 		_activity?.Stop();
 		_activity?.Dispose();
+		GlobalLoggerFactory?.Dispose();
 		_traceProvider?.ForceFlush();
 		_traceProvider?.Shutdown();
 		_meterProvider?.ForceFlush();
 		_meterProvider?.Shutdown();
-		
-		GlobalLoggerFactory?.Dispose();
 	}
 
 	public virtual void Configure(
