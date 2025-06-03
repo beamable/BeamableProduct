@@ -696,9 +696,6 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
-	        var envArgs = _args = new EnvironmentArgs();
-	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
-			
 	        Type microserviceType = typeof(TMicroservice);
 	        
 	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
@@ -711,6 +708,10 @@ namespace Beamable.Server
 		        await GenerateOpenApiSpecification(microserviceType, attribute);
 		        return;
 	        }
+	        
+	        var envArgs = _args = new EnvironmentArgs();
+	        
+	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
 	        
 	        _logger.LogInformation($"Starting Prepare");
 
