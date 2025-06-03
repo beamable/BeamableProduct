@@ -58,7 +58,15 @@ public struct ChangedContentFile
 
 public class ContentService
 {
+	/// <summary>
+	/// <see cref="PublishContent"/>
+	/// </summary>
 	private const int ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST = 3;
+
+	/// <summary>
+	/// <see cref="CreateFakeEmptyManifest"/> and <see cref="GetManifest"/>.
+	/// </summary>
+	private const string FAKE_EMPTY_MANIFEST_UID = "EmptyManifest";
 
 	private readonly CliRequester _requester;
 	private readonly ConfigService _config;
@@ -83,7 +91,6 @@ public class ContentService
 	/// We can't use these filter types before we actually load the file into memory. 
 	/// </summary>
 	public static readonly HashSet<ContentFilterType> UNSUPPORTED_FILTERS_BEFORE_LOADING = new() { ContentFilterType.Tags };
-
 
 	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi)
 	{
@@ -1114,6 +1121,12 @@ public class ContentService
 	/// </summary>
 	public async Task<ClientManifestJsonResponse> GetManifest(string manifestId = "global", string manifestUid = "", bool cachedOnly = false, bool replaceLatest = false)
 	{
+		// Realms don't have a content manifest by default, so... until the first publish happens, we assume dummy response and a fake UID as the realm manifest.
+		// This dummy manifest can only ever be found when asking for it specifically OR trying to fetch the latest manifest.
+		// We DO NOT return this when asking for specific manifestUid ('cause this could explode our conflict resolution in all sorts of different ways)
+		if (manifestUid == FAKE_EMPTY_MANIFEST_UID)
+			return CreateFakeEmptyManifest();
+
 		var cacheKey = GetCacheKeyForManifest(_requester.Cid, _requester.Pid, manifestId, manifestUid);
 		var latestCacheKey = GetCacheKeyForLatestManifest(_requester.Cid, _requester.Pid, manifestId);
 
@@ -1125,7 +1138,19 @@ public class ContentService
 		{
 			if (string.IsNullOrEmpty(manifestUid))
 			{
-				manifest = await _contentApi.GetManifestPublicJson(manifestId);
+				try
+				{
+					manifest = await _contentApi.GetManifestPublicJson(manifestId);
+				}
+				catch (RequesterException e)
+				{
+					if (e.Status == 404 && e.Message.Contains("Unable to load the requested manifest."))
+					{
+						return CreateFakeEmptyManifest();
+					}
+
+					throw;
+				}
 
 				var specificCacheKey = GetCacheKeyForManifest(_requester.Cid, _requester.Pid, manifestId, manifest.uid.GetOrElse(""));
 				_cachedManifests[specificCacheKey] = manifest;
@@ -1206,6 +1231,17 @@ public class ContentService
 		}
 
 		return filterFunc;
+	}
+
+
+	/// <summary>
+	/// Realms don't have a content manifest by default, so... until the first publish happens, we assume dummy response and a fake UID as the realm manifest.
+	/// This dummy manifest can only ever be found when asking for it specifically OR trying to fetch the latest manifest.
+	/// We DO NOT return this when asking for specific manifestUid ('cause this could explode our conflict resolution in all sorts of different ways)
+	/// </summary>
+	private static ClientManifestJsonResponse CreateFakeEmptyManifest()
+	{
+		return new ClientManifestJsonResponse() { uid = FAKE_EMPTY_MANIFEST_UID, entries = Array.Empty<ClientContentInfoJson>(), publisherAccountId = new(), };
 	}
 }
 
