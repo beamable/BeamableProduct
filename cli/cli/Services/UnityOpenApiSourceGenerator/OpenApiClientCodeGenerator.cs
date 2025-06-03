@@ -4,6 +4,7 @@ using Beamable.Server.Common;
 using Beamable.Tooling.Common.OpenAPI.Utils;
 using cli;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -189,20 +190,31 @@ namespace Beamable.Server.Generator
 						continue;
 					}
 
-					if (!operation.Responses.TryGetValue("200", out var response) ||
-					    !response.Content.TryGetValue("application/json", out var responseType))
+					if (!operation.Responses.TryGetValue("200", out var response))
 					{
 						continue;
 					}
 
-					if (!operation.RequestBody.Content.TryGetValue("application/json", out var requestType))
+					if (!response.Content.TryGetValue("application/json", out var responseType))
 					{
-						continue;
+						responseType = new OpenApiMediaType()
+						{
+							Extensions = new Dictionary<string, IOpenApiExtension>()
+							{
+								[SCHEMA_QUALIFIED_NAME_KEY] = new OpenApiString("Beamable.Common.Unit"),
+							}
+						};
+					}
+
+					Dictionary<string, OpenApiSchema> parameters = new();
+					
+					if (operation.RequestBody != null && operation.RequestBody.Content.TryGetValue("application/json", out var requestType))
+					{
+						var requestSchema = requestType.Schema.GetEffective(document);
+						parameters = requestSchema.Properties.ToDictionary(itemKey => itemKey.Key,
+							itemValue => itemValue.Value.GetEffective(document));
 					}
 					
-					var requestSchema = requestType.Schema.GetEffective(document);
-					var parameters = requestSchema.Properties.ToDictionary(itemKey => itemKey.Key,
-						itemValue => itemValue.Value.GetEffective(document));
 					AddCallableMethod(targetClass, methodName, parameters, responseType, addedParameters);
 				}
 			}
