@@ -193,8 +193,8 @@ namespace Beamable.Server
 
 		    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		    Debug.Instance = new MicroserviceDebug();
-		    _logger = BeamableZLoggerProvider.LogContext.Value = _loggerFactory.CreateLogger<TMicroservice>();
-
+		    _logger = _loggerFactory.CreateLogger<TMicroservice>();
+			BeamableZLoggerProvider.SetLogger(_logger);
 	    }
 
         public static void ConfigureUnhandledError()
@@ -923,9 +923,8 @@ namespace Beamable.Server
 
 	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true);
 
-	        BeamableZLoggerProvider.LogContext.Value = _logger;
-
-
+	        BeamableZLoggerProvider.SetLogger(_logger);
+	        
 	        ConfigureTelemetry(envArgs, attribute);
 
 	        ConfigureUncaughtExceptions();
