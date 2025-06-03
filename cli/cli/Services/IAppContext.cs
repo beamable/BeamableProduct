@@ -343,7 +343,7 @@ public class DefaultAppContext : IAppContext
 		}
 		else
 		{
-			_cid = cid;
+			_cid = null;
 		}
 
 		_pid = pid;
