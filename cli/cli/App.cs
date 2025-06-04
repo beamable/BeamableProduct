@@ -637,6 +637,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentPsCommand, ContentPsCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentReplaceCommand, ContentReplaceCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSaveCommand, ContentSaveCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSyncCommand, ContentSyncCommandArgs, ContentCommand>();

@@ -115,6 +115,45 @@ public class ContentService
 
 		return path;
 	}
+	
+	public void ReplaceLocalContent(string contentDirectory, string sourcePath, string destinationPath)
+	{
+		Debug.Assert(Directory.Exists(contentDirectory), "If you see this, please make sure that your content directory is created.");
+		
+		Debug.Assert(Directory.Exists(sourcePath), $"Your source directory [{sourcePath}] doesn't exist. Please make sure that your realm PID is correct and try again.");
+		
+		// Create the destination folder if it doesn't exist.
+		if (!string.IsNullOrEmpty(destinationPath) && !Directory.Exists(destinationPath))
+		{
+			Directory.CreateDirectory(destinationPath);
+		}
+		
+		string[] destinationFiles = Directory.GetFiles(destinationPath, "*", SearchOption.AllDirectories);
+
+		foreach (string filePath in destinationFiles)
+		{
+			File.Delete(filePath);
+		}
+		
+		string[] sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
+		
+		foreach (string filePath in sourceFiles)
+		{
+			string relativePath = Path.GetRelativePath(sourcePath, filePath);
+			string destinationFilePath = Path.Combine(destinationPath, relativePath);
+			
+			string fileName = Path.GetFileName(destinationFilePath);
+			
+			string directoryPath = destinationFilePath.Replace(fileName, string.Empty);
+
+			if (!Directory.Exists(directoryPath))
+			{
+				Directory.CreateDirectory(directoryPath);
+			}
+			
+			File.Copy(filePath, destinationFilePath, overwrite: true);
+		}
+	}
 
 	private Dictionary<(string pid, string manifest), FileSystemWatcher> _watchers = new();
 
