@@ -150,13 +150,17 @@ namespace Beamable.Purchasing
 		}
 
 		#region "IBeamablePurchaser"
-		/// <summary>
-		/// Get the localized price string for a given SKU.
-		/// </summary>
 		public string GetLocalizedPrice(string skuSymbol)
 		{
 			var product = _storeController?.products.WithID(skuSymbol);
 			return product?.metadata.localizedPriceString ?? "???";
+		}
+
+		public bool TryGetLocalizedPrice(string skuSymbol, out string localizedPrice)
+		{
+			var product = _storeController?.products.WithID(skuSymbol);
+			localizedPrice = product?.metadata.localizedPriceString ?? string.Empty;
+			return !string.IsNullOrEmpty(localizedPrice);
 		}
 
 		/// <summary>
@@ -453,6 +457,7 @@ namespace Beamable.Purchasing
 		[RegisterBeamableDependencies]
 		public static void RegisterServices(IDependencyBuilder builder)
 		{
+			builder.RemoveIfExists<IBeamablePurchaser>();
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
 		}
 	}

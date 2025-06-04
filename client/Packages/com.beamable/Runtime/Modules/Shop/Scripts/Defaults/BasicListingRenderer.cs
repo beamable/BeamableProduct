@@ -46,7 +46,7 @@ namespace Beamable.Shop.Defaults
 			if (listing.offer.price.type == "sku")
 			{
 				var purchaser = await beamable.BeamableIAP;
-				ButtonText.text = purchaser.GetLocalizedPrice(listing.offer.price.symbol);
+				ButtonText.text = purchaser.TryGetLocalizedPrice(listing.offer.price.symbol, out var price) ? price : "Could not get localized price";
 			}
 			else
 			{
