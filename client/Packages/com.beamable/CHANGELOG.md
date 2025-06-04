@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-06-05 
+
+### Fixed
+- Fixed issue that CloudSaving could generate corrupted save files if the application was closed during saving process.
+- Fixed incorrect `MailMessage` `expires` field parsing.
+- Fixed issue with `WebSocketConnection` not sending updates after reconnection.
+- Improve IAP error detection.
+
+### Changed
+- Bake content will bake content from realm that is provided by `config-defaults` (used in builds) when available. Instead of using local content and requiring it to be the same as remote one, it will download and bake currently deployed manifest and its content.
+
 ## [2.3.0] - 2025-05-08
 
 ### Added
