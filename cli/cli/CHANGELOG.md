@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.0.0]
 ### Added
 - New Code Analyzer to return compile time error for async void Callable methods.
 - New Code Fixer to fix async void Callable methods on IDE.
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`.
   The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
 - Added `beam org realms` command that prints out a list of all available realms for the requesting user.
+- Added an --admin flag for Beam Me Command, that fixes the costumer token being scoped by realm for this request. 
 - New `beam content` command pallet for SAMS and Engine-integration usage.
  
 ### Changed

@@ -73,7 +73,10 @@ public class ServeCliCommand
 		RequireProcessIdOption.ConfigureRequiredProcessIdWatcher(args.requireProcessId);
 		
 		// Pre-Warm the content cache.
-		await args.ContentService.GetManifest();
+		if (!string.IsNullOrEmpty(args.AppContext.Cid))
+		{
+			await args.ContentService.GetManifest();
+		}
 		
 		var server = args.Provider.GetService<ServerService>();
 		await server.RunServer(args, data =>
