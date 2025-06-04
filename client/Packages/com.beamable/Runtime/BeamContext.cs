@@ -697,6 +697,10 @@ namespace Beamable
 					});
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 				}
+				else
+				{
+					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(new DummyPurchaser());
+				}
 			}
 
 			void SetupEmitEvents()

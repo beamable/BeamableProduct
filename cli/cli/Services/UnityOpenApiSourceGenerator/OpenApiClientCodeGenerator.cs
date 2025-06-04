@@ -1,8 +1,10 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
+using Beamable.Tooling.Common.OpenAPI.Utils;
 using cli;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -44,39 +46,7 @@ namespace Beamable.Server.Generator
 		private const string LIST_BASE_PREFIX = "System.Collections.Generic.List";
 		private const string NULLABLE_BASE = "System.Nullable<{0}>";
 
-		private static readonly Dictionary<string, string> OpenApiCSharpFullNameMap = new()
-		{
-			{ "int16", typeof(short).FullName },
-			{ "int32", typeof(int).FullName },
-			{ "int64", typeof(long).FullName },
-			{ "integer", typeof(int).FullName },
-			{ "float", typeof(float).FullName },
-			{ "double", typeof(double).FullName },
-			{ "decimal", typeof(decimal).FullName },
-			{ "number", typeof(double).FullName },
-			{ "boolean", typeof(bool).FullName },
-			{ "date", typeof(DateTime).FullName },
-			{ "date-time", typeof(DateTime).FullName },
-			{ "uuid", typeof(Guid).FullName },
-			{ "byte", typeof(byte).FullName },
-			{ "string", typeof(string).FullName }
-		};
-
-		private static readonly Dictionary<string, string> OpenApiCSharpNameMap = new()
-		{
-			{ "int16", "short" },
-			{ "int32", "int" },
-			{ "int64", "long" },
-			{ "integer", "int" },
-			{ "float", "float" },
-			{ "double", "double" },
-			{ "decimal", "decimal" },
-			{ "number", "double" },
-			{ "boolean", "bool" },
-			{ "uuid", typeof(Guid).FullName },
-			{ "byte", "byte" },
-			{ "string", "string" }
-		};
+		
 
 		private static readonly List<string> CallableMethodsToGenerate = new()
 		{
@@ -220,22 +190,32 @@ namespace Beamable.Server.Generator
 						continue;
 					}
 
-					if (!operation.Responses.TryGetValue("200", out var response) ||
-					    !response.Content.TryGetValue("application/json", out var responseType))
+					if (!operation.Responses.TryGetValue("200", out var response))
 					{
 						continue;
 					}
 
-					if (!operation.RequestBody.Content.TryGetValue("application/json", out var requestType))
+					if (!response.Content.TryGetValue("application/json", out var responseType))
 					{
-						continue;
+						responseType = new OpenApiMediaType()
+						{
+							Extensions = new Dictionary<string, IOpenApiExtension>()
+							{
+								[SCHEMA_QUALIFIED_NAME_KEY] = new OpenApiString("Beamable.Common.Unit"),
+							}
+						};
 					}
 
-					var responseSchema = responseType.Schema.GetEffective(document);
-					var requestSchema = requestType.Schema.GetEffective(document);
-					var parameters = requestSchema.Properties.ToDictionary(itemKey => itemKey.Key,
-						itemValue => itemValue.Value.GetEffective(document));
-					AddCallableMethod(targetClass, methodName, parameters, responseSchema, addedParameters);
+					Dictionary<string, OpenApiSchema> parameters = new();
+					
+					if (operation.RequestBody != null && operation.RequestBody.Content.TryGetValue("application/json", out var requestType))
+					{
+						var requestSchema = requestType.Schema.GetEffective(document);
+						parameters = requestSchema.Properties.ToDictionary(itemKey => itemKey.Key,
+							itemValue => itemValue.Value.GetEffective(document));
+					}
+					
+					AddCallableMethod(targetClass, methodName, parameters, responseType, addedParameters);
 				}
 			}
 
@@ -314,7 +294,7 @@ namespace Beamable.Server.Generator
 		}
 
 		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName,
-			IDictionary<string, OpenApiSchema> parameters, OpenApiSchema returnMethodType,
+			IDictionary<string, OpenApiSchema> parameters, OpenApiMediaType returnMediaType,
 			Dictionary<string, string> paramsTypeName)
 		{
 			// Declaring a ToString method
@@ -353,7 +333,22 @@ namespace Beamable.Server.Generator
 				new CodeCommentStatement($"<see cref=\"{_serviceNamespaceClassName}.{methodName}\"/>", true));
 			genMethod.Comments.Add(new CodeCommentStatement("</summary>", true));
 
-			var genericPromiseType = $"Beamable.Common.Promise<{GetParsedType(returnMethodType)}>";
+			string returnTypeString;
+			OpenApiString qualifiedNameString = null;
+			bool hasQualifiedName = returnMediaType.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var qualifiedExtension) &&
+			                   qualifiedExtension is OpenApiString;
+			if (hasQualifiedName)
+			{
+				qualifiedNameString = (OpenApiString)qualifiedExtension;
+				returnTypeString = qualifiedNameString.Value;
+			}
+			else
+			{
+				returnTypeString = GetParsedType(returnMediaType.Schema);
+			}
+
+
+			string genericPromiseType = $"Beamable.Common.Promise<{returnTypeString}>";
 			genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
 
 			// Declaring a return statement for method ToString.
@@ -386,11 +381,12 @@ namespace Beamable.Server.Generator
 				);
 			}
 
+			string parsedType = hasQualifiedName ? qualifiedNameString.Value : GetParsedType(returnMediaType.Schema, true);
 			var requestInvokeExpr = new CodeMethodInvokeExpression(
 				new CodeMethodReferenceExpression(
 					new CodeThisReferenceExpression(),
 					"Request",
-					new CodeTypeReference[] { new(GetParsedType(returnMethodType, true)) }),
+					new CodeTypeReference[] { new(parsedType) }),
 				new CodeExpression[]
 				{
 					// first argument is the service name
@@ -413,6 +409,13 @@ namespace Beamable.Server.Generator
 
 		private string GetParsedType(OpenApiSchema schema, bool useFullName = false)
 		{
+
+			if (schema.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME,
+				    out var extensionType) && extensionType is OpenApiString forcedTypeName)
+			{
+				return forcedTypeName.Value;
+			}
+			
 			var (typeName, isNullable, isOptional) = ResolveTypeInfo(schema);
 			var nameBase = GetTypeNameBase(schema, isNullable);
 
@@ -449,7 +452,7 @@ namespace Beamable.Server.Generator
 
 		private string GetBaseTypeName(OpenApiSchema schema)
 		{
-			var mapToUse = OpenApiCSharpNameMap; // Default to short names
+			var mapToUse = OpenApiUtils.OpenApiCSharpNameMap; // Default to short names
 			string valueToFind = !string.IsNullOrEmpty(schema.Format) ? schema.Format : schema.Type;
 
 			if (mapToUse.TryGetValue(valueToFind, out string typeValue))
@@ -477,7 +480,7 @@ namespace Beamable.Server.Generator
 			{
 				return schema.Reference.Id;
 			}
-
+			
 			return schema.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var extension) &&
 			       extension is OpenApiString value
 				? value.Value
@@ -486,7 +489,7 @@ namespace Beamable.Server.Generator
 
 		private string GetFullTypeName(OpenApiSchema schema, string typeName)
 		{
-			if (OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
+			if (OpenApiUtils.OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
 			{
 				return fullName;
 			}
@@ -573,8 +576,6 @@ namespace Beamable.Server.Generator
 				sourceWriter.Flush();
 				var source = sb.ToString();
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
-				// CodeDom code generated with the string value of primal types are created with a @ added as prefix,
-				// we need to remove it so Unity can compile
 				return source;
 			}
 		}
