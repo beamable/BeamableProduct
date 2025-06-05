@@ -39,6 +39,7 @@ namespace Beamable.Common.BeamCli.Contracts
     {
 	    public string Level;
 	    public string Message;
+	    public DateTime Timestamp;
     }
 
 }

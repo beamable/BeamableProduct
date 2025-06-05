@@ -400,7 +400,7 @@ public class CollectorManager
 			catch (Exception ex)
 			{
 				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace} All Collector Logs=[\n{
-					string.Join("\n", CollectorStatus.logs.Select(l => $"{l.Level} - {l.Message}").ToList())
+					string.Join("\n", CollectorStatus.logs.Select(l => $"[{l.Timestamp}] {l.Level} - {l.Message}").ToList())
 				}]");
 
 				Environment.Exit(1);
@@ -540,7 +540,8 @@ public class CollectorManager
 					continue;
 
 			}
-			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message }).ToList();
+			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message , Timestamp = l.Time}).
+				OrderBy(t => t.Timestamp).ToList();
 			return new CollectorStatus()
 			{
 				isRunning = true,
@@ -555,7 +556,7 @@ public class CollectorManager
 			isRunning = false,
 			isReady = false,
 			pid = 0,
-			logs = CollectorStatus.logs
+			logs = CollectorStatus?.logs
 		};
 	}
 
@@ -604,15 +605,15 @@ public class CollectorManager
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
-		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
+		Log.Verbose($"Executing: [{fileExe} {arguments}]");
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			logger.ZLogInformation($"(collector) {args.Data}");
+			Log.Verbose($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			logger.ZLogInformation($"(collector err) {args.Data}");
+			Log.Verbose($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
