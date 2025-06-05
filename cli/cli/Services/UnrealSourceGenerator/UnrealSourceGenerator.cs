@@ -18,7 +18,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 {
 	// Start of Special-Cased Types
 	public static readonly UnrealType UNREAL_STRING = new("FString");
-	public static readonly UnrealType UNREAL_BYTE = new("int8");
+	public static readonly UnrealType UNREAL_BYTE = new("uint8");
 	public static readonly UnrealType UNREAL_SHORT = new("int16");
 	public static readonly UnrealType UNREAL_INT = new("int32");
 	public static readonly UnrealType UNREAL_LONG = new("int64");
@@ -30,7 +30,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_JSON = new("TSharedPtr<FJsonObject>");
 	public static readonly UnrealType UNREAL_OPTIONAL = new("FOptional");
 	public static readonly UnrealType UNREAL_OPTIONAL_STRING = new($"{UNREAL_OPTIONAL}String");
-	public static readonly UnrealType UNREAL_OPTIONAL_BYTE = new($"{UNREAL_OPTIONAL}Int8");
+	public static readonly UnrealType UNREAL_OPTIONAL_BYTE = new($"{UNREAL_OPTIONAL}UInt8");
 	public static readonly UnrealType UNREAL_OPTIONAL_SHORT = new($"{UNREAL_OPTIONAL}Int16");
 	public static readonly UnrealType UNREAL_OPTIONAL_INT = new($"{UNREAL_OPTIONAL}Int32");
 	public static readonly UnrealType UNREAL_OPTIONAL_LONG = new($"{UNREAL_OPTIONAL}Int64");
@@ -2443,7 +2443,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <summary>
 	/// Makes a UnrealType from a NamespacedType that the caller knows should become a F_____.
 	/// </summary>
-	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId) => new($"EBeam{referenceId.AsStr.Capitalize()}");
+	private static UnrealType MakeUnrealUEnumTypeFromNamespacedType(NamespacedType referenceId)
+	{
+		var prefix = genType != GenerationType.Microservice ? "EBeam" : "E";
+		string enumName = referenceId.AsStr.Replace(".", "").Capitalize();
+		return new UnrealType($"{prefix}{enumName}");
+	}
 
 	/// <summary>
 	/// Checks if the given schema should be interpreted a CSV-Response's Row schema. 
