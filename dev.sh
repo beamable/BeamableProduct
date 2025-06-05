@@ -20,6 +20,28 @@ echo "Hello, you stalwart Beamable"
 # the .dev.env file hosts some common variables
 source ./.dev.env
 
+# idiomatic parameter and option handling in sh
+SHOULD_APPLY_TO_UNITY=true
+SHOULD_APPLY_TO_UNREAL=true
+SHOULD_APPLY_TO_SAMS_SANDBOX=true
+while test $# -gt 0
+do
+    case "$1" in
+        --skip-unity) SHOULD_APPLY_TO_UNITY=false
+            echo "skipping unity $1 $SHOULD_APPLY_TO_UNITY"
+            ;;
+        --skip-unreal) SHOULD_APPLY_TO_UNREAL=false
+            echo "skipping unreal $1 $SHOULD_APPLY_TO_UNREAL"
+            ;;
+        --skip-sams-sandbox) SHOULD_APPLY_TO_SAMS_SANDBOX=false
+            echo "skipping sams-sandbox $1 $SHOULD_APPLY_TO_SAMS_SANDBOX"
+            ;;
+        *) echo "argument $1"
+            ;;
+    esac
+    shift
+done
+
 # construct a build number
 NEXT_BUILD_NUMBER=`cat build-number.txt`
 PREVIOUS_BUILD_NUMBER=$NEXT_BUILD_NUMBER
@@ -40,7 +62,7 @@ PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
 dotnet build $SOLUTION $BUILD_ARGS
-dotnet build cli/beamable.common -f net8.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true
+dotnet build cli/beamable.common -f net8.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
@@ -72,20 +94,25 @@ rm -rf $HOME/.nuget/packages/beamable.*/$PREVIOUS_VERSION
 # install the latest CLI globally.
 dotnet tool install Beamable.Tools --version $VERSION --global --allow-downgrade --no-cache
 
-# generate unity CLI
-beam generate-interface --engine unity --output=./client/Packages/com.beamable/Editor/BeamCli/Commands
-
 # restore the nuget packages (and CLI) for a sample project, thus restoring the
 # nuget-cache for all projects.
-cd cli/beamable.templates/templates/BeamService
-dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
-dotnet restore BeamService.csproj  --no-cache --force
-
-# Go back to the project root
-cd ../../../..
+if [ $SHOULD_APPLY_TO_UNITY = true ]; then
+  echo "Preparing the Unity SDK project to use locally built CLI"
+ 
+  # generate unity CLI
+  beam generate-interface --engine unity --output=./client/Packages/com.beamable/Editor/BeamCli/Commands --no-log-file
+  
+  cd cli/beamable.templates/templates/BeamService
+  dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
+  dotnet restore BeamService.csproj  --no-cache --force
+  
+  # Go back to the project root
+  cd ../../../..
+fi
 
 # If the user has the Unreal repo as a sibling, we update the version number there too
-if [[ -d "../UnrealSDK" ]]; then
+if [ $SHOULD_APPLY_TO_UNREAL = true ] && [[ -d "../UnrealSDK" ]]; then
+  echo "Preparing UnrealSDK project to use locally built CLI"
   cd ../UnrealSDK
   dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
   cd Microservices
@@ -96,4 +123,15 @@ if [[ -d "../UnrealSDK" ]]; then
   cd ../../BeamableProduct  
 fi
 
+# If the user has the Unreal repo as a sibling, we update the version number there too
+if [ $SHOULD_APPLY_TO_SAMS_SANDBOX = true ] && [[ -d "../SamsLocalSandbox" ]]; then
+  echo "Preparing the SamsSandbox local project to use locally built CLI"
+  cd ../SamsLocalSandbox
+  dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade  
+  for i in `find . -name "*.csproj" -type f`; do
+    echo "Restoring Microservice Project: $i"
+    dotnet restore "$i" --no-cache --force      
+  done
+  cd ../BeamableProduct  
+fi
 

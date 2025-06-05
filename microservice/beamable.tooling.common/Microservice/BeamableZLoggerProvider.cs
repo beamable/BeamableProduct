@@ -3,6 +3,7 @@ using Beamable.Common;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 using System.Runtime.CompilerServices;
+using Beamable.Server.Common;
 
 
 namespace Beamable.Server
@@ -13,6 +14,7 @@ namespace Beamable.Server
     {
         
         public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
+        public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
         
         public static void Debug(string message)
         {
@@ -96,7 +98,22 @@ namespace Beamable.Server
     public class BeamableZLoggerProvider : BeamableLogProvider
     {
         public static AsyncLocal<ILogger> LogContext = new AsyncLocal<ILogger>();
+        public static ILogger GlobalLogger;
 
+        static BeamableZLoggerProvider()
+        {
+            LogContext.Value = new QueuedLogger();
+        }
+
+        public static void SetLogger(ILogger logger)
+        {
+            if (LogContext.Value is QueuedLogger oldQueued)
+            {
+                oldQueued.Flush(logger);
+            }
+            LogContext.Value = logger;
+        }
+        
         /// <summary>
         /// Gets the singleton instance of <see cref="BeamableZLoggerProvider"/>.
         /// </summary>

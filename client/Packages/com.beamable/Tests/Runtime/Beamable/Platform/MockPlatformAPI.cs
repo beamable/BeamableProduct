@@ -21,16 +21,21 @@ namespace Beamable.Platform.Tests
 			get;
 			set;
 		} = "test";
+
 		public string RefreshToken
 		{
 			get;
 			set;
 		} = "test";
+
 		public DateTime ExpiresAt
 		{
 			get;
 			set;
 		} = DateTime.UtcNow + TimeSpan.FromMinutes(2);
+
+		public long ExpiresIn { get; } = (long)TimeSpan.FromMinutes(2).TotalMilliseconds;
+		public DateTime IssuedAt { get; } = DateTime.UtcNow;
 
 		public string Cid
 		{
@@ -44,7 +49,6 @@ namespace Beamable.Platform.Tests
 			set;
 		} = "test";
 	}
-
 
 	public abstract class MockPlatformRouteBase
 	{
@@ -185,6 +189,7 @@ namespace Beamable.Platform.Tests
 			{
 				throw _errorResponse;
 			}
+
 			return Promise<T1>.Successful((T1)_response);
 		}
 
@@ -195,6 +200,7 @@ namespace Beamable.Platform.Tests
 			{
 				throw _errorResponse;
 			}
+
 			return _response.ToString();
 		}
 
@@ -206,6 +212,7 @@ namespace Beamable.Platform.Tests
 			{
 				tokenMatch = true; // it doesn't matter what the token is, because we aren't going to send it anyway.
 			}
+
 			var uriMatch = Uri == null || Uri.Equals(uri);
 
 			var typeMatch = typeof(T1) == typeof(T);
@@ -327,12 +334,7 @@ namespace Beamable.Platform.Tests
 
 		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri = null)
 		{
-			var route = new MockPlatformRoute<T>()
-			{
-				Method = method,
-				Uri = uri,
-				Token = AccessToken?.Token
-			};
+			var route = new MockPlatformRoute<T>() {Method = method, Uri = uri, Token = AccessToken?.Token};
 
 			_routes.Add(route);
 

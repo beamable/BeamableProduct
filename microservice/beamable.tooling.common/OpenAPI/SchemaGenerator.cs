@@ -51,6 +51,7 @@ public class SchemaGenerator
 			shouldEmit &= curr.IsSerializable;
 			shouldEmit &= !curr.IsArray;
 			shouldEmit &= curr != typeof(string);
+			shouldEmit &= !typeof(Optional).IsAssignableFrom(curr);
 			if (shouldEmit)
 			{
 				yield return curr; // add the current type to the final set of types.
@@ -125,7 +126,7 @@ public class SchemaGenerator
 	/// <summary>
 	/// Converts a runtime type into an OpenAPI schema.
 	/// </summary>
-	public static OpenApiSchema Convert(Type runtimeType, int depth = 1)
+	public static OpenApiSchema Convert(Type runtimeType, int depth = 1, bool sanitizeGenericType = false)
 	{
 
 		switch (runtimeType)
@@ -175,7 +176,16 @@ public class SchemaGenerator
 				{
 					Type = "object",
 					AdditionalPropertiesAllowed = true,
-					AdditionalProperties = Convert(x.GetGenericArguments()[1], depth - 1)
+					AdditionalProperties = Convert(x.GetGenericArguments()[1], depth - 1),
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetGenericQualifiedTypeName()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] = new OpenApiString(runtimeType.GetGenericSanitizedFullName())
+					}
 				};
 
 			
@@ -190,7 +200,15 @@ public class SchemaGenerator
 				var enumNames = Enum.GetNames(runtimeType);
 				return new OpenApiSchema
 				{
-					Enum = enumNames.Select(name => new OpenApiString(name)).Cast<IOpenApiAny>().ToList()
+					Enum = enumNames.Select(name => new OpenApiString(name)).Cast<IOpenApiAny>().ToList(),
+					Extensions = new Dictionary<string, IOpenApiExtension>
+				{
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+				}
 				};
 			
 			default:
@@ -198,20 +216,28 @@ public class SchemaGenerator
 				var schema = new OpenApiSchema { };
 				var comments = DocsLoader.GetTypeComments(runtimeType);
 				
+				string typeName = sanitizeGenericType ? runtimeType.GetGenericSanitizedFullName() : runtimeType.Name;
+				
 				schema.Description = comments.Summary;
 				schema.Properties = new Dictionary<string, OpenApiSchema>();
 				schema.Required = new SortedSet<string>();
 				schema.Type = "object";
-				schema.Title = runtimeType.Name;
+				schema.Title = typeName;
 				schema.AdditionalPropertiesAllowed = false;
 				schema.Extensions = new Dictionary<string, IOpenApiExtension>
 				{
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(typeName),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetGenericQualifiedTypeName() : GetQualifiedReferenceName(runtimeType)),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 				};
+
+				if (sanitizeGenericType)
+				{
+					schema.Extensions[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] =
+						new OpenApiString(runtimeType.GetGenericSanitizedFullName());
+				}
 				
 				if (depth == 0) return schema;
 				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);

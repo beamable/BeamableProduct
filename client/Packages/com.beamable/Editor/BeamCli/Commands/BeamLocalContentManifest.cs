@@ -7,6 +7,8 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public partial class BeamLocalContentManifest
     {
+        public string OwnerCid;
+        public string OwnerPid;
         public string ManifestId;
         public BeamLocalContentManifestEntry Entries;
     }

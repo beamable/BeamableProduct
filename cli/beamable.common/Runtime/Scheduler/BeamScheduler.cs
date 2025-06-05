@@ -46,6 +46,7 @@ namespace Beamable.Common.Scheduler
 		/// <param name="jobId">The <see cref="Job.id"/> of a <see cref="Job"/> that has been scheduled. See <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/> to create a job.</param>
 		/// <param name="limit">The number of events to fetch. By default, this is 1000.</param>
 		/// <returns>A set of <see cref="JobExecution"/>s describing the recent activity.</returns>
+		[Obsolete("Prefer GetAllJobActivity")]
 		public async Promise<List<JobExecution>> GetJobActivity(string jobId, OptionalInt limit = null)
 		{
 			var res = await _api.GetJobActivity(jobId, limit);
@@ -168,6 +169,28 @@ namespace Beamable.Common.Scheduler
 			return job;
 		}
 
+		/// <inheritdoc cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy,bool)"/>
+		public Promise<Job> CreateUniqueJob(
+			string name,
+			string source,
+			ISchedulableAction action,
+			ISchedulerTrigger[] triggers,
+			RetryPolicy retryPolicy = null)
+		{
+			return CreateJob(name, source, action, triggers, retryPolicy, isUnique: true);
+		}
+		
+		/// <inheritdoc cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy,bool)"/>
+		public async Promise<Job> CreateUniqueJob(
+			string name,
+			string source,
+			ISchedulableAction action,
+			ISchedulerTrigger trigger,
+			RetryPolicy retryPolicy = null)
+		{
+			return await CreateJob(name, source, action, new ISchedulerTrigger[] { trigger }, retryPolicy, isUnique: true);
+		}
+		
 		/// <summary>
 		/// Create and schedule a <see cref="Job"/>.
 		/// </summary>
@@ -184,23 +207,25 @@ namespace Beamable.Common.Scheduler
 		/// <param name="triggers">A set of <see cref="ISchedulerTrigger"/>s that
 		/// will cause the <paramref name="action"/> to execute.</param>
 		/// <param name="retryPolicy">A <see cref="RetryPolicy"/> for the action</param>
+		/// <param name="isUnique">Forces the job to be unique. If the job already exists, this call will not re-create the job</param>
 		/// <returns>The created <see cref="Job"/></returns>
 		public async Promise<Job> CreateJob(
 			string name,
 			string source,
 			ISchedulableAction action,
 			ISchedulerTrigger[] triggers,
-			RetryPolicy retryPolicy = null)
+			RetryPolicy retryPolicy = null,
+			bool isUnique=false)
 		{
 			// TODO: Is it possible to specify the jobID ahead of time? 
-			var req = Utility.CreateSaveRequest(name, source, action, triggers, retryPolicy);
+			var req = Utility.CreateSaveRequest(name, source, action, triggers, retryPolicy, isUnique);
 			
 			var res = await _api.PostJob(req);
 			var job = Utility.Convert(res);
 			return job;
 		}
 
-		/// <inheritdoc cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/>
+		/// <inheritdoc cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy,bool)"/>
 		public async Promise<Job> CreateJob(
 			string name,
 			string source,
@@ -214,14 +239,33 @@ namespace Beamable.Common.Scheduler
 
 		public static class Utility
 		{
+			[Obsolete("Prefer Convert(JobActivityView)")]
 			public static JobExecutionEvent Convert(JobActivity activity)
 			{
 				return new JobExecutionEvent
 				{
 					id = activity.id.GetOrThrow(() => new Exception("Job activity needs id")),
 					jobId = activity.jobId.GetOrThrow(() => new Exception("Job activity needs jobId")),
+					jobName = activity.jobName.GetOrElse(() => null),
+
 					executionId =
 						activity.executionId.GetOrThrow(() => new Exception("Job activity needs executionId")),
+					state = activity.state.GetOrThrow(() => new Exception("Job activity needs state")),
+					message = activity.message.Value,
+					timestamp = activity.timestamp.GetOrThrow(() => new Exception("JobActivity needs timestamp")).ToString("O")
+				};
+			}
+			
+			public static JobExecutionEvent Convert(JobActivityView activity)
+			{
+				return new JobExecutionEvent
+				{
+					
+					id = activity.id.GetOrThrow(() => new Exception("Job activity needs id")),
+					jobId = activity.jobId.GetOrThrow(() => new Exception("Job activity needs jobId")),
+					jobName = activity.jobName.GetOrElse(() => null),
+					// executionId =
+					// 	activity.executionId.GetOrThrow(() => new Exception("Job activity needs executionId")),
 					state = activity.state.GetOrThrow(() => new Exception("Job activity needs state")),
 					message = activity.message.Value,
 					timestamp = activity.timestamp.GetOrThrow(() => new Exception("JobActivity needs timestamp")).ToString("O")
@@ -369,6 +413,7 @@ namespace Beamable.Common.Scheduler
 	public class JobExecutionEvent : ISerializationCallbackReceiver
 	{
 		/// <inheritdoc cref="JobExecution.executionId"/>
+		[Obsolete("No longer used")]
 		public string executionId;
 
 		/// <summary>
@@ -378,6 +423,11 @@ namespace Beamable.Common.Scheduler
 
 		/// <inheritdoc cref="JobExecution.jobId"/>
 		public string jobId;
+
+		/// <summary>
+		/// The name of the job
+		/// </summary>
+		public string jobName;
 
 		/// <summary>
 		/// A message describing any extra information for this state.

@@ -98,8 +98,10 @@ namespace Beamable.Server
                 }
             }
 
-            var type = result.GetType();
-            if (type.IsEnum)
+            
+            
+            var type = result?.GetType();
+            if (type?.IsEnum ?? false)
             {
 	            response.body = Convert.ChangeType(result, typeof(int)).ToString();
             }
