@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incorrect `MailMessage` `expires` field parsing.
 - Fixed issue with `WebSocketConnection` not sending updates after reconnection.
 - Improve IAP error detection.
+- Namespace error in `UpdateGPGSRealmConfigHelper`.
 
 ### Changed
 - Bake content will bake content from realm that is provided by `config-defaults` (used in builds) when available. Instead of using local content and requiring it to be the same as remote one, it will download and bake currently deployed manifest and its content.
