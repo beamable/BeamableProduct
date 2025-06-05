@@ -3,6 +3,8 @@ package servicediscovery
 import (
 	"encoding/json"
 	"strings"
+
+	"go.uber.org/zap/zapcore"
 )
 
 type Status int
@@ -25,8 +27,28 @@ func (s Status) String() string {
 }
 
 type responseData struct {
-	Status Status `json:"status"`
-	Pid    int    `json:"pid"`
+	Status Status          `json:"status"`
+	Pid    int             `json:"pid"`
+	Logs   []zapcore.Entry `json:"logs"`
+}
+
+type RingBufferLogs struct {
+	Data []zapcore.Entry
+	Size int
+}
+
+func NewRingBufferLogs(size int) *RingBufferLogs {
+	return &RingBufferLogs{
+		Data: make([]zapcore.Entry, 0, size),
+		Size: size,
+	}
+}
+
+func (q *RingBufferLogs) Append(entry zapcore.Entry) {
+	if len(q.Data) >= q.Size {
+		q.Data = q.Data[1:]
+	}
+	q.Data = append(q.Data, entry)
 }
 
 func (s Status) MarshalJSON() ([]byte, error) {

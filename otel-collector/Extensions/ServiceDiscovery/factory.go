@@ -15,6 +15,7 @@ func createDefaultConfig() component.Config {
 		Port:           "8686",
 		Host:           "127.0.0.1",
 		DiscoveryDelay: 10,
+		LogsBufferSize: 128,
 	}
 }
 
