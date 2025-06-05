@@ -1,11 +1,15 @@
 package servicediscovery
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -22,20 +26,26 @@ type serviceDiscovery struct {
 }
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
+	// Test clickhouse credentials to make sure everything is set for sending data
+	PingClickhouse()
 
 	rd := responseData{
 		Status: NOT_READY,
 		Pid:    os.Getpid(),
+		Logs:   []zapcore.Entry{},
 	}
+
+	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)
 
 	go func() {
 		for logEntry := range m.logEventsChan {
+			ringBuffer.Append(logEntry)
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
 				rd.Status = READY
 			}
 		}
 	}()
-	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd)
+	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd, &ringBuffer.Data)
 
 	return nil
 }
@@ -45,7 +55,7 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(host string, port string, delay int, rd *responseData) {
+func StartUDPServer(host string, port string, delay int, rd *responseData, logs *[]zapcore.Entry) {
 
 	broadcastAddr := host
 	broadcastAddr += ":"
@@ -69,16 +79,47 @@ func StartUDPServer(host string, port string, delay int, rd *responseData) {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		rd.Logs = *logs
+
 		message, mErr := json.Marshal(rd)
 
 		if mErr != nil {
 			fmt.Println("Error deserializing message!", mErr)
 		}
 
-		_, err := conn.Write(message)
-		fmt.Println(string(message))
-		if err != nil {
-			fmt.Println("Error sending message:", err)
-		}
+		conn.Write(message)
+		// TODO this should be smarter, like: if N errors happened in a row, then quit the app
+		// if err != nil {
+		// 	fmt.Println("Error sending message:", err)
+		// }
 	}
+}
+
+func PingClickhouse() {
+	username := os.Getenv("BEAM_CLICKHOUSE_USERNAME")
+	password := os.Getenv("BEAM_CLICKHOUSE_PASSWORD")
+	url := os.Getenv("BEAM_CLICKHOUSE_ENDPOINT")
+
+	data := []byte("SELECT 1") // This is the same query that Clickhouse gives for testing connection
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	auth := username + ":" + password
+	basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+	req.Header.Set("Authorization", basicAuth)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	log.Println("Ping test response:", string(body))
 }

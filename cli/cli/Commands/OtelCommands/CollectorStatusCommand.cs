@@ -37,9 +37,9 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
 		
-		var socket = CollectorManager.GetSocket(host, portNumber);
+		var socket = CollectorManager.GetSocket(host, portNumber, BeamableZLoggerProvider.LogContext.Value);
 
-		CollectorStatus currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token);
+		CollectorStatus currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 
 		if (args.watch)
 		{
@@ -54,7 +54,7 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 				}
 
 				lastStatus = currentStatus;
-				currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token);
+				currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 
 				if (currentStatus.Equals(lastStatus))
 				{
