@@ -455,7 +455,7 @@ namespace Beamable.Server.Generator
 			var mapToUse = OpenApiUtils.OpenApiCSharpNameMap; // Default to short names
 			string valueToFind = !string.IsNullOrEmpty(schema.Format) ? schema.Format : schema.Type;
 
-			if (mapToUse.TryGetValue(valueToFind, out string typeValue))
+			if (!string.IsNullOrEmpty(valueToFind) && mapToUse.TryGetValue(valueToFind, out string typeValue))
 			{
 				return typeValue;
 			}
@@ -489,7 +489,8 @@ namespace Beamable.Server.Generator
 
 		private string GetFullTypeName(OpenApiSchema schema, string typeName)
 		{
-			if (OpenApiUtils.OpenApiCSharpFullNameMap.TryGetValue(schema.Format ?? schema.Type, out string fullName))
+			string schemaFormat = schema.Format ?? schema.Type;
+			if (!string.IsNullOrEmpty(schemaFormat) && OpenApiUtils.OpenApiCSharpFullNameMap.TryGetValue(schemaFormat, out string fullName))
 			{
 				return fullName;
 			}
@@ -560,7 +561,7 @@ namespace Beamable.Server.Generator
 			sb.Append(nameBase.Contains("{0}")
 				? string.Format(nameBase, parameterClassName)
 				: nameBase);
-			return sb.ToString().Replace(".", "_");
+			return sb.ToString().Replace(".", "_").Replace(",","_").Replace(" ", "");
 		}
 
 		private string GetCSharpCodeString()
