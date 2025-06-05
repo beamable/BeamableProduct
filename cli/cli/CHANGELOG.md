@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revise the categorization of all Blueprint nodes to enhance discoverability.
 - `OptionalString` overrides `.ToString()` for easier print debugging.
 - Changes on MicroserviceBootstrapper to allow the creation of OAPI document after building the Microservice
-- `beam me` command now also gives you back your active token information
+- `beam me` command now also gives you back your active token information, but no longer gives you the `deviceIds` for a user
 - `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
 - `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
 - `beam checks scan` includes fixes for CLI 5 upgrade
