@@ -122,42 +122,42 @@ public class ContentService
 
 		return path;
 	}
-	
+
 	public void ReplaceLocalContent(string contentDirectory, string sourcePath, string destinationPath)
 	{
 		Debug.Assert(Directory.Exists(contentDirectory), "If you see this, please make sure that your content directory is created.");
-		
+
 		Debug.Assert(Directory.Exists(sourcePath), $"Your source directory [{sourcePath}] doesn't exist. Please make sure that your realm PID is correct and try again.");
-		
+
 		// Create the destination folder if it doesn't exist.
 		if (!string.IsNullOrEmpty(destinationPath) && !Directory.Exists(destinationPath))
 		{
 			Directory.CreateDirectory(destinationPath);
 		}
-		
+
 		string[] destinationFiles = Directory.GetFiles(destinationPath, "*", SearchOption.AllDirectories);
 
 		foreach (string filePath in destinationFiles)
 		{
 			File.Delete(filePath);
 		}
-		
+
 		string[] sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
-		
+
 		foreach (string filePath in sourceFiles)
 		{
 			string relativePath = Path.GetRelativePath(sourcePath, filePath);
 			string destinationFilePath = Path.Combine(destinationPath, relativePath);
-			
+
 			string fileName = Path.GetFileName(destinationFilePath);
-			
+
 			string directoryPath = destinationFilePath.Replace(fileName, string.Empty);
 
 			if (!Directory.Exists(directoryPath))
 			{
 				Directory.CreateDirectory(directoryPath);
 			}
-			
+
 			File.Copy(filePath, destinationFilePath, overwrite: true);
 		}
 	}
@@ -172,6 +172,11 @@ public class ContentService
 
 		_watchers.Add((pid, manifestId), new FileSystemWatcher());
 
+		// We need to keep track of the last write time for each content file in order to disambiguate multiple events firing simultaneously for the same file.
+		// For example, on Windows, a Created event is always fired alongside a Changed event of the same file (because of "reasons", I guess)
+		// This dictionary helps us fire off only one relevant event at a time even when the file watcher gets confused about the desireable semantics...
+		var eventDisambiguationHelper = new Dictionary<string, long>();
+		
 		// Set up the file watcher...
 		var watcher = _watchers[(pid, manifestId)];
 		watcher.BeginInit();
@@ -183,9 +188,7 @@ public class ContentService
 		                        NotifyFilters.CreationTime |
 		                        NotifyFilters.DirectoryName |
 		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite |
-		                        NotifyFilters.Security |
-		                        NotifyFilters.Size);
+		                        NotifyFilters.LastWrite);
 		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
 		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
 		watcher.Created += (_, e) => { OnLocalRealmContentFilesChanged(e); };
@@ -222,6 +225,7 @@ public class ContentService
 
 		void OnLocalRealmContentFilesChanged(FileSystemEventArgs e)
 		{
+			var lastWriteTime = File.GetLastWriteTime(e.FullPath).ToFileTimeUtc();
 			if (e.ChangeType == WatcherChangeTypes.Created)
 			{
 				var changedContent = new ChangedContentFile { OwnerPid = pid };
@@ -232,8 +236,13 @@ public class ContentService
 				changedContent.FullFilePath = e.FullPath;
 				changedContent.OldContentId = "";
 				changedContent.OldFullFilePath = "";
-				Log.Verbose($"Created file: {JsonConvert.SerializeObject(changedContent)} ");
-				_channelChangedContentFiles.Writer.TryWrite(changedContent);
+
+				if (!eventDisambiguationHelper.TryGetValue(e.FullPath, out var time) || time != lastWriteTime)
+				{
+					eventDisambiguationHelper[e.FullPath] = lastWriteTime;
+					Log.Verbose($"Created file ({lastWriteTime}): {JsonConvert.SerializeObject(changedContent)} ");
+					_channelChangedContentFiles.Writer.TryWrite(changedContent);
+				}
 			}
 			else if (e.ChangeType == WatcherChangeTypes.Deleted)
 			{
@@ -254,8 +263,13 @@ public class ContentService
 				changedContent.OwnerManifestId = manifestId;
 				changedContent.ContentId = changedContent.OldContentId = Path.GetFileNameWithoutExtension(e.Name);
 				changedContent.FullFilePath = changedContent.OldFullFilePath = e.FullPath;
-				Log.Verbose($"Changed file: {JsonConvert.SerializeObject(changedContent)} ");
-				_channelChangedContentFiles.Writer.TryWrite(changedContent);
+
+				if (!eventDisambiguationHelper.TryGetValue(e.FullPath, out var time) || time != lastWriteTime)
+				{
+					eventDisambiguationHelper[e.FullPath] = lastWriteTime;
+					Log.Verbose($"Changed file ({lastWriteTime}): {JsonConvert.SerializeObject(changedContent)} ");
+					_channelChangedContentFiles.Writer.TryWrite(changedContent);
+				}
 			}
 			else if (e.ChangeType == WatcherChangeTypes.Renamed)
 			{
