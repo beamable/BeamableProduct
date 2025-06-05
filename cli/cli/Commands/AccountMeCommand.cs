@@ -11,7 +11,6 @@ namespace cli;
 
 public class AccountMeCommandArgs : CommandArgs
 {
-	public bool UseAdmin;
 }
 
 public class AccountMeCommandOutput
@@ -109,11 +108,6 @@ public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, AccountMeCom
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOptionFlag("admin", "Required flag for cross realm use"), (args, b) =>
-		{
-			args.UseAdmin = b;
-		});
-		
 	}
 
 	protected override AccountMeCommandOutput GetHelpInstance()
@@ -133,20 +127,9 @@ public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, AccountMeCom
 	{
 		try
 		{
+			// Get the Account Me admin command if the flag has been set in the args
 			var token = args.AppContext.Token;
-			
-			if (!args.UseAdmin)
-			{
-				// If the Pid is different from the Token Pid this will return a 403 and not locking the CLI
-				Log.Verbose("[Command Account Me] It will use the admin call, please check your configuration or add the --admin parameter.");
-				return await NonAdminGetAccountMeCommand(args.AuthApi.GetUser(), token);
-		
-			}
-			else
-			{
-				// Get the Account Me admin command if the flag has been set in the args
-				return await AdminGetAccountMeCommand(args.Provider.GetService<IAccountsApi>(), token);
-			}
+			return await AdminGetAccountMeCommand(args.Provider.GetService<IAccountsApi>(), token);
 		}
 		catch (Exception e)
 		{
@@ -162,35 +145,14 @@ public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, AccountMeCom
 		{
 			id = response.id,
 			deviceIds = new List<string>(),
-			external = response.external.HasValue ? response.external.Value?.Select(x => new AccountMeExternalIdentity { userId = x.userId, providerNamespace = x.providerNamespace, providerService = x.providerService }).ToList() : new List<AccountMeExternalIdentity>(),
+			external =
+				response.external.HasValue
+					? response.external.Value?.Select(x => new AccountMeExternalIdentity { userId = x.userId, providerNamespace = x.providerNamespace, providerService = x.providerService }).ToList()
+					: new List<AccountMeExternalIdentity>(),
 			scopes = response.scopes.ToList(),
 			email = response.email,
 			language = response.language,
 			thirdPartyAppAssociations = response.thirdPartyAppAssociations.ToList(),
-			tokenCid = token.Cid,
-			tokenPid = token.Pid,
-			accessToken = token.Token,
-			refreshToken = token.RefreshToken,
-			tokenExpiration = token.ExpiresAt,
-			tokenIssuedAt = token.IssuedAt,
-			tokenExpiresIn = token.ExpiresIn,
-		};
-	}
-
-	private static async Task<AccountMeCommandOutput> NonAdminGetAccountMeCommand(Promise<User> user, IAccessToken token)
-	{
-		var response = await PromiseExtensions.ShowLoading<User>(user, "Sending Request...");
-		
-		// Get the token and fill it out args.AppContext.Token.
-		return new AccountMeCommandOutput
-		{
-			id = response.id,
-			deviceIds = response.deviceIds,
-			external = response.external?.Select(x => new AccountMeExternalIdentity { userId = x.userId, providerNamespace = x.providerNamespace, providerService = x.providerService }).ToList(),
-			scopes = response.scopes,
-			email = response.email,
-			language = response.language,
-			thirdPartyAppAssociations = response.thirdPartyAppAssociations,
 			tokenCid = token.Cid,
 			tokenPid = token.Pid,
 			accessToken = token.Token,

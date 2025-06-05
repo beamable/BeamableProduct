@@ -333,7 +333,7 @@ public class ContentService
 			// We only emit an event if the published manifest matches the id we care about.
 			if (manifestId == publishedManifestId)
 			{
-				Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}", manifestId);
+				Log.Verbose("Fetching Manifest Data. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
 				var emailFetchTask = GetAccountEmail(publisherAccountId);
 				var manifestFetchTask = GetManifest(publishedManifestId, manifestUid, replaceLatest: true);
 
@@ -1199,7 +1199,6 @@ public class ContentService
 			}
 			else
 			{
-				// TODO: try/catch on 404 to setup a dummy manifet with the given ids.
 				_cachedManifests[cacheKey] = manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
 			}
 		}
