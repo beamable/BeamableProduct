@@ -1,5 +1,7 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
+using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using ZLogger;
@@ -12,10 +14,13 @@ public class DebugLogProcessor : IAsyncLogProcessor
 	public ConcurrentDictionary<string, Channel<string>> subscriberToLogs =
 		new ConcurrentDictionary<string, Channel<string>>();
 
-	
-	public DebugLogProcessor()
+	private IZLoggerFormatter _formatter;
+
+
+	public DebugLogProcessor(ZLoggerOptions options)
 	{
-		
+		_formatter = options.CreateFormatter();
+		// formatter.
 	}
 	
 	
@@ -64,7 +69,10 @@ public class DebugLogProcessor : IAsyncLogProcessor
 		{
 			foreach (var kvp in subscriberToLogs)
 			{
-				kvp.Value.Writer.TryWrite(log.ToString());
+				var buffer = new ArrayBufferWriter<byte>();
+				_formatter.FormatLogEntry(buffer, log);
+				var result = Encoding.UTF8.GetString(buffer.WrittenMemory.Span);
+				kvp.Value.Writer.TryWrite(result);
 			}
 		}
 	}
