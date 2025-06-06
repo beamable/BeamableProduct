@@ -20,7 +20,6 @@ public class DebugLogProcessor : IAsyncLogProcessor
 	public DebugLogProcessor(ZLoggerOptions options)
 	{
 		_formatter = options.CreateFormatter();
-		// formatter.
 	}
 	
 	
