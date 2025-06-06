@@ -4,6 +4,7 @@ using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using Beamable.Server.Common;
+using cli.Utils;
 using CliWrap;
 using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
@@ -660,7 +661,7 @@ public static class ProjectContextUtil
 			}
 		}
 
-		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY);
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
 		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
 		if (File.Exists(openApiPath))
 		{
