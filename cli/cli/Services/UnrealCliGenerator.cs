@@ -1,8 +1,9 @@
 ﻿using cli.Unreal;
-using Serilog;
 using System.Collections;
 using System.CommandLine;
 using System.CommandLine.Help;
+using Beamable.Server;
+using System.Reflection;
 
 namespace cli.Services;
 
@@ -232,7 +233,7 @@ public struct UnrealCliStreamDeclaration
 	public const string STREAM_COMMAND_FIELDS = $@"inline static FString StreamType₢{nameof(StreamName)}₢ = FString(TEXT(""₢{nameof(RawStreamName)}₢""));
 	UPROPERTY() TArray<₢{nameof(_rootDataType)}₢> ₢{nameof(StreamName)}₢Stream;
 	UPROPERTY() TArray<int64> ₢{nameof(StreamName)}₢Timestamps;
-	TFunction<void (const TArray<₢{nameof(_rootDataType)}₢>& StreamData, const TArray<int64>& Timestamps, const FBeamOperationHandle& Op)> On₢{nameof(StreamName)}₢StreamOutput;";
+	TFunction<void (TArray<₢{nameof(_rootDataType)}₢>& StreamData, TArray<int64>& Timestamps, const FBeamOperationHandle& Op)> On₢{nameof(StreamName)}₢StreamOutput;";
 
 	public const string STREAM_PARSE_IMPL = $@"
 	if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
@@ -359,7 +360,7 @@ public class UnrealCliGenerator : ICliGenerator
 	{
 		typeNameOverride = string.IsNullOrEmpty(typeNameOverride.AsStr) ? GetStreamDataUnrealType(t, streamChannel) : typeNameOverride;
 
-		var streamDataProperties = t.GetFields()
+		var streamDataProperties = t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 			.Select(fieldInfo =>
 			{
 				var fieldType = fieldInfo.FieldType;
@@ -418,7 +419,7 @@ public class UnrealCliGenerator : ICliGenerator
 						subType = subType.GetElementType()!;
 				}
 
-				if ((subType.IsClass || subType.IsValueType) && !subType.IsPrimitive && subType != typeof(string))
+				if ((subType.IsClass || subType.IsValueType) && !subType.IsPrimitive && subType != typeof(string) && subType != typeof(DateTime))
 				{
 					FindDataDeclarations(subType, newDataTypes, streamChannel, new UnrealSourceGenerator.UnrealType());
 				}

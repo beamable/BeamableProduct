@@ -12,12 +12,16 @@ public class NoAuthHttpRequester : IRequester
 	private const string CONTENT_TYPE = "application/json";
 	private const string BASE_ADDRESS = "https://api.beamable.com";
 	private readonly HttpClient _client;
+	private readonly ConfigService _config;
 
-	public NoAuthHttpRequester()
+	private string Host => _config.GetConfigString(Constants.CONFIG_PLATFORM);
+
+	public NoAuthHttpRequester(ConfigService config)
 	{
 		_client = new HttpClient();
+		_config = config;
 	}
-	
+
 	public string EscapeURL(string url)
 	{
 		return System.Web.HttpUtility.UrlEncode(url);
@@ -30,7 +34,7 @@ public class NoAuthHttpRequester : IRequester
 	public async Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		uri = BASE_ADDRESS + uri;
+		uri = Host + uri;
 		var req = new HttpRequestMessage();
 		req.Method = method switch
 		{
@@ -41,7 +45,7 @@ public class NoAuthHttpRequester : IRequester
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
 		req.RequestUri = new Uri(uri);
-		
+
 		if (body is string bodyStr)
 		{
 			req.Content = new StringContent(bodyStr, Encoding.UTF8, CONTENT_TYPE);
@@ -52,21 +56,15 @@ public class NoAuthHttpRequester : IRequester
 			req.Content = new StringContent(json, Encoding.UTF8, CONTENT_TYPE);
 		}
 
-		
+
 		var res = await _client.SendAsync(req);
 
 		var resBody = await res.Content.ReadAsStringAsync();
-		
+
 		if (!res.IsSuccessStatusCode)
 		{
 			throw new RequesterException("no-auth-http", method.ToString(), uri, (long)res.StatusCode,
-				new BeamableRequestError
-				{
-					service = "",
-					status = (long)res.StatusCode,
-					error = res.ReasonPhrase,
-					message = resBody
-				}
+				new BeamableRequestError { service = "", status = (long)res.StatusCode, error = res.ReasonPhrase, message = resBody }
 			);
 		}
 

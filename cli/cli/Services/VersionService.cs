@@ -1,8 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Util;
 using Newtonsoft.Json;
-using Serilog;
-using System.Reflection;
+using Beamable.Server;
 
 namespace cli.Services;
 

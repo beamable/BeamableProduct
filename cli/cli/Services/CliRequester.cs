@@ -1,13 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using System.Text;
+using Beamable.Server;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
@@ -95,6 +94,7 @@ public class CliRequester : IRequester
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			var rawResponse = await reader.ReadToEndAsync();
+			Log.Verbose($"RESPONSE BODY:\n{rawResponse}");
 
 			if (typeof(T) == typeof(string) && rawResponse is T response)
 			{
@@ -137,7 +137,7 @@ public class CliRequester : IRequester
 						{
 							Log.Debug(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_ctx.UpdateToken(rsp);
+							_ctx.SetToken(rsp);
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
@@ -178,7 +178,7 @@ public class CliRequester : IRequester
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
-		client.DefaultRequestHeaders.Add("X-DE-SCOPE", customerScoped ? cid : $"{cid}.{pid}");
+		client.DefaultRequestHeaders.Add("X-BEAM-SCOPE", string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}");
 
 		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
 		{

@@ -244,6 +244,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		{
 			switch (log.logLevel)
 			{
+				case "Trace":
+				case "trace":
 				case "Verbose":
 				case "verbose":
 					return CliLogLevel.Verbose;

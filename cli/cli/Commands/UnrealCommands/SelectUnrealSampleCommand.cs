@@ -75,9 +75,12 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 			includeStorage: true,
 			ref serviceListToDisable);
 
+		ApplyProjectOverrides(args.ConfigService.BaseDirectory, foundPluginName);
+		
 		_ = SetEnabledCommand.SetProjectEnabled(serviceListToEnable, args.BeamoLocalSystem.BeamoManifest, true);
 		_ = SetEnabledCommand.SetProjectEnabled(serviceListToDisable, args.BeamoLocalSystem.BeamoManifest, false);
 
+	
 		uprojectJsonStr = Json.Serialize(uproject, new StringBuilder());
 		uprojectJsonStr = Json.FormatJson(uprojectJsonStr);
 		File.WriteAllText(pathToUproject, uprojectJsonStr);
@@ -87,5 +90,74 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.BaseDirectory);
 
 		return Task.CompletedTask;
+	}
+	
+	
+	public static void ApplyProjectOverrides(string projRoot, string beamProj)
+	{
+		string[] overrides = new[]{
+			"steam_appid.txt"
+		};
+	
+		var overridesRoot = Path.Combine(projRoot, "Plugins", beamProj, "Overrides");
+
+		foreach(var entry in overrides)
+		{
+			var filePath = Path.Combine(projRoot, entry);
+			if(File.Exists(filePath)) {
+				File.Delete(filePath);
+			}
+			string targetFilePath = Path.Combine(overridesRoot, entry);
+			if(File.Exists(targetFilePath)){
+				FileInfo file = new FileInfo(targetFilePath);
+				file.CopyTo(Path.Combine(projRoot, entry));
+			}
+		}
+		var overrideFolders = new[] { "Config" };
+
+		foreach (var overrideFolder in overrideFolders)
+		{
+			var projectPath = Path.Combine(projRoot, overrideFolder);
+			var overridesPath = Path.Combine(overridesRoot, overrideFolder);
+			if (!Directory.Exists(overridesPath))
+			{
+				BeamableLogger.Log($"{beamProj} project does not have Overrides directory for this expected override path. Create one at: {overridesPath}");
+				return;
+			}
+
+			if (Directory.Exists(projectPath))
+				Directory.Delete(projectPath, true);
+
+			CopyDirectory(overridesPath, projectPath);
+		}
+
+		static void CopyDirectory(string sourceDir, string destinationDir)
+		{
+			// Get information about the source directory
+			var dir = new DirectoryInfo(sourceDir);
+
+			// Check if the source directory exists
+			if (!dir.Exists)
+				throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+			// Cache directories before we start copying
+			DirectoryInfo[] dirs = dir.GetDirectories();
+
+			// Create the destination directory
+			Directory.CreateDirectory(destinationDir);
+
+			// Get the files in the source directory and copy to the destination directory
+			foreach (FileInfo file in dir.GetFiles())
+			{
+				string targetFilePath = Path.Combine(destinationDir, file.Name);
+				file.CopyTo(targetFilePath, true);
+			}
+
+			foreach (DirectoryInfo subDir in dirs)
+			{
+				string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+				CopyDirectory(subDir.FullName, newDestinationDir);
+			}
+		}
 	}
 }

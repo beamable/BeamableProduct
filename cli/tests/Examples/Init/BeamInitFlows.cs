@@ -4,11 +4,11 @@ using Beamable.Common.Content;
 using Moq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using Serilog.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using cli.Services;
+using Microsoft.Extensions.Logging;
 using tests.MoqExtensions;
 
 namespace tests.Examples.Init;
@@ -47,7 +47,7 @@ public class BeamInitFlows : CLITest
 	[TestCase("with a space")]
 	public void InEmptyDirectory(string initArg)
 	{
-		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
+		_logSwitch.Level = LogLevel.Trace;
 		var alias = "sample-alias";
 		var userName = "user@test.com";
 		var password = "password";
@@ -74,7 +74,7 @@ public class BeamInitFlows : CLITest
 
 		Mock<IAuthApi>(mock =>
 		{
-			mock.Setup(x => x.Login(userName, password, false, false))
+			mock.Setup(x => x.Login(userName, password, false, true))
 				.ReturnsPromise(new TokenResponse
 				{
 					refresh_token = "refresh",

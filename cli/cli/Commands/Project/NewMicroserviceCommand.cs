@@ -4,9 +4,9 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 
@@ -237,8 +237,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
 		var previousWorkingDir = args.ConfigService.WorkingDirectory;
 		var previousCurrentDirectory = Environment.CurrentDirectory;
-		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-		args.ConfigService.SetBeamableDirectory(".");
+		args.ConfigService.SetWorkingDir(newMicroserviceInfo.SolutionDirectory);
 		try
 		{
 			await args.BeamoLocalSystem.InitManifest();
@@ -293,7 +292,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		finally
 		{
 			//Go back to the default working dir
-			args.ConfigService.SetTempWorkingDir(previousWorkingDir);
+			args.ConfigService.SetWorkingDir(previousWorkingDir);
 			args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 		}
 

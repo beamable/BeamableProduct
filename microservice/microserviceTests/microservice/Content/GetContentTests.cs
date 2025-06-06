@@ -13,6 +13,7 @@ using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading;
 using Beamable.Common.Leaderboards;
+using microserviceTests.microservice.Util;
 
 namespace microserviceTests.microservice.Content
 {
@@ -31,6 +32,8 @@ namespace microserviceTests.microservice.Content
 
          var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
          _cache.GenerateReflectionCache(asms);
+         
+         LoggingUtil.InitTestCorrelator();
       }
 
       [Test]
@@ -67,7 +70,8 @@ namespace microserviceTests.microservice.Content
 
          var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
+        
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
@@ -143,7 +147,7 @@ namespace microserviceTests.microservice.Content
 
          var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
@@ -217,7 +221,7 @@ namespace microserviceTests.microservice.Content
 
          var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
@@ -299,7 +303,7 @@ namespace microserviceTests.microservice.Content
 
          var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 

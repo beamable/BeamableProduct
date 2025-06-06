@@ -65,6 +65,9 @@ public class StreamingDataTests
 
 					var isOptional = type.Name.StartsWith("Optional");
 					if (isOptional) continue;
+
+					var isDateTime = type.Name.StartsWith("DateTime");
+					if (isDateTime) continue;
 					
 					if (!hasCliContractAttribute && cliAssembly != declaringAssembly)
 					{

@@ -9,7 +9,6 @@ using Beamable.Server.Common;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using System.Collections;
 using System.CommandLine;
 

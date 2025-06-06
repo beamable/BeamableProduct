@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Server;
 using microserviceTests.microservice;
 using NUnit.Framework;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;

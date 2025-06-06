@@ -1,5 +1,4 @@
 ﻿using cli;
-using Serilog;
 
 public static class Program
 {
@@ -8,14 +7,13 @@ public static class Program
 		var app = new App();
 		app.Configure();
 		app.Build();
-
 		try
 		{
 			return await app.RunAsync(args);
 		}
 		finally
 		{
-			await Log.CloseAndFlushAsync();
+			app.Flush();
 		}
 	}
 }

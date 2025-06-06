@@ -1,19 +1,15 @@
+using System.Diagnostics;
+using System.Text.Json;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using Beamable.Server.Common;
+using cli.Utils;
 using CliWrap;
 using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
-using Serilog;
-using System.Diagnostics;
-using System.Text.Json;
-using System.Xml;
-using System.Xml.Linq;
-using Beamable.Common.Util;
 using microservice.Extensions;
 using Microsoft.OpenApi.Exceptions;
-using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 
 namespace cli.Services;
@@ -56,11 +52,13 @@ public static class ProjectContextUtil
 		BeamoService beamo,
 		ConfigService configService,
 		HashSet<string> ignoreIds,
+		BeamActivity rootActivity,
 		bool useCache=true,
 		bool fetchServerManifest=true)
 	{
 		ServiceManifest remote = new ServiceManifest();
-
+		using var activity = rootActivity.CreateChild("generateManifest");
+		
 		if (fetchServerManifest)
 		{
 			lock (_existingManifestLock)
@@ -257,6 +255,8 @@ public static class ProjectContextUtil
 		
 		sw.Stop();
 		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
+		
+		activity.SetStatus(ActivityStatusCode.Ok);
 		return manifest;
 	}
 
@@ -661,7 +661,7 @@ public static class ProjectContextUtil
 			}
 		}
 
-		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY);
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
 		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
 		if (File.Exists(openApiPath))
 		{

@@ -7,7 +7,6 @@ using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
-using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -99,7 +98,7 @@ public partial class BeamoLocalSystem
 	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{
 		// Load or create the local manifest
-		if (_configService.BaseDirectory == null)
+		if (!_configService.DirectoryExists.GetValueOrDefault(false))
 		{
 			Log.Verbose("Beamo is initializing local manifest, but since no beamable folder exists, an empty manifest is being produced. ");
 			BeamoManifest = new BeamoLocalManifest
@@ -112,8 +111,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, useCache: useManifestCache, fetchServerManifest);
-	}
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
 	{

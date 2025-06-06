@@ -13,9 +13,8 @@ using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using Serilog;
-using Serilog.Events;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using ClientRequest = Beamable.Microservice.Tests.Socket.ClientRequest;
 using ContentReference = Beamable.Server.Content.ContentReference;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
@@ -494,8 +493,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await Task.Delay(10);
 
             var notImplementedLogs = GetLogs()
-	            .Where(l => l.Level == LogEventLevel.Error)
-	            .Select(l => l.RenderMessage())
+	            .Where(l => l.LogInfo.LogLevel == LogLevel.Error)
+	            .Select(l => l.ToString())
 	            .Where(l => l.Contains("This version of GetUser is not supported in the Microservice environment"))
 	            .ToList();
             Assert.AreEqual(testCount, notImplementedLogs.Count);
@@ -866,9 +865,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 	        testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple_no_updates", nameof(SimpleMicroserviceWithNoEvents.GetContent), 1, 1, "content.abc"));
 
-	        var warningLog = GetLogs().FirstOrDefault(l => l.Level == LogEventLevel.Warning);
+	        var warningLog = GetLogs().FirstOrDefault(l => l.LogInfo.LogLevel == LogLevel.Warning);
 			Assert.IsNotNull(warningLog);
-			Assert.IsTrue(warningLog.RenderMessage().Contains("The content=[\"content.abc\"] may be unreliable"));
+			Assert.IsTrue(warningLog.ToString().Contains("The content=[content.abc] may be unreliable"));
 
 
 	        // simulate shutdown event...

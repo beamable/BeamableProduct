@@ -1,13 +1,11 @@
 using Beamable.Common;
-using Beamable.Common.BeamCli;
 using cli.Services;
 using CliWrap;
-using Errata;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text;
+using Beamable.Server;
 using microservice.Extensions;
 using Command = System.CommandLine.Command;
 

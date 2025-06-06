@@ -150,13 +150,17 @@ namespace Beamable.Purchasing
 		}
 
 		#region "IBeamablePurchaser"
-		/// <summary>
-		/// Get the localized price string for a given SKU.
-		/// </summary>
 		public string GetLocalizedPrice(string skuSymbol)
 		{
 			var product = _storeController?.products.WithID(skuSymbol);
 			return product?.metadata.localizedPriceString ?? "???";
+		}
+
+		public bool TryGetLocalizedPrice(string skuSymbol, out string localizedPrice)
+		{
+			var product = _storeController?.products.WithID(skuSymbol);
+			localizedPrice = product?.metadata.localizedPriceString ?? string.Empty;
+			return !string.IsNullOrEmpty(localizedPrice);
 		}
 
 		/// <summary>
@@ -391,7 +395,15 @@ namespace Beamable.Purchasing
 
 				if (err == null)
 				{
-					return;
+					var platformException = ex as PlatformRequesterException;
+					if (platformException != null)
+					{
+						err = new ErrorCode(platformException.Error);
+					}
+					else
+					{
+						return;
+					}
 				}
 
 				var retryable = err.Code >= 500 || err.Code == 429 || err.Code == 0;   // Server error or rate limiting or network error
@@ -453,6 +465,7 @@ namespace Beamable.Purchasing
 		[RegisterBeamableDependencies]
 		public static void RegisterServices(IDependencyBuilder builder)
 		{
+			builder.RemoveIfExists<IBeamablePurchaser>();
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
 		}
 	}

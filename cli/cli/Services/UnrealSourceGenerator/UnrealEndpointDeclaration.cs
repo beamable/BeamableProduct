@@ -275,8 +275,9 @@ public struct UnrealEndpointDeclaration
 		{
 			return
 				$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
-				$"*U{routeParameterDeclaration.PropertyNamespacedType}Library::{routeParameterDeclaration.PropertyNamespacedType}ToSerializableName({routeParameterDeclaration.PropertyName}));";
+				$"*UBeamJsonUtils::EnumToSerializationName({routeParameterDeclaration.PropertyName}));";
 		}
+		
 		else if (routeParameterDeclaration.PropertyUnrealType.IsAnySemanticType())
 		{
 			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
@@ -338,10 +339,10 @@ public struct UnrealEndpointDeclaration
 			{
 				if (isOptional)
 					queryAppend.Append(
-						$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
+						$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *UBeamJsonUtils::EnumToSerializationName({q.PropertyName}.Val));\n\t");
 				else
 					queryAppend.Append(
-						$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
+						$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *UBeamJsonUtils::EnumToSerializationName({q.PropertyName}));\n\t");
 			}
 			else if (q.NonOptionalTypeName.IsAnySemanticType())
 			{
