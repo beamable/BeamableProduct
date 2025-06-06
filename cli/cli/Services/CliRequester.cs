@@ -178,7 +178,12 @@ public class CliRequester : IRequester
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
-		client.DefaultRequestHeaders.Add("X-BEAM-SCOPE", string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}");
+
+		var scope = string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";
+		if (!string.IsNullOrEmpty(scope))
+		{
+			client.DefaultRequestHeaders.Add("X-BEAM-SCOPE", scope);
+		}
 
 		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
 		{

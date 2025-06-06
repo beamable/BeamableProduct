@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
 - `beam checks scan` includes fixes for CLI 5 upgrade
 - Logging uses `ZLogger` instead of `Serilog`
+- `beam org new` no longer creates an organization directly on the CLI. Instead it opens the browser to the Beamable portal registrations page
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
