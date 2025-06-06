@@ -133,7 +133,8 @@ namespace Beamable.Server
 			    builder.AddFilter(level => level >= LogLevel);
 			    if (!inDocker)
 			    {
-				    var debugLogProcessor = _debugLogProcessor = new DebugLogProcessor();
+				    var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
+				    var debugLogProcessor = _debugLogProcessor = new DebugLogProcessor(debugLogOptions);
 				    builder
 					    .AddZLoggerLogProcessor(debugLogProcessor);
 			    }
