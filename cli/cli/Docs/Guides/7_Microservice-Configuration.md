@@ -98,6 +98,22 @@ The `<GenerateClientCode>` property is boolean property, only valid on Standalon
 | ---------------------- | ------------- |
 | `<GenerateClientCode>` | true          |
 
+
+#### BeamValidateCallableTypesExistInSharedLibraries
+
+The `<BeamValidateCallableTypesExistInSharedLibraries>` property is a boolean property, only valid on Microservice projects. 
+When it is enabled, and the `Beamable.Microservice.SourceGen` nuget package is referenced, the static analyzer will
+disallow type references on `[Callable]` methods that are defined _within_ the Microservice assembly. 
+The goal is to prevent developers from building `[Callable]` methods that rely on data types inaccessible outside
+of the Microservice assembly. 
+
+This is disabled by default, because Microservices being developed outside an engine integration likely
+do not need to worry about type accessibility. 
+
+| Property Name          | Default Value |
+| ---------------------- |---------------|
+| `<BeamValidateCallableTypesExistInSharedLibraries>` | false         |
+
 #### BeamableTool
 
 The `<BeamableTool>` property is the path to the Beam CLI program that the Standalone Microservice will use to do various tasking. For most cases, this is configured to be the globally installed `beam` tool. However, if any dotnet build tasks run with a `BEAM_PATH` environment variable, then the `BEAM_PATH` environment variable will set the `<BeamableTool>` value. 

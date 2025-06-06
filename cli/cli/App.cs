@@ -627,6 +627,8 @@ public class App
 		// content commands
 
 		Commands.AddRootCommand<DeploymentCommand>();
+		
+		Commands.AddSubCommandWithHandler<CheckRegistryCommand, CheckRegistryCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<GetDeploymentCommand, GetDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ListDeploymentsCommand, ListDeploymentsCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ShowCurrentBeamoStatusCommand, ShowCurrentBeamoStatusCommandArgs, DeploymentCommand>();
