@@ -16,26 +16,26 @@ namespace Editor.CliContentManager
 					new LocalContentManifestEntry()
 					{
 						CurrentStatus = 1,
-						FullId = "api.announcements.announcement1",
+						FullId = "api.announcementApi.announcement1",
 						Hash = "random_hash",
 						JsonFilePath = ".beamable/api/announcements/announcement1.json",
 						Name = "Announcement 1",
 						ReferenceManifestUid = "1",
 						Tags = Array.Empty<string>(),
 						TagsStatus = Array.Empty<int>(),
-						TypeName = "api.announcements",
+						TypeName = "api.announcementApi",
 					},
 					new LocalContentManifestEntry()
 					{
 						CurrentStatus = 0,
-						FullId = "api.announcements.announcement2",
+						FullId = "api.announcementApi.announcement2",
 						Hash = "random_hash",
 						JsonFilePath = ".beamable/api/announcements/announcement2.json",
 						Name = "Announcement 2",
 						ReferenceManifestUid = "1",
 						Tags = Array.Empty<string>(),
 						TagsStatus = Array.Empty<int>(),
-						TypeName = "api.announcements",
+						TypeName = "api.announcementApi",
 					},
 					new LocalContentManifestEntry()
 					{

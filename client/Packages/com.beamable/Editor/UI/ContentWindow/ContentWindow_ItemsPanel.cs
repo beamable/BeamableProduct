@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Beamable.Editor.Util;
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,14 +47,14 @@ namespace Editor.UI2.ContentWindow
 			{
 				_itemsPanelScrollPos = EditorGUILayout.BeginScrollView(_itemsPanelScrollPos);
 				{
-					DrawItemNode();
+					DrawGroupNode();
 				}
 				EditorGUILayout.EndScrollView();
 			}
 			EditorGUILayout.EndVertical();
 		}
 		
-		private void DrawItemNode(string parentPath = "", int indentLevel = 0)
+		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
 		{
 			var filteredContents = _contentTypeHierarchy;
 			if (!filteredContents.TryGetValue(parentPath, out List<string> value)) return;
@@ -70,7 +71,7 @@ namespace Editor.UI2.ContentWindow
 				if (startsWithType && !isSameType)
 				{
 					// Subtype detected, skip parent draw
-					DrawItemNode(contentType, indentLevel);
+					DrawGroupNode(contentType, indentLevel);
 					return;
 				}
 
@@ -78,24 +79,26 @@ namespace Editor.UI2.ContentWindow
 					? contentType
 					: contentType.Substring(parentPath.Length + 1);
 
+				var items = GetFilteredItems(contentType);
+
+				bool hasChildrenItems = items.Count > 0;
+				
 				bool hasChildrenSubtypes = filteredContents.ContainsKey(contentType) &&
 				                        filteredContents[contentType].Count > 0;
+				
+				GUIStyle rowStyle = EditorStyles.helpBox;
 
-				bool isSelected = _selectedItemId == contentType;
-				GUIStyle rowStyle = isSelected ? new GUIStyle("TV Selection") : new GUIStyle("Label");
-
-				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
+				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(35));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
-
-				if (isSelected)
-				{
-					GUI.Box(rowRect, GUIContent.none, rowStyle);
-				}
+				
+				GUI.Box(rowRect, GUIContent.none, rowStyle);
 				
 				Rect contentRect = new Rect(rowRect);
-				bool isGroupExpanded = _itemsExpandedStates[contentType];
 				
-				if (hasChildrenSubtypes)
+				contentRect.xMin += 5;
+				
+				bool isGroupExpanded = _itemsExpandedStates[contentType];
+				if (hasChildrenSubtypes || hasChildrenItems)
 				{
 					_itemsExpandedStates[contentType] = EditorGUI.Foldout(
 						new Rect(contentRect.x, contentRect.y, 20f, contentRect.height),
@@ -103,25 +106,65 @@ namespace Editor.UI2.ContentWindow
 						GUIContent.none
 					);
 				}
+				
+				contentRect.xMin += 15;
 
-				contentRect.xMin += CONTENT_GROUP_INDENT_WIDTH;
+				var texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
+				var iconSize = 25f;
+				GUI.DrawTexture(new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize), texture, ScaleMode.ScaleToFit);
+				
+				contentRect.xMin += 35;
+				
 				GUI.Label(contentRect, displayName);
 
-				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+				var buttonSize = contentRect.height - 5;
+				GUI.Button(new Rect(contentRect.xMax - contentRect.height - 2, contentRect.y + 2f, buttonSize, buttonSize), BeamGUI.iconPlus);
+				
+				
+				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
 				{
-					_selectedItemId = contentType;
-					Event.current.Use();
-					GUI.changed = true;
-				}
-
-				if (hasChildrenSubtypes && isGroupExpanded)
-				{
-					DrawItemNode(contentType, indentLevel + 1);
+					if (items.Count > 0)
+					{
+						DrawItemNodes(items, indentLevel + 1);
+					}
+					DrawGroupNode(contentType, indentLevel + 1);
 				}
 			}
 		}
 
-		private List<LocalContentManifestEntry> GetFilteredItems()
+		private void DrawItemNodes(List<LocalContentManifestEntry> items, int indentLevel)
+		{
+			GUIStyle rowStyle = EditorStyles.helpBox;
+			foreach (LocalContentManifestEntry localContentManifestEntry in items)
+			{
+				bool isSelected = _selectedItemId == localContentManifestEntry.FullId;
+				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(35));
+				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+				GUI.Box(rowRect, GUIContent.none, rowStyle);
+				
+				Rect contentRect = new Rect(rowRect);
+				
+				contentRect.xMin += 5;
+				var texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(localContentManifestEntry.TypeName);
+				var iconSize = 15f;
+				GUI.DrawTexture(new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize), texture, ScaleMode.ScaleToFit);
+				contentRect.xMin += 20;
+				GUI.Label(contentRect, localContentManifestEntry.Name);
+
+				var buttonSize = contentRect.height - 5;
+				GUI.Button(new Rect(contentRect.xMax - contentRect.height - 2, contentRect.y + 2f, buttonSize, buttonSize), BeamGUI.iconUpload);
+				
+				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+				{
+					_selectedItemId = localContentManifestEntry.FullId;
+					Event.current.Use();
+					GUI.changed = true;
+				}
+				
+			}
+		}
+
+		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "")
 		{
 			var allItems = new List<LocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>());
 
@@ -135,13 +178,14 @@ namespace Editor.UI2.ContentWindow
 				bool matchesType = types.Count == 0 || types.Any(type => entry.TypeName.Contains(type));
 				bool matchesTags = tags.Count == 0 || tags.Any(tag => entry.Tags.Contains(tag));
 				bool matchesStatus = statuses.Count == 0 || statuses.Any(status => entry.StatusEnum.ToString() == status);
+				bool matchesSpecificType = string.IsNullOrEmpty(specificType) || entry.TypeName == specificType;
 				
 				
 				bool matchesName = string.IsNullOrEmpty(nameSearchPartValue) || entry.Name.Contains(nameSearchPartValue);
 				bool matchesContentGroup = string.IsNullOrEmpty(_selectedContentType) || 
 				                           entry.TypeName == _selectedContentType ||
 				                           entry.TypeName.StartsWith(_selectedContentType + ".");
-				return matchesName && matchesContentGroup && matchesType && matchesTags && matchesStatus;
+				return matchesName && matchesContentGroup && matchesType && matchesTags && matchesStatus && matchesSpecificType;
 			}).ToList();
 		}
 

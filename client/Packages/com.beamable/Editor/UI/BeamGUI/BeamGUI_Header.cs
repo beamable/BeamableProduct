@@ -52,10 +52,7 @@ namespace Beamable.Editor.Util
 
 			{ 
 				var rect = new Rect(0, GUILayoutUtility.GetLastRect().yMax, window.position.width, 30);
-				EditorGUILayout.BeginHorizontal(new GUIStyle()
-				                                {
-					                               
-				                                }, GUILayout.ExpandWidth(true),
+				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true),
 				                                GUILayout.Height(30));
 				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
 

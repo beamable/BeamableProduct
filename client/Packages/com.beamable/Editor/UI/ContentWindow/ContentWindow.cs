@@ -1,6 +1,7 @@
 ﻿using Beamable;
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Editor.CliContentManager;
@@ -18,6 +19,7 @@ namespace Editor.UI2.ContentWindow
 		private SearchData _contentSearchData;
 		private ContentTypeReflectionCache _contentTypeReflectionCache;
 		private CliContentService _contentService;
+		private ContentConfiguration _contentConfiguration;
 
 		static ContentWindow()
 		{
@@ -44,6 +46,8 @@ namespace Editor.UI2.ContentWindow
 			_contentService = ActiveContext.ServiceScope.GetService<CliContentService>();
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			
+			_contentConfiguration = ContentConfiguration.Instance;
 			
 			BuildHeaderFilters();
 			
