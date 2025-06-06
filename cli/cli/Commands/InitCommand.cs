@@ -134,13 +134,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				}
 				catch (RequesterException)
 				{
-					throw new CliException($"Organization not found for '{cid}', try again");
+					throw new CliException($"Organization not found for cid='{cid}', try again");
+				}
+				catch (AliasService.AliasDoesNotExistException)
+				{
+					throw new CliException($"Organization not found for alias='{cid}', try again");
 				}
 				catch (Exception e)
 				{
 					BeamableLogger.LogError(e.Message);
 					throw;
 				}
+				
 			}
 			_configService.SetConfigString(Constants.CONFIG_CID, cid);
 		}
