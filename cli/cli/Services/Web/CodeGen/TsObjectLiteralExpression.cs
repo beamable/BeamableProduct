@@ -28,6 +28,12 @@ public class TsObjectLiteralMember : TsNode
 
 	public override void Write(TsCodeWriter writer)
 	{
+		if (Key is TsIdentifier && Value is TsIdentifier && Key.Render() == Value.Render())
+		{
+			writer.Write(Key.Render());
+			return;
+		}
+
 		Key.Write(writer);
 		writer.Write(": ");
 		Value.Write(writer);

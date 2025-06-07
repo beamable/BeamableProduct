@@ -32,6 +32,54 @@ public class TsDeclarationsTests
 	}
 
 	[Test]
+	public void Export_Wildcard_WritesExportAll()
+	{
+		const string expected = "export * from 'module';\n";
+		var exp = new TsExport("module");
+		var writer = new TsCodeWriter();
+		exp.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, exp.Render());
+	}
+
+	[Test]
+	public void Export_Named_WritesNamedExport()
+	{
+		const string expected = "export { a, b } from 'mod';\n";
+		var exp = new TsExport("mod")
+			.AddNamedExport("a")
+			.AddNamedExport("b");
+		var writer = new TsCodeWriter();
+		exp.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, exp.Render());
+	}
+
+	[Test]
+	public void Export_DefaultAlias_WritesDefaultAliasExport()
+	{
+		const string expected = "export { default as def } from 'mod';\n";
+		var exp = new TsExport("mod", "def");
+		var writer = new TsCodeWriter();
+		exp.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, exp.Render());
+	}
+
+	[Test]
+	public void Export_DefaultAndNamed_WritesCombinedExport()
+	{
+		const string expected = "export { default as def, a, b } from 'mod';\n";
+		var exp = new TsExport("mod", "def")
+			.AddNamedExport("a")
+			.AddNamedExport("b");
+		var writer = new TsCodeWriter();
+		exp.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, exp.Render());
+	}
+
+	[Test]
 	public void File_WithImportAndDeclaration_WritesFileContents()
 	{
 		const string expected = "import 'm';\n" +
@@ -41,6 +89,18 @@ public class TsDeclarationsTests
 		var file = new TsFile("file.ts")
 			.AddImport(new TsImport("m"))
 			.AddDeclaration(new TsClass("X"));
+		var writer = new TsCodeWriter();
+		file.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, file.Render());
+	}
+
+	[Test]
+	public void File_WithExport_WritesFileContents()
+	{
+		const string expected = "export { X } from 'm';\n";
+		var file = new TsFile("file.ts")
+			.AddExport(new TsExport("m").AddNamedExport("X"));
 		var writer = new TsCodeWriter();
 		file.Write(writer);
 		Assert.AreEqual(expected, writer.ToString());

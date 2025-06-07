@@ -122,6 +122,28 @@ public class TsTypesTests
 	}
 
 	[Test]
+	public void ObjectLiteralExpression_AddMemberOverload_WritesShorthandMember()
+	{
+		var member = new TsObjectLiteralMember(new TsIdentifier("c"), new TsIdentifier("c"));
+		var obj = new TsObjectLiteralExpression().AddMember(member);
+		const string expected = "{\n" +
+		                        "  c\n" +
+		                        "}";
+		Assert.AreEqual(expected, obj.Render());
+	}
+
+	[Test]
+	public void ObjectLiteralExpression_AddMemberOverload_WritesLiteralKeyMember()
+	{
+		var member = new TsObjectLiteralMember(new TsLiteralExpression("c"), new TsLiteralExpression("c"));
+		var obj = new TsObjectLiteralExpression().AddMember(member);
+		const string expected = "{\n" +
+		                        "  \"c\": \"c\"\n" +
+		                        "}";
+		Assert.AreEqual(expected, obj.Render());
+	}
+
+	[Test]
 	public void UnaryExpression_PrefixAndPostfix_WritesOperator()
 	{
 		var pre = new TsUnaryExpression(new TsIdentifier("a"), TsUnaryOperatorType.Not);

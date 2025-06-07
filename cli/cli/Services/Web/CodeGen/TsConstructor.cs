@@ -15,9 +15,27 @@ public class TsConstructor : TsNode
 	public List<TsNode> Body { get; } = new();
 
 	/// <summary>
+	/// The comments preceding the constructor.
+	/// </summary>
+	public List<TsComment> Comments { get; } = new();
+
+	/// <summary>
 	/// Creates a constructor.
 	/// </summary>
 	public TsConstructor() => Name = "constructor";
+
+	/// <summary>
+	/// Adds a comment before the constructor.
+	/// </summary>
+	/// <param name="comment">
+	/// The comment to add.
+	/// </param>
+	/// <returns>The current <see cref="TsConstructor"/> instance for chaining.</returns>
+	public TsConstructor AddComment(TsComment comment)
+	{
+		Comments.Add(comment);
+		return this;
+	}
 
 	/// <summary>
 	/// Adds a parameter to the constructor.
@@ -43,6 +61,9 @@ public class TsConstructor : TsNode
 
 	public override void Write(TsCodeWriter writer)
 	{
+		foreach (TsComment comment in Comments)
+			comment.Write(writer);
+
 		writer.Write(Name);
 
 		if (Parameters.Count == 0)

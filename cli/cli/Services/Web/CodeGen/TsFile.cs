@@ -16,6 +16,11 @@ public class TsFile : TsNode
 	private List<TsImport> Imports { get; } = new();
 
 	/// <summary>
+	/// The exports of the file.
+	/// </summary>
+	private List<TsExport> Exports { get; } = new();
+
+	/// <summary>
 	/// The declarations of the file.
 	/// </summary>
 	private List<TsNode> Declarations { get; } = new();
@@ -27,13 +32,24 @@ public class TsFile : TsNode
 	public TsFile(string fileName) => FileName = fileName;
 
 	/// <summary>
-	/// Adds an import to the file.
+	/// Adds an import module to the file.
 	/// </summary>
-	/// <param name="import">The import to add.</param>
+	/// <param name="import">The import module to add.</param>
 	/// <returns>The same <see cref="TsFile"/> instance (for chaining).</returns>
 	public TsFile AddImport(TsImport import)
 	{
 		Imports.Add(import);
+		return this;
+	}
+
+	/// <summary>
+	/// Adds an export module to the file.
+	/// </summary>
+	/// <param name="import">The export module to add.</param>
+	/// <returns>The same <see cref="TsFile"/> instance (for chaining).</returns>
+	public TsFile AddExport(TsExport export)
+	{
+		Exports.Add(export);
 		return this;
 	}
 
@@ -53,7 +69,13 @@ public class TsFile : TsNode
 		foreach (TsImport imp in Imports)
 			imp.Write(writer);
 
-		if (Imports.Count > 0)
+		if (Imports.Count > 0 && (Exports.Count > 0 || Declarations.Count > 0))
+			writer.WriteLine();
+
+		foreach (TsExport exp in Exports)
+			exp.Write(writer);
+
+		if (Exports.Count > 0 && Declarations.Count > 0)
 			writer.WriteLine();
 
 		foreach (TsNode decl in Declarations)
