@@ -25,6 +25,15 @@ public record BuildAndAddMethodParams(
 
 public static class WebApi
 {
+	public static readonly TsFile API_BARREL_FILE = new("index");
+
+	public static void BuildApiBarrel(GeneratedFileDescriptor fileDescriptor)
+	{
+		var fileName = Path.GetFileNameWithoutExtension(fileDescriptor.FileName);
+		var tsExport = new TsExport($"./{fileName}");
+		API_BARREL_FILE.AddExport(tsExport);
+	}
+
 	public static List<GeneratedFileDescriptor> GenerateApiModules(IReadOnlyList<OpenApiDocument> ctxDocuments,
 		List<TsEnum> enums)
 	{
@@ -32,7 +41,6 @@ public static class WebApi
 		var apiDeclarations = new Dictionary<string, (Dictionary<string, TsImport>, TsClass)>();
 		var httpMethod = new TsIdentifier("HttpMethod");
 		var httpRequester = new TsIdentifier("HttpRequester");
-		var httpRequest = new TsIdentifier("HttpRequest");
 		var httpResponse = new TsIdentifier("HttpResponse");
 		var requester = new TsIdentifier("requester");
 
@@ -64,19 +72,15 @@ public static class WebApi
 				new TsImport($"@/http/types/{httpMethod.Identifier}").AddNamedImport(httpMethod.Identifier);
 			var tsImportHttpRequester =
 				new TsImport($"@/http/types/{httpRequester.Identifier}").AddNamedImport(httpRequester.Identifier);
-			var tsImportHttpRequest =
-				new TsImport($"@/http/types/{httpRequest.Identifier}").AddNamedImport(httpRequest.Identifier);
 			var tsImportHttpResponse =
 				new TsImport($"@/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
 
-			tsFile.AddImport(tsImportHttpMethod);
-			tsFile.AddImport(tsImportHttpRequester);
-			tsFile.AddImport(tsImportHttpRequest);
-			tsFile.AddImport(tsImportHttpResponse);
-			foreach (var kvp in tsImports)
-			{
+			tsImports.TryAdd("httpMethod", tsImportHttpMethod);
+			tsImports.TryAdd("httpRequester", tsImportHttpRequester);
+			tsImports.TryAdd("httpResponse", tsImportHttpResponse);
+
+			foreach (var kvp in tsImports.OrderBy(kvp => kvp.Key))
 				tsFile.AddImport(kvp.Value);
-			}
 
 			tsFile.AddDeclaration(tsApiClass);
 
@@ -123,14 +127,12 @@ public static class WebApi
 		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
 
 		var payload = new TsIdentifier("payload");
-		var queries = new TsIdentifier("queries");
 		var headers = new TsIdentifier("headers");
 		var modules = new List<string>();
 		var requiredParams = new List<TsFunctionParameter>();
 		var optionalParams = new List<TsFunctionParameter>();
 		var paramCommentList = new List<string>();
 		var methodBodyStatements = new List<TsNode>();
-		var queryOptionalStatements = new List<TsNode>();
 		var headerOptionalStatements = new List<TsNode>();
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
 		var headersObjectLiteral = new TsObjectLiteralExpression();
@@ -149,20 +151,21 @@ public static class WebApi
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpoint);
 		AddHeaderParametersStatements(headerParams, methodBodyStatements, headers, headerOptionalStatements,
 			headersObjectLiteral, paramCommentList);
-		AddQueryParameterStatements(apiParameters, queries, queryOptionalStatements, queriesObjectLiteral);
+		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
 
 		TsVariable queryStringDeclaration = null;
 		if (apiParameters.Any(p => p.In == ParameterLocation.Query))
 		{
-			AddQueryStringStatements(methodBodyStatements, queryOptionalStatements, queriesObjectLiteral,
-				out queryStringDeclaration);
+			tsImports.TryAdd("makeQueryString",
+				new TsImport($"@/utils/makeQueryString").AddNamedImport("makeQueryString"));
+			AddQueryStringStatements(methodBodyStatements, queriesObjectLiteral, out queryStringDeclaration);
 		}
 
 		var hasHeaders = headerParams.Count > 0;
-		var requestDeclaration = AddHttpRequestStatements(methodBodyStatements, payload, hasRequestBody, hasHeaders,
-			requiresAuth, apiMethodType, endpoint, queryStringDeclaration, requestType);
+		var requestObjectLiteral = MakeHttpRequestObject(payload, hasRequestBody, hasHeaders, requiresAuth,
+			apiMethodType, endpoint, queryStringDeclaration);
 
-		AddApiCallStatements(methodBodyStatements, responseType, requestType, requestDeclaration);
+		AddApiCallStatements(methodBodyStatements, responseType, requestType, requestObjectLiteral);
 
 		var @params = new BuildAndAddMethodParams(tsClass, tsImports, enums, methodName, requiredParams, bodyParam,
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
@@ -230,7 +233,7 @@ public static class WebApi
 			requestType = OpenApiTsTypeMapper.Map(requestSchema, ref modules);
 			hasRequestBody = true;
 			paramCommentList.Add(
-				$"@param {payloadIdentifier.Identifier} - The `{requestType.Render()}` instance to use for the API request");
+				$"@param {{{requestType.Render()}}} {payloadIdentifier.Identifier} - The `{requestType.Render()}` instance to use for the API request");
 			bodyParam = new TsFunctionParameter(payloadIdentifier.Identifier, requestType);
 		}
 		else
@@ -280,7 +283,6 @@ public static class WebApi
 			var paramDescription = !string.IsNullOrEmpty(param.Description)
 				? param.Description
 				: $"The `{paramName}` parameter to include in the API request.";
-			paramCommentList.Add($"@param {paramName} - {paramDescription}");
 
 			if (paramName == "objectId" && param.Extensions.TryGetValue("x-beamable-object-id", out var ext) &&
 			    ext is OpenApiObject obj &&
@@ -296,6 +298,8 @@ public static class WebApi
 			}
 
 			var tsType = OpenApiTsTypeMapper.Map(paramSchema, ref modules);
+			paramCommentList.Add($"@param {{{tsType.Render()}}} {paramName} - {paramDescription}");
+
 			if (param.Required)
 				requiredParams.Add(new TsFunctionParameter(paramName, tsType));
 			else
@@ -331,7 +335,8 @@ public static class WebApi
 		{
 			var paramNameIdentifier = new TsIdentifier(param.Name.Split('-').Last().ToLower());
 			paramCommentList.Add(
-				$"@param {paramNameIdentifier.Identifier} - {param.Description ?? $"The `{param.Name}` header to include in the API request."}");
+				$"@param {{{TsType.String.Render()}}} {paramNameIdentifier.Identifier} - {param.Description ?? $"The `{param.Name}` header to include in the API request."}");
+
 			if (param.Required)
 			{
 				var member =
@@ -361,72 +366,28 @@ public static class WebApi
 	}
 
 	private static void AddQueryParameterStatements(List<OpenApiParameter> apiParameters,
-		TsIdentifier queriesIdentifier, List<TsNode> queryOptionalStatements,
 		TsObjectLiteralExpression queriesObjectLiteral)
 	{
 		foreach (var param in apiParameters.Where(p => p.In == ParameterLocation.Query))
 		{
-			var queryParamToStringInvocation =
-				new TsInvokeExpression(new TsIdentifier("String"), new TsIdentifier(param.Name));
-			if (param.Required)
-			{
-				var member = new TsObjectLiteralMember(new TsLiteralExpression(param.Name),
-					queryParamToStringInvocation);
-				queriesObjectLiteral.AddMember(member);
-			}
-			else
-			{
-				var queryAssignment = new TsAssignmentStatement(
-					new TsMemberAccessExpression(queriesIdentifier, param.Name, false),
-					queryParamToStringInvocation);
-				var queryMemberOptional =
-					new TsConditionalStatement(new TsBinaryExpression(new TsIdentifier(param.Name),
-							TsBinaryOperatorType.NotEqualTo, new TsLiteralExpression("undefined")))
-						.AddThen(queryAssignment);
-				queryOptionalStatements.Add(queryMemberOptional);
-			}
+			var member = new TsObjectLiteralMember(new TsIdentifier(param.Name), new TsIdentifier(param.Name));
+			queriesObjectLiteral.AddMember(member);
 		}
 	}
 
 	private static void AddQueryStringStatements(List<TsNode> methodBodyStatements,
-		List<TsNode> queryOptionalStatements, TsObjectLiteralExpression queriesObjectLiteral,
-		out TsVariable queryStringDeclaration)
+		TsObjectLiteralExpression queriesObjectLiteral, out TsVariable queryStringDeclaration)
 	{
-		var queriesVar = new TsVariable("queries").AsConst()
-			.AsType(TsUtilityType.Record(TsType.String, TsType.String))
-			.WithInitializer(queriesObjectLiteral);
-		methodBodyStatements.Add(new TsBlankLine());
-		methodBodyStatements.Add(new TsComment("Create the query parameters object"));
-		methodBodyStatements.Add(queriesVar);
-		methodBodyStatements.AddRange(queryOptionalStatements);
-
-		var encodeUriCall = new TsInvokeExpression(new TsIdentifier("encodeURIComponent"),
-			new TsIdentifier("value"));
-		var templateExpr = new TsTemplateLiteralExpression(
-			head: string.Empty,
-			new TsTemplateSpan(new TsIdentifier("key"), "="),
-			new TsTemplateSpan(encodeUriCall, string.Empty));
-		var mapArrow = new TsArrowExpression(
-			new TsArrayDestructureParameter("key", "value"), templateExpr);
-		var entriesCall = new TsInvokeExpression(
-			new TsMemberAccessExpression(new TsIdentifier("Object"), "entries"),
-			new TsIdentifier("queries"));
-		var mapCall = new TsInvokeExpression(
-			new TsMemberAccessExpression(entriesCall, "map"), mapArrow);
-		var joinCall = new TsInvokeExpression(
-			new TsMemberAccessExpression(mapCall, "join"), new TsLiteralExpression("&"));
-		var concatCall = new TsInvokeExpression(
-			new TsMemberAccessExpression(new TsLiteralExpression("?"), "concat"), joinCall);
 		queryStringDeclaration = new TsVariable("queryString").AsConst()
-			.WithInitializer(concatCall);
+			.WithInitializer(new TsInvokeExpression(new TsIdentifier("makeQueryString"), queriesObjectLiteral));
 		methodBodyStatements.Add(new TsBlankLine());
 		methodBodyStatements.Add(new TsComment("Create the query string from the query parameters"));
 		methodBodyStatements.Add(queryStringDeclaration);
 	}
 
-	private static TsVariable AddHttpRequestStatements(List<TsNode> methodBodyStatements,
-		TsIdentifier payloadIdentifier, bool hasRequestBody, bool hasHeaders, bool requiresAuth, string apiMethodType,
-		TsVariable endpoint, TsVariable queryStringDeclaration, TsType requestType)
+	private static TsObjectLiteralExpression MakeHttpRequestObject(TsIdentifier payloadIdentifier, bool hasRequestBody,
+		bool hasHeaders, bool requiresAuth, string apiMethodType, TsVariable endpoint,
+		TsVariable queryStringDeclaration)
 	{
 		var urlKey = new TsIdentifier("url");
 		var methodKey = new TsIdentifier("method");
@@ -452,21 +413,15 @@ public static class WebApi
 		if (requiresAuth)
 			requestObjectLiteral.AddMember(withAuthKey, new TsLiteralExpression(true));
 
-		var requestDeclaration = new TsVariable("req").AsConst()
-			.AsType(requestType != null ? TsType.Generic("HttpRequest", requestType) : TsType.Of("HttpRequest"))
-			.WithInitializer(requestObjectLiteral);
-		methodBodyStatements.Add(new TsBlankLine());
-		methodBodyStatements.Add(new TsComment("Create the HTTP request object"));
-		methodBodyStatements.Add(requestDeclaration);
-		return requestDeclaration;
+		return requestObjectLiteral;
 	}
 
 	private static void AddApiCallStatements(List<TsNode> methodBodyStatements, string responseType, TsType requestType,
-		TsVariable requestDeclaration)
+		TsObjectLiteralExpression requestObjectLiteral)
 	{
 		var theRequester = new TsMemberAccessExpression(new TsIdentifier("this"), "requester");
 		var theRequestFn = new TsMemberAccessExpression(theRequester, "request");
-		var apiMethodCall = new TsInvokeExpression(theRequestFn, requestDeclaration.Identifier)
+		var apiMethodCall = new TsInvokeExpression(theRequestFn, requestObjectLiteral)
 			.AddTypeArgument(TsType.Of(responseType));
 
 		if (requestType != null)
