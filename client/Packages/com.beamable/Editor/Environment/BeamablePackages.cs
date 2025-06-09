@@ -61,9 +61,7 @@ namespace Beamable.Editor.Environment
 			"Library/PackageCache/" + BeamablePackageName,
 			"Library/PackageCache/" + ServerPackageName
 		};
-
-		private static Dictionary<string, Action> _packageToWindowInitialization = new Dictionary<string, Action>();
-
+		
 		private static Promise<BeamablePackageMeta> _serverPackageMetaPromise;
 
 		public static Promise<BeamablePackageMeta> ServerPackageMeta =>
@@ -94,15 +92,6 @@ namespace Beamable.Editor.Environment
 			set => SessionState.SetBool(SESSION_KEY_UPDATE_SERVER_REQUIRED, value);
 		}
 
-		public static void ShowServerWindow()
-		{
-			if (!_packageToWindowInitialization.TryGetValue(ServerPackageName, out var windowInitializer))
-			{
-				BeamableLogger.LogError("Beamable server not installed.");
-			}
-
-			windowInitializer?.Invoke();
-		}
 		public static List<string> GetManifestFileReferences()
 		{
 			var referencePaths = new List<string>();
@@ -231,16 +220,6 @@ namespace Beamable.Editor.Environment
 
 			EditorApplication.update += Callback;
 			return promise;
-		}
-
-		public static void ProvideServerWindow(Action windowInitializer)
-		{
-			ProvidePackageWindow(ServerPackageName, windowInitializer);
-		}
-
-		public static void ProvidePackageWindow(string packageName, Action windowInitializer)
-		{
-			_packageToWindowInitialization.Add(packageName, windowInitializer);
 		}
 
 		public static Promise<Unit> DownloadServer(BeamablePackageMeta beamableVersion)
