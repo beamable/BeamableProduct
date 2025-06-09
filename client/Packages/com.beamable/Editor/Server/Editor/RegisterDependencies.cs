@@ -10,14 +10,14 @@ namespace Beamable.Server.Editor
 	[BeamContextSystem]
 	public class BeamableServerDependencies
 	{
-		[RegisterBeamableDependencies(-1000, RegistrationOrigin.EDITOR)]
-		public static void Register(IDependencyBuilder builder)
-		{
-			builder.AddGlobalStorage<UsamService, SessionStorageLayer>();
-			builder.AddSingleton(() => MicroserviceConfiguration.Instance);
-			builder.AddSingleton<CommonAreaService>();
-		}
-
+		/// <summary>
+		/// This exists in EDITOR code so it won't be included in a build.
+		/// However, the DI is modifying the runtime scope.
+		///
+		/// That means that the editor experience has different services injected into the
+		/// DI scope than a runtime game will. 
+		/// </summary>
+		/// <param name="builder"></param>
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
