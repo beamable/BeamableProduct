@@ -1,4 +1,4 @@
-﻿namespace Editor.UI2.ContentWindow
+﻿namespace Editor.UI.ContentWindow
 {
 	public enum ContentFilterStatus
 	{

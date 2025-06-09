@@ -1,49 +1,61 @@
-﻿using Beamable.Editor.Util;
-using JetBrains.Annotations;
+﻿using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Content.UI;
+using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
-namespace Editor.UI2.ContentWindow
+namespace Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
+		
+		private const float CONTENT_ITEMS_PANEL_WIDTH = 450;
+		
 		private class ItemsPanelItem
 		{
 			public bool IsSubtype;
 			public string Name;
-			public LocalContentManifestEntry? Entry;
+			public BeamLocalContentManifestEntry Entry;
 			public List<ItemsPanelItem> SubItems;
 		}
 
 		private Vector2 _itemsPanelScrollPos;
 		private string _selectedItemId;
 
-		private Dictionary<string, List<LocalContentManifestEntry>> _itemViewHierarchy = new();
+		
 		private readonly Dictionary<string, bool> _itemsExpandedStates = new();
+		private GUIStyle _itemEvenStyle;
+		private GUIStyle _itemOddStyle;
+		private GUIStyle _itemSelectedStyle;
 
 
-		private void BuildItemsHierarchy()
+		private void BuildItemsPanelStyles()
 		{
-			_itemViewHierarchy.Clear();
-			var filteredItems = GetFilteredItems();
-			foreach (var localContentManifestEntry in filteredItems)
+			_itemEvenStyle = new GUIStyle(EditorStyles.helpBox)
 			{
-				if (!_itemViewHierarchy.TryGetValue(localContentManifestEntry.Name, out var entries))
-				{
-					entries = new List<LocalContentManifestEntry>();
-					_itemViewHierarchy.Add(localContentManifestEntry.Name, entries);
-				}
-				entries.Add(localContentManifestEntry);
-			}
+				normal = { background = CreateColorTexture(new Color(0.06f, 0.06f, 0.06f)) },
+			};
+			
+			_itemOddStyle = new GUIStyle(EditorStyles.helpBox)
+			{
+				normal = { background = CreateColorTexture(new Color(0.1f, 0.1f, 0.1f)) },
+			};
+			
+			_itemSelectedStyle = new GUIStyle(EditorStyles.helpBox)
+			{
+				normal = { background = CreateColorTexture(new Color(0.31f, 0.31f, 0.31f)) },
+			};
 		}
+		
+		
 		
 		private void DrawContentItemPanel()
 		{
-			EditorGUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true));
+			
+			EditorGUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true), GUILayout.Width(CONTENT_ITEMS_PANEL_WIDTH));
 			{
 				_itemsPanelScrollPos = EditorGUILayout.BeginScrollView(_itemsPanelScrollPos);
 				{
@@ -132,41 +144,49 @@ namespace Editor.UI2.ContentWindow
 			}
 		}
 
-		private void DrawItemNodes(List<LocalContentManifestEntry> items, int indentLevel)
+		private void DrawItemNodes(List<BeamLocalContentManifestEntry> items, int indentLevel)
 		{
-			GUIStyle rowStyle = EditorStyles.helpBox;
-			foreach (LocalContentManifestEntry localContentManifestEntry in items)
+			for (int index = 0; index < items.Count; index++)
 			{
+				BeamLocalContentManifestEntry localContentManifestEntry = items[index];
 				bool isSelected = _selectedItemId == localContentManifestEntry.FullId;
+				GUIStyle rowStyle = isSelected ? _itemSelectedStyle : index % 2 == 0 ? _itemEvenStyle :  _itemOddStyle;
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(35));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 				GUI.Box(rowRect, GUIContent.none, rowStyle);
-				
+
 				Rect contentRect = new Rect(rowRect);
-				
+
 				contentRect.xMin += 5;
-				var texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(localContentManifestEntry.TypeName);
+				var texture = GetIconForStatus(localContentManifestEntry.StatusEnum);
 				var iconSize = 15f;
-				GUI.DrawTexture(new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize), texture, ScaleMode.ScaleToFit);
+				GUI.DrawTexture(new Rect(contentRect.x, contentRect.center.y - iconSize / 2f, iconSize, iconSize),
+				                texture, ScaleMode.ScaleToFit);
 				contentRect.xMin += 20;
 				GUI.Label(contentRect, localContentManifestEntry.Name);
 
 				var buttonSize = contentRect.height - 5;
-				GUI.Button(new Rect(contentRect.xMax - contentRect.height - 2, contentRect.y + 2f, buttonSize, buttonSize), BeamGUI.iconUpload);
-				
+				GUI.Button(
+					new Rect(contentRect.xMax - contentRect.height - 2, contentRect.y + 2f, buttonSize, buttonSize),
+					BeamGUI.iconUpload);
+
 				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 				{
 					_selectedItemId = localContentManifestEntry.FullId;
 					Event.current.Use();
 					GUI.changed = true;
 				}
-				
 			}
 		}
 
-		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "")
+		private Texture GetIconForStatus(ContentStatus statusEnum)
 		{
-			var allItems = new List<LocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>());
+			throw new NotImplementedException();
+		}
+
+		private List<BeamLocalContentManifestEntry> GetFilteredItems(string specificType = "")
+		{
+			var allItems = new List<BeamLocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<BeamLocalContentManifestEntry>());
 
 			string nameSearchPartValue = GetNameSearchPartValue();
 			var types = GetFilterTypeActiveItems(ContentFilterType.Type);
@@ -189,7 +209,7 @@ namespace Editor.UI2.ContentWindow
 			}).ToList();
 		}
 
-		private List<LocalContentManifestEntry> SortItems(List<LocalContentManifestEntry> items)
+		private List<BeamLocalContentManifestEntry> SortItems(List<BeamLocalContentManifestEntry> items)
 		{
 			switch (_currentSortOption)
 			{

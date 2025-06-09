@@ -7,19 +7,21 @@ using Beamable.Editor.UI;
 using Editor.CliContentManager;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-namespace Editor.UI2.ContentWindow
+namespace Editor.UI.ContentWindow
 {
-	public partial class ContentWindow : BeamEditorWindow<ContentWindow>
+	public partial class ContentWindow : BeamEditorWindow<UI.ContentWindow.ContentWindow>
 	{
 		private const int MARGIN_SEPARATOR_WIDTH = 10;
+		
+		private UnityEditor.Editor nestedEditor;
 		
 		[SerializeField]
 		private SearchData _contentSearchData;
 		private ContentTypeReflectionCache _contentTypeReflectionCache;
 		private CliContentService _contentService;
 		private ContentConfiguration _contentConfiguration;
+		private Vector2 _horizontalScrollPosition;
 
 		static ContentWindow()
 		{
@@ -53,11 +55,11 @@ namespace Editor.UI2.ContentWindow
 			
 			BuildContentTypeHierarchy();
 
-			BuildItemsHierarchy();
-			
 			BuildHeaderStyles();
 			
 			BuildContentStyles();
+			
+			BuildItemsPanelStyles();
 		}
 
 		protected override void DrawGUI()
@@ -71,13 +73,17 @@ namespace Editor.UI2.ContentWindow
 
 		private void DrawContentData()
 		{
+			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
 			EditorGUILayout.BeginHorizontal();
 			{
 				DrawContentGroupPanel();
 				DrawVerticalLineSeparator(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
 				DrawContentItemPanel();
+				DrawVerticalLineSeparator(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
+				DrawContentInspector();
 			}
 			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.EndScrollView();
 		}
 
 		private static void DrawVerticalLineSeparator(RectOffset margin = null)
