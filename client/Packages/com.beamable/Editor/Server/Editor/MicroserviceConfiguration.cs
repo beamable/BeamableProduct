@@ -11,21 +11,7 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Server.Editor
 {
-
-	public class MicroserviceConfigConstants : IConfigurationConstants
-	{
-		public string GetSourcePath(Type type)
-		{
-			//
-			// TODO: make this work for multiple config types
-			//       but for now, there is just the one...
-
-			return $"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR}/microserviceConfiguration.asset";
-
-		}
-	}
-
-	public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
+	public class MicroserviceConfiguration : ModuleConfigurationObject
 	{
 #if UNITY_EDITOR_OSX
 		const string DOCKER_LOCATION = "/usr/local/bin/docker";
