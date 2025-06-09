@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.0.0]
+## [5.0.0] - 2025-06-06
 ### Added
 - New Code Analyzer to return compile time error for async void Callable methods.
 - New Code Fixer to fix async void Callable methods on IDE.
@@ -18,23 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for Int32 and FString on Enum deserialization in Unreal code generation.
 - Enums in the Unreal code gen is now EBeam[ENUM_NAME] instead of E[ENUM_NAME]. We decided to update our enums to avoid potential conflicts with external code enums.
 - New Microservice Client Code Generator for Unity that used OAPI for the generation.
+- `MicroserviceBootstrapper` creates OAPI document after building the Microservice
 - Added support for generating `FDateTime` instead of `FString` in Unreal code generation.
 - Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`.
   The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
 - Added `beam org realms` command that prints out a list of all available realms for the requesting user.
-- Added an --admin flag for Beam Me Command, that fixes the costumer token being scoped by realm for this request. 
 - New `beam content` command pallet for SAMS and Engine-integration usage.
 - CLI can emit open telemetry data when `BEAM_TELEMETRY` environment variable is enabled.
  
 ### Changed
-- Revise the categorization of all Blueprint nodes to enhance discoverability.
+- Logging uses `ZLogger` instead of `Serilog`
+- Revise the categorization of all generated Blueprint nodes to enhance discoverability in Unreal Engine.
 - `OptionalString` overrides `.ToString()` for easier print debugging.
-- Changes on MicroserviceBootstrapper to allow the creation of OAPI document after building the Microservice
 - `beam me` command now also gives you back your active token information, but no longer gives you the `deviceIds` for a user
 - `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
 - `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
 - `beam checks scan` includes fixes for CLI 5 upgrade
-- Logging uses `ZLogger` instead of `Serilog`
+- `beam org new` no longer creates an organization directly on the CLI. Instead it opens the browser to the Beamable portal registrations page
+- `beam project generate-client` is no longer the default post-build action. Use `beam project generate-client-oapi` instead
 
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
