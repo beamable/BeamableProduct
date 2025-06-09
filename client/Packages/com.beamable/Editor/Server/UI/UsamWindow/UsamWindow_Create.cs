@@ -53,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI2
 			"\n\n" +
 			"[Optional] Select which Microservices should be linked to this Storage Object. ";
 
-		private const string FederationTemplatePath = "Packages/com.beamable/Editor/Server/UI2/ScriptTemplates/FederationId.cs.txt";
+		private const string FederationTemplatePath = "Packages/com.beamable/Editor/Server/UI/ScriptTemplates/FederationId.cs.txt";
 		private const string CommonPath = "Assets/Beamable/Common/";
 		private const string ScriptNameReplaceTag = "#SCRIPTNAME#";
 		private const string ScriptNameLowerCaseReplaceTag = "#SCRIPTNAME_LOWER#";
