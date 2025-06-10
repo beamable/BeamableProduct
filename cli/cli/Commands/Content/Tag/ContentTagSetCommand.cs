@@ -5,7 +5,7 @@ namespace cli.Content.Tag;
 public class ContentTagSetCommand : AppCommand<ContentTagSetCommandArgs>, IEmptyResult, ISkipManifest
 {
 	public static readonly ConfigurableOptionFlag CLEAR_TAG_FLAG_OPTION =
-		new ConfigurableOptionFlag("clear", "Set the tags to a empty value, if you pass something in [<tag>] it will be ignored.");
+		new ConfigurableOptionFlag("clear", "Set the tags to a empty value, if you pass something in [<tag>] it will be ignored");
 
 	private ContentService _contentService;
 
