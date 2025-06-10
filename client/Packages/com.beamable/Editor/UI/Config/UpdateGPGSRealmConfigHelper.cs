@@ -12,7 +12,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI.Config
+namespace Beamable.Editor.Config
 {
 	public class UpdateGPGSRealmConfigHelper : EditorWindow
 	{
