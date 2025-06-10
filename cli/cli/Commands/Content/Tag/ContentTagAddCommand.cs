@@ -3,7 +3,7 @@ using Beamable.Common.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
+public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>, IEmptyResult, ISkipManifest
 {
 	private ContentService _contentService;
 

@@ -3,7 +3,7 @@ using Beamable.Common.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>
+public class ContentTagRemoveCommand : AppCommand<ContentTagRemoveCommandArgs>, IEmptyResult, ISkipManifest
 {
 	private ContentService _contentService;
 

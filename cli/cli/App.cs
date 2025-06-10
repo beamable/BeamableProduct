@@ -646,6 +646,8 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentResolveConflictCommand, ContentResolveConflictCommandArgs, ContentCommand>();
 
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
+		
+		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagRemoveCommand, ContentTagRemoveCommandArgs, ContentTagCommand>();
 
