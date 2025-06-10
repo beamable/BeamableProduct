@@ -1030,7 +1030,17 @@ namespace Beamable.Common
 		{
 			var result = new Promise<T>();
 			promise.Then(value => result.CompleteSuccess(value))
-			   .Error(err => result.CompleteSuccess(callback(err)));
+			   .Error(err =>
+			   {
+				   try
+				   {
+					   result.CompleteSuccess(callback(err));
+				   }
+				   catch (Exception ex)
+				   {
+					   result.CompleteError(ex);
+				   }
+			   });
 			return result;
 		}
 
