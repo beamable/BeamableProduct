@@ -80,7 +80,6 @@ export class Beam {
       new BaseRequester({
         baseUrl: this.envConfig.apiUrl,
         defaultHeaders: this.defaultHeaders,
-        withCredentials: isBrowserEnv(),
         tokenProvider,
       });
 

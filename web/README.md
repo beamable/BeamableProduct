@@ -174,16 +174,85 @@ Create an HTML file `temp/test-iife.html`:
     <title>Beam SDK Test</title>
   </head>
   <body>
-    <script src="./dist/index.global.js"></script>
+    <!-- Load the IIFE bundle; exposes a global `Beam` symbol -->
+    <script src="../dist/index.global.js"></script>
+
     <script>
-      // global variable exposed as Beam
-      console.log(Beam.print());
+      // Instantiate the SDK via the `Beam` constructor
+      const { Beam, BeamEnvironment } = Beamable;
+      const beam = new Beam({
+        cid: 'YOUR_CUSTOMER_ID',
+        pid: 'YOUR_PROJECT_ID',
+        // Environment must be one of: 'Dev', 'Stg', or 'Prod'
+        environment: 'Prod',
+      });
+
+      // Print a human-readable configuration string:
+      console.log(beam.toString());
+
+      // List all built-in environments:
+      console.log(BeamEnvironment.list());
+
+      // Example: authenticate via the auth endpoint:
+      beam.api.auth
+        .postAuthToken({
+          grant_type: 'password',
+          username: 'user@example.com',
+          password: 'your-password',
+        })
+        .then((res) => console.log('Login response:', res))
+        .catch(console.error);
     </script>
   </body>
 </html>
 ```
 
-Open the file in your browser and check the console output.
+Open the file in your browser and watch the console for output.
+
+## Token storage and automatic refresh
+
+The SDK stores authentication tokens using a platform-appropriate strategy and automatically handles access token renewal when needed.
+
+### Automatic refresh
+
+All HTTP requests that receive a 401 response will trigger an automatic access token refresh using the stored refresh token.
+On successful refresh, the original request is retried with the new access token. If the refresh fails, stored tokens are cleared and the error is propagated.
+
+#### Refresh failures
+
+If the SDK fails to refresh the access token (for example, the refresh token has expired), it throws a `RefreshAccessTokenError` and stored tokens are cleared. Consumers should catch this error to start a new login flow:
+
+```ts
+import { RefreshAccessTokenError } from '@beamable/sdk';
+
+try {
+  await beam.api.someService.someEndpoint();
+} catch (error) {
+  if (error instanceof RefreshAccessTokenError) {
+    // Refresh failed: redirect user to login
+    redirectToLoginPage();
+  }
+  throw error;
+}
+```
+
+### Custom token storage
+
+If you need a different storage mechanism, implement the `TokenStorage` interface and pass it in the configuration:
+
+```ts
+import { TokenStorage } from '@beamable/sdk';
+
+class MyTokenStorage implements TokenStorage {
+  /* implement getAccessToken, setAccessToken, ... */
+}
+
+const sdk = new Beam.Beam({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+  tokenStorage: new MyTokenStorage(),
+});
+```
 
 ## License
 
