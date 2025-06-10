@@ -19,8 +19,10 @@ namespace Beamable.Editor.Environment
 		public static List<string> CliPathsToIgnore = new List<string>()
 		{
 			"Packages/" + BeamablePackageName,
-			"Packages/" + ServerPackageName,
 			"Library/PackageCache/" + BeamablePackageName,
+			
+			// leave the com.beamable.server exclusion so that older versions don't
+			//  accidentally include older C#MS instances
 			"Library/PackageCache/" + ServerPackageName
 		};
 		
