@@ -1,5 +1,10 @@
 export * from '@/core/Beam';
 export * from '@/configs/BeamConfig';
+export * from '@/http/types/HttpMethod';
+export * from '@/http/types/HttpRequest';
 export * from '@/http/types/HttpRequester';
+export * from '@/http/types/HttpResponse';
+export * from '@/platform/types/TokenStorage';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
+export { RefreshAccessTokenError, NoRefreshTokenError } from '@/http/Errors';

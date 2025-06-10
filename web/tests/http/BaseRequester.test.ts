@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FetchRequester } from '@/http/FetchRequester';
+import { BaseRequester } from '@/http/BaseRequester';
 import { HttpMethod } from '@/http/types/HttpMethod';
 
 type TestReq = { foo: string };
@@ -15,10 +15,11 @@ const makeFetchMock = (
       'content-type': opts.contentType ?? 'application/json',
     }),
     json: () => Promise.resolve(body),
-    text: () => Promise.resolve(String(body)),
+    text: () =>
+      Promise.resolve(typeof body === 'string' ? body : JSON.stringify(body)),
   } as unknown as Response);
 
-describe('FetchRequester', () => {
+describe('BaseRequester', () => {
   afterEach(() => {
     // clean up mocks between tests
     vi.useRealTimers();
@@ -26,7 +27,7 @@ describe('FetchRequester', () => {
 
   it('performs a JSON GET request and returns parsed body', async () => {
     const fetchMock = makeFetchMock({ success: true });
-    const requester = new FetchRequester({ customFetch: fetchMock });
+    const requester = new BaseRequester({ customFetch: fetchMock });
 
     const res = await requester.request<TestRes, TestReq>({
       url: 'https://example.com/data',
@@ -44,7 +45,7 @@ describe('FetchRequester', () => {
 
   it('merges default headers and per-request headers', async () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
-    const requester = new FetchRequester({
+    const requester = new BaseRequester({
       customFetch: fetchMock,
       defaultHeaders: { 'x-default': 'A' },
     });
@@ -65,7 +66,7 @@ describe('FetchRequester', () => {
 
   it('adds an Authorization header when withAuth is true', async () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
-    const requester = new FetchRequester({
+    const requester = new BaseRequester({
       customFetch: fetchMock,
       tokenProvider: () => 'TOKEN_123',
     });
@@ -85,7 +86,7 @@ describe('FetchRequester', () => {
 
   it('builds the final URL from baseUrl + relative path', async () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
-    const requester = new FetchRequester({
+    const requester = new BaseRequester({
       baseUrl: 'https://api.example.com/',
       customFetch: fetchMock,
     });
@@ -103,7 +104,7 @@ describe('FetchRequester', () => {
     const abortErr = new Error('aborted');
     abortErr.name = 'AbortError';
     const mockFetch = vi.fn().mockRejectedValue(abortErr);
-    const requester = new FetchRequester({ timeout, customFetch: mockFetch });
+    const requester = new BaseRequester({ timeout, customFetch: mockFetch });
 
     await expect(requester.request({ url: '/timeout' })).rejects.toThrow(
       `Request to /timeout timed out after ${timeout}ms`,

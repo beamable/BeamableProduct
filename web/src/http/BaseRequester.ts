@@ -1,10 +1,16 @@
 import type { HttpRequest } from './types/HttpRequest';
 import type { HttpResponse } from './types/HttpResponse';
 import type { HttpRequester } from './types/HttpRequester';
-import type { FetchRequesterConfig } from '@/configs/FetchRequesterConfig';
+import type { BaseRequesterConfig } from '@/configs/BaseRequesterConfig';
 import { HttpMethod } from './types/HttpMethod';
+import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 
-export class FetchRequester implements HttpRequester {
+/**
+ * A basic HttpRequester implementation using the Fetch API.
+ * Supports base URL, default headers, timeout, and optional token-based authentication.
+ * Applies custom JSON deserialization using `BeamJsonUtils.reviver`.
+ */
+export class BaseRequester implements HttpRequester {
   private readonly timeout: number;
   private readonly defaultHeaders: Record<string, string>;
   private readonly withCredentials: boolean;
@@ -12,13 +18,19 @@ export class FetchRequester implements HttpRequester {
   private tokenProvider?: () => Promise<string> | string;
   private baseUrl?: string;
 
-  constructor(config: FetchRequesterConfig = {}) {
+  constructor(config: BaseRequesterConfig = {}) {
     this.timeout = config.timeout ?? 10_000; // defaults to 10 seconds
     this.baseUrl = config.baseUrl;
     this.defaultHeaders = config.defaultHeaders ?? {};
     this.withCredentials = config.withCredentials ?? false;
     this.fetchImpl = config.customFetch ?? fetch;
     this.tokenProvider = config.tokenProvider;
+
+    this.fetchImpl =
+      config.customFetch ??
+      (typeof globalThis.fetch === 'function'
+        ? globalThis.fetch.bind(globalThis)
+        : (undefined as never));
 
     if (typeof this.fetchImpl !== 'function') {
       throw new Error(
@@ -54,9 +66,10 @@ export class FetchRequester implements HttpRequester {
       });
 
       const contentType = response.headers.get('content-type');
+      const text = await response.text();
       const responseBody = contentType?.includes('application/json')
-        ? await response.json()
-        : await response.text();
+        ? JSON.parse(text, BeamJsonUtils.reviver) // deserialize with custom reviver
+        : text;
 
       const responseHeaders: Record<string, string> = {};
       response.headers.forEach((v, k) => (responseHeaders[k] = v));
