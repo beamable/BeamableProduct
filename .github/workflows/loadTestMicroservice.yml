@@ -41,7 +41,7 @@ jobs:
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          beam version update -q
+          dotnet beam version update 0.0.123.1
           dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
