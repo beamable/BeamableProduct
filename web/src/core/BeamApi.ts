@@ -1,0 +1,113 @@
+import { HttpRequester } from '@/http/types/HttpRequester';
+import { AccountsApi } from '@/__generated__/apis/AccountsApi';
+import { AnnouncementsApi } from '@/__generated__/apis/AnnouncementsApi';
+import { AuthApi } from '@/__generated__/apis/AuthApi';
+import { BeamoApi } from '@/__generated__/apis/BeamoApi';
+import { CalendarsApi } from '@/__generated__/apis/CalendarsApi';
+import { CloudsavingApi } from '@/__generated__/apis/CloudsavingApi';
+import { CommerceApi } from '@/__generated__/apis/CommerceApi';
+import { ContentApi } from '@/__generated__/apis/ContentApi';
+import { EventPlayersApi } from '@/__generated__/apis/EventPlayersApi';
+import { EventsApi } from '@/__generated__/apis/EventsApi';
+import { GroupsApi } from '@/__generated__/apis/GroupsApi';
+import { GroupUsersApi } from '@/__generated__/apis/GroupUsersApi';
+import { InventoryApi } from '@/__generated__/apis/InventoryApi';
+import { LeaderboardsApi } from '@/__generated__/apis/LeaderboardsApi';
+import { LobbyApi } from '@/__generated__/apis/LobbyApi';
+import { MailApi } from '@/__generated__/apis/MailApi';
+import { MailboxApi } from '@/__generated__/apis/MailboxApi';
+import { MatchmakingApi } from '@/__generated__/apis/MatchmakingApi';
+import { NotificationApi } from '@/__generated__/apis/NotificationApi';
+import { PartyApi } from '@/__generated__/apis/PartyApi';
+import { PaymentsApi } from '@/__generated__/apis/PaymentsApi';
+import { PlayerApi } from '@/__generated__/apis/PlayerApi';
+import { PlayerLobbyApi } from '@/__generated__/apis/PlayerLobbyApi';
+import { PlayerPartyApi } from '@/__generated__/apis/PlayerPartyApi';
+import { PlayerTicketApi } from '@/__generated__/apis/PlayerTicketApi';
+import { PresenceApi } from '@/__generated__/apis/PresenceApi';
+import { PushApi } from '@/__generated__/apis/PushApi';
+import { RealmsApi } from '@/__generated__/apis/RealmsApi';
+import { SchedulerApi } from '@/__generated__/apis/SchedulerApi';
+import { SessionApi } from '@/__generated__/apis/SessionApi';
+import { SocialApi } from '@/__generated__/apis/SocialApi';
+import { StatsApi } from '@/__generated__/apis/StatsApi';
+import { TournamentsApi } from '@/__generated__/apis/TournamentsApi';
+import { TrialsApi } from '@/__generated__/apis/TrialsApi';
+
+/**
+ * Container for all generated API clients.
+ * Access each service client via `beam.api.<serviceName>`.
+ */
+export class BeamApi {
+  accounts: AccountsApi;
+  announcements: AnnouncementsApi;
+  auth: AuthApi;
+  beamo: BeamoApi;
+  calendars: CalendarsApi;
+  cloudSaving: CloudsavingApi;
+  commerce: CommerceApi;
+  content: ContentApi;
+  eventPlayers: EventPlayersApi;
+  events: EventsApi;
+  groups: GroupsApi;
+  groupUsers: GroupUsersApi;
+  inventory: InventoryApi;
+  leaderboards: LeaderboardsApi;
+  lobby: LobbyApi;
+  mail: MailApi;
+  mailbox: MailboxApi;
+  matchmaking: MatchmakingApi;
+  notification: NotificationApi;
+  party: PartyApi;
+  payments: PaymentsApi;
+  player: PlayerApi;
+  playerLobby: PlayerLobbyApi;
+  playerParty: PlayerPartyApi;
+  playerTicket: PlayerTicketApi;
+  presence: PresenceApi;
+  push: PushApi;
+  realms: RealmsApi;
+  scheduler: SchedulerApi;
+  session: SessionApi;
+  social: SocialApi;
+  stats: StatsApi;
+  tournaments: TournamentsApi;
+  trials: TrialsApi;
+
+  constructor(private readonly requester: HttpRequester) {
+    this.accounts = new AccountsApi(this.requester);
+    this.announcements = new AnnouncementsApi(this.requester);
+    this.auth = new AuthApi(this.requester);
+    this.beamo = new BeamoApi(this.requester);
+    this.calendars = new CalendarsApi(this.requester);
+    this.cloudSaving = new CloudsavingApi(this.requester);
+    this.commerce = new CommerceApi(this.requester);
+    this.content = new ContentApi(this.requester);
+    this.eventPlayers = new EventPlayersApi(this.requester);
+    this.events = new EventsApi(this.requester);
+    this.groups = new GroupsApi(this.requester);
+    this.groupUsers = new GroupUsersApi(this.requester);
+    this.inventory = new InventoryApi(this.requester);
+    this.leaderboards = new LeaderboardsApi(this.requester);
+    this.lobby = new LobbyApi(this.requester);
+    this.mail = new MailApi(this.requester);
+    this.mailbox = new MailboxApi(this.requester);
+    this.matchmaking = new MatchmakingApi(this.requester);
+    this.notification = new NotificationApi(this.requester);
+    this.party = new PartyApi(this.requester);
+    this.payments = new PaymentsApi(this.requester);
+    this.player = new PlayerApi(this.requester);
+    this.playerLobby = new PlayerLobbyApi(this.requester);
+    this.playerParty = new PlayerPartyApi(this.requester);
+    this.playerTicket = new PlayerTicketApi(this.requester);
+    this.presence = new PresenceApi(this.requester);
+    this.push = new PushApi(this.requester);
+    this.realms = new RealmsApi(this.requester);
+    this.scheduler = new SchedulerApi(this.requester);
+    this.session = new SessionApi(this.requester);
+    this.social = new SocialApi(this.requester);
+    this.stats = new StatsApi(this.requester);
+    this.tournaments = new TournamentsApi(this.requester);
+    this.trials = new TrialsApi(this.requester);
+  }
+}
