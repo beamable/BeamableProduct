@@ -35,7 +35,7 @@ jobs:
         working-directory: ./
         run: |
           ./setup.sh
-          ./dev.sh
+          ./dev.sh --skip-unity --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI
