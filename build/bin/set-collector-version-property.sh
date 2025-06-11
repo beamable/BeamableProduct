@@ -9,7 +9,7 @@ COMMENT_TAG="<!-- The proper value for BeamCollectorVersion will be injected bel
 
 VERSION=$(jq -r ."$COLLECTOR_VERSION_PROPERTY" "$COLLECTOR_VERSION_FILE")
 
-if [ "$VERSION" == "null" ] || [ -z "$VERSION" ]; then
+if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
   echo "Error: $COLLECTOR_VERSION_PROPERTY not found in $COLLECTOR_VERSION_FILE"
   exit 1
 fi
