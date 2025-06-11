@@ -27,14 +27,14 @@ public class ProjectLogsService
 			catch (Exception ex)
 			{
 				// log an error, but continue parsing logs. 
-				Log.Error($"Unable to parse log=[{logMessage}] message=[{ex.Message}]" );
+				Log.Error($"Unable to parse log=[{logMessage}] message=[{ex.Message}]");
 			}
 		}
-		
+
 		/*
 		 * the discovery never exits.
 		 */
-		
+
 		while (!cts.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -46,10 +46,10 @@ public class ProjectLogsService
 			{
 				if (evt.Type != ServiceEventType.Running)
 					continue;
-				
+
 				if (evt.Service != args.service)
 					continue;
-				
+
 				switch (evt)
 				{
 					case DockerServiceEvent dockerEvt:
@@ -73,16 +73,14 @@ public class ProjectLogsService
 			else
 			{
 				Log.Verbose($"service=[{args.service}] is waiting for log observation");
-			
+
 				await tailTask;
-				
+
 				await discoveryCts.CancelAsync();
 				await discovery.Stop();
 
 				Log.Verbose($"{args.service} has stopped.");
 			}
-
-
 		}
 	}
 
@@ -107,7 +105,7 @@ public class ProjectLogsService
 		// Set the "text/event-stream" media type to indicate Server-Sent Events
 		request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
 
-		
+
 		// Send the request and get the response
 		try
 		{
@@ -124,13 +122,14 @@ public class ProjectLogsService
 					while (true)
 					{
 						if (cts.IsCancellationRequested) break;
-						
+
 						var line = await reader.ReadLineAsync(cts.Token);
 						if (line == null)
 						{
 							Log.Verbose("invalid log, server is likely destroyed.");
 							break;
 						}
+
 						var _ = await reader.ReadLineAsync(cts.Token);
 
 						var substrLength = "data: ".Length;
@@ -165,6 +164,15 @@ public class ProjectLogsService
 		catch (HttpRequestException ex) when (ex.Message.StartsWith("Connection refused"))
 		{
 			Log.Verbose("Service is not ready to accept connections yet... Retrying soon...");
+		}
+		catch (HttpRequestException ex)
+		{
+			Log.Verbose($"Skipping this error --- usually this happens when some external application kills the process. If this is NOT the case, notify Beamable. TYPE={ex.GetType()}, MESSAGE={ex.Message}");
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"Some other error happened; please report a bug. TYPE={ex.GetType()}, MESSAGE={ex.Message}");
+			throw;
 		}
 	}
 }
