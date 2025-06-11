@@ -1,4 +1,3 @@
-using System.Collections;
 using Beamable.Common;
 using Beamable.Server.Common;
 using microservice.Extensions;
@@ -13,11 +12,16 @@ using System.Text;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
-using beamable.tooling.common.Microservice;
+using System.Reflection;
+using UnityEngine;
 using ZLogger;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
-namespace cli.Services;
+[Serializable]
+public class CollectorVersion
+{
+	public string collectorVersion;
+}
 
 [Serializable]
 public class CollectorZapcoreEntry
@@ -67,7 +71,6 @@ public class CollectorManager
 	public const int ReceiveTimeout = 10;
 	public const int ReceiveBufferSize = 4096;
 
-
 	private const string KEY_VERSION = "BEAM_VERSION";
 	private const string KEY_FILE = "BEAM_FILE_NAME";
 
@@ -84,6 +87,7 @@ public class CollectorManager
 	private const int attemptsToConnect = 3;
 	private const int attemptsBeforeFailing = 3;
 	private const int delayBeforeNewAttempt = 500;
+	public const string COLLECTOR_VERSION_FILE_NAME = "collector-version.json";
 
 	public static CollectorStatus CollectorStatus;
 
@@ -167,7 +171,40 @@ public class CollectorManager
 		return GetCollectorName(platform, arch);
 	}
 
-	public static string GetCollectorBasePathForCli(string version=null)
+	public static string GetCollectorVersion()
+	{
+		var assembly = Assembly.GetExecutingAssembly();
+		var resourceName = "beamable.tooling.common.Microservice.VersionManagement.collector-version.json";
+
+		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+
+		if (version.StartsWith("0.0.123") || version == "1.0.0")
+		{
+			// if the version looks like a local dev version, then
+			//  force the version to be THE local dev version
+			return "0.0.123";
+		}
+
+		Stream stream = assembly.GetManifestResourceStream(resourceName);
+
+		if (stream == null)
+		{
+			throw new FileNotFoundException($"Collector version file not found: '{resourceName}'.\nAvailable resources:\n" +
+			                                string.Join("\n", assembly.GetManifestResourceNames()));
+		}
+
+		string versionJson;
+
+		using(stream)
+		using (var reader = new StreamReader(stream))
+		{
+			versionJson = reader.ReadToEnd();
+		}
+
+		return JsonUtility.FromJson<CollectorVersion>(versionJson).collectorVersion;
+	}
+
+	public static string GetCollectorBasePathForCli()
 	{
 		/*
 		 * there are several common cases,
@@ -197,16 +234,7 @@ public class CollectorManager
 		 * 
 		 */
 
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
-		if (version.StartsWith("0.0.123") || version == "1.0.0")
-		{
-			// if the version looks like a local dev version, then 
-			//  force the version to be THE local dev version
-			version = "0.0.123";
-		}
+		var version = GetCollectorVersion();
 		
 		string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 		var root = Path.Combine(localAppData, "beam", "collectors", version);
@@ -224,13 +252,9 @@ public class CollectorManager
 		string absBasePath, 
 		bool allowDownload,
 		OSPlatform platform, 
-		Architecture arch, 
-		string version=null)
+		Architecture arch)
 	{
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
+		var version = GetCollectorVersion();
 		
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
@@ -626,7 +650,5 @@ public class CollectorManager
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
-		
-
 	}
 }

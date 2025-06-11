@@ -64,7 +64,7 @@
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
         <Exec   Condition="'$(BeamCollectorExists)'!='true'"
-                Command="$(BeamableDotnetPath) $(BeamableTool) collector get --override-version $(BeamCollectorVersion) $(BeamCollectorPlatformArchArg)"
+                Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
                 EnvironmentVariables=""/>
 
         <Message
