@@ -31,6 +31,11 @@ namespace Beamable.Editor.Util
 		public static Texture iconTag;
 		public static Texture iconType;
 		public static Texture iconStatus;
+		public static Texture iconDelete;
+		public static Texture iconStatusModified;
+		public static Texture iconStatusAdded;
+		public static Texture iconStatusDeleted;
+		public static Texture iconStatusInvalid;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -234,6 +239,31 @@ namespace Beamable.Editor.Util
 			if (iconStatus == null)
 			{
 				iconStatus = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Statuses.png");
+			}
+
+			if (iconDelete == null)
+			{
+				iconDelete = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Delete.png");
+			}
+
+			if (iconStatusModified == null)
+			{
+				iconStatusModified = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Modified.png");
+			}
+
+			if (iconStatusAdded == null)
+			{
+				iconStatusAdded = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Added.png");
+			}
+
+			if (iconStatusDeleted == null)
+			{
+				iconStatusDeleted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Deleted.png");
+			}
+
+			if (iconStatusInvalid == null)
+			{
+				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconLogs_WarningMsg.png");
 			}
 		}
 	}

@@ -1,4 +1,6 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Util;
 using Editor.UI2.Utils;
@@ -65,7 +67,7 @@ namespace Editor.UI.ContentWindow
 			
 			_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
 			{
-				normal = {background = CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
+				normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
 				alignment = TextAnchor.MiddleLeft,
 				margin = new RectOffset(0, 15, 5, 0),
 			};
@@ -115,15 +117,15 @@ namespace Editor.UI.ContentWindow
 			var itemsFilterLabelRect =
 				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.Width(50), GUILayout.ExpandHeight(true));
 			var contentTreeLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.Width(350), GUILayout.ExpandHeight(true));
+				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
 			var entries = _contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>();
 			int filteredItemsCount = GetFilteredItems().Count;
 			int totalItems = entries.Length;
 			string contentTreeLabelValue = "All Content";
-			contentTreeLabelValue += string.IsNullOrEmpty(_selectedContentType)
+			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
-				: $" > {_selectedContentType.Replace(".", " > ")}";
+				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
 
 
 			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", _lowBarTextStyle);
@@ -264,7 +266,8 @@ namespace Editor.UI.ContentWindow
 			foreach ((ContentFilterType type, string filterLabel) in ContentFilterTypeToQueryTag)
 			{
 				bool hasFilterToType = _activeFilters.TryGetValue(type, out var filterData) && filterData.Count > 0;
-				string typeSearchString = $"{filterLabel} {string.Join(' ', filterData ?? new HashSet<string>())}";
+				HashSet<string> data = filterData ?? new HashSet<string>();
+				string typeSearchString = $"{filterLabel} {string.Join(' ', data.OrderBy(item => item))}";
 				bool isUpdated = false;
 				for (int index = 0; index < searchTextParts.Length; index++)
 				{

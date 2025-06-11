@@ -347,6 +347,7 @@ namespace Beamable.Common.Content
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
+      public event Action OnEditorChanged;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
       public Guid ValidationGuid { get; set; }
@@ -385,7 +386,7 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-	      
+	      OnEditorChanged?.Invoke();
          if (ValidationContext == null)
          {
 	         // if we have no validation context assigned yet, then we cannot possibly validate.

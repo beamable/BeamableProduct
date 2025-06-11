@@ -4,6 +4,7 @@ using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
+using Beamable.Editor.Util;
 using Editor.CliContentManager;
 using UnityEditor;
 using UnityEngine;
@@ -45,7 +46,10 @@ namespace Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
+			
 			_contentService = ActiveContext.ServiceScope.GetService<CliContentService>();
+			
+			_contentService.Reload();
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
@@ -77,47 +81,11 @@ namespace Editor.UI.ContentWindow
 			EditorGUILayout.BeginHorizontal();
 			{
 				DrawContentGroupPanel();
-				DrawVerticalLineSeparator(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
+				BeamGUI.DrawVerticalSeparatorLine(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
 				DrawContentItemPanel();
-				DrawVerticalLineSeparator(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
-				DrawContentInspector();
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
-		}
-
-		private static void DrawVerticalLineSeparator(RectOffset margin = null)
-		{
-			var verticalLineStyle = new GUIStyle
-			{
-				normal = {background = EditorGUIUtility.whiteTexture},
-				fixedWidth = 1,
-				margin = margin ?? new RectOffset(0, 0, 0, 0)
-			};
-			GUILayout.Box(GUIContent.none, verticalLineStyle,
-			              GUILayout.ExpandHeight(true),
-			              GUILayout.Width(1f));
-		}
-		
-		private static void DrawHorizontalLineSeparator(RectOffset margin = null)
-		{
-			var horizontalLineStyle = new GUIStyle
-			{
-				normal = {background = EditorGUIUtility.whiteTexture},
-				fixedHeight = 1,
-				margin = margin ?? new RectOffset(0, 0, 0, 0)
-			};
-			GUILayout.Box(GUIContent.none, horizontalLineStyle,
-			              GUILayout.ExpandWidth(true),
-			              GUILayout.Height(1f));
-		}
-		
-		private Texture2D CreateColorTexture(Color color)
-		{
-			var texture = new Texture2D(1, 1);
-			texture.SetPixel(0, 0, color);
-			texture.Apply();
-			return texture;
 		}
 	}
 }

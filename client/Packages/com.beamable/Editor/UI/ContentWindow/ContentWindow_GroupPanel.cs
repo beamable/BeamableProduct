@@ -8,13 +8,34 @@ namespace Editor.UI.ContentWindow
 	public partial class ContentWindow
 	{
 		private const float CONTENT_GROUP_PANEL_WIDTH = 250;
-		private const float CONTENT_GROUP_INDENT_WIDTH = 15f;
+		private const int CONTENT_GROUP_INDENT_WIDTH = 15;
 		private Vector2 _contentGroupScrollPos;
-		private string _selectedContentType = string.Empty;
-		
+
+		private HashSet<string> SelectedContentType
+		{
+			get
+			{
+				if (_activeFilters.TryGetValue(ContentFilterType.Type, out var value))
+				{
+					return value;
+				}
+
+				value = new HashSet<string>();
+				_activeFilters.Add(ContentFilterType.Type, value);
+				return value;
+			}
+			set
+			{
+				_activeFilters[ContentFilterType.Type] = value;
+				UpdateActiveFilterSearchText();
+			}
+		}
+
 		private readonly Dictionary<string, List<string>> _contentTypeHierarchy = new();
 		private readonly Dictionary<string, bool> _groupExpandedStates = new();
 		private GUIStyle _headerStyle;
+		private GUIStyle _selectedStyle;
+		private GUIStyle _nonSelectedStyle;
 
 		private void BuildContentTypeHierarchy()
 		{
@@ -44,38 +65,58 @@ namespace Editor.UI.ContentWindow
 						_contentTypeHierarchy[parentPath].Add(currentPath);
 					}
 					
-					_groupExpandedStates.TryAdd(currentPath, false);
-					_itemsExpandedStates.TryAdd(currentPath, false);
+					_groupExpandedStates.TryAdd(currentPath, true);
+					_itemsExpandedStates.TryAdd(currentPath, true);
 				}
 			}
 		}
 
 		private void BuildContentStyles()
 		{
-			_headerStyle = new GUIStyle(EditorStyles.boldLabel)
+			_headerStyle = new GUIStyle(EditorStyles.label)
 			{
 				fontSize = 16, 
-				alignment = TextAnchor.MiddleCenter, 
+				alignment = TextAnchor.MiddleLeft, 
 				margin = new RectOffset(0, 0, 10, 20)
 			};
+			
+			_selectedStyle = new GUIStyle("TV Selection");
+			_nonSelectedStyle = new GUIStyle("Label");
 		}
 
 		private void DrawContentGroupPanel()
 		{
 			EditorGUILayout.BeginVertical(GUILayout.Width(CONTENT_GROUP_PANEL_WIDTH));
 			{
-				EditorGUILayout.LabelField("Content Type", _headerStyle);
+				EditorGUILayout.Space(5);
+				bool isSelected = SelectedContentType.Count == 0;
+				
+				GUIStyle rowStyle = isSelected ? _selectedStyle : _nonSelectedStyle;
 
-				if (GUILayout.Button("Show All"))
+				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
+				
+				if (isSelected)
 				{
-					_selectedContentType = "";
+					GUI.Box(rowRect, GUIContent.none, rowStyle ?? EditorStyles.label);
 				}
+				
+				Rect contentRect = new Rect(rowRect);
+				
+				contentRect.xMin += CONTENT_GROUP_INDENT_WIDTH;
+				GUI.Label(contentRect, "Show all");
 
-				EditorGUILayout.Separator();
+				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+				{
+					SelectedContentType.Clear();
+					UpdateActiveFilterSearchText();
+					Event.current.Use();
+					GUI.changed = true;
+				}
+				
 
 				_contentGroupScrollPos = EditorGUILayout.BeginScrollView(_contentGroupScrollPos);
 				{
-					DrawContentTypeNode();
+					DrawContentTypeNode(indentLevel: 1);
 				}
 				EditorGUILayout.EndScrollView();
 			}
@@ -96,15 +137,15 @@ namespace Editor.UI.ContentWindow
 				bool hasChildrenNodes = _contentTypeHierarchy.ContainsKey(contentType) &&
 				                        _contentTypeHierarchy[contentType].Count > 0;
 
-				bool isSelected = _selectedContentType == contentType;
-				GUIStyle rowStyle = isSelected ? new GUIStyle("TV Selection") : new GUIStyle("Label");
+				bool isSelected = SelectedContentType.Contains(contentType);
+				GUIStyle rowStyle = isSelected ? _selectedStyle : _nonSelectedStyle;
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 
 				if (isSelected)
 				{
-					GUI.Box(rowRect, GUIContent.none, rowStyle);
+					GUI.Box(rowRect, GUIContent.none, rowStyle ?? EditorStyles.label);
 				}
 				
 				Rect contentRect = new Rect(rowRect);
@@ -124,7 +165,17 @@ namespace Editor.UI.ContentWindow
 
 				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 				{
-					_selectedContentType = contentType;
+					if (!Event.current.control)
+					{
+						SelectedContentType.Clear();
+					}
+					
+					if (!SelectedContentType.Add(contentType))
+					{
+						SelectedContentType.Remove(contentType);
+					}
+					
+					UpdateActiveFilterSearchText();
 					Event.current.Use();
 					GUI.changed = true;
 				}

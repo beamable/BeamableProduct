@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using Beamable.Common.BeamCli.Contracts;
+using Spectre.Console;
 
 namespace cli.Content;
 
