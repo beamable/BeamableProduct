@@ -47,16 +47,20 @@ jobs:
           sudo apt-get install jq
           jq --version
 
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-
-      - name: Build Otel Collector
-        working-directory: ./otel-collector
+      - name: Add collector version
         run: |
-          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
+            sh ./build/bin/set-collector-version-property.sh
+
+      # - name: Install Go
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: 1.24.1
+      #     cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+
+      # - name: Build Otel Collector
+      #   working-directory: ./otel-collector
+      #   run: |
+      #     OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
 
       - name: Install CLI
         working-directory: ./

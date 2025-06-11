@@ -34,7 +34,6 @@
         <GenerateClientCode Condition="'$(GenerateClientCode)' == ''">false</GenerateClientCode>
 
         <!-- The proper value for BeamCollectorVersion will be injected below this line for non dev builds -->
-<!--        <BeamCollectorVersion>0.0.1</BeamCollectorVersion>-->
 
     </PropertyGroup>
 
