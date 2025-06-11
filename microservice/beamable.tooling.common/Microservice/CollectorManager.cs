@@ -629,15 +629,15 @@ public class CollectorManager
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
-		Log.Verbose($"Executing: [{fileExe} {arguments}]");
+		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector) {args.Data}");
+			logger.ZLogInformation($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector err) {args.Data}");
+			logger.ZLogInformation($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
