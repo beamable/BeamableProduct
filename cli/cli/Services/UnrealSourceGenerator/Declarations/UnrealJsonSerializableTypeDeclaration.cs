@@ -461,7 +461,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
-UCLASS(BlueprintType, Category=""Beam"")
+UCLASS(BlueprintType, Category=""Beam"", DefaultToInstanced, EditInlineNew)
 class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamJsonSerializableUObject₢{nameof(_inheritResponseBodyInterface)}₢
 {{
 	GENERATED_BODY()
