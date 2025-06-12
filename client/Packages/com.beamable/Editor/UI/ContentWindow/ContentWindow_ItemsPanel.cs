@@ -294,6 +294,7 @@ namespace Editor.UI.ContentWindow
 
 		private async Task LoadItemScriptable(LocalContentManifestEntry entry)
 		{
+			
 			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
@@ -305,7 +306,8 @@ namespace Editor.UI.ContentWindow
 			Selection.activeObject = selectedContentObject;
 			selectedContentObject.OnEditorChanged += () =>
 			{
-				Debug.Log($"Item Changed. JSON => {selectedContentObject.ToJson()}");
+				var propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+				_contentService.SaveContent(entry.FullId, propertiesJson);
 			};
 		}
 
@@ -328,7 +330,7 @@ namespace Editor.UI.ContentWindow
 
 		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "")
 		{
-			var allItems = new List<LocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>());
+			var allItems = GetCachedManifestEntries();
 
 			string nameSearchPartValue = GetNameSearchPartValue();
 			var types = GetFilterTypeActiveItems(ContentFilterType.Type);
@@ -339,8 +341,9 @@ namespace Editor.UI.ContentWindow
 			{
 				bool matchesType = types.Count == 0 || types.Any(type => entry.TypeName.Contains(type));
 				bool matchesTags = tags.Count == 0 || tags.Any(tag => entry.Tags.Contains(tag));
-				bool matchesStatus = statuses.Count == 0 || statuses.Any(status => entry.StatusEnum.ToString() == status);
-				bool matchesSpecificType = string.IsNullOrEmpty(specificType) || entry.TypeName == specificType;
+				
+				bool matchesStatus = statuses.Count == 0 || statuses.Any(status => entry.StatusEnum.ToString().Equals(status, StringComparison.InvariantCultureIgnoreCase));
+				bool matchesSpecificType = string.IsNullOrEmpty(specificType) || entry.TypeName.Equals(specificType, StringComparison.InvariantCultureIgnoreCase);
 				
 				
 				bool matchesName = string.IsNullOrEmpty(nameSearchPartValue) || entry.Name.Contains(nameSearchPartValue);

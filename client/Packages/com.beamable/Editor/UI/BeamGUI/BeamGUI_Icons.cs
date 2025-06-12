@@ -36,6 +36,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconStatusAdded;
 		public static Texture iconStatusDeleted;
 		public static Texture iconStatusInvalid;
+		public static Texture iconRotate;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -264,6 +265,11 @@ namespace Beamable.Editor.Util
 			if (iconStatusInvalid == null)
 			{
 				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconLogs_WarningMsg.png");
+			}
+
+			if (iconRotate == null)
+			{
+				iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
 			}
 		}
 	}
