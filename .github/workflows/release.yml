@@ -51,17 +51,6 @@ jobs:
         run: |
             sh ./build/bin/set-collector-version-property.sh
 
-      # - name: Install Go
-      #   uses: actions/setup-go@v5
-      #   with:
-      #     go-version: 1.24.1
-      #     cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-
-      # - name: Build Otel Collector
-      #   working-directory: ./otel-collector
-      #   run: |
-      #     OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
-
       - name: Install CLI
         working-directory: ./
         run: |
@@ -99,29 +88,7 @@ jobs:
           VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
           DRY_RUN: ${{ inputs.dryRun }}
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
-
-      # - name: Compress Collector Files
-      #   working-directory: otel-bin
-      #   run: find . -type f ! -name '*.gz' -exec gzip -k -9 {} \;
-
-      # Push the collector builds to s3 so that they can be downloaded by distros later
-      # - name: Upload Collector to S3
-      #   working-directory: otel-bin
-      #   run: |
-      #     AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.VERSION }}  --exclude "*" --include "*.gz" --acl public-read
-      
-      # Invalidate the CDN for collector builds
-      - name: Prepare Cloudfront Invalidation 
-        run: |
-          CLOUD_DISTRO=E3S54OWVMS4PQH
-          CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
-          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
-      - name: Preview Cloudfront Invalidation 
-        run: |
-          cat cloudfront-invalidation.json
-      - name: Do Cloudfront Invalidation
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
-
+          
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
         env:
