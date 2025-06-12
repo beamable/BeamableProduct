@@ -208,7 +208,11 @@ public class ContentService
 			{
 				break;
 			}
-
+			
+			// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
+			// So to batch it together we wait 100 ms and then try to read from the buffer.
+			await Task.Delay(100, token);
+			
 			// Get all the files that were changed respecting the PID filter.
 			var batchedChanges = new LocalContentFileChanges() { AllFileChanges = new() };
 			while (reader.TryRead(out var changed))
@@ -856,7 +860,11 @@ public class ContentService
 		foreach (var c in contentToUpdateManifestReference)
 		{
 			var contentFile = c;
-			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+			// In some cases of conflict resolution the Reference Content could be null.
+			if (c.ReferenceContent != null)
+			{
+				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+			}
 			contentFile.FetchedFromManifestUid = targetManifestUid;
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
 		}
@@ -1003,6 +1011,30 @@ public class ContentService
 			var newTags = existingTags.Union(tags);
 
 			f.Tags = JsonSerializer.SerializeToElement(newTags);
+			saveTasks.Add(SaveContentFile(contentFolder, f));
+		}
+
+		await Task.WhenAll(saveTasks);
+	}
+	
+	/// <summary>
+	/// Set the given tags to each content file in the list of <see cref="LocalContentFiles"/>.
+	/// it will replace all the tags in the content.
+	/// </summary>
+	public async Task SetTags(LocalContentFiles localContentFiles, string[] tags)
+	{
+		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
+		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, localContentFiles.ManifestId);
+		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+
+		var saveTasks = new List<Task>();
+		foreach (var contentFile in localContentFiles.ContentFiles)
+		{
+			var f = contentFile;
+			
+			// Override the tags with the new tags
+			f.Tags = JsonSerializer.SerializeToElement(tags);
+			
 			saveTasks.Add(SaveContentFile(contentFolder, f));
 		}
 

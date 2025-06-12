@@ -41,6 +41,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Server.Editor;
+using Beamable.Server.Editor.Usam;
+using Editor.CliContentManager;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEngine;
@@ -125,6 +128,11 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<DotnetService>();
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
 
+			DependencyBuilder.AddGlobalStorage<UsamService, SessionStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<CliContentService, SessionStorageLayer>();
+			DependencyBuilder.AddSingleton(() => MicroserviceConfiguration.Instance);
+			DependencyBuilder.AddSingleton<CommonAreaService>();
+			
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}

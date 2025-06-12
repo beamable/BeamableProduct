@@ -9,7 +9,7 @@ public class ContentTagCommand : CommandGroup<ContentTagCommandArgs>
 		new("tag", "List of tags for us to affect");
 
 
-	public ContentTagCommand() : base("tag", "Commands for adding/removing tags")
+	public ContentTagCommand() : base("tag", "Commands for adding/set/removing tags")
 	{
 	}
 }

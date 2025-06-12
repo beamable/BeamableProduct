@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using microservice.Extensions;
+using UnityEngine;
 using ZLogger;
 using ZLogger.Formatters;
 
@@ -23,23 +25,23 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
 
     [GeneratedRegex("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............", RegexOptions.None, "en-US")]
     public static partial Regex TokenRegex();
-
     
     public BeamZLogFormatter(IAppContext context, IZLoggerFormatter innerFormatter)
     {
         _context = context;
         _innerFormatter = innerFormatter;
     }
-    
+
     public void FormatLogEntry(IBufferWriter<byte> writer, IZLoggerEntry entry)
     {
+
         if (!_context.ShouldMaskLogs)
         {
             // there is no work to be done, so just proxy out to the original formatter
             _innerFormatter.FormatLogEntry(writer, entry);
             return;
         }
-        
+
         // format the message as it should look
         var buffer = new ArrayBufferWriter<byte>();
         _innerFormatter.FormatLogEntry(buffer, entry);
@@ -47,9 +49,10 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
 
         // do masking operations to takeout sensitive data
         result = TokenRegex().Replace(result, PreprocessMask);
-        
+
         // and finally write the masked result to the destination
-        writer.Write(Encoding.UTF8.GetBytes(result));
+        var value = Encoding.UTF8.GetBytes(result);
+        writer.BeamWrite(value);
     }
 
     public bool WithLineBreak => _innerFormatter.WithLineBreak;
