@@ -30,6 +30,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Server;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
@@ -169,6 +170,8 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
+		public MicroserviceClients Microservices => _serviceScope.GetService<MicroserviceClients>();
+		
 		/// <summary>
 		/// Access the <see cref="PlayerLobby"/> for this context.
 		/// </summary>

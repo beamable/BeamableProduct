@@ -16,10 +16,10 @@ on:
 run-name: Release Custom ${{ inputs.commit }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 20
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     concurrency:
-      group: release-nuget
+      group: release-nuget-and-unity
       cancel-in-progress: true
     steps:
       - name: review options
@@ -88,7 +88,7 @@ jobs:
           VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
           DRY_RUN: ${{ inputs.dryRun }}
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
-          
+
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
         env:
