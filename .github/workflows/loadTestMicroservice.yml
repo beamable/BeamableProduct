@@ -42,7 +42,7 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice
         run: |
           dotnet tool restore
-          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q
+          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
