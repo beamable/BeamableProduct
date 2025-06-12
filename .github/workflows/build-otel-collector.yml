@@ -11,7 +11,7 @@ on:
         type: string
         description: Collector version to create
         required: true
-        default: false
+        default: 0.0.0
 
 run-name: Release Collector of version ${{ inputs.version }} in commit ${{ inputs.commit }} by @${{ github.actor }}
 jobs:
