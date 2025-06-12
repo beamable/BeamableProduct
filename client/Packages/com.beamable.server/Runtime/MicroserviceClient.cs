@@ -18,16 +18,16 @@ namespace Beamable.Server
 	// a class that acts as vessel for extension methods for service clients
 	public class MicroserviceClients
 	{
-		private BeamContext _ctx;
+		private IDependencyProvider _provider;
 
-		public MicroserviceClients(BeamContext context)
+		public MicroserviceClients(IDependencyProvider provider)
 		{
-			_ctx = context;
+			_provider = provider;
 		}
 
 		public TClient GetClient<TClient>() where TClient : MicroserviceClient
 		{
-			return _ctx.ServiceProvider.GetService<TClient>();
+			return _provider.GetService<TClient>();
 		}
 	}
 
@@ -42,8 +42,6 @@ namespace Beamable.Server
 	public class MicroserviceClient
 	{
 		private readonly IDependencyProvider _provider;
-
-		// protected BeamContext _ctx;
 
 		protected MicroserviceClient(BeamContext ctx=null) : this(ctx?.ServiceProvider)
 		{

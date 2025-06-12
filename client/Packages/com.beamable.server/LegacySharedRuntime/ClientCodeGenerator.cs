@@ -96,8 +96,8 @@ namespace Beamable.Server.Generator
 			targetClass.Members.Add(new CodeConstructor()
 			{
 				Attributes = MemberAttributes.Public,
-				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"), "context = null") },
-				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
+				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("IDependencyProvider"), "provider = null") },
+				BaseConstructorArgs = { new CodeArgumentReferenceExpression("provider") }
 			});
 
 
