@@ -141,7 +141,6 @@ namespace Beamable.Common.Api.Mail
 								expires = c.expires.Value.ToString();
 							}
 
-
 							return new MailMessage
 							{
 								id = c.id,
