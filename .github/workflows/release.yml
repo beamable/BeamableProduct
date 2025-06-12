@@ -16,7 +16,7 @@ on:
 run-name: Release Custom ${{ inputs.commit }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     concurrency:
       group: release-nuget
