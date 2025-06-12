@@ -36,19 +36,6 @@ namespace Beamable.Server.Editor
 		// private const string SNAPSHOT_MONGO = ASSETS_BEAMABLE + "Create Mongo Snapshot"; // TODO: Delete this when we have a UI
 		// private const string RESTORE_MONGO = ASSETS_BEAMABLE + "Restore Mongo Snapshot"; // TODO: Delete this when we have a UI
 		private const int BEAMABLE_PRIORITY = 190;
-
-		public static readonly string[] MongoLibraries = new[]
-		{
-		 "DnsClient.dll",
-		 "MongoDB.Bson.dll",
-		 "MongoDB.Driver.Core.dll",
-		 "MongoDB.Driver.dll",
-		 "MongoDB.Libmongocrypt.dll",
-		 "System.Buffers.dll",
-		 "System.Runtime.CompilerServices.Unsafe.dll",
-		 "SharpCompress.dll"
-	  };
-
 		
 		public static AssemblyDefinitionInfo ConvertToInfo(this AssemblyDefinitionAsset asm)
 		{
