@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The name of the service to view logs for</summary>
         public Beamable.Common.Semantics.ServiceName service;
+        /// <summary>Listens to the given process id. Terminates this long-running command when the it no longer is running</summary>
+        public int requireProcessId;
         /// <summary>If the service stops, and reconnect is enabled, then the logs command will wait for the service to restart and then reattach to logs</summary>
         public bool reconnect;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -17,6 +19,11 @@ namespace Beamable.Editor.BeamCli.Commands
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // Add the service value to the list of args.
             genBeamCommandArgs.Add(this.service.ToString());
+            // If the requireProcessId value was not default, then add it to the list of args.
+            if ((this.requireProcessId != default(int)))
+            {
+                genBeamCommandArgs.Add(("--require-process-id=" + this.requireProcessId));
+            }
             // If the reconnect value was not default, then add it to the list of args.
             if ((this.reconnect != default(bool)))
             {
