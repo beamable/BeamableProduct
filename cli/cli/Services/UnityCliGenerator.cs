@@ -373,8 +373,26 @@ MonoImporter:
 					new CodeDefaultValueExpression(parameter.Type));
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
 				CodeMethodInvokeExpression addStatement;
-
-				if (parameter.Type.BaseType == "System.String")
+				if (option.ValueType.BaseType is { FullName: "System.Array" } && !option.AllowMultipleArgumentsPerToken)
+				{
+					var stringJoinCall = new CodeMethodInvokeExpression(
+						new CodeTypeReferenceExpression(typeof(string)),  
+						nameof(string.Join),                                          
+						new CodePrimitiveExpression("\",\""),                
+						parameterReference                               
+					);
+					
+					var optionalValWithoutEscape =
+						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\'"),
+							CodeBinaryOperatorType.Add, stringJoinCall);
+					
+					var optionalVal =
+						new CodeBinaryOperatorExpression(optionalValWithoutEscape,
+							CodeBinaryOperatorType.Add, new CodePrimitiveExpression("\'"));
+					addStatement =
+						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
+				}
+				else if (parameter.Type.BaseType == "System.String")
 				{
 					var optionalValWithoutEscape =
 						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\""),
