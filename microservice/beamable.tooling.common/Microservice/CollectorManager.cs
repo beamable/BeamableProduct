@@ -13,7 +13,6 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
 using System.Reflection;
-using UnityEngine;
 using ZLogger;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
@@ -76,9 +75,6 @@ public class CollectorManager
 
 	private const string COLLECTOR_DOWNLOAD_URL_TEMPLATE =
 		"https://collectors.beamable.com/version/" + KEY_VERSION + "/" + KEY_FILE;
-	
-	public static string CollectorDownloadUrl =
-		"https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME";
 
 	
 	
@@ -87,17 +83,8 @@ public class CollectorManager
 	private const int attemptsToConnect = 3;
 	private const int attemptsBeforeFailing = 3;
 	private const int delayBeforeNewAttempt = 500;
-	public const string COLLECTOR_VERSION_FILE_NAME = "collector-version.json";
 
 	public static CollectorStatus CollectorStatus;
-
-	public static string GetCollectorExecutablePath()
-	{
-		var collectorFileName = GetCollectorName();
-		var collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, collectorFileName);
-
-		return collectorFilePath;
-	}
 
 	public static OSPlatform GetCurrentPlatform()
 	{
@@ -164,13 +151,6 @@ public class CollectorManager
 		return collectorFileName;
 	}
 
-	public static string GetCollectorName()
-	{
-		var platform = GetCurrentPlatform();
-		var arch = RuntimeInformation.OSArchitecture;
-		return GetCollectorName(platform, arch);
-	}
-
 	public static string GetCollectorVersion()
 	{
 		var assembly = Assembly.GetExecutingAssembly();
@@ -201,7 +181,7 @@ public class CollectorManager
 			versionJson = reader.ReadToEnd();
 		}
 
-		return JsonUtility.FromJson<CollectorVersion>(versionJson).collectorVersion;
+		return JsonConvert.DeserializeObject<CollectorVersion>(versionJson).collectorVersion;
 	}
 
 	public static string GetCollectorBasePathForCli()
