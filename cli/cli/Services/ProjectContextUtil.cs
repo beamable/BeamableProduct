@@ -80,15 +80,6 @@ public static class ProjectContextUtil
 				}
 			}
 			remote = await _existingManifest;
-			Log.Verbose($"Got manifest=[{remote}]");
-			if (remote != null)
-			{
-				var remoteJson = JsonSerializer.Serialize(remote, new JsonSerializerOptions
-				{
-					IncludeFields = true
-				});
-				Log.Verbose($"MANIFEST JSON=[{remoteJson}]");
-			}
 		}
 
 		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
