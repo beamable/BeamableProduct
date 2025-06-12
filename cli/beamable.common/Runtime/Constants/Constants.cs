@@ -45,11 +45,6 @@
 			public const string BEAMABLE_PACKAGE_EDITOR_UI = BEAMABLE_PACKAGE_EDITOR + "/UI";
 			public const string BEAMABLE_PACKAGE_EDITOR_TOOLBAR = BEAMABLE_PACKAGE_EDITOR_UI + "/Toolbar";
 
-			public const string BEAMABLE_SERVER_PACKAGE = "Packages/com.beamable.server";
-			public const string BEAMABLE_SERVER_PACKAGE_EDITOR = BEAMABLE_SERVER_PACKAGE + "/Editor";
-			public const string BEAMABLE_SERVER_PACKAGE_EDITOR_UI = BEAMABLE_SERVER_PACKAGE_EDITOR + "/UI";
-			public const string BEAMABLE_SERVER_PACKAGE_EDITOR_UI_3 = BEAMABLE_SERVER_PACKAGE_EDITOR + "/UI3";
-
 			public const string COMMON_COMPONENTS_PATH = BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Components";
 
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";

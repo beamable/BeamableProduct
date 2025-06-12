@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07df9645011542f28edcc5419377e5ab, type: 3}
   m_Name: Readme
   m_EditorClassIdentifier: 
-  icon: {fileID: 2800000, guid: 3164f0c73c6e74dcb9da404b47dbcee8, type: 3}
+  semver: 1.2.0
+  icon: {fileID: 2800000, guid: 3ac244b013ca143d9b75505cc885fb98, type: 3}
   title: Welcome to the Beamable Package Installer
   sections:
   - heading: What is Beamable?
@@ -41,9 +42,11 @@ MonoBehaviour:
     url: 
     Action: 2
   - heading: Join our Discord
-    text: Join our Discord server to get real-time technical help, connect with a vibrant community of developers, 
-            and stay up to date with the latest in tech! Whether you're debugging a tricky problem, looking for feedback on a project,
-             or just want to chat with like-minded enthusiasts, our community is here to support you.
+    text: Join our Discord server to get real-time technical help, connect with a
+      vibrant community of developers,  and stay up to date with the latest in tech!
+      Whether you're debugging a tricky problem, looking for feedback on a project,
+      or just want to chat with like-minded enthusiasts, our community is here to
+      support you.
     linkText: Discord
     url: https://discord.gg/beamable
     Action: 0
@@ -53,3 +56,5 @@ MonoBehaviour:
     url: https://docs.beamable.com/discuss
     Action: 0
   loadedLayout: 1
+  headerMaterial: {fileID: 2100000, guid: ae788a52059ff456f88cccb4a2765fe0, type: 2}
+  headerBackground: {fileID: 2800000, guid: f27609945925d49209188e898987d469, type: 3}

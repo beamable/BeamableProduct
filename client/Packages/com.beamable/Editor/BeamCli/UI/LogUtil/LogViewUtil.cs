@@ -232,6 +232,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					return CliLogLevel.Debug;
 				case "Warning":
 				case "warning":
+				case "warn":
 					return CliLogLevel.Warning;
 				case "Information":
 				case "information":

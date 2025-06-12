@@ -134,7 +134,7 @@ namespace Beamable.Installer.Editor
         {
             Debug.Log($"{LogPrefix}");
             CheckManifest(registry);
-            CheckPackage(version, onFail);
+            CheckPackage(registry, version, onFail);
             SessionState.SetBool("BEAM_INSTALL_DEPS", InstallDependencies);
         }
 
@@ -204,7 +204,7 @@ namespace Beamable.Installer.Editor
             AssetDatabase.Refresh();
         }
 
-        private static void CheckPackage(string version = null, Action onFail = null)
+        private static void CheckPackage(ArrayDict registry, string version = null, Action onFail = null)
         {
             UpdateInstalledVersionInfo(beamableVersion =>
             {
@@ -214,14 +214,34 @@ namespace Beamable.Installer.Editor
                     return;
                 }
 
-                InstallPackage(err =>
+                var shouldInstallServer = InstallServerPackage;
+
+                if (shouldInstallServer)
                 {
-                    if (err != null)
+                    PrefetchPackageManifestFile(registry, BeamableServerPackageName, beamableVersion, serverManifest =>
                     {
-                        Debug.LogError(err);
-                        onFail?.Invoke();
-                    }
-                }, version);
+                        var isServerObsolete = serverManifest["title"]?.ToString()
+                            .Contains("obsolete", StringComparison.InvariantCultureIgnoreCase) ?? false;
+                        InstallPackageHelper(!isServerObsolete);
+                    });
+                }
+                else
+                {
+                    InstallPackageHelper(false);
+                }
+
+                void InstallPackageHelper(bool installServer)
+                {
+                    InstallPackage(installServer, err =>
+                    {
+                        if (err != null)
+                        {
+                            Debug.LogError(err);
+                            onFail?.Invoke();
+                        }
+                    }, version);
+                }
+                
             });
         }
 
@@ -248,7 +268,7 @@ namespace Beamable.Installer.Editor
             set => SessionState.SetBool(SessionStateKey_FrozenAssets, value);
         }
 
-        private static void InstallPackage(Action<Exception> onComplete, string version = null)
+        private static void InstallPackage(bool installServerPackage, Action<Exception> onComplete, string version = null)
         {
             var versionString = string.IsNullOrEmpty(version) ? "" : $"@{version}";
 
@@ -256,7 +276,7 @@ namespace Beamable.Installer.Editor
             var packages = new Queue<string>();
             packages.Enqueue(BeamablePackageName + versionString);
 
-            if (InstallServerPackage)
+            if (installServerPackage)
             {
                 packages.Enqueue(BeamableServerPackageName + versionString);
             }
@@ -324,6 +344,30 @@ namespace Beamable.Installer.Editor
             RunLater(InstallOne, 1);
         }
 
+        public static void PrefetchPackageManifestFile(ArrayDict registry, string package, string versionString, Action<ArrayDict> packageManifestCallback)
+        {
+            var registryUrl = registry["url"].ToString();
+            var request = UnityWebRequest.Get($"{registryUrl}/{package}/{versionString}");
+
+            request.SendWebRequest();
+            EditorApplication.update += Check;
+                
+            void Check()
+            {
+                if (!request.isDone) return;
+
+                try
+                {
+                    var manifest = Json.Deserialize(request.downloadHandler.text) as ArrayDict;
+                    packageManifestCallback?.Invoke(manifest);
+                }
+                finally
+                {
+                    EditorApplication.update -= Check;
+                }
+            }
+        }
+        
         public static void UpdateInstalledVersionInfo(Action<string> beamableVersionCallback)
         {
             var listReq = Client.List(true);

@@ -35,14 +35,14 @@ jobs:
         working-directory: ./
         run: |
           ./setup.sh
-          ./dev.sh
+          ./dev.sh --skip-unity --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          beam version update -q
-          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
+          dotnet tool restore
+          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
