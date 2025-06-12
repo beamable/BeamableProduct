@@ -7,10 +7,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-
-        
-        <BeamCollectorVersion Condition="'$(BeamCollectorVersion)'==''">$(BeamableVersion)</BeamCollectorVersion>
-        <BeamIsDevVersion Condition="$(BeamCollectorVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
+        <BeamIsDevVersion Condition="$(BeamableVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
         
         <BeamCollectorVersion Condition="'$(BeamIsDevVersion)'=='true'">0.0.123</BeamCollectorVersion>
         
