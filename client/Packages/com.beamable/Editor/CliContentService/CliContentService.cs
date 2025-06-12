@@ -16,12 +16,22 @@ namespace Editor.CliContentManager
 
 		public LocalContentManifest CachedManifest { get; private set; }
 
+		public event Action OnManifestUpdated;
 
 		public CliContentService(BeamCommands cli, BeamEditorContext beamContext)
 		{
 			_cli = cli;
 			_beamContext = beamContext;
-			
+		}
+
+		
+		public void SaveContent(string contentId, string contentPropertiesJson)
+		{
+			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
+			{
+				contentIds = new[] {contentId}, contentProperties = new[] {contentPropertiesJson},
+			});
+			saveCommand.Run();
 		}
 
 		public void Reload()
@@ -39,7 +49,8 @@ namespace Editor.CliContentManager
 				var currentManifest =
 					report.data.RelevantManifestsAgainstLatest.FirstOrDefault(item => item.OwnerCid == currentCid &&
 						                                                          item.OwnerPid == currentPid);
-				CachedManifest = currentManifest ?? new LocalContentManifest();
+				CachedManifest = currentManifest;
+				OnManifestUpdated?.Invoke();
 			});
 			_contentWatcher.Command.Run();
 		}

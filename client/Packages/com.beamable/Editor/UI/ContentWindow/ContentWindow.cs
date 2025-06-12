@@ -1,11 +1,14 @@
 ﻿using Beamable;
 using Beamable.Common;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using Editor.CliContentManager;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -47,10 +50,13 @@ namespace Editor.UI.ContentWindow
 		protected override void Build()
 		{
 			
-			_contentService = ActiveContext.ServiceScope.GetService<CliContentService>();
-			
-			_contentService.Reload();
-			
+			if (_contentService == null)
+			{
+				_contentService = ActiveContext.ServiceScope.GetService<CliContentService>();
+				_contentService.OnManifestUpdated += Build;
+				_contentService.Reload();
+			}
+
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
 			_contentConfiguration = ContentConfiguration.Instance;
@@ -86,6 +92,11 @@ namespace Editor.UI.ContentWindow
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
+		}
+		
+		private List<LocalContentManifestEntry> GetCachedManifestEntries()
+		{
+			return new List<LocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>());
 		}
 	}
 }

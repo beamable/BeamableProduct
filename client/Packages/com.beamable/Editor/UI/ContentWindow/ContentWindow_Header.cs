@@ -31,12 +31,13 @@ namespace Editor.UI.ContentWindow
 			{ContentFilterType.Type, "type:"}
 		};
 		
-		private static readonly Dictionary<ContentFilterStatus, string> StatusMapToString = new()
+		private static readonly Dictionary<ContentStatus, string> StatusMapToString = new()
 		{
-			{ContentFilterStatus.LocalOnly, "local"},
-			{ContentFilterStatus.ServerOnly, "server"},
-			{ContentFilterStatus.Modified, "modified"},
-			{ContentFilterStatus.Sync, "sync"},
+			{ContentStatus.Invalid, "invalid"},
+			{ContentStatus.Created, "created"},
+			{ContentStatus.Deleted, "deleted"},
+			{ContentStatus.Modified, "modified"},
+			{ContentStatus.UpToDate, "up to date"}
 		};
 
 		private static readonly Dictionary<ContentSortOptionType, string> SortTypeNameMap = new()
@@ -58,7 +59,17 @@ namespace Editor.UI.ContentWindow
 			                                       .OrderBy(pair => pair.Name)
 			                                       .Select(pair => pair.Name)
 			                                       .ToList();
-			_allTags = new List<string> {"test"};
+			
+			HashSet<string> tags = new();
+			var entries = GetCachedManifestEntries();
+			foreach (LocalContentManifestEntry cachedManifestEntry in entries)
+			{
+				foreach (string tag in cachedManifestEntry.Tags)
+				{
+					tags.Add(tag);
+				}
+			}
+			_allTags = new List<string>(tags);
 		}
 
 		private void BuildHeaderStyles()
@@ -75,13 +86,13 @@ namespace Editor.UI.ContentWindow
 
 		private void DrawHeader()
 		{
-			bool clickedCreate = false, clickedValidate = false, clickedPublish = false, clickedDownload = false;
+			bool clickedSync = false;
+			bool clickedPublish = false;
 			BeamGUI.DrawHeaderSection(this, ActiveContext, () =>
 			{
-				clickedCreate = BeamGUI.HeaderButton("Create", BeamGUI.iconPlus, width: HEADER_BUTTON_WIDTH);
-				clickedValidate = BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck, width: HEADER_BUTTON_WIDTH);
+				
+				clickedSync = BeamGUI.HeaderButton("Sync", BeamGUI.iconRotate, width: HEADER_BUTTON_WIDTH);
 				clickedPublish = BeamGUI.HeaderButton("Publish", BeamGUI.iconUpload, width: HEADER_BUTTON_WIDTH);
-				clickedDownload = BeamGUI.HeaderButton("Download", BeamGUI.iconDownload, width: HEADER_BUTTON_WIDTH);
 				EditorGUILayout.Space(5, false);
 				this.DrawSearchBar(_contentSearchData, true);
 				DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
@@ -92,21 +103,14 @@ namespace Editor.UI.ContentWindow
 				Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
 			}, Repaint);
 
-			if (clickedCreate)
+			if (clickedSync)
 			{
-				ShowCreateContentMenu();
+				
 			}
-
-			if (clickedValidate) { }
 
 			if (clickedPublish)
 			{
 				ShowPublishMenu();
-			}
-
-			if (clickedDownload)
-			{
-				ShowDownloadMenu();
 			}
 		}
 
@@ -119,9 +123,9 @@ namespace Editor.UI.ContentWindow
 			var contentTreeLabelRect =
 				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
-			var entries = _contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>();
+			var entries = GetCachedManifestEntries();
 			int filteredItemsCount = GetFilteredItems().Count;
-			int totalItems = entries.Length;
+			int totalItems = entries.Count;
 			string contentTreeLabelValue = "All Content";
 			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
@@ -154,15 +158,6 @@ namespace Editor.UI.ContentWindow
 
 		}
 
-		private static void ShowDownloadMenu()
-		{
-			GenericMenu menu = new GenericMenu();
-			menu.AddItem(new GUIContent("Open Download Window"), false, () => { });
-			menu.AddItem(new GUIContent("Reset Content"), false, () => { });
-			menu.AddItem(new GUIContent("Download Content (default)"), false, () => { });
-			menu.ShowAsContext();
-		}
-
 		private static void ShowPublishMenu()
 		{
 			GenericMenu menu = new GenericMenu();
@@ -173,24 +168,6 @@ namespace Editor.UI.ContentWindow
 			menu.ShowAsContext();
 		}
 
-		private void ShowCreateContentMenu()
-		{
-			GenericMenu menu = new GenericMenu();
-			foreach (ContentTypePair contentTypePair in _contentTypeReflectionCache.GetAll().OrderBy(pair => pair.Name))
-			{
-				string itemName = contentTypePair.Name;
-
-				string typeName = itemName.Split('.').Last();
-				string createItemName = $"Create {typeName}";
-
-				menu.AddItem(new GUIContent($"{itemName.Replace(".", "/")}/{createItemName}"), false, () =>
-				{
-					Debug.Log(contentTypePair.Type.FullName);
-				});
-			}
-
-			menu.ShowAsContext();
-		}
 
 		private void DrawFilterButton(ContentFilterType filterType, Texture icon, IEnumerable<string> items)
 		{
