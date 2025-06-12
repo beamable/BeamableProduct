@@ -220,8 +220,8 @@ namespace Beamable.Installer.Editor
                 {
                     PrefetchPackageManifestFile(registry, BeamableServerPackageName, beamableVersion, serverManifest =>
                     {
-                        var isServerObsolete = serverManifest["title"]?.ToString()
-                            .Contains("obsolete", StringComparison.InvariantCultureIgnoreCase) ?? false;
+                        var isServerObsolete = serverManifest["title"]?.ToString()?.ToLowerInvariant()
+                            .Contains("obsolete") ?? false;
                         InstallPackageHelper(!isServerObsolete);
                     });
                 }
