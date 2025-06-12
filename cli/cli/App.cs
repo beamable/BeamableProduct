@@ -1021,6 +1021,7 @@ public class App
 				{
 					try
 					{
+						Log.Verbose($"Getting manifest... provider=[{provider}]");
 						var beamoSystem = provider.GetService<BeamoLocalSystem>();
 						beamoSystem.InitManifest(useManifestCache: true).Wait();
 					}
