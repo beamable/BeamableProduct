@@ -58,6 +58,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Server;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -296,6 +297,11 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			DependencyBuilder.AddSingleton<PlayerCloudSavingConfiguration>();
+			
+			
+			DependencyBuilder.AddScoped<MicroserviceClients>();
+
+			
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
 

@@ -5,11 +5,15 @@ namespace Beamable.Installer.Editor
 {
    public class BeamableInstallerReadme : ScriptableObject
    {
+      public string semver;
       public Texture2D icon;
       public string title;
       public Section[] sections;
       public bool loadedLayout;
 
+      public Material headerMaterial;
+      public Texture2D headerBackground;
+      
       [Serializable]
       public class Section
       {

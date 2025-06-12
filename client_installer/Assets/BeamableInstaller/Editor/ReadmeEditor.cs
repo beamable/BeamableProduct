@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace Beamable.Installer.Editor
 {
@@ -65,14 +66,31 @@ namespace Beamable.Installer.Editor
             Init();
 
             var iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
-
+            
+            Rect iconRect = default;
+            Rect titleRect = default;
             GUILayout.BeginHorizontal("In BigTitle");
             {
                 GUILayout.Space(12);
-                GUILayout.Label(readme.icon, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
-                GUILayout.Label(readme.title, TitleStyle);
+
+                iconRect = GUILayoutUtility.GetRect(new GUIContent(readme.icon), EditorStyles.label, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
+
+                GUILayout.BeginVertical();
+                titleRect = GUILayoutUtility.GetRect(new GUIContent(readme.title), TitleStyle);
+               
+                GUILayout.FlexibleSpace();
+                GUILayout.Label($"(installer version {readme.semver})", EditorStyles.miniLabel);
+                GUILayout.EndVertical();
             }
             GUILayout.EndHorizontal();
+            var headerRect = GUILayoutUtility.GetLastRect();
+
+            EditorGUI.DrawPreviewTexture(headerRect, readme.headerBackground, readme.headerMaterial, ScaleMode.ScaleAndCrop);
+
+            iconRect = new Rect(iconRect.x - 12, iconRect.y - 12, iconRect.width + 12, iconRect.height + 12);
+            GUI.DrawTextureWithTexCoords(iconRect, readme.icon, new Rect(.2f, .18f, .7f, .72f), true);
+            
+            GUI.Label(titleRect, readme.title, TitleStyle);
         }
 
         public override void OnInspectorGUI()
@@ -236,13 +254,17 @@ namespace Beamable.Installer.Editor
 
                 EditorGUILayout.Space();
                 BeamableInstaller.InstallServerPackage =
-                    EditorGUILayout.ToggleLeft("Install com.beamable.server",
+                    EditorGUILayout.ToggleLeft("Install legacy com.beamable.server for older versions",
                         BeamableInstaller.InstallServerPackage);
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(EditorGUI.indentLevel * 10 + 25);
                 GUILayout.Label(
-                    "The server package allows you to create and deploy Microservices and Microstorages for your game. If you don't install this now, you can install it later from the Beamable Toolbox.",
+                    "In older versions of the Beamable SDK (before 3.0.0), Beamable was split into two packages, <i>com.beamale</i> and <i>com.beamable.server</i>. " +
+                    "The server package allowed you to create and deploy Microservices " +
+                    "and Microstorages for your game. However, in Beamable 3.0.0, the packages were merged into a single package, <i>com.beamable</i>. " +
+                    "If you don't install this now, you " +
+                    "can install it later from the Beamable Toolbox.",
                     AdvancedStyle);
                 GUILayout.EndHorizontal();
 
@@ -359,9 +381,11 @@ namespace Beamable.Installer.Editor
             m_AdvancedStyle = new GUIStyle(EditorStyles.label);
             m_AdvancedStyle.wordWrap = true;
             m_AdvancedStyle.fontSize = 10;
+            m_AdvancedStyle.richText = true;
 
             m_TitleStyle = new GUIStyle(m_BodyStyle);
             m_TitleStyle.fontSize = 26;
+            m_TitleStyle.padding = new RectOffset(0, 0, 6, 0);
 
             m_HeadingStyle = new GUIStyle(m_BodyStyle);
             m_HeadingStyle.fontSize = 18;

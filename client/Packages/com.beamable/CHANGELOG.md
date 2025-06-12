@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade CLI to 4.3.1
 - Bake content will bake content from realm that is provided by `config-defaults` (used in builds) when available. Instead of using local content and requiring it to be the same as remote one, it will download and bake currently deployed manifest and its content.
 
+### Removed
+- Mongo third party libraries no longer exist
+- SharpCompress third party library no longer exists
+- dotnet `System` namespace dlls no longer exist
+- Microservice types no longer exist in the Unity SDK
+
 ## [2.3.0] - 2025-05-08
 
 ### Added
