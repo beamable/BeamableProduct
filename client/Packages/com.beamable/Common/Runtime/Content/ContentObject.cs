@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+#if UNITY_EDITOR || true
+using Unity.EditorCoroutines.Editor;
+#endif
 
 namespace Beamable.Common.Content
 {
@@ -346,12 +349,15 @@ namespace Beamable.Common.Content
 			}
 		}
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || true
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
+      public event Action OnEditorChanged;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
+      private EditorCoroutine _validateCoroutine;
+
       public Guid ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
@@ -388,25 +394,39 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-	      
-         if (ValidationContext == null)
-         {
-	         // if we have no validation context assigned yet, then we cannot possibly validate.
-	         return;
-         }
-         OnEditorValidation?.Invoke();
-         
-         if (HasValidationExceptions(ValidationContext, out var exceptions))
-         {
-            _hadValidationErrors = true;
-            OnValidationChanged?.Invoke(exceptions);
 
-         }
-         else if (_hadValidationErrors)
-         {
-            _hadValidationErrors = false;
-            OnValidationChanged?.Invoke(null);
-         }
+	      if (_validateCoroutine != null)
+	      {
+		      EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+	      }
+	      _validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+	      
+
+	      if (ValidationContext == null)
+	      {
+		      // if we have no validation context assigned yet, then we cannot possibly validate.
+		      return;
+	      }
+	      OnEditorValidation?.Invoke();
+         
+	      if (HasValidationExceptions(ValidationContext, out var exceptions))
+	      {
+		      _hadValidationErrors = true;
+		      OnValidationChanged?.Invoke(exceptions);
+
+	      }
+	      else if (_hadValidationErrors)
+	      {
+		      _hadValidationErrors = false;
+		      OnValidationChanged?.Invoke(null);
+	      }
+      }
+
+      private IEnumerator DelayedValidate()
+      {
+	      yield return new WaitForSeconds(1f);
+	      OnEditorChanged?.Invoke();
+	      _validateCoroutine = null;
       }
 
       public void ForceValidate()

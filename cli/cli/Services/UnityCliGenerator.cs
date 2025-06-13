@@ -373,46 +373,15 @@ MonoImporter:
 					new CodeDefaultValueExpression(parameter.Type));
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
 				CodeMethodInvokeExpression addStatement;
-				if (option.ValueType.BaseType is { FullName: "System.Array" } && !option.AllowMultipleArgumentsPerToken)
-				{
-					var stringJoinCall = new CodeMethodInvokeExpression(
-						new CodeTypeReferenceExpression(typeof(string)),  
-						nameof(string.Join),                                          
-						new CodePrimitiveExpression("\",\""),                
-						parameterReference                               
-					);
-					
-					var optionalValWithoutEscape =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\'"),
-							CodeBinaryOperatorType.Add, stringJoinCall);
-					
-					var optionalVal =
-						new CodeBinaryOperatorExpression(optionalValWithoutEscape,
-							CodeBinaryOperatorType.Add, new CodePrimitiveExpression("\'"));
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
-				else if (parameter.Type.BaseType == "System.String")
-				{
-					var optionalValWithoutEscape =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\""),
-							CodeBinaryOperatorType.Add, parameterReference);
-					var optionalVal =
-						new CodeBinaryOperatorExpression(optionalValWithoutEscape,
-							CodeBinaryOperatorType.Add, new CodePrimitiveExpression("\""));
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
-				else
-				{
-					var optionalVal =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
-							CodeBinaryOperatorType.Add, parameterReference);
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
+				
+				var optionalVal =
+					new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
+						CodeBinaryOperatorType.Add, parameterReference);
+				addStatement =
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
+				
 
-				if (option.AllowMultipleArgumentsPerToken)
+				if (option.AllowMultipleArgumentsPerToken || option.ValueType.GetElementType() != null)
 				{
 					var loopInitExpr =
 						new CodeVariableDeclarationStatement(typeof(int), "i", new CodePrimitiveExpression(0));

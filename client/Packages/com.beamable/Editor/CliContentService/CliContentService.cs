@@ -3,7 +3,9 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Editor.CliContentManager
 {
@@ -14,7 +16,7 @@ namespace Editor.CliContentManager
 		private ContentPsWrapper _contentWatcher;
 		private readonly BeamEditorContext _beamContext;
 
-		public LocalContentManifest CachedManifest { get; private set; }
+		public Dictionary<string, LocalContentManifestEntry> CachedManifest { get; }
 
 		public event Action OnManifestUpdated;
 
@@ -22,6 +24,7 @@ namespace Editor.CliContentManager
 		{
 			_cli = cli;
 			_beamContext = beamContext;
+			CachedManifest = new();
 		}
 
 		
@@ -36,6 +39,7 @@ namespace Editor.CliContentManager
 
 		public void Reload()
 		{
+			CachedManifest.Clear();
 			if (_contentWatcher != null)
 			{
 				_contentWatcher.Cancel();
@@ -46,11 +50,38 @@ namespace Editor.CliContentManager
 			{
 				string currentCid = _beamContext.CurrentRealm.Cid;
 				string currentPid = _beamContext.CurrentRealm.Pid;
-				var currentManifest =
-					report.data.RelevantManifestsAgainstLatest.FirstOrDefault(item => item.OwnerCid == currentCid &&
-						                                                          item.OwnerPid == currentPid);
-				CachedManifest = currentManifest;
-				OnManifestUpdated?.Invoke();
+				
+				bool ValidateManifest(LocalContentManifest item) => item.OwnerCid == currentCid && item.OwnerPid == currentPid;
+				
+				var reportData = report.data;
+				var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
+				var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
+				
+				bool hasChangeManifest = changesManifest != null;
+				bool hasRemoveManifest = removeManifest != null;
+				
+				if (hasChangeManifest)
+				{
+					foreach (var entry in changesManifest.Entries)
+					{
+						CachedManifest[entry.FullId] =  entry;
+					}
+				}
+				
+				
+				if (hasRemoveManifest)
+				{
+					foreach (var entry in removeManifest.Entries)
+					{
+						CachedManifest.Remove(entry.FullId);
+					}
+				}
+
+				if (hasRemoveManifest || hasChangeManifest)
+				{
+					OnManifestUpdated?.Invoke();
+				}
+
 			});
 			_contentWatcher.Command.Run();
 		}

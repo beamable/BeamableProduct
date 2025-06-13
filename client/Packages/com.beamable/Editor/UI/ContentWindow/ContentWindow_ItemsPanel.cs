@@ -306,6 +306,7 @@ namespace Editor.UI.ContentWindow
 			Selection.activeObject = selectedContentObject;
 			selectedContentObject.OnEditorChanged += () =>
 			{
+				Debug.Log("Changed");
 				var propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
 				_contentService.SaveContent(entry.FullId, propertiesJson);
 			};

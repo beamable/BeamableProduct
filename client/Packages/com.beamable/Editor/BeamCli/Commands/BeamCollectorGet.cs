@@ -20,20 +20,17 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the platform value was not default, then add it to the list of args.
             if ((this.platform != default(string)))
             {
-                genBeamCommandArgs.Add((("--platform=\"" + this.platform) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--platform=" + this.platform));
             }
             // If the arch value was not default, then add it to the list of args.
             if ((this.arch != default(string)))
             {
-                genBeamCommandArgs.Add((("--arch=\"" + this.arch) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--arch=" + this.arch));
             }
             // If the overrideVersion value was not default, then add it to the list of args.
             if ((this.overrideVersion != default(string)))
             {
-                genBeamCommandArgs.Add((("--override-version=\"" + this.overrideVersion) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--override-version=" + this.overrideVersion));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

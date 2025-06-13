@@ -28,8 +28,11 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
             {
-                genBeamCommandArgs.Add((("--manifest-ids=\"" + this.manifestIds) 
-                                + "\""));
+                for (int i = 0; (i < this.manifestIds.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds[i]));
+                }
             }
             // If the filterType value was not default, then add it to the list of args.
             if ((this.filterType != default(Beamable.Common.Content.ContentFilterType)))
@@ -39,14 +42,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the filter value was not default, then add it to the list of args.
             if ((this.filter != default(string)))
             {
-                genBeamCommandArgs.Add((("--filter=\"" + this.filter) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--filter=" + this.filter));
             }
             // If the use value was not default, then add it to the list of args.
             if ((this.use != default(string)))
             {
-                genBeamCommandArgs.Add((("--use=\"" + this.use) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--use=" + this.use));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

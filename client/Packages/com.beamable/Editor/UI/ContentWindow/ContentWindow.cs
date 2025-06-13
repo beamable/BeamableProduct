@@ -9,6 +9,7 @@ using Beamable.Editor.Util;
 using Editor.CliContentManager;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -96,7 +97,12 @@ namespace Editor.UI.ContentWindow
 		
 		private List<LocalContentManifestEntry> GetCachedManifestEntries()
 		{
-			return new List<LocalContentManifestEntry>(_contentService?.CachedManifest?.Entries ?? Array.Empty<LocalContentManifestEntry>());
+			var localContentManifestEntries = new List<LocalContentManifestEntry>();
+			if (_contentService != null)
+			{
+				localContentManifestEntries.AddRange(_contentService.CachedManifest.Values);
+			}
+			return localContentManifestEntries;
 		}
 	}
 }
