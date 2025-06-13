@@ -9,16 +9,35 @@ import { BrowserTokenStorage } from '@/platform/BrowserTokenStorage';
 import { NodeTokenStorage } from '@/platform/NodeTokenStorage';
 import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
-import { generateTag } from '@/utils/generateTag';
 import packageJson from '../../package.json';
+import { BeamService } from '@/core/BeamService';
+import { AccountService } from '@/services/AccountService';
+import { AuthService } from '@/services/AuthService';
+import { BeamUtils } from '@/core/BeamUtils';
+import { TokenResponse } from '@/__generated__/schemas';
+import { PlayerService } from '@/services/PlayerService';
 
+/** The main class for interacting with the Beam SDK. */
 export class Beam {
   /**
    * A namespace of generated API service clients.
    * Use `beam.api.<serviceName>` to access specific clients.
    */
   public readonly api: BeamApi;
+
+  /**
+   * A namespace of player-related services.
+   * Use `beam.player.<method>` to access player-specific operations.
+   */
+  public readonly player: PlayerService;
+
+  /**
+   * The token storage instance used by the SDK.
+   * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
+   * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
+   */
   public tokenStorage: TokenStorage;
+
   private readonly cid: string;
   private readonly pid: string;
   private readonly defaultHeaders: Record<string, string>;
@@ -27,14 +46,14 @@ export class Beam {
 
   constructor(config: BeamConfig) {
     const env = config.environment;
-    const tag = generateTag();
-
     this.cid = config.cid;
     this.pid = config.pid;
     this.envConfig = BeamEnvironment.get(env ?? 'Prod');
     this.tokenStorage =
       config.tokenStorage ??
-      (isBrowserEnv() ? new BrowserTokenStorage(tag) : new NodeTokenStorage());
+      (isBrowserEnv()
+        ? new BrowserTokenStorage(config.instanceTag)
+        : new NodeTokenStorage());
 
     this.defaultHeaders = {
       Accept: 'application/json',
@@ -51,6 +70,35 @@ export class Beam {
 
     this.requester = this.createBeamRequester(config);
     this.api = new BeamApi(this.requester);
+    this.player = new PlayerService();
+    BeamService.attachServices(this);
+  }
+
+  /**
+   * Initializes the Beam SDK instance.
+   * @returns {Promise<void>}
+   */
+  async ready() {
+    const accessToken = await this.tokenStorage.getAccessToken();
+
+    if (accessToken === null) {
+      // If no access token exists, sign in as a guest and save the tokens
+      const tokenResponse = await this.auth.signInAsGuest();
+      await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+    } else if (this.tokenStorage.isExpired) {
+      // If the access token is expired, try to refresh it using the refresh token
+      // If no refresh token exists, sign in as a guest and save the tokens
+      let tokenResponse: TokenResponse;
+      const refreshToken = await this.tokenStorage.getRefreshToken();
+
+      if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
+      else tokenResponse = await this.auth.refreshAuthToken(refreshToken);
+
+      await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+    }
+
+    // If we have a valid access token, fetch the current player account and set it
+    this.player.account = await this.account.getCurrentPlayer();
   }
 
   /**
@@ -96,4 +144,11 @@ export class Beam {
       this.defaultHeaders[key] = value;
     }
   }
+}
+
+export interface Beam {
+  /** High-level account helper built on top of beam.api.accounts.* endpoints */
+  account: AccountService;
+  /** High-level auth helper built on top of beam.api.auth.* endpoints */
+  auth: AuthService;
 }
