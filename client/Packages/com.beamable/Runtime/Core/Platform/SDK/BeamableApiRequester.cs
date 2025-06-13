@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace Core.Platform.SDK
+namespace Beamable.Api
 {
 	public interface IBeamableApiRequester : IRequester
 	{

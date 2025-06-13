@@ -30,7 +30,7 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	}
 }
 
-public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcerns<LoginCommandArgs>
+public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcerns<LoginCommandArgs>, ISkipManifest
 {
 	public bool Successful { get; private set; } = false;
 	private IAppContext _ctx;
