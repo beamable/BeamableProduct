@@ -16,8 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the token value was not default, then add it to the list of args.
             if ((this.token != default(string)))
             {
-                genBeamCommandArgs.Add((("--token=\"" + this.token) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--token=" + this.token));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

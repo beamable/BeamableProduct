@@ -22,20 +22,17 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
             {
-                genBeamCommandArgs.Add((("--manifest-ids=\"" + this.manifestIds) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds));
             }
             // If the contentIds value was not default, then add it to the list of args.
             if ((this.contentIds != default(string[])))
             {
-                genBeamCommandArgs.Add((("--content-ids=\"" + this.contentIds) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--content-ids=" + this.contentIds));
             }
             // If the contentProperties value was not default, then add it to the list of args.
             if ((this.contentProperties != default(string[])))
             {
-                genBeamCommandArgs.Add((("--content-properties=\"" + this.contentProperties) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--content-properties=" + this.contentProperties));
             }
             // If the force value was not default, then add it to the list of args.
             if ((this.force != default(bool)))

@@ -374,25 +374,13 @@ MonoImporter:
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
 				CodeMethodInvokeExpression addStatement;
 
-				if (parameter.Type.BaseType == "System.String")
-				{
-					var optionalValWithoutEscape =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\""),
-							CodeBinaryOperatorType.Add, parameterReference);
-					var optionalVal =
-						new CodeBinaryOperatorExpression(optionalValWithoutEscape,
-							CodeBinaryOperatorType.Add, new CodePrimitiveExpression("\""));
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
-				else
-				{
-					var optionalVal =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
-							CodeBinaryOperatorType.Add, parameterReference);
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
+				
+				var optionalVal =
+					new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
+						CodeBinaryOperatorType.Add, parameterReference);
+				addStatement =
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
+				
 
 				if (option.AllowMultipleArgumentsPerToken)
 				{

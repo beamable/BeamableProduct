@@ -25,8 +25,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
             {
-                genBeamCommandArgs.Add((("--manifest-ids=\"" + this.manifestIds) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds));
             }
             // If the requireProcessId value was not default, then add it to the list of args.
             if ((this.requireProcessId != default(int)))
