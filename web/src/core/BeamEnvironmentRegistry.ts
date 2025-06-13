@@ -27,6 +27,10 @@ const defaultEnvironments: Record<BuiltInEnv, BeamEnvironmentConfig> = {
   },
 };
 
+/**
+ * A registry for Beamable environment configurations.
+ * Allows for registering and retrieving environment configurations by name.
+ */
 export class BeamEnvironmentRegistry {
   private readonly envs: Record<string, BeamEnvironmentConfig>;
 

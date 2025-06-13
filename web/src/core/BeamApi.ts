@@ -36,7 +36,8 @@ import { TrialsApi } from '@/__generated__/apis/TrialsApi';
 
 /**
  * Container for all generated API clients.
- * Access each service client via `beam.api.<serviceName>`.
+ * Used for making raw API calls.
+ * Access each api client via `beam.api.<serviceName>.<method>`.
  */
 export class BeamApi {
   accounts: AccountsApi;
