@@ -42,9 +42,9 @@ describe('beamReviver', () => {
     expect(result.date.toISOString()).toBe(iso);
   });
 
-  it('converts long numeric strings (>10 digits) to BigInt', () => {
-    const big = '1234567890123';
-    const result = JSON.parse(`{"num":"${big}"}`, BeamJsonUtils.reviver);
+  it('converts long numeric (>10 digits) to BigInt', () => {
+    const big = 1234567890123;
+    const result = JSON.parse(`{"num":${big}}`, BeamJsonUtils.reviver);
     expect(typeof result.num).toBe('bigint');
     expect(result.num).toBe(BigInt(big));
   });

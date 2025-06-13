@@ -35,6 +35,16 @@ export class BeamJsonUtils {
       if (BeamJsonUtils.NUMBER_STRING_REGEX.test(value) && value.length > 10)
         return BigInt(value);
     }
+
+    if (typeof value === 'number') {
+      const valueAsString = value.toString();
+      if (
+        BeamJsonUtils.NUMBER_STRING_REGEX.test(valueAsString) &&
+        valueAsString.length > 10
+      )
+        return BigInt(value.toString());
+    }
+
     return value;
   }
 }
