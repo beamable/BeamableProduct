@@ -39,7 +39,7 @@ jobs:
       - name: Build Otel Collector
         working-directory: ./otel-collector
         run: |
-          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
+          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh --version ${{ inputs.version }}
 
       - name: Compress Collector Files
         working-directory: otel-bin

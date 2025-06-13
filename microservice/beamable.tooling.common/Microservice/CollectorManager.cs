@@ -54,6 +54,7 @@ public class CollectorCaller
 [Serializable]
 public class CollectorDiscoveryEntry
 {
+	public string version;
 	public string status;
 	public int pid;
 	public List<CollectorZapcoreEntry> logs;
@@ -85,6 +86,20 @@ public class CollectorManager
 	private const int delayBeforeNewAttempt = 500;
 
 	public static CollectorStatus CollectorStatus;
+
+	private static string _cachedVersion;
+
+	public static string Version
+	{
+		get
+		{
+			if (_cachedVersion == null)
+			{
+				_cachedVersion = GetCollectorVersion();
+			}
+			return _cachedVersion;
+		}
+	}
 
 	public static OSPlatform GetCurrentPlatform()
 	{
@@ -213,11 +228,9 @@ public class CollectorManager
 		 * - 
 		 * 
 		 */
-
-		var version = GetCollectorVersion();
 		
 		string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var root = Path.Combine(localAppData, "beam", "collectors", version);
+		var root = Path.Combine(localAppData, "beam", "collectors", Version);
 		return root;
 	}
 
@@ -234,7 +247,6 @@ public class CollectorManager
 		OSPlatform platform, 
 		Architecture arch)
 	{
-		var version = GetCollectorVersion();
 		
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
@@ -245,7 +257,7 @@ public class CollectorManager
 		if (!File.Exists(collectorPath) && allowDownload)
 		{
 			var collectorUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, collectorName + ".gz");
 			
 			itemsToDownload.Add(new (collectorUrl, collectorPath, true));
@@ -254,7 +266,7 @@ public class CollectorManager
 		if (!File.Exists(configPath) && allowDownload)
 		{
 			var configUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, configFileName + ".gz");
 			itemsToDownload.Add(new (configUrl, configPath, false));
 		}
@@ -544,6 +556,13 @@ public class CollectorManager
 					continue;
 
 			}
+
+			// Then we check if the version of the found collector matches the version supported
+			if (collector.version != Version)
+			{
+				continue;
+			}
+
 			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message , Timestamp = l.Time}).
 				OrderBy(t => t.Timestamp).ToList();
 			return new CollectorStatus()
@@ -597,6 +616,8 @@ public class CollectorManager
 				fileExe = "open";
 			}
 		}
+
+		//TODO: We should make it possible to pass a OTLP PORT that is free for the collector, it being the same one we are using here in the first place
 
 		var workingDir = Path.GetDirectoryName(fileExe);
 		process.StartInfo.FileName = fileExe;
