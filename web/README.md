@@ -30,15 +30,27 @@ You can use the Beam SDK across different JavaScript environments:
 #### CommonJS (Node.js)
 
 ```js
-const Beam = require('@beamable/sdk');
-console.log(Beam.print());
+const { Beam } = require('@beamable/sdk');
+const beam = new Beam({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+});
+await beam.ready();
+console.log(beam.toString());
+console.log(beam.player.id);
 ```
 
 #### ES Modules (Node.js)
 
 ```js
-import { print } from '@beamable/sdk';
-console.log(print());
+import { Beam } from '@beamable/sdk';
+const beam = new Beam({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+});
+await beam.ready();
+console.log(beam.toString());
+console.log(beam.player.id);
 ```
 
 #### Browser (IIFE)
@@ -46,8 +58,15 @@ console.log(print());
 ```html
 <script src="https://unpkg.com/@beamable/sdk"></script>
 <script>
-  // global variable exposed as Beam
-  console.log(Beam.print());
+  // global variable exposed as Beamable
+  const { Beam, BeamEnvironment } = Beamable;
+  const beam = new Beam({
+    cid: 'YOUR_CUSTOMER_ID',
+    pid: 'YOUR_PROJECT_ID',
+  });
+  await beam.ready();
+  console.log(beam.toString());
+  console.log(beam.player.id);
 </script>
 ```
 
@@ -137,8 +156,14 @@ This ensures the bundle works correctly in Node.js (CommonJS, ESM) and in the br
 Create a file `temp/test-cjs.js`:
 
 ```js
-const Beam = require('./dist/index.js');
-console.log(Beam.print());
+const { Beam } = require('./dist/index.js');
+const beam = new Beam({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+});
+await beam.ready();
+console.log(beam.toString());
+console.log(beam.player.id);
 ```
 
 Run:
@@ -152,8 +177,14 @@ node test-cjs.js
 Create a file `temp/test-esm.mjs`:
 
 ```js
-import { print } from './dist/index.mjs';
-console.log(print());
+import { Beam } from './dist/index.mjs';
+const beam = new Beam({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+});
+await beam.ready();
+console.log(beam.toString());
+console.log(beam.player.id);
 ```
 
 Run:
@@ -186,22 +217,16 @@ Create an HTML file `temp/test-iife.html`:
         // Environment must be one of: 'Dev', 'Stg', or 'Prod'
         environment: 'Prod',
       });
+      await beam.ready();
 
-      // Print a human-readable configuration string:
+      // Display a human-readable configuration string:
       console.log(beam.toString());
 
       // List all built-in environments:
       console.log(BeamEnvironment.list());
-
-      // Example: authenticate via the auth endpoint:
-      beam.api.auth
-        .postAuthToken({
-          grant_type: 'password',
-          username: 'user@example.com',
-          password: 'your-password',
-        })
-        .then((res) => console.log('Login response:', res))
-        .catch(console.error);
+      
+      // Display current player id:
+      console.log(beam.player.id);
     </script>
   </body>
 </html>
@@ -247,7 +272,7 @@ class MyTokenStorage implements TokenStorage {
   /* implement getAccessToken, setAccessToken, ... */
 }
 
-const sdk = new Beam.Beam({
+const beam = new Beam({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
   tokenStorage: new MyTokenStorage(),
