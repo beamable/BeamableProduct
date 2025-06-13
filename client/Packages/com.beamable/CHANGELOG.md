@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Able to use the new Client Code Generator from CLI that uses OpenAPI instead of the old one that uses Reflection
+- `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
+- `Core.Platform` namespace moved into `Beamable` namespace
 
 ## [2.4.0] - 2025-06-11 
 
