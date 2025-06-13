@@ -1,5 +1,12 @@
 # @beamable/sdk
 
+## 0.1.1
+
+### Patch Changes
+
+- New `ready` function to initialize the sdk
+- Initial Auth, Account and Player services for the sdk
+
 ## 0.1.0
 
 ### Minor Changes
