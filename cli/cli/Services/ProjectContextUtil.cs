@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using microservice.Extensions;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Readers;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
 
