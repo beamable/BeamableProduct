@@ -4,10 +4,10 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class ContentResolveArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class ContentTagRmArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
-        public string[] manifestIds;
+        /// <summary>List of tags for us to affect</summary>
+        public string tag;
         /// <summary>Defines the semantics for the `filter` argument. When no filters are given, affects all existing content.
         ///ExactIds => Will only add the given tags to the ','-separated list of filters
         ///Regexes => Will add the given tags to any content whose Id is matched by any of the ','-separated list of filters (C# regex string)
@@ -16,24 +16,15 @@ namespace Beamable.Editor.BeamCli.Commands
         public Beamable.Common.Content.ContentFilterType filterType;
         /// <summary>Accepts different strings to filter which content files will be affected. See the `filter-type` option</summary>
         public string filter;
-        /// <summary>Whether to use the 'local' or 'realm' version of the conflicted content.
-        ///This applies to ALL matching elements of the filter that are conflicted.
-        ///Value must be "local" or "realm"</summary>
-        public string use;
+        /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
+        public string[] manifestIds;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // If the manifestIds value was not default, then add it to the list of args.
-            if ((this.manifestIds != default(string[])))
-            {
-                for (int i = 0; (i < this.manifestIds.Length); i = (i + 1))
-                {
-                    // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds[i]));
-                }
-            }
+            // Add the tag value to the list of args.
+            genBeamCommandArgs.Add(this.tag.ToString());
             // If the filterType value was not default, then add it to the list of args.
             if ((this.filterType != default(Beamable.Common.Content.ContentFilterType)))
             {
@@ -45,11 +36,14 @@ namespace Beamable.Editor.BeamCli.Commands
                 genBeamCommandArgs.Add((("--filter=\"" + this.filter) 
                                 + "\""));
             }
-            // If the use value was not default, then add it to the list of args.
-            if ((this.use != default(string)))
+            // If the manifestIds value was not default, then add it to the list of args.
+            if ((this.manifestIds != default(string[])))
             {
-                genBeamCommandArgs.Add((("--use=\"" + this.use) 
-                                + "\""));
+                for (int i = 0; (i < this.manifestIds.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds[i]));
+                }
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -59,33 +53,29 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ContentResolveWrapper ContentResolve(ContentResolveArgs resolveArgs)
+        public virtual ContentTagRmWrapper ContentTagRm(ContentTagRmArgs rmArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("content");
-            genBeamCommandArgs.Add("resolve");
-            genBeamCommandArgs.Add(resolveArgs.Serialize());
+            genBeamCommandArgs.Add("tag");
+            genBeamCommandArgs.Add("rm");
+            genBeamCommandArgs.Add(rmArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            ContentResolveWrapper genBeamCommandWrapper = new ContentResolveWrapper();
+            ContentTagRmWrapper genBeamCommandWrapper = new ContentTagRmWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class ContentResolveWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class ContentTagRmWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual ContentResolveWrapper OnStreamContentResolveConflictResult(System.Action<ReportDataPoint<BeamContentResolveConflictResult>> cb)
-        {
-            this.Command.On("stream", cb);
-            return this;
-        }
     }
 }

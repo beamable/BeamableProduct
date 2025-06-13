@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class DeploymentRegistryArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The beamo id for the service to get logs for</summary>
+        /// <summary>The beamo id for the service to get images for</summary>
         public string serviceId;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

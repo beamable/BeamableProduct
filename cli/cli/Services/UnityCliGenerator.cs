@@ -394,7 +394,7 @@ MonoImporter:
 						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
 				}
 
-				if (option.AllowMultipleArgumentsPerToken)
+				if (option.AllowMultipleArgumentsPerToken || option.ValueType.GetElementType() != null)
 				{
 					var loopInitExpr =
 						new CodeVariableDeclarationStatement(typeof(int), "i", new CodePrimitiveExpression(0));
