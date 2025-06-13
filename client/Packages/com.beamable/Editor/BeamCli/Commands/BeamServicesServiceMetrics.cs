@@ -18,14 +18,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the id value was not default, then add it to the list of args.
             if ((this.id != default(string)))
             {
-                genBeamCommandArgs.Add((("--id=\"" + this.id) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--id=" + this.id));
             }
             // If the metric value was not default, then add it to the list of args.
             if ((this.metric != default(string)))
             {
-                genBeamCommandArgs.Add((("--metric=\"" + this.metric) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--metric=" + this.metric));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

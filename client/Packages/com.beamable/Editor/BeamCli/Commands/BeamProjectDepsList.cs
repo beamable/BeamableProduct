@@ -20,8 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the service value was not default, then add it to the list of args.
             if ((this.service != default(string)))
             {
-                genBeamCommandArgs.Add((("--service=\"" + this.service) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--service=" + this.service));
             }
             // If the all value was not default, then add it to the list of args.
             if ((this.all != default(bool)))

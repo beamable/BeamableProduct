@@ -17,8 +17,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the sourcePid value was not default, then add it to the list of args.
             if ((this.sourcePid != default(string)))
             {
-                genBeamCommandArgs.Add((("--source-pid=\"" + this.sourcePid) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--source-pid=" + this.sourcePid));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

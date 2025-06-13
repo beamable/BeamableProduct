@@ -22,14 +22,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the version value was not default, then add it to the list of args.
             if ((this.version != default(string)))
             {
-                genBeamCommandArgs.Add((("--version=\"" + this.version) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--version=" + this.version));
             }
             // If the owner value was not default, then add it to the list of args.
             if ((this.owner != default(string)))
             {
-                genBeamCommandArgs.Add((("--owner=\"" + this.owner) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--owner=" + this.owner));
             }
             // If the port value was not default, then add it to the list of args.
             if ((this.port != default(int)))

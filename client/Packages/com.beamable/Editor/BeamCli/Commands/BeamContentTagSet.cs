@@ -40,8 +40,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the filter value was not default, then add it to the list of args.
             if ((this.filter != default(string)))
             {
-                genBeamCommandArgs.Add((("--filter=\"" + this.filter) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--filter=" + this.filter));
             }
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))

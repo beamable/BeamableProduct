@@ -43,26 +43,22 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the email value was not default, then add it to the list of args.
             if ((this.email != default(string)))
             {
-                genBeamCommandArgs.Add((("--email=\"" + this.email) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--email=" + this.email));
             }
             // If the password value was not default, then add it to the list of args.
             if ((this.password != default(string)))
             {
-                genBeamCommandArgs.Add((("--password=\"" + this.password) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--password=" + this.password));
             }
             // If the host value was not default, then add it to the list of args.
             if ((this.host != default(string)))
             {
-                genBeamCommandArgs.Add((("--host=\"" + this.host) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--host=" + this.host));
             }
             // If the refreshToken value was not default, then add it to the list of args.
             if ((this.refreshToken != default(string)))
             {
-                genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
             }
             // If the saveExtraPaths value was not default, then add it to the list of args.
             if ((this.saveExtraPaths != default(string[])))

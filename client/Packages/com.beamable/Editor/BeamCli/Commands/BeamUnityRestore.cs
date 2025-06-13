@@ -16,8 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the csproj value was not default, then add it to the list of args.
             if ((this.csproj != default(string)))
             {
-                genBeamCommandArgs.Add((("--csproj=\"" + this.csproj) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--csproj=" + this.csproj));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

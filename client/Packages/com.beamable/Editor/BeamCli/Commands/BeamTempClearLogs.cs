@@ -22,8 +22,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the olderThan value was not default, then add it to the list of args.
             if ((this.olderThan != default(string)))
             {
-                genBeamCommandArgs.Add((("--older-than=\"" + this.olderThan) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--older-than=" + this.olderThan));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

@@ -22,14 +22,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
             {
-                genBeamCommandArgs.Add((("--sln=\"" + this.sln) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--sln=" + this.sln));
             }
             // If the outputPath value was not default, then add it to the list of args.
             if ((this.outputPath != default(string)))
             {
-                genBeamCommandArgs.Add((("--output-path=\"" + this.outputPath) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--output-path=" + this.outputPath));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

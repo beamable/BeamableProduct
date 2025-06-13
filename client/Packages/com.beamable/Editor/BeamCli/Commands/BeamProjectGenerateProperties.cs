@@ -30,8 +30,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the buildDir value was not default, then add it to the list of args.
             if ((this.buildDir != default(string)))
             {
-                genBeamCommandArgs.Add((("--build-dir=\"" + this.buildDir) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--build-dir=" + this.buildDir));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

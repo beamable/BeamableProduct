@@ -39,8 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the comment value was not default, then add it to the list of args.
             if ((this.comment != default(string)))
             {
-                genBeamCommandArgs.Add((("--comment=\"" + this.comment) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--comment=" + this.comment));
             }
             // If the serviceComments value was not default, then add it to the list of args.
             if ((this.serviceComments != default(string[])))
@@ -54,14 +53,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the fromManifest value was not default, then add it to the list of args.
             if ((this.fromManifest != default(string)))
             {
-                genBeamCommandArgs.Add((("--from-manifest=\"" + this.fromManifest) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--from-manifest=" + this.fromManifest));
             }
             // If the fromManifestId value was not default, then add it to the list of args.
             if ((this.fromManifestId != default(string)))
             {
-                genBeamCommandArgs.Add((("--from-manifest-id=\"" + this.fromManifestId) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--from-manifest-id=" + this.fromManifestId));
             }
             // If the runHealthChecks value was not default, then add it to the list of args.
             if ((this.runHealthChecks != default(bool)))
@@ -91,14 +88,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the fromPlan value was not default, then add it to the list of args.
             if ((this.fromPlan != default(string)))
             {
-                genBeamCommandArgs.Add((("--from-plan=\"" + this.fromPlan) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--from-plan=" + this.fromPlan));
             }
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
             {
-                genBeamCommandArgs.Add((("--sln=\"" + this.sln) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--sln=" + this.sln));
             }
             // If the fromLatestPlan value was not default, then add it to the list of args.
             if ((this.fromLatestPlan != default(bool)))

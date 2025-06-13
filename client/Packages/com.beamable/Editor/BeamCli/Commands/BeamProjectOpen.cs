@@ -20,8 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
             {
-                genBeamCommandArgs.Add((("--sln=\"" + this.sln) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--sln=" + this.sln));
             }
             // If the onlyGenerate value was not default, then add it to the list of args.
             if ((this.onlyGenerate != default(bool)))
