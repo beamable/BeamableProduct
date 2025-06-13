@@ -12,6 +12,71 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a5b40dc58386f46a327adbbd3aab00, type: 3}
   m_Name: ContentConfiguration
   m_EditorClassIdentifier: 
-  EnableMultipleContentNamespaces: 1
+  EnableMultipleContentNamespaces: 0
+  multipleContentNamespacesSettingLocked: 0
   EditorManifestID: global
+  EditorDownloadBatchSize:
+    HasValue: 0
+    Value: 0
+  EnablePropertyOrderDependenceForContentChecksum: 1
+  EnableLocalContentInEditor: 0
+  LocalContentReferenceDelaySeconds:
+    HasValue: 0
+    Value: 0
+  LocalContentManifestDelaySeconds:
+    HasValue: 0
+    Value: 0
   _runtimeManifestID: global
+  EnableBakedContentCompression: 1
+  BakeContentOnBuild: 1
+  DisableContentDownloadExceptions: 0
+  ContentTextureConfiguration:
+    TextureConfigurations:
+    - TypeName: calendars
+      Texture: {fileID: 0}
+    - TypeName: tournaments
+      Texture: {fileID: 0}
+    - TypeName: listings
+      Texture: {fileID: 2800000, guid: 23f852cf03a706549bb84eca31944afb, type: 3}
+    - TypeName: skus
+      Texture: {fileID: 0}
+    - TypeName: stores
+      Texture: {fileID: 2800000, guid: 27f3d636ab9141342a1ef254d2d9cc16, type: 3}
+    - TypeName: leaderboards
+      Texture: {fileID: 0}
+    - TypeName: currency
+      Texture: {fileID: 2800000, guid: 0843affd5116e9a4cb5f2add24a03faa, type: 3}
+    - TypeName: items
+      Texture: {fileID: 2800000, guid: cf6ab0b88a5ac274f9b8679295458b65, type: 3}
+    - TypeName: vip
+      Texture: {fileID: 0}
+    - TypeName: donations
+      Texture: {fileID: 0}
+    - TypeName: api.announcementApi
+      Texture: {fileID: 0}
+    - TypeName: announcements
+      Texture: {fileID: 2800000, guid: 4059afbb28d92494392ae29f6014f0be, type: 3}
+    - TypeName: api
+      Texture: {fileID: 0}
+    - TypeName: emails
+      Texture: {fileID: 0}
+    - TypeName: events
+      Texture: {fileID: 0}
+    - TypeName: game_types
+      Texture: {fileID: 2800000, guid: efec56c35a450b448a6d1ce8d113b120, type: 3}
+    - TypeName: items.weapons
+      Texture: {fileID: 0}
+    - TypeName: items.weapons.melee
+      Texture: {fileID: 0}
+    - TypeName: items.weapons.ranged
+      Texture: {fileID: 0}
+    - TypeName: items.trinkets
+      Texture: {fileID: 0}
+    - TypeName: items.inventoryTestItem
+      Texture: {fileID: 0}
+    - TypeName: currency.gf
+      Texture: {fileID: 0}
+    - TypeName: currency.gf.test
+      Texture: {fileID: 0}
+    - TypeName: example
+      Texture: {fileID: 0}

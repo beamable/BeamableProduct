@@ -373,7 +373,6 @@ MonoImporter:
 					new CodeDefaultValueExpression(parameter.Type));
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
 				CodeMethodInvokeExpression addStatement;
-
 				
 				var optionalVal =
 					new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
