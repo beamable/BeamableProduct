@@ -22,6 +22,9 @@ export interface BeamConfig {
   /** Optional custom token storage strategy. */
   tokenStorage?: TokenStorage;
 
+  /** Optional tag to uniquely identify this instance. Used for browser token storage synchronization. */
+  instanceTag?: string;
+
   /** Optional name of the game engine being used (e.g., "Three.js", "Phaser", "Babylon", "PlayCanvas"). */
   gameEngine?: string;
 
