@@ -20,8 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the output value was not default, then add it to the list of args.
             if ((this.output != default(string)))
             {
-                genBeamCommandArgs.Add((("--output=\"" + this.output) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--output=" + this.output));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

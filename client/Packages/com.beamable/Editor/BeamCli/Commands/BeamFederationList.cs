@@ -20,20 +20,17 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the type value was not default, then add it to the list of args.
             if ((this.type != default(string)))
             {
-                genBeamCommandArgs.Add((("--type=\"" + this.type) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--type=" + this.type));
             }
             // If the id value was not default, then add it to the list of args.
             if ((this.id != default(string)))
             {
-                genBeamCommandArgs.Add((("--id=\"" + this.id) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--id=" + this.id));
             }
             // If the fedIds value was not default, then add it to the list of args.
             if ((this.fedIds != default(string)))
             {
-                genBeamCommandArgs.Add((("--fed-ids=\"" + this.fedIds) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--fed-ids=" + this.fedIds));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

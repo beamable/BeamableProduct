@@ -26,26 +26,22 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the filter value was not default, then add it to the list of args.
             if ((this.filter != default(string)))
             {
-                genBeamCommandArgs.Add((("--filter=\"" + this.filter) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--filter=" + this.filter));
             }
             // If the serverLogLevel value was not default, then add it to the list of args.
             if ((this.serverLogLevel != default(string)))
             {
-                genBeamCommandArgs.Add((("--server-log-level=\"" + this.serverLogLevel) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--server-log-level=" + this.serverLogLevel));
             }
             // If the from value was not default, then add it to the list of args.
             if ((this.from != default(string)))
             {
-                genBeamCommandArgs.Add((("--from=\"" + this.from) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--from=" + this.from));
             }
             // If the to value was not default, then add it to the list of args.
             if ((this.to != default(string)))
             {
-                genBeamCommandArgs.Add((("--to=\"" + this.to) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--to=" + this.to));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
