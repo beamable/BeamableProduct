@@ -31,6 +31,7 @@ export default [
     rules: {
       // turn off the JS version
       'no-unused-vars': 'off',
+      'no-redeclare': 'off',
       // turn on the TS-aware replacement
       '@typescript-eslint/no-unused-vars': [
         'error',

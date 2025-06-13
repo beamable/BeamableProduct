@@ -5,7 +5,8 @@
     "src/__generated__/apis/index.ts",
     "src/configs/BeamEnvironmentConfig.ts",
     "src/core/BeamEnvironmentRegistry.ts",
-    "src/core/BeamApi.ts"
+    "src/core/BeamApi.ts",
+    "src/services/*"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs",

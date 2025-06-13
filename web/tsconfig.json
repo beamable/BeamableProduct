@@ -4,6 +4,7 @@
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
     "declaration": true,
+    "stripInternal": true,
     "outDir": "dist",
     "sourceMap": true,
     "strict": true,
