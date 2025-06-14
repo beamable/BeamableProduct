@@ -224,7 +224,7 @@ Create an HTML file `temp/test-iife.html`:
 
       // List all built-in environments:
       console.log(BeamEnvironment.list());
-      
+
       // Display current player id:
       console.log(beam.player.id);
     </script>
