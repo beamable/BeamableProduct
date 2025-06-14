@@ -43,6 +43,8 @@ export class Beam {
   private readonly defaultHeaders: Record<string, string>;
   private readonly requester: HttpRequester;
   private envConfig: BeamEnvironmentConfig;
+  // Cached promise for SDK initialization to ensure idempotent ready() calls
+  private readyPromise?: Promise<void>;
 
   constructor(config: BeamConfig) {
     const env = config.environment;
@@ -75,30 +77,36 @@ export class Beam {
   }
 
   /**
-   * Initializes the Beam SDK instance.
-   * @returns {Promise<void>}
+   * Initializes the Beam SDK instance. Subsequent calls return the same initialization promise.
+   * @returns {Promise<void>} A promise that resolves when initialization is complete.
    */
-  async ready() {
-    const accessToken = await this.tokenStorage.getAccessToken();
+  async ready(): Promise<void> {
+    if (!this.readyPromise) {
+      this.readyPromise = (async () => {
+        const accessToken = await this.tokenStorage.getAccessToken();
 
-    if (accessToken === null) {
-      // If no access token exists, sign in as a guest and save the tokens
-      const tokenResponse = await this.auth.signInAsGuest();
-      await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
-    } else if (this.tokenStorage.isExpired) {
-      // If the access token is expired, try to refresh it using the refresh token
-      // If no refresh token exists, sign in as a guest and save the tokens
-      let tokenResponse: TokenResponse;
-      const refreshToken = await this.tokenStorage.getRefreshToken();
+        if (accessToken === null) {
+          // If no access token exists, sign in as a guest and save the tokens
+          const tokenResponse = await this.auth.signInAsGuest();
+          await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+        } else if (this.tokenStorage.isExpired) {
+          // If the access token is expired, try to refresh it using the refresh token
+          // If no refresh token exists, sign in as a guest and save the tokens
+          let tokenResponse: TokenResponse;
+          const refreshToken = await this.tokenStorage.getRefreshToken();
 
-      if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
-      else tokenResponse = await this.auth.refreshAuthToken(refreshToken);
+          if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
+          else tokenResponse = await this.auth.refreshAuthToken(refreshToken);
 
-      await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+          await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+        }
+
+        // If we have a valid access token, fetch the current player account and set it
+        this.player.account = await this.account.getCurrentPlayer();
+      })();
     }
 
-    // If we have a valid access token, fetch the current player account and set it
-    this.player.account = await this.account.getCurrentPlayer();
+    return this.readyPromise;
   }
 
   /**
