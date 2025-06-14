@@ -1,5 +1,11 @@
 # @beamable/sdk
 
+## 0.1.2
+
+### Patch Changes
+
+- Make `Beam.ready()` idempotent so that calling it multiple times has no additional effect after initialization.
+
 ## 0.1.1
 
 ### Patch Changes
