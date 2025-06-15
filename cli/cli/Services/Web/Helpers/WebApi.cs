@@ -137,8 +137,7 @@ public static class WebApi
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
 		var headersObjectLiteral = new TsObjectLiteralExpression();
 
-		var endpoint = new TsVariable("endpoint").WithInitializer(new TsLiteralExpression(apiEndpoint));
-		methodBodyStatements.Add(endpoint);
+		var endpointVariable = new TsVariable("endpoint");
 
 		var hasRequestBody = false;
 		var bodyParam = AddBodyParameterIfExist(operation, payload, modules, paramCommentList, ref hasRequestBody,
@@ -148,7 +147,7 @@ public static class WebApi
 		SortApiParameters(apiParameters);
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
 
-		AddPathParameterStatements(apiParameters, methodBodyStatements, endpoint);
+		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint);
 		AddHeaderParametersStatements(headerParams, methodBodyStatements, headers, headerOptionalStatements,
 			headersObjectLiteral, paramCommentList);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
@@ -163,7 +162,7 @@ public static class WebApi
 
 		var hasHeaders = headerParams.Count > 0;
 		var requestObjectLiteral = MakeHttpRequestObject(payload, hasRequestBody, hasHeaders, requiresAuth,
-			apiMethodType, endpoint, queryStringDeclaration);
+			apiMethodType, endpointVariable, queryStringDeclaration);
 
 		AddApiCallStatements(methodBodyStatements, responseType, requestType, requestObjectLiteral);
 
@@ -308,23 +307,27 @@ public static class WebApi
 	}
 
 	private static void AddPathParameterStatements(List<OpenApiParameter> apiParameters,
-		List<TsNode> methodBodyStatements, TsVariable endpoint)
+		List<TsNode> methodBodyStatements, TsVariable endpoint, string apiEndpoint)
 	{
+		TsExpression endpointReplaceExpression = new TsLiteralExpression(apiEndpoint);
+
 		foreach (var param in apiParameters.Where(p => p.In == ParameterLocation.Path))
 		{
 			var paramToStringExpression = new TsMemberAccessExpression(
 				new TsIdentifier(param.Name),
 				new TsInvokeExpression(new TsIdentifier("toString")).Render());
+
 			var encodeParamInvocation = new TsInvokeExpression(
 				new TsIdentifier("encodeURIComponent"), paramToStringExpression);
-			var endpointReplaceExpression =
-				new TsMemberAccessExpression(endpoint.Identifier, "replace");
-			var endpointReplaceInvocation = new TsInvokeExpression(endpointReplaceExpression,
+
+			endpointReplaceExpression = new TsMemberAccessExpression(endpointReplaceExpression, "replace");
+
+			endpointReplaceExpression = new TsInvokeExpression(endpointReplaceExpression,
 				new TsLiteralExpression($"{{{param.Name}}}"), encodeParamInvocation);
-			var endpointReplaceAssignment =
-				new TsAssignmentStatement(endpoint.Identifier, endpointReplaceInvocation);
-			methodBodyStatements.Add(endpointReplaceAssignment);
 		}
+
+		endpoint.WithInitializer(endpointReplaceExpression);
+		methodBodyStatements.Add(endpoint);
 	}
 
 	private static void AddHeaderParametersStatements(List<OpenApiParameter> headerParams,
