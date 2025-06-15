@@ -1,5 +1,11 @@
 # @beamable/sdk
 
+## 0.1.3
+
+### Patch Changes
+
+- Minor update to the api classes
+
 ## 0.1.2
 
 ### Patch Changes
