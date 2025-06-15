@@ -538,8 +538,7 @@ export class TournamentsApi {
    * @returns {Promise<HttpResponse<TournamentClientView>>} A promise containing the HttpResponse of TournamentClientView
    */
   async getTournamentByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<TournamentClientView>> {
-    let endpoint = "/object/tournaments/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/tournaments/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

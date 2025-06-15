@@ -48,8 +48,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyMetadataById(id: string, payload: UpdateParty, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}/metadata";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}/metadata".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -72,8 +71,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async getPartyById(id: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -95,8 +93,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyById(id: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -119,8 +116,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyPromoteById(id: string, payload: PromoteNewLeader, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}/promote";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}/promote".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -144,8 +140,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesInvitePostPartyResponse>>} A promise containing the HttpResponse of ApiPartiesInvitePostPartyResponse
    */
   async postPartyInviteById(id: string, payload: InviteToParty, gamertag?: string): Promise<HttpResponse<ApiPartiesInvitePostPartyResponse>> {
-    let endpoint = "/api/parties/{id}/invite";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}/invite".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -169,8 +164,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesInviteDeletePartyResponse>>} A promise containing the HttpResponse of ApiPartiesInviteDeletePartyResponse
    */
   async deletePartyInviteById(id: string, payload: CancelInviteToParty, gamertag?: string): Promise<HttpResponse<ApiPartiesInviteDeletePartyResponse>> {
-    let endpoint = "/api/parties/{id}/invite";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}/invite".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -194,8 +188,7 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesMembersDeletePartyResponse>>} A promise containing the HttpResponse of ApiPartiesMembersDeletePartyResponse
    */
   async deletePartyMembersById(id: string, payload: LeaveParty, gamertag?: string): Promise<HttpResponse<ApiPartiesMembersDeletePartyResponse>> {
-    let endpoint = "/api/parties/{id}/members";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/parties/{id}/members".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

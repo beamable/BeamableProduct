@@ -23,8 +23,7 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<EventPlayerView>>} A promise containing the HttpResponse of EventPlayerView
    */
   async getEventPlayersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EventPlayerView>> {
-    let endpoint = "/object/event-players/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/event-players/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -52,8 +51,7 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<EventClaimResponse>>} A promise containing the HttpResponse of EventClaimResponse
    */
   async postEventPlayersClaimByObjectId(objectId: bigint | string, payload: EventClaimRequest, gamertag?: string): Promise<HttpResponse<EventClaimResponse>> {
-    let endpoint = "/object/event-players/{objectId}/claim";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/event-players/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -78,8 +76,7 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventPlayersScoreByObjectId(objectId: bigint | string, payload: EventScoreRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/event-players/{objectId}/score";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/event-players/{objectId}/score".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

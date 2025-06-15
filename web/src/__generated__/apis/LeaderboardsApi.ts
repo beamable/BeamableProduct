@@ -164,8 +164,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardEntriesByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entries";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/entries".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -193,8 +192,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardMembershipResponse>>} A promise containing the HttpResponse of LeaderboardMembershipResponse
    */
   async getLeaderboardMembershipByObjectId(objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardMembershipResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/membership";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/membership".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -223,8 +221,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardRanksByObjectId(objectId: string, ids: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/ranks";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/ranks".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -256,8 +253,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardPartitionInfo>>} A promise containing the HttpResponse of LeaderboardPartitionInfo
    */
   async getLeaderboardPartitionByObjectId(objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardPartitionInfo>> {
-    let endpoint = "/object/leaderboards/{objectId}/partition";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/partition".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -289,8 +285,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardFriendsByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/friends";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/friends".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -318,8 +313,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postLeaderboardByObjectId(objectId: string, payload: LeaderboardCreateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -347,8 +341,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -374,8 +367,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<MatchMakingMatchesPvpResponse>>} A promise containing the HttpResponse of MatchMakingMatchesPvpResponse
    */
   async getLeaderboardMatchesByObjectId(objectId: string, poolSize: number, windowSize: number, windows: number, gamertag?: string): Promise<HttpResponse<MatchMakingMatchesPvpResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/matches";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/matches".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -408,8 +400,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardAssignmentInfo>>} A promise containing the HttpResponse of LeaderboardAssignmentInfo
    */
   async getLeaderboardAssignmentByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
-    let endpoint = "/object/leaderboards/{objectId}/assignment";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/assignment".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -437,8 +428,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardAssignmentByObjectId(objectId: string, payload: LeaderboardRemoveCacheEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/assignment";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/assignment".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -463,8 +453,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardEntryByObjectId(objectId: string, payload: LeaderboardAddRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entry";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/entry".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -492,8 +481,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardEntryByObjectId(objectId: string, payload: LeaderboardRemoveEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entry";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/entry".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -521,8 +509,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardFreezeByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/freeze";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/freeze".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -551,8 +538,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardDetails>>} A promise containing the HttpResponse of LeaderboardDetails
    */
   async getLeaderboardDetailsByObjectId(objectId: string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<LeaderboardDetails>> {
-    let endpoint = "/object/leaderboards/{objectId}/details";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/details".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -587,8 +573,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardViewByObjectId(objectId: string, focus?: bigint | string, friends?: boolean, from?: number, guild?: boolean, max?: number, outlier?: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/view";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/view".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -625,8 +610,7 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardSwapByObjectId(objectId: string, payload: LeaderboardSwapRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/swap";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/leaderboards/{objectId}/swap".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

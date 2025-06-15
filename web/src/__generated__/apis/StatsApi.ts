@@ -205,8 +205,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatClientStringlistByObjectId(objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/client/stringlist";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/client/stringlist".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -235,8 +234,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
    */
   async getStatByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let endpoint = "/object/stats/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -269,8 +267,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -299,8 +296,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteStatByObjectId(objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -329,8 +325,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
    */
   async getStatClientByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let endpoint = "/object/stats/{objectId}/client";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/client".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -363,8 +358,7 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatClientByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/client";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/stats/{objectId}/client".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

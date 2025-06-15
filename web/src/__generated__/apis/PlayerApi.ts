@@ -17,8 +17,7 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>>} A promise containing the HttpResponse of ApiPlayersPresencePutPlayerPresenceResponse
    */
   async putPlayerPresenceByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
-    let endpoint = "/api/players/{playerId}/presence";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/presence".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -40,8 +39,7 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<OnlineStatus>>} A promise containing the HttpResponse of OnlineStatus
    */
   async getPlayerPresenceByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
-    let endpoint = "/api/players/{playerId}/presence";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/presence".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -64,8 +62,7 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<OnlineStatus>>} A promise containing the HttpResponse of OnlineStatus
    */
   async putPlayerPresenceStatusByPlayerId(playerId: string, payload: SetPresenceStatusRequest, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
-    let endpoint = "/api/players/{playerId}/presence/status";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/presence/status".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

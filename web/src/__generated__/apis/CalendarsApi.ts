@@ -18,8 +18,7 @@ export class CalendarsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCalendarClaimByObjectId(objectId: bigint | string, payload: CalendarClaimRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/calendars/{objectId}/claim";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/calendars/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -42,8 +41,7 @@ export class CalendarsApi {
    * @returns {Promise<HttpResponse<CalendarQueryResponse>>} A promise containing the HttpResponse of CalendarQueryResponse
    */
   async getCalendarByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CalendarQueryResponse>> {
-    let endpoint = "/object/calendars/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/calendars/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

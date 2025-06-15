@@ -1496,8 +1496,7 @@ export class PaymentsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async getPayment(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/payments/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/payments/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

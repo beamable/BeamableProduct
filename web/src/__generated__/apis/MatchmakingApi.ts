@@ -21,8 +21,7 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<Match>>} A promise containing the HttpResponse of Match
    */
   async getMatchmakingMatchesById(id: string, gamertag?: string): Promise<HttpResponse<Match>> {
-    let endpoint = "/api/matchmaking/matches/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/matchmaking/matches/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -100,8 +99,7 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<Ticket>>} A promise containing the HttpResponse of Ticket
    */
   async getMatchmakingTicketsById(id: string, gamertag?: string): Promise<HttpResponse<Ticket>> {
-    let endpoint = "/api/matchmaking/tickets/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/matchmaking/tickets/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -123,8 +121,7 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>>} A promise containing the HttpResponse of ApiMatchmakingTicketsDeleteTicketResponse
    */
   async deleteMatchmakingTicketsById(id: string, gamertag?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
-    let endpoint = "/api/matchmaking/tickets/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/matchmaking/tickets/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

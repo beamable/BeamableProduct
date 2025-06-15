@@ -228,8 +228,7 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putAnnouncementReadByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/read";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/announcements/{objectId}/read".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -258,8 +257,7 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postAnnouncementClaimByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/claim";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/announcements/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -287,8 +285,7 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementRawResponse>>} A promise containing the HttpResponse of AnnouncementRawResponse
    */
   async getAnnouncementRawByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
-    let endpoint = "/object/announcements/{objectId}/raw";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/announcements/{objectId}/raw".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -316,8 +313,7 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementQueryResponse>>} A promise containing the HttpResponse of AnnouncementQueryResponse
    */
   async getAnnouncementByObjectId(objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
-    let endpoint = "/object/announcements/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/announcements/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -350,8 +346,7 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteAnnouncementByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/announcements/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

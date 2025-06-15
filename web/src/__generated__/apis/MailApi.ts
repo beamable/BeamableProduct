@@ -169,8 +169,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailResponse>>} A promise containing the HttpResponse of MailResponse
    */
   async getMailDetailByObjectId(objectId: bigint | string, mid: bigint | string, gamertag?: string): Promise<HttpResponse<MailResponse>> {
-    let endpoint = "/object/mail/{objectId}/detail";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/detail".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -197,8 +196,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<ListMailCategoriesResponse>>} A promise containing the HttpResponse of ListMailCategoriesResponse
    */
   async getMailCategoriesByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<ListMailCategoriesResponse>> {
-    let endpoint = "/object/mail/{objectId}/categories";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/categories".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -221,8 +219,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailSearchResponse>>} A promise containing the HttpResponse of MailSearchResponse
    */
   async postMailSearchByObjectId(objectId: bigint | string, payload: MailSearchRequest, gamertag?: string): Promise<HttpResponse<MailSearchResponse>> {
-    let endpoint = "/object/mail/{objectId}/search";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/search".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -250,8 +247,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailSuccessResponse>>} A promise containing the HttpResponse of MailSuccessResponse
    */
   async postMailBulkByObjectId(objectId: bigint | string, payload: BulkSendMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
-    let endpoint = "/object/mail/{objectId}/bulk";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/bulk".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -276,8 +272,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailSuccessResponse>>} A promise containing the HttpResponse of MailSuccessResponse
    */
   async putMailBulkByObjectId(objectId: bigint | string, payload: BulkUpdateMailObjectRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
-    let endpoint = "/object/mail/{objectId}/bulk";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/bulk".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -301,8 +296,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailSuccessResponse>>} A promise containing the HttpResponse of MailSuccessResponse
    */
   async putMailAcceptManyByObjectId(objectId: bigint | string, payload: AcceptMultipleAttachments, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
-    let endpoint = "/object/mail/{objectId}/accept/many";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/accept/many".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -325,8 +319,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailQueryResponse>>} A promise containing the HttpResponse of MailQueryResponse
    */
   async getMailByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MailQueryResponse>> {
-    let endpoint = "/object/mail/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -353,8 +346,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<SendMailResponse>>} A promise containing the HttpResponse of SendMailResponse
    */
   async postMailByObjectId(objectId: bigint | string, payload: SendMailObjectRequest, gamertag?: string): Promise<HttpResponse<SendMailResponse>> {
-    let endpoint = "/object/mail/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -379,8 +371,7 @@ export class MailApi {
    * @returns {Promise<HttpResponse<MailSuccessResponse>>} A promise containing the HttpResponse of MailSuccessResponse
    */
   async putMailByObjectId(objectId: bigint | string, payload: UpdateMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
-    let endpoint = "/object/mail/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/mail/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

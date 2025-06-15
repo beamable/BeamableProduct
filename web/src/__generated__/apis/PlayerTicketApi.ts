@@ -15,8 +15,7 @@ export class PlayerTicketApi {
    * @returns {Promise<HttpResponse<TicketQueryResponse>>} A promise containing the HttpResponse of TicketQueryResponse
    */
   async getPlayerMatchmakingTicketsByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
-    let endpoint = "/api/players/{playerId}/matchmaking/tickets";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/matchmaking/tickets".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

@@ -150,8 +150,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceByObjectId(objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -179,8 +178,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetTotalCouponResponse>>} A promise containing the HttpResponse of GetTotalCouponResponse
    */
   async getCommerceCouponsCountByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GetTotalCouponResponse>> {
-    let endpoint = "/object/commerce/{objectId}/coupons/count";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/coupons/count".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -207,8 +205,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putCommerceListingsCooldownByObjectId(objectId: bigint | string, payload: CooldownModifierRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/listings/cooldown";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/listings/cooldown".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -239,8 +236,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceOffersAdminByObjectId(objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/offersAdmin";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/offersAdmin".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -275,8 +271,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommercePurchaseByObjectId(objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/purchase";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/purchase".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -305,8 +300,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ResultResponse>>} A promise containing the HttpResponse of ResultResponse
    */
   async putCommercePurchaseByObjectId(objectId: bigint | string, payload: ReportPurchaseRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
-    let endpoint = "/object/commerce/{objectId}/purchase";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/purchase".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -337,8 +331,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ActiveListingResponse>>} A promise containing the HttpResponse of ActiveListingResponse
    */
   async getCommerceListingsByObjectId(objectId: bigint | string, listing: string, store?: string, time?: string, gamertag?: string): Promise<HttpResponse<ActiveListingResponse>> {
-    let endpoint = "/object/commerce/{objectId}/listings";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/listings".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -373,8 +366,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteCommerceStatusByObjectId(objectId: bigint | string, payload: ClearStatusRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/status";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/status".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -403,8 +395,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommerceCouponsByObjectId(objectId: bigint | string, payload: GiveCouponReq, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/coupons";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/coupons".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -433,8 +424,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommerceStatsUpdateByObjectId(objectId: bigint | string, payload: StatSubscriptionNotification, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/stats/update";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/stats/update".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -465,8 +455,7 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceOffersByObjectId(objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/offers";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/commerce/{objectId}/offers".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

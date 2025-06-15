@@ -17,8 +17,7 @@ export class PlayerPartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async getPlayerPartiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/players/{playerId}/parties";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/parties".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -40,8 +39,7 @@ export class PlayerPartyApi {
    * @returns {Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>>} A promise containing the HttpResponse of ApiPlayersPartiesDeletePlayerPartyResponse
    */
   async deletePlayerPartiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>> {
-    let endpoint = "/api/players/{playerId}/parties";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/parties".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -63,8 +61,7 @@ export class PlayerPartyApi {
    * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
    */
   async getPlayerPartiesInvitesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
-    let endpoint = "/api/players/{playerId}/parties/invites";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/parties/invites".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -86,8 +83,7 @@ export class PlayerPartyApi {
    * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
    */
   async getPlayerPartyInvitesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
-    let endpoint = "/api/players/{playerId}/party/invites";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/party/invites".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

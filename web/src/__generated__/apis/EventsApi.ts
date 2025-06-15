@@ -142,8 +142,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventEndPhaseByObjectId(objectId: string, payload: EventPhaseEndRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/endPhase";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/endPhase".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -171,8 +170,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<EventObjectData>>} A promise containing the HttpResponse of EventObjectData
    */
   async getEventByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<EventObjectData>> {
-    let endpoint = "/object/events/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -199,8 +197,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<PingRsp>>} A promise containing the HttpResponse of PingRsp
    */
   async getEventPingByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<PingRsp>> {
-    let endpoint = "/object/events/{objectId}/ping";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/ping".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -228,8 +225,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventContentByObjectId(objectId: string, payload: SetContentRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/content";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/content".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -257,8 +253,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteEventContentByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/content";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/content".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -285,8 +280,7 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventRefreshByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/refresh";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/events/{objectId}/refresh".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

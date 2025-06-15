@@ -80,8 +80,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async getLobbyById(id: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -104,8 +103,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyById(id: string, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -129,8 +127,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Acknowledge>>} A promise containing the HttpResponse of Acknowledge
    */
   async deleteLobbyById(id: string, payload: RemoveFromLobby, gamertag?: string): Promise<HttpResponse<Acknowledge>> {
-    let endpoint = "/api/lobbies/{id}";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -177,8 +174,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyMetadataById(id: string, payload: UpdateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/metadata";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}/metadata".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -202,8 +198,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyTagsById(id: string, payload: AddTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/tags";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}/tags".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -227,8 +222,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async deleteLobbyTagsById(id: string, payload: RemoveTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/tags";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}/tags".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -252,8 +246,7 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>>} A promise containing the HttpResponse of ApiLobbiesServerPostLobbyResponse
    */
   async postLobbyServerById(id: string, payload: CreateFederatedGameServer, gamertag?: string): Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>> {
-    let endpoint = "/api/lobbies/{id}/server";
-    endpoint = endpoint.replace("{id}", encodeURIComponent(id.toString()));
+    let endpoint = "/api/lobbies/{id}/server".replace("{id}", encodeURIComponent(id.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

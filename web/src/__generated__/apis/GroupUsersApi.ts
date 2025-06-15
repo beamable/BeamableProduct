@@ -27,8 +27,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<AvailabilityResponse>>} A promise containing the HttpResponse of AvailabilityResponse
    */
   async getGroupUsersAvailabilityByObjectId(objectId: bigint | string, type: GroupType, name?: string, subGroup?: boolean, tag?: string, gamertag?: string): Promise<HttpResponse<AvailabilityResponse>> {
-    let endpoint = "/object/group-users/{objectId}/availability";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/availability".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -58,8 +57,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupSearchResponse>>} A promise containing the HttpResponse of GroupSearchResponse
    */
   async getGroupUsersRecommendedByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
-    let endpoint = "/object/group-users/{objectId}/recommended";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/recommended".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -82,8 +80,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async postGroupUsersJoinByObjectId(objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/group-users/{objectId}/join";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/join".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -107,8 +104,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async deleteGroupUsersJoinByObjectId(objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/group-users/{objectId}/join";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/join".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -132,8 +128,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupCreateResponse>>} A promise containing the HttpResponse of GroupCreateResponse
    */
   async postGroupUsersByObjectId(objectId: bigint | string, payload: GroupCreate, gamertag?: string): Promise<HttpResponse<GroupCreateResponse>> {
-    let endpoint = "/object/group-users/{objectId}/group";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/group".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -168,8 +163,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupSearchResponse>>} A promise containing the HttpResponse of GroupSearchResponse
    */
   async getGroupUsersSearchByObjectId(objectId: bigint | string, type: GroupType, enrollmentTypes?: string, hasSlots?: boolean, limit?: number, name?: string, offset?: number, scoreMax?: bigint | string, scoreMin?: bigint | string, sortField?: string, sortValue?: number, subGroup?: boolean, userScore?: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
-    let endpoint = "/object/group-users/{objectId}/search";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/search".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -207,8 +201,7 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupUser>>} A promise containing the HttpResponse of GroupUser
    */
   async getGroupUsersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupUser>> {
-    let endpoint = "/object/group-users/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/group-users/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

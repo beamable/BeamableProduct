@@ -632,8 +632,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<Account>>} A promise containing the HttpResponse of Account
    */
   async putAccountAdminEmailByObjectId(objectId: bigint | string, payload: EmailUpdateRequest, gamertag?: string): Promise<HttpResponse<Account>> {
-    let endpoint = "/object/accounts/{objectId}/admin/email";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/email".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -657,8 +656,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<AvailableRolesResponse>>} A promise containing the HttpResponse of AvailableRolesResponse
    */
   async getAccountAvailableRolesByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AvailableRolesResponse>> {
-    let endpoint = "/object/accounts/{objectId}/available-roles";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/available-roles".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -684,8 +682,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<AccountRolesReport>>} A promise containing the HttpResponse of AccountRolesReport
    */
   async getAccountRoleReportByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AccountRolesReport>> {
-    let endpoint = "/object/accounts/{objectId}/role/report";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/role/report".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -713,8 +710,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putAccountRoleByObjectId(objectId: bigint | string, payload: UpdateRole, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/role";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/role".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -743,8 +739,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteAccountRoleByObjectId(objectId: bigint | string, payload: DeleteRole, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/role";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/role".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -773,8 +768,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putAccountAdminScopeByObjectId(objectId: bigint | string, payload: UpdateRole, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/admin/scope";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/scope".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -803,8 +797,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteAccountAdminScopeByObjectId(objectId: bigint | string, payload: DeleteRole, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/admin/scope";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/scope".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -833,8 +826,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putAccountAdminThirdPartyByObjectId(objectId: bigint | string, payload: TransferThirdPartyAssociation, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/admin/third-party";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/third-party".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -863,8 +855,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteAccountAdminThirdPartyByObjectId(objectId: bigint | string, payload: DeleteThirdPartyAssociation, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/accounts/{objectId}/admin/third-party";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/third-party".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -893,8 +884,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<Account>>} A promise containing the HttpResponse of Account
    */
   async putAccountByObjectId(objectId: bigint | string, payload: AccountUpdate, gamertag?: string): Promise<HttpResponse<Account>> {
-    let endpoint = "/object/accounts/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -922,8 +912,7 @@ export class AccountsApi {
    * @returns {Promise<HttpResponse<Account>>} A promise containing the HttpResponse of Account
    */
   async deleteAccountAdminForgetByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Account>> {
-    let endpoint = "/object/accounts/{objectId}/admin/forget";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/accounts/{objectId}/admin/forget".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

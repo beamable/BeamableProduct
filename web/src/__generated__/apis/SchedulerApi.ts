@@ -191,8 +191,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<JobDefinitionView>>} A promise containing the HttpResponse of JobDefinitionView
    */
   async getSchedulerJobByJobId(jobId: string, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
-    let endpoint = "/api/scheduler/job/{jobId}";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -214,8 +213,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobDeleteSchedulerResponse
    */
   async deleteSchedulerJobByJobId(jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>> {
-    let endpoint = "/api/scheduler/job/{jobId}";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -241,8 +239,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobActivityGetSchedulerResponse
    */
   async getSchedulerJobActivityByJobId(jobId: string, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>> {
-    let endpoint = "/api/scheduler/job/{jobId}/activity";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}/activity".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -270,8 +267,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<JobActivityViewCursorPagedResult>>} A promise containing the HttpResponse of JobActivityViewCursorPagedResult
    */
   async getSchedulerJobActivityPagedByJobId(jobId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
-    let endpoint = "/api/scheduler/job/{jobId}/activity-paged";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}/activity-paged".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -327,8 +323,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobNextExecutionsGetSchedulerResponse
    */
   async getSchedulerJobNextExecutionsByJobId(jobId: string, from?: Date, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>> {
-    let endpoint = "/api/scheduler/job/{jobId}/next-executions";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}/next-executions".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -356,8 +351,7 @@ export class SchedulerApi {
    * @returns {Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobCancelPutSchedulerResponse
    */
   async putSchedulerJobCancelByJobId(jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>> {
-    let endpoint = "/api/scheduler/job/{jobId}/cancel";
-    endpoint = endpoint.replace("{jobId}", encodeURIComponent(jobId.toString()));
+    let endpoint = "/api/scheduler/job/{jobId}/cancel".replace("{jobId}", encodeURIComponent(jobId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

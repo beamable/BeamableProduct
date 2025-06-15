@@ -31,8 +31,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putGroupRoleByObjectId(objectId: bigint | string, payload: RoleChangeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/role";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/role".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -57,8 +56,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async postGroupKickByObjectId(objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/groups/{objectId}/kick";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/kick".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -86,8 +84,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupApplyByObjectId(objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/apply";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/apply".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -116,8 +113,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postGroupDonationsByObjectId(objectId: bigint | string, payload: CreateDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/donations".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -146,8 +142,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putGroupDonationsByObjectId(objectId: bigint | string, payload: MakeDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/donations".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -172,8 +167,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async deleteGroupMemberByObjectId(objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/groups/{objectId}/member";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/member".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -196,8 +190,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<Group>>} A promise containing the HttpResponse of Group
    */
   async getGroupByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Group>> {
-    let endpoint = "/object/groups/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -220,8 +213,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putGroupByObjectId(objectId: bigint | string, payload: GroupUpdate, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -245,8 +237,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteGroupByObjectId(objectId: bigint | string, payload: DisbandRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -273,8 +264,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putGroupDonationsClaimByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations/claim";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/donations/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -302,8 +292,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupInviteByObjectId(objectId: bigint | string, payload: GroupInvite, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/invite";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/invite".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -332,8 +321,7 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupPetitionByObjectId(objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/petition";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/groups/{objectId}/petition".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

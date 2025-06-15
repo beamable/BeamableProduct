@@ -16,8 +16,7 @@ export class PlayerLobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async getPlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/players/{playerId}/lobbies";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/lobbies".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -39,8 +38,7 @@ export class PlayerLobbyApi {
    * @returns {Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>>} A promise containing the HttpResponse of ApiPlayersLobbiesDeletePlayerLobbyResponse
    */
   async deletePlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
-    let endpoint = "/api/players/{playerId}/lobbies";
-    endpoint = endpoint.replace("{playerId}", encodeURIComponent(playerId.toString()));
+    let endpoint = "/api/players/{playerId}/lobbies".replace("{playerId}", encodeURIComponent(playerId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};

@@ -68,8 +68,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<PreviewVipBonusResponse>>} A promise containing the HttpResponse of PreviewVipBonusResponse
    */
   async putInventoryPreviewByObjectId(objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<PreviewVipBonusResponse>> {
-    let endpoint = "/object/inventory/{objectId}/preview";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/preview".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -92,8 +91,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<MultipliersGetResponse>>} A promise containing the HttpResponse of MultipliersGetResponse
    */
   async getInventoryMultipliersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MultipliersGetResponse>> {
-    let endpoint = "/object/inventory/{objectId}/multipliers";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/multipliers".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -120,8 +118,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteInventoryTransactionByObjectId(objectId: bigint | string, payload: EndTransactionRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/transaction";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/transaction".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -146,8 +143,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<InventoryView>>} A promise containing the HttpResponse of InventoryView
    */
   async getInventoryByObjectId(objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<InventoryView>> {
-    let endpoint = "/object/inventory/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -175,8 +171,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<InventoryView>>} A promise containing the HttpResponse of InventoryView
    */
   async postInventoryByObjectId(objectId: bigint | string, payload: InventoryQueryRequest, gamertag?: string): Promise<HttpResponse<InventoryView>> {
-    let endpoint = "/object/inventory/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -200,8 +195,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryByObjectId(objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -224,8 +218,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryProxyReloadByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/proxy/reload";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/proxy/reload".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
@@ -252,8 +245,7 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryTransferByObjectId(objectId: bigint | string, payload: TransferRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/transfer";
-    endpoint = endpoint.replace("{objectId}", encodeURIComponent(objectId.toString()));
+    let endpoint = "/object/inventory/{objectId}/transfer".replace("{objectId}", encodeURIComponent(objectId.toString()));
     
     // Create the header parameters object
     const headers: Record<string, string> = {};
