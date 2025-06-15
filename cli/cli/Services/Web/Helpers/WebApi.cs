@@ -136,7 +136,6 @@ public static class WebApi
 		var headerOptionalStatements = new List<TsNode>();
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
 		var headersObjectLiteral = new TsObjectLiteralExpression();
-
 		var endpointVariable = new TsVariable("endpoint");
 
 		var hasRequestBody = false;
