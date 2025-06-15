@@ -40,75 +40,141 @@ import { TrialsApi } from '@/__generated__/apis/TrialsApi';
  * Access each api client via `beam.api.<serviceName>.<method>`.
  */
 export class BeamApi {
-  accounts: AccountsApi;
-  announcements: AnnouncementsApi;
-  auth: AuthApi;
-  beamo: BeamoApi;
-  calendars: CalendarsApi;
-  cloudSaving: CloudsavingApi;
-  commerce: CommerceApi;
-  content: ContentApi;
-  eventPlayers: EventPlayersApi;
-  events: EventsApi;
-  groups: GroupsApi;
-  groupUsers: GroupUsersApi;
-  inventory: InventoryApi;
-  leaderboards: LeaderboardsApi;
-  lobby: LobbyApi;
-  mail: MailApi;
-  mailbox: MailboxApi;
-  matchmaking: MatchmakingApi;
-  notification: NotificationApi;
-  party: PartyApi;
-  payments: PaymentsApi;
-  player: PlayerApi;
-  playerLobby: PlayerLobbyApi;
-  playerParty: PlayerPartyApi;
-  playerTicket: PlayerTicketApi;
-  presence: PresenceApi;
-  push: PushApi;
-  realms: RealmsApi;
-  scheduler: SchedulerApi;
-  session: SessionApi;
-  social: SocialApi;
-  stats: StatsApi;
-  tournaments: TournamentsApi;
-  trials: TrialsApi;
+  constructor(private readonly requester: HttpRequester) {}
 
-  constructor(private readonly requester: HttpRequester) {
-    this.accounts = new AccountsApi(this.requester);
-    this.announcements = new AnnouncementsApi(this.requester);
-    this.auth = new AuthApi(this.requester);
-    this.beamo = new BeamoApi(this.requester);
-    this.calendars = new CalendarsApi(this.requester);
-    this.cloudSaving = new CloudsavingApi(this.requester);
-    this.commerce = new CommerceApi(this.requester);
-    this.content = new ContentApi(this.requester);
-    this.eventPlayers = new EventPlayersApi(this.requester);
-    this.events = new EventsApi(this.requester);
-    this.groups = new GroupsApi(this.requester);
-    this.groupUsers = new GroupUsersApi(this.requester);
-    this.inventory = new InventoryApi(this.requester);
-    this.leaderboards = new LeaderboardsApi(this.requester);
-    this.lobby = new LobbyApi(this.requester);
-    this.mail = new MailApi(this.requester);
-    this.mailbox = new MailboxApi(this.requester);
-    this.matchmaking = new MatchmakingApi(this.requester);
-    this.notification = new NotificationApi(this.requester);
-    this.party = new PartyApi(this.requester);
-    this.payments = new PaymentsApi(this.requester);
-    this.player = new PlayerApi(this.requester);
-    this.playerLobby = new PlayerLobbyApi(this.requester);
-    this.playerParty = new PlayerPartyApi(this.requester);
-    this.playerTicket = new PlayerTicketApi(this.requester);
-    this.presence = new PresenceApi(this.requester);
-    this.push = new PushApi(this.requester);
-    this.realms = new RealmsApi(this.requester);
-    this.scheduler = new SchedulerApi(this.requester);
-    this.session = new SessionApi(this.requester);
-    this.social = new SocialApi(this.requester);
-    this.stats = new StatsApi(this.requester);
-    this.tournaments = new TournamentsApi(this.requester);
-    this.trials = new TrialsApi(this.requester);
+  get accounts(): AccountsApi {
+    return new AccountsApi(this.requester);
+  }
+
+  get announcements(): AnnouncementsApi {
+    return new AnnouncementsApi(this.requester);
+  }
+
+  get auth(): AuthApi {
+    return new AuthApi(this.requester);
+  }
+
+  get beamo(): BeamoApi {
+    return new BeamoApi(this.requester);
+  }
+
+  get calendars(): CalendarsApi {
+    return new CalendarsApi(this.requester);
+  }
+
+  get cloudSaving(): CloudsavingApi {
+    return new CloudsavingApi(this.requester);
+  }
+
+  get commerce(): CommerceApi {
+    return new CommerceApi(this.requester);
+  }
+
+  get content(): ContentApi {
+    return new ContentApi(this.requester);
+  }
+
+  get eventPlayers(): EventPlayersApi {
+    return new EventPlayersApi(this.requester);
+  }
+
+  get events(): EventsApi {
+    return new EventsApi(this.requester);
+  }
+
+  get groups(): GroupsApi {
+    return new GroupsApi(this.requester);
+  }
+
+  get groupUsers(): GroupUsersApi {
+    return new GroupUsersApi(this.requester);
+  }
+
+  get inventory(): InventoryApi {
+    return new InventoryApi(this.requester);
+  }
+
+  get leaderboards(): LeaderboardsApi {
+    return new LeaderboardsApi(this.requester);
+  }
+
+  get lobby(): LobbyApi {
+    return new LobbyApi(this.requester);
+  }
+
+  get mail(): MailApi {
+    return new MailApi(this.requester);
+  }
+
+  get mailbox(): MailboxApi {
+    return new MailboxApi(this.requester);
+  }
+
+  get matchmaking(): MatchmakingApi {
+    return new MatchmakingApi(this.requester);
+  }
+
+  get notification(): NotificationApi {
+    return new NotificationApi(this.requester);
+  }
+
+  get party(): PartyApi {
+    return new PartyApi(this.requester);
+  }
+
+  get payments(): PaymentsApi {
+    return new PaymentsApi(this.requester);
+  }
+
+  get player(): PlayerApi {
+    return new PlayerApi(this.requester);
+  }
+
+  get playerLobby(): PlayerLobbyApi {
+    return new PlayerLobbyApi(this.requester);
+  }
+
+  get playerParty(): PlayerPartyApi {
+    return new PlayerPartyApi(this.requester);
+  }
+
+  get playerTicket(): PlayerTicketApi {
+    return new PlayerTicketApi(this.requester);
+  }
+
+  get presence(): PresenceApi {
+    return new PresenceApi(this.requester);
+  }
+
+  get push(): PushApi {
+    return new PushApi(this.requester);
+  }
+
+  get realms(): RealmsApi {
+    return new RealmsApi(this.requester);
+  }
+
+  get scheduler(): SchedulerApi {
+    return new SchedulerApi(this.requester);
+  }
+
+  get session(): SessionApi {
+    return new SessionApi(this.requester);
+  }
+
+  get social(): SocialApi {
+    return new SocialApi(this.requester);
+  }
+
+  get stats(): StatsApi {
+    return new StatsApi(this.requester);
+  }
+
+  get tournaments(): TournamentsApi {
+    return new TournamentsApi(this.requester);
+  }
+
+  get trials(): TrialsApi {
+    return new TrialsApi(this.requester);
   }
 }
