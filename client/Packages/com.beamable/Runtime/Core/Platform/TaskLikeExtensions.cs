@@ -2,7 +2,7 @@ using Beamable.Common;
 using System;
 using System.Runtime.CompilerServices;
 
-namespace Core.Platform
+namespace Beamable
 {
 	public abstract class BeamableTaskLike<TResult> : ITaskLike<TResult, BeamableTaskLike<TResult>>
 	{

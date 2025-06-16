@@ -25,14 +25,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the toFile value was not default, then add it to the list of args.
             if ((this.toFile != default(string)))
             {
-                genBeamCommandArgs.Add((("--to-file=\"" + this.toFile) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--to-file=" + this.toFile));
             }
             // If the id value was not default, then add it to the list of args.
             if ((this.id != default(string)))
             {
-                genBeamCommandArgs.Add((("--id=\"" + this.id) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--id=" + this.id));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

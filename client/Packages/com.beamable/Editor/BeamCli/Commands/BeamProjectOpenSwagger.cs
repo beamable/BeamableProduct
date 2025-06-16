@@ -27,8 +27,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the routingKey value was not default, then add it to the list of args.
             if ((this.routingKey != default(string)))
             {
-                genBeamCommandArgs.Add((("--routing-key=\"" + this.routingKey) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--routing-key=" + this.routingKey));
             }
             // If the remote value was not default, then add it to the list of args.
             if ((this.remote != default(bool)))
@@ -38,8 +37,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the srcTool value was not default, then add it to the list of args.
             if ((this.srcTool != default(string)))
             {
-                genBeamCommandArgs.Add((("--src-tool=\"" + this.srcTool) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--src-tool=" + this.srcTool));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

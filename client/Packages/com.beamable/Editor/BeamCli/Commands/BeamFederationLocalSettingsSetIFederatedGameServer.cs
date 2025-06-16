@@ -20,14 +20,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the beamoId value was not default, then add it to the list of args.
             if ((this.beamoId != default(string)))
             {
-                genBeamCommandArgs.Add((("--beamo-id=\"" + this.beamoId) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--beamo-id=" + this.beamoId));
             }
             // If the fedId value was not default, then add it to the list of args.
             if ((this.fedId != default(string)))
             {
-                genBeamCommandArgs.Add((("--fed-id=\"" + this.fedId) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--fed-id=" + this.fedId));
             }
             // If the contentIds value was not default, then add it to the list of args.
             if ((this.contentIds != default(string[])))
