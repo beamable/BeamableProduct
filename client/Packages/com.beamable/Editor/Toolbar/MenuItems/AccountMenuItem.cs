@@ -1,4 +1,5 @@
-using Beamable.Editor.Login.UI;
+
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,9 +26,10 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			if (editorApi.IsAuthenticated)
 			{
-				menu.AddItem(new GUIContent($"Account: {editorApi?.CurrentUser?.email ?? ("(unknown)")}"), false, () =>
+				menu.AddItem(new GUIContent($"Account: {editorApi?.BeamCli.latestUser?.email ?? ("(unknown)")}"), false, () =>
 				{
-					var _ = LoginWindow.Init();
+					throw new NotImplementedException();
+					// var _ = LoginWindow.Init();
 				});
 			}
 		}
@@ -40,7 +42,7 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 			else
 			{
-				var _ = LoginWindow.CheckLogin();
+				// var _ = LoginWindow.CheckLogin();
 			}
 		}
 	}

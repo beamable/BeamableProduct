@@ -1,6 +1,5 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Beamable.Editor.Login.UI;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
@@ -100,7 +99,7 @@ namespace Beamable.Editor.UI
 			var requireLoggedUser = config.RequireLoggedUser;
 			if (requireLoggedUser)
 			{
-				var loginPromise = LoginWindow.CheckLogin();
+				// var loginPromise = LoginWindow.CheckLogin();
 			}
 
 			// If it was already instantiated -- destroy the existing window.
@@ -279,7 +278,7 @@ namespace Beamable.Editor.UI
 				return;
 			}
 			
-			if (InitializedConfig.RequirePid && ctx.CurrentRealm?.Pid == null)
+			if (InitializedConfig.RequirePid && ctx.BeamCli?.Pid == null)
 			{
 				root.Clear();
 				DrawNoRealmGui();
@@ -396,7 +395,8 @@ namespace Beamable.Editor.UI
 			{ // draw button to open
 				if (BeamGUI.PrimaryButton(new GUIContent("Log in")))
 				{
-					var _ = LoginWindow.CheckLogin();
+					throw new NotImplementedException("todo; use accounts window");
+					// var _ = LoginWindow.CheckLogin();
 				}
 			}
 

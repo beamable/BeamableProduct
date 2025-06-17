@@ -18,13 +18,14 @@ namespace Beamable.Editor.ToolbarExtender
 			var rootDisplay = RenderLabel(editor);
 
 			var projects = new List<RealmView>();
+
 			
-			if (editor.CurrentCustomer?.Projects != null)
+			if (editor.BeamCli?.latestRealms != null)
 			{
-				foreach (var proj in editor.CurrentCustomer.Projects)
+				foreach (var proj in editor.BeamCli.latestRealms)
 				{
 					if (proj.Archived) continue;
-					if (proj.GamePid != editor.CurrentRealm?.GamePid) continue;
+					if (proj.GamePid != editor.BeamCli?.ProductionRealm.Pid) continue;
 
 					projects.Add(proj);
 				}
@@ -42,10 +43,10 @@ namespace Beamable.Editor.ToolbarExtender
 			});
 			var buildPid = editor.ServiceScope.GetService<ConfigDefaultsService>().Pid;
 			var buildName = buildPid.ToString();
-			var sameEditorAndBuildPids = buildPid == editor.CurrentRealm?.Pid;
+			var sameEditorAndBuildPids = buildPid == editor.BeamCli?.Pid;
 			foreach (var proj in projects)
 			{
-				var enabled = proj.Pid == editor.CurrentRealm.Pid;
+				var enabled = proj.Pid == editor.BeamCli.Pid;
 				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.ProjectName} [build]" : proj.ProjectName;
 				if (buildPid == proj.Pid)
 				{
@@ -62,7 +63,8 @@ namespace Beamable.Editor.ToolbarExtender
 				menu.AddSeparator(rootDisplay.text + "/");
 				menu.AddItem(new GUIContent(rootDisplay.text + "/Refresh"), false, () =>
 				{
-					var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
+					throw new NotImplementedException();
+					// var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
 				});
 				if(!sameEditorAndBuildPids)
 				{
@@ -73,7 +75,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
 		{
-			var realmName = beamableApi?.CurrentRealm?.DisplayName;
+			var realmName = beamableApi?.BeamCli?.CurrentRealm.DisplayName;
 			if (string.IsNullOrEmpty(realmName))
 			{
 				return null;

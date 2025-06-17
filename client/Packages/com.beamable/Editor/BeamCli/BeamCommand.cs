@@ -20,23 +20,30 @@ namespace Beamable.Editor.BeamCli.Commands
 {
 	public partial class BeamCommands : IBeamableDisposable
 	{
-		private readonly IBeamableRequester _requester;
+		// private readonly IBeamableRequester _requester;
 		private IBeamCommandFactory _factory;
 
 		public Action<BeamArgs> argModifier = null;
+		public Stack<Action<BeamArgs>> argStackModifier = new Stack<Action<BeamArgs>>();
+
+		public void ModifierNextDefault(Action<BeamArgs> modifier) => argStackModifier.Push(modifier);
+		
 		protected BeamArgs defaultBeamArgs
 		{
 			get
 			{
 				var args = ConstructDefaultArgs();
+				if (argStackModifier.TryPop(out var modifier))
+				{
+					modifier?.Invoke(args);
+				}
 				argModifier?.Invoke(args);
 				return args;
 			}
 		}
 
-		public BeamCommands(IBeamableRequester requester, IBeamCommandFactory factory)
+		public BeamCommands(IBeamCommandFactory factory)
 		{
-			_requester = requester;
 			_factory = factory;
 		}
 
@@ -49,24 +56,13 @@ namespace Beamable.Editor.BeamCli.Commands
 
 		public BeamArgs ConstructDefaultArgs()
 		{
-			string cid = null;
-			string pid = null;
-			try
-			{
-				cid = _requester.Cid;
-				pid = _requester.Pid;
-			}
-			catch
-			{
-				// if there is no cid or pid, oh well.
-			}
-
+			
 			var beamArgs = new BeamArgs
 			{
-				cid = cid,
-				pid = pid,
-				host = BeamableEnvironment.ApiUrl,
-				refreshToken = _requester?.AccessToken?.RefreshToken,
+				// cid = cid,
+				// pid = pid,
+				// host = BeamableEnvironment.ApiUrl,
+				// refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Verbose",
 				skipStandaloneValidation = true,
 				dotnetPath = "dotnet",
