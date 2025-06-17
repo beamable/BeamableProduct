@@ -67,7 +67,6 @@ using Beamable.Tooling.Common.OpenAPI;
 using microservice.Common;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
-using cli.Services;
 using ZLogger.Formatters;
 using Constants = Beamable.Common.Constants;
 using Otel = Beamable.Common.Constants.Features.Otel;

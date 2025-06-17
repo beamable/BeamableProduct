@@ -7,10 +7,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-
-        
-        <BeamCollectorVersion Condition="'$(BeamCollectorVersion)'==''">$(BeamableVersion)</BeamCollectorVersion>
-        <BeamIsDevVersion Condition="$(BeamCollectorVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
+        <BeamIsDevVersion Condition="$(BeamableVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
         
         <BeamCollectorVersion Condition="'$(BeamIsDevVersion)'=='true'">0.0.123</BeamCollectorVersion>
         
@@ -64,12 +61,12 @@
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
         <Exec   Condition="'$(BeamCollectorExists)'!='true'"
-                Command="$(BeamableDotnetPath) $(BeamableTool) collector get --override-version $(BeamCollectorVersion) $(BeamCollectorPlatformArchArg)"
+                Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
                 EnvironmentVariables=""/>
 
         <Message
                 Importance="high"
-                Text="Copying collector to output folder... "
+                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)] "
         />
         <Copy
                 SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"

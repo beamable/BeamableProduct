@@ -25,14 +25,17 @@ type serviceDiscovery struct {
 	logEventsChan <-chan zapcore.Entry
 }
 
+var Version = "0.0.0" // The actual version is injected here during build time
+
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 	// Test clickhouse credentials to make sure everything is set for sending data
 	PingClickhouse()
 
 	rd := responseData{
-		Status: NOT_READY,
-		Pid:    os.Getpid(),
-		Logs:   []zapcore.Entry{},
+		Status:  NOT_READY,
+		Pid:     os.Getpid(),
+		Logs:    []zapcore.Entry{},
+		Version: Version,
 	}
 
 	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)

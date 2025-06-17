@@ -41,6 +41,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <EmbeddedResource Include="Microservice\VersionManagement\collector-version.json" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 

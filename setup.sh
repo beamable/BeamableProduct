@@ -76,7 +76,7 @@ EOF
 
 # Builds all the otel collector binaries
 cd ./otel-collector/
-./build.sh
+./build.sh --version 0.0.123
 cd ..
 
 # TODO: Consider running this as part of a post-pull git action

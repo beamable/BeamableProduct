@@ -9,7 +9,6 @@ public class DownloadCollectorCommandArgs : CommandArgs
 {
     public string platform;
     public string arch;
-    public string version;
 }
 
 public class DownloadCollectorCommandResults
@@ -34,9 +33,6 @@ public class DownloadCollectorCommand : AtomicCommand<DownloadCollectorCommandAr
         
         AddOption(new Option<string>("--arch", "The architecture for the collector executable. [arm64, x64] or defaults to system"),
             (args, i) => args.arch = i);
-        
-        AddOption(new Option<string>("--override-version", "The collector version to download, or defaults to current install"),
-            (args, i) => args.version = i);
     }
 
     public override async Task<DownloadCollectorCommandResults> GetResult(DownloadCollectorCommandArgs args)
@@ -59,8 +55,8 @@ public class DownloadCollectorCommand : AtomicCommand<DownloadCollectorCommandAr
             _ =>  RuntimeInformation.OSArchitecture
         };
         
-        var basePath = CollectorManager.GetCollectorBasePathForCli(args.version);
-        var info = await CollectorManager.ResolveCollector(basePath, true, platform, arch, args.version);
+        var basePath = CollectorManager.GetCollectorBasePathForCli();
+        var info = await CollectorManager.ResolveCollector(basePath, true, platform, arch);
 
         return new DownloadCollectorCommandResults
         {
