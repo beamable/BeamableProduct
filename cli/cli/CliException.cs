@@ -17,6 +17,11 @@ public class CliException<T> : CliException
 	public CliException(string message) : base(message)
 	{
 	}
+	
+	public CliException(string message, int nonZeroOrOneExitCode) : base(message)
+	{
+		NonZeroOrOneExitCode = nonZeroOrOneExitCode;
+	}
 
 	public CliException(string message, int nonZeroExitCode) : base(message)
 	{
