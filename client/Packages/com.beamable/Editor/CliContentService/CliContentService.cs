@@ -2,8 +2,10 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Utility;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -35,6 +37,71 @@ namespace Editor.CliContentManager
 				contentIds = new[] {contentId}, contentProperties = new[] {contentPropertiesJson},
 			});
 			saveCommand.Run();
+		}
+
+		public void SyncContents(bool syncModified = true, bool syncCreated = true, bool syncConflicted = true)
+		{
+			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
+			{
+				syncModified = syncModified,
+				syncConflicts = syncConflicted,
+				syncCreated = syncCreated
+			});
+			contentSyncCommand.Run();
+		}
+
+		public void RenameContent(string contentId, string newName)
+		{
+			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			{
+				Debug.Log($"No Entry found with id: {contentId}");
+				return;
+			}
+			
+			string fileDirectoryPath = Path.GetDirectoryName(entry.JsonFilePath);
+			string newFileNamePath = Path.Combine(fileDirectoryPath, newName);
+			if (File.Exists(newFileNamePath))
+			{
+				Debug.Log($"A Content already exists with name: {newName}");
+				return;
+			}
+
+			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
+			if (entry.StatusEnum is ContentStatus.Created)
+			{
+				entry.Name = newName;
+				CachedManifest[contentId] = entry;
+			}
+			else
+			{
+				entry.CurrentStatus = (int)ContentStatus.Deleted;
+				CachedManifest[contentId] = entry;
+				entry.Name = newName;
+				entry.CurrentStatus = (int)ContentStatus.Created;
+				var newId = $"{entry.TypeName}.{entry.Name}";
+				CachedManifest[newId] = entry;
+			}
+			
+			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, $"{entry.TypeName}.{newName}.json");
+		}
+
+		public void DeleteContent(string contentId)
+		{
+			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			{
+				Debug.Log($"No Content found with id: {contentId}");
+				return;
+			}
+
+			entry.CurrentStatus = (int)ContentStatus.Deleted;
+			CachedManifest[contentId] = entry;
+			File.Delete(entry.JsonFilePath);
+		}
+
+		public void Publish()
+		{
+			var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
+			publishCommand.Run();
 		}
 
 		public void Reload()

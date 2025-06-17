@@ -79,39 +79,41 @@ namespace Editor.UI.ContentWindow
 			_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
 			{
 				normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
-				alignment = TextAnchor.MiddleLeft,
+				alignment = TextAnchor.MiddleRight,
 				margin = new RectOffset(0, 15, 5, 0),
 			};
 		}
 
 		private void DrawHeader()
 		{
-			bool clickedSync = false;
-			bool clickedPublish = false;
-			BeamGUI.DrawHeaderSection(this, ActiveContext, () =>
-			{
-				
-				clickedSync = BeamGUI.HeaderButton("Sync", BeamGUI.iconRotate, width: HEADER_BUTTON_WIDTH);
-				clickedPublish = BeamGUI.HeaderButton("Publish", BeamGUI.iconUpload, width: HEADER_BUTTON_WIDTH);
-				EditorGUILayout.Space(5, false);
-				this.DrawSearchBar(_contentSearchData, true);
-				DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
-				DrawFilterButton(ContentFilterType.Type, BeamGUI.iconType, _allTypes);
-				DrawFilterButton(ContentFilterType.Status, BeamGUI.iconStatus, AllStatus);
-			}, DrawLowBarHeader, () =>
+			BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
 			{
 				Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
-			}, Repaint);
+			}, _contentService.Reload);
+		}
 
-			if (clickedSync)
+		private void DrawTopBarHeader()
+		{
+			var items = GetCachedManifestEntries();
+			var hasContentToPublish =
+				items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
+					          or ContentStatus.Modified);
+			if (BeamGUI.HeaderButton("Sync", BeamGUI.iconSync, width: HEADER_BUTTON_WIDTH, iconPadding: 2))
 			{
-				
+				ShowSyncMenu();
 			}
 
-			if (clickedPublish)
+			if (BeamGUI.ShowDisabled(hasContentToPublish,
+			                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
+			                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2)))
 			{
-				ShowPublishMenu();
+				PublishAction();
 			}
+			EditorGUILayout.Space(5, false);
+			this.DrawSearchBar(_contentSearchData, true);
+			DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
+			DrawFilterButton(ContentFilterType.Type, BeamGUI.iconType, _allTypes);
+			DrawFilterButton(ContentFilterType.Status, BeamGUI.iconStatus, AllStatus);
 		}
 
 		private void DrawLowBarHeader()
@@ -137,12 +139,12 @@ namespace Editor.UI.ContentWindow
 
 			EditorGUILayout.Space(1, true);
 			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]} ▼");
-			
+			Vector2 itemWidth = _lowBarDropdownStyle.CalcSize(dropdownContent);
 			if (EditorGUILayout.DropdownButton(
 				    dropdownContent,
 				    FocusType.Passive,
 				    _lowBarDropdownStyle,
-				    GUILayout.Width(100)))
+				    GUILayout.Width(itemWidth.x)))
 			{
 				GenericMenu menu = new GenericMenu();
 				foreach ((ContentSortOptionType type, string stringValue) in SortTypeNameMap)
@@ -157,15 +159,80 @@ namespace Editor.UI.ContentWindow
 			}
 
 		}
-
-		private static void ShowPublishMenu()
+		
+		private void ShowSyncMenu()
 		{
+			var entries = GetCachedManifestEntries();
+			bool hasModified = false;
+			bool hasNewItems = false;
+			bool hasConflictedItems = false;
+			
+			foreach (LocalContentManifestEntry localContentManifestEntry in entries)
+			{
+				hasModified |= localContentManifestEntry.StatusEnum is ContentStatus.Modified or ContentStatus.Deleted;
+				hasNewItems |= localContentManifestEntry.StatusEnum == ContentStatus.Created;
+				hasConflictedItems |= localContentManifestEntry.IsInConflict;
+				
+				if (hasModified && hasNewItems && hasConflictedItems)
+					break;
+			}
+			
 			GenericMenu menu = new GenericMenu();
-			menu.AddItem(new GUIContent("Open Publish Window"), false, () => { });
-			menu.AddItem(new GUIContent("Publish New Content namespace"), false, () => { });
-			menu.AddItem(new GUIContent("Archive namespaces"), false, () => { });
-			menu.AddItem(new GUIContent("Publish (default)"), false, () => { });
+			if (hasModified || hasNewItems || hasConflictedItems)
+			{
+				menu.AddItem(new GUIContent("Revert All Local Changes (Modified, Created, and Conflicted)"), false,
+				             () =>
+				             {
+					             _contentService.SyncContents();
+				             });
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Revert All Local Changes (Modified, Created, and Conflicted)"), false);
+			}
+
+			if (hasModified)
+			{
+				menu.AddItem(new GUIContent("Revert Modified Local Changes"), false, () =>
+				{
+					_contentService.SyncContents(syncConflicted: false, syncCreated: false);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Revert Modified Local Changes"), false);
+			}
+
+			if (hasConflictedItems)
+			{
+				menu.AddItem(new GUIContent("Revert Conflicted Changes Only"), false, () =>
+				{
+					_contentService.SyncContents(syncModified: false, syncCreated: false);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Revert Conflicted Changes Only"), false);
+			}
+
+			if (hasNewItems)
+			{
+				menu.AddItem(new GUIContent("Delete All New Created Changes"), false, () =>
+				{
+					_contentService.SyncContents(syncModified: false, syncConflicted: false);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Delete All New Created Changes"), false);
+			}
+
 			menu.ShowAsContext();
+		}
+
+		private void PublishAction()
+		{
+			_contentService.Publish();
 		}
 
 

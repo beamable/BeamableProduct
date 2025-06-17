@@ -37,6 +37,8 @@ namespace Beamable.Editor.Util
 		public static Texture iconStatusDeleted;
 		public static Texture iconStatusInvalid;
 		public static Texture iconRotate;
+		public static Texture iconSync;
+		public static Texture iconPublish;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -163,8 +165,7 @@ namespace Beamable.Editor.Util
 			
 			if (iconRefresh == null)
 			{
-				iconRefresh = EditorResources.Load<Texture>(
-					"Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
+				iconRefresh = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
 			}
 			
 			if (iconSettings == null)
@@ -270,6 +271,16 @@ namespace Beamable.Editor.Util
 			if (iconRotate == null)
 			{
 				iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
+			}
+			
+			if (iconSync == null)
+			{
+				iconSync = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconBeam_Sync.png");
+			}
+			
+			if (iconPublish == null)
+			{
+				iconPublish = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconBeam_Publish.png");
 			}
 		}
 	}

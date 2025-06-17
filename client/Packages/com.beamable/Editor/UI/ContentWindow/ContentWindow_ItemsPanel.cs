@@ -1,7 +1,9 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Content;
 using Beamable.Editor.Util;
+using Beamable.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,10 +16,11 @@ namespace Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
-		private static readonly float[] MinWidths = new[] {120f, 100f, 100f};
 		private const float BASE_PADDING = 5f;
 		private const float SEPARATOR_WIDTH_AREA = 3;
 		private const float ITEMS_TABLE_ROW_HEIGHT = 20;
+		private const string FOCUS_NAME = "EditLabel";
+		private const float FOLDOUT_WIDTH = 20f;
 
 		private Vector2 _itemsPanelScrollPos;
 		private string _selectedItemId;
@@ -30,7 +33,11 @@ namespace Editor.UI.ContentWindow
 		private GUIStyle _rowEvenItemStyle;
 		private GUIStyle _rowOddItemStyle;
 		private GUIStyle _rowSelectedItemStyle;
+		private string _editItemId;
+		private string[] _editLabels;
+		private bool _needToFocusLabel;
 
+		
 		private void BuildItemsPanelStyles()
 		{
 			_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
@@ -72,6 +79,7 @@ namespace Editor.UI.ContentWindow
 				alignment = TextAnchor.MiddleLeft
 			};
 			
+			
 			_rowSelectedItemStyle = new GUIStyle(EditorStyles.label)
 			{
 				normal = { background = BeamGUI.CreateColorTexture(new Color(0.21f, 0.32f, 0.49f)) },
@@ -80,7 +88,6 @@ namespace Editor.UI.ContentWindow
 				alignment = TextAnchor.MiddleLeft
 			};
 		}
-		
 		
 		
 		private void DrawContentItemPanel()
@@ -98,8 +105,8 @@ namespace Editor.UI.ContentWindow
 		
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
 		{
-			var filteredContents = _contentTypeHierarchy;
-			if (!filteredContents.TryGetValue(parentPath, out List<string> value)) return;
+			var contentTypeItems = SortContentGroups(_contentTypeHierarchy);
+			if (!contentTypeItems.TryGetValue(parentPath, out List<string> value)) return;
 
 			foreach (string contentType in value)
 			{
@@ -117,17 +124,21 @@ namespace Editor.UI.ContentWindow
 					DrawGroupNode(contentType, indentLevel);
 					continue;
 				}
+				
+				var items = GetFilteredItems(contentType, true);
+				if (items.Count == 0 && !string.IsNullOrEmpty(GetNameSearchPartValue()))
+				{
+					continue;
+				}
 
 				string displayName = string.IsNullOrEmpty(parentPath)
 					? contentType
 					: contentType.Substring(parentPath.Length + 1);
 
-				var items = GetFilteredItems(contentType);
-
 				bool hasChildrenItems = items.Count > 0;
 				
-				bool hasChildrenSubtypes = filteredContents.ContainsKey(contentType) &&
-				                        filteredContents[contentType].Count > 0;
+				bool hasChildrenSubtypes = contentTypeItems.ContainsKey(contentType) &&
+				                        contentTypeItems[contentType].Count > 0;
 				GUILayout.Space(BASE_PADDING);
 				GUIStyle rowStyle = EditorStyles.helpBox;
 
@@ -140,34 +151,37 @@ namespace Editor.UI.ContentWindow
 				Rect contentRect = new Rect(rowRect);
 				
 				contentRect.xMin += BASE_PADDING;
-				
-				float foldoutWidth = 20f;
-				
+
 				bool isGroupExpanded = _itemsExpandedStates[contentType];
 				if (hasChildrenSubtypes || hasChildrenItems)
 				{
 					_itemsExpandedStates[contentType] = EditorGUI.Foldout(
-						new Rect(contentRect.x, contentRect.y, foldoutWidth, contentRect.height),
+						new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height),
 						isGroupExpanded,
 						GUIContent.none
 					);
 				}
 				
-				contentRect.xMin += foldoutWidth + BASE_PADDING;
+				contentRect.xMin += FOLDOUT_WIDTH + BASE_PADDING;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
 				float iconSize = 25f;
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
-				
+
+				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
+				{
+					SettingsService.OpenProjectSettings("Project/Beamable/Content");
+				}
+
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, displayName);
+				GUI.Label(contentRect, $"{displayName} - ({items.Count})");
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
 				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
 				{
-					Debug.Log("Create new Item");
+					CreateNewItem(contentType);
 				}
 				
 				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
@@ -181,6 +195,19 @@ namespace Editor.UI.ContentWindow
 					DrawGroupNode(contentType, nextIndent);
 				}
 			}
+		}
+
+		private void CreateNewItem(string itemType)
+		{
+			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
+			{
+				return;
+			}
+			var contentObject = CreateInstance(type) as ContentObject;
+			contentObject.SetContentName($"New_{itemType.Replace(".","_")}");
+			SaveContent(contentObject);
+			Selection.activeObject = contentObject;
+			_selectedItemId = contentObject.Id;
 		}
 
 		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth)
@@ -225,10 +252,42 @@ namespace Editor.UI.ContentWindow
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
 
-			string[] values = {entry.Name, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", "-----"};
-			DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, new []{ GetIconForStatus(entry.StatusEnum)});
+			bool isEditingName = entry.FullId == _editItemId;
+			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", "-----"};
+			Texture[] icons = { GetIconForStatus(entry.StatusEnum)};
+			
+			bool[] isEditable = {isEditingName};
+			
+			EditorGUI.BeginChangeCheck();
+			if (isEditingName)
+			{
+				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
+				
+				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == FOCUS_NAME;
+				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
+				    Event.current.keyCode is KeyCode.Return or KeyCode.KeypadEnter)
+				{
+					RenameEntry(entry.FullId, _editLabels[0]);
+				}
+				
+				if (Event.current.type == EventType.MouseDown && !rowRect.Contains(Event.current.mousePosition))
+				{
+					RenameEntry(entry.FullId, _editLabels[0]);
+				}
+			}
+			else
+			{
+				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
+			}
+			
 			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
+				if (Event.current.button == 1)
+				{
+					ShowItemOptionsMenu(entry);
+					return;
+				}
 				if (_selectedItemId == entry.FullId)
 				{
 					_selectedItemId = string.Empty;
@@ -239,24 +298,46 @@ namespace Editor.UI.ContentWindow
 					_selectedItemId = entry.FullId;
 					_ = LoadItemScriptable(entry);
 				}
-				_selectedItemId = entry.FullId;
 				Event.current.Use();
 				Repaint();
 			}
 		}
 
-		private static void DrawTableRow(string[] labels,
+		private void RenameEntry(string entryId, string newName)
+		{
+			_editItemId = string.Empty;
+			_contentService.RenameContent(entryId, newName);
+			Repaint();
+		}
+
+		private void ShowItemOptionsMenu(LocalContentManifestEntry entry)
+		{
+			GenericMenu menu = new GenericMenu();
+			menu.AddItem(new GUIContent("Rename Item"), false, () =>
+			{
+				_editItemId = entry.FullId;
+				_editLabels = new[] {entry.Name};
+				_needToFocusLabel = true;
+			});
+			menu.AddItem(new GUIContent("Delete Item"), false, () =>
+			{
+				_contentService.DeleteContent(entry.FullId);
+			});
+			menu.ShowAsContext();
+		}
+
+		private string[] DrawTableRow(string[] labels,
 		                                 float[] columnWidths,
 		                                 GUIStyle rowStyle,
 		                                 GUIStyle fieldStyle,
 		                                 Rect fullRect,
-		                                 Texture[] icons = null)
+		                                 Texture[] icons = null, bool[] isEditLabel = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
 				rowStyle.Draw(fullRect, false, false, false, false);
 			}
-
+			
 			float separatorHeight = fullRect.height + SEPARATOR_WIDTH_AREA;
 			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, Color.gray);
 			for (int i = 0; i < labels.Length; i++)
@@ -280,7 +361,21 @@ namespace Editor.UI.ContentWindow
 				
 				Rect nameRect = new Rect(fullRect.xMin, fullRect.y, contentWidth,
 				                         fullRect.height);
-				EditorGUI.LabelField(nameRect, labelValue, fieldStyle);
+				if (isEditLabel!= null && isEditLabel.Length > i && isEditLabel[i])
+				{
+					GUI.SetNextControlName(FOCUS_NAME);
+					labels[i] = EditorGUI.TextField(nameRect, labels[i]);
+					if (_needToFocusLabel)
+					{
+						EditorGUI.FocusTextInControl(FOCUS_NAME);
+						_needToFocusLabel = false;
+					}
+				}
+				else
+				{
+					EditorGUI.LabelField(nameRect, labelValue, fieldStyle);
+				}
+
 				fullRect.xMin += itemWidth;
 				if (i + 1 < labels.Length)
 				{
@@ -290,26 +385,53 @@ namespace Editor.UI.ContentWindow
 			}
 
 			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMax, fullRect.yMin, separatorHeight, Color.gray);
+			return labels;
 		}
 
 		private async Task LoadItemScriptable(LocalContentManifestEntry entry)
 		{
-			
-			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
 				return;
 			}
+			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
 			
 			var contentObject = CreateInstance(type) as IContentObject;
 			var selectedContentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
-			Selection.activeObject = selectedContentObject;
-			selectedContentObject.OnEditorChanged += () =>
+			if (selectedContentObject)
 			{
-				Debug.Log("Changed");
-				var propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
-				_contentService.SaveContent(entry.FullId, propertiesJson);
-			};
+				Selection.activeObject = selectedContentObject;
+				selectedContentObject.OnEditorChanged += () =>
+				{
+					SaveContent(selectedContentObject);
+				};
+			}
+			
+		}
+
+		private void SaveContent(ContentObject selectedContentObject)
+		{
+			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+			_contentService.SaveContent(selectedContentObject.Id, propertiesJson);
+		}
+
+		private void SetEditorSelection()
+		{
+			if (!string.IsNullOrEmpty(_selectedItemId))
+			{
+				var entries = GetCachedManifestEntries();
+				var itemIndex = entries.FindIndex(item => item.FullId == _selectedItemId);
+				if (itemIndex != -1)
+				{
+					_ = LoadItemScriptable(entries[itemIndex]);
+					return;
+				}
+			}
+
+			if (Selection.activeObject is ContentObject)
+			{
+				Selection.activeObject = null;
+			}
 		}
 
 		private Texture GetIconForStatus(ContentStatus statusEnum)
@@ -329,7 +451,7 @@ namespace Editor.UI.ContentWindow
 			}
 		}
 
-		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "")
+		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "", bool shouldSort = false)
 		{
 			var allItems = GetCachedManifestEntries();
 
@@ -337,25 +459,62 @@ namespace Editor.UI.ContentWindow
 			var types = GetFilterTypeActiveItems(ContentFilterType.Type);
 			var tags = GetFilterTypeActiveItems(ContentFilterType.Tag);
 			var statuses = GetFilterTypeActiveItems(ContentFilterType.Status);
-			
-			return allItems.Where(entry =>
-			{
-				bool matchesType = types.Count == 0 || types.Any(type => entry.TypeName.Contains(type));
-				bool matchesTags = tags.Count == 0 || tags.Any(tag => entry.Tags.Contains(tag));
-				
-				bool matchesStatus = statuses.Count == 0 || statuses.Any(status => entry.StatusEnum.ToString().Equals(status, StringComparison.InvariantCultureIgnoreCase));
-				bool matchesSpecificType = string.IsNullOrEmpty(specificType) || entry.TypeName.Equals(specificType, StringComparison.InvariantCultureIgnoreCase);
-				
-				
-				bool matchesName = string.IsNullOrEmpty(nameSearchPartValue) || entry.Name.Contains(nameSearchPartValue);
-				bool matchesContentGroup = SelectedContentType.Count == 0 || 
-				                           SelectedContentType.Contains(entry.TypeName) ||
-				                           SelectedContentType.Any(item => entry.TypeName.StartsWith(item + "."));
-				return matchesName && matchesContentGroup && matchesType && matchesTags && matchesStatus && matchesSpecificType;
-			}).ToList();
+
+			var localContentManifestEntries =
+				allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue));
+			return shouldSort ? SortItems(localContentManifestEntries) : localContentManifestEntries.ToList();
 		}
 
-		private List<LocalContentManifestEntry> SortItems(List<LocalContentManifestEntry> items)
+		private bool FilterItem(string specificType,
+		                        HashSet<string> types,
+		                        LocalContentManifestEntry entry,
+		                        HashSet<string> tags,
+		                        HashSet<string> statuses,
+		                        string nameSearchPartValue)
+		{
+			// Check if it is the specificType
+			if (!string.IsNullOrEmpty(specificType) &&
+			    !entry.TypeName.Equals(specificType, StringComparison.InvariantCultureIgnoreCase))
+			{
+				return false;
+			}
+			
+			// Check if matches any Type
+			if (types.Count > 0 && types.All(type => !entry.TypeName.Contains(type)))
+			{
+				return false;
+			}
+
+			// Check if matches any tag
+			if (tags.Count > 0 && tags.All(tag => !entry.Tags.Contains(tag)))
+			{
+				return false;
+			}
+
+			// Check if matches any status
+			if (statuses.Count > 0 &&
+			    statuses.All(status => !entry.StatusEnum.ToString()
+			                                 .Equals(status, StringComparison.InvariantCultureIgnoreCase)))
+			{
+				return false;
+			}
+
+			// Check if matches the name filter
+			if (!string.IsNullOrEmpty(nameSearchPartValue) &&
+			    !entry.Name.Contains(nameSearchPartValue))
+			{
+				return false;
+			}
+			
+			// Check if it matches the Selected Content Types Groups (left bar UI)
+			bool matchesContentGroup = SelectedContentType.Count == 0 ||
+			                           SelectedContentType.Contains(entry.TypeName) ||
+			                           SelectedContentType.Any(item => entry.TypeName.StartsWith(item + "."));
+			
+			return matchesContentGroup;
+		}
+
+		private List<LocalContentManifestEntry> SortItems(IEnumerable<LocalContentManifestEntry> items)
 		{
 			switch (_currentSortOption)
 			{
@@ -373,27 +532,47 @@ namespace Editor.UI.ContentWindow
 					throw new ArgumentOutOfRangeException();
 			}
 		}
+
+		private Dictionary<string, List<string>> SortContentGroups(Dictionary<string, List<string>> baseDictionary)
+		{
+			switch (_currentSortOption)
+			{
+				
+				case ContentSortOptionType.TypeAscending:
+					return baseDictionary.OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+					                     .ToDictionary(item => item.Key,
+					                                   item => 
+						                                   item.Value.OrderBy(listItem => listItem).ToList());
+				case ContentSortOptionType.TypeDescending:
+					return baseDictionary.OrderByDescending(item => item.Key, StringComparer.OrdinalIgnoreCase)
+					                     .ToDictionary(item => item.Key,
+					                                   item => 
+						                                   item.Value.OrderByDescending(listItem => listItem).ToList());
+				default:
+					return baseDictionary;
+			}
+		}
 		
 		private static float[] CalculateColumnWidths(float totalAvailableWidth)
 		{
 			// Name, Tags, Last Modified
+			float[] minWidths = {200f, 100f, 100f};
+			float[] weights = {2f, 1.25f, 1f};
 
-			float[] weights = {1.5f, 1.25f, 1f, 1f};
-
-			totalAvailableWidth -= BASE_PADDING * 2 * MinWidths.Length;
-			totalAvailableWidth -= SEPARATOR_WIDTH_AREA * Mathf.Max(0, MinWidths.Length - 1);
+			totalAvailableWidth -= BASE_PADDING * 2 * minWidths.Length;
+			totalAvailableWidth -= SEPARATOR_WIDTH_AREA * Mathf.Max(0, minWidths.Length - 1);
 
 			// MinWidth sum + Vertical Line Separator Count
-			float totalMinWidth = MinWidths.Sum() + (MinWidths.Length - 1);
+			float totalMinWidth = minWidths.Sum() + (minWidths.Length - 1);
 			
 			float remainingWidth = Mathf.Max(0, totalAvailableWidth - totalMinWidth);
 			
 			float totalWeight = weights.Sum();
 			
-			float[] widths = new float[MinWidths.Length];
+			float[] widths = new float[minWidths.Length];
 			for (int i = 0; i < widths.Length; i++)
 			{
-				widths[i] = MinWidths[i] + (remainingWidth * (weights[i] / totalWeight));
+				widths[i] = minWidths[i] + (remainingWidth * (weights[i] / totalWeight));
 			}
 
 			return widths;

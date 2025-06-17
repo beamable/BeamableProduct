@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Editor.UI.ContentWindow
 {
-	public partial class ContentWindow : BeamEditorWindow<UI.ContentWindow.ContentWindow>
+	public partial class ContentWindow : BeamEditorWindow<ContentWindow>
 	{
 		private const int MARGIN_SEPARATOR_WIDTH = 10;
 		
@@ -71,6 +71,8 @@ namespace Editor.UI.ContentWindow
 			BuildContentStyles();
 			
 			BuildItemsPanelStyles();
+
+			SetEditorSelection();
 		}
 
 		protected override void DrawGUI()
@@ -88,7 +90,7 @@ namespace Editor.UI.ContentWindow
 			EditorGUILayout.BeginHorizontal();
 			{
 				DrawContentGroupPanel();
-				BeamGUI.DrawVerticalSeparatorLine(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15));
+				BeamGUI.DrawVerticalSeparatorLine(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15), Color.gray);
 				DrawContentItemPanel();
 			}
 			EditorGUILayout.EndHorizontal();

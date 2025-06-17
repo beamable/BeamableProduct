@@ -154,13 +154,21 @@ namespace Editor.UI.ContentWindow
 				if (hasChildrenNodes)
 				{
 					_groupExpandedStates[contentType] = EditorGUI.Foldout(
-						new Rect(contentRect.x, contentRect.y, 20f, contentRect.height),
+						new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height),
 						isGroupExpanded,
 						GUIContent.none
 					);
 				}
 
 				contentRect.xMin += CONTENT_GROUP_INDENT_WIDTH;
+				
+				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
+				float iconSize = 15f;
+				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
+				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
+				
+				contentRect.xMin += iconSize + BASE_PADDING;
+				
 				GUI.Label(contentRect, displayName);
 
 				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))

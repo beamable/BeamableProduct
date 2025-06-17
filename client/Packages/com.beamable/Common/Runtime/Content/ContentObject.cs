@@ -11,8 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-#if UNITY_EDITOR || true
+#if UNITY_EDITOR
 using Unity.EditorCoroutines.Editor;
+using UnityEditor;
 #endif
 
 namespace Beamable.Common.Content
@@ -349,7 +350,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-#if UNITY_EDITOR || true
+#if UNITY_EDITOR
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
@@ -424,7 +425,16 @@ namespace Beamable.Common.Content
 
       private IEnumerator DelayedValidate()
       {
-	      yield return new WaitForSeconds(1f);
+	      double baseTime = EditorApplication.timeSinceStartup;
+	      double elapsed = 0d;
+	      double delay = 0.3d;
+	      
+	      while (elapsed < delay)
+	      {
+		     elapsed = EditorApplication.timeSinceStartup - baseTime;
+		     yield return null;
+	      }
+	      
 	      OnEditorChanged?.Invoke();
 	      _validateCoroutine = null;
       }
