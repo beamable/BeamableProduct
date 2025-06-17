@@ -32,6 +32,9 @@
         <BeamableDotnetPath Condition="'$(BeamableDotnetPath)' == ''">dotnet</BeamableDotnetPath>
 
         <GenerateClientCode Condition="'$(GenerateClientCode)' == ''">false</GenerateClientCode>
+
+        <!-- The proper value for BeamCollectorVersion will be injected below this line for non dev builds -->
+
     </PropertyGroup>
 
     <!-- Set some default Beamable options, https://docs.beamable.com/docs/cli-guide-microservice-configuration -->
