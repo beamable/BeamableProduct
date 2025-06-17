@@ -1105,10 +1105,11 @@ public class App
 					{
 						Console.Error.WriteLine(cliException.Message);
 					}
-					context.ExitCode = cliException.NonZeroOrOneExitCode;
+					Environment.ExitCode = context.ExitCode = cliException.NonZeroOrOneExitCode;
+					
 					break;
 				default:
-					context.ExitCode = 1;
+					Environment.ExitCode = context.ExitCode = 1;
 					Console.Error.WriteLine(ex.Message);
 					Console.Error.WriteLine(ex.StackTrace);
 					break;
