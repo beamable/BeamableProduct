@@ -69,7 +69,7 @@ public class ServeCliCommand
 		AddOption(splitterOption, (args, b) => args.useCustomSplitter = b);
 		
 		var skipContentPrewarm = new Option<bool>("--skip-content-prewarm", () => false,
-			"When true, will NOT pre-warm the content service with the latest content manifest.");
+			"When true, will NOT pre-warm the content service with the latest content manifest");
 		skipContentPrewarm.AddAlias("-scpw");
 		AddOption(skipContentPrewarm, (args, b) => args.skipContentPreWarm = b);
 	}

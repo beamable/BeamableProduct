@@ -5,22 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Fixed
- - Fix `unreal init`, it wasn't triggering the re-generate uproject when called by the `beam_init_game_maker.sh`.
-
-## [5.0.1] - 2025-06-10
+## [5.0.1]
 ### Fixed
 - Fixed issue with the `project logs` command that could cause the command to fail to exit cleanly when the service process was killed. 
 - Fixed issue a performance issue with the `content ps`, the watcher wasn't recognizing actions for batch execution.
 - `Promise.Recover` no longer hangs forever when callback throws an exception
 - CLI no longer throws internal argument exceptions on large log messages
-
+- Fix `unreal init`, it wasn't triggering the re-generate uproject when called by the `beam_init_game_maker.sh`.
+- `init` and `login` commands won't attempt to retry new passwords with `--quiet` flag
+- `login` and `me` commands emit data and error streams
 
 ### Added
 - Added a new command `content tag set`, which can be used to replace tags in the contents.
 - Added DefaultToInstanced, EditInlineNew tags for Unreal serializable types. That helps to use those types as serializables in the content window.
-
+- `me` command includes realm role permissions
 
 
 ## [5.0.0] - 2025-06-06
