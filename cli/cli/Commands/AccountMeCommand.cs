@@ -128,6 +128,10 @@ public class AccountMeCommand
 			, IReportException<InvalidTokenError>
 		, ISkipManifest
 {
+	private const int NO_TOKEN_ERROR_CODE = 100;
+	private const int INVALID_AUTH_ERROR_CODE = 101;
+	
+	
 	public override int Order => 200;
 	public AccountMeCommand() : base("me", "Fetch the current account") { }
 
@@ -157,7 +161,7 @@ public class AccountMeCommand
 
 			if (string.IsNullOrEmpty(token.Token))
 			{
-				throw new CliException<NoTokenError>("Not logged in")
+				throw new CliException<NoTokenError>("Not logged in", NO_TOKEN_ERROR_CODE)
 				{
 					payload = new NoTokenError()
 				};
@@ -167,7 +171,7 @@ public class AccountMeCommand
 		}
 		catch (RequesterException ex) when (ex.Status == 401)
 		{
-			throw new CliException<InvalidTokenError>("Not authorized")
+			throw new CliException<InvalidTokenError>("Not authorized", INVALID_AUTH_ERROR_CODE)
 			{
 				payload = new InvalidTokenError
 				{

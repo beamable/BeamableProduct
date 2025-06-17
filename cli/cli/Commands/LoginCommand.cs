@@ -49,6 +49,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	, IReportException<LoginFailedError>
 	, IResultSteam<DefaultStreamResultChannel, LoginResults>
 {
+	public const int LOGIN_FAILED_ERROR_CODE = 100;
 	public bool Successful { get; private set; } = false;
 	private IAppContext _ctx;
 	private ConfigService _configService;
@@ -95,7 +96,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				if (args.Quiet)
 				{
 					BeamableLogger.LogError($"Login failed: {e.RequestError.message}. Failing due to -q flag.");
-					throw new CliException<LoginFailedError>(e.RequestError.message)
+					throw new CliException<LoginFailedError>(e.RequestError.message, LOGIN_FAILED_ERROR_CODE)
 					{
 						payload = new LoginFailedError()
 					};
