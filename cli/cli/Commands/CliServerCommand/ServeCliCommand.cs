@@ -13,6 +13,7 @@ public class ServeCliCommandArgs : CommandArgs
 	public bool incPortUntilSuccess;
 	public int requireProcessId;
 	public bool useCustomSplitter;
+	public bool skipContentPreWarm;
 }
 
 public class ServeCliCommandOutput
@@ -66,6 +67,11 @@ public class ServeCliCommand
 			"The custom splitter does its best to support all our commands correctly and accept json blobs as arguments");
 		splitterOption.AddAlias("-cs");
 		AddOption(splitterOption, (args, b) => args.useCustomSplitter = b);
+		
+		var skipContentPrewarm = new Option<bool>("--skip-content-prewarm", () => false,
+			"When true, will NOT pre-warm the content service with the latest content manifest.");
+		skipContentPrewarm.AddAlias("-scpw");
+		AddOption(skipContentPrewarm, (args, b) => args.skipContentPreWarm = b);
 	}
 
 	public override async Task Handle(ServeCliCommandArgs args)
@@ -73,7 +79,7 @@ public class ServeCliCommand
 		RequireProcessIdOption.ConfigureRequiredProcessIdWatcher(args.requireProcessId);
 		
 		// Pre-Warm the content cache.
-		if (!string.IsNullOrEmpty(args.AppContext.Cid))
+		if (!string.IsNullOrEmpty(args.AppContext.Cid) && !args.skipContentPreWarm)
 		{
 			await args.ContentService.GetManifest();
 		}
