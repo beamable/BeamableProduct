@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BaseRequester } from '@/http/BaseRequester';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { GET } from '@/constants';
 
 type TestReq = { foo: string };
 type TestRes = { ok: boolean };
@@ -31,13 +31,13 @@ describe('BaseRequester', () => {
 
     const res = await requester.request<TestRes, TestReq>({
       url: 'https://example.com/data',
-      method: HttpMethod.GET,
+      method: GET,
     });
 
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledWith(
       'https://example.com/data',
-      expect.objectContaining({ method: HttpMethod.GET }),
+      expect.objectContaining({ method: GET }),
     );
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ success: true });

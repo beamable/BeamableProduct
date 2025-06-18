@@ -2,8 +2,8 @@ import type { HttpRequest } from './types/HttpRequest';
 import type { HttpResponse } from './types/HttpResponse';
 import type { HttpRequester } from './types/HttpRequester';
 import type { BaseRequesterConfig } from '@/configs/BaseRequesterConfig';
-import { HttpMethod } from './types/HttpMethod';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
+import { GET } from '@/constants';
 
 /**
  * A basic HttpRequester implementation using the Fetch API.
@@ -58,7 +58,7 @@ export class BaseRequester implements HttpRequester {
 
     try {
       const response = await this.fetchImpl(finalUrl, {
-        method: req.method ?? HttpMethod.GET,
+        method: req.method ?? GET,
         headers: requestHeaders,
         body: req.body as BodyInit | null | undefined,
         signal: controller.signal,
