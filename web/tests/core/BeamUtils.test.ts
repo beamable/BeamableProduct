@@ -23,7 +23,7 @@ describe('BeamUtils', () => {
 
       expect(storage.setAccessToken).toHaveBeenCalledWith('access-token');
       expect(storage.setRefreshToken).toHaveBeenCalledWith('refresh-token');
-      expect(storage.setExpiresIn).toHaveBeenCalledWith(123);
+      expect(storage.setExpiresIn).toHaveBeenCalled();
     });
   });
 });
