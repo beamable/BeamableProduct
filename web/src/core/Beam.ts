@@ -6,7 +6,6 @@ import { BeamRequester } from '@/http/BeamRequester';
 import { isBrowserEnv } from '@/utils/isBrowserEnv';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 import { BrowserTokenStorage } from '@/platform/BrowserTokenStorage';
-import { NodeTokenStorage } from '@/platform/NodeTokenStorage';
 import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
 import packageJson from '../../package.json';
@@ -16,6 +15,8 @@ import { AuthService } from '@/services/AuthService';
 import { BeamUtils } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
+import { ConfigurationError } from '@/constants/Errors';
+import { NodeTokenStorageRequiredMessage } from '@/constants';
 
 /** The main class for interacting with the Beam SDK. */
 export class Beam {
@@ -51,11 +52,12 @@ export class Beam {
     this.cid = config.cid;
     this.pid = config.pid;
     this.envConfig = BeamEnvironment.get(env ?? 'Prod');
+
+    if (!isBrowserEnv() && config.tokenStorage === undefined)
+      throw new ConfigurationError(NodeTokenStorageRequiredMessage);
+
     this.tokenStorage =
-      config.tokenStorage ??
-      (isBrowserEnv()
-        ? new BrowserTokenStorage(config.instanceTag)
-        : new NodeTokenStorage());
+      config.tokenStorage ?? new BrowserTokenStorage(config.instanceTag);
 
     this.defaultHeaders = {
       Accept: 'application/json',
@@ -83,8 +85,13 @@ export class Beam {
   async ready(): Promise<void> {
     if (!this.readyPromise) {
       this.readyPromise = (async () => {
-        const accessToken = await this.tokenStorage.getAccessToken();
+        const savedConfig = await BeamUtils.readConfig();
+        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
+          this.tokenStorage.clear();
+          await BeamUtils.saveConfig(this.cid, this.pid);
+        }
 
+        const accessToken = await this.tokenStorage.getAccessToken();
         if (accessToken === null) {
           // If no access token exists, sign in as a guest and save the tokens
           const tokenResponse = await this.auth.signInAsGuest();
