@@ -1,5 +1,15 @@
 # @beamable/sdk
 
+## 0.1.4
+
+### Patch Changes
+
+- Implement file storage for token persistence in node environments
+- Upgrades to TokenStorage implementations
+- Bundle size reduction of generated api classes
+- Fix bug with token storage `isExpired` function always returning true
+- Fix bug with `BeamRequester` token refresh functionality
+
 ## 0.1.3
 
 ### Patch Changes
