@@ -41,7 +41,7 @@ export class NodeTokenStorage extends TokenStorage {
       };
       await fs.promises.writeFile(this.filePath, JSON.stringify(data), 'utf8');
     } catch {
-     // Ignore errors during persistence and fallback to in‑memory behavior
+      // Ignore errors during persistence and fallback to in‑memory behavior
     }
   }
 

@@ -15,6 +15,8 @@ export class BeamUtils {
   ): Promise<void> {
     await tokenStorage.setAccessToken(tokenResponse.access_token as string);
     await tokenStorage.setRefreshToken(tokenResponse.refresh_token as string);
-    await tokenStorage.setExpiresIn(Number(tokenResponse.expires_in));
+    await tokenStorage.setExpiresIn(
+      Date.now() + Number(tokenResponse.expires_in),
+    );
   }
 }
