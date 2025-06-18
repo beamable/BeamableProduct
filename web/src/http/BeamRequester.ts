@@ -97,24 +97,31 @@ export class BeamRequester implements HttpRequester {
       throw new NoRefreshTokenError();
     }
 
-    const response = await new AuthApi(this.inner).postAuthRefreshTokenV2({
-      customerId: this.cid,
-      realmId: this.pid,
-      refreshToken,
+    const response = await new AuthApi(this).postAuthToken({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
     });
     if (response.status !== 200) {
       await this.tokenStorage.removeRefreshToken();
       throw new RefreshAccessTokenError();
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = response.body;
+    const {
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      expires_in: newExpiresIn,
+    } = response.body;
 
-    if (accessToken) {
-      await this.tokenStorage.setAccessToken(accessToken);
+    if (newAccessToken) {
+      await this.tokenStorage.setAccessToken(newAccessToken);
     }
 
     if (newRefreshToken) {
       await this.tokenStorage.setRefreshToken(newRefreshToken);
+    }
+
+    if (newExpiresIn) {
+      await this.tokenStorage.setExpiresIn(Date.now() + Number(newExpiresIn));
     }
   }
 }
