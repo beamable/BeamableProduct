@@ -90,20 +90,17 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
-		private IBeamableRequester _requester;
 
 		public BeamWebCommandFactory(
-			IBeamableRequester requester, 
 			BeamableDispatcher dispatcher, 
 			BeamWebCliCommandHistory history, 
 			BeamWebCommandFactoryOptions options)
 		{
-			_requester = requester;
 			this.dispatcher = dispatcher;
 			_history = history;
 			_options = options;
 			processFactory = new BeamCommandFactory(dispatcher);
-			processCommands = new BeamCommands(requester, processFactory);
+			processCommands = new BeamCommands(processFactory);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
 			
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());

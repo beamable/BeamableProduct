@@ -110,12 +110,9 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<SessionStorageLayer>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, EditorFilesystemAccessor>();
-			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
-			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddGlobalStorage<LibraryService, SessionStorageLayer>();
-			DependencyBuilder.AddSingleton<IUserContext>(p => p.GetService<AccountService>());
-
+			DependencyBuilder.AddSingleton<IUserContext>(p => p.GetService<BeamCli>());
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
@@ -125,7 +122,7 @@ namespace Beamable
 			
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
-			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => p.GetService<BeamCli>());
 
 			DependencyBuilder.AddGlobalStorage<UsamService, SessionStorageLayer>();
 			DependencyBuilder.AddSingleton(() => MicroserviceConfiguration.Instance);
@@ -146,8 +143,8 @@ namespace Beamable
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			builder.AddSingleton(_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
-			builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
-			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
+			// builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
+			// builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 		}
 	}
 
@@ -501,6 +498,7 @@ namespace Beamable
 		public string PlayerCode { get; private set; }
 		public bool IsStopped { get; private set; }
 		public bool IsAuthenticated => ServiceScope.GetService<PlatformRequester>().Token != null;
+		public long UserId => BeamCli.latestAccount.id;
 
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
@@ -512,28 +510,25 @@ namespace Beamable
 		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
-		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
+		// public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
 		public BeamCommands Cli => BeamCli.Command;
 		public BeamCli BeamCli => ServiceScope.GetService<BeamCli>();
-		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
-		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
-		public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);
-		public EditorUser CurrentUser => EditorAccount?.user;
+		// public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
+		// public BeamOrgRealmData CurrentRealm => BeamCli.LatestRealm;
+		// public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);
+		// public EditorUser CurrentUser => EditorAccount?.user;
 		public AliasService AliasService => ServiceScope.GetService<AliasService>();
 		public IEditorAuthApi AuthService => ServiceScope.GetService<IEditorAuthApi>();
 
-		public EditorAccountInfo EditorAccount => EditorAccountService.Account; // TODO: events and setting?
+		// public EditorAccountInfo EditorAccount => EditorAccountService.Account; // TODO: events and setting?
 
 		/// <summary>
 		/// The permissions for the <see cref="CurrentUser"/> in the <see cref="CurrentRealm"/>.
 		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
 		/// </summary>
-		public UserPermissions Permissions =>
-			CurrentUser?.GetPermissionsForRealm(CurrentRealm?.Pid) ?? new UserPermissions(null);
+		public UserPermissions Permissions => BeamCli.Permissions;
 
 		public bool HasToken => Requester.Token != null;
-		public bool HasCustomer => CurrentCustomer != null && !string.IsNullOrEmpty(CurrentCustomer.Cid);
-		public bool HasRealm => CurrentRealm != null && !string.IsNullOrEmpty(CurrentRealm.Pid);
 
 #pragma warning disable CS0067
 		public event Action<RealmView> OnRealmChange;
@@ -566,58 +561,78 @@ namespace Beamable
 
 			async Promise Initialize()
 			{
-				var configService = ServiceScope.GetService<ConfigDefaultsService>();
-				var initResult = await EditorAccountService.TryInit();
-				var account = initResult.account;
-
-
+				
+				// initialize the default dependencies before a beam context ever gets going.
+				if (ContentIO.EnsureAllDefaultContent())
 				{
-					// initialize the default dependencies before a beam context ever gets going.
-					if (ContentIO.EnsureAllDefaultContent())
-					{
-						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-					}
+					AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+					                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+					AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 				}
+				
+				// fetch latest CLI data, 
+				await BeamCli.Refresh();
 
-				if (!initResult.hasCid)
+				if (!BeamCli.HasCid)
 				{
-					Requester.DeleteToken(); // not signed in... 
+					// the user is not signed in...
+					await BeamCli.Logout();
 					return;
 				}
-
-				var requester = ServiceScope.GetService<PlatformRequester>();
-				var cid = requester.Cid = EditorAccountService.Cid.GetOrThrow();
-
-				if (account.realmPid.HasValue)
-				{
-					requester.Pid = account.realmPid.Value;
-				}
-				else if (configService.Pid.HasValue)
-				{
-					account.realmPid.Set(configService.Pid.Value);
-					requester.Pid = configService.Pid.Value;
-				}
-
-				requester.Host = BeamableEnvironment.ApiUrl;
-
-				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
-				requester.Token = accessToken;
-
-				PublishDefaultContent();
 				
-				// it is possible that the requester cid/pid have been set, but the editor account service hasn't.
-				if (accessToken != null && account.HasEmptyCustomerView)
-				{
-					await account.UpdateRealms(requester);
-					account.Refresh();
-				}
-
-				await RefreshRealmSecret();
 				
-				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+				// var configService = ServiceScope.GetService<ConfigDefaultsService>();
+				// var initResult = await EditorAccountService.TryInit();
+				// var account = initResult.account;
+				//
+				//
+				// {
+				// 	// initialize the default dependencies before a beam context ever gets going.
+				// 	if (ContentIO.EnsureAllDefaultContent())
+				// 	{
+				// 		AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+				// 		                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+				// 		AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+				// 	}
+				// }
+				//
+				// if (!initResult.hasCid)
+				// {
+				// 	Requester.DeleteToken(); // not signed in... 
+				// 	return;
+				// }
+				//
+				// var requester = ServiceScope.GetService<PlatformRequester>();
+				// var cid = requester.Cid = EditorAccountService.Cid.GetOrThrow();
+				//
+				// if (account.realmPid.HasValue)
+				// {
+				// 	requester.Pid = account.realmPid.Value;
+				// }
+				// else if (configService.Pid.HasValue)
+				// {
+				// 	account.realmPid.Set(configService.Pid.Value);
+				// 	requester.Pid = configService.Pid.Value;
+				// }
+				//
+				// requester.Host = BeamableEnvironment.ApiUrl;
+				//
+				// var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
+				// var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
+				// requester.Token = accessToken;
+				//
+				// PublishDefaultContent();
+				//
+				// // it is possible that the requester cid/pid have been set, but the editor account service hasn't.
+				// if (accessToken != null && account.HasEmptyCustomerView)
+				// {
+				// 	await account.UpdateRealms(requester);
+				// 	account.Refresh();
+				// }
+				//
+				// await RefreshRealmSecret();
+				//
+				// var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 
 			}
 
@@ -632,34 +647,34 @@ namespace Beamable
 		/// <param name="email"></param>
 		/// <param name="password"></param>
 		/// <returns></returns>
-		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
-		{
-			EditorAccountService.Logout(false);
-
-			var res = await AliasService.Resolve(aliasOrCid);
-			var cid = res.Cid.GetOrThrow();
-
-			var authFactory = ServiceScope.GetService<EditorAuthServiceFactory>();
-			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-
-			var authService = authFactory.CreateCidScopedAuthService(cid);
-			var tokenRes = await authService.Login(email, password, mergeGamerTagToAccount: false, customerScoped: true);
-			var token = new AccessToken(accessTokenStorage, cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
-
-			var info = await EditorAccountService.Login(cid, token);
-			await token.SaveAsCustomerScoped();
-			Requester.Token = token;
-			Requester.Cid = EditorAccount.cid;
-			Requester.Pid = info.realmPid ??
-			                info.CustomerRealms?.FirstOrDefault(x => x.Cid == EditorAccount?.cid && x.IsDev)?.Pid;
-			
-			PublishDefaultContent();
-			await BeamCli.Init();
-			await RefreshRealmSecret();
-
-			OnUserChange?.Invoke(CurrentUser);
-			return PromiseBase.Unit;
-		}
+		// public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
+		// {
+		// 	EditorAccountService.Logout(false);
+		//
+		// 	var res = await AliasService.Resolve(aliasOrCid);
+		// 	var cid = res.Cid.GetOrThrow();
+		//
+		// 	var authFactory = ServiceScope.GetService<EditorAuthServiceFactory>();
+		// 	var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
+		//
+		// 	var authService = authFactory.CreateCidScopedAuthService(cid);
+		// 	var tokenRes = await authService.Login(email, password, mergeGamerTagToAccount: false, customerScoped: true);
+		// 	var token = new AccessToken(accessTokenStorage, cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+		//
+		// 	var info = await EditorAccountService.Login(cid, token);
+		// 	await token.SaveAsCustomerScoped();
+		// 	Requester.Token = token;
+		// 	Requester.Cid = EditorAccount.cid;
+		// 	Requester.Pid = info.realmPid ??
+		// 	                info.CustomerRealms?.FirstOrDefault(x => x.Cid == EditorAccount?.cid && x.IsDev)?.Pid;
+		// 	
+		// 	PublishDefaultContent();
+		// 	await BeamCli.Init();
+		// 	await RefreshRealmSecret();
+		//
+		// 	OnUserChange?.Invoke(CurrentUser);
+		// 	return PromiseBase.Unit;
+		// }
 
 		public void PublishDefaultContent()
 		{
@@ -676,31 +691,6 @@ namespace Beamable
 			});
 		}
 
-		[Obsolete("this method is no longer supported, and will be removed in a future release")]
-		public Promise Login(string email, string password, string pid = null)
-		{
-			Debug.LogWarning("The " + nameof(Login) + " method is no longer supported. It will not do anything.");
-			return Promise.Success;
-		}
-
-		[Obsolete("this method is no longer supported, and will be removed in a future release")]
-		public async Promise Relogin()
-		{
-			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-			var currentToken = Requester.Token;
-			var expiresIn = (long)(currentToken.ExpiresAt - DateTime.UtcNow).TotalMilliseconds;
-			var newToken = new AccessToken(accessTokenStorage, Requester.Cid, null, currentToken.Token,
-										   currentToken.RefreshToken, expiresIn);
-			await Login(newToken);
-		}
-
-		[Obsolete("this method is no longer supported, and will be removed in a future release")]
-		public Promise Login(AccessToken token, string pid = null)
-		{
-			Debug.LogWarning("The " + nameof(Login) + " method is no longer supported. It will not do anything.");
-			return Promise.Success;
-		}
-
 		/// <summary>
 		/// Erase the toolbox's authorization. 
 		/// </summary>
@@ -709,9 +699,11 @@ namespace Beamable
 		/// </param>
 		public void Logout(bool clearRealmPid)
 		{
-			EditorAccountService.Logout(clearRealmPid);
-			OnUserChange?.Invoke(null);
-			BeamableEnvironment.ReloadEnvironment();
+			BeamCli.Logout().Then(_ =>
+			{
+				OnUserChange?.Invoke(null);
+				BeamableEnvironment.ReloadEnvironment();
+			});
 		}
 
 		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
@@ -720,25 +712,18 @@ namespace Beamable
 							 .GetService<ConfigDefaultsService>()
 							 .SaveConfig(alias, cid, pid);
 		}
-
-		public async Promise LoadConfig()
-		{
-			var needsLogout = await EditorAccountService.SwitchToConfigDefaults();
-			if (needsLogout)
-			{
-				Logout(false);
-			}
-		}
+		
 
 		/// <summary>
 		/// Save the current toolbox CID/PID data in the config-defaults.txt file.
 		/// </summary>
 		public void WriteConfig()
 		{
-			var alias = EditorAccount.CustomerView.Alias;
-			var cid = EditorAccount.CustomerView.Cid;
-			var pid = EditorAccount.realmPid.Value;
-			WriteConfig(alias, pid, cid: cid);
+			throw new InvalidOperationException("todo; write config-defaults from editor view");
+			// var alias = EditorAccount.CustomerView.Alias;
+			// var cid = EditorAccount.CustomerView.Cid;
+			// var pid = EditorAccount.realmPid.Value;
+			// WriteConfig(alias, pid, cid: cid);
 		}
 
 		[Obsolete]
@@ -762,11 +747,6 @@ namespace Beamable
 			requester.Host = host;
 		}
 
-		[Obsolete]
-		private static string GetCustomContainerPrefix()
-		{
-			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;
-		}
 
 		#region Customer & User Creation and Management
 
@@ -782,61 +762,7 @@ namespace Beamable
 					$"Hubspot registration event failed. type=[{hubspotError?.GetType()}] message=[{hubspotError?.Message}]");
 			}
 		}
-
-		public async Promise CreateCustomer(string alias, string gameName, string email, string password)
-		{
-			EditorAccountService.Logout(false);
-			var customerResponse = await AuthService.RegisterCustomer(email, password, gameName, alias, alias);
-			
-			await SendHubspotRegistrationEvent(email, alias);
-
-			var cid = customerResponse.cid.ToString();
-			var pid = customerResponse.pid;
-			var tokenResponse = customerResponse.token;
-			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-			var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-										tokenResponse.refresh_token, tokenResponse.expires_in);
-			
-			var info = await EditorAccountService.Login(cid, token);
-			info.Refresh();
-			var realm = info.CustomerRealms.FirstOrDefault(x => x.IsDev);
-			var realmPid = realm.Pid;
-			
-			EditorAccountService.SetRealm(EditorAccount, realm.FindRoot(), realmPid);
-			Requester.Cid = EditorAccount.cid;
-			Requester.Pid = realmPid;
-			await token.SaveAsCustomerScoped();
-			Requester.Token = token;
-
-			await ContentIO.FetchManifest();
-			ContentDatabase.RecalculateIndex();
-			await RefreshRealmSecret();
-			EditorAccountService.WriteUnsetConfigValues();
-			PublishDefaultContent();
-			
-			await BeamCli.Init();
-			
-			OnUserChange?.Invoke(CurrentUser);
-			OnRealmChange?.Invoke(CurrentRealm);
-			
-		}
-
-		public async Promise SendPasswordReset(string cidOrAlias, string email)
-		{
-			var aliasService = ServiceScope.GetService<AliasService>();
-			var res = await aliasService.Resolve(cidOrAlias);
-			var cid = res.Cid.GetOrThrow();
-			Requester.Cid = cid;
-			var authService = ServiceScope.GetService<IEditorAuthApi>();
-			await authService.IssuePasswordUpdate(email);
-		}
-
-		public async Promise SendPasswordResetCode(string code, string newPassword)
-		{
-			var authService = ServiceScope.GetService<IEditorAuthApi>();
-			await authService.ConfirmPasswordUpdate(code, newPassword).ToUnit();
-		}
-
+		
 		/// <summary>
 		/// Force a publish operation, with no validation, with no UX popups. Log output will occur.
 		/// </summary>
@@ -864,19 +790,11 @@ namespace Beamable
 			// TODO this will only work if the current user is an admin.
 			return Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
 			{
-				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(CurrentRealm.Pid));
+				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(BeamCli.CurrentRealm.Pid));
 				return matchingProject?.secret ?? "";
 			});
 		}
 
-		public async Promise SetGame(RealmView game)
-		{
-			if (game == null) throw new Exception("Cannot set game to null");
-
-			string realmPid = EditorAccount.GetRealmPidForGame(game);
-			await SwitchRealm(game, realmPid);
-			await EditorAccount.UpdateRealms(Requester);
-		}
 
 		public Promise SwitchRealm(RealmView realm)
 		{
@@ -893,7 +811,7 @@ namespace Beamable
 		{
 			try
 			{
-				if (CurrentRealm == null) return;
+				if (BeamCli.CurrentRealm == null) return;
 				var secret = await GetRealmSecret();
 				RealmSecret.SetValue(secret);
 			}
@@ -905,23 +823,24 @@ namespace Beamable
 		}
 
 
-		public async Promise SwitchRealm(RealmView game, string realmPid)
+		public Promise SwitchRealm(RealmView game, string realmPid)
 		{
-			var oldRealmPid = Requester.Pid;
-			if (oldRealmPid == realmPid) return; // bail early; nothing to do.
+			throw new NotImplementedException();
+			// var oldRealmPid = Requester.Pid;
+			// if (oldRealmPid == realmPid) return; // bail early; nothing to do.
+			//
+			// EditorAccountService.SetRealm(EditorAccount, game, realmPid);
+			// Requester.Cid = EditorAccount.cid;
+			// Requester.Pid = realmPid;
+			//
+			// await ContentIO.FetchManifest();
+			// ContentDatabase.RecalculateIndex();
+			// await RefreshRealmSecret();
+			//
+			// EditorAccountService.WriteUnsetConfigValues();
+			// await BeamCli.Init();
+			// OnRealmChange?.Invoke(CurrentRealm);
 
-			EditorAccountService.SetRealm(EditorAccount, game, realmPid);
-			Requester.Cid = EditorAccount.cid;
-			Requester.Pid = realmPid;
-
-			await ContentIO.FetchManifest();
-			ContentDatabase.RecalculateIndex();
-			await RefreshRealmSecret();
-
-			EditorAccountService.WriteUnsetConfigValues();
-			await BeamCli.Init();
-			OnRealmChange?.Invoke(CurrentRealm);
-			
 		}
 
 
@@ -940,6 +859,7 @@ namespace Beamable
 			IsStopped = true;
 			await ServiceScope.Dispose();
 		}
+
 	}
 
 	[Serializable]

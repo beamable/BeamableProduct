@@ -1,6 +1,5 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using Beamable.Common;
-using Beamable.Editor.Login.UI;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;

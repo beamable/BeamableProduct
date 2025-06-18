@@ -87,13 +87,13 @@ namespace Beamable.Editor.BeamCli
 			{
 				if (CheckForBuildedSource())
 				{
-					return;
+					// return;
 				}
-
-				BuildTool();
+				//
+				// BuildTool();
 				if (CheckForBuildedSource(outputNotFoundError: true))
 				{
-					return;
+					// return;
 				}
 			}
 
@@ -239,6 +239,10 @@ namespace Beamable.Editor.BeamCli
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
+			}
+			else
+			{
+				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
 			}
 			proc.StartInfo = new ProcessStartInfo
 			{

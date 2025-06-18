@@ -37,12 +37,6 @@ namespace Beamable.Editor.Tests
 				Cid = "000",
 				Pid = "111"
 			});
-			builder.ReplaceSingleton<IAccountService, MockAccountService>(provider =>
-			{
-				var service = new MockAccountService();
-
-				return service;
-			});
 			Configure(builder);
 
 			Context = BeamEditorContext.Instantiate("test", builder);

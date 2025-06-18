@@ -54,7 +54,6 @@ namespace Beamable.Editor.Environment
 			_context.Requester.Cid = null;
 			_context.Requester.Pid = null;
 			_context.Logout(false);
-			_context.EditorAccountService.Clear();
 		}
 	}
 }

@@ -74,7 +74,7 @@ namespace Beamable.Editor.Microservice.UI2
 					iconPadding = 2;
 				}
 
-				var isProductionRealm = ActiveContext.CurrentRealm.IsProduction;
+				var isProductionRealm = ActiveContext.BeamCli.CurrentRealm.IsProduction;
 				BeamGUI.ShowDisabled(!isProductionRealm && !isCreating, () =>
 				{
 					var tooltip = isRunning

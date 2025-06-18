@@ -1,5 +1,4 @@
 ﻿#if UNITY_2022_1_OR_NEWER
-using Beamable.Editor.Login.UI;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.Util;
 using System;
@@ -49,13 +48,13 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			BeamEditorContext ctx = BeamEditorContext.Default;
 
-			_label.text = ctx.CurrentRealm?.DisplayName ?? "<no realm>";
+			_label.text = ctx.BeamCli.CurrentRealm?.DisplayName ?? "<no realm>";
 			_badge?.ClearClassList();
-			if (ctx.CurrentRealm?.IsProduction ?? false)
+			if (ctx.BeamCli.CurrentRealm?.IsProduction ?? false)
 			{
 				_badge?.AddToClassList("production");
 			}
-			if (ctx.CurrentRealm?.IsStaging ?? false)
+			if (ctx.BeamCli.CurrentRealm?.IsStaging ?? false)
 			{
 				_badge?.AddToClassList("staging");
 			}

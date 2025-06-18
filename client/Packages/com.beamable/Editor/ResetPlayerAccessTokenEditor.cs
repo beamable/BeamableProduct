@@ -24,7 +24,7 @@ namespace Beamable.Editor
 				if (GUILayout.Button("Clear Tokens"))
 				{
 					var token = BeamEditorContext.Default.Requester.Token;
-					BeamEditorContext.Default.EditorAccountService.Clear();
+					// BeamEditorContext.Default.EditorAccountService.Clear();
 					var storage = BeamEditorContext.Default.ServiceScope.GetService<AccessTokenStorage>();
 					storage.DeleteTokenForCustomer(token.Cid);
 					storage.DeleteTokenForRealm(token.Cid, token.Pid);
@@ -50,8 +50,8 @@ namespace Beamable.Editor
 				{
 					var api = BeamEditorContext.Default;
 					var storage = new AccessTokenStorage(Prefix);
-					storage.ClearDeviceRefreshTokens(api.CurrentCustomer.Cid, api.CurrentRealm.Pid);
-					storage.DeleteTokenForRealm(api.CurrentCustomer.Cid, api.CurrentRealm.Pid).Then(_ =>
+					storage.ClearDeviceRefreshTokens(api.BeamCli.Cid, api.BeamCli.Pid);
+					storage.DeleteTokenForRealm(api.BeamCli.Cid, api.BeamCli.Pid).Then(_ =>
 					{
 						Close();
 					});
