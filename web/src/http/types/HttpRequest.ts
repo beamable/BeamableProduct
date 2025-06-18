@@ -1,3 +1,5 @@
+import { HttpMethod } from '@/http/types/HttpMethod';
+
 /**
  * Describes the configuration for an HTTP request.
  * @template TReq - The expected type of the request body.
@@ -8,9 +10,9 @@ export interface HttpRequest<TReq = any> {
 
   /**
    * The HTTP method to use for the request (e.g., 'GET', 'POST', 'PUT', 'PATCH', 'DELETE').
-   * If omitted, a default (often 'GET') will be assumed by the requester.
+   * If omitted, the requester will assume a default (often 'GET').
    */
-  method?: string;
+  method?: HttpMethod;
 
   /** A collection of HTTP headers to include with the request. */
   headers?: Record<string, string>;
