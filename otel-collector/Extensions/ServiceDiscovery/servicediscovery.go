@@ -28,8 +28,6 @@ type serviceDiscovery struct {
 var Version = "0.0.0" // The actual version is injected here during build time
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
-	// Test clickhouse credentials to make sure everything is set for sending data
-	PingClickhouse()
 
 	rd := responseData{
 		Status:  NOT_READY,
@@ -49,6 +47,9 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 		}
 	}()
 	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd, &ringBuffer.Data)
+
+	// Test clickhouse credentials to make sure everything is set for sending data
+	PingClickhouse()
 
 	return nil
 }

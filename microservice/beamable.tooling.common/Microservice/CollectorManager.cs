@@ -476,7 +476,7 @@ public class CollectorManager
 		if (!CollectorStatus.isRunning)
 		{
 			logger.ZLogInformation($"Starting local process for collector");
-			await StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
+			StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
 		}
 		
 		while (!cts.IsCancellationRequested) // Should we stop this after a number of attempts to find the collector?
@@ -583,7 +583,7 @@ public class CollectorManager
 		};
 	}
 
-	public static async Task StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
+	public static void StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
 	{
 		logger.ZLogInformation($"Using Collector Executable Path: [{collectorExecutablePath}]");
 
@@ -619,7 +619,6 @@ public class CollectorManager
 
 		//TODO: We should make it possible to pass a OTLP PORT that is free for the collector, it being the same one we are using here in the first place
 
-		var workingDir = Path.GetDirectoryName(fileExe);
 		process.StartInfo.FileName = fileExe;
 		process.StartInfo.Arguments = arguments;
 		process.StartInfo.WorkingDirectory = Path.GetDirectoryName(fileExe);
@@ -650,6 +649,5 @@ public class CollectorManager
 
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
-		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
 	}
 }
