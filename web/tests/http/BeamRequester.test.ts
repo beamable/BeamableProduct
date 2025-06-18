@@ -2,7 +2,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { BeamRequester } from '@/http/BeamRequester';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { AuthApi } from '@/__generated__/apis';
-import { RefreshAccessTokenError, NoRefreshTokenError } from '@/http/Errors';
+import {
+  RefreshAccessTokenError,
+  NoRefreshTokenError,
+} from '@/constants/Errors';
 import type { HttpRequester } from '@/http/types/HttpRequester';
 import type { TokenStorage } from '@/platform/types/TokenStorage';
 
@@ -165,19 +168,18 @@ describe('BeamRequester', () => {
     (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
     const mockRefreshResponse = {
       status: 200,
-      body: { accessToken: 'at', refreshToken: 'nrt' },
+      body: { access_token: 'at', refresh_token: 'nrt' },
     };
-    vi.spyOn(AuthApi.prototype, 'postAuthRefreshTokenV2').mockResolvedValue(
+    vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(inner.request).toHaveBeenCalledTimes(2);
     expect(tokenStorage.getRefreshToken).toHaveBeenCalled();
-    expect(AuthApi.prototype.postAuthRefreshTokenV2).toHaveBeenCalledWith({
-      customerId: cid,
-      realmId: pid,
-      refreshToken: 'rt',
+    expect(AuthApi.prototype.postAuthToken).toHaveBeenCalledWith({
+      grant_type: 'refresh_token',
+      refresh_token: 'rt',
     });
     expect(tokenStorage.setAccessToken).toHaveBeenCalledWith('at');
     expect(tokenStorage.setRefreshToken).toHaveBeenCalledWith('nrt');
@@ -211,7 +213,7 @@ describe('BeamRequester', () => {
     } as unknown as HttpRequester;
     (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
     const mockRefreshResponse = { status: 400, body: {} };
-    vi.spyOn(AuthApi.prototype, 'postAuthRefreshTokenV2').mockResolvedValue(
+    vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({ inner, tokenStorage, cid, pid });

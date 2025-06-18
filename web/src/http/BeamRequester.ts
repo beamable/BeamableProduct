@@ -4,7 +4,10 @@ import { HttpResponse } from './types/HttpResponse';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 import { AuthApi } from '@/__generated__/apis';
-import { RefreshAccessTokenError, NoRefreshTokenError } from './Errors';
+import {
+  RefreshAccessTokenError,
+  NoRefreshTokenError,
+} from '@/constants/Errors';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;

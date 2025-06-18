@@ -1,4 +1,15 @@
 /**
+ * Error thrown when the Beam SDK encounters a configuration issue.
+ */
+export class ConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConfigurationError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
  * Error thrown when the Beam SDK fails to refresh the access token.
  */
 export class RefreshAccessTokenError extends Error {
