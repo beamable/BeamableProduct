@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
@@ -227,6 +228,7 @@ namespace Beamable.Common.Content
 		public string Created { get; private set; }
 		public long LastChanged { get; set; }
 		public ContentCorruptedException ContentException { get; set; }
+		
 		public bool IsDeprecated => Version == Constants.Features.Content.CONTENT_DEPRECATED;
 		/// <summary>
 		/// Set the %id and %version
@@ -359,6 +361,10 @@ namespace Beamable.Common.Content
       public Guid ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
+	
+      
+      public ContentStatus ContentStatus { get; set; }
+      public bool IsInConflict { get; set; }
 
       [SerializeField]
       private string _serializedValidationGUID { get; set; }

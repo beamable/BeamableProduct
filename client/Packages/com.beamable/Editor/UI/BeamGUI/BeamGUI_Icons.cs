@@ -39,6 +39,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconRotate;
 		public static Texture iconSync;
 		public static Texture iconPublish;
+		public static Texture iconRevertAction;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -281,6 +282,11 @@ namespace Beamable.Editor.Util
 			if (iconPublish == null)
 			{
 				iconPublish = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconBeam_Publish.png");
+			}
+
+			if (iconRevertAction == null)
+			{
+				iconRevertAction = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconAction_Revert.png");
 			}
 		}
 	}

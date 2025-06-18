@@ -37,7 +37,7 @@ namespace Editor.UI.ContentWindow
 			{ContentStatus.Created, "created"},
 			{ContentStatus.Deleted, "deleted"},
 			{ContentStatus.Modified, "modified"},
-			{ContentStatus.UpToDate, "up to date"}
+			{ContentStatus.UpToDate, "upToDate"}
 		};
 
 		private static readonly Dictionary<ContentSortOptionType, string> SortTypeNameMap = new()

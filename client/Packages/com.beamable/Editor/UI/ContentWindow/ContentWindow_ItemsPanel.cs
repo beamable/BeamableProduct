@@ -23,9 +23,20 @@ namespace Editor.UI.ContentWindow
 		private const float FOLDOUT_WIDTH = 20f;
 
 		private Vector2 _itemsPanelScrollPos;
-		private string _selectedItemId;
+		private string _selectedItemId
+		{
+			get
+			{
+				if (Selection.activeObject && Selection.activeObject is ContentObject contentObject)
+				{
+					return contentObject.Id;
+				}
 
-		
+				return string.Empty;
+
+			}
+		}
+
 		private readonly Dictionary<string, bool> _itemsExpandedStates = new();
 		private GUIStyle _itemPanelHeaderRowStyle;
 		private GUIStyle _itemPanelHeaderFieldStyle;
@@ -126,7 +137,10 @@ namespace Editor.UI.ContentWindow
 				}
 				
 				var items = GetFilteredItems(contentType, true);
-				if (items.Count == 0 && !string.IsNullOrEmpty(GetNameSearchPartValue()))
+				bool isFilteringActive = !string.IsNullOrEmpty(GetNameSearchPartValue());
+				isFilteringActive |= GetFilterTypeActiveItems(ContentFilterType.Status).Count > 0;
+				isFilteringActive |= GetFilterTypeActiveItems(ContentFilterType.Tag).Count > 0;
+				if (items.Count == 0 && isFilteringActive)
 				{
 					continue;
 				}
@@ -175,7 +189,7 @@ namespace Editor.UI.ContentWindow
 				}
 
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, $"{displayName} - ({items.Count})");
+				GUI.Label(contentRect, $"{displayName} - [{items.Count}]");
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
@@ -207,7 +221,6 @@ namespace Editor.UI.ContentWindow
 			contentObject.SetContentName($"New_{itemType.Replace(".","_")}");
 			SaveContent(contentObject);
 			Selection.activeObject = contentObject;
-			_selectedItemId = contentObject.Id;
 		}
 
 		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth)
@@ -290,12 +303,10 @@ namespace Editor.UI.ContentWindow
 				}
 				if (_selectedItemId == entry.FullId)
 				{
-					_selectedItemId = string.Empty;
 					Selection.activeObject = null;
 				}
 				else
 				{
-					_selectedItemId = entry.FullId;
 					_ = LoadItemScriptable(entry);
 				}
 				Event.current.Use();
@@ -321,7 +332,12 @@ namespace Editor.UI.ContentWindow
 			});
 			menu.AddItem(new GUIContent("Delete Item"), false, () =>
 			{
-				_contentService.DeleteContent(entry.FullId);
+				if (EditorUtility.DisplayDialog("Delete Content", 
+				                                "Are you sure you want to delete this content?", "Yes", "No"))
+				{
+					_contentService.DeleteContent(entry.FullId);
+				}
+				
 			});
 			menu.ShowAsContext();
 		}
@@ -394,12 +410,27 @@ namespace Editor.UI.ContentWindow
 			{
 				return;
 			}
+
+			if (entry.StatusEnum is ContentStatus.Deleted)
+			{
+				var deletedObject = CreateInstance(type) as ContentObject;
+				deletedObject.SetIdAndVersion(entry.FullId, String.Empty);
+				deletedObject.Tags = entry.Tags.ToArray();
+				deletedObject.SetContentName(entry.Name);
+				deletedObject.ContentStatus = ContentStatus.Deleted;
+				deletedObject.IsInConflict = entry.IsInConflict;
+				Selection.activeObject = deletedObject;
+			}
+			
 			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
 			
 			var contentObject = CreateInstance(type) as IContentObject;
 			var selectedContentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
 			if (selectedContentObject)
 			{
+				selectedContentObject.Tags = entry.Tags.ToArray();
+				selectedContentObject.ContentStatus = entry.StatusEnum;
+				selectedContentObject.IsInConflict = entry.IsInConflict;
 				Selection.activeObject = selectedContentObject;
 				selectedContentObject.OnEditorChanged += () =>
 				{
@@ -434,7 +465,7 @@ namespace Editor.UI.ContentWindow
 			}
 		}
 
-		private Texture GetIconForStatus(ContentStatus statusEnum)
+		public static Texture GetIconForStatus(ContentStatus statusEnum)
 		{
 			switch (statusEnum)
 			{

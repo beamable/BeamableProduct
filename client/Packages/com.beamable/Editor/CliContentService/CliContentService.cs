@@ -1,5 +1,6 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Utility;
@@ -34,20 +35,44 @@ namespace Editor.CliContentManager
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
-				contentIds = new[] {contentId}, contentProperties = new[] {contentPropertiesJson},
+				contentIds = new[] {contentId}, contentProperties = new[] {contentPropertiesJson}
 			});
 			saveCommand.Run();
 		}
 
-		public void SyncContents(bool syncModified = true, bool syncCreated = true, bool syncConflicted = true)
+		public void SyncContents(bool syncModified = true, 
+		                         bool syncCreated = true, 
+		                         bool syncConflicted = true, 
+		                         string filter = null, 
+		                         ContentFilterType filterType = default)
 		{
 			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 			{
 				syncModified = syncModified,
 				syncConflicts = syncConflicted,
-				syncCreated = syncCreated
+				syncCreated = syncCreated,
+				filter = filter,
+				filterType = filterType,
 			});
 			contentSyncCommand.Run();
+		}
+
+		public void SetContentTags(string contentId, string[] tags)
+		{
+			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			{
+				Debug.Log($"No Entry found with id: {contentId}");
+				return;
+			}
+			
+			entry.Tags = tags;
+			CachedManifest[contentId] = entry;
+			
+			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+			{
+				filterType = ContentFilterType.ExactIds, filter = contentId, tag = string.Join(",", tags)
+			});
+			setContentTagCommand.Run();
 		}
 
 		public void RenameContent(string contentId, string newName)
@@ -96,6 +121,17 @@ namespace Editor.CliContentManager
 			entry.CurrentStatus = (int)ContentStatus.Deleted;
 			CachedManifest[contentId] = entry;
 			File.Delete(entry.JsonFilePath);
+		}
+
+		public void ResolveConflict(string contentId, bool useLocal)
+		{
+			var resolveCommand = _cli.ContentResolve(new ContentResolveArgs()
+			{
+				filter = contentId,
+				filterType = ContentFilterType.ExactIds,
+				use = useLocal ? "local" : "realm"
+			});
+			resolveCommand.Run();
 		}
 
 		public void Publish()

@@ -7,9 +7,7 @@ using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using Editor.CliContentManager;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -50,10 +48,9 @@ namespace Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
-			
 			if (_contentService == null)
 			{
-				_contentService = ActiveContext.ServiceScope.GetService<CliContentService>();
+				_contentService = Scope.GetService<CliContentService>();
 				_contentService.OnManifestUpdated += Build;
 				_contentService.Reload();
 			}
@@ -73,6 +70,7 @@ namespace Editor.UI.ContentWindow
 			BuildItemsPanelStyles();
 
 			SetEditorSelection();
+			Repaint();
 		}
 
 		protected override void DrawGUI()
