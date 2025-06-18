@@ -1,7 +1,5 @@
 /**
  * Abstraction for managing a persisted authentication token.
- *
- * @interface TokenStorage
  */
 export abstract class TokenStorage {
   protected accessToken: string | null = null;
@@ -64,6 +62,8 @@ export abstract class TokenStorage {
    * @return {Promise<void>}
    */
   abstract removeExpiresIn(): Promise<void>;
+
+  abstract clear(): void;
 
   /** Clean up BroadcastChannel and storage listener in the case of browser environment (e.g., on logout). */
   abstract dispose(): void;

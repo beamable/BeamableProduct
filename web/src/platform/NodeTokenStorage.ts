@@ -1,7 +1,7 @@
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 /**
  * TokenStorage implementation for Node.js environments.
@@ -11,10 +11,13 @@ export class NodeTokenStorage extends TokenStorage {
   private readonly prefix: string;
   private readonly filePath: string;
 
+  /**
+   * @param {string} tag - Optional tag used to distinguish tokens that belong to different Beam instances.
+   */
   constructor(tag?: string) {
     super();
     this.prefix = tag ? `${tag}_` : '';
-    const directory = path.join(os.homedir(), '.beam');
+    const directory = path.join(os.homedir(), '.beamable');
     this.filePath = path.join(directory, `${this.prefix}beam_tokens.json`);
     try {
       if (fs.existsSync(this.filePath)) {
@@ -39,7 +42,11 @@ export class NodeTokenStorage extends TokenStorage {
         refreshToken: this.refreshToken,
         expiresIn: this.expiresIn,
       };
-      await fs.promises.writeFile(this.filePath, JSON.stringify(data), 'utf8');
+      await fs.promises.writeFile(
+        this.filePath,
+        JSON.stringify(data, null, 2) + '\n',
+        'utf8',
+      );
     } catch {
       // Ignore errors during persistence and fallback to in‑memory behavior
     }
@@ -85,6 +92,14 @@ export class NodeTokenStorage extends TokenStorage {
   async removeExpiresIn(): Promise<void> {
     this.expiresIn = null;
     await this.persist();
+  }
+
+  async clear(): Promise<void> {
+    await Promise.all([
+      this.removeAccessToken(),
+      this.removeRefreshToken(),
+      this.removeExpiresIn(),
+    ]);
   }
 
   dispose(): void {}

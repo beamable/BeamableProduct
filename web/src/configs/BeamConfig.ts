@@ -19,7 +19,19 @@ export interface BeamConfig {
   /** Optional custom HTTP requester to use instead of the default implementation. */
   requester?: HttpRequester;
 
-  /** Optional custom token storage strategy. */
+  /**
+   * Custom token storage strategy.
+   *
+   * - **Browser (default)**: if you omit this, the SDK uses `BrowserTokenStorage`
+   *   (in‐memory + `localStorage` with cross-tab sync).
+   * - **Node.js**: you **must** provide an instance of a `TokenStorage` implementation—
+   *   e.g.:
+   *     ```ts
+   *     import { NodeTokenStorage } from '@beamable/sdk';
+   *     const beam = new Beam({ cid, pid, tokenStorage: new NodeTokenStorage() });
+   *     ```
+   *   or your own class that extends the abstract `TokenStorage`.
+   */
   tokenStorage?: TokenStorage;
 
   /** Optional tag to uniquely identify this instance. Used for browser token storage synchronization. */

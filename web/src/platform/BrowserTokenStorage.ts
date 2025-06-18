@@ -20,6 +20,9 @@ export class BrowserTokenStorage extends TokenStorage {
   private bc: BroadcastChannel | null = null;
   private readonly storageListener: (e: StorageEvent) => void;
 
+  /**
+   * @param {string} tag - Optional tag used to distinguish tokens that belong to different Beam instances.
+   */
   constructor(tag?: string) {
     super();
     this.prefix = tag ? `${tag}_` : '';
@@ -135,6 +138,14 @@ export class BrowserTokenStorage extends TokenStorage {
     this.expiresIn = null;
     localStorage.removeItem(this.expiresInKey);
     this.bc?.postMessage({ type: 'expiresIn', value: null });
+  }
+
+  async clear(): Promise<void> {
+    await Promise.all([
+      this.removeAccessToken(),
+      this.removeRefreshToken(),
+      this.removeExpiresIn(),
+    ]);
   }
 
   dispose(): void {
