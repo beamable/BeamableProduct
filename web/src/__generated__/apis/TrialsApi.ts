@@ -2,7 +2,6 @@ import { CreateTrialRestRequest } from '@/__generated__/schemas/CreateTrialRestR
 import { DELETE } from '@/constants';
 import { DeleteTrialDataRequest } from '@/__generated__/schemas/DeleteTrialDataRequest';
 import { DeleteTrialRequest } from '@/__generated__/schemas/DeleteTrialRequest';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { GetPlayerTrialsResponse } from '@/__generated__/schemas/GetPlayerTrialsResponse';
 import { GetS3DataResponse } from '@/__generated__/schemas/GetS3DataResponse';
@@ -10,7 +9,6 @@ import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { ListTrialsResponse } from '@/__generated__/schemas/ListTrialsResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { PauseTrialRequest } from '@/__generated__/schemas/PauseTrialRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';

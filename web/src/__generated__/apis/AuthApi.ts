@@ -1,13 +1,11 @@
 import { AuthResponse } from '@/__generated__/schemas/AuthResponse';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { GuestAuthRequest } from '@/__generated__/schemas/GuestAuthRequest';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { ListTokenResponse } from '@/__generated__/schemas/ListTokenResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { PasswordAuthRequest } from '@/__generated__/schemas/PasswordAuthRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';

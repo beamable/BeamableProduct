@@ -1,8 +1,6 @@
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { OnlineStatusQuery } from '@/__generated__/schemas/OnlineStatusQuery';
 import { PlayersStatusResponse } from '@/__generated__/schemas/PlayersStatusResponse';
 import { POST } from '@/constants';

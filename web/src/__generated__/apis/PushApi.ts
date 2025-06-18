@@ -1,9 +1,7 @@
 import { EmptyRsp } from '@/__generated__/schemas/EmptyRsp';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { POST } from '@/constants';
 import { RegisterReq } from '@/__generated__/schemas/RegisterReq';
 import { SendReq } from '@/__generated__/schemas/SendReq';

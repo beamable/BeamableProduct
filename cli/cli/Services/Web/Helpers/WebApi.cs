@@ -73,16 +73,10 @@ public static class WebApi
 				new TsImport($"@/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
 			var tsImportMakeApiRequest =
 				new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest");
-			var tsImportEndpointEncoder =
-				new TsImport("@/utils/endpointEncoder").AddNamedImport("endpointEncoder");
-			var tsImportObjectIdPlaceholder =
-				new TsImport("@/constants").AddNamedImport("objectIdPlaceholder");
 
 			tsImports.TryAdd("httpRequester", tsImportHttpRequester);
 			tsImports.TryAdd("httpResponse", tsImportHttpResponse);
 			tsImports.TryAdd("makeApiRequest", tsImportMakeApiRequest);
-			tsImports.TryAdd("endpointEncoder", tsImportEndpointEncoder);
-			tsImports.TryAdd("objectIdPlaceholder", tsImportObjectIdPlaceholder);
 
 			foreach (var kvp in tsImports.OrderBy(kvp => kvp.Key))
 				tsFile.AddImport(kvp.Value);
@@ -148,7 +142,7 @@ public static class WebApi
 		SortApiParameters(apiParameters);
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
 
-		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint);
+		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint, tsImports);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
 
 		tsImports.TryAdd($"{apiMethodType}", new TsImport("@/constants").AddNamedImport($"{apiMethodType}"));
@@ -333,7 +327,8 @@ public static class WebApi
 	}
 
 	private static void AddPathParameterStatements(List<OpenApiParameter> apiParameters,
-		List<TsNode> methodBodyStatements, TsVariable endpoint, string apiEndpoint)
+		List<TsNode> methodBodyStatements, TsVariable endpoint, string apiEndpoint,
+		Dictionary<string, TsImport> tsImports)
 	{
 		TsExpression endpointReplaceExpression = new TsLiteralExpression(apiEndpoint);
 
@@ -341,6 +336,12 @@ public static class WebApi
 		{
 			var encodeParamInvocation = new TsInvokeExpression(
 				new TsIdentifier("endpointEncoder"), new TsIdentifier(param.Name));
+			var tsImportObjectIdPlaceholder =
+				new TsImport("@/constants").AddNamedImport("objectIdPlaceholder");
+			var tsImportEndpointEncoder =
+				new TsImport("@/utils/endpointEncoder").AddNamedImport("endpointEncoder");
+			tsImports.TryAdd("objectIdPlaceholder", tsImportObjectIdPlaceholder);
+			tsImports.TryAdd("endpointEncoder", tsImportEndpointEncoder);
 
 			endpointReplaceExpression = new TsMemberAccessExpression(endpointReplaceExpression, "replace");
 

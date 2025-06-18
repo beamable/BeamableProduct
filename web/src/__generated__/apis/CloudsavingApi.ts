@@ -1,12 +1,10 @@
 import { CloudsavingBasicManifest } from '@/__generated__/schemas/CloudsavingBasicManifest';
 import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { ObjectRequests } from '@/__generated__/schemas/ObjectRequests';
 import { PlayerBasicCloudDataRequest } from '@/__generated__/schemas/PlayerBasicCloudDataRequest';
 import { POST } from '@/constants';

@@ -5,7 +5,6 @@ import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { ConnectionString } from '@/__generated__/schemas/ConnectionString';
 import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { GetCurrentManifestResponse } from '@/__generated__/schemas/GetCurrentManifestResponse';
 import { GetElasticContainerRegistryURI } from '@/__generated__/schemas/GetElasticContainerRegistryURI';
@@ -26,7 +25,6 @@ import { MicroserviceRegistrationRequest } from '@/__generated__/schemas/Microse
 import { MicroserviceRegistrationsQuery } from '@/__generated__/schemas/MicroserviceRegistrationsQuery';
 import { MicroserviceRegistrationsResponse } from '@/__generated__/schemas/MicroserviceRegistrationsResponse';
 import { MicroserviceSecretResponse } from '@/__generated__/schemas/MicroserviceSecretResponse';
-import { objectIdPlaceholder } from '@/constants';
 import { PerformanceResponse } from '@/__generated__/schemas/PerformanceResponse';
 import { POST } from '@/constants';
 import { PostManifestRequest } from '@/__generated__/schemas/PostManifestRequest';

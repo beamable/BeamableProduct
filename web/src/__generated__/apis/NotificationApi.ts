@@ -1,11 +1,9 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { NotificationRequest } from '@/__generated__/schemas/NotificationRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { POST } from '@/constants';
 import { ServerEvent } from '@/__generated__/schemas/ServerEvent';
 import { SubscriberDetailsResponse } from '@/__generated__/schemas/SubscriberDetailsResponse';

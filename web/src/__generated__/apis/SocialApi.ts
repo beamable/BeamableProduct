@@ -1,7 +1,6 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { FriendshipStatus } from '@/__generated__/schemas/FriendshipStatus';
 import { GET } from '@/constants';
 import { GetSocialStatusesResponse } from '@/__generated__/schemas/GetSocialStatusesResponse';
@@ -10,7 +9,6 @@ import { HttpResponse } from '@/http/types/HttpResponse';
 import { ImportFriendsRequest } from '@/__generated__/schemas/ImportFriendsRequest';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MakeFriendshipRequest } from '@/__generated__/schemas/MakeFriendshipRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { PlayerIdRequest } from '@/__generated__/schemas/PlayerIdRequest';
 import { POST } from '@/constants';
 import { SendFriendRequest } from '@/__generated__/schemas/SendFriendRequest';

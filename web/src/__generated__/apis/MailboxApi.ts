@@ -1,10 +1,8 @@
 import { ApiMailboxPublishPostMailboxResponse } from '@/__generated__/schemas/ApiMailboxPublishPostMailboxResponse';
-import { endpointEncoder } from '@/utils/endpointEncoder';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MessageRequest } from '@/__generated__/schemas/MessageRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { POST } from '@/constants';
 
 export class MailboxApi {
