@@ -17,7 +17,7 @@ export class NodeTokenStorage extends TokenStorage {
   constructor(tag?: string) {
     super();
     this.prefix = tag ? `${tag}_` : '';
-    const directory = path.join(os.homedir(), '.beamable');
+    const directory = path.join(os.homedir(), '.beamable_node');
     this.filePath = path.join(directory, `${this.prefix}beam_tokens.json`);
     try {
       if (fs.existsSync(this.filePath)) {

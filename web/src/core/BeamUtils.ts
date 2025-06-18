@@ -37,7 +37,7 @@ export class BeamUtils {
       return;
     }
 
-    const directory = path.join(os.homedir(), '.beamable');
+    const directory = path.join(os.homedir(), '.beamable_node');
     const filePath = path.join(directory, 'beam_config.json');
 
     try {
@@ -75,7 +75,7 @@ export class BeamUtils {
       };
     }
 
-    const directory = path.join(os.homedir(), '.beamable');
+    const directory = path.join(os.homedir(), '.beamable_node');
     const filePath = path.join(directory, 'beam_config.json');
 
     try {
