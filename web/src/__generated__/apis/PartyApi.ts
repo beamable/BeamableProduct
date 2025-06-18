@@ -3,18 +3,24 @@ import { ApiPartiesInvitePostPartyResponse } from '@/__generated__/schemas/ApiPa
 import { ApiPartiesMembersDeletePartyResponse } from '@/__generated__/schemas/ApiPartiesMembersDeletePartyResponse';
 import { CancelInviteToParty } from '@/__generated__/schemas/CancelInviteToParty';
 import { CreateParty } from '@/__generated__/schemas/CreateParty';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { InviteToParty } from '@/__generated__/schemas/InviteToParty';
 import { LeaveParty } from '@/__generated__/schemas/LeaveParty';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { Party } from '@/__generated__/schemas/Party';
+import { POST } from '@/constants';
 import { PromoteNewLeader } from '@/__generated__/schemas/PromoteNewLeader';
+import { PUT } from '@/constants';
 import { UpdateParty } from '@/__generated__/schemas/UpdateParty';
 
 export class PartyApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -24,20 +30,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async postParty(payload: CreateParty, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties";
     
     // Make the API request
-    return this.requester.request<Party, CreateParty>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<Party, CreateParty>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -48,20 +49,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyMetadataById(id: string, payload: UpdateParty, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}/metadata".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}/metadata".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Party, UpdateParty>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Party, UpdateParty>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -71,19 +67,14 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async getPartyById(id: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Party>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Party>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -93,19 +84,14 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyById(id: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Party>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers
+    return makeApiRequest<Party>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag
     });
   }
   
@@ -116,20 +102,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
    */
   async putPartyPromoteById(id: string, payload: PromoteNewLeader, gamertag?: string): Promise<HttpResponse<Party>> {
-    let endpoint = "/api/parties/{id}/promote".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}/promote".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Party, PromoteNewLeader>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Party, PromoteNewLeader>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -140,20 +121,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesInvitePostPartyResponse>>} A promise containing the HttpResponse of ApiPartiesInvitePostPartyResponse
    */
   async postPartyInviteById(id: string, payload: InviteToParty, gamertag?: string): Promise<HttpResponse<ApiPartiesInvitePostPartyResponse>> {
-    let endpoint = "/api/parties/{id}/invite".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}/invite".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<ApiPartiesInvitePostPartyResponse, InviteToParty>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<ApiPartiesInvitePostPartyResponse, InviteToParty>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -164,20 +140,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesInviteDeletePartyResponse>>} A promise containing the HttpResponse of ApiPartiesInviteDeletePartyResponse
    */
   async deletePartyInviteById(id: string, payload: CancelInviteToParty, gamertag?: string): Promise<HttpResponse<ApiPartiesInviteDeletePartyResponse>> {
-    let endpoint = "/api/parties/{id}/invite".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}/invite".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<ApiPartiesInviteDeletePartyResponse, CancelInviteToParty>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<ApiPartiesInviteDeletePartyResponse, CancelInviteToParty>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -188,20 +159,15 @@ export class PartyApi {
    * @returns {Promise<HttpResponse<ApiPartiesMembersDeletePartyResponse>>} A promise containing the HttpResponse of ApiPartiesMembersDeletePartyResponse
    */
   async deletePartyMembersById(id: string, payload: LeaveParty, gamertag?: string): Promise<HttpResponse<ApiPartiesMembersDeletePartyResponse>> {
-    let endpoint = "/api/parties/{id}/members".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/parties/{id}/members".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<ApiPartiesMembersDeletePartyResponse, LeaveParty>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<ApiPartiesMembersDeletePartyResponse, LeaveParty>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
 }

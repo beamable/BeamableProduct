@@ -1,13 +1,16 @@
 import { EmptyRsp } from '@/__generated__/schemas/EmptyRsp';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { RegisterReq } from '@/__generated__/schemas/RegisterReq';
 import { SendReq } from '@/__generated__/schemas/SendReq';
 
 export class PushApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -21,21 +24,16 @@ export class PushApi {
    * @returns {Promise<HttpResponse<EmptyRsp>>} A promise containing the HttpResponse of EmptyRsp
    */
   async postPushRegister(payload: RegisterReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
-    let endpoint = "/basic/push/register";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/push/register";
     
     // Make the API request
-    return this.requester.request<EmptyRsp, RegisterReq>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyRsp, RegisterReq>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -49,21 +47,16 @@ export class PushApi {
    * @returns {Promise<HttpResponse<EmptyRsp>>} A promise containing the HttpResponse of EmptyRsp
    */
   async postPushSend(payload: SendReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
-    let endpoint = "/basic/push/send";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/push/send";
     
     // Make the API request
-    return this.requester.request<EmptyRsp, SendReq>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyRsp, SendReq>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

@@ -1,14 +1,18 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { NotificationRequest } from '@/__generated__/schemas/NotificationRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { ServerEvent } from '@/__generated__/schemas/ServerEvent';
 import { SubscriberDetailsResponse } from '@/__generated__/schemas/SubscriberDetailsResponse';
 
 export class NotificationApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -22,21 +26,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationChannel(payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/channel";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/channel";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NotificationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NotificationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -50,21 +49,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationPlayer(payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/player";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/player";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NotificationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NotificationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -78,21 +72,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationCustom(payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/custom";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/custom";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NotificationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NotificationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -106,21 +95,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationServer(payload: ServerEvent, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/server";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/server";
     
     // Make the API request
-    return this.requester.request<CommonResponse, ServerEvent>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, ServerEvent>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -134,21 +118,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationGeneric(payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/generic";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/generic";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NotificationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NotificationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -161,20 +140,15 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<SubscriberDetailsResponse>>} A promise containing the HttpResponse of SubscriberDetailsResponse
    */
   async getNotification(gamertag?: string): Promise<HttpResponse<SubscriberDetailsResponse>> {
-    let endpoint = "/basic/notification/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/";
     
     // Make the API request
-    return this.requester.request<SubscriberDetailsResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<SubscriberDetailsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -188,21 +162,16 @@ export class NotificationApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postNotificationGame(payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/notification/game";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/notification/game";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NotificationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NotificationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

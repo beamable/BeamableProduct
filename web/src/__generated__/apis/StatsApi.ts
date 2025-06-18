@@ -1,11 +1,16 @@
 import { BatchReadStatsResponse } from '@/__generated__/schemas/BatchReadStatsResponse';
 import { BatchSetStatsRequest } from '@/__generated__/schemas/BatchSetStatsRequest';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
 import { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
 import { StatRequest } from '@/__generated__/schemas/StatRequest';
@@ -19,7 +24,7 @@ import { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatU
 
 export class StatsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -33,21 +38,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putStatSubscribe(payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/stats/subscribe";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/stats/subscribe";
     
     // Make the API request
-    return this.requester.request<CommonResponse, StatsSubscribeRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, StatsSubscribeRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -61,21 +61,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteStatSubscribe(payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/stats/subscribe";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/stats/subscribe";
     
     // Make the API request
-    return this.requester.request<CommonResponse, StatsUnsubscribeRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, StatsUnsubscribeRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -87,26 +82,19 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<BatchReadStatsResponse>>} A promise containing the HttpResponse of BatchReadStatsResponse
    */
   async getStatsClientBatch(objectIds: string, format?: string, stats?: string, gamertag?: string): Promise<HttpResponse<BatchReadStatsResponse>> {
-    let endpoint = "/basic/stats/client/batch";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      objectIds,
-      format,
-      stats
-    });
+    let e = "/basic/stats/client/batch";
     
     // Make the API request
-    return this.requester.request<BatchReadStatsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<BatchReadStatsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        objectIds,
+        format,
+        stats
+      },
+      g: gamertag
     });
   }
   
@@ -120,21 +108,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatBatch(payload: BatchSetStatsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/stats/batch";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/stats/batch";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, BatchSetStatsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, BatchSetStatsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -148,21 +131,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<StatsSearchResponse>>} A promise containing the HttpResponse of StatsSearchResponse
    */
   async postStatSearch(payload: StatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsSearchResponse>> {
-    let endpoint = "/basic/stats/search";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/stats/search";
     
     // Make the API request
-    return this.requester.request<StatsSearchResponse, StatsSearchRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<StatsSearchResponse, StatsSearchRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -176,21 +154,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<SearchExtendedResponse>>} A promise containing the HttpResponse of SearchExtendedResponse
    */
   async postStatSearchExtended(payload: SearchExtendedRequest, gamertag?: string): Promise<HttpResponse<SearchExtendedResponse>> {
-    let endpoint = "/basic/stats/search/extended";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/stats/search/extended";
     
     // Make the API request
-    return this.requester.request<SearchExtendedResponse, SearchExtendedRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SearchExtendedResponse, SearchExtendedRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -205,21 +178,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatClientStringlistByObjectId(objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/client/stringlist".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/stats/{objectId}/client/stringlist".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, StatUpdateRequestStringListFormat>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, StatUpdateRequestStringListFormat>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -234,25 +202,18 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
    */
   async getStatByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      stats
-    });
+    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<StatsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<StatsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        stats
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -267,21 +228,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, StatUpdateRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, StatUpdateRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -296,21 +252,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteStatByObjectId(objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, StatRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, StatRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -325,25 +276,18 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
    */
   async getStatClientByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let endpoint = "/object/stats/{objectId}/client".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      stats
-    });
+    let e = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<StatsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<StatsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        stats
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -358,21 +302,16 @@ export class StatsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postStatClientByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/stats/{objectId}/client".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, StatUpdateRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, StatUpdateRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

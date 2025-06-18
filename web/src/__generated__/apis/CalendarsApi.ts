@@ -1,13 +1,17 @@
 import { CalendarClaimRequest } from '@/__generated__/schemas/CalendarClaimRequest';
 import { CalendarQueryResponse } from '@/__generated__/schemas/CalendarQueryResponse';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 
 export class CalendarsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -18,20 +22,15 @@ export class CalendarsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCalendarClaimByObjectId(objectId: bigint | string, payload: CalendarClaimRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/calendars/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/calendars/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, CalendarClaimRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, CalendarClaimRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -41,19 +40,14 @@ export class CalendarsApi {
    * @returns {Promise<HttpResponse<CalendarQueryResponse>>} A promise containing the HttpResponse of CalendarQueryResponse
    */
   async getCalendarByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CalendarQueryResponse>> {
-    let endpoint = "/object/calendars/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/calendars/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CalendarQueryResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<CalendarQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
 }

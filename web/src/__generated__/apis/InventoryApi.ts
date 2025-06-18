@@ -1,21 +1,26 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { CurrencyContentResponse } from '@/__generated__/schemas/CurrencyContentResponse';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
 import { EndTransactionRequest } from '@/__generated__/schemas/EndTransactionRequest';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { InventoryQueryRequest } from '@/__generated__/schemas/InventoryQueryRequest';
 import { InventoryUpdateRequest } from '@/__generated__/schemas/InventoryUpdateRequest';
 import { InventoryView } from '@/__generated__/schemas/InventoryView';
 import { ItemContentResponse } from '@/__generated__/schemas/ItemContentResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MultipliersGetResponse } from '@/__generated__/schemas/MultipliersGetResponse';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { PreviewVipBonusResponse } from '@/__generated__/schemas/PreviewVipBonusResponse';
+import { PUT } from '@/constants';
 import { TransferRequest } from '@/__generated__/schemas/TransferRequest';
 
 export class InventoryApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -24,19 +29,14 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<ItemContentResponse>>} A promise containing the HttpResponse of ItemContentResponse
    */
   async getInventoryItems(gamertag?: string): Promise<HttpResponse<ItemContentResponse>> {
-    let endpoint = "/basic/inventory/items";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/inventory/items";
     
     // Make the API request
-    return this.requester.request<ItemContentResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<ItemContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -45,19 +45,14 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CurrencyContentResponse>>} A promise containing the HttpResponse of CurrencyContentResponse
    */
   async getInventoryCurrency(gamertag?: string): Promise<HttpResponse<CurrencyContentResponse>> {
-    let endpoint = "/basic/inventory/currency";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/inventory/currency";
     
     // Make the API request
-    return this.requester.request<CurrencyContentResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<CurrencyContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -68,20 +63,15 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<PreviewVipBonusResponse>>} A promise containing the HttpResponse of PreviewVipBonusResponse
    */
   async putInventoryPreviewByObjectId(objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<PreviewVipBonusResponse>> {
-    let endpoint = "/object/inventory/{objectId}/preview".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/preview".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<PreviewVipBonusResponse, InventoryUpdateRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<PreviewVipBonusResponse, InventoryUpdateRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -91,19 +81,14 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<MultipliersGetResponse>>} A promise containing the HttpResponse of MultipliersGetResponse
    */
   async getInventoryMultipliersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MultipliersGetResponse>> {
-    let endpoint = "/object/inventory/{objectId}/multipliers".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/multipliers".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<MultipliersGetResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<MultipliersGetResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -118,21 +103,16 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteInventoryTransactionByObjectId(objectId: bigint | string, payload: EndTransactionRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/transaction".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/transaction".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, EndTransactionRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, EndTransactionRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -143,24 +123,17 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<InventoryView>>} A promise containing the HttpResponse of InventoryView
    */
   async getInventoryByObjectId(objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<InventoryView>> {
-    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      scope
-    });
+    let e = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<InventoryView>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<InventoryView>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        scope
+      },
+      g: gamertag
     });
   }
   
@@ -171,20 +144,15 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<InventoryView>>} A promise containing the HttpResponse of InventoryView
    */
   async postInventoryByObjectId(objectId: bigint | string, payload: InventoryQueryRequest, gamertag?: string): Promise<HttpResponse<InventoryView>> {
-    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<InventoryView, InventoryQueryRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<InventoryView, InventoryQueryRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -195,20 +163,15 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryByObjectId(objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, InventoryUpdateRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, InventoryUpdateRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -218,19 +181,14 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryProxyReloadByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/proxy/reload".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/proxy/reload".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag
     });
   }
   
@@ -245,21 +203,16 @@ export class InventoryApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putInventoryTransferByObjectId(objectId: bigint | string, payload: TransferRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/inventory/{objectId}/transfer".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/inventory/{objectId}/transfer".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, TransferRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, TransferRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

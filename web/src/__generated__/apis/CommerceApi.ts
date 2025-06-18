@@ -2,16 +2,21 @@ import { ActiveListingResponse } from '@/__generated__/schemas/ActiveListingResp
 import { ClearStatusRequest } from '@/__generated__/schemas/ClearStatusRequest';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { CooldownModifierRequest } from '@/__generated__/schemas/CooldownModifierRequest';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GetActiveOffersResponse } from '@/__generated__/schemas/GetActiveOffersResponse';
 import { GetCatalogResponse } from '@/__generated__/schemas/GetCatalogResponse';
 import { GetSKUsResponse } from '@/__generated__/schemas/GetSKUsResponse';
 import { GetTotalCouponResponse } from '@/__generated__/schemas/GetTotalCouponResponse';
 import { GiveCouponReq } from '@/__generated__/schemas/GiveCouponReq';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { PurchaseRequest } from '@/__generated__/schemas/PurchaseRequest';
+import { PUT } from '@/constants';
 import { ReportPurchaseRequest } from '@/__generated__/schemas/ReportPurchaseRequest';
 import { ResultResponse } from '@/__generated__/schemas/ResultResponse';
 import { SaveCatalogRequest } from '@/__generated__/schemas/SaveCatalogRequest';
@@ -20,7 +25,7 @@ import { StatSubscriptionNotification } from '@/__generated__/schemas/StatSubscr
 
 export class CommerceApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -34,21 +39,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ResultResponse>>} A promise containing the HttpResponse of ResultResponse
    */
   async postCommerceCatalogLegacy(payload: SaveCatalogRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
-    let endpoint = "/basic/commerce/catalog/legacy";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/commerce/catalog/legacy";
     
     // Make the API request
-    return this.requester.request<ResultResponse, SaveCatalogRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ResultResponse, SaveCatalogRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -62,25 +62,18 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetCatalogResponse>>} A promise containing the HttpResponse of GetCatalogResponse
    */
   async getCommerceCatalog(version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetCatalogResponse>> {
-    let endpoint = "/basic/commerce/catalog";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      version
-    });
+    let e = "/basic/commerce/catalog";
     
     // Make the API request
-    return this.requester.request<GetCatalogResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetCatalogResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        version
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -90,24 +83,17 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetSKUsResponse>>} A promise containing the HttpResponse of GetSKUsResponse
    */
   async getCommerceSkus(version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetSKUsResponse>> {
-    let endpoint = "/basic/commerce/skus";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      version
-    });
+    let e = "/basic/commerce/skus";
     
     // Make the API request
-    return this.requester.request<GetSKUsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<GetSKUsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        version
+      },
+      g: gamertag
     });
   }
   
@@ -121,21 +107,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ResultResponse>>} A promise containing the HttpResponse of ResultResponse
    */
   async postCommerceSkus(payload: SaveSKUsRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
-    let endpoint = "/basic/commerce/skus";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/commerce/skus";
     
     // Make the API request
-    return this.requester.request<ResultResponse, SaveSKUsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ResultResponse, SaveSKUsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -150,25 +131,18 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceByObjectId(objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      scope
-    });
+    let e = "/object/commerce/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GetActiveOffersResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetActiveOffersResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        scope
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -178,19 +152,14 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetTotalCouponResponse>>} A promise containing the HttpResponse of GetTotalCouponResponse
    */
   async getCommerceCouponsCountByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GetTotalCouponResponse>> {
-    let endpoint = "/object/commerce/{objectId}/coupons/count".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/coupons/count".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GetTotalCouponResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<GetTotalCouponResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -205,21 +174,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putCommerceListingsCooldownByObjectId(objectId: bigint | string, payload: CooldownModifierRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/listings/cooldown".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/listings/cooldown".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, CooldownModifierRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, CooldownModifierRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -236,27 +200,20 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceOffersAdminByObjectId(objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/offersAdmin".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      language,
-      stores,
-      time
-    });
+    let e = "/object/commerce/{objectId}/offersAdmin".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GetActiveOffersResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetActiveOffersResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        language,
+        stores,
+        time
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -271,21 +228,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommercePurchaseByObjectId(objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/purchase".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/purchase".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, PurchaseRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, PurchaseRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -300,21 +252,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ResultResponse>>} A promise containing the HttpResponse of ResultResponse
    */
   async putCommercePurchaseByObjectId(objectId: bigint | string, payload: ReportPurchaseRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
-    let endpoint = "/object/commerce/{objectId}/purchase".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/purchase".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<ResultResponse, ReportPurchaseRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ResultResponse, ReportPurchaseRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -331,27 +278,20 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<ActiveListingResponse>>} A promise containing the HttpResponse of ActiveListingResponse
    */
   async getCommerceListingsByObjectId(objectId: bigint | string, listing: string, store?: string, time?: string, gamertag?: string): Promise<HttpResponse<ActiveListingResponse>> {
-    let endpoint = "/object/commerce/{objectId}/listings".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      listing,
-      store,
-      time
-    });
+    let e = "/object/commerce/{objectId}/listings".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<ActiveListingResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ActiveListingResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        listing,
+        store,
+        time
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -366,21 +306,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteCommerceStatusByObjectId(objectId: bigint | string, payload: ClearStatusRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/status".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/status".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, ClearStatusRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, ClearStatusRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -395,21 +330,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommerceCouponsByObjectId(objectId: bigint | string, payload: GiveCouponReq, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/coupons".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/coupons".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, GiveCouponReq>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, GiveCouponReq>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -424,21 +354,16 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postCommerceStatsUpdateByObjectId(objectId: bigint | string, payload: StatSubscriptionNotification, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/commerce/{objectId}/stats/update".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/commerce/{objectId}/stats/update".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, StatSubscriptionNotification>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, StatSubscriptionNotification>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -455,27 +380,20 @@ export class CommerceApi {
    * @returns {Promise<HttpResponse<GetActiveOffersResponse>>} A promise containing the HttpResponse of GetActiveOffersResponse
    */
   async getCommerceOffersByObjectId(objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
-    let endpoint = "/object/commerce/{objectId}/offers".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      language,
-      stores,
-      time
-    });
+    let e = "/object/commerce/{objectId}/offers".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GetActiveOffersResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetActiveOffersResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        language,
+        stores,
+        time
+      },
+      g: gamertag,
+      w: true
     });
   }
 }

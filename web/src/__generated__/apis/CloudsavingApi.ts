@@ -1,11 +1,16 @@
 import { CloudsavingBasicManifest } from '@/__generated__/schemas/CloudsavingBasicManifest';
+import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { ObjectRequests } from '@/__generated__/schemas/ObjectRequests';
 import { PlayerBasicCloudDataRequest } from '@/__generated__/schemas/PlayerBasicCloudDataRequest';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { ReplaceObjectsRequest } from '@/__generated__/schemas/ReplaceObjectsRequest';
 import { UploadRequests } from '@/__generated__/schemas/UploadRequests';
 import { UploadRequestsFromPortal } from '@/__generated__/schemas/UploadRequestsFromPortal';
@@ -13,7 +18,7 @@ import { URLSResponse } from '@/__generated__/schemas/URLSResponse';
 
 export class CloudsavingApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -27,21 +32,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<CloudsavingBasicManifest>>} A promise containing the HttpResponse of CloudsavingBasicManifest
    */
   async postCloudsavingDataReplace(payload: ReplaceObjectsRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
-    let endpoint = "/basic/cloudsaving/data/replace";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/replace";
     
     // Make the API request
-    return this.requester.request<CloudsavingBasicManifest, ReplaceObjectsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CloudsavingBasicManifest, ReplaceObjectsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -55,21 +55,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteCloudsavingData(payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/cloudsaving/data";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, ObjectRequests>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, ObjectRequests>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -83,21 +78,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<URLSResponse>>} A promise containing the HttpResponse of URLSResponse
    */
   async postCloudsavingDataDownloadURL(payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
-    let endpoint = "/basic/cloudsaving/data/downloadURL";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/downloadURL";
     
     // Make the API request
-    return this.requester.request<URLSResponse, ObjectRequests>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<URLSResponse, ObjectRequests>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -111,21 +101,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<URLSResponse>>} A promise containing the HttpResponse of URLSResponse
    */
   async postCloudsavingDataDownloadURLFromPortal(payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
-    let endpoint = "/basic/cloudsaving/data/downloadURLFromPortal";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/downloadURLFromPortal";
     
     // Make the API request
-    return this.requester.request<URLSResponse, ObjectRequests>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<URLSResponse, ObjectRequests>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -139,21 +124,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<CloudsavingBasicManifest>>} A promise containing the HttpResponse of CloudsavingBasicManifest
    */
   async putCloudsavingDataMove(payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
-    let endpoint = "/basic/cloudsaving/data/move";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/move";
     
     // Make the API request
-    return this.requester.request<CloudsavingBasicManifest, PlayerBasicCloudDataRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CloudsavingBasicManifest, PlayerBasicCloudDataRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -167,21 +147,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<CloudsavingBasicManifest>>} A promise containing the HttpResponse of CloudsavingBasicManifest
    */
   async putCloudsavingDataMoveFromPortal(payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
-    let endpoint = "/basic/cloudsaving/data/moveFromPortal";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/moveFromPortal";
     
     // Make the API request
-    return this.requester.request<CloudsavingBasicManifest, PlayerBasicCloudDataRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CloudsavingBasicManifest, PlayerBasicCloudDataRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -195,21 +170,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<URLSResponse>>} A promise containing the HttpResponse of URLSResponse
    */
   async postCloudsavingDataUploadURLFromPortal(payload: UploadRequestsFromPortal, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
-    let endpoint = "/basic/cloudsaving/data/uploadURLFromPortal";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/uploadURLFromPortal";
     
     // Make the API request
-    return this.requester.request<URLSResponse, UploadRequestsFromPortal>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<URLSResponse, UploadRequestsFromPortal>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -223,21 +193,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<CloudsavingBasicManifest>>} A promise containing the HttpResponse of CloudsavingBasicManifest
    */
   async putCloudsavingDataCommitManifest(payload: UploadRequests, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
-    let endpoint = "/basic/cloudsaving/data/commitManifest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/commitManifest";
     
     // Make the API request
-    return this.requester.request<CloudsavingBasicManifest, UploadRequests>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CloudsavingBasicManifest, UploadRequests>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -251,21 +216,16 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<URLSResponse>>} A promise containing the HttpResponse of URLSResponse
    */
   async postCloudsavingDataUploadURL(payload: UploadRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
-    let endpoint = "/basic/cloudsaving/data/uploadURL";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/cloudsaving/data/uploadURL";
     
     // Make the API request
-    return this.requester.request<URLSResponse, UploadRequests>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<URLSResponse, UploadRequests>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -275,24 +235,17 @@ export class CloudsavingApi {
    * @returns {Promise<HttpResponse<CloudsavingBasicManifest>>} A promise containing the HttpResponse of CloudsavingBasicManifest
    */
   async getCloudsaving(playerId?: bigint | string, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
-    let endpoint = "/basic/cloudsaving/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      playerId
-    });
+    let e = "/basic/cloudsaving/";
     
     // Make the API request
-    return this.requester.request<CloudsavingBasicManifest>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<CloudsavingBasicManifest>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        playerId
+      },
+      g: gamertag
     });
   }
 }

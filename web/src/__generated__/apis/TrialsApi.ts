@@ -1,14 +1,19 @@
 import { CreateTrialRestRequest } from '@/__generated__/schemas/CreateTrialRestRequest';
+import { DELETE } from '@/constants';
 import { DeleteTrialDataRequest } from '@/__generated__/schemas/DeleteTrialDataRequest';
 import { DeleteTrialRequest } from '@/__generated__/schemas/DeleteTrialRequest';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GetPlayerTrialsResponse } from '@/__generated__/schemas/GetPlayerTrialsResponse';
 import { GetS3DataResponse } from '@/__generated__/schemas/GetS3DataResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { ListTrialsResponse } from '@/__generated__/schemas/ListTrialsResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { PauseTrialRequest } from '@/__generated__/schemas/PauseTrialRequest';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { SaveGameDataResponse } from '@/__generated__/schemas/SaveGameDataResponse';
 import { ScheduleTrialRequest } from '@/__generated__/schemas/ScheduleTrialRequest';
 import { StartTrialRequest } from '@/__generated__/schemas/StartTrialRequest';
@@ -17,7 +22,7 @@ import { UploadTrialDataRequest } from '@/__generated__/schemas/UploadTrialDataR
 
 export class TrialsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -31,25 +36,18 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<GetS3DataResponse>>} A promise containing the HttpResponse of GetS3DataResponse
    */
   async getTrialsAdminData(id: bigint | string, gamertag?: string): Promise<HttpResponse<GetS3DataResponse>> {
-    let endpoint = "/basic/trials/admin/data";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id
-    });
+    let e = "/basic/trials/admin/data";
     
     // Make the API request
-    return this.requester.request<GetS3DataResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetS3DataResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -63,21 +61,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<SaveGameDataResponse>>} A promise containing the HttpResponse of SaveGameDataResponse
    */
   async postTrialData(payload: UploadTrialDataRequest, gamertag?: string): Promise<HttpResponse<SaveGameDataResponse>> {
-    let endpoint = "/basic/trials/data";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/data";
     
     // Make the API request
-    return this.requester.request<SaveGameDataResponse, UploadTrialDataRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SaveGameDataResponse, UploadTrialDataRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -91,21 +84,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async deleteTrialData(payload: DeleteTrialDataRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/data";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/data";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, DeleteTrialDataRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, DeleteTrialDataRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -119,21 +107,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async putTrialPause(payload: PauseTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/pause";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/pause";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, PauseTrialRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, PauseTrialRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -147,21 +130,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async putTrialSchedule(payload: ScheduleTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/schedule";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/schedule";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, ScheduleTrialRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, ScheduleTrialRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -174,20 +152,15 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<ListTrialsResponse>>} A promise containing the HttpResponse of ListTrialsResponse
    */
   async getTrials(gamertag?: string): Promise<HttpResponse<ListTrialsResponse>> {
-    let endpoint = "/basic/trials/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/";
     
     // Make the API request
-    return this.requester.request<ListTrialsResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ListTrialsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -201,21 +174,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async postTrial(payload: CreateTrialRestRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, CreateTrialRestRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, CreateTrialRestRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -229,21 +197,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async deleteTrial(payload: DeleteTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, DeleteTrialRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, DeleteTrialRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -257,25 +220,18 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<GetPlayerTrialsResponse>>} A promise containing the HttpResponse of GetPlayerTrialsResponse
    */
   async getTrialsAdmin(dbid: bigint | string, gamertag?: string): Promise<HttpResponse<GetPlayerTrialsResponse>> {
-    let endpoint = "/basic/trials/admin";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      dbid
-    });
+    let e = "/basic/trials/admin";
     
     // Make the API request
-    return this.requester.request<GetPlayerTrialsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetPlayerTrialsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        dbid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -289,21 +245,16 @@ export class TrialsApi {
    * @returns {Promise<HttpResponse<TrialSuccessResponse>>} A promise containing the HttpResponse of TrialSuccessResponse
    */
   async putTrialStart(payload: StartTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
-    let endpoint = "/basic/trials/start";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/trials/start";
     
     // Make the API request
-    return this.requester.request<TrialSuccessResponse, StartTrialRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<TrialSuccessResponse, StartTrialRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

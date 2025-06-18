@@ -1,5 +1,7 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { LeaderboardAddRequest } from '@/__generated__/schemas/LeaderboardAddRequest';
@@ -15,12 +17,15 @@ import { LeaderboardSwapRequest } from '@/__generated__/schemas/LeaderboardSwapR
 import { LeaderboardUidResponse } from '@/__generated__/schemas/LeaderboardUidResponse';
 import { LeaderBoardViewResponse } from '@/__generated__/schemas/LeaderBoardViewResponse';
 import { ListLeaderBoardViewResponse } from '@/__generated__/schemas/ListLeaderBoardViewResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MatchMakingMatchesPvpResponse } from '@/__generated__/schemas/MatchMakingMatchesPvpResponse';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 
 export class LeaderboardsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -37,28 +42,21 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardListResponse>>} A promise containing the HttpResponse of LeaderboardListResponse
    */
   async getLeaderboardsList(includePartitions?: boolean, limit?: number, prefix?: string, skip?: number, gamertag?: string): Promise<HttpResponse<LeaderboardListResponse>> {
-    let endpoint = "/basic/leaderboards/list";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      includePartitions,
-      limit,
-      prefix,
-      skip
-    });
+    let e = "/basic/leaderboards/list";
     
     // Make the API request
-    return this.requester.request<LeaderboardListResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardListResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        includePartitions,
+        limit,
+        prefix,
+        skip
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -72,25 +70,18 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<ListLeaderBoardViewResponse>>} A promise containing the HttpResponse of ListLeaderBoardViewResponse
    */
   async getLeaderboardsPlayer(dbid: bigint | string, gamertag?: string): Promise<HttpResponse<ListLeaderBoardViewResponse>> {
-    let endpoint = "/basic/leaderboards/player";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      dbid
-    });
+    let e = "/basic/leaderboards/player";
     
     // Make the API request
-    return this.requester.request<ListLeaderBoardViewResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ListLeaderBoardViewResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        dbid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -105,26 +96,19 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardAssignmentInfo>>} A promise containing the HttpResponse of LeaderboardAssignmentInfo
    */
   async getLeaderboardsAssignment(boardId: string, joinBoard?: boolean, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
-    let endpoint = "/basic/leaderboards/assignment";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      boardId,
-      joinBoard
-    });
+    let e = "/basic/leaderboards/assignment";
     
     // Make the API request
-    return this.requester.request<LeaderboardAssignmentInfo>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardAssignmentInfo>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        boardId,
+        joinBoard
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -137,20 +121,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardUidResponse>>} A promise containing the HttpResponse of LeaderboardUidResponse
    */
   async getLeaderboardsUid(gamertag?: string): Promise<HttpResponse<LeaderboardUidResponse>> {
-    let endpoint = "/basic/leaderboards/uid";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/leaderboards/uid";
     
     // Make the API request
-    return this.requester.request<LeaderboardUidResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardUidResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -164,20 +143,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardEntriesByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entries".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/entries".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      withAuth: true
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: DELETE,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -192,25 +166,18 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardMembershipResponse>>} A promise containing the HttpResponse of LeaderboardMembershipResponse
    */
   async getLeaderboardMembershipByObjectId(objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardMembershipResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/membership".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      playerId
-    });
+    let e = "/object/leaderboards/{objectId}/membership".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderboardMembershipResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardMembershipResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        playerId
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -221,24 +188,17 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardRanksByObjectId(objectId: string, ids: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/ranks".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      ids
-    });
+    let e = "/object/leaderboards/{objectId}/ranks".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderBoardViewResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<LeaderBoardViewResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        ids
+      },
+      g: gamertag
     });
   }
   
@@ -253,25 +213,18 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardPartitionInfo>>} A promise containing the HttpResponse of LeaderboardPartitionInfo
    */
   async getLeaderboardPartitionByObjectId(objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardPartitionInfo>> {
-    let endpoint = "/object/leaderboards/{objectId}/partition".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      playerId
-    });
+    let e = "/object/leaderboards/{objectId}/partition".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderboardPartitionInfo>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardPartitionInfo>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        playerId
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -285,20 +238,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardFriendsByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/friends".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/friends".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderBoardViewResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderBoardViewResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -313,21 +261,16 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postLeaderboardByObjectId(objectId: string, payload: LeaderboardCreateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, LeaderboardCreateRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, LeaderboardCreateRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -341,20 +284,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      withAuth: true
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: DELETE,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -367,26 +305,19 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<MatchMakingMatchesPvpResponse>>} A promise containing the HttpResponse of MatchMakingMatchesPvpResponse
    */
   async getLeaderboardMatchesByObjectId(objectId: string, poolSize: number, windowSize: number, windows: number, gamertag?: string): Promise<HttpResponse<MatchMakingMatchesPvpResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/matches".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      poolSize,
-      windowSize,
-      windows
-    });
+    let e = "/object/leaderboards/{objectId}/matches".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<MatchMakingMatchesPvpResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<MatchMakingMatchesPvpResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        poolSize,
+        windowSize,
+        windows
+      },
+      g: gamertag
     });
   }
   
@@ -400,20 +331,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardAssignmentInfo>>} A promise containing the HttpResponse of LeaderboardAssignmentInfo
    */
   async getLeaderboardAssignmentByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
-    let endpoint = "/object/leaderboards/{objectId}/assignment".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/assignment".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderboardAssignmentInfo>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardAssignmentInfo>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -428,21 +354,16 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardAssignmentByObjectId(objectId: string, payload: LeaderboardRemoveCacheEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/assignment".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/assignment".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, LeaderboardRemoveCacheEntryRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, LeaderboardRemoveCacheEntryRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -453,20 +374,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardEntryByObjectId(objectId: string, payload: LeaderboardAddRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entry".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/entry".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, LeaderboardAddRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, LeaderboardAddRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -481,21 +397,16 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteLeaderboardEntryByObjectId(objectId: string, payload: LeaderboardRemoveEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/entry".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/entry".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, LeaderboardRemoveEntryRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, LeaderboardRemoveEntryRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -509,20 +420,15 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardFreezeByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/freeze".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/freeze".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      withAuth: true
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -538,26 +444,19 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderboardDetails>>} A promise containing the HttpResponse of LeaderboardDetails
    */
   async getLeaderboardDetailsByObjectId(objectId: string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<LeaderboardDetails>> {
-    let endpoint = "/object/leaderboards/{objectId}/details".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      from,
-      max
-    });
+    let e = "/object/leaderboards/{objectId}/details".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderboardDetails>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LeaderboardDetails>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        from,
+        max
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -573,29 +472,22 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<LeaderBoardViewResponse>>} A promise containing the HttpResponse of LeaderBoardViewResponse
    */
   async getLeaderboardViewByObjectId(objectId: string, focus?: bigint | string, friends?: boolean, from?: number, guild?: boolean, max?: number, outlier?: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/view".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      focus,
-      friends,
-      from,
-      guild,
-      max,
-      outlier
-    });
+    let e = "/object/leaderboards/{objectId}/view".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<LeaderBoardViewResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<LeaderBoardViewResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        focus,
+        friends,
+        from,
+        guild,
+        max,
+        outlier
+      },
+      g: gamertag
     });
   }
   
@@ -610,21 +502,16 @@ export class LeaderboardsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putLeaderboardSwapByObjectId(objectId: string, payload: LeaderboardSwapRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/leaderboards/{objectId}/swap".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/leaderboards/{objectId}/swap".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, LeaderboardSwapRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, LeaderboardSwapRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

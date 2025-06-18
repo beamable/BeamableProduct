@@ -1,20 +1,25 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
 import { EventApplyRequest } from '@/__generated__/schemas/EventApplyRequest';
 import { EventContentResponse } from '@/__generated__/schemas/EventContentResponse';
 import { EventObjectData } from '@/__generated__/schemas/EventObjectData';
 import { EventPhaseEndRequest } from '@/__generated__/schemas/EventPhaseEndRequest';
 import { EventQueryResponse } from '@/__generated__/schemas/EventQueryResponse';
 import { EventsInDateRangeResponse } from '@/__generated__/schemas/EventsInDateRangeResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { PingRsp } from '@/__generated__/schemas/PingRsp';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { SetContentRequest } from '@/__generated__/schemas/SetContentRequest';
 
 export class EventsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -27,20 +32,15 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<EventContentResponse>>} A promise containing the HttpResponse of EventContentResponse
    */
   async getEventsContent(gamertag?: string): Promise<HttpResponse<EventContentResponse>> {
-    let endpoint = "/basic/events/content";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/events/content";
     
     // Make the API request
-    return this.requester.request<EventContentResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<EventContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -57,28 +57,21 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<EventsInDateRangeResponse>>} A promise containing the HttpResponse of EventsInDateRangeResponse
    */
   async getEventsCalendar(from?: string, limit?: number, query?: string, to?: string, gamertag?: string): Promise<HttpResponse<EventsInDateRangeResponse>> {
-    let endpoint = "/basic/events/calendar";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      from,
-      limit,
-      query,
-      to
-    });
+    let e = "/basic/events/calendar";
     
     // Make the API request
-    return this.requester.request<EventsInDateRangeResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<EventsInDateRangeResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        from,
+        limit,
+        query,
+        to
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -92,21 +85,16 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postEventApplyContent(payload: EventApplyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/events/applyContent";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/events/applyContent";
     
     // Make the API request
-    return this.requester.request<CommonResponse, EventApplyRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, EventApplyRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -115,19 +103,14 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<EventQueryResponse>>} A promise containing the HttpResponse of EventQueryResponse
    */
   async getEventsRunning(gamertag?: string): Promise<HttpResponse<EventQueryResponse>> {
-    let endpoint = "/basic/events/running";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/events/running";
     
     // Make the API request
-    return this.requester.request<EventQueryResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<EventQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -142,21 +125,16 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventEndPhaseByObjectId(objectId: string, payload: EventPhaseEndRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/endPhase".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/endPhase".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, EventPhaseEndRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, EventPhaseEndRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -170,20 +148,15 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<EventObjectData>>} A promise containing the HttpResponse of EventObjectData
    */
   async getEventByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<EventObjectData>> {
-    let endpoint = "/object/events/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EventObjectData>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<EventObjectData>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -197,20 +170,15 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<PingRsp>>} A promise containing the HttpResponse of PingRsp
    */
   async getEventPingByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<PingRsp>> {
-    let endpoint = "/object/events/{objectId}/ping".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/ping".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<PingRsp>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<PingRsp>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -225,21 +193,16 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventContentByObjectId(objectId: string, payload: SetContentRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/content".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/content".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, SetContentRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, SetContentRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -253,20 +216,15 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteEventContentByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/content".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/content".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      withAuth: true
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: DELETE,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -280,20 +238,15 @@ export class EventsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventRefreshByObjectId(objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/events/{objectId}/refresh".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/events/{objectId}/refresh".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      withAuth: true
+    return makeApiRequest<CommonResponse>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag,
+      w: true
     });
   }
 }

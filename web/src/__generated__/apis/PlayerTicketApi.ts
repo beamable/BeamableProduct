@@ -1,11 +1,14 @@
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { TicketQueryResponse } from '@/__generated__/schemas/TicketQueryResponse';
 
 export class PlayerTicketApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -15,19 +18,14 @@ export class PlayerTicketApi {
    * @returns {Promise<HttpResponse<TicketQueryResponse>>} A promise containing the HttpResponse of TicketQueryResponse
    */
   async getPlayerMatchmakingTicketsByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
-    let endpoint = "/api/players/{playerId}/matchmaking/tickets".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/matchmaking/tickets".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<TicketQueryResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<TicketQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
 }

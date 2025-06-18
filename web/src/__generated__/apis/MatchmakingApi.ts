@@ -1,9 +1,13 @@
 import { ApiMatchmakingTicketsDeleteTicketResponse } from '@/__generated__/schemas/ApiMatchmakingTicketsDeleteTicketResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { Match } from '@/__generated__/schemas/Match';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { Ticket } from '@/__generated__/schemas/Ticket';
 import { TicketQueryResponse } from '@/__generated__/schemas/TicketQueryResponse';
 import { TicketReservationRequest } from '@/__generated__/schemas/TicketReservationRequest';
@@ -11,7 +15,7 @@ import { TicketReservationResponse } from '@/__generated__/schemas/TicketReserva
 
 export class MatchmakingApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -21,19 +25,14 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<Match>>} A promise containing the HttpResponse of Match
    */
   async getMatchmakingMatchesById(id: string, gamertag?: string): Promise<HttpResponse<Match>> {
-    let endpoint = "/api/matchmaking/matches/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/matchmaking/matches/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Match>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Match>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -46,27 +45,20 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<TicketQueryResponse>>} A promise containing the HttpResponse of TicketQueryResponse
    */
   async getMatchmakingTickets(IncludeInactive?: boolean, Limit?: number, Players?: string[], Skip?: number, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
-    let endpoint = "/api/matchmaking/tickets";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      IncludeInactive,
-      Limit,
-      Players,
-      Skip
-    });
+    let e = "/api/matchmaking/tickets";
     
     // Make the API request
-    return this.requester.request<TicketQueryResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<TicketQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        IncludeInactive,
+        Limit,
+        Players,
+        Skip
+      },
+      g: gamertag
     });
   }
   
@@ -76,20 +68,15 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<TicketReservationResponse>>} A promise containing the HttpResponse of TicketReservationResponse
    */
   async postMatchmakingTickets(payload: TicketReservationRequest, gamertag?: string): Promise<HttpResponse<TicketReservationResponse>> {
-    let endpoint = "/api/matchmaking/tickets";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/matchmaking/tickets";
     
     // Make the API request
-    return this.requester.request<TicketReservationResponse, TicketReservationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<TicketReservationResponse, TicketReservationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -99,19 +86,14 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<Ticket>>} A promise containing the HttpResponse of Ticket
    */
   async getMatchmakingTicketsById(id: string, gamertag?: string): Promise<HttpResponse<Ticket>> {
-    let endpoint = "/api/matchmaking/tickets/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/matchmaking/tickets/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Ticket>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Ticket>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -121,19 +103,14 @@ export class MatchmakingApi {
    * @returns {Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>>} A promise containing the HttpResponse of ApiMatchmakingTicketsDeleteTicketResponse
    */
   async deleteMatchmakingTicketsById(id: string, gamertag?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
-    let endpoint = "/api/matchmaking/tickets/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/matchmaking/tickets/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<ApiMatchmakingTicketsDeleteTicketResponse>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers
+    return makeApiRequest<ApiMatchmakingTicketsDeleteTicketResponse>({
+      r: this.r,
+      e,
+      m: DELETE,
+      g: gamertag
     });
   }
 }

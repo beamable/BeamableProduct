@@ -7,16 +7,21 @@ import { ContentBasicManifest } from '@/__generated__/schemas/ContentBasicManife
 import { ContentBasicManifestChecksum } from '@/__generated__/schemas/ContentBasicManifestChecksum';
 import { ContentBasicManifestChecksums } from '@/__generated__/schemas/ContentBasicManifestChecksums';
 import { ContentOrText } from '@/__generated__/schemas/ContentOrText';
+import { DELETE } from '@/constants';
 import { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
 import { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { PullAllManifestsRequest } from '@/__generated__/schemas/PullAllManifestsRequest';
 import { PullManifestRequest } from '@/__generated__/schemas/PullManifestRequest';
+import { PUT } from '@/constants';
 import { PutLocalizationsRequest } from '@/__generated__/schemas/PutLocalizationsRequest';
 import { RepeatManifestRequest } from '@/__generated__/schemas/RepeatManifestRequest';
 import { SaveBinaryRequest } from '@/__generated__/schemas/SaveBinaryRequest';
@@ -29,7 +34,7 @@ import { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
 
 export class ContentApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -43,21 +48,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postContentManifestsUnarchive(payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/content/manifests/unarchive";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifests/unarchive";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, ArchiveOrUnarchiveManifestsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, ArchiveOrUnarchiveManifestsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -71,21 +71,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifest>>} A promise containing the HttpResponse of ContentBasicManifest
    */
   async postContentManifestPull(payload: PullManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
-    let endpoint = "/basic/content/manifest/pull";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifest/pull";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifest, PullManifestRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifest, PullManifestRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -100,26 +95,19 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<GetManifestHistoryResponse>>} A promise containing the HttpResponse of GetManifestHistoryResponse
    */
   async getContentManifestHistory(id?: string, limit?: number, gamertag?: string): Promise<HttpResponse<GetManifestHistoryResponse>> {
-    let endpoint = "/basic/content/manifest/history";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      limit
-    });
+    let e = "/basic/content/manifest/history";
     
     // Make the API request
-    return this.requester.request<GetManifestHistoryResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetManifestHistoryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        limit
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -133,21 +121,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<SaveBinaryResponse>>} A promise containing the HttpResponse of SaveBinaryResponse
    */
   async postContentBinary(payload: SaveBinaryRequest, gamertag?: string): Promise<HttpResponse<SaveBinaryResponse>> {
-    let endpoint = "/basic/content/binary";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/binary";
     
     // Make the API request
-    return this.requester.request<SaveBinaryResponse, SaveBinaryRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SaveBinaryResponse, SaveBinaryRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -161,21 +144,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifestChecksums>>} A promise containing the HttpResponse of ContentBasicManifestChecksums
    */
   async postContentManifestsPull(payload: PullAllManifestsRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
-    let endpoint = "/basic/content/manifests/pull";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifests/pull";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifestChecksums, PullAllManifestsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifestChecksums, PullAllManifestsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -190,26 +168,19 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentOrText>>} A promise containing the HttpResponse of ContentOrText
    */
   async getContent(contentId: string, version: string, gamertag?: string): Promise<HttpResponse<ContentOrText>> {
-    let endpoint = "/basic/content/content";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      contentId,
-      version
-    });
+    let e = "/basic/content/content";
     
     // Make the API request
-    return this.requester.request<ContentOrText>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ContentOrText>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        contentId,
+        version
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -222,20 +193,15 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<GetLocalizationsResponse>>} A promise containing the HttpResponse of GetLocalizationsResponse
    */
   async getContentLocalizations(gamertag?: string): Promise<HttpResponse<GetLocalizationsResponse>> {
-    let endpoint = "/basic/content/localizations";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/localizations";
     
     // Make the API request
-    return this.requester.request<GetLocalizationsResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetLocalizationsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -249,21 +215,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putContentLocalizations(payload: PutLocalizationsRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/content/localizations";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/localizations";
     
     // Make the API request
-    return this.requester.request<CommonResponse, PutLocalizationsRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, PutLocalizationsRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -277,21 +238,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteContentLocalizations(payload: DeleteLocalizationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/content/localizations";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/localizations";
     
     // Make the API request
-    return this.requester.request<CommonResponse, DeleteLocalizationRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, DeleteLocalizationRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -305,21 +261,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<SaveTextResponse>>} A promise containing the HttpResponse of SaveTextResponse
    */
   async postContentText(payload: SaveTextRequest, gamertag?: string): Promise<HttpResponse<SaveTextResponse>> {
-    let endpoint = "/basic/content/text";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/text";
     
     // Make the API request
-    return this.requester.request<SaveTextResponse, SaveTextRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SaveTextResponse, SaveTextRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -333,25 +284,18 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifest>>} A promise containing the HttpResponse of ContentBasicManifest
    */
   async getContentManifestExact(uid: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
-    let endpoint = "/basic/content/manifest/exact";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      uid
-    });
+    let e = "/basic/content/manifest/exact";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifest>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifest>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        uid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -366,26 +310,19 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifest>>} A promise containing the HttpResponse of ContentBasicManifest
    */
   async getContentManifest(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
-    let endpoint = "/basic/content/manifest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifest>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifest>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -399,21 +336,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifest>>} A promise containing the HttpResponse of ContentBasicManifest
    */
   async postContentManifest(payload: SaveManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
-    let endpoint = "/basic/content/manifest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifest";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifest, SaveManifestRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifest, SaveManifestRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -427,21 +359,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postContentManifestsArchive(payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/content/manifests/archive";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifests/archive";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, ArchiveOrUnarchiveManifestsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, ArchiveOrUnarchiveManifestsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -455,21 +382,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<SaveContentResponse>>} A promise containing the HttpResponse of SaveContentResponse
    */
   async postContent(payload: SaveContentRequest, gamertag?: string): Promise<HttpResponse<SaveContentResponse>> {
-    let endpoint = "/basic/content/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/";
     
     // Make the API request
-    return this.requester.request<SaveContentResponse, SaveContentRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SaveContentResponse, SaveContentRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -480,25 +402,18 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ClientManifestResponse>>} A promise containing the HttpResponse of ClientManifestResponse
    */
   async getContentManifestPublic(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
-    let endpoint = "/basic/content/manifest/public";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest/public";
     
     // Make the API request
-    return this.requester.request<ClientManifestResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<ClientManifestResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag
     });
   }
   
@@ -509,25 +424,18 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ClientManifestJsonResponse>>} A promise containing the HttpResponse of ClientManifestJsonResponse
    */
   async getContentManifestPublicJson(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
-    let endpoint = "/basic/content/manifest/public/json";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest/public/json";
     
     // Make the API request
-    return this.requester.request<ClientManifestJsonResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<ClientManifestJsonResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag
     });
   }
   
@@ -541,21 +449,16 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putContentManifestRepeat(payload: RepeatManifestRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/content/manifest/repeat";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifest/repeat";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RepeatManifestRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RepeatManifestRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -570,26 +473,19 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ClientManifestJsonResponse>>} A promise containing the HttpResponse of ClientManifestJsonResponse
    */
   async getContentManifestPrivateJson(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
-    let endpoint = "/basic/content/manifest/private/json";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest/private/json";
     
     // Make the API request
-    return this.requester.request<ClientManifestJsonResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ClientManifestJsonResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -604,26 +500,19 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ClientManifestResponse>>} A promise containing the HttpResponse of ClientManifestResponse
    */
   async getContentManifestPrivate(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
-    let endpoint = "/basic/content/manifest/private";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest/private";
     
     // Make the API request
-    return this.requester.request<ClientManifestResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ClientManifestResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -636,20 +525,15 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifestChecksums>>} A promise containing the HttpResponse of ContentBasicManifestChecksums
    */
   async getContentManifestChecksums(gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
-    let endpoint = "/basic/content/manifest/checksums";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifest/checksums";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifestChecksums>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ContentBasicManifestChecksums>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -660,25 +544,18 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicManifestChecksum>>} A promise containing the HttpResponse of ContentBasicManifestChecksum
    */
   async getContentManifestChecksum(id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksum>> {
-    let endpoint = "/basic/content/manifest/checksum";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      uid
-    });
+    let e = "/basic/content/manifest/checksum";
     
     // Make the API request
-    return this.requester.request<ContentBasicManifestChecksum>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<ContentBasicManifestChecksum>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        uid
+      },
+      g: gamertag
     });
   }
   
@@ -691,20 +568,15 @@ export class ContentApi {
    * @returns {Promise<HttpResponse<ContentBasicGetManifestsResponse>>} A promise containing the HttpResponse of ContentBasicGetManifestsResponse
    */
   async getContentManifests(gamertag?: string): Promise<HttpResponse<ContentBasicGetManifestsResponse>> {
-    let endpoint = "/basic/content/manifests";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/content/manifests";
     
     // Make the API request
-    return this.requester.request<ContentBasicGetManifestsResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ContentBasicGetManifestsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
 }

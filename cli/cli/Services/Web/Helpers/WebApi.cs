@@ -39,10 +39,9 @@ public static class WebApi
 	{
 		var resources = new List<GeneratedFileDescriptor>();
 		var apiDeclarations = new Dictionary<string, (Dictionary<string, TsImport>, TsClass)>();
-		var httpMethod = new TsIdentifier("HttpMethod");
 		var httpRequester = new TsIdentifier("HttpRequester");
 		var httpResponse = new TsIdentifier("HttpResponse");
-		var requester = new TsIdentifier("requester");
+		var requester = new TsIdentifier("r");
 
 		foreach (var document in ctxDocuments)
 		{
@@ -68,16 +67,22 @@ public static class WebApi
 		foreach ((string apiName, (Dictionary<string, TsImport> tsImports, TsClass tsApiClass)) in apiDeclarations)
 		{
 			var tsFile = new TsFile(apiName);
-			var tsImportHttpMethod =
-				new TsImport($"@/http/types/{httpMethod.Identifier}").AddNamedImport(httpMethod.Identifier);
 			var tsImportHttpRequester =
 				new TsImport($"@/http/types/{httpRequester.Identifier}").AddNamedImport(httpRequester.Identifier);
 			var tsImportHttpResponse =
 				new TsImport($"@/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
+			var tsImportMakeApiRequest =
+				new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest");
+			var tsImportEndpointEncoder =
+				new TsImport("@/utils/endpointEncoder").AddNamedImport("endpointEncoder");
+			var tsImportObjectIdPlaceholder =
+				new TsImport("@/constants").AddNamedImport("objectIdPlaceholder");
 
-			tsImports.TryAdd("httpMethod", tsImportHttpMethod);
 			tsImports.TryAdd("httpRequester", tsImportHttpRequester);
 			tsImports.TryAdd("httpResponse", tsImportHttpResponse);
+			tsImports.TryAdd("makeApiRequest", tsImportMakeApiRequest);
+			tsImports.TryAdd("endpointEncoder", tsImportEndpointEncoder);
+			tsImports.TryAdd("objectIdPlaceholder", tsImportObjectIdPlaceholder);
 
 			foreach (var kvp in tsImports.OrderBy(kvp => kvp.Key))
 				tsFile.AddImport(kvp.Value);
@@ -127,16 +132,13 @@ public static class WebApi
 		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
 
 		var payload = new TsIdentifier("payload");
-		var headers = new TsIdentifier("headers");
 		var modules = new List<string>();
 		var requiredParams = new List<TsFunctionParameter>();
 		var optionalParams = new List<TsFunctionParameter>();
 		var paramCommentList = new List<string>();
 		var methodBodyStatements = new List<TsNode>();
-		var headerOptionalStatements = new List<TsNode>();
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
-		var headersObjectLiteral = new TsObjectLiteralExpression();
-		var endpointVariable = new TsVariable("endpoint");
+		var endpointVariable = new TsVariable("e");
 
 		var hasRequestBody = false;
 		var bodyParam = AddBodyParameterIfExist(operation, payload, modules, paramCommentList, ref hasRequestBody,
@@ -147,23 +149,48 @@ public static class WebApi
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
 
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint);
-		AddHeaderParametersStatements(headerParams, methodBodyStatements, headers, headerOptionalStatements,
-			headersObjectLiteral, paramCommentList);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
 
-		TsVariable queryStringDeclaration = null;
+		tsImports.TryAdd($"{apiMethodType}", new TsImport("@/constants").AddNamedImport($"{apiMethodType}"));
+		tsImports.TryAdd("makeApiRequest", new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest"));
+
+		var propsLiteral = new TsObjectLiteralExpression()
+			.AddMember(new TsObjectLiteralMember(new TsIdentifier("r"),
+				new TsMemberAccessExpression(new TsIdentifier("this"), "r")))
+			.AddMember(new TsObjectLiteralMember(new TsIdentifier("e"), new TsIdentifier("e")))
+			.AddMember(new TsObjectLiteralMember(new TsIdentifier("m"), new TsIdentifier(apiMethodType)));
+
 		if (apiParameters.Any(p => p.In == ParameterLocation.Query))
+			propsLiteral.AddMember(new TsObjectLiteralMember(new TsIdentifier("q"), queriesObjectLiteral));
+
+		if (hasRequestBody)
+			propsLiteral.AddMember(new TsObjectLiteralMember(new TsIdentifier("p"), payload));
+
+		if (headerParams.Count > 0)
 		{
-			tsImports.TryAdd("makeQueryString",
-				new TsImport($"@/utils/makeQueryString").AddNamedImport("makeQueryString"));
-			AddQueryStringStatements(methodBodyStatements, queriesObjectLiteral, out queryStringDeclaration);
+			var gamertag = new TsIdentifier("gamertag");
+			headerParams.ForEach(headerParam =>
+			{
+				paramCommentList.Add(
+					$"@param {{{TsType.String.Render()}}} {gamertag.Identifier} - {headerParam.Description ?? $"The `{headerParam.Name}` header to include in the API request."}");
+			});
+			propsLiteral.AddMember(
+				new TsObjectLiteralMember(new TsIdentifier("g"), gamertag));
 		}
 
-		var hasHeaders = headerParams.Count > 0;
-		var requestObjectLiteral = MakeHttpRequestObject(payload, hasRequestBody, hasHeaders, requiresAuth,
-			apiMethodType, endpointVariable, queryStringDeclaration);
+		if (requiresAuth)
+			propsLiteral.AddMember(new TsObjectLiteralMember(new TsIdentifier("w"),
+				new TsLiteralExpression(true)));
 
-		AddApiCallStatements(methodBodyStatements, responseType, requestType, requestObjectLiteral);
+		var apiMethodCall = new TsInvokeExpression(new TsIdentifier("makeApiRequest"), propsLiteral)
+			.AddTypeArgument(TsType.Of(responseType));
+
+		if (requestType != null)
+			apiMethodCall.AddTypeArgument(requestType);
+
+		methodBodyStatements.Add(new TsBlankLine());
+		methodBodyStatements.Add(new TsComment("Make the API request"));
+		methodBodyStatements.Add(new TsReturnStatement(apiMethodCall));
 
 		var @params = new BuildAndAddMethodParams(tsClass, tsImports, enums, methodName, requiredParams, bodyParam,
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
@@ -312,59 +339,17 @@ public static class WebApi
 
 		foreach (var param in apiParameters.Where(p => p.In == ParameterLocation.Path))
 		{
-			var paramToStringExpression = new TsMemberAccessExpression(
-				new TsIdentifier(param.Name),
-				new TsInvokeExpression(new TsIdentifier("toString")).Render());
-
 			var encodeParamInvocation = new TsInvokeExpression(
-				new TsIdentifier("encodeURIComponent"), paramToStringExpression);
+				new TsIdentifier("endpointEncoder"), new TsIdentifier(param.Name));
 
 			endpointReplaceExpression = new TsMemberAccessExpression(endpointReplaceExpression, "replace");
 
 			endpointReplaceExpression = new TsInvokeExpression(endpointReplaceExpression,
-				new TsLiteralExpression($"{{{param.Name}}}"), encodeParamInvocation);
+				new TsIdentifier("objectIdPlaceholder"), encodeParamInvocation);
 		}
 
 		endpoint.WithInitializer(endpointReplaceExpression);
 		methodBodyStatements.Add(endpoint);
-	}
-
-	private static void AddHeaderParametersStatements(List<OpenApiParameter> headerParams,
-		List<TsNode> methodBodyStatements, TsIdentifier headersIdentifier, List<TsNode> headerOptionalStatements,
-		TsObjectLiteralExpression headersObjectLiteral, List<string> paramCommentList)
-	{
-		foreach (var param in headerParams)
-		{
-			var paramNameIdentifier = new TsIdentifier(param.Name.Split('-').Last().ToLower());
-			paramCommentList.Add(
-				$"@param {{{TsType.String.Render()}}} {paramNameIdentifier.Identifier} - {param.Description ?? $"The `{param.Name}` header to include in the API request."}");
-
-			if (param.Required)
-			{
-				var member =
-					new TsObjectLiteralMember(new TsLiteralExpression(param.Name), paramNameIdentifier);
-				headersObjectLiteral.AddMember(member);
-			}
-			else
-			{
-				var headerAssignment = new TsAssignmentStatement(
-					new TsMemberAccessExpression(headersIdentifier, param.Name, false),
-					paramNameIdentifier);
-				var queryMemberOptional =
-					new TsConditionalStatement(new TsBinaryExpression(paramNameIdentifier,
-							TsBinaryOperatorType.NotEqualTo, new TsLiteralExpression("undefined")))
-						.AddThen(headerAssignment);
-				headerOptionalStatements.Add(queryMemberOptional);
-			}
-		}
-
-		var headersVar = new TsVariable("headers").AsConst()
-			.AsType(TsUtilityType.Record(TsType.String, TsType.String))
-			.WithInitializer(headersObjectLiteral);
-		methodBodyStatements.Add(new TsBlankLine());
-		methodBodyStatements.Add(new TsComment("Create the header parameters object"));
-		methodBodyStatements.Add(headersVar);
-		methodBodyStatements.AddRange(headerOptionalStatements);
 	}
 
 	private static void AddQueryParameterStatements(List<OpenApiParameter> apiParameters,
@@ -375,64 +360,6 @@ public static class WebApi
 			var member = new TsObjectLiteralMember(new TsIdentifier(param.Name), new TsIdentifier(param.Name));
 			queriesObjectLiteral.AddMember(member);
 		}
-	}
-
-	private static void AddQueryStringStatements(List<TsNode> methodBodyStatements,
-		TsObjectLiteralExpression queriesObjectLiteral, out TsVariable queryStringDeclaration)
-	{
-		queryStringDeclaration = new TsVariable("queryString").AsConst()
-			.WithInitializer(new TsInvokeExpression(new TsIdentifier("makeQueryString"), queriesObjectLiteral));
-		methodBodyStatements.Add(new TsBlankLine());
-		methodBodyStatements.Add(new TsComment("Create the query string from the query parameters"));
-		methodBodyStatements.Add(queryStringDeclaration);
-	}
-
-	private static TsObjectLiteralExpression MakeHttpRequestObject(TsIdentifier payloadIdentifier, bool hasRequestBody,
-		bool hasHeaders, bool requiresAuth, string apiMethodType, TsVariable endpoint,
-		TsVariable queryStringDeclaration)
-	{
-		var urlKey = new TsIdentifier("url");
-		var methodKey = new TsIdentifier("method");
-		var headersKey = new TsIdentifier("headers");
-		var bodyKey = new TsIdentifier("body");
-		var withAuthKey = new TsIdentifier("withAuth");
-		var requestUrl = queryStringDeclaration != null
-			? new TsInvokeExpression(new TsMemberAccessExpression(endpoint.Identifier, "concat"),
-				queryStringDeclaration.Identifier)
-			: endpoint.Identifier;
-		var requestMethod =
-			new TsMemberAccessExpression(new TsIdentifier("HttpMethod"), apiMethodType);
-		var requestObjectLiteral = new TsObjectLiteralExpression()
-			.AddMember(new TsObjectLiteralMember(urlKey, requestUrl))
-			.AddMember(new TsObjectLiteralMember(methodKey, requestMethod));
-
-		if (hasHeaders)
-			requestObjectLiteral.AddMember(headersKey, new TsIdentifier("headers"));
-
-		if (hasRequestBody)
-			requestObjectLiteral.AddMember(bodyKey, payloadIdentifier);
-
-		if (requiresAuth)
-			requestObjectLiteral.AddMember(withAuthKey, new TsLiteralExpression(true));
-
-		return requestObjectLiteral;
-	}
-
-	private static void AddApiCallStatements(List<TsNode> methodBodyStatements, string responseType, TsType requestType,
-		TsObjectLiteralExpression requestObjectLiteral)
-	{
-		var theRequester = new TsMemberAccessExpression(new TsIdentifier("this"), "requester");
-		var theRequestFn = new TsMemberAccessExpression(theRequester, "request");
-		var apiMethodCall = new TsInvokeExpression(theRequestFn, requestObjectLiteral)
-			.AddTypeArgument(TsType.Of(responseType));
-
-		if (requestType != null)
-			apiMethodCall.AddTypeArgument(requestType);
-
-		var apiMethodCallReturn = new TsReturnStatement(apiMethodCall);
-		methodBodyStatements.Add(new TsBlankLine());
-		methodBodyStatements.Add(new TsComment("Make the API request"));
-		methodBodyStatements.Add(apiMethodCallReturn);
 	}
 
 	private static void BuildAndAddMethod(BuildAndAddMethodParams p)
@@ -454,7 +381,7 @@ public static class WebApi
 			tsMethod.AddParameter(requiredParam);
 
 		// add required header parameters
-		foreach (var headerParam in p.HeaderParams.Where(p => p.Required))
+		foreach (var headerParam in p.HeaderParams.Where(param => param.Required))
 			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name, TsType.String));
 
 		// add body parameter if exists
@@ -466,7 +393,7 @@ public static class WebApi
 			tsMethod.AddParameter(optionalParam);
 
 		// add optional header parameters
-		foreach (var headerParam in p.HeaderParams.Where(p => !p.Required))
+		foreach (var headerParam in p.HeaderParams.Where(param => !param.Required))
 			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name.Split('-').Last().ToLower(), TsType.String)
 				.AsOptional());
 

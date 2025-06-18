@@ -1,12 +1,16 @@
 import { ApiPlayersLobbiesDeletePlayerLobbyResponse } from '@/__generated__/schemas/ApiPlayersLobbiesDeletePlayerLobbyResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { Lobby } from '@/__generated__/schemas/Lobby';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 
 export class PlayerLobbyApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -16,19 +20,14 @@ export class PlayerLobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async getPlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/players/{playerId}/lobbies".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/lobbies".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<Lobby>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Lobby>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -38,19 +37,14 @@ export class PlayerLobbyApi {
    * @returns {Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>>} A promise containing the HttpResponse of ApiPlayersLobbiesDeletePlayerLobbyResponse
    */
   async deletePlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
-    let endpoint = "/api/players/{playerId}/lobbies".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/lobbies".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<ApiPlayersLobbiesDeletePlayerLobbyResponse>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers
+    return makeApiRequest<ApiPlayersLobbiesDeletePlayerLobbyResponse>({
+      r: this.r,
+      e,
+      m: DELETE,
+      g: gamertag
     });
   }
 }

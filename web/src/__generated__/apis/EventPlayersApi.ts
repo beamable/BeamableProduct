@@ -1,15 +1,20 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
 import { EventClaimRequest } from '@/__generated__/schemas/EventClaimRequest';
 import { EventClaimResponse } from '@/__generated__/schemas/EventClaimResponse';
 import { EventPlayerView } from '@/__generated__/schemas/EventPlayerView';
 import { EventScoreRequest } from '@/__generated__/schemas/EventScoreRequest';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 
 export class EventPlayersApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -23,20 +28,15 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<EventPlayerView>>} A promise containing the HttpResponse of EventPlayerView
    */
   async getEventPlayersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EventPlayerView>> {
-    let endpoint = "/object/event-players/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/event-players/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EventPlayerView>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<EventPlayerView>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -51,21 +51,16 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<EventClaimResponse>>} A promise containing the HttpResponse of EventClaimResponse
    */
   async postEventPlayersClaimByObjectId(objectId: bigint | string, payload: EventClaimRequest, gamertag?: string): Promise<HttpResponse<EventClaimResponse>> {
-    let endpoint = "/object/event-players/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/event-players/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EventClaimResponse, EventClaimRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EventClaimResponse, EventClaimRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -76,20 +71,15 @@ export class EventPlayersApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putEventPlayersScoreByObjectId(objectId: bigint | string, payload: EventScoreRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/event-players/{objectId}/score".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/event-players/{objectId}/score".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, EventScoreRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, EventScoreRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
 }

@@ -1,22 +1,28 @@
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { CreateDonationRequest } from '@/__generated__/schemas/CreateDonationRequest';
+import { DELETE } from '@/constants';
 import { DisbandRequest } from '@/__generated__/schemas/DisbandRequest';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { Group } from '@/__generated__/schemas/Group';
 import { GroupApplication } from '@/__generated__/schemas/GroupApplication';
 import { GroupInvite } from '@/__generated__/schemas/GroupInvite';
 import { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembershipResponse';
 import { GroupUpdate } from '@/__generated__/schemas/GroupUpdate';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { KickRequest } from '@/__generated__/schemas/KickRequest';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MakeDonationRequest } from '@/__generated__/schemas/MakeDonationRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { RoleChangeRequest } from '@/__generated__/schemas/RoleChangeRequest';
 
 export class GroupsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -31,21 +37,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putGroupRoleByObjectId(objectId: bigint | string, payload: RoleChangeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/role".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/role".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, RoleChangeRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RoleChangeRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -56,20 +57,15 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async postGroupKickByObjectId(objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/groups/{objectId}/kick".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/kick".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupMembershipResponse, KickRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<GroupMembershipResponse, KickRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -84,21 +80,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupApplyByObjectId(objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/apply".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/apply".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, GroupApplication>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, GroupApplication>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -113,21 +104,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postGroupDonationsByObjectId(objectId: bigint | string, payload: CreateDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/donations".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, CreateDonationRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, CreateDonationRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -142,21 +128,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putGroupDonationsByObjectId(objectId: bigint | string, payload: MakeDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/donations".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse, MakeDonationRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, MakeDonationRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -167,20 +148,15 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async deleteGroupMemberByObjectId(objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/groups/{objectId}/member".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/member".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupMembershipResponse, KickRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<GroupMembershipResponse, KickRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -190,19 +166,14 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<Group>>} A promise containing the HttpResponse of Group
    */
   async getGroupByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Group>> {
-    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<Group>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Group>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -213,20 +184,15 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putGroupByObjectId(objectId: bigint | string, payload: GroupUpdate, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, GroupUpdate>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, GroupUpdate>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -237,20 +203,15 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteGroupByObjectId(objectId: bigint | string, payload: DisbandRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, DisbandRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<CommonResponse, DisbandRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -264,20 +225,15 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async putGroupDonationsClaimByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/object/groups/{objectId}/donations/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/donations/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<EmptyResponse>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      withAuth: true
+    return makeApiRequest<EmptyResponse>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -292,21 +248,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupInviteByObjectId(objectId: bigint | string, payload: GroupInvite, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/invite".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/invite".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, GroupInvite>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, GroupInvite>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -321,21 +272,16 @@ export class GroupsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postGroupPetitionByObjectId(objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/groups/{objectId}/petition".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/groups/{objectId}/petition".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, GroupApplication>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, GroupApplication>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

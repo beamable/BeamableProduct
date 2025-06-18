@@ -1,4 +1,7 @@
 import { AvailabilityResponse } from '@/__generated__/schemas/AvailabilityResponse';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GroupCreate } from '@/__generated__/schemas/GroupCreate';
 import { GroupCreateResponse } from '@/__generated__/schemas/GroupCreateResponse';
 import { GroupMembershipRequest } from '@/__generated__/schemas/GroupMembershipRequest';
@@ -6,14 +9,15 @@ import { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembership
 import { GroupSearchResponse } from '@/__generated__/schemas/GroupSearchResponse';
 import { GroupType } from '@/__generated__/schemas/enums/GroupType';
 import { GroupUser } from '@/__generated__/schemas/GroupUser';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 
 export class GroupUsersApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -27,27 +31,20 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<AvailabilityResponse>>} A promise containing the HttpResponse of AvailabilityResponse
    */
   async getGroupUsersAvailabilityByObjectId(objectId: bigint | string, type: GroupType, name?: string, subGroup?: boolean, tag?: string, gamertag?: string): Promise<HttpResponse<AvailabilityResponse>> {
-    let endpoint = "/object/group-users/{objectId}/availability".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      type,
-      name,
-      subGroup,
-      tag
-    });
+    let e = "/object/group-users/{objectId}/availability".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<AvailabilityResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<AvailabilityResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        type,
+        name,
+        subGroup,
+        tag
+      },
+      g: gamertag
     });
   }
   
@@ -57,19 +54,14 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupSearchResponse>>} A promise containing the HttpResponse of GroupSearchResponse
    */
   async getGroupUsersRecommendedByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
-    let endpoint = "/object/group-users/{objectId}/recommended".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/group-users/{objectId}/recommended".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupSearchResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<GroupSearchResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -80,20 +72,15 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async postGroupUsersJoinByObjectId(objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/group-users/{objectId}/join".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/group-users/{objectId}/join".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupMembershipResponse, GroupMembershipRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<GroupMembershipResponse, GroupMembershipRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -104,20 +91,15 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupMembershipResponse>>} A promise containing the HttpResponse of GroupMembershipResponse
    */
   async deleteGroupUsersJoinByObjectId(objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
-    let endpoint = "/object/group-users/{objectId}/join".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/group-users/{objectId}/join".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupMembershipResponse, GroupMembershipRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<GroupMembershipResponse, GroupMembershipRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -128,20 +110,15 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupCreateResponse>>} A promise containing the HttpResponse of GroupCreateResponse
    */
   async postGroupUsersByObjectId(objectId: bigint | string, payload: GroupCreate, gamertag?: string): Promise<HttpResponse<GroupCreateResponse>> {
-    let endpoint = "/object/group-users/{objectId}/group".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/group-users/{objectId}/group".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupCreateResponse, GroupCreate>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<GroupCreateResponse, GroupCreate>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -163,35 +140,28 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupSearchResponse>>} A promise containing the HttpResponse of GroupSearchResponse
    */
   async getGroupUsersSearchByObjectId(objectId: bigint | string, type: GroupType, enrollmentTypes?: string, hasSlots?: boolean, limit?: number, name?: string, offset?: number, scoreMax?: bigint | string, scoreMin?: bigint | string, sortField?: string, sortValue?: number, subGroup?: boolean, userScore?: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
-    let endpoint = "/object/group-users/{objectId}/search".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      type,
-      enrollmentTypes,
-      hasSlots,
-      limit,
-      name,
-      offset,
-      scoreMax,
-      scoreMin,
-      sortField,
-      sortValue,
-      subGroup,
-      userScore
-    });
+    let e = "/object/group-users/{objectId}/search".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupSearchResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<GroupSearchResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        type,
+        enrollmentTypes,
+        hasSlots,
+        limit,
+        name,
+        offset,
+        scoreMax,
+        scoreMin,
+        sortField,
+        sortValue,
+        subGroup,
+        userScore
+      },
+      g: gamertag
     });
   }
   
@@ -201,19 +171,14 @@ export class GroupUsersApi {
    * @returns {Promise<HttpResponse<GroupUser>>} A promise containing the HttpResponse of GroupUser
    */
   async getGroupUsersByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupUser>> {
-    let endpoint = "/object/group-users/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/group-users/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<GroupUser>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<GroupUser>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
 }

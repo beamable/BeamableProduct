@@ -1,12 +1,15 @@
 import { ApiMailboxPublishPostMailboxResponse } from '@/__generated__/schemas/ApiMailboxPublishPostMailboxResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MessageRequest } from '@/__generated__/schemas/MessageRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 
 export class MailboxApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -16,20 +19,15 @@ export class MailboxApi {
    * @returns {Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>>} A promise containing the HttpResponse of ApiMailboxPublishPostMailboxResponse
    */
   async postMailboxPublish(payload: MessageRequest, gamertag?: string): Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>> {
-    let endpoint = "/api/mailbox/publish";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/mailbox/publish";
     
     // Make the API request
-    return this.requester.request<ApiMailboxPublishPostMailboxResponse, MessageRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<ApiMailboxPublishPostMailboxResponse, MessageRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
 }

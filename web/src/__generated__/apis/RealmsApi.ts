@@ -8,22 +8,27 @@ import { CreateProjectRequest } from '@/__generated__/schemas/CreateProjectReque
 import { CustomerResponse } from '@/__generated__/schemas/CustomerResponse';
 import { CustomersResponse } from '@/__generated__/schemas/CustomersResponse';
 import { CustomerViewResponse } from '@/__generated__/schemas/CustomerViewResponse';
+import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GetGameResponse } from '@/__generated__/schemas/GetGameResponse';
 import { HtmlResponse } from '@/__generated__/schemas/HtmlResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { InFlightFailureResponse } from '@/__generated__/schemas/InFlightFailureResponse';
 import { LaunchMessageListResponse } from '@/__generated__/schemas/LaunchMessageListResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { NewCustomerRequest } from '@/__generated__/schemas/NewCustomerRequest';
 import { NewCustomerResponse } from '@/__generated__/schemas/NewCustomerResponse';
 import { NewGameRequest } from '@/__generated__/schemas/NewGameRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
 import { ProjectView } from '@/__generated__/schemas/ProjectView';
 import { PromoteRealmRequest } from '@/__generated__/schemas/PromoteRealmRequest';
 import { PromoteRealmResponse } from '@/__generated__/schemas/PromoteRealmResponse';
 import { PromoteRealmResponseOld } from '@/__generated__/schemas/PromoteRealmResponseOld';
+import { PUT } from '@/constants';
 import { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
 import { RealmConfigResponse } from '@/__generated__/schemas/RealmConfigResponse';
 import { RealmConfigSaveRequest } from '@/__generated__/schemas/RealmConfigSaveRequest';
@@ -36,7 +41,7 @@ import { UpdateGameHierarchyRequest } from '@/__generated__/schemas/UpdateGameHi
 
 export class RealmsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -47,25 +52,18 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<HtmlResponse>>} A promise containing the HttpResponse of HtmlResponse
    */
   async getRealmsCustomerActivate(cid: bigint | string, token: string, gamertag?: string): Promise<HttpResponse<HtmlResponse>> {
-    let endpoint = "/basic/realms/customer/activate";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      cid,
-      token
-    });
+    let e = "/basic/realms/customer/activate";
     
     // Make the API request
-    return this.requester.request<HtmlResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<HtmlResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        cid,
+        token
+      },
+      g: gamertag
     });
   }
   
@@ -79,21 +77,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmProjectBeamable(payload: CreateProjectRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/project/beamable";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project/beamable";
     
     // Make the API request
-    return this.requester.request<CommonResponse, CreateProjectRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, CreateProjectRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -103,24 +96,17 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<AliasAvailableResponse>>} A promise containing the HttpResponse of AliasAvailableResponse
    */
   async getRealmsCustomerAliasAvailable(alias: string, gamertag?: string): Promise<HttpResponse<AliasAvailableResponse>> {
-    let endpoint = "/basic/realms/customer/alias/available";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      alias
-    });
+    let e = "/basic/realms/customer/alias/available";
     
     // Make the API request
-    return this.requester.request<AliasAvailableResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<AliasAvailableResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        alias
+      },
+      g: gamertag
     });
   }
   
@@ -129,19 +115,14 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<ProjectView>>} A promise containing the HttpResponse of ProjectView
    */
   async getRealmsProject(gamertag?: string): Promise<HttpResponse<ProjectView>> {
-    let endpoint = "/basic/realms/project";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project";
     
     // Make the API request
-    return this.requester.request<ProjectView>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<ProjectView>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -155,21 +136,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmProject(payload: CreateProjectRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/project";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project";
     
     // Make the API request
-    return this.requester.request<CommonResponse, CreateProjectRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, CreateProjectRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -183,21 +159,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putRealmProject(payload: UnarchiveProjectRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/project";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project";
     
     // Make the API request
-    return this.requester.request<CommonResponse, UnarchiveProjectRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, UnarchiveProjectRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -211,21 +182,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteRealmProject(payload: ArchiveProjectRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/project";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project";
     
     // Make the API request
-    return this.requester.request<CommonResponse, ArchiveProjectRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, ArchiveProjectRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -235,20 +201,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<NewCustomerResponse>>} A promise containing the HttpResponse of NewCustomerResponse
    */
   async postRealmCustomerVerify(payload: NewCustomerRequest, gamertag?: string): Promise<HttpResponse<NewCustomerResponse>> {
-    let endpoint = "/basic/realms/customer/verify";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/customer/verify";
     
     // Make the API request
-    return this.requester.request<NewCustomerResponse, NewCustomerRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<NewCustomerResponse, NewCustomerRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -261,20 +222,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<GetGameResponse>>} A promise containing the HttpResponse of GetGameResponse
    */
   async getRealmsGames(gamertag?: string): Promise<HttpResponse<GetGameResponse>> {
-    let endpoint = "/basic/realms/games";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/games";
     
     // Make the API request
-    return this.requester.request<GetGameResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetGameResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -287,20 +243,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<RealmConfigResponse>>} A promise containing the HttpResponse of RealmConfigResponse
    */
   async getRealmsConfig(gamertag?: string): Promise<HttpResponse<RealmConfigResponse>> {
-    let endpoint = "/basic/realms/config";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/config";
     
     // Make the API request
-    return this.requester.request<RealmConfigResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<RealmConfigResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -314,21 +265,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmConfig(payload: RealmConfigChangeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/config";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/config";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RealmConfigChangeRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RealmConfigChangeRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -342,21 +288,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putRealmConfig(payload: RealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/config";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/config";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RealmConfigSaveRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RealmConfigSaveRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -370,21 +311,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putRealmProjectRename(payload: RenameProjectRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/project/rename";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project/rename";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RenameProjectRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RenameProjectRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -397,20 +333,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<ServicePlansResponse>>} A promise containing the HttpResponse of ServicePlansResponse
    */
   async getRealmsPlans(gamertag?: string): Promise<HttpResponse<ServicePlansResponse>> {
-    let endpoint = "/basic/realms/plans";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/plans";
     
     // Make the API request
-    return this.requester.request<ServicePlansResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ServicePlansResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -424,21 +355,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmPlans(payload: CreatePlanRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/plans";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/plans";
     
     // Make the API request
-    return this.requester.request<CommonResponse, CreatePlanRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, CreatePlanRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -447,19 +373,14 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<RealmConfiguration>>} A promise containing the HttpResponse of RealmConfiguration
    */
   async getRealmsClientDefaults(gamertag?: string): Promise<HttpResponse<RealmConfiguration>> {
-    let endpoint = "/basic/realms/client/defaults";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/client/defaults";
     
     // Make the API request
-    return this.requester.request<RealmConfiguration>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<RealmConfiguration>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -472,20 +393,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CustomerViewResponse>>} A promise containing the HttpResponse of CustomerViewResponse
    */
   async getRealmsCustomer(gamertag?: string): Promise<HttpResponse<CustomerViewResponse>> {
-    let endpoint = "/basic/realms/customer";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/customer";
     
     // Make the API request
-    return this.requester.request<CustomerViewResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<CustomerViewResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -495,20 +411,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<NewCustomerResponse>>} A promise containing the HttpResponse of NewCustomerResponse
    */
   async postRealmCustomer(payload: NewCustomerRequest, gamertag?: string): Promise<HttpResponse<NewCustomerResponse>> {
-    let endpoint = "/basic/realms/customer";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/customer";
     
     // Make the API request
-    return this.requester.request<NewCustomerResponse, NewCustomerRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<NewCustomerResponse, NewCustomerRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -523,26 +434,19 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<InFlightFailureResponse>>} A promise containing the HttpResponse of InFlightFailureResponse
    */
   async getRealmsAdminInflightFailures(serviceName: string, serviceObjectId?: string, gamertag?: string): Promise<HttpResponse<InFlightFailureResponse>> {
-    let endpoint = "/basic/realms/admin/inflight/failures";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      serviceName,
-      serviceObjectId
-    });
+    let e = "/basic/realms/admin/inflight/failures";
     
     // Make the API request
-    return this.requester.request<InFlightFailureResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<InFlightFailureResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        serviceName,
+        serviceObjectId
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -556,21 +460,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteRealmAdminInflightFailures(payload: BatchDeleteInFlightRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/admin/inflight/failures";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/admin/inflight/failures";
     
     // Make the API request
-    return this.requester.request<CommonResponse, BatchDeleteInFlightRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, BatchDeleteInFlightRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -583,20 +482,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<LaunchMessageListResponse>>} A promise containing the HttpResponse of LaunchMessageListResponse
    */
   async getRealmsLaunchMessage(gamertag?: string): Promise<HttpResponse<LaunchMessageListResponse>> {
-    let endpoint = "/basic/realms/launch-message";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/launch-message";
     
     // Make the API request
-    return this.requester.request<LaunchMessageListResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<LaunchMessageListResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -610,21 +504,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmLaunchMessage(payload: CreateLaunchMessageRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/launch-message";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/launch-message";
     
     // Make the API request
-    return this.requester.request<CommonResponse, CreateLaunchMessageRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, CreateLaunchMessageRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -638,21 +527,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteRealmLaunchMessage(payload: RemoveLaunchMessageRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/launch-message";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/launch-message";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RemoveLaunchMessageRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RemoveLaunchMessageRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -661,19 +545,14 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async getRealmsIsCustomer(gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/realms/is-customer";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/is-customer";
     
     // Make the API request
-    return this.requester.request<EmptyResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<EmptyResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -686,20 +565,15 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CustomerResponse>>} A promise containing the HttpResponse of CustomerResponse
    */
   async getRealmsAdminCustomer(gamertag?: string): Promise<HttpResponse<CustomerResponse>> {
-    let endpoint = "/basic/realms/admin/customer";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/admin/customer";
     
     // Make the API request
-    return this.requester.request<CustomerResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<CustomerResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -713,25 +587,18 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<GetGameResponse>>} A promise containing the HttpResponse of GetGameResponse
    */
   async getRealmsGame(rootPID: string, gamertag?: string): Promise<HttpResponse<GetGameResponse>> {
-    let endpoint = "/basic/realms/game";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      rootPID
-    });
+    let e = "/basic/realms/game";
     
     // Make the API request
-    return this.requester.request<GetGameResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetGameResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        rootPID
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -745,21 +612,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postRealmGame(payload: NewGameRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/game";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/game";
     
     // Make the API request
-    return this.requester.request<CommonResponse, NewGameRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, NewGameRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -773,21 +635,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putRealmGame(payload: UpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/realms/game";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/game";
     
     // Make the API request
-    return this.requester.request<CommonResponse, UpdateGameHierarchyRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, UpdateGameHierarchyRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -803,27 +660,20 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<PromoteRealmResponseOld>>} A promise containing the HttpResponse of PromoteRealmResponseOld
    */
   async getRealmsProjectPromote(sourcePid: string, contentManifestIds?: string[], promotions?: string[], gamertag?: string): Promise<HttpResponse<PromoteRealmResponseOld>> {
-    let endpoint = "/basic/realms/project/promote";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      sourcePid,
-      contentManifestIds,
-      promotions
-    });
+    let e = "/basic/realms/project/promote";
     
     // Make the API request
-    return this.requester.request<PromoteRealmResponseOld>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<PromoteRealmResponseOld>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        sourcePid,
+        contentManifestIds,
+        promotions
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -837,21 +687,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<PromoteRealmResponseOld>>} A promise containing the HttpResponse of PromoteRealmResponseOld
    */
   async postRealmProjectPromote(payload: PromoteRealmRequest, gamertag?: string): Promise<HttpResponse<PromoteRealmResponseOld>> {
-    let endpoint = "/basic/realms/project/promote";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/project/promote";
     
     // Make the API request
-    return this.requester.request<PromoteRealmResponseOld, PromoteRealmRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<PromoteRealmResponseOld, PromoteRealmRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -860,19 +705,14 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<CustomersResponse>>} A promise containing the HttpResponse of CustomersResponse
    */
   async getRealmsCustomers(gamertag?: string): Promise<HttpResponse<CustomersResponse>> {
-    let endpoint = "/basic/realms/customers";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/customers";
     
     // Make the API request
-    return this.requester.request<CustomersResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<CustomersResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -888,27 +728,20 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<PromoteRealmResponse>>} A promise containing the HttpResponse of PromoteRealmResponse
    */
   async getRealmsPromotion(sourcePid: string, contentManifestIds?: string[], promotions?: string[], gamertag?: string): Promise<HttpResponse<PromoteRealmResponse>> {
-    let endpoint = "/basic/realms/promotion";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      sourcePid,
-      contentManifestIds,
-      promotions
-    });
+    let e = "/basic/realms/promotion";
     
     // Make the API request
-    return this.requester.request<PromoteRealmResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<PromoteRealmResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        sourcePid,
+        contentManifestIds,
+        promotions
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -922,21 +755,16 @@ export class RealmsApi {
    * @returns {Promise<HttpResponse<PromoteRealmResponse>>} A promise containing the HttpResponse of PromoteRealmResponse
    */
   async postRealmPromotion(payload: PromoteRealmRequest, gamertag?: string): Promise<HttpResponse<PromoteRealmResponse>> {
-    let endpoint = "/basic/realms/promotion";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/realms/promotion";
     
     // Make the API request
-    return this.requester.request<PromoteRealmResponse, PromoteRealmRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<PromoteRealmResponse, PromoteRealmRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

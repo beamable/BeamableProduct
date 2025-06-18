@@ -1,13 +1,17 @@
 import { ApiPlayersPresencePutPlayerPresenceResponse } from '@/__generated__/schemas/ApiPlayersPresencePutPlayerPresenceResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { OnlineStatus } from '@/__generated__/schemas/OnlineStatus';
+import { PUT } from '@/constants';
 import { SetPresenceStatusRequest } from '@/__generated__/schemas/SetPresenceStatusRequest';
 
 export class PlayerApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -17,19 +21,14 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>>} A promise containing the HttpResponse of ApiPlayersPresencePutPlayerPresenceResponse
    */
   async putPlayerPresenceByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
-    let endpoint = "/api/players/{playerId}/presence".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/presence".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<ApiPlayersPresencePutPlayerPresenceResponse>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers
+    return makeApiRequest<ApiPlayersPresencePutPlayerPresenceResponse>({
+      r: this.r,
+      e,
+      m: PUT,
+      g: gamertag
     });
   }
   
@@ -39,19 +38,14 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<OnlineStatus>>} A promise containing the HttpResponse of OnlineStatus
    */
   async getPlayerPresenceByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
-    let endpoint = "/api/players/{playerId}/presence".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/presence".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<OnlineStatus>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<OnlineStatus>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -62,20 +56,15 @@ export class PlayerApi {
    * @returns {Promise<HttpResponse<OnlineStatus>>} A promise containing the HttpResponse of OnlineStatus
    */
   async putPlayerPresenceStatusByPlayerId(playerId: string, payload: SetPresenceStatusRequest, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
-    let endpoint = "/api/players/{playerId}/presence/status".replace("{playerId}", encodeURIComponent(playerId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/players/{playerId}/presence/status".replace(objectIdPlaceholder, endpointEncoder(playerId));
     
     // Make the API request
-    return this.requester.request<OnlineStatus, SetPresenceStatusRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<OnlineStatus, SetPresenceStatusRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
 }

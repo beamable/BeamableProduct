@@ -1,12 +1,16 @@
 import { AuthResponse } from '@/__generated__/schemas/AuthResponse';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GuestAuthRequest } from '@/__generated__/schemas/GuestAuthRequest';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { ListTokenResponse } from '@/__generated__/schemas/ListTokenResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
 import { PasswordAuthRequest } from '@/__generated__/schemas/PasswordAuthRequest';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { RefreshTokenAuthRequest } from '@/__generated__/schemas/RefreshTokenAuthRequest';
 import { RevokeTokenRequest } from '@/__generated__/schemas/RevokeTokenRequest';
 import { ServerTokenAuthRequest } from '@/__generated__/schemas/ServerTokenAuthRequest';
@@ -17,7 +21,7 @@ import { TokenResponse } from '@/__generated__/schemas/TokenResponse';
 
 export class AuthApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -30,20 +34,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
    */
   async postAuthRefreshToken(payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
-    let endpoint = "/api/auth/refresh-token";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/auth/refresh-token";
     
     // Make the API request
-    return this.requester.request<AuthResponse, RefreshTokenAuthRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<AuthResponse, RefreshTokenAuthRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -53,20 +52,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
    */
   async postAuthRefreshTokenV2(payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
-    let endpoint = "/api/auth/tokens/refresh-token";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/auth/tokens/refresh-token";
     
     // Make the API request
-    return this.requester.request<AuthResponse, RefreshTokenAuthRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<AuthResponse, RefreshTokenAuthRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -76,20 +70,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
    */
   async postGuestToken(payload: GuestAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
-    let endpoint = "/api/auth/tokens/guest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/auth/tokens/guest";
     
     // Make the API request
-    return this.requester.request<AuthResponse, GuestAuthRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<AuthResponse, GuestAuthRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -99,20 +88,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
    */
   async postPasswordToken(payload: PasswordAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
-    let endpoint = "/api/auth/tokens/password";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/auth/tokens/password";
     
     // Make the API request
-    return this.requester.request<AuthResponse, PasswordAuthRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<AuthResponse, PasswordAuthRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -122,20 +106,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<ServerTokenResponse>>} A promise containing the HttpResponse of ServerTokenResponse
    */
   async postAuthServer(payload: ServerTokenAuthRequest, gamertag?: string): Promise<HttpResponse<ServerTokenResponse>> {
-    let endpoint = "/api/auth/server";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/auth/server";
     
     // Make the API request
-    return this.requester.request<ServerTokenResponse, ServerTokenAuthRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<ServerTokenResponse, ServerTokenAuthRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -153,29 +132,22 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<ListTokenResponse>>} A promise containing the HttpResponse of ListTokenResponse
    */
   async getAuthTokenList(gamerTagOrAccountId: bigint | string, page: number, pageSize: number, cid?: bigint | string, pid?: string, gamertag?: string): Promise<HttpResponse<ListTokenResponse>> {
-    let endpoint = "/basic/auth/token/list";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      gamerTagOrAccountId,
-      page,
-      pageSize,
-      cid,
-      pid
-    });
+    let e = "/basic/auth/token/list";
     
     // Make the API request
-    return this.requester.request<ListTokenResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ListTokenResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        gamerTagOrAccountId,
+        page,
+        pageSize,
+        cid,
+        pid
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -185,24 +157,17 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<Token>>} A promise containing the HttpResponse of Token
    */
   async getAuthToken(token: string, gamertag?: string): Promise<HttpResponse<Token>> {
-    let endpoint = "/basic/auth/token";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      token
-    });
+    let e = "/basic/auth/token";
     
     // Make the API request
-    return this.requester.request<Token>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Token>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        token
+      },
+      g: gamertag
     });
   }
   
@@ -212,20 +177,15 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<TokenResponse>>} A promise containing the HttpResponse of TokenResponse
    */
   async postAuthToken(payload: TokenRequestWrapper, gamertag?: string): Promise<HttpResponse<TokenResponse>> {
-    let endpoint = "/basic/auth/token";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/auth/token";
     
     // Make the API request
-    return this.requester.request<TokenResponse, TokenRequestWrapper>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<TokenResponse, TokenRequestWrapper>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -239,21 +199,16 @@ export class AuthApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putAuthTokenRevoke(payload: RevokeTokenRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/auth/token/revoke";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/auth/token/revoke";
     
     // Make the API request
-    return this.requester.request<CommonResponse, RevokeTokenRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, RevokeTokenRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

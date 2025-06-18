@@ -3,20 +3,25 @@ import { AddTags } from '@/__generated__/schemas/AddTags';
 import { ApiLobbiesServerPostLobbyResponse } from '@/__generated__/schemas/ApiLobbiesServerPostLobbyResponse';
 import { CreateFederatedGameServer } from '@/__generated__/schemas/CreateFederatedGameServer';
 import { CreateLobby } from '@/__generated__/schemas/CreateLobby';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { DELETE } from '@/constants';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { JoinLobby } from '@/__generated__/schemas/JoinLobby';
 import { Lobby } from '@/__generated__/schemas/Lobby';
 import { LobbyQueryResponse } from '@/__generated__/schemas/LobbyQueryResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { RemoveFromLobby } from '@/__generated__/schemas/RemoveFromLobby';
 import { RemoveTags } from '@/__generated__/schemas/RemoveTags';
 import { UpdateLobby } from '@/__generated__/schemas/UpdateLobby';
 
 export class LobbyApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -28,26 +33,19 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<LobbyQueryResponse>>} A promise containing the HttpResponse of LobbyQueryResponse
    */
   async getLobbies(Limit?: number, MatchType?: string, Skip?: number, gamertag?: string): Promise<HttpResponse<LobbyQueryResponse>> {
-    let endpoint = "/api/lobbies";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      Limit,
-      MatchType,
-      Skip
-    });
+    let e = "/api/lobbies";
     
     // Make the API request
-    return this.requester.request<LobbyQueryResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<LobbyQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        Limit,
+        MatchType,
+        Skip
+      },
+      g: gamertag
     });
   }
   
@@ -57,20 +55,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async postLobby(payload: CreateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies";
     
     // Make the API request
-    return this.requester.request<Lobby, CreateLobby>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, CreateLobby>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -80,19 +73,14 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async getLobbyById(id: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Lobby>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers
+    return makeApiRequest<Lobby>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag
     });
   }
   
@@ -103,20 +91,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyById(id: string, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Lobby, JoinLobby>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, JoinLobby>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -127,20 +110,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Acknowledge>>} A promise containing the HttpResponse of Acknowledge
    */
   async deleteLobbyById(id: string, payload: RemoveFromLobby, gamertag?: string): Promise<HttpResponse<Acknowledge>> {
-    let endpoint = "/api/lobbies/{id}".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Acknowledge, RemoveFromLobby>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<Acknowledge, RemoveFromLobby>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -150,20 +128,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyPasscode(payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/passcode";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/passcode";
     
     // Make the API request
-    return this.requester.request<Lobby, JoinLobby>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, JoinLobby>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -174,20 +147,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyMetadataById(id: string, payload: UpdateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/metadata".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}/metadata".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Lobby, UpdateLobby>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, UpdateLobby>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -198,20 +166,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async putLobbyTagsById(id: string, payload: AddTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/tags".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}/tags".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Lobby, AddTags>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, AddTags>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -222,20 +185,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
    */
   async deleteLobbyTagsById(id: string, payload: RemoveTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let endpoint = "/api/lobbies/{id}/tags".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}/tags".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<Lobby, RemoveTags>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload
+    return makeApiRequest<Lobby, RemoveTags>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag
     });
   }
   
@@ -246,20 +204,15 @@ export class LobbyApi {
    * @returns {Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>>} A promise containing the HttpResponse of ApiLobbiesServerPostLobbyResponse
    */
   async postLobbyServerById(id: string, payload: CreateFederatedGameServer, gamertag?: string): Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>> {
-    let endpoint = "/api/lobbies/{id}/server".replace("{id}", encodeURIComponent(id.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/api/lobbies/{id}/server".replace(objectIdPlaceholder, endpointEncoder(id));
     
     // Make the API request
-    return this.requester.request<ApiLobbiesServerPostLobbyResponse, CreateFederatedGameServer>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload
+    return makeApiRequest<ApiLobbiesServerPostLobbyResponse, CreateFederatedGameServer>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag
     });
   }
 }

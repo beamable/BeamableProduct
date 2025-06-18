@@ -4,18 +4,23 @@ import { AnnouncementQueryResponse } from '@/__generated__/schemas/AnnouncementQ
 import { AnnouncementRawResponse } from '@/__generated__/schemas/AnnouncementRawResponse';
 import { AnnouncementRequest } from '@/__generated__/schemas/AnnouncementRequest';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import { DELETE } from '@/constants';
 import { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnouncementRequest';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
 import { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
+import { objectIdPlaceholder } from '@/constants';
+import { POST } from '@/constants';
+import { PUT } from '@/constants';
 
 export class AnnouncementsApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -29,25 +34,18 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<ListTagsResponse>>} A promise containing the HttpResponse of ListTagsResponse
    */
   async getAnnouncementsListTags(tagNameFilter?: string, gamertag?: string): Promise<HttpResponse<ListTagsResponse>> {
-    let endpoint = "/basic/announcements/list/tags";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      tagNameFilter
-    });
+    let e = "/basic/announcements/list/tags";
     
     // Make the API request
-    return this.requester.request<ListTagsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ListTagsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        tagNameFilter
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -60,20 +58,15 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
    */
   async getAnnouncementsList(gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let endpoint = "/basic/announcements/list";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/announcements/list";
     
     // Make the API request
-    return this.requester.request<AnnouncementContentResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<AnnouncementContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -87,25 +80,18 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
    */
   async getAnnouncementsSearch(date?: string, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let endpoint = "/basic/announcements/search";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      date
-    });
+    let e = "/basic/announcements/search";
     
     // Make the API request
-    return this.requester.request<AnnouncementContentResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<AnnouncementContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        date
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -118,20 +104,15 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<ListDefinitionsResponse>>} A promise containing the HttpResponse of ListDefinitionsResponse
    */
   async getAnnouncementsListDefinitions(gamertag?: string): Promise<HttpResponse<ListDefinitionsResponse>> {
-    let endpoint = "/basic/announcements/list/definitions";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/announcements/list/definitions";
     
     // Make the API request
-    return this.requester.request<ListDefinitionsResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ListDefinitionsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -145,21 +126,16 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postAnnouncement(payload: AnnouncementDto, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/announcements/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/announcements/";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, AnnouncementDto>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, AnnouncementDto>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -173,21 +149,16 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async deleteAnnouncement(payload: DeleteAnnouncementRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/announcements/";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/announcements/";
     
     // Make the API request
-    return this.requester.request<EmptyResponse, DeleteAnnouncementRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<EmptyResponse, DeleteAnnouncementRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -200,20 +171,15 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
    */
   async getAnnouncementsContent(gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let endpoint = "/basic/announcements/content";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/announcements/content";
     
     // Make the API request
-    return this.requester.request<AnnouncementContentResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<AnnouncementContentResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -228,21 +194,16 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putAnnouncementReadByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/read".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/announcements/{objectId}/read".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, AnnouncementRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, AnnouncementRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -257,21 +218,16 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async postAnnouncementClaimByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/claim".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/announcements/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, AnnouncementRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, AnnouncementRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -285,20 +241,15 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementRawResponse>>} A promise containing the HttpResponse of AnnouncementRawResponse
    */
   async getAnnouncementRawByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
-    let endpoint = "/object/announcements/{objectId}/raw".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/announcements/{objectId}/raw".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<AnnouncementRawResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<AnnouncementRawResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -313,25 +264,18 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<AnnouncementQueryResponse>>} A promise containing the HttpResponse of AnnouncementQueryResponse
    */
   async getAnnouncementByObjectId(objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
-    let endpoint = "/object/announcements/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      include_deleted
-    });
+    let e = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<AnnouncementQueryResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<AnnouncementQueryResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        include_deleted
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -346,21 +290,16 @@ export class AnnouncementsApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteAnnouncementByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/object/announcements/{objectId}/".replace("{objectId}", encodeURIComponent(objectId.toString()));
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
     
     // Make the API request
-    return this.requester.request<CommonResponse, AnnouncementRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, AnnouncementRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }

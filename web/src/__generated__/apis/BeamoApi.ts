@@ -3,7 +3,10 @@ import { BeamoBasicManifestChecksums } from '@/__generated__/schemas/BeamoBasicM
 import { CommitImageRequest } from '@/__generated__/schemas/CommitImageRequest';
 import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import { ConnectionString } from '@/__generated__/schemas/ConnectionString';
+import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import { endpointEncoder } from '@/utils/endpointEncoder';
+import { GET } from '@/constants';
 import { GetCurrentManifestResponse } from '@/__generated__/schemas/GetCurrentManifestResponse';
 import { GetElasticContainerRegistryURI } from '@/__generated__/schemas/GetElasticContainerRegistryURI';
 import { GetLambdaURI } from '@/__generated__/schemas/GetLambdaURI';
@@ -15,26 +18,28 @@ import { GetServiceURLsRequest } from '@/__generated__/schemas/GetServiceURLsReq
 import { GetSignedUrlResponse } from '@/__generated__/schemas/GetSignedUrlResponse';
 import { GetStatusResponse } from '@/__generated__/schemas/GetStatusResponse';
 import { GetTemplatesResponse } from '@/__generated__/schemas/GetTemplatesResponse';
-import { HttpMethod } from '@/http/types/HttpMethod';
 import { HttpRequester } from '@/http/types/HttpRequester';
 import { HttpResponse } from '@/http/types/HttpResponse';
 import { LambdaResponse } from '@/__generated__/schemas/LambdaResponse';
-import { makeQueryString } from '@/utils/makeQueryString';
+import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MicroserviceRegistrationRequest } from '@/__generated__/schemas/MicroserviceRegistrationRequest';
 import { MicroserviceRegistrationsQuery } from '@/__generated__/schemas/MicroserviceRegistrationsQuery';
 import { MicroserviceRegistrationsResponse } from '@/__generated__/schemas/MicroserviceRegistrationsResponse';
 import { MicroserviceSecretResponse } from '@/__generated__/schemas/MicroserviceSecretResponse';
+import { objectIdPlaceholder } from '@/constants';
 import { PerformanceResponse } from '@/__generated__/schemas/PerformanceResponse';
+import { POST } from '@/constants';
 import { PostManifestRequest } from '@/__generated__/schemas/PostManifestRequest';
 import { PostManifestResponse } from '@/__generated__/schemas/PostManifestResponse';
 import { PreSignedUrlsResponse } from '@/__generated__/schemas/PreSignedUrlsResponse';
 import { PullBeamoManifestRequest } from '@/__generated__/schemas/PullBeamoManifestRequest';
+import { PUT } from '@/constants';
 import { Query } from '@/__generated__/schemas/Query';
 import { SupportedFederationsResponse } from '@/__generated__/schemas/SupportedFederationsResponse';
 
 export class BeamoApi {
   constructor(
-    private readonly requester: HttpRequester
+    private readonly r: HttpRequester
   ) {
   }
   
@@ -48,21 +53,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<MicroserviceRegistrationsResponse>>} A promise containing the HttpResponse of MicroserviceRegistrationsResponse
    */
   async postBeamoMicroserviceRegistrations(payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<MicroserviceRegistrationsResponse>> {
-    let endpoint = "/basic/beamo/microservice/registrations";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/microservice/registrations";
     
     // Make the API request
-    return this.requester.request<MicroserviceRegistrationsResponse, MicroserviceRegistrationsQuery>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<MicroserviceRegistrationsResponse, MicroserviceRegistrationsQuery>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -76,21 +76,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async putBeamoMicroserviceFederationTraffic(payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/beamo/microservice/federation/traffic";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/microservice/federation/traffic";
     
     // Make the API request
-    return this.requester.request<CommonResponse, MicroserviceRegistrationRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, MicroserviceRegistrationRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -104,21 +99,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteBeamoMicroserviceFederationTraffic(payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/beamo/microservice/federation/traffic";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/microservice/federation/traffic";
     
     // Make the API request
-    return this.requester.request<CommonResponse, MicroserviceRegistrationRequest>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, MicroserviceRegistrationRequest>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -132,21 +122,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<PreSignedUrlsResponse>>} A promise containing the HttpResponse of PreSignedUrlsResponse
    */
   async postBeamoImageUrls(payload: GetServiceURLsRequest, gamertag?: string): Promise<HttpResponse<PreSignedUrlsResponse>> {
-    let endpoint = "/basic/beamo/image/urls";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/image/urls";
     
     // Make the API request
-    return this.requester.request<PreSignedUrlsResponse, GetServiceURLsRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<PreSignedUrlsResponse, GetServiceURLsRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -160,21 +145,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetSignedUrlResponse>>} A promise containing the HttpResponse of GetSignedUrlResponse
    */
   async postBeamoMetricsUrl(payload: GetMetricsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
-    let endpoint = "/basic/beamo/metricsUrl";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/metricsUrl";
     
     // Make the API request
-    return this.requester.request<GetSignedUrlResponse, GetMetricsUrlRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<GetSignedUrlResponse, GetMetricsUrlRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -187,20 +167,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<MicroserviceSecretResponse>>} A promise containing the HttpResponse of MicroserviceSecretResponse
    */
   async getBeamoMicroserviceSecret(gamertag?: string): Promise<HttpResponse<MicroserviceSecretResponse>> {
-    let endpoint = "/basic/beamo/microservice/secret";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/microservice/secret";
     
     // Make the API request
-    return this.requester.request<MicroserviceSecretResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<MicroserviceSecretResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -214,21 +189,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetSignedUrlResponse>>} A promise containing the HttpResponse of GetSignedUrlResponse
    */
   async postBeamoQueryLogsResult(payload: Query, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
-    let endpoint = "/basic/beamo/queryLogs/result";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/queryLogs/result";
     
     // Make the API request
-    return this.requester.request<GetSignedUrlResponse, Query>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<GetSignedUrlResponse, Query>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -246,29 +216,22 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<PerformanceResponse>>} A promise containing the HttpResponse of PerformanceResponse
    */
   async getBeamoStoragePerformance(granularity: string, storageObjectName: string, endDate?: string, period?: string, startDate?: string, gamertag?: string): Promise<HttpResponse<PerformanceResponse>> {
-    let endpoint = "/basic/beamo/storage/performance";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      granularity,
-      storageObjectName,
-      endDate,
-      period,
-      startDate
-    });
+    let e = "/basic/beamo/storage/performance";
     
     // Make the API request
-    return this.requester.request<PerformanceResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<PerformanceResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        granularity,
+        storageObjectName,
+        endDate,
+        period,
+        startDate
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -284,27 +247,20 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<BeamoBasicGetManifestsResponse>>} A promise containing the HttpResponse of BeamoBasicGetManifestsResponse
    */
   async getBeamoManifests(archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoBasicGetManifestsResponse>> {
-    let endpoint = "/basic/beamo/manifests";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      archived,
-      limit,
-      offset
-    });
+    let e = "/basic/beamo/manifests";
     
     // Make the API request
-    return this.requester.request<BeamoBasicGetManifestsResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<BeamoBasicGetManifestsResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        archived,
+        limit,
+        offset
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -317,20 +273,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetTemplatesResponse>>} A promise containing the HttpResponse of GetTemplatesResponse
    */
   async getBeamoTemplates(gamertag?: string): Promise<HttpResponse<GetTemplatesResponse>> {
-    let endpoint = "/basic/beamo/templates";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/templates";
     
     // Make the API request
-    return this.requester.request<GetTemplatesResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetTemplatesResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -344,21 +295,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<Query>>} A promise containing the HttpResponse of Query
    */
   async postBeamoQueryLogs(payload: GetLogsInsightUrlRequest, gamertag?: string): Promise<HttpResponse<Query>> {
-    let endpoint = "/basic/beamo/queryLogs";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/queryLogs";
     
     // Make the API request
-    return this.requester.request<Query, GetLogsInsightUrlRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<Query, GetLogsInsightUrlRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -372,21 +318,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
    */
   async deleteBeamoQueryLogs(payload: Query, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let endpoint = "/basic/beamo/queryLogs";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/queryLogs";
     
     // Make the API request
-    return this.requester.request<CommonResponse, Query>({
-      url: endpoint,
-      method: HttpMethod.DELETE,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<CommonResponse, Query>({
+      r: this.r,
+      e,
+      m: DELETE,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -400,21 +341,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetSignedUrlResponse>>} A promise containing the HttpResponse of GetSignedUrlResponse
    */
   async postBeamoLogsUrl(payload: GetLogsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
-    let endpoint = "/basic/beamo/logsUrl";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/logsUrl";
     
     // Make the API request
-    return this.requester.request<GetSignedUrlResponse, GetLogsUrlRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<GetSignedUrlResponse, GetLogsUrlRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -428,21 +364,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<LambdaResponse>>} A promise containing the HttpResponse of LambdaResponse
    */
   async putBeamoImageCommit(payload: CommitImageRequest, gamertag?: string): Promise<HttpResponse<LambdaResponse>> {
-    let endpoint = "/basic/beamo/image/commit";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/image/commit";
     
     // Make the API request
-    return this.requester.request<LambdaResponse, CommitImageRequest>({
-      url: endpoint,
-      method: HttpMethod.PUT,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<LambdaResponse, CommitImageRequest>({
+      r: this.r,
+      e,
+      m: PUT,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -455,20 +386,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetLambdaURI>>} A promise containing the HttpResponse of GetLambdaURI
    */
   async getBeamoUploadAPI(gamertag?: string): Promise<HttpResponse<GetLambdaURI>> {
-    let endpoint = "/basic/beamo/uploadAPI";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/uploadAPI";
     
     // Make the API request
-    return this.requester.request<GetLambdaURI>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetLambdaURI>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -481,20 +407,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetStatusResponse>>} A promise containing the HttpResponse of GetStatusResponse
    */
   async getBeamoStatus(gamertag?: string): Promise<HttpResponse<GetStatusResponse>> {
-    let endpoint = "/basic/beamo/status";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/status";
     
     // Make the API request
-    return this.requester.request<GetStatusResponse>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetStatusResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -508,25 +429,18 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetCurrentManifestResponse>>} A promise containing the HttpResponse of GetCurrentManifestResponse
    */
   async getBeamoManifestCurrent(archived?: boolean, gamertag?: string): Promise<HttpResponse<GetCurrentManifestResponse>> {
-    let endpoint = "/basic/beamo/manifest/current";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      archived
-    });
+    let e = "/basic/beamo/manifest/current";
     
     // Make the API request
-    return this.requester.request<GetCurrentManifestResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetCurrentManifestResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        archived
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -540,21 +454,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<BeamoBasicManifestChecksums>>} A promise containing the HttpResponse of BeamoBasicManifestChecksums
    */
   async postBeamoManifestPull(payload: PullBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoBasicManifestChecksums>> {
-    let endpoint = "/basic/beamo/manifest/pull";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/manifest/pull";
     
     // Make the API request
-    return this.requester.request<BeamoBasicManifestChecksums, PullBeamoManifestRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<BeamoBasicManifestChecksums, PullBeamoManifestRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -567,20 +476,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetElasticContainerRegistryURI>>} A promise containing the HttpResponse of GetElasticContainerRegistryURI
    */
   async getBeamoRegistry(gamertag?: string): Promise<HttpResponse<GetElasticContainerRegistryURI>> {
-    let endpoint = "/basic/beamo/registry";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/registry";
     
     // Make the API request
-    return this.requester.request<GetElasticContainerRegistryURI>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetElasticContainerRegistryURI>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -593,20 +497,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
    */
   async postBeamoManifestDeploy(gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let endpoint = "/basic/beamo/manifest/deploy";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/manifest/deploy";
     
     // Make the API request
-    return this.requester.request<EmptyResponse>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      withAuth: true
+    return makeApiRequest<EmptyResponse>({
+      r: this.r,
+      e,
+      m: POST,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -620,21 +519,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<SupportedFederationsResponse>>} A promise containing the HttpResponse of SupportedFederationsResponse
    */
   async postBeamoMicroserviceFederation(payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<SupportedFederationsResponse>> {
-    let endpoint = "/basic/beamo/microservice/federation";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/microservice/federation";
     
     // Make the API request
-    return this.requester.request<SupportedFederationsResponse, MicroserviceRegistrationsQuery>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<SupportedFederationsResponse, MicroserviceRegistrationsQuery>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -647,20 +541,15 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<ConnectionString>>} A promise containing the HttpResponse of ConnectionString
    */
   async getBeamoStorageConnection(gamertag?: string): Promise<HttpResponse<ConnectionString>> {
-    let endpoint = "/basic/beamo/storage/connection";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/storage/connection";
     
     // Make the API request
-    return this.requester.request<ConnectionString>({
-      url: endpoint,
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<ConnectionString>({
+      r: this.r,
+      e,
+      m: GET,
+      g: gamertag,
+      w: true
     });
   }
   
@@ -675,26 +564,19 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<GetManifestResponse>>} A promise containing the HttpResponse of GetManifestResponse
    */
   async getBeamoManifest(id: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<GetManifestResponse>> {
-    let endpoint = "/basic/beamo/manifest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
-    
-    // Create the query string from the query parameters
-    const queryString = makeQueryString({
-      id,
-      archived
-    });
+    let e = "/basic/beamo/manifest";
     
     // Make the API request
-    return this.requester.request<GetManifestResponse>({
-      url: endpoint.concat(queryString),
-      method: HttpMethod.GET,
-      headers,
-      withAuth: true
+    return makeApiRequest<GetManifestResponse>({
+      r: this.r,
+      e,
+      m: GET,
+      q: {
+        id,
+        archived
+      },
+      g: gamertag,
+      w: true
     });
   }
   
@@ -708,21 +590,16 @@ export class BeamoApi {
    * @returns {Promise<HttpResponse<PostManifestResponse>>} A promise containing the HttpResponse of PostManifestResponse
    */
   async postBeamoManifest(payload: PostManifestRequest, gamertag?: string): Promise<HttpResponse<PostManifestResponse>> {
-    let endpoint = "/basic/beamo/manifest";
-    
-    // Create the header parameters object
-    const headers: Record<string, string> = {};
-    if (gamertag != undefined) {
-      headers['X-BEAM-GAMERTAG'] = gamertag;
-    }
+    let e = "/basic/beamo/manifest";
     
     // Make the API request
-    return this.requester.request<PostManifestResponse, PostManifestRequest>({
-      url: endpoint,
-      method: HttpMethod.POST,
-      headers,
-      body: payload,
-      withAuth: true
+    return makeApiRequest<PostManifestResponse, PostManifestRequest>({
+      r: this.r,
+      e,
+      m: POST,
+      p: payload,
+      g: gamertag,
+      w: true
     });
   }
 }
