@@ -5,8 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamLocalContentState
+    public partial class BeamLoginResults
     {
-        public BeamLocalContentManifest Manifests;
     }
 }

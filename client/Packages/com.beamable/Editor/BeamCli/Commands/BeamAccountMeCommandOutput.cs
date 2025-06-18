@@ -14,6 +14,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<string> thirdPartyAppAssociations;
         public System.Collections.Generic.List<string> deviceIds;
         public System.Collections.Generic.List<BeamAccountMeExternalIdentity> external;
+        public System.Collections.Generic.List<BeamRealmRole> roles;
         public string tokenCid;
         public string tokenPid;
         public string accessToken;
