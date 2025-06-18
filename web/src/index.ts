@@ -7,4 +7,8 @@ export * from '@/http/types/HttpResponse';
 export * from '@/platform/types/TokenStorage';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
-export { RefreshAccessTokenError, NoRefreshTokenError } from '@/http/Errors';
+export {
+  ConfigurationError,
+  RefreshAccessTokenError,
+  NoRefreshTokenError,
+} from '@/constants/Errors';
