@@ -14,7 +14,7 @@
   },
   "scripts": {
     "setup-project": "node setup.mjs",
-    "build": "tsup",
+    "build": "tsup && node scripts/fix-dts-names.js",
     "dev": "tsup --watch",
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
@@ -46,6 +46,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./platform": {
+      "import": "./dist/platform/index.mjs",
+      "require": "./dist/platform/index.js"
     }
   },
   "keywords": [
