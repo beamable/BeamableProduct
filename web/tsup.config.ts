@@ -14,10 +14,11 @@ const config = {
 };
 
 export default defineConfig([
+  // CJS Node
   {
     ...config,
     entry: ['src/index.ts'], // Entry files for the library build
-    format: ['esm', 'cjs'], // Output formats: ES modules and CommonJS
+    format: 'cjs', // Output formats: CommonJS
     outDir: 'dist/node', // Output directory for the build
     platform: 'node', // Target node environment for bundling
     clean: true, // Clean the output directory before building
@@ -26,13 +27,24 @@ export default defineConfig([
       options.alias = alias;
     },
   },
+  // ESM Node
+  {
+    ...config,
+    entry: ['src/index.ts'], // Entry files for the library build
+    format: 'esm', // Output formats: ES modules
+    outDir: 'dist/node', // Output directory for the build
+    platform: 'node', // Target node environment for bundling
+    esbuildOptions(options) {
+      options.alias = alias;
+    },
+  },
+  // ESM Browser
   {
     ...config,
     entry: ['src/index.browser.ts'], // Entry files for the library build
-    format: 'esm', // Output formats: ES modules and CommonJS
+    format: 'esm', // Output formats: ES modules
     outDir: 'dist/browser', // Output directory for the build
     platform: 'browser', // Target browser environment for bundling
-    dts: true, // Generate TypeScript declaration (.d.ts) files
     esbuildOptions(options) {
       options.alias = {
         ...alias,
@@ -40,6 +52,7 @@ export default defineConfig([
       };
     },
   },
+  // IIFE Browser
   {
     ...config,
     entry: ['src/index.browser.ts'], // Entry files for the library build
@@ -47,6 +60,7 @@ export default defineConfig([
     outDir: 'dist/browser', // Output directory for the build
     platform: 'browser', // Target browser environment for bundling
     globalName: 'Beamable', // Global variable name for IIFE builds (window.Beamable)
+    dts: true, // Generate TypeScript declaration (.d.ts) files
     esbuildOptions(options) {
       options.alias = {
         ...alias,

@@ -1,5 +1,11 @@
 # beamable-sdk
 
+## 0.1.7
+
+### Patch Changes
+
+- Separate build config for various bundle format
+
 ## 0.1.6
 
 ### Patch Changes

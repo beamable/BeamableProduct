@@ -1,6 +1,6 @@
 {
   "name": "beamable-sdk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.js",
   "module": "dist/node/index.mjs",
@@ -44,7 +44,7 @@
   "exports": {
     ".": {
       "browser": {
-        "types": "./dist/browser/index.browser.d.mts",
+        "types": "./dist/browser/index.browser.d.ts",
         "require": "./dist/browser/index.browser.global.js",
         "import": "./dist/browser/index.browser.mjs"
       },
