@@ -1,13 +1,12 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.BeamCli;
 using cli.Utils;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
-using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.Text;
+using Beamable.Server;
+using cli.Services;
 
 namespace cli;
 
@@ -23,9 +22,9 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	public bool saveToEnvironment;
 	public bool saveToFile;
 	public bool printToConsole;
-	public bool customerScoped;
+	public bool realmScoped;
 	public string refreshToken = "";
-	
+
 	public bool SaveToFile
 	{
 		get => saveToFile;
@@ -33,8 +32,24 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	}
 }
 
-public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcerns<LoginCommandArgs>
+[Serializable]
+public class LoginResults
 {
+	
+}
+
+[Serializable]
+public class LoginFailedError : ErrorOutput
+{
+}
+
+public class LoginCommand : AppCommand<LoginCommandArgs>
+	, IHaveRedirectionConcerns<LoginCommandArgs>
+	, ISkipManifest
+	, IReportException<LoginFailedError>
+	, IResultSteam<DefaultStreamResultChannel, LoginResults>
+{
+	public const int LOGIN_FAILED_ERROR_CODE = 100;
 	public bool Successful { get; private set; } = false;
 	private IAppContext _ctx;
 	private ConfigService _configService;
@@ -50,7 +65,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		SaveToFileOption.Bind(this);
-		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
@@ -70,12 +85,23 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 			var password = GetPassword(args);
 			try
 			{
-				response = await _authApi.Login(username, password, false, args.customerScoped)
+				response = await _authApi.Login(username, password, false, !args.realmScoped)
 					.ShowLoading("Authorizing...");
+
+				this.SendResults<DefaultStreamResultChannel, LoginResults>(new LoginResults());
 			}
 			catch (RequesterException e) when (e.RequestError.status == 401) // for invalid credentials
 			{
 				Log.Verbose(e.Message + " " + e.StackTrace);
+				if (args.Quiet)
+				{
+					BeamableLogger.LogError($"Login failed: {e.RequestError.message}. Failing due to -q flag.");
+					throw new CliException<LoginFailedError>(e.RequestError.message, LOGIN_FAILED_ERROR_CODE)
+					{
+						payload = new LoginFailedError()
+					};
+				}
+				
 				BeamableLogger.LogError($"Login failed: {e.RequestError.message} Try again");
 				await Handle(args);
 				return;
@@ -110,6 +136,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 				return;
 			}
 		}
+
 		Successful = HandleResponse(args, response);
 	}
 
@@ -121,7 +148,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 			return false;
 		}
 
-		_ctx.UpdateToken(response);
+		_ctx.SetToken(response);
 
 		if (args.saveToEnvironment)
 		{
@@ -132,7 +159,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		if (args.saveToFile)
 		{
 			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-							   " do not add it to control version system. It should be used only locally.");
+			                   " do not add it to control version system. It should be used only locally.");
 			_configService.SaveTokenToFile(_ctx.Token);
 		}
 
@@ -140,6 +167,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcer
 		{
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
+
 		return true;
 	}
 

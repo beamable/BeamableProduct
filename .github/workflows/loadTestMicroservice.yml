@@ -7,15 +7,21 @@ on:
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
+      - 'client_installer/**'
 jobs:
   runPerfTest:
-    timeout-minutes: 4
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     concurrency:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -29,14 +35,23 @@ jobs:
         working-directory: ./
         run: |
           ./setup.sh
-          ./dev.sh
+          ./dev.sh --skip-unity --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
+      - name: Restore tool
+        working-directory: ./stress-tests/standalone-microservice
+        run: |
+          dotnet tool restore
+      - name: Check BEAM CLI
+        working-directory: ./stress-tests/standalone-microservice
+        run: |
+          dotnet beam config --logs v
+      
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          beam version update -q
-          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
+          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
+      
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
@@ -73,7 +88,7 @@ jobs:
         with:
           name: profiler
           if-no-files-found: error
-          retention-days: 15
+          retention-days: 1
           path: |
             ./stress-tests/standalone-microservice/services/reports
       - name: Check Dotnet Counters

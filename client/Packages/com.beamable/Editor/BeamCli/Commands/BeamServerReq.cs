@@ -23,8 +23,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the cli value was not default, then add it to the list of args.
             if ((this.cli != default(string)))
             {
-                genBeamCommandArgs.Add((("--cli=\"" + this.cli) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--cli=" + this.cli));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

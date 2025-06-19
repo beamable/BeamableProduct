@@ -1,8 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using cli.Services;
-using CliWrap;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project.StorageData;
 

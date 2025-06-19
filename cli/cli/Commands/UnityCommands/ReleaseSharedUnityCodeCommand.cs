@@ -1,7 +1,6 @@
 using cli.Services.Unity;
-using Serilog;
 using System.CommandLine;
-using System.IO.Compression;
+using Beamable.Server;
 
 namespace cli.UnityCommands;
 

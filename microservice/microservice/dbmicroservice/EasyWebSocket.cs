@@ -5,16 +5,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
-using Serilog;
-using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Text.Json;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
+using beamable.tooling.common.Microservice;
 using UnityEngine;
+using ZLogger;
 
 
 namespace Beamable.Server
@@ -309,7 +308,7 @@ namespace Beamable.Server
 							requiredPermits = (int)(interpolated * _args.RateLimitWebsocketTokens * arg);
 							requiredPermits = Math.Clamp(requiredPermits - _args.RateLimitCPUOffset, 1,
 								_args.RateLimitWebsocketTokens);
-							Log.Verbose(
+							BeamableZLoggerProvider.LogContext.Value.ZLogTrace(
 								$"Acquiring Permits=[{requiredPermits}] cpu=[{cpu.RollingRatio * 100}] arg=[{arg}] interpolated=[{interpolated}]");
 						}
 
@@ -367,7 +366,7 @@ namespace Beamable.Server
 
 			catch (Exception ex)
 			{
-				Log.Debug($"Websocket error=[{ex.GetType().FullName}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Websocket error=[{ex.GetType().FullName}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 				CallOnDisconnected(false);
 			}
 

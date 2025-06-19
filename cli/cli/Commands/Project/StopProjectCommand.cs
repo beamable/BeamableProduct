@@ -1,10 +1,10 @@
 using cli.Dotnet;
 using cli.Services;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Net;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 

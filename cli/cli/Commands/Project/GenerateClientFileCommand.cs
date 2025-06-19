@@ -1,5 +1,4 @@
 using Beamable;
-using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
@@ -9,13 +8,12 @@ using cli.Unreal;
 using cli.Utils;
 using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
+using Beamable.Common;
 
 namespace cli.Dotnet;
 
@@ -45,7 +43,9 @@ public class GenerateClientFileCommand
 	: AppCommand<GenerateClientFileCommandArgs>
 		, IResultSteam<DefaultStreamResultChannel, GenerateClientFileEvent>
 {
-	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
+	public override bool IsForInternalUse => true;
+
+	public GenerateClientFileCommand() : base("generate-client", "Obsolete command, please use generate-client-oapi that used the OpenAPI specifications to generate the C# client code. The generate-client command will Generate a C# client file based on a built C# microservice dll directory using refactor")
 	{
 	}
 

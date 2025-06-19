@@ -26,8 +26,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool saveToFile;
         /// <summary>Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option</summary>
         public bool noTokenSave;
-        /// <summary>Make request customer scoped instead of product only</summary>
-        public bool customerScoped;
+        /// <summary>Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one</summary>
+        public bool realmScoped;
         /// <summary>Prints out login request response to console</summary>
         public bool printToConsole;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -43,26 +43,22 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the email value was not default, then add it to the list of args.
             if ((this.email != default(string)))
             {
-                genBeamCommandArgs.Add((("--email=\"" + this.email) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--email=" + this.email));
             }
             // If the password value was not default, then add it to the list of args.
             if ((this.password != default(string)))
             {
-                genBeamCommandArgs.Add((("--password=\"" + this.password) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--password=" + this.password));
             }
             // If the host value was not default, then add it to the list of args.
             if ((this.host != default(string)))
             {
-                genBeamCommandArgs.Add((("--host=\"" + this.host) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--host=" + this.host));
             }
             // If the refreshToken value was not default, then add it to the list of args.
             if ((this.refreshToken != default(string)))
             {
-                genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
             }
             // If the saveExtraPaths value was not default, then add it to the list of args.
             if ((this.saveExtraPaths != default(string[])))
@@ -97,10 +93,10 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--no-token-save=" + this.noTokenSave));
             }
-            // If the customerScoped value was not default, then add it to the list of args.
-            if ((this.customerScoped != default(bool)))
+            // If the realmScoped value was not default, then add it to the list of args.
+            if ((this.realmScoped != default(bool)))
             {
-                genBeamCommandArgs.Add(("--customer-scoped=" + this.customerScoped));
+                genBeamCommandArgs.Add(("--realm-scoped=" + this.realmScoped));
             }
             // If the printToConsole value was not default, then add it to the list of args.
             if ((this.printToConsole != default(bool)))

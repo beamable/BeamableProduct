@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli;
 
@@ -28,7 +28,7 @@ public enum GenerateSdkConflictResolutionStrategy
 	RenameUncommonConflicts
 }
 
-public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand
+public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

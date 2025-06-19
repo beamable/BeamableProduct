@@ -44,8 +44,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the pid value was not default, then add it to the list of args.
             if ((this.pid != default(string)))
             {
-                genBeamCommandArgs.Add((("--pid=\"" + this.pid) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--pid=" + this.pid));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

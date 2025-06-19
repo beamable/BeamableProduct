@@ -24,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string log;
         /// <summary>If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, then any global invocation of the beam tool will automatically redirect and call the local version. However, there will be a performance penalty due to the extra process invocation. This option flag will cause an error to occur instead of automatically redirecting the execution to a new process invocation. </summary>
         public bool noRedirect;
+        /// <summary>A set of beam ids that should be excluded from the local source code scans. When a beam id is ignored, it cannot be deployed or understood by the CLI. The final set of ignored beam ids is the summation of this option AND any .beamignore files found in the .beamable folder</summary>
+        public string[] ignoreBeamIds;
         /// <summary>By default, any local CLI invocation that should trigger a Federation of any type will prefer locally running Microservices. However, if you need the CLI to use the remotely running Microservices, use this option to ignore locally running services. </summary>
         public bool preferRemoteFederation;
         /// <summary>Show help for all commands</summary>
@@ -66,14 +68,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the cid value was not default, then add it to the list of args.
             if ((this.cid != default(string)))
             {
-                genBeamCommandArgs.Add((("--cid=\"" + this.cid) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--cid=" + this.cid));
             }
             // If the pid value was not default, then add it to the list of args.
             if ((this.pid != default(string)))
             {
-                genBeamCommandArgs.Add((("--pid=\"" + this.pid) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--pid=" + this.pid));
             }
             // If the quiet value was not default, then add it to the list of args.
             if ((this.quiet != default(bool)))
@@ -83,31 +83,36 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the host value was not default, then add it to the list of args.
             if ((this.host != default(string)))
             {
-                genBeamCommandArgs.Add((("--host=\"" + this.host) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--host=" + this.host));
             }
             // If the accessToken value was not default, then add it to the list of args.
             if ((this.accessToken != default(string)))
             {
-                genBeamCommandArgs.Add((("--access-token=\"" + this.accessToken) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--access-token=" + this.accessToken));
             }
             // If the refreshToken value was not default, then add it to the list of args.
             if ((this.refreshToken != default(string)))
             {
-                genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
             }
             // If the log value was not default, then add it to the list of args.
             if ((this.log != default(string)))
             {
-                genBeamCommandArgs.Add((("--log=\"" + this.log) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--log=" + this.log));
             }
             // If the noRedirect value was not default, then add it to the list of args.
             if ((this.noRedirect != default(bool)))
             {
                 genBeamCommandArgs.Add(("--no-redirect=" + this.noRedirect));
+            }
+            // If the ignoreBeamIds value was not default, then add it to the list of args.
+            if ((this.ignoreBeamIds != default(string[])))
+            {
+                for (int i = 0; (i < this.ignoreBeamIds.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--ignore-beam-ids=" + this.ignoreBeamIds[i]));
+                }
             }
             // If the preferRemoteFederation value was not default, then add it to the list of args.
             if ((this.preferRemoteFederation != default(bool)))
@@ -132,8 +137,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the dockerCliPath value was not default, then add it to the list of args.
             if ((this.dockerCliPath != default(string)))
             {
-                genBeamCommandArgs.Add((("--docker-cli-path=\"" + this.dockerCliPath) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--docker-cli-path=" + this.dockerCliPath));
             }
             // If the emitLogStreams value was not default, then add it to the list of args.
             if ((this.emitLogStreams != default(bool)))
@@ -152,8 +156,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the dir value was not default, then add it to the list of args.
             if ((this.dir != default(string)))
             {
-                genBeamCommandArgs.Add((("--dir=\"" + this.dir) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--dir=" + this.dir));
             }
             // If the raw value was not default, then add it to the list of args.
             if ((this.raw != default(bool)))
@@ -173,8 +176,7 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the dotnetPath value was not default, then add it to the list of args.
             if ((this.dotnetPath != default(string)))
             {
-                genBeamCommandArgs.Add((("--dotnet-path=\"" + this.dotnetPath) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--dotnet-path=" + this.dotnetPath));
             }
             // If the version value was not default, then add it to the list of args.
             if ((this.version != default(bool)))

@@ -132,6 +132,13 @@ namespace Beamable.Common.Api.Mail
 								};
 							}
 
+							var expires = string.Empty;
+							if (c.expires.HasValue)
+							{
+								expires = c.expires.Value.ToString();
+							}
+
+
 							return new MailMessage
 							{
 								id = c.id,
@@ -143,7 +150,7 @@ namespace Beamable.Common.Api.Mail
 								subject = c.subject,
 								body = c.body,
 								state = c.state,
-								expires = c.expires.ToString(),
+								expires = expires,
 								rewards = rewards
 							};
 						}).ToList() : new List<MailMessage>(),

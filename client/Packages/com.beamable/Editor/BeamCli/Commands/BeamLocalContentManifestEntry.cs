@@ -11,7 +11,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public string TypeName;
         public string Name;
         public int CurrentStatus;
+        public bool IsInConflict;
         public string Hash;
         public string[] Tags;
+        public int[] TagsStatus;
+        public string JsonFilePath;
+        public string ReferenceManifestUid;
     }
 }

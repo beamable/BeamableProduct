@@ -16,10 +16,10 @@ on:
 run-name: Release Custom ${{ inputs.commit }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     concurrency:
-      group: release-nuget
+      group: release-nuget-and-unity
       cancel-in-progress: true
     steps:
       - name: review options
@@ -46,6 +46,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install jq
           jq --version
+
+      - name: Add collector version
+        run: |
+            sh ./build/bin/set-collector-version-property.sh
 
       - name: Install CLI
         working-directory: ./

@@ -5,8 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Serilog;
-using System.Collections.Generic;
+using beamable.tooling.common.Microservice;
+using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace Beamable.Server;
 
@@ -68,7 +69,7 @@ public class MicroserviceAuthenticationDaemon
 	public void WakeAuthThread()
 	{
 		Interlocked.Increment(ref AuthorizationCounter);
-		Log.Debug($"Authorization Daemon is being requested. Requests=[{AuthorizationCounter}]");
+		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorization Daemon is being requested. Requests=[{AuthorizationCounter}]");
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
 
@@ -112,16 +113,16 @@ public class MicroserviceAuthenticationDaemon
 		// While this thread isn't cancelled...
 		while (!cancellationTokenSource.IsCancellationRequested)
 		{
-			Log.Verbose($"Waiting at Thread ID = {Environment.CurrentManagedThreadId}");
+			BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Waiting at Thread ID = {Environment.CurrentManagedThreadId}");
 			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep.
 			AUTH_THREAD_WAIT_HANDLE.WaitOne();
 			if (cancellationTokenSource.IsCancellationRequested)
 			{
-				Log.Verbose($"Authorization Daemon has been cancelled. At ThreadID = {Environment.CurrentManagedThreadId}");
+				BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Authorization Daemon has been cancelled. At ThreadID = {Environment.CurrentManagedThreadId}");
 				return;
 			}
 
-			Log.Verbose($"Authorization Daemon has been woken. At ThreadID = {Environment.CurrentManagedThreadId}");
+			BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Authorization Daemon has been woken. At ThreadID = {Environment.CurrentManagedThreadId}");
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
@@ -141,20 +142,20 @@ public class MicroserviceAuthenticationDaemon
 					try
 					{
 						// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
-						Log.Verbose($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
+						BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
 						if (AuthorizationCounter > 0)
 						{
 							// Do the authorization back and forth with Beamo
 							await Authenticate();
 
 							// Resets the auth counter back to 0
-							Log.Verbose($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
+							BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
 							Interlocked.Exchange(ref AuthorizationCounter, 0);
 							authHappened = true;
 						}
 						else
 						{
-							Log.Verbose("Authorization Daemon tried to authenticate, but found that there were no pending auth requests.");
+							BeamableZLoggerProvider.LogContext.Value.LogTrace("Authorization Daemon tried to authenticate, but found that there were no pending auth requests.");
 							authHappened = true;
 						}
 					}
@@ -166,7 +167,7 @@ public class MicroserviceAuthenticationDaemon
 
 					if (!authHappened)
 					{
-						Log.Verbose("Authorization Daemon failed to authenticate. Trying again...");
+						BeamableZLoggerProvider.LogContext.Value.LogTrace("Authorization Daemon failed to authenticate. Trying again...");
 					}
 				}
 			} 
@@ -192,7 +193,7 @@ public class MicroserviceAuthenticationDaemon
 
 			{
 				// This solves an extremely unlikely race condition
-				Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
+				BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
 				Interlocked.Exchange(ref AuthorizationCounter, 0);
 				AUTH_THREAD_WAIT_HANDLE.Reset();
 			}
@@ -209,20 +210,20 @@ public class MicroserviceAuthenticationDaemon
 			return Convert.ToBase64String(hash);
 		}
 
-		Log.Debug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
+		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-		Log.Debug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
+		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
 		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
 		var authRes = await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 		if (!string.Equals("ok", authRes.result))
 		{
-			Log.Error("Authorization failed. result=[{result}]", authRes.result);
+			BeamableZLoggerProvider.LogContext.Value.ZLogError($"Authorization failed. result=[{authRes.result}]");
 			
 			throw new BeamableWebsocketAuthException(authRes.result);
 		}
 
-		Log.Debug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
+		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 	}
 
 	/// <summary>

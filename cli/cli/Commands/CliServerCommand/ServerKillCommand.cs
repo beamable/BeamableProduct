@@ -1,5 +1,5 @@
-using Serilog;
 using System.Diagnostics;
+using Beamable.Server;
 
 namespace cli.CliServerCommand;
 

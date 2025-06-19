@@ -1,6 +1,14 @@
-﻿using Beamable.Server;
-using Microsoft.CodeAnalysis;
-using System.Linq;
+﻿using Beamable.Microservice.SourceGen;
+using Beamable.Microservice.SourceGen.Analyzers;
+using Beamable.Microservice.SourceGen.Fixers;
+using Beamable.Server;
+using Microservice.SourceGen.Tests.Dep;
+using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.Testing;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microservice.SourceGen.Tests;
@@ -8,7 +16,7 @@ namespace Microservice.SourceGen.Tests;
 public partial class BeamableSourceGeneratorTests
 {
 	[Fact]
-	public void Test_Diagnostic_Srv_UsesFedFromAnotherProject()
+	public async Task Test_Diagnostic_Srv_UsesFedFromAnotherProject()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -18,7 +26,7 @@ using Microservice.SourceGen.Tests.Dep;
 namespace TestNamespace;
 
 [Microservice(""TunaService"")]
-public partial class TunaService : Microservice, IFederatedLogin<ExampleFederationId>
+public partial class TunaService : Beamable.Server.Microservice, IFederatedLogin<ExampleFederationId>
 {		
 	public Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution)
 	{
@@ -26,21 +34,23 @@ public partial class TunaService : Microservice, IFederatedLogin<ExampleFederati
 	}
 }";
 
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "example", [new() { Interface = "IFederatedLogin" }] } } };
-
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
-
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have no errors
-		Assert.Empty(runResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		// Microsoft.CodeAnalysis.Testing v1.1.1 used on tests don't have the Net9 Reference, so we need to manually create it
+		ctx.ReferenceAssemblies = new ReferenceAssemblies("net9.0",
+			new PackageIdentity("Microsoft.NETCore.App.Ref", "9.0.0"), Path.Combine("ref", "net9.0"));
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		ctx.TestState.AdditionalReferences.Add(Assembly.GetAssembly(typeof(ExampleFederationId))!);
+		
+		await ctx.RunAsync();
+		
 	}
 
 	
 	[Fact]
-	public void Test_Diagnostic_Srv_NoMicroserviceClassesDetected()
+	public async Task Test_Diagnostic_Srv_NoMicroserviceClassesDetected()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -54,18 +64,17 @@ public class SomeUserMicroservice
 
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.NoMicroserviceClassesDetected));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NoMicroserviceClassesDetected));
+		
+		await ctx.RunAsync();
 	}
 
 	[Fact]
-	public void Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected()
+	public async Task Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -74,30 +83,37 @@ using Beamable.Common;
 namespace TestNamespace;
 
 [Microservice(""id"")]
-public class SomeUserMicroservice : Microservice
+public class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 
 [Microservice(""id2"")]
-public class SomeOtherUserMicroservice : Microservice
+public class {|#1:SomeOtherUserMicroservice|} : Microservice
 {		
 }
 ";
 
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MultipleMicroserviceClassesDetected));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
+			.WithLocation(0)
+			.WithArguments("SomeOtherUserMicroservice")
+			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
+		
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
+			.WithLocation(1)
+			.WithArguments("SomeUserMicroservice")
+			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
+		
+		await ctx.RunAsync();
 	}
 	
 	[Fact]
-	public void Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected_PartialCompatibility()
+	public async Task Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected_PartialCompatibility()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -106,7 +122,7 @@ using Beamable.Common;
 namespace TestNamespace;
 
 [Microservice(""someid"")]
-public partial class SomeUserMicroservice : Microservice
+public partial class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 
@@ -115,20 +131,17 @@ public partial class SomeUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
-
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.DoesNotContain(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MultipleMicroserviceClassesDetected));
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
 	}
 
 	[Fact]
-	public void Test_Diagnostic_Srv_NonPartialMicroserviceClassDetected()
+	public async Task Test_Diagnostic_Srv_NonPartialMicroserviceClassDetected()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -137,25 +150,24 @@ using Beamable.Common;
 namespace TestNamespace;
 
 [Microservice(""id"")]
-public class SomeUserMicroservice : Microservice
+public class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 ";
 
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.NonPartialMicroserviceClassDetected));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NonPartialMicroserviceClassDetected).WithLocation(0));
+		
+		await ctx.RunAsync();
 	}
 
 	[Fact]
-	public void Test_Diagnostic_Srv_MissingMicroserviceId()
+	public async Task Test_Diagnostic_Srv_MissingMicroserviceId()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -163,25 +175,25 @@ using Beamable.Common;
 
 namespace TestNamespace;
 
-public partial class SomeUserMicroservice : Microservice
+public partial class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 ";
 
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
-
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MissingMicroserviceId));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MissingMicroserviceId).WithLocation(0));
+		
+		await ctx.RunAsync();
 	}
-
+	
+	
 	[Fact]
-	public void Test_Diagnostic_Srv_InvalidMicroserviceId()
+	public async Task Test_Diagnostic_Srv_InvalidAsyncVoidCallableMethod()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -189,21 +201,323 @@ using Beamable.Common;
 
 namespace TestNamespace;
 
-[Microservice(""2-n%t-v#l!d-i&"")]
+[Microservice(""some_user_service"")]
+public partial class SomeUserMicroservice : Microservice
+{
+	[ClientCallable]
+	public async {|#0:void|} ClientTestAsyncCallable()
+	{
+	}
+
+	[ServerCallable]
+	public async {|#1:void|} ServerTestAsyncCallable()
+	{
+	}
+
+	[Callable]
+	public async {|#2:void|} TestAsyncCallable()
+	{
+	}
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(0)
+			.WithArguments("ClientTestAsyncCallable"));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(1)
+			.WithArguments("ServerTestAsyncCallable"));
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(2)
+			.WithArguments("TestAsyncCallable"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ReturnTypeInsideServerScope()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+
+	[Beamable.BeamGenerateSchema]
+	public class {|#0:DTO_Attribute|}
+	{
+		public int x;
+	}
+
+	public class DTO_Nested
+	{
+		public int x;
+	}
+
+	[ClientCallable]
+	public {|#1:DTO_Nested|} CallService_Nested() 
+	{
+		return new DTO_Nested{ x = 1 };
+	}
+
+	[ClientCallable]
+	public async {|#2:Task<DTO_MicroserviceScope>|} CallServiceAsync(DTO_MicroserviceScope {|#3:param|}) 
+	{
+	return new DTO_MicroserviceScope{ x = 1 };
+	}
+}
+
+public class DTO_MicroserviceScope 
+{
+    public int x;
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested)
+				.WithLocation(0)
+				.WithArguments("DTO_Attribute"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableMethodTypeIsNested)
+				.WithLocation(1)
+				.WithArguments("DTO_Nested", "CallService_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(1)
+				.WithArguments("CallService_Nested", "DTO_Nested"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(2)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
+				.WithLocation(3)
+				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+
+		string config = $@"
+is_global = true
+build_property.BeamValidateCallableTypesExistInSharedLibraries = true
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_NonReadonlyStaticField()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+
+	static string {|#0:TestField|} = ""Hello"";
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
+				.WithLocation(0)
+				.WithArguments("TestField"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Srv_InvalidAsyncVoidCallableMethod()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""some_user_service"")]
+public partial class SomeUserMicroservice : Microservice
+{
+	[ClientCallable]
+	public async {|#0:void|} ClientTestAsyncCallable()
+	{
+	}
+
+	[ServerCallable]
+	public async {|#1:void|} ServerTestAsyncCallable()
+	{
+	}
+
+	[Callable]
+	public async {|#2:void|} TestAsyncCallable()
+	{
+	}
+}
+";
+		
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""some_user_service"")]
+public partial class SomeUserMicroservice : Microservice
+{
+	[ClientCallable]
+	public async Task ClientTestAsyncCallable()
+	{
+	}
+
+	[ServerCallable]
+	public async Task ServerTestAsyncCallable()
+	{
+	}
+
+	[Callable]
+	public async Task TestAsyncCallable()
+	{
+	}
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, AsyncVoidCallableFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(0)
+			.WithArguments("ClientTestAsyncCallable"));
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(1)
+			.WithArguments("ServerTestAsyncCallable"));
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
+			.WithLocation(2)
+			.WithArguments("TestAsyncCallable"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Srv_InvalidMicroserviceID_NonMatchBeamIdProperty()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class {|#0:SomeUserMicroservice|} : Microservice
+{		
+}
+";
+		
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""OtherBeamID"")]
 public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
-
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, InvalidMicroserviceAttributeFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
 
-		// We are testing the detection
-		PrepareForRun(new[] { cfg }, new[] { UserCode });
+		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MicroserviceIdInvalidFromCsProj)
+			.WithLocation(0)
+			.WithArguments("MyMicroservice", "OtherBeamID"));
+		
+		string config = $@"
+is_global = true
+build_property.beamid = OtherBeamID
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_CodeFixer_Srv_NonReadonlyStaticField()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
 
-		// Run generators and retrieve all results.
-		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+namespace TestNamespace;
 
-		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.InvalidMicroserviceId));
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	static string {|#0:TestField|} = ""Hello"";
+}
+";
+		
+		const string FixedCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+    static readonly string TestField = ""Hello"";
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, MicroserviceNonReadonlyStaticFieldFixer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+		
+		ctx.TestState.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
+				.WithLocation(0)
+				.WithArguments("TestField"));
+		
+		await ctx.RunAsync();
 	}
 }
