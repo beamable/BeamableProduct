@@ -1,5 +1,11 @@
 # @beamable/sdk
 
+## 0.1.5
+
+### Patch Changes
+
+- Split bundle based on platform
+
 ## 0.1.4
 
 ### Patch Changes

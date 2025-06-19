@@ -1,6 +1,6 @@
 {
   "name": "@beamable/sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.js",
   "module": "dist/node/index.mjs",
