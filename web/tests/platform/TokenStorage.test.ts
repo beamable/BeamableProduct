@@ -29,6 +29,11 @@ class DummyStorage extends TokenStorage {
   async removeExpiresIn() {
     this.expiresIn = null;
   }
+  clear() {
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.expiresIn = null;
+  }
   dispose() {}
 }
 

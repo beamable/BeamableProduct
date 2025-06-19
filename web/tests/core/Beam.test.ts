@@ -1,35 +1,12 @@
-import {
-  describe,
-  expect,
-  it,
-  vi,
-  beforeEach,
-  afterEach,
-  beforeAll,
-} from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Beam } from '@/core/Beam';
-import { BeamUtils } from '@/core/BeamUtils';
-import { NodeTokenStorage } from '@/platform';
-import type { TokenStorage } from '@/platform/types/TokenStorage';
+import * as BeamUtils from '@/core/BeamUtils';
 
 describe('Beam', () => {
-  let nodeTokenStorage: NodeTokenStorage;
-
-  beforeAll(() => {
-    // Mock NodeTokenStorage
-    nodeTokenStorage = {
-      getRefreshToken: vi.fn(),
-      setAccessToken: vi.fn(),
-      setRefreshToken: vi.fn(),
-      removeRefreshToken: vi.fn(),
-    } as unknown as NodeTokenStorage;
-  });
-
   it('returns a formatted summary of the instance configuration', () => {
     const cid = '1713028771755577';
     const pid = 'DE_1740294079885317';
     const beam = new Beam({
-      tokenStorage: nodeTokenStorage,
       environment: 'Dev',
       cid,
       pid,

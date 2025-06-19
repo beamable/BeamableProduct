@@ -2,10 +2,10 @@
   "name": "@beamable/sdk",
   "version": "0.1.4",
   "description": "Beamable Web SDK",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "unpkg": "dist/index.global.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/node/index.js",
+  "module": "dist/node/index.mjs",
+  "unpkg": "dist/browser/index.browser.global.js",
+  "types": "dist/node/index.d.ts",
   "author": "Beamable",
   "license": "MIT",
   "packageManager": "pnpm@10.8.0",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "setup-project": "node setup.mjs",
-    "build": "tsup && node scripts/fix-dts-names.js",
+    "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
@@ -43,13 +43,14 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    },
-    "./platform": {
-      "import": "./dist/platform/index.mjs",
-      "require": "./dist/platform/index.js"
+      "browser": {
+        "types": "./dist/browser/index.browser.d.mts",
+        "require": "./dist/browser/index.browser.global.js",
+        "import": "./dist/browser/index.browser.mjs"
+      },
+      "types": "./dist/node/index.d.ts",
+      "require": "./dist/node/index.js",
+      "import": "./dist/node/index.mjs"
     }
   },
   "keywords": [

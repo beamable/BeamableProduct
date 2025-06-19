@@ -7,7 +7,6 @@ import path from 'path';
 const alias = { '@': path.resolve(__dirname, 'src') };
 
 const config = {
-  outDir: 'dist', // Output directory for the build
   splitting: false, // Disable code splitting (required for CJS and IIFE builds)
   sourcemap: false, // Generate source maps for debugging
   minify: true, // Minify the output for smaller bundle size
@@ -17,8 +16,10 @@ const config = {
 export default defineConfig([
   {
     ...config,
-    entry: ['src/index.ts', 'src/platform/index.ts'], // Entry files for the library build
+    entry: ['src/index.ts'], // Entry files for the library build
     format: ['esm', 'cjs'], // Output formats: ES modules and CommonJS
+    outDir: 'dist/node', // Output directory for the build
+    platform: 'node', // Target node environment for bundling
     clean: true, // Clean the output directory before building
     dts: true, // Generate TypeScript declaration (.d.ts) files
     esbuildOptions(options) {
@@ -27,11 +28,30 @@ export default defineConfig([
   },
   {
     ...config,
-    entry: ['src/index.ts'], // Entry files for the library build
+    entry: ['src/index.browser.ts'], // Entry files for the library build
+    format: 'esm', // Output formats: ES modules and CommonJS
+    outDir: 'dist/browser', // Output directory for the build
+    platform: 'browser', // Target browser environment for bundling
+    dts: true, // Generate TypeScript declaration (.d.ts) files
+    esbuildOptions(options) {
+      options.alias = {
+        ...alias,
+        '@/index': path.resolve(__dirname, 'src/index.browser.ts'),
+      };
+    },
+  },
+  {
+    ...config,
+    entry: ['src/index.browser.ts'], // Entry files for the library build
     format: 'iife', // Output formats: browser-friendly IIFE
+    outDir: 'dist/browser', // Output directory for the build
+    platform: 'browser', // Target browser environment for bundling
     globalName: 'Beamable', // Global variable name for IIFE builds (window.Beamable)
     esbuildOptions(options) {
-      options.alias = alias;
+      options.alias = {
+        ...alias,
+        '@/index': path.resolve(__dirname, 'src/index.browser.ts'),
+      };
     },
   },
 ]);

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BeamUtils } from '@/core/BeamUtils';
+import { saveToken } from '@/core/BeamUtils';
 import type { TokenStorage } from '@/platform/types/TokenStorage';
 import type { TokenResponse } from '@/__generated__/schemas';
 
-describe('BeamUtils', () => {
+describe('saveToken()', () => {
   describe('saveToken', () => {
     it('calls setAccessToken, setRefreshToken, and setExpiresIn on storage', async () => {
       const tokenResponse: TokenResponse = {
@@ -19,7 +19,7 @@ describe('BeamUtils', () => {
         setExpiresIn: vi.fn().mockResolvedValue(undefined),
       } as unknown as TokenStorage;
 
-      await BeamUtils.saveToken(storage, tokenResponse);
+      await saveToken(storage, tokenResponse);
 
       expect(storage.setAccessToken).toHaveBeenCalledWith('access-token');
       expect(storage.setRefreshToken).toHaveBeenCalledWith('refresh-token');

@@ -3,20 +3,17 @@ import { BeamConfig } from '@/configs/BeamConfig';
 import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 import { BaseRequester } from '@/http/BaseRequester';
 import { BeamRequester } from '@/http/BeamRequester';
-import { isBrowserEnv } from '@/utils/isBrowserEnv';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { BrowserTokenStorage } from '@/platform/BrowserTokenStorage';
 import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
 import packageJson from '../../package.json';
 import { BeamService } from '@/core/BeamService';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
-import { BeamUtils } from '@/core/BeamUtils';
+import { defaultTokenStorage, readConfig, saveConfig } from '@/index';
+import { saveToken } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
-import { ConfigurationError } from '@/constants/Errors';
-import { NodeTokenStorageRequiredMessage } from '@/constants';
 
 /** The main class for interacting with the Beam SDK. */
 export class Beam {
@@ -53,11 +50,8 @@ export class Beam {
     this.pid = config.pid;
     this.envConfig = BeamEnvironment.get(env ?? 'Prod');
 
-    if (!isBrowserEnv() && config.tokenStorage === undefined)
-      throw new ConfigurationError(NodeTokenStorageRequiredMessage);
-
     this.tokenStorage =
-      config.tokenStorage ?? new BrowserTokenStorage(config.instanceTag);
+      config.tokenStorage ?? defaultTokenStorage(config.instanceTag);
 
     this.defaultHeaders = {
       Accept: 'application/json',
@@ -85,17 +79,17 @@ export class Beam {
   async ready(): Promise<void> {
     if (!this.readyPromise) {
       this.readyPromise = (async () => {
-        const savedConfig = await BeamUtils.readConfig();
+        const savedConfig = await readConfig();
         if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
           this.tokenStorage.clear();
-          await BeamUtils.saveConfig(this.cid, this.pid);
+          await saveConfig({ cid: this.cid, pid: this.pid });
         }
 
         const accessToken = await this.tokenStorage.getAccessToken();
         if (accessToken === null) {
           // If no access token exists, sign in as a guest and save the tokens
           const tokenResponse = await this.auth.signInAsGuest();
-          await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+          await saveToken(this.tokenStorage, tokenResponse);
         } else if (this.tokenStorage.isExpired) {
           // If the access token is expired, try to refresh it using the refresh token
           // If no refresh token exists, sign in as a guest and save the tokens
@@ -105,7 +99,7 @@ export class Beam {
           if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
           else tokenResponse = await this.auth.refreshAuthToken(refreshToken);
 
-          await BeamUtils.saveToken(this.tokenStorage, tokenResponse);
+          await saveToken(this.tokenStorage, tokenResponse);
         }
 
         // If we have a valid access token, fetch the current player account and set it
