@@ -1,4 +1,10 @@
-# @beamable/sdk
+# beamable-sdk
+
+## 0.1.6
+
+### Patch Changes
+
+- New package name
 
 ## 0.1.5
 

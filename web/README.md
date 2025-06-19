@@ -18,9 +18,9 @@ Install the SDK into your project via npm (or pnpm):
 
 ```bash
 # npm
-npm install @beamable/sdk
+npm install beamable-sdk
 # pnpm
-pnpm add @beamable/sdk
+pnpm add beamable-sdk
 ```
 
 ## Using the SDK
@@ -30,7 +30,7 @@ You can use the Beam SDK across different JavaScript environments:
 #### CommonJS (Node.js)
 
 ```js
-const { Beam } = require('@beamable/sdk');
+const { Beam } = require('beamable-sdk');
 const beam = new Beam({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
@@ -43,7 +43,7 @@ console.log(beam.player.id);
 #### ES Modules (Node.js)
 
 ```js
-import { Beam } from '@beamable/sdk';
+import { Beam } from 'beamable-sdk';
 const beam = new Beam({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
@@ -56,7 +56,7 @@ console.log(beam.player.id);
 #### Browser (IIFE)
 
 ```html
-<script src="https://unpkg.com/@beamable/sdk"></script>
+<script src="https://unpkg.com/beamable-sdk"></script>
 <script>
   // global variable exposed as Beamable
   const { Beam, BeamEnvironment } = Beamable;
@@ -248,7 +248,7 @@ On successful refresh, the original request is retried with the new access token
 If the SDK fails to refresh the access token (for example, the refresh token has expired), it throws a `RefreshAccessTokenError` and stored tokens are cleared. Consumers should catch this error to start a new login flow:
 
 ```ts
-import { RefreshAccessTokenError } from '@beamable/sdk';
+import { RefreshAccessTokenError } from 'beamable-sdk';
 
 try {
   await beam.api.someService.someEndpoint();
@@ -266,7 +266,7 @@ try {
 If you need a different storage mechanism, implement the `TokenStorage` interface and pass it in the configuration:
 
 ```ts
-import { TokenStorage } from '@beamable/sdk';
+import { TokenStorage } from 'beamable-sdk';
 
 class MyTokenStorage implements TokenStorage {
   /* implement getAccessToken, setAccessToken, ... */
