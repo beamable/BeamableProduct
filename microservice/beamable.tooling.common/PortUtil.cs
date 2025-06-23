@@ -21,4 +21,13 @@ public class PortUtil
 		l.Stop();
 		return port;
 	}
+
+	/// <summary>
+	/// This is mainly to get a local endpoint with a free port to use
+	/// </summary>
+	/// <returns></returns>
+	public static string FreeEndpoint()
+	{
+		return $"http://localhost:{PortUtil.FreeTcpPort()}"; //TODO should have a better way to get the local url
+	}
 }

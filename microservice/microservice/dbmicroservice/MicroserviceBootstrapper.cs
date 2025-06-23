@@ -114,7 +114,7 @@ namespace Beamable.Server
 		    });
 	    }
 	    
-	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, bool includeOtel)
+	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, bool includeOtel, string otlpEndpoint)
 	    {
 		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 		    if (!LogUtil.TryParseSystemLogLevel(args.LogLevel, out LogLevel))
@@ -146,7 +146,11 @@ namespace Beamable.Server
 					    logging.IncludeScopes = true;
 					    logging
 						    .SetResourceBuilder(_resourceBuilder)
-						    .AddOtlpExporter();
+						    .AddOtlpExporter(option =>
+						    {
+							    option.Protocol = OtlpExportProtocol.HttpProtobuf;
+							    option.Endpoint = new Uri(otlpEndpoint);
+						    });
 
 				    });
 			    }
@@ -659,7 +663,7 @@ namespace Beamable.Server
         public static ILogger _logger;
         private static readonly BeamStandardTelemetryAttributeProvider _standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
 
-        public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute, string otlpEndpoint)
         {
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
 			        .AddMeter(Otel.METER_SERVICE_NAME)
@@ -667,8 +671,10 @@ namespace Beamable.Server
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
 			        .SetResourceBuilder(_resourceBuilder)
-			        .AddOtlpExporter((c) =>
+			        .AddOtlpExporter(option =>
 			        {
+				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
+				        option.Endpoint = new Uri(otlpEndpoint);
 			        })
 			        .Build()
 		        ;
@@ -679,8 +685,10 @@ namespace Beamable.Server
 			        .AddSource(Otel.METER_SERVICE_NAME)
 			        .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .SetSampler<TraceSampler>()
-			        .AddOtlpExporter((c) =>
+			        .AddOtlpExporter(option =>
 			        {
+				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
+				        option.Endpoint = new Uri(otlpEndpoint);
 			        })
 			        .Build()
 		        ;
@@ -711,7 +719,7 @@ namespace Beamable.Server
 	        
 	        var envArgs = _args = new EnvironmentArgs();
 	        
-	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false);
+	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false, string.Empty);
 	        
 	        _logger.LogInformation($"Starting Prepare");
 
@@ -877,11 +885,14 @@ namespace Beamable.Server
 		        shouldStartStandardOtel = true;
 	        }
 
+	        var otlpEndpoint = PortUtil.FreeEndpoint();
+
 	        if (shouldStartStandardOtel)
 	        {
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
+		        var collectorStatus = await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
+		        otlpEndpoint = collectorStatus.otlpEndpoint;
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
@@ -912,11 +923,11 @@ namespace Beamable.Server
 	        
 	        
 
-	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true);
+	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true, otlpEndpoint);
 
 	        BeamableZLoggerProvider.SetLogger(_logger);
 	        
-	        ConfigureTelemetry(envArgs, attribute);
+	        ConfigureTelemetry(envArgs, attribute, otlpEndpoint);
 
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();

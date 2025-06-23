@@ -10,10 +10,8 @@ receivers:
           layout: '%Y-%m-%d %H:%M:%S'
   otlp:
     protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
       http:
-        endpoint: 0.0.0.0:4318
+        endpoint: ${env:BEAM_OTLP_HTTP_ENDPOINT}
 processors:
   batch:
     timeout: 5s

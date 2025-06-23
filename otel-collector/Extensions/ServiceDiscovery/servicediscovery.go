@@ -25,15 +25,18 @@ type serviceDiscovery struct {
 	logEventsChan <-chan zapcore.Entry
 }
 
-var Version = "0.0.0" // The actual version is injected here during build time
+var Version = "0.0.123" // The actual version is injected here during build time
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 
+	otlpEndpoint := os.Getenv("BEAM_OTLP_HTTP_ENDPOINT")
+
 	rd := responseData{
-		Status:  NOT_READY,
-		Pid:     os.Getpid(),
-		Logs:    []zapcore.Entry{},
-		Version: Version,
+		Status:       NOT_READY,
+		Pid:          os.Getpid(),
+		Logs:         []zapcore.Entry{},
+		Version:      Version,
+		OtlpEndpoint: otlpEndpoint,
 	}
 
 	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)

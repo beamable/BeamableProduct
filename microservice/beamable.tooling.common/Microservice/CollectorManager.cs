@@ -58,6 +58,7 @@ public class CollectorDiscoveryEntry
 	public string status;
 	public int pid;
 	public List<CollectorZapcoreEntry> logs;
+	public string otlpEndpoint;
 }
 
 public class CollectorInfo
@@ -394,7 +395,7 @@ public class CollectorManager
 		return socket;
 	}
 
-	public static async Task<int> StartCollector(
+	public static async Task<CollectorStatus> StartCollector(
 		string absBasePath, 
 		bool allowDownload,
 		bool detach, 
@@ -405,7 +406,7 @@ public class CollectorManager
 
 		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
 		
-		var connectedPromise = new Promise<int>();
+		var connectedPromise = new Promise<CollectorStatus>();
 
 		_ = Task.Run(async () =>
 		{
@@ -424,9 +425,9 @@ public class CollectorManager
 			}
 		});
 
-		var collectorProcessId = await connectedPromise; // the first time we wait for the collector to be up before continuing
+		var collectorStatus = await connectedPromise; // the first time we wait for the collector to be up before continuing
 
-		return collectorProcessId;
+		return collectorStatus;
 	}
 
 	public static void AddDefaultCollectorHostAndPortFallback()
@@ -444,7 +445,7 @@ public class CollectorManager
 		}
 	}
 
-	private static async Task CollectorDiscovery(string collectorExecutablePath, bool detach, CancellationTokenSource cts, Promise<int> connectedPromise, ILogger logger)
+	private static async Task CollectorDiscovery(string collectorExecutablePath, bool detach, CancellationTokenSource cts, Promise<CollectorStatus> connectedPromise, ILogger logger)
 	{
 		AddDefaultCollectorHostAndPortFallback();
 		
@@ -496,7 +497,7 @@ public class CollectorManager
 				if (!connectedPromise.IsCompleted)
 				{
 					logger.ZLogInformation($"Found collector! Events can now be sent to collector");
-					connectedPromise.CompleteSuccess(CollectorStatus.pid);
+					connectedPromise.CompleteSuccess(CollectorStatus);
 				}
 				alarmCounter = 0;
 			}
@@ -570,7 +571,8 @@ public class CollectorManager
 				isRunning = true,
 				isReady = collector.status == "READY",
 				pid = collector.pid,
-				logs = logs
+				logs = logs,
+				otlpEndpoint = collector.otlpEndpoint
 			};
 		}
 
@@ -628,6 +630,7 @@ public class CollectorManager
 		process.StartInfo.UseShellExecute = false;
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+		process.StartInfo.Environment.Add("BEAM_OTLP_HTTP_ENDPOINT", PortUtil.FreeEndpoint());
 
 		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
 
