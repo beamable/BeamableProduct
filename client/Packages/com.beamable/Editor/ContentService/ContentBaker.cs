@@ -9,13 +9,14 @@ using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
 using Editor.CliContentManager;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Content;
 
 public class ContentBaker
 {
@@ -78,22 +79,26 @@ public class ContentBaker
 				                    "Reset your content and try again.");
 			}
 
-			var contentFileValue = await File.ReadAllTextAsync(content.JsonFilePath);
+			var contentJson = await File.ReadAllTextAsync(content.JsonFilePath);
+			var deserializedResult = Json.Deserialize(contentJson);
+			var root = deserializedResult as ArrayDict;
 			var contentDict = new ArrayDict
 			{
 				{"id", content.FullId},
 				{"version", content.Hash ?? ""},
-				{"properties", }
+				{"properties", root}
 			};
 			
-			var propertyDict = new ContentSerializer<>.PropertyValue { rawJson = SerializeProperties(content) };
+			var propertyDict = new PropertyValue { rawJson = contentJson };
 			contentDict.Add("properties", propertyDict);
+			
+			var bakedJson = Json.Serialize(contentDict, new StringBuilder());
 			
 			contentData[i] = new ContentDataInfo
 			{
 				contentId = content.FullId, 
 				contentVersion = content.Hash, 
-				data = content.ToJson()
+				data = bakedJson
 			};
 		}
 
