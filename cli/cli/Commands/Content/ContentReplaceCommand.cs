@@ -26,9 +26,7 @@ public class ContentReplaceCommand : AppCommand<ContentReplaceCommandArgs>, ISki
 		
 		string destinationPath = Path.Combine(contentDirectory, args.Destination);		
 
-		args.ContentService.ReplaceLocalContent(contentDirectory, sourcePath, destinationPath);
-
-		return Task.CompletedTask;
+		return args.ContentService.ReplaceLocalContent(contentDirectory, sourcePath, destinationPath);
 	}
 
 }
