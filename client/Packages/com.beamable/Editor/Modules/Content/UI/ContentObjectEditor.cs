@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
@@ -13,7 +14,6 @@ using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEngine;
 using ContentFilterType = Beamable.Common.Content.ContentFilterType;
-using ContentStatus2 = Beamable.Common.BeamCli.Contracts.ContentStatus;
 
 namespace Beamable.Editor.Content.UI
 {
@@ -37,7 +37,7 @@ namespace Beamable.Editor.Content.UI
 			var boldLabelFieldStyle =
 				new GUIStyle(EditorStyles.boldLabel) {fixedHeight = EditorGUIUtility.singleLineHeight};
 
-			var isModified = contentObject.ContentStatus is ContentStatus2.Modified or ContentStatus2.Created or ContentStatus2.Deleted;
+			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted;
 			var isInConflict = contentObject.IsInConflict;
 
 			var headerHeight = isModified || isInConflict ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
@@ -57,7 +57,7 @@ namespace Beamable.Editor.Content.UI
 				var iconRect = new Rect(headerRect.x, headerRect.y + iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
-				if (contentObject.ContentStatus is not ContentStatus2.UpToDate)
+				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
 				{
 					var statusIconSize = 15f;
 					var statusIconRect = new Rect(
@@ -106,7 +106,7 @@ namespace Beamable.Editor.Content.UI
 				alignment = TextAnchor.MiddleLeft,     
 				padding = new RectOffset(10, 5, 5, 5),
 			};
-			bool hasModifiedButton = content.ContentStatus is ContentStatus2.Deleted or ContentStatus2.Modified or ContentStatus2.Created;
+			bool hasModifiedButton = content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
 			bool hasConflictSolveButton = content.IsInConflict;
 			if (hasModifiedButton)
 			{
@@ -192,7 +192,7 @@ namespace Beamable.Editor.Content.UI
 			var nameFieldSize = boldLabelFieldStyle.CalcSize(nameContent);
 			nameRect.xMin += nameFieldSize.x;
 			EditorGUI.BeginChangeCheck();
-			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
+			if (contentObject.ContentStatus is ContentStatus.Deleted)
 			{
 				EditorGUI.LabelField(nameRect, contentObject.ContentName);
 			}

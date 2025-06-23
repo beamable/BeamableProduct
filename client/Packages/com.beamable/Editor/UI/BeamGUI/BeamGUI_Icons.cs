@@ -166,7 +166,7 @@ namespace Beamable.Editor.Util
 			
 			if (iconRefresh == null)
 			{
-				iconRefresh = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
+				iconRefresh = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Refresh.png");
 			}
 			
 			if (iconSettings == null)
@@ -231,42 +231,42 @@ namespace Beamable.Editor.Util
 
 			if (iconTag == null)
 			{
-				iconTag = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Tag.png");
+				iconTag = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Tag.png");
 			}
 
 			if (iconType == null)
 			{
-				iconType = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Type.png");
+				iconType = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Type.png");
 			}
 
 			if (iconStatus == null)
 			{
-				iconStatus = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/Statuses.png");
+				iconStatus = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Statuses.png");
 			}
 
 			if (iconDelete == null)
 			{
-				iconDelete = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Delete.png");
+				iconDelete = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Delete.png");
 			}
 
 			if (iconStatusModified == null)
 			{
-				iconStatusModified = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Modified.png");
+				iconStatusModified = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Modified.png");
 			}
 
 			if (iconStatusAdded == null)
 			{
-				iconStatusAdded = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Added.png");
+				iconStatusAdded = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Added.png");
 			}
 
 			if (iconStatusDeleted == null)
 			{
-				iconStatusDeleted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconStatus_Deleted.png");
+				iconStatusDeleted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Deleted.png");
 			}
 
 			if (iconStatusInvalid == null)
 			{
-				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconLogs_WarningMsg.png");
+				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
 			}
 
 			if (iconRotate == null)
@@ -276,17 +276,17 @@ namespace Beamable.Editor.Util
 			
 			if (iconSync == null)
 			{
-				iconSync = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconBeam_Sync.png");
+				iconSync = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Sync.png");
 			}
 			
 			if (iconPublish == null)
 			{
-				iconPublish = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconBeam_Publish.png");
+				iconPublish = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Publish.png");
 			}
 
 			if (iconRevertAction == null)
 			{
-				iconRevertAction = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Content/Icons/IconAction_Revert.png");
+				iconRevertAction = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconAction_Revert.png");
 			}
 		}
 	}
