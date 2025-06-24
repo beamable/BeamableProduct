@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Beam } from '@/core/Beam';
 import * as BeamUtils from '@/core/BeamUtils';
+import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
+import { RealmsApi } from '@/__generated__/apis/RealmsApi';
 
 describe('Beam', () => {
   it('returns a formatted summary of the instance configuration', () => {
@@ -56,6 +58,19 @@ describe('Beam', () => {
         pid: 'pid',
         tokenStorage: storage,
       });
+      // Use mock WebSocket for realtime connection
+      (beam as any).webSocket = new MockBeamWebSocket();
+      // Stub realms client defaults for setupRealtimeConnection
+      vi.spyOn(
+        RealmsApi.prototype,
+        'getRealmsClientDefaults',
+      ).mockResolvedValue({
+        body: {
+          websocketConfig: { provider: 'beamable', uri: 'wss://test.com' },
+        },
+      } as any);
+      // Default refresh token for setupRealtimeConnection
+      storage.getRefreshToken.mockResolvedValue('refresh-token');
       saveTokenSpy = vi.spyOn(BeamUtils, 'saveToken').mockResolvedValue();
       vi.spyOn(beam.auth, 'signInAsGuest').mockResolvedValue(
         dummyTokenResponse as any,
@@ -106,7 +121,7 @@ describe('Beam', () => {
     it('falls back to guest sign-in when refresh token does not exist', async () => {
       storage.getAccessToken.mockResolvedValue('access');
       storage.isExpired = true;
-      storage.getRefreshToken.mockResolvedValue(null);
+      storage.getRefreshToken.mockResolvedValueOnce(null);
       beam.auth.signInAsGuest = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
@@ -131,6 +146,24 @@ describe('Beam', () => {
       expect(beam.auth.signInAsGuest).not.toHaveBeenCalled();
       expect(saveTokenSpy).not.toHaveBeenCalled();
       expect(beam.player.account).toEqual(dummyPlayer);
+    });
+
+    it('isReadyPromise resolves to true when setup is complete', async () => {
+      storage.getAccessToken.mockResolvedValue('access');
+      storage.isExpired = false;
+      beam.account.getCurrentPlayer = vi
+        .fn()
+        .mockResolvedValue(dummyPlayer as any);
+
+      await beam.ready();
+
+      expect(beam.isReady).toBe(true);
+    });
+
+    it('isReadyPromise resolves to false when setup fails', async () => {
+      storage.getAccessToken.mockRejectedValue(new Error('Setup failed'));
+      await expect(beam.ready()).rejects.toThrow('Setup failed');
+      expect(beam.isReady).toBe(false);
     });
   });
 });

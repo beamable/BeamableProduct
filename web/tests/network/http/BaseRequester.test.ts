@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BaseRequester } from '@/http/BaseRequester';
+import { BaseRequester } from '@/network/http/BaseRequester';
 import { GET } from '@/constants';
 
 type TestReq = { foo: string };

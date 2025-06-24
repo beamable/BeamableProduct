@@ -1,5 +1,5 @@
 import { BeamEnvironmentName } from './BeamEnvironmentConfig';
-import { HttpRequester } from '@/http/types/HttpRequester';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 
 /**

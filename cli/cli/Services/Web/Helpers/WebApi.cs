@@ -68,9 +68,10 @@ public static class WebApi
 		{
 			var tsFile = new TsFile(apiName);
 			var tsImportHttpRequester =
-				new TsImport($"@/http/types/{httpRequester.Identifier}").AddNamedImport(httpRequester.Identifier);
+				new TsImport($"@/network/http/types/{httpRequester.Identifier}").AddNamedImport(
+					httpRequester.Identifier);
 			var tsImportHttpResponse =
-				new TsImport($"@/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
+				new TsImport($"@/network/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
 			var tsImportMakeApiRequest =
 				new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest");
 

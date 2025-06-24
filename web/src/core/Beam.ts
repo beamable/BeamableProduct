@@ -1,8 +1,8 @@
-import { HttpRequester } from '@/http/types/HttpRequester';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { BeamConfig } from '@/configs/BeamConfig';
 import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
-import { BaseRequester } from '@/http/BaseRequester';
-import { BeamRequester } from '@/http/BeamRequester';
+import { BaseRequester } from '@/network/http/BaseRequester';
+import { BeamRequester } from '@/network/http/BeamRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
@@ -14,6 +14,8 @@ import { defaultTokenStorage, readConfig, saveConfig } from '@/index';
 import { saveToken } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
+import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
+import { BeamWebSocketError } from '@/constants/Errors';
 
 /** The main class for interacting with the Beam SDK. */
 export class Beam {
@@ -41,8 +43,10 @@ export class Beam {
   private readonly defaultHeaders: Record<string, string>;
   private readonly requester: HttpRequester;
   private envConfig: BeamEnvironmentConfig;
+  private webSocket: BeamWebSocket;
   // Cached promise for SDK initialization to ensure idempotent ready() calls
   private readyPromise?: Promise<void>;
+  private isReadyPromise = false;
 
   constructor(config: BeamConfig) {
     const env = config.environment;
@@ -67,21 +71,44 @@ export class Beam {
     );
 
     this.requester = this.createBeamRequester(config);
+    this.webSocket = new BeamWebSocket();
     this.api = new BeamApi(this.requester);
     this.player = new PlayerService();
     BeamService.attachServices(this);
   }
 
   /**
-   * Initializes the Beam SDK instance. Subsequent calls return the same initialization promise.
+   * Initializes the Beam SDK instance. Later calls return the same initialization promise.
    * @returns {Promise<void>} A promise that resolves when initialization is complete.
    */
   async ready(): Promise<void> {
-    if (!this.readyPromise) {
-      this.readyPromise = (async () => {
+    if (!this.readyPromise) this.readyPromise = this.init();
+    return this.readyPromise;
+  }
+
+  /**
+   * Returns whether the Beam SDK instance is ready.
+   * @returns {boolean} `true` if the SDK is initialized and ready to use, `false` otherwise.
+   */
+  get isReady(): boolean {
+    return this.isReadyPromise;
+  }
+
+  /**
+   * Returns a concise, human-readable summary of this Beam instance’s core configuration.
+   * @returns {string} A string of the form `Beam(config: cid=<cid>, pid=<pid>)`
+   */
+  toString(): string {
+    const { cid, pid } = this;
+    return `Beam(config: cid=${cid}, pid=${pid})`;
+  }
+
+  private async init(): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
         const savedConfig = await readConfig();
         if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
-          this.tokenStorage.clear();
+          this.tokenStorage.clear(); // TODO: consider namespacing by pid
           await saveConfig({ cid: this.cid, pid: this.pid });
         }
 
@@ -104,19 +131,16 @@ export class Beam {
 
         // If we have a valid access token, fetch the current player account and set it
         this.player.account = await this.account.getCurrentPlayer();
-      })();
-    }
 
-    return this.readyPromise;
-  }
-
-  /**
-   * Returns a concise, human-readable summary of this Beam instance’s core configuration.
-   * @returns {string} A string of the form `Beam(config: cid=<cid>, pid=<pid>)`
-   */
-  toString(): string {
-    const { cid, pid } = this;
-    return `Beam(config: cid=${cid}, pid=${pid})`;
+        await this.setupRealtimeConnection();
+        this.isReadyPromise = true;
+        resolve();
+      } catch (err) {
+        this.isReadyPromise = false;
+        this.readyPromise = undefined;
+        reject(err);
+      }
+    });
   }
 
   private createBeamRequester(config: BeamConfig): BeamRequester {
@@ -145,6 +169,31 @@ export class Beam {
       tokenStorage: this.tokenStorage,
       cid: this.cid,
       pid: this.pid,
+    });
+  }
+
+  private async setupRealtimeConnection() {
+    const refreshToken = await this.tokenStorage.getRefreshToken();
+    if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
+
+    const realmConfigResponse = await this.api.realms.getRealmsClientDefaults();
+    const realmConfig = realmConfigResponse.body;
+    if (realmConfig.websocketConfig.provider === 'pubnub') {
+      // Web SDK does not support pubnub
+      throw new BeamWebSocketError(
+        'Unsupported websocket provider. Configure your Realm in portal to include: namespace=notification, key=publisher, value=beamable.',
+      );
+    }
+
+    const url = realmConfig.websocketConfig.uri;
+    if (!url) throw new BeamWebSocketError('No websocket URL found');
+
+    await this.webSocket.connect({
+      api: this.api,
+      cid: this.cid,
+      pid: this.pid,
+      refreshToken,
+      url,
     });
   }
 

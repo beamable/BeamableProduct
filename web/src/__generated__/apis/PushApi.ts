@@ -1,6 +1,6 @@
 import { EmptyRsp } from '@/__generated__/schemas/EmptyRsp';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import { RegisterReq } from '@/__generated__/schemas/RegisterReq';

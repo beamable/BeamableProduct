@@ -9,8 +9,8 @@ import { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembership
 import { GroupSearchResponse } from '@/__generated__/schemas/GroupSearchResponse';
 import { GroupType } from '@/__generated__/schemas/enums/GroupType';
 import { GroupUser } from '@/__generated__/schemas/GroupUser';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/constants';
 import { POST } from '@/constants';

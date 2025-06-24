@@ -8,8 +8,8 @@ import { EventPhaseEndRequest } from '@/__generated__/schemas/EventPhaseEndReque
 import { EventQueryResponse } from '@/__generated__/schemas/EventQueryResponse';
 import { EventsInDateRangeResponse } from '@/__generated__/schemas/EventsInDateRangeResponse';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/constants';
 import { PingRsp } from '@/__generated__/schemas/PingRsp';

@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import * as qsModule from '@/utils/makeQueryString';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import type { HttpRequester } from '@/http/types/HttpRequester';
-import type { HttpRequest } from '@/http/types/HttpRequest';
-import type { HttpResponse } from '@/http/types/HttpResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpRequest } from '@/network/http/types/HttpRequest';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import { DELETE, GET, PATCH, POST, PUT } from '@/constants';
 
 describe('makeApiRequest', () => {

@@ -2,8 +2,8 @@ import { ApiPlayersPartiesDeletePlayerPartyResponse } from '@/__generated__/sche
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/constants';
 import { Party } from '@/__generated__/schemas/Party';

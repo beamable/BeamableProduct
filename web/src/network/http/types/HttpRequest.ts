@@ -1,4 +1,4 @@
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { HttpMethod } from '@/network/http/types/HttpMethod';
 
 /**
  * Describes the configuration for an HTTP request.

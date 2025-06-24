@@ -11,8 +11,8 @@ import { FailPurchaseRequest } from '@/__generated__/schemas/FailPurchaseRequest
 import { GET } from '@/constants';
 import { GetProductResponse } from '@/__generated__/schemas/GetProductResponse';
 import { GetProductsResponse } from '@/__generated__/schemas/GetProductsResponse';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { ListAuditResponse } from '@/__generated__/schemas/ListAuditResponse';
 import { LocalizedPriceMap } from '@/__generated__/schemas/LocalizedPriceMap';
 import { makeApiRequest } from '@/utils/makeApiRequest';

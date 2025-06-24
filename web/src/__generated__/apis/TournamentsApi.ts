@@ -10,8 +10,8 @@ import { GetPlayerStatusResponse } from '@/__generated__/schemas/GetPlayerStatus
 import { GetStandingsResponse } from '@/__generated__/schemas/GetStandingsResponse';
 import { GetStatusForGroupsRequest } from '@/__generated__/schemas/GetStatusForGroupsRequest';
 import { GetStatusForGroupsResponse } from '@/__generated__/schemas/GetStatusForGroupsResponse';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { JoinRequest } from '@/__generated__/schemas/JoinRequest';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/constants';

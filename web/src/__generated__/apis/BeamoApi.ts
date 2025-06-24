@@ -17,8 +17,8 @@ import { GetServiceURLsRequest } from '@/__generated__/schemas/GetServiceURLsReq
 import { GetSignedUrlResponse } from '@/__generated__/schemas/GetSignedUrlResponse';
 import { GetStatusResponse } from '@/__generated__/schemas/GetStatusResponse';
 import { GetTemplatesResponse } from '@/__generated__/schemas/GetTemplatesResponse';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { LambdaResponse } from '@/__generated__/schemas/LambdaResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MicroserviceRegistrationRequest } from '@/__generated__/schemas/MicroserviceRegistrationRequest';

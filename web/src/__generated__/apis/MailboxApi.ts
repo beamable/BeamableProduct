@@ -1,6 +1,6 @@
 import { ApiMailboxPublishPostMailboxResponse } from '@/__generated__/schemas/ApiMailboxPublishPostMailboxResponse';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { MessageRequest } from '@/__generated__/schemas/MessageRequest';
 import { POST } from '@/constants';

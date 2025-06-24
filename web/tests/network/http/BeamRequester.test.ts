@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { BeamRequester } from '@/http/BeamRequester';
+import { BeamRequester } from '@/network/http/BeamRequester';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { AuthApi } from '@/__generated__/apis';
 import {
   RefreshAccessTokenError,
   NoRefreshTokenError,
 } from '@/constants/Errors';
-import type { HttpRequester } from '@/http/types/HttpRequester';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { TokenStorage } from '@/platform/types/TokenStorage';
 
 type ObjReq = { date: Date; big: bigint; normal: string };

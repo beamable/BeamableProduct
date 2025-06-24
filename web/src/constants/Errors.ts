@@ -1,17 +1,13 @@
-/**
- * Error thrown when the Beam SDK encounters a configuration issue.
- */
-export class ConfigurationError extends Error {
+/** Error thrown when web socket failed to connect. */
+export class BeamWebSocketError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ConfigurationError';
+    this.name = 'BeamWebSocketError';
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
-/**
- * Error thrown when the Beam SDK fails to refresh the access token.
- */
+/** Error thrown when the Beam SDK fails to refresh the access token. */
 export class RefreshAccessTokenError extends Error {
   constructor(message = 'Failed to refresh access token') {
     super(message);
@@ -20,9 +16,7 @@ export class RefreshAccessTokenError extends Error {
   }
 }
 
-/**
- * Error thrown when there is no refresh token available to refresh access token.
- */
+/** Error thrown when there is no refresh token available to refresh access token. */
 export class NoRefreshTokenError extends Error {
   constructor(message = 'No refresh token available') {
     super(message);

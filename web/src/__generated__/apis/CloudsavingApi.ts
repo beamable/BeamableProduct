@@ -2,8 +2,8 @@ import { CloudsavingBasicManifest } from '@/__generated__/schemas/CloudsavingBas
 import { DELETE } from '@/constants';
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { ObjectRequests } from '@/__generated__/schemas/ObjectRequests';
 import { PlayerBasicCloudDataRequest } from '@/__generated__/schemas/PlayerBasicCloudDataRequest';

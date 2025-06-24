@@ -3,8 +3,8 @@ import { BulkSendMailRequest } from '@/__generated__/schemas/BulkSendMailRequest
 import { BulkUpdateMailObjectRequest } from '@/__generated__/schemas/BulkUpdateMailObjectRequest';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { ListMailCategoriesResponse } from '@/__generated__/schemas/ListMailCategoriesResponse';
 import { MailQueryResponse } from '@/__generated__/schemas/MailQueryResponse';
 import { MailResponse } from '@/__generated__/schemas/MailResponse';

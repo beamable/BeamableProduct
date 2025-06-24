@@ -9,8 +9,8 @@ import { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnounc
 import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
 import { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';

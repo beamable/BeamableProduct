@@ -1,4 +1,4 @@
-import { HttpRequester } from '@/http/types/HttpRequester';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { AccountsApi } from '@/__generated__/apis/AccountsApi';
 import { AnnouncementsApi } from '@/__generated__/apis/AnnouncementsApi';
 import { AuthApi } from '@/__generated__/apis/AuthApi';

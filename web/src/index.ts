@@ -10,17 +10,17 @@ export function defaultTokenStorage(tag?: string): TokenStorage {
 
 export * from '@/core/Beam';
 export * from '@/configs/BeamConfig';
-export * from '@/http/types/HttpMethod';
-export * from '@/http/types/HttpRequest';
-export * from '@/http/types/HttpRequester';
-export * from '@/http/types/HttpResponse';
+export * from '@/network/http/types/HttpMethod';
+export * from '@/network/http/types/HttpRequest';
+export * from '@/network/http/types/HttpRequester';
+export * from '@/network/http/types/HttpResponse';
 export * from '@/platform/types/TokenStorage';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 export { Config, readConfigNode as readConfig, saveConfigNode as saveConfig };
 export { GET, POST, PUT, PATCH, DELETE } from '@/constants';
 export {
-  ConfigurationError,
+  BeamWebSocketError,
   RefreshAccessTokenError,
   NoRefreshTokenError,
 } from '@/constants/Errors';

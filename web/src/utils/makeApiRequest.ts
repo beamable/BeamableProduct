@@ -1,8 +1,8 @@
-import { HttpRequester } from '@/http/types/HttpRequester';
-import { HttpMethod } from '@/http/types/HttpMethod';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { HttpMethod } from '@/network/http/types/HttpMethod';
 import { makeQueryString } from '@/utils/makeQueryString';
-import { HttpRequest } from '@/http/types/HttpRequest';
-import { HttpResponse } from '@/http/types/HttpResponse';
+import { HttpRequest } from '@/network/http/types/HttpRequest';
+import { HttpResponse } from '@/network/http/types/HttpResponse';
 
 interface makeApiRequestProps<TReq> {
   r: HttpRequester;
