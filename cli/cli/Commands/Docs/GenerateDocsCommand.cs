@@ -1,7 +1,6 @@
 using cli.Services;
-using cli.Utils;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Docs;
 
@@ -16,7 +15,7 @@ public class GenerateDocsCommandArgs : CommandArgs
 
 
 
-public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand
+public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

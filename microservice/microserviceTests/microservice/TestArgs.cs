@@ -5,6 +5,8 @@ using Beamable.Server;
 using Beamable.Server.Api.RealmConfig;
 using System;
 using System.Threading.Tasks;
+using microserviceTests.microservice.Util;
+using Microsoft.Extensions.Logging;
 
 namespace microserviceTests.microservice
 {
@@ -28,6 +30,21 @@ namespace microserviceTests.microservice
 		{
 			await Service.TestStart<T>(conf =>
 			{
+				{ 
+					// the activity provider will produce no-op activies unless 
+					//  the otel is _also_ set up; which for tests, we don't want
+					//  to do.
+					conf.Builder.RemoveIfExists<IActivityProvider>();
+					conf.Builder.AddSingleton<IActivityProvider, NoopActivityProvider>();
+					// conf.Builder.AddSingleton<DefaultActivityProvider>(p => 
+					// 	new DefaultActivityProvider(p.GetService<IMicroserviceArgs>(), p.GetService<MicroserviceAttribute>()));
+				}
+				{ 
+					// need to inject a custom log factory to talk to the test logs
+					conf.Builder.RemoveIfExists<ILoggerFactory>();
+					conf.Builder.AddSingleton<ILoggerFactory>(LoggingUtil.testFactory);
+
+				}
 				conf.Builder.RemoveIfExists<SocketRequesterContext>();
 				conf.Builder.AddSingleton(_ => Service.SocketContext);
 				conf.Builder.RemoveIfExists<IRealmConfigService>();
@@ -83,6 +100,7 @@ namespace microserviceTests.microservice
 	   public static TestArgs Build<T>(Action<TestArgConfig> configurator = null) where T: Microservice
 	   {
 		   var args = new TestArgs();
+		   MicroserviceBootstrapper._logger = LoggingUtil.testLogger;
 		   var reflectionCache = MicroserviceBootstrapper.ConfigureReflectionCache();
 		   var builder = MicroserviceBootstrapper.ConfigureServices<T>(args);
 		   builder.RemoveIfExists<ReflectionCache>();
@@ -129,5 +147,12 @@ namespace microserviceTests.microservice
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
 	  public int RequireProcessId { get; }
+	  public string OtelExporterOtlpProtocol { get; }
+	  public string OtelExporterOtlpEndpoint { get; }
+	  public string OtelExporterOtlpHeaders { get; }
+	  public void SetResolvedCid(string resolvedCid)
+	  {
+		  throw new NotImplementedException();
+	  }
    }
 }

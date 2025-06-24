@@ -1,19 +1,17 @@
+using System.Diagnostics;
+using System.Text.Json;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using Beamable.Server.Common;
+using cli.Utils;
 using CliWrap;
-using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
-using Microsoft.Build.Locator;
 using Newtonsoft.Json;
-using Serilog;
-using System.Diagnostics;
-using System.Text.Json;
-using System.Xml;
-using System.Xml.Linq;
 using microservice.Extensions;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Readers;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
 
@@ -54,11 +52,14 @@ public static class ProjectContextUtil
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService,
+		HashSet<string> ignoreIds,
+		BeamActivity rootActivity,
 		bool useCache=true,
 		bool fetchServerManifest=true)
 	{
 		ServiceManifest remote = new ServiceManifest();
-
+		using var activity = rootActivity.CreateChild("generateManifest");
+		
 		if (fetchServerManifest)
 		{
 			lock (_existingManifestLock)
@@ -85,6 +86,11 @@ public static class ProjectContextUtil
 		var pathsToIgnore = configService.LoadPathsToIgnoreFromFile();
 		var sw = new Stopwatch();
 		sw.Start();
+
+		foreach (var id in FindIgnoredBeamoIds(searchPaths))
+		{
+			ignoreIds.Add(id);
+		}
 		var allProjects = FindCsharpProjects(rootFolder, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
@@ -95,12 +101,13 @@ public static class ProjectContextUtil
 		var fileNameToProject = allProjects.ToDictionary(kvp => kvp.fileNameWithoutExtension);
 		var manifest = new BeamoLocalManifest
 		{
+			LocallyIgnoredBeamoIds = ignoreIds,
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
-			ServiceGroupToBeamoIds = new Dictionary<string, string[]>()
+			ServiceGroupToBeamoIds = new Dictionary<string, string[]>(),
 		};
 
 
@@ -117,6 +124,8 @@ public static class ProjectContextUtil
 		foreach (var serviceProject in serviceProjects)
 		{
 			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject);
+			if (ignoreIds.Contains(definition.BeamoId)) continue;
+			
 			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, fileNameToProject);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
@@ -127,6 +136,8 @@ public static class ProjectContextUtil
 		foreach (var storageProject in storageProjects)
 		{
 			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, fileNameToProject);
+			if (ignoreIds.Contains(definition.BeamoId)) continue;
+
 			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, fileNameToProject, configService);
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
@@ -241,9 +252,12 @@ public static class ProjectContextUtil
 
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
-
+		
+		
 		sw.Stop();
 		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
+		
+		activity.SetStatus(ActivityStatusCode.Ok);
 		return manifest;
 	}
 
@@ -335,7 +349,31 @@ public static class ProjectContextUtil
 		_pathToLastWriteTime[path] = DateTime.Now;
 		_pathToMetadata[path] = metadata;
 	}
-	
+
+	public static HashSet<string> FindIgnoredBeamoIds(List<string> searchPaths)
+	{
+
+		// .beamignore files are files with beamoIds per line.
+		// All beamoIds listed in these files need to be ignored
+		// from the resulting local manifest. 
+
+		var beamoIdsToIgnore = new HashSet<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			var somePaths = Directory.GetFiles(searchPath, "*.beamignore", SearchOption.AllDirectories);
+			foreach (var path in somePaths)
+			{
+				var lines = File.ReadAllLines(path);
+				foreach (var line in lines)
+				{
+					beamoIdsToIgnore.Add(line.Trim());
+				}
+			}
+		}
+
+		return beamoIdsToIgnore;
+	}
+
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
 		var sw = new Stopwatch();
@@ -623,6 +661,30 @@ public static class ProjectContextUtil
 					break;
 			}
 		}
+
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
+		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		if (File.Exists(openApiPath))
+		{
+			var openApiStringReader = new OpenApiStringReader();
+			var fileContent = File.ReadAllText(openApiPath);
+			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
+			foreach (var warning in diagnostic.Warnings)
+			{
+				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+					warning.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+			}
+
+			foreach (var error in diagnostic.Errors)
+			{
+				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+					error.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+			}
+			protocol.OpenApiDoc = openApiDocument;
+		}
+		
 		
 		return protocol;
 	}

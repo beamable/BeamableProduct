@@ -9,13 +9,13 @@ using Beamable.Common.Tournaments;
 using Beamable.Experimental.Common.Calendars;
 using Beamable.Server.Common;
 using cli.Unreal;
-using Serilog;
 using System.CodeDom;
 using System.CommandLine;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Beamable.Server;
 
 namespace cli.Services;
 
@@ -258,7 +258,13 @@ MonoImporter:
 	{
 		if (runtimeType.Assembly == typeof(UnityCliGenerator).Assembly)
 		{
-			return new CodeTypeReference(GetResultClassName(runtimeType));
+			var type = new CodeTypeReference(GetResultClassName(runtimeType));
+			if (runtimeType.IsArray)
+			{
+				type = new CodeTypeReference(type, 1);
+			}
+
+			return type;
 		}
 
 		if (runtimeType.IsGenericType)
@@ -374,27 +380,15 @@ MonoImporter:
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
 				CodeMethodInvokeExpression addStatement;
 
-				if (parameter.Type.BaseType == "System.String")
-				{
-					var optionalValWithoutEscape =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\""),
-							CodeBinaryOperatorType.Add, parameterReference);
-					var optionalVal =
-						new CodeBinaryOperatorExpression(optionalValWithoutEscape,
-							CodeBinaryOperatorType.Add, new CodePrimitiveExpression("\""));
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
-				else
-				{
-					var optionalVal =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
-							CodeBinaryOperatorType.Add, parameterReference);
-					addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-				}
+				
+				var optionalVal =
+					new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
+						CodeBinaryOperatorType.Add, parameterReference);
+				addStatement =
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
+				
 
-				if (option.AllowMultipleArgumentsPerToken)
+				if (option.AllowMultipleArgumentsPerToken || option.ValueType.GetElementType() != null)
 				{
 					var loopInitExpr =
 						new CodeVariableDeclarationStatement(typeof(int), "i", new CodePrimitiveExpression(0));

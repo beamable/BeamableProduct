@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2025-06-18
+### Fixed
+- Fixed issue with the `project logs` command that could cause the command to fail to exit cleanly when the service process was killed. 
+- Fixed issue a performance issue with the `content ps`, the watcher wasn't recognizing actions for batch execution.
+- `Promise.Recover` no longer hangs forever when callback throws an exception
+- CLI no longer throws internal argument exceptions on large log messages
+- Fix `unreal init`, it wasn't triggering the re-generate uproject when called by the `beam_init_game_maker.sh`.
+- `init` and `login` commands won't attempt to retry new passwords with `--quiet` flag
+- `login` and `me` commands emit data and error streams
+
+### Added
+- Added a new command `content tag set`, which can be used to replace tags in the contents.
+- Added `DefaultToInstanced`, `EditInlineNew` tags for Unreal serializable types. That helps to use those types as serializables in the content window.
+- `me` command includes realm role permissions
+
+
+## [5.0.0] - 2025-06-06
+### Added
+- New Code Analyzer to return compile time error for async void Callable methods.
+- New Code Fixer to fix async void Callable methods on IDE.
+- New Code Analyzer to validate Federations.
+- New Code Fixer to Implement possible fixes for Federations.
+- New Code Fixer to Solve Microservice classes missing Attribute or Partial keyword. 
+- New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
+- New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
+- New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
+- Added support for Int32 and FString on Enum deserialization in Unreal code generation.
+- Enums in the Unreal code gen is now EBeam[ENUM_NAME] instead of E[ENUM_NAME]. We decided to update our enums to avoid potential conflicts with external code enums.
+- New Microservice Client Code Generator for Unity that used OAPI for the generation.
+- `MicroserviceBootstrapper` creates OAPI document after building the Microservice
+- Added support for generating `FDateTime` instead of `FString` in Unreal code generation.
+- Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`.
+  The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
+- Added `beam org realms` command that prints out a list of all available realms for the requesting user.
+- New `beam content` command pallet for SAMS and Engine-integration usage.
+- CLI can emit open telemetry data when `BEAM_TELEMETRY` environment variable is enabled.
+ 
+### Changed
+- Logging uses `ZLogger` instead of `Serilog`
+- Revise the categorization of all generated Blueprint nodes to enhance discoverability in Unreal Engine.
+- `OptionalString` overrides `.ToString()` for easier print debugging.
+- `beam me` command now also gives you back your active token information, but no longer gives you the `deviceIds` for a user
+- `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
+- `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
+- `beam checks scan` includes fixes for CLI 5 upgrade
+- `beam org new` no longer creates an organization directly on the CLI. Instead it opens the browser to the Beamable portal registrations page
+- `beam project generate-client` is no longer the default post-build action. Use `beam project generate-client-oapi` instead
+
+### Fixed
+- Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
+- Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
+
+## [4.3.1] - 2025-06-05
+
+no changes
+
+## [4.3.0] - 2025-05-08
+### Added
+- `.beamignore` files may be used to ignore services and storages from the `beam deploy` commands.
+- Hidden `--ignore-beam-ids` option can be used to ignore beam ids similar in addition to `.beamignore` files. [#4019](https://github.com/beamable/BeamableProduct/issues/4019)
+
+### Fixed
+- `beam deploy` commands no longer attempt to build non-existent source when `--merge` flag is used.
+
 ## [4.2.0] - 2025-04-04
 ### Changed
 - `beam deploy` commands use solution level building instead of per-project [#3952](https://github.com/beamable/BeamableProduct/issues/3952)
@@ -24,9 +88,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.1.5] - 2025-03-26
 ### Fixed
 - Microservices Docker images can be larger than 2GB. [#3926](https://github.com/beamable/BeamableProduct/issues/3926)
-- `beam deploy` commands use `--disable-build-servers` to prevent file locking 
+- `beam deploy` commands use `--disable-build-servers` to prevent file locking
 - `beam deploy` commands check that `docker` is running before starting
-- `beam deploy` commands set `CopyToLinkedProjects` to `false` to avoid duplicate project copies. 
+- `beam deploy` commands set `CopyToLinkedProjects` to `false` to avoid duplicate project copies.
 - multi-threading issue `beam deploy` commands that led to `"local service does not exist"` error.
 
 ### Added
@@ -62,7 +126,7 @@ no changes
 - `beam checks scan` command for finding known issues after CLI upgrades
 
 ### Fixed
-- Unity project not being added to SAMS if it is a child of the SAMS 
+- Unity project not being added to SAMS if it is a child of the SAMS
 - `additional-project-paths` and `project-paths-to-ignore` being overwritten when calling `beam init`
 - various CLI commands no longer break when the `.beamable` workspace is
   located in a directory with spaces in the path string. [#3866](https://github.com/beamable/BeamableProduct/issues/3866)
@@ -93,7 +157,7 @@ no changes
 ### Fixed
 - Source Generator analyzer would incorrectly accuse multiple partial implementations of being different classes. It no longer does that.
 - Fixed issue in `beam_init_game_maker.sh` (`unreal init` command) when `OnlineSubsystemBeamable` was already installed in the project.
-- Fixed issue in the Microservice Client Generation that would incorrectly generate a type that was already inside the `BeamableCore` generated types (from `AutoGenerated` namespace in Microservices).   
+- Fixed issue in the Microservice Client Generation that would incorrectly generate a type that was already inside the `BeamableCore` generated types (from `AutoGenerated` namespace in Microservices).
 
 ## [3.0.0] - 2024-12-04
 
@@ -119,13 +183,13 @@ no changes
 - `beam project ps --raw` includes an `executionVersion` representing the version of the Beamable SDK being used in the service
 - `beam project ps --raw` includes an `processId` and `routingKeys` representing the locally running OS process id, if any, and the list of routing keys currently registered with the Beamable backend for that service.
 - `beam project run` args modified: `--watch` is no longer supported due to underlying .NET issues. Added `--detach` to make it so that, after the service starts, we exit the command (the service stays running as a background process; stopped by `beam project stop` command).
-- `beam project open-swagger` now takes in `--routing-key` as opposed to `--remote`. Not passing `--routing-key` gives you the same behavior as passing `--remote`.  
+- `beam project open-swagger` now takes in `--routing-key` as opposed to `--remote`. Not passing `--routing-key` gives you the same behavior as passing `--remote`.
 - `beam temp clear logs` command will clear old log files in the `.beamable/temp/logs` folder.
 - `beam version update` updates the local tool installation
 - service deployments use buildkit via Docker CLI instead of Docker API.
 - log files are kept in the `.beamable/temp/logs` folder and are cleared after each day if the total number of log files exceeds 250
 - use local dotnet tool installation by default instead of global installation
-- global invocations of `beam` will automatically redirect to local tool installations 
+- global invocations of `beam` will automatically redirect to local tool installations
 
 ### Fixed
 - JSON output will correctly render optional types
@@ -152,7 +216,7 @@ no changes
 ### Fixed
 - `beam project stop` will stop services running in docker
 - `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
-- common lib handling uses `.` as a default path instead of the empty string 
+- common lib handling uses `.` as a default path instead of the empty string
 - `UpdateDockerfile` update to fix common lib handling for docker builds
 
 ### Changed

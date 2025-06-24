@@ -1,15 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server.Common;
+using microservice.Common;
 using microservice.Extensions;
 using Newtonsoft.Json;
-using Serilog;
+
 using System.Text;
+using Beamable.Common.Dependencies;
+using beamable.tooling.common.Microservice;
+using ZLogger;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
@@ -27,7 +27,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The factory function to create service method instances.
 		/// </summary>
-		public Func<RequestContext, object> factory;
+		public Func<MicroserviceRequestContext, object> factory;
 
 		/// <summary>
 		/// The path prefix for the service methods.
@@ -43,19 +43,80 @@ namespace Beamable.Server
 	   /// <summary>
 	   /// Scans for service methods based on various providers and generators.
 	   /// </summary>
-      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, ICallableGenerator[] generators, params ServiceMethodProvider[] serviceMethodProviders)
+      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
       {
          var output = new List<ServiceMethod>();
          foreach (var provider in serviceMethodProviders)
          {
             output.AddRange(ScanType(serviceAttribute, provider));
-            foreach (var gen in generators)
+            if (provider.instanceType == typeof(AdminRoutes))
             {
-	            output.AddRange(gen.ScanType(serviceAttribute, provider));
+	            continue;
             }
+            output.AddRange(ScanTypeFederation(serviceAttribute, provider));
          }
          return new ServiceMethodCollection(output);
       }
+	   
+	   private static List<ServiceMethod> ScanTypeFederation(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+
+	   {
+		   var type = provider.instanceType;
+		   var output = new List<ServiceMethod>();
+
+		   var interfaces = type.GetInterfaces();
+
+		   var methodToPathMap = new Dictionary<string, string>
+		   {
+			   [nameof(IFederatedGameServer<DummyThirdParty>.CreateGameServer)] = "servers",
+			   [nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "player",
+			   [nameof(IFederatedInventory<DummyThirdParty>.GetInventoryState)] = "inventory/state",
+			   [nameof(IFederatedInventory<DummyThirdParty>.StartInventoryTransaction)] = "inventory/put",
+			   [nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
+		   };
+
+		   foreach (var interfaceType in interfaces)
+		   {
+			   if (!interfaceType.IsGenericType) continue;
+			   if (!typeof(IFederation).IsAssignableFrom(interfaceType.GetGenericTypeDefinition())) continue;
+
+			   var map = type.GetInterfaceMap(interfaceType);
+			   var federatedType = interfaceType.GetGenericArguments()[0];
+			   var identity = Activator.CreateInstance(federatedType) as IFederationId;
+
+			   var federatedNamespace = identity.GetUniqueName();
+			   for (var i = 0 ; i < map.TargetMethods.Length; i ++)
+			   {
+				   var method = map.TargetMethods[i];
+				   var interfaceMethod = map.InterfaceMethods[i];
+				   var attribute = method.GetCustomAttribute<CallableAttribute>(true);
+				   if (attribute != null) continue;
+
+				   if (!methodToPathMap.TryGetValue(interfaceMethod.Name, out var pathName))
+				   {
+					   var err = $"Unable to map method name to path part. name=[{interfaceMethod.Name}]";
+					   throw new Exception(err);
+				   }
+				   var path = $"{federatedNamespace}/{pathName}";
+				   var tag = federatedNamespace;
+
+				   var serviceMethod = ServiceMethodHelper.CreateMethod(
+					   serviceAttribute,
+					   provider,
+					   path,
+					   tag,
+					   false,
+					   new HashSet<string>(new []{"*"}),
+					   method,
+					   true);
+
+				   Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
+				   output.Add(serviceMethod);
+			   }
+		   }
+
+		   return output;
+	   }
 
 	   /// <summary>
 	   /// Creates a service method based on provided parameters.
@@ -238,15 +299,15 @@ namespace Beamable.Server
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
 
-         Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
-
+         BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"{Logs.SCANNING_CLIENT_PREFIX} {type.Name}");
+        
          var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
          foreach (var method in allMethods)
          {
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            Log.Debug($"Skipped {method.Name}");
+	            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipped {method.Name}");
 	            continue;
             }
 
@@ -268,7 +329,8 @@ namespace Beamable.Server
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;
 
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
+            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found {method.Name} for {servicePath}");
+
             
             var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
             var isVoid = method.ReturnType == typeof(void);

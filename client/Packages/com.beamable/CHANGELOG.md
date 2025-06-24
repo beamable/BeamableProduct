@@ -5,9 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-##[Unreleased]
+## [Unreleased]
+
+### Changed
+- Able to use the new Client Code Generator from CLI that uses OpenAPI instead of the old one that uses Reflection
+- `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
+- `Core.Platform` namespace moved into `Beamable` namespace
+
+## [2.4.0] - 2025-06-11 
+
+### Fixed
+- Fixed issue that CloudSaving could generate corrupted save files if the application was closed during saving process.
+- Fixed incorrect `MailMessage` `expires` field parsing.
+- Fixed issue with `WebSocketConnection` not sending updates after reconnection.
+- Improve IAP error detection.
+- Namespace error in `UpdateGPGSRealmConfigHelper`.
+
+### Changed
+- Upgrade CLI to 4.3.1
+- Bake content will bake content from realm that is provided by `config-defaults` (used in builds) when available. Instead of using local content and requiring it to be the same as remote one, it will download and bake currently deployed manifest and its content.
+
+### Removed
+- Mongo third party libraries no longer exist
+- SharpCompress third party library no longer exists
+- dotnet `System` namespace dlls no longer exist
+- Microservice types no longer exist in the Unity SDK
+
+## [2.3.0] - 2025-05-08
+
+### Added
+- Helper menu option for updating Realm configuration for GPGS integration.
+- Information about already installed versions in information about missing Dotnet.
+- `Open portal for user` button in `BeamableBehaviour` inspector.
+
+### Changed
+- Upgrade CLI to 4.3.0
+- `AccountManagementConfiguration` no longer overrides `BEAMABLE_GPGS` define symbol.
+- Improved IAP Purchaser initialization flow.
+
 ### Fixed
 - CID/PID Mismatch error message was too big for Unity popup. Now it uses a Beamable Custom Editor Window. [3933](https://github.com/beamable/BeamableProduct/issues/3933)
+- Improved error detection for attaching identity providers in `PlayerAccounts`.
+- Improved content selection in Content window
 
 ## [2.2.0] - 2025-04-04
 ### Added
@@ -26,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `CloudSavingService` could not initialize correctly if a save file could not be found in storage. If that happens that file will be ignored and the system will use the Local one, if exists.
 - Fixed an issue which attempting using Stats after refreshing `PlayerStats` did not returned updated values.
+- `CloudSavingService` could not initialize correctly if a save file could not be found in storage. If that happens that file will be ignored and the system will use the Local one, if exists.
 
 ## [2.1.4] - 2025-03-26
 

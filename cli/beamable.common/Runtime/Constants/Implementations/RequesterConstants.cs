@@ -21,7 +21,11 @@ namespace Beamable.Common
 			public const string HEADER_PID = "X-KS-PROJECTID";
 
 			public const string HEADER_SCOPE = "X-BEAM-SCOPE";
-
+			
+			public const string HEADER_SIGNATURE = "X-BEAM-SIGNATURE";
+			
+			public const string HEADER_GAMERTAG = "X-BEAM-GAMERTAG";
+			
 			/// <summary>
 			/// An authorization header
 			/// </summary>
@@ -73,6 +77,11 @@ namespace Beamable.Common
 			/// The header that contains the game version. This is a developer controlled version. Its the Application.version
 			/// </summary>
 			public const string HEADER_APPLICATION_VERSION = "X-KS-GAME-VERSION";
+
+			/// <summary>
+			/// The header that beamable internals include to represent the request's context
+			/// </summary>
+			public const string HEADER_BEAM_RC = "x-obj-rc";
 
 		}
 	}

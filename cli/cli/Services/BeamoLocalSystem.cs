@@ -7,11 +7,11 @@ using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
-using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using microservice.Extensions;
+using Microsoft.OpenApi.Models;
 
 namespace cli.Services;
 
@@ -98,7 +98,7 @@ public partial class BeamoLocalSystem
 	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{
 		// Load or create the local manifest
-		if (_configService.BaseDirectory == null)
+		if (!_configService.DirectoryExists.GetValueOrDefault(false))
 		{
 			Log.Verbose("Beamo is initializing local manifest, but since no beamable folder exists, an empty manifest is being produced. ");
 			BeamoManifest = new BeamoLocalManifest
@@ -111,8 +111,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache, fetchServerManifest);
-	}
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
 	{
@@ -485,6 +484,12 @@ public class BeamoLocalManifest
 	/// </summary>
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
+	/// <summary>
+	/// This list contains the concatenation of all found `.beamignore` files in the workspace.
+	/// Each element is a beamoId. 
+	/// </summary>
+	public HashSet<string> LocallyIgnoredBeamoIds;
+	
 	/// <summary>
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>

@@ -1,9 +1,9 @@
 using Beamable.Common;
 using cli.Services;
 using cli.Utils;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using Beamable.Server;
 
 namespace cli.Commands.Project;
 
@@ -75,8 +75,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			}
 		}
 
-		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetWorkingDir(newMicroserviceInfo.SolutionDirectory);
 
 		await args.BeamoLocalSystem.InitManifest();
 

@@ -1,13 +1,11 @@
-using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
 using cli.Utils;
 using JetBrains.Annotations;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using Beamable.Server;
 
 namespace cli;
 
@@ -17,7 +15,7 @@ public class CliInterfaceGeneratorCommandArgs : CommandArgs
 	public bool Concat;
 	public string Engine;
 }
-public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
+public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

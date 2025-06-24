@@ -22,7 +22,7 @@ public class GetTokenViaRefreshCommandOutput
 }
 
 
-public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommandArgs, GetTokenViaRefreshCommandOutput>
+public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommandArgs, GetTokenViaRefreshCommandOutput>, ISkipManifest
 {
 	public GetTokenViaRefreshCommand() : base("from-refresh", "Get an access token from a refresh token")
 	{

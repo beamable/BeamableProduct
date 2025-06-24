@@ -1,8 +1,8 @@
 using Beamable.Common.Semantics;
 using cli.Services;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine;
+using Beamable.Server;
 
 #pragma warning disable CS0649
 // ReSharper disable InconsistentNaming
@@ -12,6 +12,7 @@ namespace cli.Commands.Project;
 public class TailLogsCommandArgs : CommandArgs
 {
 	public ServiceName service;
+	public int requireProcessId;
 }
 
 public class MongoLogMessage
@@ -66,6 +67,7 @@ public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessage
 	{
 		AddArgument(new Argument<ServiceName>("service", "The name of the service to view logs for"),
 			(args, i) => args.service = i);
+		AddOption(new RequireProcessIdOption(), (args, i) => args.requireProcessId = i);
 		AddOption(new Option<bool>("--reconnect", getDefaultValue: () => true, "If the service stops, and reconnect is enabled, then the logs command will wait for the service to restart and then reattach to logs"),
 			(args, i) =>
 			{
@@ -75,6 +77,8 @@ public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessage
 
 	public override async Task Handle(TailLogsCommandArgs args)
 	{
+		RequireProcessIdOption.ConfigureRequiredProcessIdWatcher(args.requireProcessId);
+		
 		await ProjectLogsService.Handle(args, HandleLog, args.Lifecycle.Source);
 	}
 

@@ -1,9 +1,9 @@
 ﻿using Beamable.Common;
-using cli.Services.Content;
+using Beamable.Common.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
+public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>, IEmptyResult, ISkipManifest
 {
 	private ContentService _contentService;
 
@@ -13,65 +13,43 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(ContentTagCommand.CONTENT_ARGUMENT, (args, s) => args.content = s);
-		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.tag = s);
+		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.Tags = s.Split(','));
+
+		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, b) => args.FilterType = b);
+		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = string.IsNullOrEmpty(s) ? Array.Empty<string>() : s.Split(','));
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
-		AddOption(ContentTagCommand.REGEX_OPTION, (args, b) => args.treatAsRegex = b);
 	}
 
-	public override Task Handle(ContentTagAddCommandArgs args)
+	public override async Task Handle(ContentTagAddCommandArgs args)
 	{
 		_contentService = args.ContentService;
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
 
+		var tasks = new List<Task<LocalContentFiles>>();
 		foreach (string manifestId in args.ManifestIds)
 		{
-			var local = _contentService.GetLocalCache(manifestId);
-
-			var contentIds = args.GetContentsList(local);
-			var addedValues = new List<string>();
-
-			foreach (var id in contentIds)
-			{
-				if (local.Tags.AddTagToContent(id, args.tag))
-				{
-					addedValues.Add(id);
-				}
-			}
-
-			local.Tags.WriteToFile();
-			BeamableLogger.Log("Added tag {ArgsTag} to content ({AddedValuesCount}): {Join}", args.tag, addedValues.Count, string.Join(", ", addedValues));
+			tasks.Add(_contentService.GetAllContentFiles(null, manifestId, args.FilterType, args.Filter, true));
 		}
 
-		return Task.CompletedTask;
+		// Get the files and filter them.
+		var filteredContentFiles = await Task.WhenAll(tasks);
+
+		// Save the added task to disk
+		var tagAddTasks = new List<Task>();
+		foreach (var f in filteredContentFiles)
+		{
+			tagAddTasks.Add(_contentService.AddTags(f, args.Tags));
+		}
+
+		await Task.WhenAll(tagAddTasks);
 	}
 }
 
 public class ContentTagAddCommandArgs : ContentTagCommandArgs
 {
-	public string content;
-	public string tag;
-	public bool treatAsRegex;
-
-	public List<string> GetContentsList(ContentLocalCache cache)
-	{
-		var result = treatAsRegex
-			? cache.ContentMatchingRegex(content).ToList()
-			: content.Split(",").ToList();
-
-		if (result.Count == 0)
-		{
-			throw new CliException("Could not find any matching content.");
-		}
-
-		var wrongContent = result.Where(id => cache.GetContent(id) == null).ToList();
-		if (wrongContent.Count != 0)
-		{
-			throw new CliException($"Could not find content: {string.Join(", ", wrongContent)}");
-		}
-
-		return result;
-	}
+	public string[] Filter;
+	public string[] Tags;
+	public ContentFilterType FilterType;
 }

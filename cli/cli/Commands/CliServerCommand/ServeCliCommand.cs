@@ -1,8 +1,7 @@
 using Beamable.Server;
 using cli.Services.HttpServer;
-using cli.Utils;
-using Serilog;
 using System.CommandLine;
+using System.Diagnostics;
 
 namespace cli.CliServerCommand;
 
@@ -12,6 +11,9 @@ public class ServeCliCommandArgs : CommandArgs
 	public string owner;
 	public int selfDestructTimeSeconds;
 	public bool incPortUntilSuccess;
+	public int requireProcessId;
+	public bool useCustomSplitter;
+	public bool skipContentPreWarm;
 }
 
 public class ServeCliCommandOutput
@@ -20,9 +22,9 @@ public class ServeCliCommandOutput
 	public string uri;
 }
 
-public class ServeCliCommand 
+public class ServeCliCommand
 	: StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
-	, ISkipManifest
+		, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 
@@ -36,14 +38,14 @@ public class ServeCliCommand
 			new Argument<string>("owner", () => "cli",
 				"The owner of the server is used to identify the server later with the /info endpoint"),
 			(args, owner) => args.owner = owner);
-		
+
 		var portOption = new Option<int>("--port", () => ServerService.DEFAULT_PORT, "The port the local server will bind to");
 		portOption.AddAlias("-p");
 		AddOption(portOption, (args, port) =>
 		{
 			if (port is < ServerService.DEFAULT_PORT or > ServerService.MAX_PORT)
 				throw new CliException($"Port must be between {ServerService.DEFAULT_PORT} and {ServerService.MAX_PORT}");
-			
+
 			args.port = port;
 		});
 
@@ -51,25 +53,41 @@ public class ServeCliCommand
 			"When true, if the given --port is not available, it will be incremented until an available port is discovered");
 		incPortOption.AddAlias("-i");
 		AddOption(incPortOption, (args, inc) => args.incPortUntilSuccess = inc);
-		
+
 		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
 			"The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer");
 		timerOption.AddAlias("-d");
 		AddOption(timerOption, (args, time) => args.selfDestructTimeSeconds = time);
 
+		AddOption(new RequireProcessIdOption(), (args, i) => args.requireProcessId = i);
+
+		var splitterOption = new Option<bool>("--custom-splitter", () => false,
+			"When true, will use custom logic to split the command line given to the server via HTTP request.\n" +
+			"The default splitter (from Microsoft) does NOT allow you to pass in JSON blobs as arguments.\n" +
+			"The custom splitter does its best to support all our commands correctly and accept json blobs as arguments");
+		splitterOption.AddAlias("-cs");
+		AddOption(splitterOption, (args, b) => args.useCustomSplitter = b);
+		
+		var skipContentPrewarm = new Option<bool>("--skip-content-prewarm", () => false,
+			"When true, will NOT pre-warm the content service with the latest content manifest");
+		skipContentPrewarm.AddAlias("-scpw");
+		AddOption(skipContentPrewarm, (args, b) => args.skipContentPreWarm = b);
 	}
 
 	public override async Task Handle(ServeCliCommandArgs args)
 	{
-		var server = args.Provider.GetService<ServerService>();
+		RequireProcessIdOption.ConfigureRequiredProcessIdWatcher(args.requireProcessId);
 		
+		// Pre-Warm the content cache.
+		if (!string.IsNullOrEmpty(args.AppContext.Cid) && !args.skipContentPreWarm)
+		{
+			await args.ContentService.GetManifest();
+		}
+		
+		var server = args.Provider.GetService<ServerService>();
 		await server.RunServer(args, data =>
 		{
-			this.SendResults(new ServeCliCommandOutput
-			{
-				uri = data.uri,
-				port = data.port
-			});
+			this.SendResults(new ServeCliCommandOutput { uri = data.uri, port = data.port });
 		});
 	}
 }

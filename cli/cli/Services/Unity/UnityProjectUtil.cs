@@ -1,8 +1,8 @@
 using Beamable.Common.BeamCli.Contracts;
 using cli.UnityCommands;
 using Newtonsoft.Json;
-using Serilog;
 using System.IO.Compression;
+using Beamable.Server;
 
 namespace cli.Services.Unity;
 
@@ -304,6 +304,9 @@ public static class UnityProjectUtil
 
 	public static void DeleteAllFilesWithExtensions(string folder, string[] extensions)
 	{
+		if (!Directory.Exists(folder))
+			return;
+		
 		foreach (var ext in extensions)
 		{
 			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);

@@ -16,6 +16,9 @@ namespace Beamable.Common
 		public const string LINK_LICENSE = "https://beamable.com/license";
 		public const string LINK_TERMS_OF_SERVICE = "https://beamable.com/tos";
 		public const string LINK_PRIVACY = "https://beamable.com/privacy";
+		
+		public const string OPEN_API_FILE_NAME = "beam_openApi.json";
+		public const string OPEN_API_DIR_PROPERTY_KEY = "OutDir";
 
 		public static class Commons
 		{

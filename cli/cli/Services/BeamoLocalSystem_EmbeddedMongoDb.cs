@@ -4,9 +4,8 @@
  * TODO: Always run the mongo-express data-explorer tool as part of the local deployment protocol. 
  */
 
-using Beamable.Server.Common;
+using Beamable.Server;
 using Newtonsoft.Json;
-using Serilog;
 
 namespace cli.Services;
 

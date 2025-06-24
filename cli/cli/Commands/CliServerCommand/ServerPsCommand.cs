@@ -1,6 +1,5 @@
 using cli.Services.HttpServer;
 using Newtonsoft.Json;
-using Serilog;
 using Spectre.Console;
 using System.Collections.Concurrent;
 using System.CommandLine;
@@ -8,6 +7,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Channels;
+using Beamable.Server;
 
 namespace cli.CliServerCommand;
 

@@ -13,6 +13,7 @@ public struct UnrealEndpointDeclaration
 
 	public bool IsAuth;
 
+	public string ServiceName;
 	public string NamespacedOwnerServiceName;
 	public string EndpointVerb;
 	public string EndpointName;
@@ -227,6 +228,7 @@ public struct UnrealEndpointDeclaration
 		helperDict.Add(nameof(ResponseTypeIncludeStatement), ResponseTypeIncludeStatement);
 
 		helperDict.Add(nameof(NamespacedOwnerServiceName), NamespacedOwnerServiceName);
+		helperDict.Add(nameof(ServiceName), ServiceName);
 		helperDict.Add(nameof(EndpointVerb), EndpointVerb);
 		helperDict.Add(nameof(EndpointName), EndpointName);
 		helperDict.Add(nameof(_capitalizedEndpointVerb), _capitalizedEndpointVerb);
@@ -273,8 +275,9 @@ public struct UnrealEndpointDeclaration
 		{
 			return
 				$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
-				$"*U{routeParameterDeclaration.PropertyNamespacedType}Library::{routeParameterDeclaration.PropertyNamespacedType}ToSerializableName({routeParameterDeclaration.PropertyName}));";
+				$"*UBeamJsonUtils::EnumToSerializationName({routeParameterDeclaration.PropertyName}));";
 		}
+		
 		else if (routeParameterDeclaration.PropertyUnrealType.IsAnySemanticType())
 		{
 			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
@@ -336,10 +339,10 @@ public struct UnrealEndpointDeclaration
 			{
 				if (isOptional)
 					queryAppend.Append(
-						$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
+						$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *UBeamJsonUtils::EnumToSerializationName({q.PropertyName}.Val));\n\t");
 				else
 					queryAppend.Append(
-						$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
+						$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *UBeamJsonUtils::EnumToSerializationName({q.PropertyName}));\n\t");
 			}
 			else if (q.NonOptionalTypeName.IsAnySemanticType())
 			{
@@ -407,7 +410,7 @@ public:
 	virtual void BuildRoute(FString& RouteString) const override;
 	virtual void BuildBody(FString& BodyString) const override;
 
-	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner"", AutoCreateRefTerm=""CustomHeaders""))
+	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", DisplayName=""Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner"", AutoCreateRefTerm=""CustomHeaders""))
 	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner, TMap<FString, FString> CustomHeaders);
 }};
 
@@ -755,7 +758,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
 	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches. 
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"", AutoCreateRefTerm=""OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"", AutoCreateRefTerm=""OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
 	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr);
 ";
 
@@ -785,7 +788,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
 	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"",AutoCreateRefTerm=""UserSlot,OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|₢{nameof(ServiceName)}₢|Utils|Make/Break"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"",AutoCreateRefTerm=""UserSlot,OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
 	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(FUserSlot UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr);
 ";
 

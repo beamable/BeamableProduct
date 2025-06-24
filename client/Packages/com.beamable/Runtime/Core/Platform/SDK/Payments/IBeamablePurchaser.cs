@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using System;
 
 namespace Beamable.Api.Payments
 {
@@ -17,6 +18,10 @@ namespace Beamable.Api.Payments
 	/// </summary>
 	public interface IBeamablePurchaser
 	{
+		/// <summary>
+		/// Purchaser initialization status.
+		/// </summary>
+		public PurchasingInitializationStatus InitializationStatus { get; }
 
 		/// <summary>
 		/// Begin initialization of Beamable purchasing.
@@ -26,12 +31,25 @@ namespace Beamable.Api.Payments
 		Promise<Unit> Initialize(IDependencyProvider provider = null);
 
 		/// <summary>
-		/// Fetches the localized string from the provider.
+		/// Get the localized price string for a given SKU.
 		/// <param name="skuSymbol">
 		/// The purchase symbol for the item. This is the skuSymbol for the offer.
 		/// </param>
 		/// </summary>
+		[Obsolete("Use " + nameof(TryGetLocalizedPrice) + " Instead")]
 		string GetLocalizedPrice(string skuSymbol);
+
+		/// <summary>
+		/// Tries to get the localized price string for a given SKU.
+		/// <param name="skuSymbol">
+		/// The purchase symbol for the item. This is the skuSymbol for the offer.
+		/// </param>
+		/// <param name="localizedPrice">
+		/// Localized price value output.
+		/// </param>
+		/// <returns>bool value whether it found localized price for the given sku symbol</returns>
+		/// </summary>
+		bool TryGetLocalizedPrice(string skuSymbol, out string localizedPrice);
 
 		/// <summary>
 		/// Start a purchase through the chosen IAP implementation.

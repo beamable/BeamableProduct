@@ -1,3 +1,3 @@
 # Beamable Server
 
-A package for microservices
+This package is deprecated, and does not contain anything. 

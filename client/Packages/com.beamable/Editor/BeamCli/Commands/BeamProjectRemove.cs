@@ -24,14 +24,12 @@ namespace Beamable.Editor.BeamCli.Commands
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
             {
-                genBeamCommandArgs.Add((("--sln=\"" + this.sln) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--sln=" + this.sln));
             }
             // If the serviceDirectory value was not default, then add it to the list of args.
             if ((this.serviceDirectory != default(string)))
             {
-                genBeamCommandArgs.Add((("--service-directory=\"" + this.serviceDirectory) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--service-directory=" + this.serviceDirectory));
             }
             // If the ids value was not default, then add it to the list of args.
             if ((this.ids != default(string[])))

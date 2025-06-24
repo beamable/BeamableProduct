@@ -4,36 +4,23 @@ using Beamable.Common.Content;
 using Spectre.Console;
 using System.CommandLine;
 using System.Linq.Expressions;
+using cli.Utils;
 
 namespace cli;
 
 public class RegisterCommandArgs : CommandArgs
 {
-	public string alias;
-	public string username;
-	public string gameName;
-	public string password;
-	public bool agreedToLegal;
 }
 
 public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneCommand
 {
-	private readonly InitCommand _initCommand;
-	private readonly LoginCommand _loginCommand;
-
-	public RegisterCommand(InitCommand initCommand, LoginCommand loginCommand) : base("new", "Create a new beamable organization")
+	
+	public RegisterCommand() : base("new", "Create a new beamable organization")
 	{
-		_initCommand = initCommand;
-		_loginCommand = loginCommand;
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--alias", "The name you will use to sign into the organization"), (args, i) => args.alias = i);
-		AddOption(new Option<string>("--game", "The first game for the organization"), (args, i) => args.gameName = i);
-		AddOption(new Option<string>("--email", "The admin email for the new organization"), (args, i) => args.username = i);
-		AddOption(new Option<string>("--password", "The admin password for the new organization"), (args, i) => args.password = i);
-		AddOption(new Option<bool>("--accept-legal", "Accept the Beamable legal agreements"), (args, i) => args.agreedToLegal = i);
 	}
 
 	public override async Task Handle(RegisterCommandArgs args)
@@ -42,112 +29,27 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneComma
 			new FigletText("Beam")
 				.Color(Color.Red));
 
-		AnsiConsole.WriteLine("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
-		var legal = await GetLegal(args);
-		if (!legal)
+		var url = args.AppContext.Host.Replace("api.", "portal.") + "/signup/registration";
+		AnsiConsole.WriteLine("Welcome to Beamable. " +
+		                      "You are creating a new Beamable organization. " +
+		                      "If you already have an organization, use the 'beam init' command to sign in. " + 
+		                      $"Otherwise, open a browser to {url} to create an organization, and then run `beam init` to sign in on the CLI. "
+		                      );
+		
+		// const string url = "https://portal.beamable.com/signup/registration";
+		
+		
+		var open = args.Quiet || AnsiConsole.Confirm($"Would you like to open the Beamable registration page in your browser?");
+
+		if (!open)
 		{
-			throw new CliException("Cannot continue without legal agreement.");
+			AnsiConsole.WriteLine("Okay!");
+			return;
 		}
-		var alias = await GetAlias(args);
-		var game = await GetGame(args);
-		var username = await GetUsername(args);
-		var password = await GetPassword(args);
-
-		// new DefaultAppContext()
-		// new CliRequester(args.AppContext);
-		args.AppContext.Set(null, null, args.AppContext.Host);
-		args.AppContext.UpdateToken(null);
-
-		try
-		{
-			var realmsApi = args.DependencyProvider.GetService<IRealmsApi>();
-			var res = await realmsApi.PostCustomer(new NewCustomerRequest
-			{
-				alias = new OptionalString(alias),
-				customerName = new OptionalString(alias),
-				projectName = game,
-				email = username,
-				password = password
-			});
-
-			await _initCommand.Handle(new InitCommandArgs
-			{
-				Provider = args.Provider,
-				saveToFile = true,
-				cid = res.cid.ToString(),
-				pid = res.pid,
-				username = username,
-				password = password
-			});
-		}
-		catch (Exception e)
-		{
-			throw new CliException($"Failed to create new org: {e.Message}");
-		}
-
-
-		var loginArgs = args.Create<LoginCommandArgs>();
-		loginArgs.password = password;
-		loginArgs.username = username;
-		loginArgs.saveToFile = true;
-		await _loginCommand.Handle(loginArgs);
-	}
-
-	private Task<string> GetAlias(RegisterCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.alias))
-			return Task.FromResult(args.alias);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]alias[/]:")
-				.PromptStyle("green")
-		));
-	}
-
-
-	private Task<string> GetUsername(RegisterCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.username))
-			return Task.FromResult(args.username);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]email[/]:")
-				.PromptStyle("green")
-		));
-	}
-
-	private Task<string> GetGame(RegisterCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.gameName))
-			return Task.FromResult(args.gameName);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]game[/]:")
-				.PromptStyle("green")
-		));
-	}
-
-	private Task<string> GetPassword(RegisterCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.password))
-			return Task.FromResult(args.password);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]password[/]:")
-				.Secret()
-				.PromptStyle("green")
-		));
-	}
-
-	private Task<bool> GetLegal(RegisterCommandArgs args)
-	{
-		if (args.agreedToLegal) return Task.FromResult(true);
-
-		return Task.FromResult(AnsiConsole.Prompt(new ConfirmationPrompt($"Have you read, and accept the following? " +
-																		 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
-																		 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
-																		 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
-																		 $"\n")));
+		
+		AnsiConsole.WriteLine($"Opening {url}");
+		AnsiConsole.WriteLine("Once you have created an organization, run `beam init` to log in on your CLI. ");
+		MachineHelper.OpenBrowser(url);
 	}
 
 }

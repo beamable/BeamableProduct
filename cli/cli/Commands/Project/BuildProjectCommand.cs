@@ -1,8 +1,6 @@
 using Beamable.Common.Semantics;
 using cli.Dotnet;
 using cli.Services;
-using Serilog;
-using System.CommandLine;
 
 namespace cli.Commands.Project;
 

@@ -1,0 +1,69 @@
+receivers:
+  filelog:
+    include:
+      - /opt/data/logs/access-structured.log
+    start_at: beginning
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time_local
+          layout: '%Y-%m-%d %H:%M:%S'
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 5000
+exporters:
+  clickhouse:
+    endpoint: ${env:BEAM_CLICKHOUSE_ENDPOINT}
+    username: ${env:BEAM_CLICKHOUSE_USERNAME}
+    password: ${env:BEAM_CLICKHOUSE_PASSWORD}
+    traces_table_name: otel_traces
+    logs_table_name: otel_logs
+    timeout: 5s
+    database: default
+    create_schema: false
+    sending_queue:
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    metrics_tables:
+      gauge: 
+        name: "otel_metrics_gauge"
+      sum: 
+        name: "otel_metrics_sum"
+      summary: 
+        name: "otel_metrics_summary"
+      histogram: 
+        name: "otel_metrics_histogram"
+      exponential_histogram: 
+        name: "otel_metrics_exp_histogram"
+extensions:
+  servicediscovery:
+    host: ${env:BEAM_COLLECTOR_DISCOVERY_HOST}
+    port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
+    discovery_delay: 100
+
+service:
+  extensions: [servicediscovery]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]

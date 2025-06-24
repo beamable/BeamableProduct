@@ -3,14 +3,12 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Services;
 using cli.Utils;
-using CliWrap;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
-using microservice.Extensions;
+using Beamable.Server;
 using Command = System.CommandLine.Command;
 
 namespace cli;
@@ -32,7 +30,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;
-	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
 	private bool _retry = false;
@@ -86,7 +83,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		SaveToFileOption.Bind(this);
-		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
@@ -116,12 +113,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		{ // switch the runtime to be operating in the existing workspace folder
-			args.ConfigService.SetTempWorkingDir(Path.GetDirectoryName(configFolder));
+			args.ConfigService.SetWorkingDir(Path.GetDirectoryName(configFolder));
 		}
 
 		{ // set the host string from existing value or given parameter, and then reset cid/pid
 			host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
-			_ctx.Set(string.Empty, string.Empty, host);
+			await _ctx.Set(string.Empty, string.Empty, host);
 		}
 		
 		SaveExtraPathFiles(args);
@@ -132,18 +129,23 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				try
 				{
-					var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+					var aliasResolve = await args.AliasService.Resolve(cid).ShowLoading("Resolving alias...");
 					cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 				}
 				catch (RequesterException)
 				{
-					throw new CliException($"Organization not found for '{cid}', try again");
+					throw new CliException($"Organization not found for cid='{cid}', try again");
+				}
+				catch (AliasService.AliasDoesNotExistException)
+				{
+					throw new CliException($"Organization not found for alias='{cid}', try again");
 				}
 				catch (Exception e)
 				{
 					BeamableLogger.LogError(e.Message);
 					throw;
 				}
+				
 			}
 			_configService.SetConfigString(Constants.CONFIG_CID, cid);
 		}
@@ -176,7 +178,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
-		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
 
 		
@@ -192,7 +193,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		Directory.CreateDirectory(args.path);
-		args.ConfigService.SetTempWorkingDir(args.path);
+		args.ConfigService.SetWorkingDir(args.path);
 		
 		// Setup integration with DotNet for C#MSs --- If we ever have integrations with other microservice languages, we 
 		{
@@ -211,17 +212,17 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		SaveExtraPathFiles(args);
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
-		else _ctx.Set(string.Empty, string.Empty, _ctx.Host);
+		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
-		_ctx.Set(cid, string.Empty, host);
+		await _ctx.Set(cid, string.Empty, host);
 
 		if (!AliasHelper.IsCid(cid))
 		{
 			try
 			{
-				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+				var aliasResolve = await args.AliasService.Resolve(cid).ShowLoading("Resolving alias...");
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 			}
 			catch (RequesterException)
@@ -274,8 +275,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		//  then just returning the pid and auth
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
 		{
-			_ctx.Set(cid, _ctx.Pid, host);
-			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+			await _ctx.Set(cid, _ctx.Pid, host);
+			_configService.SetWorkingDir(_ctx.WorkingDirectory);
 			_configService.FlushConfig();
 			_configService.CreateIgnoreFile();
 
@@ -287,41 +288,40 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		// If we have a given pid, let's login there.
 		if (!string.IsNullOrEmpty(args.pid))
 		{
-			_ctx.Set(cid, args.pid, host);
+			await _ctx.Set(cid, args.pid, host);
 
 			
 			var didLogin = !args.SaveToFile || await Login(args);
 			if (didLogin)
 			{
-				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+				_configService.SetWorkingDir(_ctx.WorkingDirectory);
 				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
 				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
 			}
 			else
 			{
-				_configService.RemoveConfigFolderContent();
+				throw new CliException("Failed to log in.");
 			}
-
-			return didLogin;
 		}
 
-		_ctx.Set(cid, null, host);
-		_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+		await _ctx.Set(cid, null, host);
+		_configService.SetWorkingDir(_ctx.WorkingDirectory);
 		_configService.FlushConfig();
 		_configService.CreateIgnoreFile();
 
 		var pid = await PickGameAndRealm(args);
 		if (string.IsNullOrWhiteSpace(pid))
-		{
-			_configService.RemoveConfigFolderContent();
-			return false;
-		}
+			throw new CliException("Failed to find a realm to target.");
 
-		_ctx.Set(cid, pid, host);
+		await _ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);
 		_configService.FlushConfig();
-
+		
+		// Whenever we swap realms using init, we also clear the local override for the selected realm.
+		_configService.DeleteLocalOverride(Constants.CONFIG_PID);
+		_configService.FlushLocalOverrides();
+		
 		return await Login(args);
 	}
 
@@ -348,7 +348,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
-		var gameSelection = AnsiConsole.Prompt(
+		var gameSelection = args.Quiet ? gameChoices.First() : AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("What [green]game[/] are you using?")
 				.AddChoices(gameChoices)
@@ -359,14 +359,15 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		var realms = await _realmsApi.GetRealms(game).ShowLoading("Fetching realms...");
 		var realmChoices = realms
 			.Where(r => !r.Archived)
-			.Select(r => r.DisplayName.Replace("[", "").Replace("]", ""));
-		var realmSelection = AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
+			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
+		var realmSelection = args.Quiet ? 
+			realms.Where(r => r.Depth == 2).OrderBy(r =>r.Pid).Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}").First() :
+			AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
 				.AddBeamHightlight()
 		);
-		var realm = realms.FirstOrDefault(g => g.DisplayName.Replace("[", "").Replace("]", "") == realmSelection);
+		var realm = realms.FirstOrDefault(g => realmSelection.StartsWith(g.DisplayName.Replace("[", "").Replace("]", "")));
 		return realm.Pid;
 	}
 
