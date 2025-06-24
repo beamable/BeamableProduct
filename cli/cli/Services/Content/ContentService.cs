@@ -693,7 +693,7 @@ public class ContentService
 					if (val.TryGetProperty("$link", out var linkProp) || val.TryGetProperty("link", out linkProp))
 						meta.Link = OptionalString.FromString(linkProp.GetString());
 
-					if (val.TryGetProperty("$links", out var linksProp) || val.TryGetProperty("link", out linksProp))
+					if (val.TryGetProperty("$links", out var linksProp) || val.TryGetProperty("links", out linksProp))
 						meta.Links = new OptionalArrayOfString(linksProp.EnumerateArray().Select(j => j.GetString()));
 
 					properties.Add(key, meta);
