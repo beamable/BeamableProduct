@@ -149,9 +149,8 @@ namespace Beamable.Server
 						    .AddOtlpExporter(option =>
 						    {
 							    option.Protocol = OtlpExportProtocol.HttpProtobuf;
-							    option.Endpoint = new Uri(otlpEndpoint);
+							    option.Endpoint = new Uri($"{otlpEndpoint}/v1/logs");
 						    });
-
 				    });
 			    }
 			    
@@ -674,7 +673,7 @@ namespace Beamable.Server
 			        .AddOtlpExporter(option =>
 			        {
 				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				        option.Endpoint = new Uri(otlpEndpoint);
+				        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");
 			        })
 			        .Build()
 		        ;
@@ -688,7 +687,7 @@ namespace Beamable.Server
 			        .AddOtlpExporter(option =>
 			        {
 				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				        option.Endpoint = new Uri(otlpEndpoint);
+				        option.Endpoint = new Uri($"{otlpEndpoint}/v1/traces");
 			        })
 			        .Build()
 		        ;
@@ -892,7 +891,7 @@ namespace Beamable.Server
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        var collectorStatus = await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
-		        otlpEndpoint = collectorStatus.otlpEndpoint;
+		        otlpEndpoint = $"http://{collectorStatus.otlpEndpoint}";
 	        }
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();

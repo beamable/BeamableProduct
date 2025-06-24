@@ -630,7 +630,9 @@ public class CollectorManager
 		process.StartInfo.UseShellExecute = false;
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-		process.StartInfo.Environment.Add("BEAM_OTLP_HTTP_ENDPOINT", PortUtil.FreeEndpoint());
+
+		var localEndpoint = PortUtil.FreeEndpoint().Replace("http://", "");
+		process.StartInfo.Environment.Add("BEAM_OTLP_HTTP_ENDPOINT", localEndpoint);
 
 		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
 

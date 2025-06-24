@@ -28,6 +28,12 @@ public class PortUtil
 	/// <returns></returns>
 	public static string FreeEndpoint()
 	{
-		return $"http://localhost:{PortUtil.FreeTcpPort()}"; //TODO should have a better way to get the local url
+		TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+		l.Start();
+		var endpoint = ((IPEndPoint)l.LocalEndpoint);
+		var address = endpoint.Address.ToString();
+		var port = endpoint.Port;
+		l.Stop();
+		return $"http://{address}:{port}";
 	}
 }
