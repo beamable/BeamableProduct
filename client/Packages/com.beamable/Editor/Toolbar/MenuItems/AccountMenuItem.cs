@@ -1,5 +1,6 @@
 
 using System;
+using Beamable.Editor.Accounts;
 using UnityEditor;
 using UnityEngine;
 
@@ -28,7 +29,8 @@ namespace Beamable.Editor.ToolbarExtender
 			{
 				menu.AddItem(new GUIContent($"Account: {editorApi?.BeamCli.latestUser?.email ?? ("(unknown)")}"), false, () =>
 				{
-					throw new NotImplementedException();
+					AccountWindow.Init();
+					// throw new NotImplementedException();
 					// var _ = LoginWindow.Init();
 				});
 			}
@@ -42,7 +44,7 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 			else
 			{
-				// var _ = LoginWindow.CheckLogin();
+				AccountWindow.Init();
 			}
 		}
 	}

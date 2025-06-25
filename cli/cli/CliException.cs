@@ -23,11 +23,6 @@ public class CliException<T> : CliException
 		NonZeroOrOneExitCode = nonZeroOrOneExitCode;
 	}
 
-	public CliException(string message, int nonZeroExitCode) : base(message)
-	{
-		NonZeroOrOneExitCode = nonZeroExitCode;
-	}
-	
 	public CliException(string message, int nonZeroOrOneExitCode, bool useStdOut, string additionalNote = null, IEnumerable<Diagnostic> additionalReports = null) : base(message, nonZeroOrOneExitCode, useStdOut, additionalNote, additionalReports)
 	{
 	}

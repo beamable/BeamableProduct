@@ -145,7 +145,10 @@ namespace Beamable
 			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
 			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
 			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
-			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider, ConfigDatabaseProvider>();
+			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => p.GetService<ConfigDatabaseProvider>());
+			GlobalDependencyBuilder.AddSingleton(BeamableEnvironment.Data);
+			GlobalDependencyBuilder.AddSingleton<ConfigDatabaseProvider>();
+			GlobalDependencyBuilder.AddSingleton<IPlatformRequesterHostResolver, ConfigPlatformHostResolver>();
 			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
 
 			// allow customization to the global scope
@@ -168,10 +171,13 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			
+			DependencyBuilder.AddSingleton<ConfigDatabaseProvider>(() => GlobalScope.GetService<ConfigDatabaseProvider>());
+			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => GlobalScope.GetService<IPlatformRequesterHostResolver>());
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(() => GlobalScope.GetService<IRuntimeConfigProvider>());
 			DependencyBuilder.AddSingleton<IRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
-			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
 			DependencyBuilder.AddSingleton<GatewayConnectivityChecker>();

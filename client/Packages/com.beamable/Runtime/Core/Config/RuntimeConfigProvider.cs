@@ -12,16 +12,25 @@ namespace Beamable.Config
 		public string cid;
 		public string pid;
 		public string alias;
+
+		public string host;
+		public string portalUrl;
+		public string socketUrl;
 	}
 
 	public class ConfigDatabaseProvider : IRuntimeConfigProvider
 	{
-		private const string CONFIG_DEFAULTS_NAME = "config-defaults";
+		public const string CONFIG_DEFAULTS_NAME = "config-defaults";
 
 		public string Cid => data?.cid;
 		public string Pid => data?.pid;
+		public string HostUrl => data?.host ?? "https://api.beamable.com";
+		public string SocketUrl => data?.socketUrl;
+		public string PortalUrl => data?.portalUrl;
 
-		private readonly ConfigData data = GetConfigData();
+		public bool HasNoHostField => string.IsNullOrEmpty(data?.host);
+		
+		private ConfigData data = GetConfigData();
 
 		public static string GetFullPath(string fileName = null) =>
 			Path.Combine("Assets", "Beamable", "Resources", $"{fileName ?? CONFIG_DEFAULTS_NAME}.txt");
@@ -62,6 +71,11 @@ namespace Beamable.Config
 #else
 			return Resources.Load<TextAsset>(filename) != null;
 #endif
+		}
+
+		public void Reload()
+		{
+			data = GetConfigData();
 		}
 	}
 }

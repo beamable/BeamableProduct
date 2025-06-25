@@ -2,6 +2,8 @@ using Beamable.Common.Api.Realms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Config;
+using Beamable.Editor.BeamCli;
 using UnityEditor;
 using UnityEngine;
 
@@ -41,20 +43,21 @@ namespace Beamable.Editor.ToolbarExtender
 				
 				return String.Compare(a.ProjectName, b.ProjectName, StringComparison.Ordinal);
 			});
-			var buildPid = editor.ServiceScope.GetService<ConfigDefaultsService>().Pid;
+			var buildPid = editor.ServiceScope.GetService<ConfigDatabaseProvider>().Pid;
 			var buildName = buildPid.ToString();
 			var sameEditorAndBuildPids = buildPid == editor.BeamCli?.Pid;
 			foreach (var proj in projects)
 			{
 				var enabled = proj.Pid == editor.BeamCli.Pid;
-				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.ProjectName} [build]" : proj.ProjectName;
+				
+				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.GetDisplayName()} [build]" : proj.GetDisplayName();
 				if (buildPid == proj.Pid)
 				{
 					buildName = proj.ProjectName;
 				}
 				menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
 				{
-					editor.SwitchRealm(proj);
+					var _ = editor.SwitchRealm(proj);
 				});
 			}
 
@@ -63,19 +66,18 @@ namespace Beamable.Editor.ToolbarExtender
 				menu.AddSeparator(rootDisplay.text + "/");
 				menu.AddItem(new GUIContent(rootDisplay.text + "/Refresh"), false, () =>
 				{
-					throw new NotImplementedException();
-					// var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
+					var _ = editor.BeamCli.Refresh();
 				});
 				if(!sameEditorAndBuildPids)
 				{
-					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, editor.WriteConfig);
+					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, editor.CommitConfigDefaults);
 				}
 			}
 		}
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
 		{
-			var realmName = beamableApi?.BeamCli?.CurrentRealm.DisplayName;
+			var realmName = beamableApi?.BeamCli?.CurrentRealm?.DisplayName;
 			if (string.IsNullOrEmpty(realmName))
 			{
 				return null;
