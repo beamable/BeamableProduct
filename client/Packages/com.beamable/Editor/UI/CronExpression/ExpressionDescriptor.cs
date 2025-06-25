@@ -701,39 +701,15 @@ namespace Beamable.CronExpression
 		{
 			string Convert(IReadOnlyList<string> part)
 			{
-				int ConvertToInt(string text) => int.Parse(text);
-
 				if (part.Contains("*") && part.Count == 1)
 					return part[0];
 
-				var converted = string.Empty;
-				var dashedStrings = new List<int>();
-
-				for (var i = 0; i < part.Count; i++)
-				{
-					var from = ConvertToInt(part[i]);
-					dashedStrings.Add(from);
-
-					if (i == part.Count - 1)
-						break;
-
-					var to = ConvertToInt(part[i + 1]);
-
-					if (from + 1 == to)
-						continue;
-
-					converted += dashedStrings.Count == 1 ? i + 1 == part.Count ? $"{dashedStrings[0]}" :
-						$"{dashedStrings[0]}," :
-						i + 1 == part.Count ? $"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]}" :
-						$"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]},";
-
-					dashedStrings.Clear();
-				}
-
-				if (dashedStrings.Count == 1)
-					converted += $"{dashedStrings[0]}";
-				else if (dashedStrings.Count != 0)
-					converted += $"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]}";
+				string converted = string.Empty;
+				
+				if (part.Count == 1)
+					converted += $"{part[0]}";
+				else if (part.Count != 0)
+					converted += $"{part[0]}-{part[^1]}";
 
 				return converted;
 			}
@@ -757,30 +733,6 @@ namespace Beamable.CronExpression
 		/// <returns>Schedule definition</returns>
 		public static ScheduleDefinition CronToScheduleDefinition(string expression)
 		{
-			List<string> Convert(string part)
-			{
-				var subParts = part.Split(',').ToList();
-				var finalList = new List<string>();
-
-				foreach (var subPart in subParts)
-				{
-					if (!subPart.Contains('-'))
-					{
-						finalList.Add(subPart);
-						continue;
-					}
-
-					var range = subPart.Split('-').ToList();
-					var from = int.Parse(range[0]);
-					var to = int.Parse(range[1]);
-
-					for (int i = from; i <= to; i++)
-						finalList.Add($"{i}");
-				}
-
-				return finalList;
-			}
-
 			var split = expression.Split(' ');
 
 			if (split.Length != 7)
@@ -791,16 +743,62 @@ namespace Beamable.CronExpression
 
 			var scheduleDefinition = new ScheduleDefinition
 			{
-				second = Convert(split[0]),
-				minute = Convert(split[1]),
-				hour = Convert(split[2]),
-				dayOfMonth = Convert(split[3]),
-				month = Convert(split[4]),
-				dayOfWeek = Convert(split[5]),
-				year = Convert(split[6])
+				second = ConvertCronPart(split[0]),
+				minute = ConvertCronPart(split[1]),
+				hour = ConvertCronPart(split[2]),
+				dayOfMonth = ConvertCronPart(split[3]),
+				month = ConvertCronPart(split[4]),
+				dayOfWeek = ConvertCronPart(split[5]),
+				year = ConvertCronPart(split[6])
 			};
 
 			return scheduleDefinition;
+		}
+		
+		
+		public static List<string> ConvertCronPart(string part)
+		{
+			var subParts = part.Split(',').ToList();
+			var finalList = new List<string>();
+
+			foreach (var subPart in subParts)
+			{
+				if (!subPart.Contains('-'))
+				{
+					finalList.Add(subPart);
+					continue;
+				}
+
+				var range = subPart.Split('-').ToList();
+				string start = ValidateStep(range[0], out _);
+				string end = ValidateStep(range[1], out string finalStep);
+				
+				var from = int.Parse(start);
+				
+				var to = int.Parse(end);
+
+				for (int i = from; i <= to; i++)
+				{
+					finalList.Add($"{i}");
+				}
+
+				if (!string.IsNullOrEmpty(finalStep))
+				{
+					finalList.Add($"/{finalStep}");
+				}
+			}
+
+			return finalList;
+		}
+
+		public static string ValidateStep(string cronPart, out string stepValue)
+		{
+			stepValue = string.Empty;
+			if (!cronPart.Contains("/"))
+				return cronPart;
+			var values = cronPart.Split("/");
+			stepValue = values[1];
+			return values[0];
 		}
 
 		#endregion

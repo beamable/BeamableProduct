@@ -89,7 +89,7 @@ namespace Editor.UI.ContentWindow
 			BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
 			{
 				Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
-			}, _contentService.Reload);
+			}, () => _ = _contentService.Reload());
 		}
 
 		private void DrawTopBarHeader()

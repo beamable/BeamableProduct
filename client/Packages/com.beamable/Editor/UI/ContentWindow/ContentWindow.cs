@@ -6,8 +6,9 @@ using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
-using Editor.CliContentManager;
+using Editor.ContentService;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -41,10 +42,10 @@ namespace Editor.UI.ContentWindow
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"New Content Manager",
+			"Content Manager",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
-		public static async void Init() => _ = await GetFullyInitializedWindow();
+		public static async Task Init() => _ = await GetFullyInitializedWindow();
 
 		protected override void Build()
 		{
@@ -52,7 +53,7 @@ namespace Editor.UI.ContentWindow
 			{
 				_contentService = Scope.GetService<CliContentService>();
 				_contentService.OnManifestUpdated += Build;
-				_contentService.Reload();
+				_ = _contentService.Reload();
 			}
 
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();

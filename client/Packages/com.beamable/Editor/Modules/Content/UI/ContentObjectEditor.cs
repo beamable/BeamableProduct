@@ -4,7 +4,7 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
 using Beamable.Editor.Util;
-using Editor.CliContentManager;
+using Editor.ContentService;
 using Editor.UI.ContentWindow;
 using System;
 using System.Collections;
@@ -198,7 +198,7 @@ namespace Beamable.Editor.Content.UI
 			}
 			else
 			{
-				string newName = EditorGUI.TextField(nameRect, contentObject.ContentName);
+				string newName = EditorGUI.DelayedTextField(nameRect, contentObject.ContentName);
 				if (EditorGUI.EndChangeCheck())
 				{
 					if (_updateNameCoroutine != null)
@@ -339,7 +339,7 @@ namespace Beamable.Editor.Content.UI
 				rect = new Rect(rect.x, rect.y - 6, rect.width, rect.height);
 				GUI.Box(new Rect(0, rect.y, contextWidth, rect.height), "", "In BigTitle Post");
 
-				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentIO.ComputeChecksum(contentObject)}", checksumStyle);
+				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentUtils.ComputeChecksum(contentObject)}", checksumStyle);
 			}
 
 			base.OnInspectorGUI();

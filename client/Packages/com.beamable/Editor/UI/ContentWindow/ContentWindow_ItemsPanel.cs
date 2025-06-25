@@ -218,7 +218,10 @@ namespace Editor.UI.ContentWindow
 				return;
 			}
 			var contentObject = CreateInstance(type) as ContentObject;
-			contentObject.SetContentName($"New_{itemType.Replace(".","_")}");
+			string baseName = $"New_{itemType.Replace(".","_")}";
+			int itemsWithBaseNameCount =  _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
+			contentObject.SetContentName($"{baseName}_{itemsWithBaseNameCount}");
+			contentObject.ContentStatus = ContentStatus.Created;
 			SaveContent(contentObject);
 			Selection.activeObject = contentObject;
 		}
@@ -380,7 +383,7 @@ namespace Editor.UI.ContentWindow
 				if (isEditLabel!= null && isEditLabel.Length > i && isEditLabel[i])
 				{
 					GUI.SetNextControlName(FOCUS_NAME);
-					labels[i] = EditorGUI.TextField(nameRect, labels[i]);
+					labels[i] = EditorGUI.DelayedTextField(nameRect, labels[i]);
 					if (_needToFocusLabel)
 					{
 						EditorGUI.FocusTextInControl(FOCUS_NAME);

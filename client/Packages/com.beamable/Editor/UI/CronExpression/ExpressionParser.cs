@@ -13,7 +13,13 @@ namespace Beamable.CronExpression
 		private readonly string _expression;
 		private readonly Options _options;
 		private readonly CultureInfo _en_culture;
-		private readonly Regex _regex = new Regex(@"^\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:(?:-))?(?:,(?:(?:-))?)*)\s+(\?|\*|(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?(?:,(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?)*|\?|\*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?)*))$");
+		private static readonly string SecondRegex = @"^(\*|\?|\*\/[0-5]?\d|(?:[0-5]?\d)(?:\/(?:[0-5]?\d))?|(?:[0-5]?\d)(?:-(?:[0-5]?\d)(?:\/(?:[0-5]?\d))?)?|(?:[0-5]?\d)(?:,(?:[0-5]?\d))*)$";
+		private static readonly string MinuteRegex = @"^(\*|\?|\*\/[0-5]?\d|(?:[0-5]?\d)(?:\/(?:[0-5]?\d))?|(?:[0-5]?\d)(?:-(?:[0-5]?\d)(?:\/(?:[0-5]?\d))?)?|(?:[0-5]?\d)(?:,(?:[0-5]?\d))*)$";
+		private static readonly string HourRegex = @"^(\*|\?|\*\/[01]?\d|(?:[01]?\d|2[0-3])(?:\/(?:[01]?\d|2[0-3]))?|(?:[01]?\d|2[0-3])(?:-(?:[01]?\d|2[0-3])(?:\/(?:[01]?\d|2[0-3]))?)?|(?:[01]?\d|2[0-3])(?:,(?:[01]?\d|2[0-3]))*)$";
+		private static readonly string DayOfMonthRegex = @"^(\*|\?|\*\/0?[1-9]|(?:0?[1-9]|[12]\d|3[01])(?:\/(?:0?[1-9]|[12]\d|3[01]))?|(?:0?[1-9]|[12]\d|3[01])(?:-(?:0?[1-9]|[12]\d|3[01])(?:\/(?:0?[1-9]|[12]\d|3[01]))?)?|(?:0?[1-9]|[12]\d|3[01])(?:,(?:0?[1-9]|[12]\d|3[01]))*)$";
+		private static readonly string MonthRegex = @"^(\*|\?|\*\/[1-9]|(?:[1-9]|1[012])(?:\/(?:[1-9]|1[012]))?|(?:[1-9]|1[012])(?:-(?:[1-9]|1[012])(?:\/(?:[1-9]|1[012]))?)?|(?:[1-9]|1[012])(?:,(?:[1-9]|1[012]))*)$";
+		private static readonly string DayOfWeekRegex = @"^(\*|\?|\*\/[0-7]|(?:[0-7])(?:\/(?:[0-7]))?|(?:[0-7])(?:-(?:[0-7])(?:\/(?:[0-7]))?)?|(?:[0-7])(?:,(?:[0-7]))*)$";
+		private static readonly string YearRegex = @"^(\*|\?|\*\/\d{4}|(?:19[7-9]\d|20\d{2})(?:\/(?:19[7-9]\d|20\d{2}))?|(?:19[7-9]\d|20\d{2})(?:-(?:19[7-9]\d|20\d{2})(?:\/(?:19[7-9]\d|20\d{2}))?)?|(?:19[7-9]\d|20\d{2})(?:,(?:19[7-9]\d|20\d{2}))*)$";
 
 		/// <summary>
 		///     Initializes a new instance of the <see cref="ExpressionParser" /> class
@@ -47,9 +53,15 @@ namespace Beamable.CronExpression
 			if (expressionPartsTemp.Length != 7)
 				throw new FormatException($"Error: Expression has {expressionPartsTemp.Length} parts. Exactly 7 parts are required.");
 
-			if (!IsValidFormat)
+			if (!ValidateField(expressionPartsTemp[0], SecondRegex, 0, 59) ||
+			    !ValidateField(expressionPartsTemp[1], MinuteRegex, 0, 59) ||
+			    !ValidateField(expressionPartsTemp[2], HourRegex, 0, 23) ||
+			    !ValidateField(expressionPartsTemp[3], DayOfMonthRegex, 1, 31) ||
+			    !ValidateField(expressionPartsTemp[4], MonthRegex, 1, 12) ||
+			    !ValidateField(expressionPartsTemp[5], DayOfWeekRegex, 0, 7) ||
+			    !ValidateField(expressionPartsTemp[6], YearRegex))
 			{
-				errorData.ErrorMessage = "Error: CRON validation is not passing. CRON supports only numbers [0-9] and special characters [,-*]";
+				errorData.ErrorMessage = "Error: Invalid CRON expression format";
 				return null;
 			}
 
@@ -178,7 +190,65 @@ namespace Beamable.CronExpression
 				}
 			}
 		}
+		
+		private bool ValidateField(string field, string pattern, int? minValue = null, int? maxValue = null)
+		{
+			if (!Regex.IsMatch(field, pattern))
+				return false;
 
-		private bool IsValidFormat => _regex.IsMatch(_expression);
+			// Additional validation for numeric values
+			if (field is "*" or "?")
+			{
+				return true;
+			}
+
+			// Check steps
+			if (field.Contains("/"))
+			{
+				field = ExpressionDescriptor.ValidateStep(field, out var stepValue);
+				if (string.IsNullOrWhiteSpace(stepValue)) return false;
+                    
+				if (!int.TryParse(stepValue, out int step) || step <= 0)
+					return false;
+			}
+			
+			// Check ranges
+			if (field.Contains("-"))
+			{
+				var parts = field.Split('-');
+				if (parts.Length != 2) return false;
+				
+				if (!int.TryParse(parts[0], out int start) || 
+				    !int.TryParse(parts[1], out int end))
+					return false;
+                        
+				if (!ValidateMinValue(start) || !ValidateMaxValue(end) || start > end)
+					return false;
+			}
+
+			
+
+			// Check lists
+			if (field.Contains(","))
+			{
+				foreach (var item in field.Split(','))
+				{
+					if (!int.TryParse(item, out int numericValue) || !ValidateMinValue(numericValue) || !ValidateMaxValue(numericValue))
+						return false;
+				}
+			}
+
+			return true;
+
+			bool ValidateMaxValue(int value)
+			{
+				return !maxValue.HasValue || value <= maxValue;
+			}
+
+			bool ValidateMinValue(int value)
+			{
+				return !minValue.HasValue || value >= minValue;
+			}
+		}
 	}
 }

@@ -1,9 +1,11 @@
 using Beamable.Common.Content;
 using Beamable.Editor.Content.SaveRequest;
 using Beamable.Serialization;
+using Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Beamable.Editor.Content
 {
@@ -91,7 +93,7 @@ namespace Beamable.Editor.Content
 					additions.Add(currentContent);
 					continue;
 				}
-				var distinctTagsExist = ContentIO.AreTagsEqual(nextContent.tags, currentContent.tags);
+				var distinctTagsExist = ContentUtils.AreTagsEqual(nextContent.tags, currentContent.tags);
 				if (!nextContent.checksum.Equals(currentContent.checksum) || !distinctTagsExist)
 				{
 					modifications.Add(currentContent);
@@ -107,6 +109,8 @@ namespace Beamable.Editor.Content
 				Deletions = deletions
 			};
 		}
+		
+		
 	}
 
 	/// <summary>

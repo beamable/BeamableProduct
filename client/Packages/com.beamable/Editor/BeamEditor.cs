@@ -43,7 +43,7 @@ using System.IO;
 using System.Linq;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
-using Editor.CliContentManager;
+using Editor.ContentService;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEngine;
@@ -78,9 +78,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IRequester>(provider => provider.GetService<IPlatformRequester>());
 			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
 			DependencyBuilder.AddSingleton<IAuthApi>(provider => provider.GetService<IEditorAuthApi>());
-			DependencyBuilder.AddSingleton<IContentIO>(provider => provider.GetService<ContentIO>());
-			DependencyBuilder.AddSingleton<ContentIO>();
-			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
 			DependencyBuilder.AddScoped<AliasService>();
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
@@ -509,8 +506,7 @@ namespace Beamable
 		public Promise OnReady => InitializePromise;
 		public Promise<BeamEditorContext> Instance => InitializePromise?.Map(_ => this);
 
-
-		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
+		public CliContentService CliContentService => ServiceScope.GetService<CliContentService>();
 		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
@@ -572,17 +568,6 @@ namespace Beamable
 				var initResult = await EditorAccountService.TryInit();
 				var account = initResult.account;
 
-
-				{
-					// initialize the default dependencies before a beam context ever gets going.
-					if (ContentIO.EnsureAllDefaultContent())
-					{
-						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-					}
-				}
-
 				if (!initResult.hasCid)
 				{
 					Requester.DeleteToken(); // not signed in... 
@@ -607,8 +592,6 @@ namespace Beamable
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
 				requester.Token = accessToken;
-
-				PublishDefaultContent();
 				
 				// it is possible that the requester cid/pid have been set, but the editor account service hasn't.
 				if (accessToken != null && account.HasEmptyCustomerView)
@@ -655,27 +638,11 @@ namespace Beamable
 			Requester.Pid = info.realmPid ??
 			                info.CustomerRealms?.FirstOrDefault(x => x.Cid == EditorAccount?.cid && x.IsDev)?.Pid;
 			
-			PublishDefaultContent();
 			await BeamCli.Init();
 			await RefreshRealmSecret();
 
 			OnUserChange?.Invoke(CurrentUser);
 			return PromiseBase.Unit;
-		}
-
-		public void PublishDefaultContent()
-		{
-			if (!IsAuthenticated)
-				return;
-			
-			var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
-			{
-				var hasNoContent = serverManifest.References.Count == 0;
-				if (hasNoContent)
-				{
-					var _ = DoSilentContentPublish();
-				}
-			});
 		}
 
 		[Obsolete("this method is no longer supported, and will be removed in a future release")]
@@ -810,11 +777,10 @@ namespace Beamable
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
 
-			await ContentIO.FetchManifest();
+			await CliContentService.Reload();
 			ContentDatabase.RecalculateIndex();
 			await RefreshRealmSecret();
 			EditorAccountService.WriteUnsetConfigValues();
-			PublishDefaultContent();
 			
 			await BeamCli.Init();
 			
@@ -837,24 +803,6 @@ namespace Beamable
 		{
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			await authService.ConfirmPasswordUpdate(code, newPassword).ToUnit();
-		}
-
-		/// <summary>
-		/// Force a publish operation, with no validation, with no UX popups. Log output will occur.
-		/// </summary>
-		/// <param name="force">Pass true to force all content to publish. Leave as false to only publish changed content.</param>
-		/// <returns>A Promise of Unit representing the completion of the publish.</returns>
-		private async Promise DoSilentContentPublish(bool force = false)
-		{
-			var contentPublisher = ServiceScope.GetService<ContentPublisher>();
-			var clearPromise = force ? contentPublisher.ClearManifest() : Promise<Unit>.Successful(PromiseBase.Unit);
-			await clearPromise;
-
-			var publishSet = await contentPublisher.CreatePublishSet();
-			await contentPublisher.Publish(publishSet, progress => { });
-
-			var contentIO = ServiceScope.GetService<ContentIO>();
-			await contentIO.FetchManifest();
 		}
 
 		#endregion
@@ -916,7 +864,7 @@ namespace Beamable
 			Requester.Cid = EditorAccount.cid;
 			Requester.Pid = realmPid;
 
-			await ContentIO.FetchManifest();
+			await CliContentService.Reload();
 			ContentDatabase.RecalculateIndex();
 			await RefreshRealmSecret();
 

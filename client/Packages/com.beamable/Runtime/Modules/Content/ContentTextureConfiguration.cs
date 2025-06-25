@@ -48,7 +48,7 @@ namespace Modules.Content
 		private static Texture GetTextureFromBeamAssets(string fileName)
 		{
 			return EditorResources.Load<Texture>(
-				$"Packages/com.beamable/Editor/UI/Content/Icons/{fileName}");
+				$"Packages/com.beamable/Editor/UI/Common/Icons/{fileName}");
 		}
 	}
 

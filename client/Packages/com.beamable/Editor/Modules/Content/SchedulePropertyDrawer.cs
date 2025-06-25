@@ -19,7 +19,7 @@ using static Beamable.Common.Constants.Features.Schedules;
 namespace Beamable.Editor.Content
 {
 
-	[CustomPropertyDrawer(typeof(ListingSchedule))]
+	//[CustomPropertyDrawer(typeof(ListingSchedule))]
 	public class ListingSchedulePropertyDrawer : SchedulePropertyDrawer<ListingContent, ListingScheduleWindow>
 	{
 		protected override ListingContent GetDataObject(SerializedProperty property)

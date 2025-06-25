@@ -497,17 +497,6 @@ namespace Beamable.Common.Content
 			return ll.ToList();
 		}
 
-		[System.Serializable]
-		public class PropertyValue : IRawJsonProvider
-		{
-			public string rawJson;
-
-			public string ToJson()
-			{
-				return rawJson;
-			}
-		}
-
 		[Obsolete("content serializer options are no longer supported.")]
 		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options)
 			where TContent : IContentObject =>
@@ -840,5 +829,16 @@ namespace Beamable.Common.Content
 	public class ContentSerializerOptions
 	{
 		public bool SortProperties { get; set; }
+	}
+	
+	[System.Serializable]
+	public class PropertyValue : IRawJsonProvider
+	{
+		public string rawJson;
+
+		public string ToJson()
+		{
+			return rawJson;
+		}
 	}
 }
