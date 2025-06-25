@@ -71,11 +71,16 @@ namespace Beamable.Editor.Content
 				EditorGUI.LabelField(humanLabelRect, "Human Readable", EditorStyles.boldLabel);
 				yOffset += StandardVerticalSpacing;
 
-				Rect humanValueRect = new Rect(position.x, position.y + yOffset, position.width,
-				                               EditorGUIUtility.singleLineHeight);
+				Rect humanValueRect = new Rect(
+					position.x, 
+					position.y + yOffset, 
+					position.width, 
+					CalculateHumanCronExpressionHeight());
 				
-				EditorGUI.LabelField(humanValueRect, new GUIContent(_humanCronExpression));
-				yOffset += StandardVerticalSpacing;
+				GUIStyle wordWrapStyle = new GUIStyle(EditorStyles.label);
+				wordWrapStyle.wordWrap = true;
+				EditorGUI.LabelField(humanValueRect, new GUIContent(_humanCronExpression), wordWrapStyle);
+				yOffset += CalculateHumanCronExpressionHeight() + EditorGUIUtility.standardVerticalSpacing;
 
 				Rect cronFoldoutRect = new Rect(
 					position.x,
@@ -343,7 +348,9 @@ namespace Beamable.Editor.Content
 				return EditorGUIUtility.singleLineHeight;
 			}
 
-			float height = StandardVerticalSpacing * 6;
+			float height = StandardVerticalSpacing * 5;
+			height += CalculateHumanCronExpressionHeight();
+			height += StandardVerticalSpacing;
 
 			if (_cronPartsFoldout)
 			{
@@ -431,6 +438,20 @@ namespace Beamable.Editor.Content
 					contentObject.ForceValidate();
 				}
 			}
+		}
+		
+		private float CalculateHumanCronExpressionHeight()
+		{
+			if (string.IsNullOrEmpty(_humanCronExpression))
+				return EditorGUIUtility.singleLineHeight;
+			
+			Rect tempRect = new Rect(0, 0, EditorGUIUtility.currentViewWidth, 0);
+			Rect indentedRect = EditorGUI.IndentedRect(tempRect);
+			float margin = 5f; 
+			float availableWidth = indentedRect.width - margin * 2;
+			GUIStyle style = EditorStyles.label;
+			style.wordWrap = true;
+			return style.CalcHeight(new GUIContent(_humanCronExpression), availableWidth);
 		}
 	}
 }
