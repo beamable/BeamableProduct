@@ -10,8 +10,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string platform;
         /// <summary>The architecture for the collector executable. [arm64, x64] or defaults to system</summary>
         public string arch;
-        /// <summary>The collector version to download, or defaults to current install</summary>
-        public string overrideVersion;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -26,11 +24,6 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.arch != default(string)))
             {
                 genBeamCommandArgs.Add(("--arch=" + this.arch));
-            }
-            // If the overrideVersion value was not default, then add it to the list of args.
-            if ((this.overrideVersion != default(string)))
-            {
-                genBeamCommandArgs.Add(("--override-version=" + this.overrideVersion));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
