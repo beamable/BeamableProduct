@@ -423,6 +423,7 @@ namespace Editor.UI.ContentWindow
 				deletedObject.ContentStatus = ContentStatus.Deleted;
 				deletedObject.IsInConflict = entry.IsInConflict;
 				Selection.activeObject = deletedObject;
+				return;
 			}
 			
 			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
@@ -435,13 +436,43 @@ namespace Editor.UI.ContentWindow
 				selectedContentObject.ContentStatus = entry.StatusEnum;
 				selectedContentObject.IsInConflict = entry.IsInConflict;
 				Selection.activeObject = selectedContentObject;
-				selectedContentObject.OnEditorChanged += () =>
+				selectedContentObject.OnEditorChanged = () =>
 				{
 					SaveContent(selectedContentObject);
 				};
 			}
-			
 		}
+
+		private async Task LoadScriptableOnActiveObject(LocalContentManifestEntry entry)
+		{
+			if (Selection.activeObject is not ContentObject contentObject)
+			{
+				await LoadItemScriptable(entry);
+				return;
+			}
+			if (entry.StatusEnum is ContentStatus.Deleted)
+			{
+				contentObject.SetIdAndVersion(entry.FullId, String.Empty);
+				contentObject.Tags = entry.Tags.ToArray();
+				contentObject.SetContentName(entry.Name);
+				contentObject.ContentStatus = ContentStatus.Deleted;
+				contentObject.IsInConflict = entry.IsInConflict;
+				return;
+			}
+			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
+			
+			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
+			if (contentObject)
+			{
+				contentObject.Tags = entry.Tags.ToArray();
+				contentObject.ContentStatus = entry.StatusEnum;
+				contentObject.IsInConflict = entry.IsInConflict;
+				contentObject.OnEditorChanged = () =>
+				{
+					SaveContent(contentObject);
+				};
+			}
+		} 
 
 		private void SaveContent(ContentObject selectedContentObject)
 		{
@@ -451,13 +482,13 @@ namespace Editor.UI.ContentWindow
 
 		private void SetEditorSelection()
 		{
-			if (!string.IsNullOrEmpty(_selectedItemId))
+			if (Selection.activeObject is ContentObject contentObject)
 			{
 				var entries = GetCachedManifestEntries();
-				var itemIndex = entries.FindIndex(item => item.FullId == _selectedItemId);
+				var itemIndex = entries.FindIndex(item => item.FullId == contentObject.Id);
 				if (itemIndex != -1)
 				{
-					_ = LoadItemScriptable(entries[itemIndex]);
+					_ = LoadScriptableOnActiveObject(entries[itemIndex]);
 					return;
 				}
 			}

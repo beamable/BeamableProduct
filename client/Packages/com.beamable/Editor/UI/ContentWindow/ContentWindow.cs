@@ -53,8 +53,9 @@ namespace Editor.UI.ContentWindow
 			{
 				_contentService = Scope.GetService<CliContentService>();
 				_contentService.OnManifestUpdated += Build;
-				_ = _contentService.Reload();
+				_ = _contentService.Reload().Then(_ => SetEditorSelection());
 			}
+			
 
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
@@ -69,8 +70,7 @@ namespace Editor.UI.ContentWindow
 			BuildContentStyles();
 			
 			BuildItemsPanelStyles();
-
-			SetEditorSelection();
+			
 			Repaint();
 		}
 

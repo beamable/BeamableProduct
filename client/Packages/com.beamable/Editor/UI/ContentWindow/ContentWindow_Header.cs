@@ -119,11 +119,12 @@ namespace Editor.UI.ContentWindow
 		private void DrawLowBarHeader()
 		{
 			GUILayout.Space(15);
-			
+
+			GUIStyle lowBarTextStyle = _lowBarTextStyle ?? EditorStyles.boldLabel;
 			var itemsFilterLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.Width(50), GUILayout.ExpandHeight(true));
+				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.Width(50), GUILayout.ExpandHeight(true));
 			var contentTreeLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, _lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
 			var entries = GetCachedManifestEntries();
 			int filteredItemsCount = GetFilteredItems().Count;
@@ -134,16 +135,17 @@ namespace Editor.UI.ContentWindow
 				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
 
 
-			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", _lowBarTextStyle);
-			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, _lowBarTextStyle);
+			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", lowBarTextStyle);
+			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
 
 			EditorGUILayout.Space(1, true);
 			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]} ▼");
-			Vector2 itemWidth = _lowBarDropdownStyle.CalcSize(dropdownContent);
+			GUIStyle lowBarDropdownStyle = _lowBarDropdownStyle ?? EditorStyles.toolbarDropDown;
+			Vector2 itemWidth = lowBarDropdownStyle.CalcSize(dropdownContent);
 			if (EditorGUILayout.DropdownButton(
 				    dropdownContent,
 				    FocusType.Passive,
-				    _lowBarDropdownStyle,
+				    lowBarDropdownStyle,
 				    GUILayout.Width(itemWidth.x)))
 			{
 				GenericMenu menu = new GenericMenu();

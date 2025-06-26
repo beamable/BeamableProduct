@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.CronExpression;
+using Editor.UI.Utils;
 using Editor.Utility;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,19 +30,29 @@ namespace Beamable.Editor.Content
 			"Seconds", "Minutes", "Hours", "Day of Month", "Month", "Day of Week", "Year"
 		};
 
-		private static readonly float StandardVerticalSpacing = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
-
-		private readonly bool[] _foldouts = new bool[7];
-		private readonly CronFieldType?[] _cronTypeParts = new CronFieldType?[7];
-		private readonly string[] _cronParts = new string[7];
-		private bool _cronPartsFoldout;
+		private readonly Dictionary<string,bool[]> _propPathFoldouts = new();
+		private readonly Dictionary<string,CronFieldType?[]> _propPathsCronTypes = new();
+		private readonly Dictionary<string,string[]> _propPathCronParts = new();
+		private readonly Dictionary<string,bool> _propPathsCronPartsFoldouts = new();
 		
-		private string _rawCronExpression;
-		private string _humanCronExpression;
+		private readonly Dictionary<string,string> _propPathRawCronFormat = new();
+		private readonly Dictionary<string,string> _propPathHumanCronFormat = new();
 
+		private bool TryGetPropertyValue<T>(Dictionary<string, T> baseDict, string propertyPath, out T value)
+		{
+			value = default;
+			return baseDict.TryGetValue(propertyPath, out value);
+		}
+
+		private void SetPropertyValue<T>(Dictionary<string, T> baseDict, string propertyPath, T value)
+		{
+			baseDict[propertyPath] = value;
+		}
+		
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			if (string.IsNullOrEmpty(_rawCronExpression))
+			string propertyPath = property.propertyPath;
+			if (TryGetPropertyValue(_propPathRawCronFormat, propertyPath,out string rawCronExpression) || string.IsNullOrEmpty(rawCronExpression))
 			{
 				InitCronParts(property); 
 			}
@@ -54,49 +65,51 @@ namespace Beamable.Editor.Content
 			{
 				EditorGUI.indentLevel++;
 
-				float yOffset = StandardVerticalSpacing;
+				float yOffset = PropertyDrawerUtils.StandardVerticalSpacing;
 
 				Rect cronLabelRect = new Rect(position.x, position.y + yOffset, position.width,
 				                              EditorGUIUtility.singleLineHeight);
 				EditorGUI.LabelField(cronLabelRect, "Raw Cron Expression", EditorStyles.boldLabel);
-				yOffset += StandardVerticalSpacing;
+				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 
 				Rect cronValueRect = new Rect(position.x, position.y + yOffset, position.width,
 				                              EditorGUIUtility.singleLineHeight);
-				EditorGUI.LabelField(cronValueRect, new GUIContent(_rawCronExpression));
-				yOffset += StandardVerticalSpacing;
+				EditorGUI.LabelField(cronValueRect, new GUIContent(rawCronExpression));
+				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 
 				Rect humanLabelRect = new Rect(position.x, position.y + yOffset, position.width,
 				                               EditorGUIUtility.singleLineHeight);
 				EditorGUI.LabelField(humanLabelRect, "Human Readable", EditorStyles.boldLabel);
-				yOffset += StandardVerticalSpacing;
+				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 
 				Rect humanValueRect = new Rect(
 					position.x, 
 					position.y + yOffset, 
 					position.width, 
-					CalculateHumanCronExpressionHeight());
+					CalculateHumanCronExpressionHeight(propertyPath));
 				
 				GUIStyle wordWrapStyle = new GUIStyle(EditorStyles.label);
 				wordWrapStyle.wordWrap = true;
-				EditorGUI.LabelField(humanValueRect, new GUIContent(_humanCronExpression), wordWrapStyle);
-				yOffset += CalculateHumanCronExpressionHeight() + EditorGUIUtility.standardVerticalSpacing;
+				TryGetPropertyValue(_propPathHumanCronFormat, propertyPath, out string humanCronExpression);
+				EditorGUI.LabelField(humanValueRect, new GUIContent(humanCronExpression), wordWrapStyle);
+				yOffset += CalculateHumanCronExpressionHeight(propertyPath) + EditorGUIUtility.standardVerticalSpacing;
 
 				Rect cronFoldoutRect = new Rect(
 					position.x,
 					position.y + yOffset,
 					position.width,
 					EditorGUIUtility.singleLineHeight);
-				
-				_cronPartsFoldout = EditorGUI.Foldout(cronFoldoutRect, _cronPartsFoldout, "Cron Values", true);
-				yOffset += StandardVerticalSpacing;
-				if (_cronPartsFoldout)
+				TryGetPropertyValue(_propPathsCronPartsFoldouts, propertyPath, out bool propPartFoldout);
+				propPartFoldout = EditorGUI.Foldout(cronFoldoutRect, propPartFoldout, "Cron Values", true);
+				SetPropertyValue(_propPathsCronPartsFoldouts, propertyPath, propPartFoldout);
+				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				if (propPartFoldout)
 				{
 					EditorGUI.indentLevel++;
 
 					for (int fieldIndex = 0; fieldIndex < FieldNames.Length; fieldIndex++)
 					{
-						yOffset = DrawField(position, yOffset, fieldIndex);
+						yOffset = DrawField(position, yOffset, fieldIndex, propertyPath);
 					}
 					
 					Rect buttonRect = new Rect(
@@ -118,7 +131,7 @@ namespace Beamable.Editor.Content
 			EditorGUI.EndProperty();
 		}
 
-		private float DrawField(Rect position, float yOffset, int fieldIndex)
+		private float DrawField(Rect position, float yOffset, int fieldIndex, string propertyPath)
 		{
 			Rect foldoutFieldRect = new Rect(
 				position.x,
@@ -126,11 +139,17 @@ namespace Beamable.Editor.Content
 				position.width,
 				EditorGUIUtility.singleLineHeight);
 
-			_foldouts[fieldIndex] = EditorGUI.Foldout(foldoutFieldRect, _foldouts[fieldIndex], FieldLabels[fieldIndex], true);
-						
-			yOffset += StandardVerticalSpacing;
+			if (!TryGetPropertyValue(_propPathFoldouts, propertyPath, out bool[] foldouts))
+			{
+				foldouts = new bool[7];
+			}
+			foldouts[fieldIndex] = EditorGUI.Foldout(foldoutFieldRect, foldouts[fieldIndex], FieldLabels[fieldIndex], true);
+			
+			SetPropertyValue(_propPathFoldouts, propertyPath, foldouts);
+			
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 
-			if (_foldouts[fieldIndex])
+			if (foldouts[fieldIndex])
 			{
 				EditorGUI.indentLevel++;
 
@@ -140,34 +159,36 @@ namespace Beamable.Editor.Content
 					position.width,
 					EditorGUIUtility.singleLineHeight);
 							
-				_cronTypeParts[fieldIndex] = (CronFieldType)EditorGUI.EnumPopup(typeRect, "Type", _cronTypeParts[fieldIndex]);
+				TryGetPropertyValue(_propPathsCronTypes, propertyPath, out CronFieldType?[] cronTypeParts);
+				
+				cronTypeParts[fieldIndex] = (CronFieldType)EditorGUI.EnumPopup(typeRect, "Type", cronTypeParts[fieldIndex]);
 
-				yOffset += StandardVerticalSpacing;
+				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 
-				switch (_cronTypeParts[fieldIndex])
+				switch (cronTypeParts[fieldIndex])
 				{
 					case CronFieldType.Any:
-						UpdateCronPartValue("*", fieldIndex);
+						UpdateCronPartValue("*", fieldIndex, propertyPath);
 						break;
 								
 					case CronFieldType.Number:
-						yOffset = DrawNumberField(position, yOffset, fieldIndex);
+						yOffset = DrawNumberField(position, yOffset, fieldIndex, propertyPath);
 						break;
 
 					case CronFieldType.Between:
-						yOffset = DrawBetweenField(position, yOffset, fieldIndex);
+						yOffset = DrawBetweenField(position, yOffset, fieldIndex, propertyPath);
 						break;
 
 					case CronFieldType.EveryNth:
-						yOffset = DrawEveryNthField(position, yOffset, fieldIndex);
+						yOffset = DrawEveryNthField(position, yOffset, fieldIndex, propertyPath);
 						break;
 
 					case CronFieldType.EveryNthBetween:
-						yOffset = DrawEveryNthBetweenField(position, yOffset, fieldIndex);
+						yOffset = DrawEveryNthBetweenField(position, yOffset, fieldIndex, propertyPath);
 						break;
 
 					case CronFieldType.Custom:
-						yOffset = DrawCustomField(position, yOffset, fieldIndex);
+						yOffset = DrawCustomField(position, yOffset, fieldIndex, propertyPath);
 						break;
 				}
 
@@ -177,7 +198,7 @@ namespace Beamable.Editor.Content
 			return yOffset;
 		}
 
-		private float DrawNumberField(Rect position, float yOffset, int i)
+		private float DrawNumberField(Rect position, float yOffset, int i, string propertyPath)
 		{
 			Rect customRect = new Rect(
 				position.x,
@@ -185,19 +206,22 @@ namespace Beamable.Editor.Content
 				position.width,
 				EditorGUIUtility.singleLineHeight);
 			int cronValue = 0;
-			if (int.TryParse(_cronParts[i], out int intValue))
+
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			
+			if (int.TryParse(cronParts[i], out int intValue))
 			{
 				cronValue = intValue;
 			}
 			cronValue = EditorGUI.IntField(customRect, "Value", cronValue);
 
-			UpdateCronPartValue($"{cronValue}", i);
+			UpdateCronPartValue($"{cronValue}", i, propertyPath);
 
-			yOffset += StandardVerticalSpacing;
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 			return yOffset;
 		}
 		
-		private float DrawBetweenField(Rect position, float yOffset, int i)
+		private float DrawBetweenField(Rect position, float yOffset, int i, string propertyPath)
 		{
 			Rect startRect = new Rect(
 				position.x,
@@ -215,9 +239,11 @@ namespace Beamable.Editor.Content
 			int start = 0;
 			int end = 0;
 
-			if (_cronParts[i].Contains("-"))
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			
+			if (cronParts[i].Contains("-"))
 			{
-				string[] valueParts = _cronParts[i].Split('-');
+				string[] valueParts = cronParts[i].Split('-');
 				start = int.Parse(valueParts[0]);
 				end = int.Parse(valueParts[^1]);
 			}
@@ -225,13 +251,13 @@ namespace Beamable.Editor.Content
 			start = EditorGUI.IntField(startRect, "Start", start);
 			end = EditorGUI.IntField(endRect, "End", end);
 
-			UpdateCronPartValue($"{start}-{end}", i);
+			UpdateCronPartValue($"{start}-{end}", i, propertyPath);
 
-			yOffset += StandardVerticalSpacing * 2;
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing * 2;
 			return yOffset;
 		}
 		
-		private float DrawEveryNthField(Rect position, float yOffset, int i)
+		private float DrawEveryNthField(Rect position, float yOffset, int i, string propertyPath)
 		{
 			Rect nthRect = new Rect(
 				position.x,
@@ -239,20 +265,22 @@ namespace Beamable.Editor.Content
 				position.width,
 				EditorGUIUtility.singleLineHeight);
 
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			
 			int nth = 1;
-			if (_cronParts[i].StartsWith("*/"))
+			if (cronParts[i].StartsWith("*/"))
 			{
-				int.TryParse(_cronParts[i].Substring(2), out nth);
+				int.TryParse(cronParts[i].Substring(2), out nth);
 			}
 
 			nth = EditorGUI.IntField(nthRect, "Every N", nth);
-			UpdateCronPartValue($"*/{nth}", i);
+			UpdateCronPartValue($"*/{nth}", i, propertyPath);
 
-			yOffset += StandardVerticalSpacing;
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 			return yOffset;
 		}
 
-		private float DrawEveryNthBetweenField(Rect position, float yOffset, int i)
+		private float DrawEveryNthBetweenField(Rect position, float yOffset, int i, string propertyPath)
 		{
 			Rect nthStartRect = new Rect(
 				position.x,
@@ -269,7 +297,7 @@ namespace Beamable.Editor.Content
 
 			Rect stepRect = new Rect(
 				position.x,
-				position.y + yOffset + StandardVerticalSpacing * 2,
+				position.y + yOffset + PropertyDrawerUtils.StandardVerticalSpacing * 2,
 				position.width,
 				EditorGUIUtility.singleLineHeight);
 
@@ -277,9 +305,11 @@ namespace Beamable.Editor.Content
 			int nthEnd = 0;
 			int step = 1;
 
-			if (_cronParts[i].Contains("/") && _cronParts[i].Contains("-"))
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			
+			if (cronParts[i].Contains("/") && cronParts[i].Contains("-"))
 			{
-				string[] rangeAndStep = _cronParts[i].Split("/");
+				string[] rangeAndStep = cronParts[i].Split("/");
 				if (rangeAndStep.Length == 2)
 				{
 					string[] rangeValues = rangeAndStep[0].Split('-');
@@ -293,15 +323,15 @@ namespace Beamable.Editor.Content
 			nthEnd = EditorGUI.IntField(nthEndRect, "End", nthEnd);
 			step = EditorGUI.IntField(stepRect, "Step", step);
 
-			UpdateCronPartValue($"{nthStart}-{nthEnd}/{step}", i);
+			UpdateCronPartValue($"{nthStart}-{nthEnd}/{step}", i, propertyPath);
 
-			yOffset += StandardVerticalSpacing * 3;
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing * 3;
 			return yOffset;
 		}
 
 		
 
-		private float DrawCustomField(Rect position, float yOffset, int i)
+		private float DrawCustomField(Rect position, float yOffset, int i, string propertyPath)
 		{
 			Rect customRect = new Rect(
 				position.x,
@@ -309,20 +339,33 @@ namespace Beamable.Editor.Content
 				position.width,
 				EditorGUIUtility.singleLineHeight);
 
-			string customValue = EditorGUI.TextField(customRect, "Value", _cronParts[i]);
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			
+			string customValue = EditorGUI.TextField(customRect, "Value", cronParts[i]);
 
-			UpdateCronPartValue(customValue, i);
+			UpdateCronPartValue(customValue, i, propertyPath);
 
-			yOffset += StandardVerticalSpacing;
+			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
 			return yOffset;
 		}
 
 		private void InitCronParts(SerializedProperty property)
 		{
+			string propertyPropertyPath = property.propertyPath;
+			if (!TryGetPropertyValue(_propPathsCronTypes, propertyPropertyPath, out CronFieldType?[] cronTypeParts))
+			{
+				cronTypeParts = new CronFieldType?[7];
+			}
+
+			if (!TryGetPropertyValue(_propPathCronParts, propertyPropertyPath, out string[] cronParts))
+			{
+				cronParts = new string[7];
+			}
+			
 			for (int i = 0; i < FieldNames.Length; i++)
 			{
 				SerializedProperty fieldProp = property.FindPropertyRelative(FieldNames[i]);
-				if (_cronTypeParts[i].HasValue && !string.IsNullOrWhiteSpace(_cronParts[i]))
+				if (cronTypeParts[i].HasValue && !string.IsNullOrWhiteSpace(cronParts[i]))
 				{
 					continue;
 				}
@@ -333,11 +376,18 @@ namespace Beamable.Editor.Content
 					currentValues.Add(fieldProp.GetArrayElementAtIndex(j).stringValue);
 				}
 
-				string partValue = string.Join("-", currentValues);
-				_cronTypeParts[i] = GetFieldType(partValue);
-				_cronParts[i] = partValue;
+				string partValue = currentValues.Count > 2
+					? $"{currentValues[0]}-{currentValues[^1]}"
+					: string.Join("-", currentValues);
+				 
+				cronTypeParts[i] = GetFieldType(partValue);
+				cronParts[i] = partValue;
 			}
-			UpdateCronExpressions();
+			
+			SetPropertyValue(_propPathsCronTypes, propertyPropertyPath, cronTypeParts);
+			SetPropertyValue(_propPathCronParts, propertyPropertyPath, cronParts);
+			
+			UpdateCronExpressions(propertyPropertyPath, cronParts);
 			
 		}
 
@@ -348,42 +398,60 @@ namespace Beamable.Editor.Content
 				return EditorGUIUtility.singleLineHeight;
 			}
 
-			float height = StandardVerticalSpacing * 5;
-			height += CalculateHumanCronExpressionHeight();
-			height += StandardVerticalSpacing;
+			string propertyPropertyPath = property.propertyPath;
+			
+			float height = PropertyDrawerUtils.StandardVerticalSpacing * 4;
+			
+			height += CalculateHumanCronExpressionHeight(propertyPropertyPath);
+			height += PropertyDrawerUtils.StandardVerticalSpacing;
 
-			if (_cronPartsFoldout)
+			TryGetPropertyValue(_propPathsCronPartsFoldouts,  propertyPropertyPath, out bool cronPartsFoldout);
+
+			if (!TryGetPropertyValue(_propPathFoldouts, propertyPropertyPath, out bool[] foldouts))
+			{
+				foldouts = new bool[7];
+			}
+			
+			if (!TryGetPropertyValue(_propPathsCronTypes, propertyPropertyPath, out CronFieldType?[] cronTypeParts))
+			{
+				cronTypeParts = new CronFieldType?[7];
+			}
+			
+			if (cronPartsFoldout)
 			{
 				for (int i = 0; i < FieldNames.Length; i++)
 				{
-					height += StandardVerticalSpacing;
+					height += PropertyDrawerUtils.StandardVerticalSpacing;
 
-					if (_foldouts[i])
+					if (foldouts[i])
 					{
 						// Base height for type dropdown
-						height += StandardVerticalSpacing;
+						height += PropertyDrawerUtils.StandardVerticalSpacing;
 						
-						switch (_cronTypeParts[i])
+						switch (cronTypeParts[i])
 						{
 							case CronFieldType.Any:
 								// No additional fields
 								break;
+							case CronFieldType.Number:
+								height += PropertyDrawerUtils.StandardVerticalSpacing;
+								break;
 							case CronFieldType.Between:
-								height += StandardVerticalSpacing * 2;
+								height += PropertyDrawerUtils.StandardVerticalSpacing * 2;
 								break;
 							case CronFieldType.EveryNth:
-								height += StandardVerticalSpacing;
+								height += PropertyDrawerUtils.StandardVerticalSpacing;
 								break;
 							case CronFieldType.EveryNthBetween:
-								height += StandardVerticalSpacing * 3;
+								height += PropertyDrawerUtils.StandardVerticalSpacing * 3;
 								break;
 							case CronFieldType.Custom:
-								height += StandardVerticalSpacing;
+								height += PropertyDrawerUtils.StandardVerticalSpacing;
 								break;
 						}
 					}
 				}
-				height += StandardVerticalSpacing; //  Button
+				height += PropertyDrawerUtils.StandardVerticalSpacing; //  Button
 			}
 
 			return height;
@@ -406,30 +474,34 @@ namespace Beamable.Editor.Content
 			return CronFieldType.Custom;
 		}
 
-		private void UpdateCronPartValue(string value, int cronPartIndex)
+		private void UpdateCronPartValue(string value, int cronPartIndex, string propertyPath)
 		{
-			if (_cronParts[cronPartIndex] != value)
+			TryGetPropertyValue(_propPathCronParts, propertyPath, out string[] cronParts);
+			if (cronParts[cronPartIndex] != value)
 			{
-				_cronParts[cronPartIndex] = value;
-				UpdateCronExpressions();
+				cronParts[cronPartIndex] = value;
+				SetPropertyValue(_propPathCronParts, propertyPath, cronParts);
+				UpdateCronExpressions(propertyPath, cronParts);
 			}
 		}
 
-		private void UpdateCronExpressions()
+		private void UpdateCronExpressions(string propertyPath, string[] cronParts)
 		{
-			_rawCronExpression = _cronParts.Any(string.IsNullOrWhiteSpace) ? string.Empty : string.Join(" ", _cronParts);
-			string humanExpression = ExpressionDescriptor.GetDescription(_rawCronExpression, out var errorData);
+			var rawCronExpression = cronParts.Any(string.IsNullOrWhiteSpace) ? string.Empty : string.Join(" ", cronParts);
+			string humanExpression = ExpressionDescriptor.GetDescription(rawCronExpression, out var errorData);
 			if (errorData.IsError)
 				humanExpression = errorData.ErrorMessage;
-			_humanCronExpression = humanExpression;
+			SetPropertyValue(_propPathRawCronFormat, propertyPath, rawCronExpression);
+			SetPropertyValue(_propPathHumanCronFormat,  propertyPath, humanExpression);
 		}
 
 		private void UpdateCronValue(SerializedProperty property)
 		{
+			TryGetPropertyValue(_propPathCronParts, property.propertyPath, out string[] cronParts);
 			if (ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) is ScheduleDefinition scheduleDefinition)
 			{
 				var rawCron =
-					string.Join(" ", _cronParts.ToList().Select(item => string.IsNullOrWhiteSpace(item) ? "*" : item));
+					string.Join(" ", cronParts.ToList().Select(item => string.IsNullOrWhiteSpace(item) ? "*" : item));
 				scheduleDefinition.ApplyCronToScheduleDefinition(rawCron);
 				Object targetObject = property.serializedObject.targetObject;
 				EditorUtility.SetDirty(targetObject);
@@ -440,9 +512,11 @@ namespace Beamable.Editor.Content
 			}
 		}
 		
-		private float CalculateHumanCronExpressionHeight()
+		private float CalculateHumanCronExpressionHeight(string propertyPath)
 		{
-			if (string.IsNullOrEmpty(_humanCronExpression))
+			TryGetPropertyValue(_propPathHumanCronFormat, propertyPath, out string humanCronExpression);
+			
+			if (string.IsNullOrEmpty(humanCronExpression))
 				return EditorGUIUtility.singleLineHeight;
 			
 			Rect tempRect = new Rect(0, 0, EditorGUIUtility.currentViewWidth, 0);
@@ -451,7 +525,7 @@ namespace Beamable.Editor.Content
 			float availableWidth = indentedRect.width - margin * 2;
 			GUIStyle style = EditorStyles.label;
 			style.wordWrap = true;
-			return style.CalcHeight(new GUIContent(_humanCronExpression), availableWidth);
+			return style.CalcHeight(new GUIContent(humanCronExpression), availableWidth);
 		}
 	}
 }
