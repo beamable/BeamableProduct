@@ -99,7 +99,6 @@ namespace Beamable
 			
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
-			DependencyBuilder.AddSingleton<ContentDatabase>();
 
 			DependencyBuilder.AddSingleton<ConfigDefaultsService>();
 
@@ -507,7 +506,6 @@ namespace Beamable
 		public Promise<BeamEditorContext> Instance => InitializePromise?.Map(_ => this);
 
 		public CliContentService CliContentService => ServiceScope.GetService<CliContentService>();
-		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
@@ -778,7 +776,6 @@ namespace Beamable
 			Requester.Token = token;
 
 			await CliContentService.Reload();
-			ContentDatabase.RecalculateIndex();
 			await RefreshRealmSecret();
 			EditorAccountService.WriteUnsetConfigValues();
 			
@@ -865,7 +862,6 @@ namespace Beamable
 			Requester.Pid = realmPid;
 
 			await CliContentService.Reload();
-			ContentDatabase.RecalculateIndex();
 			await RefreshRealmSecret();
 
 			EditorAccountService.WriteUnsetConfigValues();
