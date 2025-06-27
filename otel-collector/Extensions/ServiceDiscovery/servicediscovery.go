@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,22 +35,20 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 	rd := responseData{
 		Status:       NOT_READY,
 		Pid:          os.Getpid(),
-		Logs:         []zapcore.Entry{},
 		Version:      Version,
 		OtlpEndpoint: otlpEndpoint,
 	}
 
-	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)
+	fmt.Println("Current collector version: ", Version)
 
 	go func() {
 		for logEntry := range m.logEventsChan {
-			ringBuffer.Append(logEntry)
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
 				rd.Status = READY
 			}
 		}
 	}()
-	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd, &ringBuffer.Data)
+	go StartUDPServer(m.config.DiscoveryPort, m.config.DiscoveryDelay, m.config.DiscoveryMaxErrors, &rd)
 
 	// Test clickhouse credentials to make sure everything is set for sending data
 	PingClickhouse()
@@ -62,44 +61,118 @@ func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func StartUDPServer(host string, port string, delay int, rd *responseData, logs *[]zapcore.Entry) {
+func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseData) {
 
-	broadcastAddr := host
-	broadcastAddr += ":"
-	broadcastAddr += port
-
-	log.Println("Beam Service discovery started at: ", broadcastAddr)
-
-	udpAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
-	if err != nil {
-		panic(err)
+	localIP := GetLocalIP()
+	if localIP == nil {
+		fmt.Println("Invalid local IP")
+		os.Exit(1)
 	}
 
-	conn, err := net.DialUDP("udp", nil, udpAddr)
-
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_UDP)
 	if err != nil {
-		panic(err)
+		fmt.Println("socket error:", err)
+		os.Exit(1)
 	}
-	defer conn.Close()
+
+	if err := syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1); err != nil {
+		fmt.Println("setsockopt error:", err)
+		syscall.Close(fd)
+		os.Exit(1)
+	}
+
+	addr := syscall.SockaddrInet4{Port: 0}
+	copy(addr.Addr[:], localIP)
+	if err := syscall.Bind(fd, &addr); err != nil {
+		fmt.Println("bind error:", err)
+		syscall.Close(fd)
+		os.Exit(1)
+	}
+
+	broadcastIp, err := GetBroadcastAddress()
+	if err != nil {
+		fmt.Println("socket error:", err)
+		os.Exit(1)
+	}
+
+	dest := syscall.SockaddrInet4{Port: discoveryPort}
+
+	copy(dest.Addr[:], net.ParseIP(broadcastIp).To4())
+
+	log.Println("Beam Service discovery started at: ", broadcastIp, ":", discoveryPort)
 
 	ticker := time.NewTicker(time.Duration(delay) * time.Millisecond)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		rd.Logs = *logs
+	errCount := 0
 
+	for range ticker.C {
 		message, mErr := json.Marshal(rd)
 
 		if mErr != nil {
 			fmt.Println("Error deserializing message!", mErr)
 		}
 
-		conn.Write(message)
-		// TODO this should be smarter, like: if N errors happened in a row, then quit the app
-		// if err != nil {
-		// 	fmt.Println("Error sending message:", err)
-		// }
+		err := syscall.Sendto(fd, message, 0, &dest)
+		if err != nil {
+			errCount += 1
+
+			if errCount >= maxErrors {
+				fmt.Println("sendto error:", err)
+				os.Exit(1)
+			}
+		}
 	}
+}
+
+func GetLocalIP() net.IP {
+	conn, err := net.Dial("udp", "192.168.0.1:80") // fake remote address in LAN range
+	if err != nil {
+		fmt.Println("Unable to dial for IP discovery:", err)
+		os.Exit(1)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.To4()
+}
+
+func GetBroadcastAddress() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, iface := range interfaces {
+		// skip down interfaces and loopback
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok || ipNet.IP.To4() == nil {
+				continue
+			}
+
+			ip := ipNet.IP.To4()
+			mask := ipNet.Mask
+
+			broadcast := make(net.IP, 4)
+			for i := 0; i < 4; i++ {
+				broadcast[i] = ip[i] | ^mask[i]
+			}
+
+			return broadcast.String(), nil
+		}
+	}
+
+	return "", fmt.Errorf("no broadcast-capable interface found")
 }
 
 func PingClickhouse() {

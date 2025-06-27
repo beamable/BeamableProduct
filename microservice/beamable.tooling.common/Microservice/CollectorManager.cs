@@ -23,41 +23,11 @@ public class CollectorVersion
 }
 
 [Serializable]
-public class CollectorZapcoreEntry
-{
-	public string Level;
-	public DateTime Time;
-	public string LoggerName;
-
-	public string Message;
-
-	public CollectorCaller Caller;
-
-	public string Stack;
-
-}
-
-[Serializable]
-public class CollectorCaller
-{
-	public bool Defined;
-
-	public long PC;
-
-	public string File;
-
-	public int Line;
-
-	public string Function;
-}
-
-[Serializable]
 public class CollectorDiscoveryEntry
 {
 	public string version;
 	public string status;
 	public int pid;
-	public List<CollectorZapcoreEntry> logs;
 	public string otlpEndpoint;
 }
 
@@ -82,9 +52,10 @@ public class CollectorManager
 	
 	
 	public static string configFileName = "clickhouse-config.yaml";
-	private const int attemptsToConnect = 3;
-	private const int attemptsBeforeFailing = 3;
+	private const int attemptsToConnect = 50;
+	private const int attemptsBeforeFailing = 10;
 	private const int delayBeforeNewAttempt = 500;
+	private const int delayBeforeNewMessage = 100;
 
 	public static CollectorStatus CollectorStatus;
 
@@ -383,13 +354,15 @@ public class CollectorManager
 	
 	public static Socket GetSocket(string host, int portNumber, ILogger logger)
 	{
-		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-		var ed = new IPEndPoint(IPAddress.Parse(host), portNumber);
+		var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+		var ed = new IPEndPoint(IPAddress.Any, portNumber);
 
 		logger.LogInformation($"collector discovery acquiring socket address=[{ed}]");
 		socket.ReceiveTimeout = CollectorManager.ReceiveTimeout;
 		socket.ReceiveBufferSize = CollectorManager.ReceiveBufferSize;
 		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
+		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
 		socket.Bind(ed);
 
 		return socket;
@@ -404,21 +377,43 @@ public class CollectorManager
 	{
 		//TODO Start a signed request to Beamo asking for credentials
 
+		AddDefaultCollectorHostAndPortFallback();
+
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
+		if(string.IsNullOrEmpty(port))
+		{
+			throw new Exception("There is no port configured for the collector discovery");
+		}
+
+		if (!Int32.TryParse(port, out int portNumber))
+		{
+			throw new Exception("Invalid value for port");
+		}
+
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
+
+		if(string.IsNullOrEmpty(host))
+		{
+			throw new Exception("There is no host configured for the collector discovery");
+		}
+
+		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
+
 		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
 		
 		var connectedPromise = new Promise<CollectorStatus>();
 
-		_ = Task.Run(async () =>
+		Socket socket = GetSocket(host, portNumber, logger);
+
+		var backgroundTask = Task.Run(async () =>
 		{
 			try
 			{
-				await CollectorDiscovery(collectorInfo.filePath, detach, cts, connectedPromise, logger);
+				await CollectorDiscovery(collectorInfo.filePath, socket, detach, cts, connectedPromise, logger);
 			}
 			catch (Exception ex)
 			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace} All Collector Logs=[\n{
-					string.Join("\n", CollectorStatus.logs.Select(l => $"[{l.Timestamp}] {l.Level} - {l.Message}").ToList())
-				}]");
+				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
 
 				Environment.Exit(1);
 				throw;
@@ -445,32 +440,8 @@ public class CollectorManager
 		}
 	}
 
-	private static async Task CollectorDiscovery(string collectorExecutablePath, bool detach, CancellationTokenSource cts, Promise<CollectorStatus> connectedPromise, ILogger logger)
+	private static async Task CollectorDiscovery(string collectorExecutablePath, Socket socket, bool detach, CancellationTokenSource cts, Promise<CollectorStatus> connectedPromise, ILogger logger)
 	{
-		AddDefaultCollectorHostAndPortFallback();
-		
-		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
-		if(string.IsNullOrEmpty(port))
-		{
-			throw new Exception("There is no port configured for the collector discovery");
-		}
-
-		if (!Int32.TryParse(port, out int portNumber))
-		{
-			throw new Exception("Invalid value for port");
-		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
-		}
-
-		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
-
-		var socket = GetSocket(host, portNumber, logger);
-
 		int alarmCounter = 0;
 
 		CollectorStatus = await IsCollectorRunning(socket, cts.Token, logger);
@@ -523,7 +494,7 @@ public class CollectorManager
 
 			if (socket.Available == 0)
 			{
-				await Task.Delay(delayBeforeNewAttempt);
+				await Task.Delay(delayBeforeNewMessage);
 				continue;
 			}
 
@@ -561,17 +532,15 @@ public class CollectorManager
 			// Then we check if the version of the found collector matches the version supported
 			if (collector.version != Version)
 			{
+				await Task.Delay(delayBeforeNewMessage);
 				continue;
 			}
 
-			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message , Timestamp = l.Time}).
-				OrderBy(t => t.Timestamp).ToList();
 			return new CollectorStatus()
 			{
 				isRunning = true,
 				isReady = collector.status == "READY",
 				pid = collector.pid,
-				logs = logs,
 				otlpEndpoint = collector.otlpEndpoint
 			};
 		}
@@ -581,7 +550,6 @@ public class CollectorManager
 			isRunning = false,
 			isReady = false,
 			pid = 0,
-			logs = CollectorStatus?.logs
 		};
 	}
 
@@ -630,6 +598,9 @@ public class CollectorManager
 		process.StartInfo.UseShellExecute = false;
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+
+		//TODO: Should we check if that env var was already set and use it?
+		process.StartInfo.Environment.Add("BEAM_COLLECTOR_PROMETHEUS_PORT", PortUtil.FreeTcpPort().ToString());
 
 		var localEndpoint = PortUtil.FreeEndpoint().Replace("http://", "");
 		process.StartInfo.Environment.Add("BEAM_OTLP_HTTP_ENDPOINT", localEndpoint);

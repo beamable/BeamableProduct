@@ -11,7 +11,7 @@ namespace Beamable.Common.BeamCli.Contracts
         public bool isReady;
         public int pid;
         public string otlpEndpoint;
-        public List<CollectorLogEntry> logs;
+        public string version;
 
         public bool Equals(CollectorStatus otherStatus)
         {
@@ -32,15 +32,6 @@ namespace Beamable.Common.BeamCli.Contracts
 
             return true;
         }
-    }
-
-    [CliContractType]
-    [Serializable]
-    public class CollectorLogEntry
-    {
-	    public string Level;
-	    public string Message;
-	    public DateTime Timestamp;
     }
 
 }
