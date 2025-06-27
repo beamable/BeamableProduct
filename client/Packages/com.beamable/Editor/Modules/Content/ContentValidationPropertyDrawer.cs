@@ -31,7 +31,7 @@ namespace Beamable.Editor.Content
 			{
 				return baseHeight;
 			}
-			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
+			var ctx = BeamEditorContext.Default.CliContentService.GetValidationContext();
 
 			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
 			var contentObj = property.serializedObject.targetObject as ContentObject;
@@ -91,7 +91,7 @@ namespace Beamable.Editor.Content
 				return; // don't support multiple edit.
 			}
 
-			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
+			var ctx = BeamEditorContext.Default.CliContentService.GetValidationContext();
 
 			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
 			var value = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);

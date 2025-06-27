@@ -494,17 +494,6 @@ namespace Beamable.Common.Content
 			return ll.ToList();
 		}
 
-		[System.Serializable]
-		public class PropertyValue : IRawJsonProvider
-		{
-			public string rawJson;
-
-			public string ToJson()
-			{
-				return rawJson;
-			}
-		}
-
 		[Obsolete("content serializer options are no longer supported.")]
 		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options)
 			where TContent : IContentObject =>
@@ -656,13 +645,27 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
+		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, bool disableExceptions = false)
+		{
+			var deserializedResult = Json.Deserialize(json);
+			var root = deserializedResult as ArrayDict;
+			if (root == null) throw new ContentDeserializationException(json);
+
+			return BaseConvertType(root, disableExceptions, instanceToDeserialize, instanceId);
+		}
+
 		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
-			var fields = GetFieldInfos(typeof(TContent));
+			return (TContent)BaseConvertType(root, disableExceptions, instance);
+		}
 
-			var id = root["id"].ToString();
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, string itemId = null)
+		{
+			var fields = GetFieldInfos(instance.GetType());
+
+			var id = itemId ?? root["id"].ToString();
 
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
 			var typeName = "";
@@ -676,10 +679,10 @@ namespace Beamable.Common.Content
 			var name = ContentTypeReflectionCache.GetContentNameFromId(id);
 			id = string.Join(".", typeName, name);
 
-			var version = root["version"];
+			var version = root.TryGetValue("version", out var rootVersion) ? rootVersion.ToString() : "";
 
 			var properties = root["properties"] as ArrayDict;
-			instance.SetIdAndVersion(id, version.ToString());
+			instance.SetIdAndVersion(id, version);
 
 
 			foreach (var field in fields)
@@ -726,7 +729,7 @@ namespace Beamable.Common.Content
 							var hackResult = DeserializeResult(dataValue, field.FieldType);
 							field.SetValue(instance, hackResult);
 							if (hackResult is ISerializationCallbackReceiver rec &&
-								!(hackResult is IIgnoreSerializationCallbacks))
+							    !(hackResult is IIgnoreSerializationCallbacks))
 								rec.OnAfterDeserialize();
 						}
 						catch (Exception e)
@@ -770,7 +773,7 @@ namespace Beamable.Common.Content
 					}
 
 					if (propertyDict.TryGetValue("$links", out var linksValue) ||
-						propertyDict.TryGetValue("links", out linksValue))
+					    propertyDict.TryGetValue("links", out linksValue))
 					{
 
 						var set = (IList<object>)linksValue;
@@ -823,5 +826,16 @@ namespace Beamable.Common.Content
 	public class ContentSerializerOptions
 	{
 		public bool SortProperties { get; set; }
+	}
+	
+	[System.Serializable]
+	public class PropertyValue : IRawJsonProvider
+	{
+		public string rawJson;
+
+		public string ToJson()
+		{
+			return rawJson;
+		}
 	}
 }

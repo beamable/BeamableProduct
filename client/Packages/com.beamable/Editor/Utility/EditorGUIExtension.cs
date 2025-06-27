@@ -15,7 +15,8 @@ namespace Beamable.Editor
 			const string darkModeDropdownIcon = "d_icon dropdown";
 			const string lightModeDropdownIcon = "icon dropdown";
 			var rc = new EditorGUIRectController(rect);
-			value = GUIIntField(rc.ReserveWidth(rect.width - dropdownButtonWidth), value, fieldFormat);
+			Rect reserveWidth = rc.ReserveWidth(rect.width - dropdownButtonWidth);
+			value = GUIIntField(reserveWidth, value, fieldFormat);
 			if (GUI.Button(rc.rect,
 				EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? darkModeDropdownIcon : lightModeDropdownIcon)))
 			{
@@ -38,8 +39,11 @@ namespace Beamable.Editor
 
 		public static int GUIIntField(Rect rect, int value, string format = null)
 		{
+			int originalIndent = EditorGUI.indentLevel;
+			EditorGUI.indentLevel = 0;
 			var text = value.ToString(format);
 			text = EditorGUI.DelayedTextField(rect, text);
+			EditorGUI.indentLevel = originalIndent;
 			if (int.TryParse(text, out int newValue))
 			{
 				return newValue;
