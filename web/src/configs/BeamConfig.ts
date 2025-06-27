@@ -2,10 +2,7 @@ import { BeamEnvironmentName } from './BeamEnvironmentConfig';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 
-/**
- * Configuration options for initializing the Beamable SDK.
- * @interface BeamConfig
- */
+/** Configuration options for initializing the Beamable SDK. */
 export interface BeamConfig {
   /** The client identifier (CID) assigned to your Beamable account. */
   cid: string;

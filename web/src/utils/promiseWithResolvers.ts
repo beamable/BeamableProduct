@@ -7,7 +7,6 @@ export type PromiseWithResolversPolyfill<T = void> = {
 /**
  * Creates a promise whose resolve/reject functions can be called later.
  * @template T - The type of the value that the promise will resolve with.
- * @returns {PromiseWithResolversPolyfill<T>} An object containing the promise and its resolve/reject functions.
  */
 export function promiseWithResolvers<
   T = void,

@@ -1,35 +1,23 @@
 import { HttpRequest } from './HttpRequest';
 import { HttpResponse } from './HttpResponse';
 
-/**
- * A pluggable HTTP client abstraction that can send requests and receive typed responses.
- * @interface HttpRequester
- */
+/** A pluggable HTTP client abstraction that can send requests and receive typed responses. */
 export interface HttpRequester {
   /**
    * Sends an HTTP request and returns a typed response.
    * @template TRes - The expected type of the response body.
    * @template TReq - The type of the request payload.
-   * @param {HttpRequest<TReq>} req - Configuration for the HTTP request,
-   *   including URL, method, headers, optional body, etc.
-   * @returns {Promise<HttpResponse<TRes>>} A promise that resolves with
-   *   an HttpResponse containing status, headers, and the parsed body as TRes.
+   * @param req - Configuration for the HTTP request, including URL, method, headers, optional body, etc.
+   * @returns A promise that resolves with an HttpResponse containing status, headers, and the parsed body as TRes.
    */
   request<TRes = any, TReq = any>(
     req: HttpRequest<TReq>,
   ): Promise<HttpResponse<TRes>>;
 
-  /**
-   * Overrides the base URL used for all subsequent requests.
-   * @param {string} url - The new base URL to prepend to request paths.
-   */
+  /** Overrides the base URL used for all subsequent requests. */
   setBaseUrl(url: string): void;
 
-  /**
-   * Sets or removes a default header included on every request.
-   * @param {string} key - The header name.
-   * @param {string | undefined} value - The header value; if undefined, the header is removed.
-   */
+  /** Sets or removes a default header included on every request. */
   setDefaultHeader(key: string, value?: string): void;
 
   /**

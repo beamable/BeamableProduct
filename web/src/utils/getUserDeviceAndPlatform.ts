@@ -1,9 +1,6 @@
 type DeviceType = 'Desktop' | 'Mobile' | 'Tablet';
 
-/**
- * Utility function to detect a user device type and platform type (browser or node)
- * @returns An object containing device type and platform information
- */
+/** Utility function to detect a user device type and platform type (browser or node). */
 export function getUserDeviceAndPlatform(): {
   deviceType: DeviceType;
   platform: string;

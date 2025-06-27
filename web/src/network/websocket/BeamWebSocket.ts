@@ -38,6 +38,7 @@ export class BeamWebSocket {
       );
     }
 
+    // Create a new WebSocket connection
     const socket = new WebSocket(
       `${this.url}/connect?access_token=${accessToken}&send-session-start=true`,
     );
@@ -98,7 +99,7 @@ export class BeamWebSocket {
         refreshToken: this.refreshToken,
       });
       return accessTokenResponse.body.accessToken ?? null;
-    } catch (err) {
+    } catch (error) {
       return null;
     }
   }

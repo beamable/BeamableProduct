@@ -10,7 +10,6 @@ export interface Config {
 /**
  * Reads the Beamable configuration from storage.
  * In Node.js environments, it reads from a JSON file in the user's home directory.
- * @returns {Promise<Config>} A promise that resolves with the configuration object.
  */
 export async function readConfigNode(): Promise<Config> {
   const directory = path.join(os.homedir(), '.beamable_node');
@@ -35,7 +34,6 @@ export async function readConfigNode(): Promise<Config> {
 /**
  * Saves the Beamable configuration to storage.
  * In Node.js environments, it saves it to a JSON file in the user's home directory.
- * @returns {Promise<Config>} A promise that resolves with the configuration object.
  */
 export async function saveConfigNode({ cid, pid }: Config): Promise<void> {
   const directory = path.join(os.homedir(), '.beamable_node');
@@ -59,7 +57,7 @@ export async function saveConfigNode({ cid, pid }: Config): Promise<void> {
       JSON.stringify(data, null, 2) + '\n',
       'utf8',
     );
-  } catch (err) {
-    console.error("Couldn't save beam config:", err);
+  } catch (error) {
+    console.error("Couldn't save beam config:", error);
   }
 }

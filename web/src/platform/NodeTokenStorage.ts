@@ -11,9 +11,6 @@ export class NodeTokenStorage extends TokenStorage {
   private readonly prefix: string;
   private readonly filePath: string;
 
-  /**
-   * @param {string} tag - Optional tag used to distinguish tokens that belong to different Beam instances.
-   */
   constructor(tag?: string) {
     super();
     this.prefix = tag ? `${tag}_` : '';

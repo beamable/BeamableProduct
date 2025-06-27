@@ -6,63 +6,34 @@ export abstract class TokenStorage {
   protected refreshToken: string | null = null;
   protected expiresIn: number | null = null;
 
-  /**
-   * Retrieves the stored access token, or `null` if none.
-   * @return {Promise<string | null>}
-   */
+  /** Retrieves the stored access token, or `null` if none. */
   abstract getAccessToken(): Promise<string | null>;
 
-  /**
-   * Persists the provided access token.
-   * @param {string} token - The access token to store.
-   * @return {Promise<void>}
-   */
+  /** Persists the provided access token. */
   abstract setAccessToken(token: string): Promise<void>;
 
-  /**
-   *  * Removes any stored access token.
-   * @return {Promise<void>}
-   */
+  /** Removes any stored access token. */
   abstract removeAccessToken(): Promise<void>;
 
-  /**
-   * Retrieves the stored refresh token, or `null` if none.
-   * @return {Promise<string | null>}
-   */
+  /** Retrieves the stored refresh token, or `null` if none. */
   abstract getRefreshToken(): Promise<string | null>;
 
-  /**
-   * Persists the provided refresh token.
-   * @param {string} token - The refresh token to store.
-   * @return {Promise<void>}
-   */
+  /** Persists the provided refresh token. */
   abstract setRefreshToken(token: string): Promise<void>;
 
-  /**
-   * Removes any stored refresh token.
-   * @return {Promise<void>}
-   */
+  /** Removes any stored refresh token. */
   abstract removeRefreshToken(): Promise<void>;
 
-  /**
-   * Retrieves the stored expiresIn, or `null` if none.
-   * @return {Promise<number | null>}
-   */
+  /** Retrieves the stored expiresIn, or `null` if none. */
   abstract getExpiresIn(): Promise<number | null>;
 
-  /**
-   * Persists the provided expiresIn
-   * @param {number} expiresIn - The expiresIn to store.
-   * @return {Promise<void>}
-   */
+  /** Persists the provided expiresIn. */
   abstract setExpiresIn(expiresIn: number): Promise<void>;
 
-  /**
-   * Removes any stored expiresIn.
-   * @return {Promise<void>}
-   */
+  /** Removes any stored expiresIn. */
   abstract removeExpiresIn(): Promise<void>;
 
+  /** Clears all stored tokens and expiry information. */
   abstract clear(): void;
 
   /** Clean up BroadcastChannel and storage listener in the case of browser environment (e.g., on logout). */

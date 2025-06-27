@@ -1,7 +1,4 @@
-/**
- * Configuration settings for a Beamable environment.
- * @interface BeamEnvironmentConfig
- */
+/** Configuration settings for a Beamable environment. */
 export interface BeamEnvironmentConfig {
   /** The base URL for the Beamable API. */
   apiUrl: string;

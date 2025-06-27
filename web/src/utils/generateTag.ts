@@ -1,8 +1,6 @@
 /**
  * Generates a random alphanumeric beam tag used for namespacing token storage keys and BroadcastChannel name.
  * Defaults to 8 characters.
- * @param length Length of the generated tag.
- * @returns A random tag string.
  */
 export function generateTag(length = 8): string {
   const chars =

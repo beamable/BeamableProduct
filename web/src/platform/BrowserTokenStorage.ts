@@ -20,9 +20,6 @@ export class BrowserTokenStorage extends TokenStorage {
   private bc: BroadcastChannel | null = null;
   private readonly storageListener: (e: StorageEvent) => void;
 
-  /**
-   * @param {string} tag - Optional tag used to distinguish tokens that belong to different Beam instances.
-   */
   constructor(tag?: string) {
     super();
     this.prefix = tag ? `${tag}_` : '';
