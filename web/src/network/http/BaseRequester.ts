@@ -4,6 +4,7 @@ import type { HttpRequester } from './types/HttpRequester';
 import type { BaseRequesterConfig } from '@/configs/BaseRequesterConfig';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { GET } from '@/constants';
+import { BeamError } from '@/constants/Errors';
 
 /**
  * A basic HttpRequester implementation using the Fetch API.
@@ -79,13 +80,28 @@ export class BaseRequester implements HttpRequester {
         headers: responseHeaders,
         body: responseBody,
       } as HttpResponse<TRes>;
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        throw new Error(
+    } catch (error: any) {
+      const context = {
+        url: finalUrl,
+        method: req.method,
+        headers: requestHeaders,
+        body: req.body,
+      };
+
+      if (error.name === 'AbortError') {
+        throw new BeamError(
           `Request to ${finalUrl} timed out after ${this.timeout}ms`,
+          {
+            cause: error,
+            context,
+          },
         );
       }
-      throw err;
+
+      throw new BeamError('Request failed', {
+        cause: error,
+        context,
+      });
     } finally {
       clearTimeout(timeoutId);
     }

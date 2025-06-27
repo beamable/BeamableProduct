@@ -7,6 +7,7 @@ import { AuthApi } from '@/__generated__/apis';
 import {
   RefreshAccessTokenError,
   NoRefreshTokenError,
+  BeamError,
 } from '@/constants/Errors';
 
 type BeamRequesterConfig = {
@@ -68,6 +69,13 @@ export class BeamRequester implements HttpRequester {
     if (response.status === 401) {
       await this.handleRefresh();
       response = await this.inner.request<TRes, TReq>(req);
+    }
+
+    // throw a beam error if the response is not successful
+    if (response.status < 200 || response.status >= 300) {
+      throw new BeamError(
+        `Request to '${req.url}' failed with status ${response.status}: ${response.body}`,
+      );
     }
 
     let newBody: any = response.body;

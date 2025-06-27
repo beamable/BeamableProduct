@@ -222,4 +222,20 @@ describe('BeamRequester', () => {
     );
     expect(tokenStorage.removeRefreshToken).toHaveBeenCalled();
   });
+
+  it('throws BeamError on non-2xx response', async () => {
+    const inner = {
+      request: vi
+        .fn()
+        .mockResolvedValue({ status: 404, headers: {}, body: 'Not Found' }),
+      setBaseUrl: vi.fn(),
+      setDefaultHeader: vi.fn(),
+      setTokenProvider: vi.fn(),
+    } as unknown as HttpRequester;
+    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+
+    await expect(requester.request({ url: '/test' })).rejects.toThrow(
+      "Request to '/test' failed with status 404: Not Found",
+    );
+  });
 });

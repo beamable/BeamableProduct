@@ -2,7 +2,6 @@
  * Configuration options for a Fetch-based HTTP requester.
  * Includes settings for timeouts, base URL, default headers,
  * credential handling, custom fetch implementation, and token provisioning.
- * @interface BaseRequesterConfig
  */
 export interface BaseRequesterConfig {
   /**
@@ -17,7 +16,7 @@ export interface BaseRequesterConfig {
    * Example:
    * - baseUrl: 'https://api.beamable.com'
    * - request.url: `/api/auth/refresh-token`
-   * - Final URL: 'https://api.example.com/api/auth/refresh-token'
+   * - Final URL: 'https://api.beamable.com/api/auth/refresh-token'
    */
   baseUrl?: string;
 
