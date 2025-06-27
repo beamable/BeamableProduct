@@ -34,10 +34,8 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		{
 			throw new Exception("Invalid value for port");
 		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
 		
-		var socket = CollectorManager.GetSocket(host, portNumber, BeamableZLoggerProvider.LogContext.Value);
+		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
 		CollectorStatus currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 
@@ -86,7 +84,9 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 			Log.Information($"Collector Status:");
 			Log.Information($"Is Running: {currentStatus.isRunning}");
 			Log.Information($"Is Ready: {currentStatus.isReady}");
-			Log.Information($"Process Id: {currentStatus.pid} \n\n");
+			Log.Information($"Process Id: {currentStatus.pid}");
+			Log.Information($"Version: {currentStatus.version}");
+			Log.Information($"OTLP Endpoint: {currentStatus.otlpEndpoint}");
 		}
 	}
 }

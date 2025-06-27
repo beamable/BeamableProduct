@@ -1,8 +1,5 @@
 using Beamable.Server;
-using cli.Services;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 
 namespace cli.OtelCommands;
 
@@ -46,7 +43,7 @@ public class StopCollectorCommand : AppCommand<StopCollectorCommandArgs>
 
 		Log.Information($"Starting listening to otel collector in port [{portNumber}]...");
 
-		var socket = CollectorManager.GetSocket(host, portNumber, BeamableZLoggerProvider.LogContext.Value);
+		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
 		var status = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 

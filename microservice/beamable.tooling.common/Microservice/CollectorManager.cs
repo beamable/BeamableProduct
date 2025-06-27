@@ -352,7 +352,7 @@ public class CollectorManager
         }
     }
 	
-	public static Socket GetSocket(string host, int portNumber, ILogger logger)
+	public static Socket GetSocket(int portNumber, ILogger logger)
 	{
 		var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 		var ed = new IPEndPoint(IPAddress.Any, portNumber);
@@ -403,7 +403,7 @@ public class CollectorManager
 		
 		var connectedPromise = new Promise<CollectorStatus>();
 
-		Socket socket = GetSocket(host, portNumber, logger);
+		Socket socket = GetSocket(portNumber, logger);
 
 		var backgroundTask = Task.Run(async () =>
 		{
