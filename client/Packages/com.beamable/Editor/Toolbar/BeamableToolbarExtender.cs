@@ -312,10 +312,10 @@ namespace Beamable.Editor.ToolbarExtender
 
 
 			var badgeColor = Color.clear;
-			if (_editorAPI.CurrentRealm?.IsProduction ?? false)
+			if (_editorAPI.BeamCli.CurrentRealm?.IsProduction ?? false)
 			{
 				badgeColor = new Color(1, 0, 0, .5f);
-			} else if (_editorAPI.CurrentRealm?.IsStaging ?? false)
+			} else if (_editorAPI.BeamCli.CurrentRealm?.IsStaging ?? false)
 			{
 				badgeColor = new Color(1, .5f, 0, .5f);
 			}
@@ -324,7 +324,7 @@ namespace Beamable.Editor.ToolbarExtender
 			                         beamableToolbarButtonRect.height);
 			
 			
-			var titleContent = new GUIContent(_editorAPI.CurrentRealm?.DisplayName ?? "<no realm>");
+			var titleContent = new GUIContent(_editorAPI.BeamCli.CurrentRealm?.DisplayName ?? "<no realm>");
 			if (GUILayout.Button(titleContent, new GUIStyle(EditorStyles.toolbarButton)
 			                     {
 				                     alignment = TextAnchor.MiddleLeft,
