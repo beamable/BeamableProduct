@@ -1,18 +1,27 @@
 import { BeamApi } from '@/core/BeamApi';
 import { AccountPlayerView } from '@/__generated__/schemas';
 
+interface AccountServiceProps {
+  api: BeamApi;
+}
+
 export class AccountService {
-  constructor(private readonly api: BeamApi) {}
+  private readonly api: BeamApi;
+
+  /** @internal */
+  constructor(props: AccountServiceProps) {
+    this.api = props.api;
+  }
 
   /**
-   * Retrieves the current player's account information.
-   * @returns {Promise<AccountPlayerView>} A promise that resolves with the player's account view.
+   * Fetches the current player's account information.
    * @example
    * ```ts
-   * const playerAccount = await beam.account.getCurrentPlayer();
+   * const playerAccount = await beam.account.current();
    * ```
+   * @throws {BeamError} If the request fails.
    */
-  async getCurrentPlayer(): Promise<AccountPlayerView> {
+  async current(): Promise<AccountPlayerView> {
     const { body } = await this.api.accounts.getAccountsMe();
     return body;
   }

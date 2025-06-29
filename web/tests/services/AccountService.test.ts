@@ -4,7 +4,7 @@ import type { BeamApi } from '@/core/BeamApi';
 import type { AccountPlayerView } from '@/__generated__/schemas';
 
 describe('AccountService', () => {
-  describe('getCurrentPlayer', () => {
+  describe('current', () => {
     it('calls getAccountsMe on the accounts API and returns the account player view', async () => {
       const mockBody: AccountPlayerView = {
         deviceIds: ['device1'],
@@ -21,8 +21,8 @@ describe('AccountService', () => {
         },
       } as unknown as BeamApi;
 
-      const accountService = new AccountService(mockBeamApi);
-      const result = await accountService.getCurrentPlayer();
+      const accountService = new AccountService({ api: mockBeamApi });
+      const result = await accountService.current();
 
       expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalled();
       expect(result).toEqual(mockBody);

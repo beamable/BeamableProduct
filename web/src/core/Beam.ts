@@ -15,7 +15,11 @@ import { saveToken } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
-import { BeamWebSocketError } from '@/constants/Errors';
+import { BeamError, BeamWebSocketError } from '@/constants/Errors';
+import { AnnouncementsService } from '@/services/AnnouncementsService';
+import { Refreshable } from '@/services/types/Refreshable';
+import { ContextMap, Subscription, SubscriptionMap } from '@/core/types';
+import { wait } from '@/utils/wait';
 
 /** The main class for interacting with the Beam SDK. */
 export class Beam {
@@ -40,13 +44,15 @@ export class Beam {
 
   private readonly cid: string;
   private readonly pid: string;
+  private readonly refreshable: Record<keyof ContextMap, Refreshable<unknown>>;
   private readonly defaultHeaders: Record<string, string>;
   private readonly requester: HttpRequester;
   private envConfig: BeamEnvironmentConfig;
-  private webSocket: BeamWebSocket;
+  private ws: BeamWebSocket;
   // Cached promise for SDK initialization to ensure idempotent ready() calls
   private readyPromise?: Promise<void>;
   private isReadyPromise = false;
+  private subscriptions: Partial<SubscriptionMap> = {};
 
   constructor(config: BeamConfig) {
     const env = config.environment;
@@ -71,36 +77,115 @@ export class Beam {
     );
 
     this.requester = this.createBeamRequester(config);
-    this.webSocket = new BeamWebSocket();
+    this.ws = new BeamWebSocket();
     this.api = new BeamApi(this.requester);
     this.player = new PlayerService();
     BeamService.attachServices(this);
+    this.refreshable = {
+      'announcements.refresh': this.announcements,
+    };
   }
 
-  /**
-   * Initializes the Beam SDK instance. Later calls return the same initialization promise.
-   * @returns {Promise<void>} A promise that resolves when initialization is complete.
-   */
+  /** Initializes the Beam SDK instance. Later calls return the same initialization promise. */
   async ready(): Promise<void> {
     if (!this.readyPromise) this.readyPromise = this.init();
     return this.readyPromise;
   }
 
-  /**
-   * Returns whether the Beam SDK instance is ready.
-   * @returns {boolean} `true` if the SDK is initialized and ready to use, `false` otherwise.
-   */
+  /** Returns whether the Beam SDK instance is ready. */
   get isReady(): boolean {
     return this.isReadyPromise;
   }
 
   /**
-   * Returns a concise, human-readable summary of this Beam instance’s core configuration.
-   * @returns {string} A string of the form `Beam(config: cid=<cid>, pid=<pid>)`
+   * Subscribes to a specific context and listens for messages.
+   * @template {keyof ContextMap} K
+   * @template {ContextMap[K]['data']} T
+   * @param context The context to subscribe to, e.g., 'inventory.refresh'.
+   * @param handler The callback to process the data when a message is received.
+   * @example
+   * ```ts
+   * beam.on('inventory.refresh', (data) => {
+   *   console.log('New inventory data:', data);
+   * });
+   * ```
    */
-  toString(): string {
-    const { cid, pid } = this;
-    return `Beam(config: cid=${cid}, pid=${pid})`;
+  on<K extends keyof ContextMap, T extends ContextMap[K]['data']>(
+    context: K,
+    handler: (data: T) => void,
+  ) {
+    this.checkIfReadyAndSupportedContext(context, 'subscribing');
+    const abortController = new AbortController();
+    const listener = async (e: MessageEvent) => {
+      const eventData = JSON.parse(e.data) as {
+        context: string;
+        messageFull: string;
+      };
+      // ignore the message if the context does not match
+      if (eventData.context !== context) return;
+
+      // parse the messageFull as the expected type
+      const payload = JSON.parse(eventData.messageFull) as Omit<
+        ContextMap[K],
+        'data'
+      >;
+
+      if ('delay' in payload) {
+        try {
+          await wait(payload.delay, abortController.signal);
+        } catch {
+          return; // aborted
+        }
+      }
+
+      const data = (await this.refreshable[context].refresh()) as T;
+      handler(data);
+    };
+
+    this.ws.rawSocket?.addEventListener('message', listener);
+    const subs: Subscription[] = this.subscriptions[context] ?? [];
+    subs.push({ handler, listener, abortController });
+    this.subscriptions[context] = subs;
+  }
+
+  /**
+   * Unsubscribes from a specific context or removes all subscriptions if no handler is provided.
+   * @template {keyof ContextMap} K
+   * @param context The context to unsubscribe from, e.g., 'inventory.refresh'.
+   * @param handler The callback to remove. If not provided, all handlers for the context are removed.
+   * @example
+   * ```ts
+   * beam.off('inventory.refresh', myHandler);
+   * // or to remove all handlers for the context
+   * beam.off('inventory.refresh');
+   * ```
+   */
+  off<K extends keyof ContextMap>(
+    context: K,
+    handler?: (data: ContextMap[K]['data']) => void,
+  ) {
+    this.checkIfReadyAndSupportedContext(context, 'unsubscribing');
+    const subs = this.subscriptions[context];
+    if (!subs) return;
+
+    if (!handler) {
+      // if no handler is supplied, remove them all
+      subs.forEach(({ listener, abortController }) => {
+        this.ws.rawSocket?.removeEventListener('message', listener);
+        abortController.abort();
+      });
+      delete this.subscriptions[context];
+      return;
+    }
+
+    const index = subs.findIndex((s) => s.handler === handler);
+    if (index === -1) return;
+
+    const { listener, abortController } = subs[index];
+    this.ws.rawSocket?.removeEventListener('message', listener);
+    abortController.abort();
+    subs.splice(index, 1);
+    if (subs.length === 0) delete this.subscriptions[context];
   }
 
   private async init(): Promise<void> {
@@ -124,21 +209,22 @@ export class Beam {
           const refreshToken = await this.tokenStorage.getRefreshToken();
 
           if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
-          else tokenResponse = await this.auth.refreshAuthToken(refreshToken);
+          else
+            tokenResponse = await this.auth.refreshAuthToken({ refreshToken });
 
           await saveToken(this.tokenStorage, tokenResponse);
         }
 
         // If we have a valid access token, fetch the current player account and set it
-        this.player.account = await this.account.getCurrentPlayer();
+        this.player.account = await this.account.current();
 
         await this.setupRealtimeConnection();
         this.isReadyPromise = true;
         resolve();
-      } catch (err) {
+      } catch (error) {
         this.isReadyPromise = false;
         this.readyPromise = undefined;
-        reject(err);
+        reject(error);
       }
     });
   }
@@ -188,7 +274,7 @@ export class Beam {
     const url = realmConfig.websocketConfig.uri;
     if (!url) throw new BeamWebSocketError('No websocket URL found');
 
-    await this.webSocket.connect({
+    await this.ws.connect({
       api: this.api,
       cid: this.cid,
       pid: this.pid,
@@ -202,11 +288,32 @@ export class Beam {
       this.defaultHeaders[key] = value;
     }
   }
+
+  private checkIfReadyAndSupportedContext(
+    context: keyof ContextMap,
+    messageType: string,
+  ) {
+    if (!this.isReadyPromise) {
+      throw new BeamError(
+        `Beam SDK is not ready. Please call \`await beam.ready()\` before ${messageType}.`,
+      );
+    }
+
+    if (!this.refreshable[context]) {
+      throw new BeamError(
+        `Context "${context}" is not supported. Available contexts: ${Object.keys(
+          this.refreshable,
+        ).join(', ')}`,
+      );
+    }
+  }
 }
 
 export interface Beam {
-  /** High-level account helper built on top of beam.api.accounts.* endpoints */
+  /** High-level account helper built on top of `beam.api.accounts.*` endpoints */
   account: AccountService;
-  /** High-level auth helper built on top of beam.api.auth.* endpoints */
+  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints */
+  announcements: AnnouncementsService;
+  /** High-level auth helper built on top of `beam.api.auth.*` endpoints */
   auth: AuthService;
 }

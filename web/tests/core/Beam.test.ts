@@ -5,18 +5,6 @@ import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
 import { RealmsApi } from '@/__generated__/apis/RealmsApi';
 
 describe('Beam', () => {
-  it('returns a formatted summary of the instance configuration', () => {
-    const cid = '1713028771755577';
-    const pid = 'DE_1740294079885317';
-    const beam = new Beam({
-      environment: 'Dev',
-      cid,
-      pid,
-    });
-
-    expect(beam.toString()).toBe(`Beam(config: cid=${cid}, pid=${pid})`);
-  });
-
   describe('ready', () => {
     const dummyTokenResponse = {
       access_token: 'access',
@@ -59,7 +47,7 @@ describe('Beam', () => {
         tokenStorage: storage,
       });
       // Use mock WebSocket for realtime connection
-      (beam as any).webSocket = new MockBeamWebSocket();
+      (beam as any).ws = new MockBeamWebSocket();
       // Stub realms client defaults for setupRealtimeConnection
       vi.spyOn(
         RealmsApi.prototype,
@@ -89,9 +77,7 @@ describe('Beam', () => {
       beam.auth.signInAsGuest = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.getCurrentPlayer = vi
-        .fn()
-        .mockResolvedValue(dummyPlayer as any);
+      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
@@ -107,13 +93,13 @@ describe('Beam', () => {
       beam.auth.refreshAuthToken = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.getCurrentPlayer = vi
-        .fn()
-        .mockResolvedValue(dummyPlayer as any);
+      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
-      expect(beam.auth.refreshAuthToken).toHaveBeenCalledWith('refreshToken');
+      expect(beam.auth.refreshAuthToken).toHaveBeenCalledWith({
+        refreshToken: 'refreshToken',
+      });
       expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
       expect(beam.player.account).toEqual(dummyPlayer);
     });
@@ -125,9 +111,7 @@ describe('Beam', () => {
       beam.auth.signInAsGuest = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.getCurrentPlayer = vi
-        .fn()
-        .mockResolvedValue(dummyPlayer as any);
+      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
@@ -139,9 +123,7 @@ describe('Beam', () => {
     it('only sets player account when token exists and not expired', async () => {
       storage.getAccessToken.mockResolvedValue('access');
       storage.isExpired = false;
-      beam.account.getCurrentPlayer = vi
-        .fn()
-        .mockResolvedValue(dummyPlayer as any);
+      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
       await beam.ready();
       expect(beam.auth.signInAsGuest).not.toHaveBeenCalled();
       expect(saveTokenSpy).not.toHaveBeenCalled();
@@ -151,9 +133,7 @@ describe('Beam', () => {
     it('isReadyPromise resolves to true when setup is complete', async () => {
       storage.getAccessToken.mockResolvedValue('access');
       storage.isExpired = false;
-      beam.account.getCurrentPlayer = vi
-        .fn()
-        .mockResolvedValue(dummyPlayer as any);
+      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
