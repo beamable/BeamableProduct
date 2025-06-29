@@ -29,7 +29,7 @@ describe('AuthService', () => {
         },
       } as unknown as BeamApi;
 
-      const authService = new AuthService(mockBeamApi);
+      const authService = new AuthService({ api: mockBeamApi });
       const result = await authService.signInAsGuest();
 
       expect(mockBeamApi.auth.postAuthToken).toHaveBeenCalledWith(payload);
@@ -57,8 +57,8 @@ describe('AuthService', () => {
         },
       } as unknown as BeamApi;
 
-      const authService = new AuthService(mockBeamApi);
-      const result = await authService.refreshAuthToken(refreshToken);
+      const authService = new AuthService({ api: mockBeamApi });
+      const result = await authService.refreshAuthToken({ refreshToken });
 
       expect(mockBeamApi.auth.postAuthToken).toHaveBeenCalledWith(payload);
       expect(result).toEqual(mockBody);
