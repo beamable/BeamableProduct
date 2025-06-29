@@ -6,7 +6,8 @@
     "src/configs/BeamEnvironmentConfig.ts",
     "src/core/BeamEnvironmentRegistry.ts",
     "src/core/BeamApi.ts",
-    "src/services/*"
+    "src/core/types/ContextMap.ts",
+    "src/services/**/*.ts"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs",

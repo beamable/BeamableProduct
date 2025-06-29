@@ -18,6 +18,7 @@ export * from '@/network/http/types/HttpRequest';
 export * from '@/network/http/types/HttpRequester';
 export * from '@/network/http/types/HttpResponse';
 export * from '@/platform/types/TokenStorage';
+export * from '@/constants/Errors';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 export {
@@ -26,8 +27,3 @@ export {
   saveConfigBrowser as saveConfig,
 };
 export { GET, POST, PUT, PATCH, DELETE } from '@/constants';
-export {
-  BeamWebSocketError,
-  RefreshAccessTokenError,
-  NoRefreshTokenError,
-} from '@/constants/Errors';
