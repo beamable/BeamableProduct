@@ -183,7 +183,7 @@ jobs:
         working-directory: ./
         run: |
           ./setup.sh
-          SKIP_GENERATION=true ./dev.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -194,6 +194,14 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
+      
+      # - name: Apply CLI Versions 
+      #   run: jq --arg nextVersion ${{ steps.version.outputs.VERSION }} '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Review Unity version-default file
+        run: |
+          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
