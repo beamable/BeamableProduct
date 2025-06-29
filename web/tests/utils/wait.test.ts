@@ -20,4 +20,18 @@ describe('wait()', () => {
     await Promise.resolve();
     expect(resolved).toBe(true);
   });
+
+  it('rejects if the signal is aborted before the delay', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const delay = 100;
+    let rejected = false;
+    wait(delay, controller.signal).catch(() => {
+      rejected = true;
+    });
+    controller.abort();
+    vi.advanceTimersByTime(delay);
+    await Promise.resolve();
+    expect(rejected).toBe(true);
+  });
 });
