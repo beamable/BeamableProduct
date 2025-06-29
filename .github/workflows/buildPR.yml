@@ -201,6 +201,11 @@ jobs:
       - name: Review Unity version-default file
         run: |
           cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+      
+      - name: Install Local CLI Tool
+        working-directory: client
+        run: |
+          dotnet tool install beamable.tools --version 0.0.123.1 --local --create-manifest-if-needed
 
       - name: Cache Unity Folders
         uses: actions/cache@v3
