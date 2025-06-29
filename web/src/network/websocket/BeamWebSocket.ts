@@ -50,11 +50,6 @@ export class BeamWebSocket {
       this.connectPromiseWithResolvers?.resolve();
     };
 
-    // Web socket message event handler
-    socket.onmessage = (e) => {
-      console.log('Message:', e.data);
-    };
-
     // Web socket error event handler
     socket.onerror = async (e) => {
       console.error('WebSocket error:', e);
@@ -102,6 +97,10 @@ export class BeamWebSocket {
     } catch (error) {
       return null;
     }
+  }
+
+  get rawSocket() {
+    return this.socket;
   }
 
   /**
