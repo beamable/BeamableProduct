@@ -545,6 +545,7 @@ public class App
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
 		
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
+		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
@@ -598,7 +599,8 @@ public class App
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
-
+		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 

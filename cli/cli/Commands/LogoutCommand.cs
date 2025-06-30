@@ -9,7 +9,9 @@ public class LogoutCommandResult
 {
 	
 }
-public class LogoutCommand : AtomicCommand<LogoutCommandArgs, LogoutCommandResult>
+public class LogoutCommand 
+	: AtomicCommand<LogoutCommandArgs, LogoutCommandResult>
+	, ISkipManifest
 {
 	public LogoutCommand() : base("logout", "Removes any saved credentials")
 	{

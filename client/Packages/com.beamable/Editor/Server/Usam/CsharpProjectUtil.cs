@@ -101,7 +101,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 ";
 
 		private const string invalidAssembliesFilePath =
-			"Packages/com.beamable.server/Editor/invalid-assemblies.txt";
+			"Packages/com.beamable/Editor/Server/invalid-assemblies.txt";
 
 		private const string customInvalidAssembliesPath = "Assets/Beamable/Resources/custom-invalid-assemblies.txt";
 

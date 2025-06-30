@@ -30,7 +30,7 @@ namespace Beamable.Editor.Modules.Account
 		{
 			var api = BeamEditorContext.Default;
 			string url =
-				$"{BeamableEnvironment.PortalUrl}/{_ctx.Cid}/games/{api.ProductionRealm.Pid}/realms/{_ctx.Pid}/players/{_ctx.PlayerId}?refresh_token={api.Requester.Token.RefreshToken}";
+				$"{BeamableEnvironment.PortalUrl}/{_ctx.Cid}/games/{api.BeamCli.ProductionRealm.Pid}/realms/{_ctx.Pid}/players/{_ctx.PlayerId}?refresh_token={api.Requester.Token.RefreshToken}";
 			return url;
 		}
 	}
