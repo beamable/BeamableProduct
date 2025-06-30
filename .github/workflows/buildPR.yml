@@ -206,6 +206,10 @@ jobs:
         working-directory: client
         run: |
           dotnet tool install beamable.tools --version 0.0.123.1 --local --create-manifest-if-needed
+      - name: Run CLI Source Build
+        working-directory: cli
+        run: |
+          dotnet build
 
       - name: Cache Unity Folders
         uses: actions/cache@v3
