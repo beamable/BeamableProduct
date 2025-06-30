@@ -207,7 +207,7 @@ jobs:
         run: |
           dotnet tool install beamable.tools --version 0.0.123.1 --local --create-manifest-if-needed
       - name: Run CLI Source Build
-        working-directory: cli
+        working-directory: cli/cli
         run: |
           dotnet build
 
