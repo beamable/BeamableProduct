@@ -103,7 +103,7 @@ namespace Beamable.Editor.Accounts
 
 				{
 					GUI.enabled = realmSelectionIndex >= 0;
-					var wasClicked = BeamGUI.PrimaryButton(new GUIContent("Continue"));
+					var wasClicked = BeamGUI.PrimaryButton(new GUIContent("Continue"), allowEnterKeyToClick: true);
 					GUI.enabled = true;
 					
 					if (wasClicked)

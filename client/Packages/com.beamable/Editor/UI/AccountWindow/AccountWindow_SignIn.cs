@@ -231,7 +231,10 @@ namespace Beamable.Editor.Accounts
 					isButtonEnabled &= _loginPromise == null;
 					
 					GUI.enabled = isButtonEnabled;
-					var wasClicked = BeamGUI.PrimaryButton(new GUIContent("Login"));
+					
+					
+					
+					var wasClicked = BeamGUI.PrimaryButton(new GUIContent("Login"), allowEnterKeyToClick: true);
 					GUI.enabled = true;
 
 					if (cli.latestLoginError?.Length > 0)

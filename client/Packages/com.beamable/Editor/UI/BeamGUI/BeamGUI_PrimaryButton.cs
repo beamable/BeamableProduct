@@ -23,10 +23,10 @@ namespace Beamable.Editor.Util
 			}
 		}
 		
-		public static bool PrimaryButton(GUIContent content)
+		public static bool PrimaryButton(GUIContent content, bool allowEnterKeyToClick=false)
 		{
 			CreateButtonStyles();
-			return CustomButton(content, primaryButtonStyle);
+			return CustomButton(content, primaryButtonStyle, allowEnterKeyToClick);
 		}
 		public static bool PrimaryButton(Rect rect, GUIContent content)
 		{
@@ -39,21 +39,27 @@ namespace Beamable.Editor.Util
 			return GUILayout.Button(text, new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)});
 		}
 
-		public static bool CustomButton(GUIContent content, GUIStyle style)
+		public static bool CustomButton(GUIContent content, GUIStyle style, bool allowEnterKeyToClick=false)
 		{
 			var rect = GUILayoutUtility.GetRect(content, style);
-			return CustomButton(rect, content, style);
+			return CustomButton(rect, content, style, allowEnterKeyToClick);
 		}
 		
-		public static bool CustomButton(Rect rect, GUIContent content, GUIStyle style)
+		public static bool CustomButton(Rect rect, GUIContent content, GUIStyle style, bool allowEnterKeyToClick=false)
 		{
-			
-			var isHover = rect.Contains(Event.current.mousePosition);
-			var buttonClicked = isHover && Event.current.rawType == EventType.MouseDown;
+			Event e = Event.current;
+
+			var isHover = rect.Contains(e.mousePosition);
+			var buttonClicked = isHover && e.rawType == EventType.MouseDown;
 
 			bool clicked = false;
 			clicked = GUI.Button(rect, content, style);
 
+
+			var isEnterHit = allowEnterKeyToClick && e.type == EventType.KeyDown &&
+			                 (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
+
+			buttonClicked |= isEnterHit;
 			
 			if (buttonClicked)
 			{

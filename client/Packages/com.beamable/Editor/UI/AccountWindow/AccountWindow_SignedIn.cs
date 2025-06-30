@@ -125,7 +125,7 @@ namespace Beamable.Editor.Accounts
 							_onQuitName = "Open Library";
 						}
 
-						var clickedLibrary = BeamGUI.PrimaryButton(new GUIContent(_onQuitName));
+						var clickedLibrary = BeamGUI.PrimaryButton(new GUIContent(_onQuitName), allowEnterKeyToClick: true);
 
 						if (clickedChangeGame)
 						{
