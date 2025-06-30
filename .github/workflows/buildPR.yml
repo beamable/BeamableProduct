@@ -207,6 +207,11 @@ jobs:
         run: |
           dotnet tool install beamable.tools --version 0.0.123.1 --local --create-manifest-if-needed
 
+      - name: Build Local Tool
+        working-directory: cli
+        run: |
+          dotnet build
+
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -226,19 +231,13 @@ jobs:
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
-          customParameters: -warnaserror+ -logfile ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
+          customParameters: -warnaserror+
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - name: Upload logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
-        uses: actions/upload-artifact@v4
-        if: always()  # Ensures this runs even if the test step failed
-        with:
-          name: unity-logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
-          path: ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
