@@ -231,10 +231,10 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - name: Upload logs
+      - name: Upload logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
         uses: actions/upload-artifact@v4
         with:
-          name: unity-logs
+          name: unity-logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
           path: ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
 
   build:
