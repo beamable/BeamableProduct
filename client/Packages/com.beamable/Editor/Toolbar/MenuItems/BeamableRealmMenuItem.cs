@@ -43,12 +43,12 @@ namespace Beamable.Editor.ToolbarExtender
 				
 				return String.Compare(a.ProjectName, b.ProjectName, StringComparison.Ordinal);
 			});
-			var buildPid = editor.ServiceScope.GetService<ConfigDatabaseProvider>().Pid;
+			var buildPid = editor.ServiceScope.GetService<ConfigDatabaseProvider>()?.Pid ?? "";
 			var buildName = buildPid.ToString();
 			var sameEditorAndBuildPids = buildPid == editor.BeamCli?.Pid;
 			foreach (var proj in projects)
 			{
-				var enabled = proj.Pid == editor.BeamCli.Pid;
+				var enabled = proj.Pid == editor.BeamCli?.Pid;
 				
 				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.GetDisplayName()} [build]" : proj.GetDisplayName();
 				if (buildPid == proj.Pid)
