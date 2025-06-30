@@ -224,14 +224,18 @@ jobs:
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
-          customParameters: -warnaserror+
+          customParameters: -warnaserror+ -logfile ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-logs
+          path: ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
