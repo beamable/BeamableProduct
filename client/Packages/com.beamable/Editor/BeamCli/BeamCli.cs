@@ -229,7 +229,7 @@ namespace Beamable.Editor.BeamCli
 		void ReconstituteRealmData()
 		{
 			// construct the realmViews
-			if (latestRealmInfo?.VisibleRealms?.Length == 0)
+			if ( (latestRealmInfo?.VisibleRealms?.Length ?? 0) == 0)
 			{
 				latestRealms?.Clear();
 				pidToRealm?.Clear();
