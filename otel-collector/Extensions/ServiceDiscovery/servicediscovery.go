@@ -121,6 +121,8 @@ func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseDat
 				fmt.Println("sendto error:", err)
 				os.Exit(1)
 			}
+		} else {
+			errCount = 0
 		}
 	}
 }

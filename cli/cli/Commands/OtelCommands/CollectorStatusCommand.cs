@@ -1,7 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using cli.Dotnet;
-using cli.Services;
+using Spectre.Console;
 
 namespace cli.OtelCommands;
 
@@ -14,7 +14,7 @@ public class CollectorStatusCommandArgs : CommandArgs
 }
 
 
-public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatus>
+public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, List<CollectorStatus>>
 {
 	public CollectorStatusCommand() : base("status", "Starts a stream of messages containing the status of the collector")
 	{
@@ -37,43 +37,64 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		
 		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
-		CollectorStatus currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
+		var currentRunningCols = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
+			BeamableZLoggerProvider.LogContext.Value);;
 
 		if (args.watch)
 		{
 			bool hasChanged = true;
-			CollectorStatus lastStatus;
+			List<CollectorStatus> lastRunningCols;
 			while (!args.Lifecycle.Source.Token.IsCancellationRequested)
 			{
 				if (hasChanged)
 				{
-					LogStatus(currentStatus);
-					SendResults(currentStatus);
+					LogStatus(currentRunningCols);
+					SendResults(currentRunningCols);
 				}
 
-				lastStatus = currentStatus;
-				currentStatus = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
+				lastRunningCols = currentRunningCols;
+				currentRunningCols = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
+					BeamableZLoggerProvider.LogContext.Value);
 
-				if (currentStatus.Equals(lastStatus))
+				if (HaveStatusChanged(lastRunningCols, currentRunningCols))
 				{
-					hasChanged = false;
+					hasChanged = true;
 				}
 				else
 				{
-					hasChanged = true;
+					hasChanged = false;
 				}
 			}
 		}
 		else
 		{
-			LogStatus(currentStatus);
-			SendResults(currentStatus);
+			LogStatus(currentRunningCols);
+			SendResults(currentRunningCols);
 		}
 	}
 
-	private void LogStatus(CollectorStatus currentStatus)//TODO improve this to be more visually interesting
+	private bool HaveStatusChanged(List<CollectorStatus> lastStatusList, List<CollectorStatus> currentStatusList)
 	{
-		if (!currentStatus.isRunning)
+		if (lastStatusList.Count != currentStatusList.Count)
+		{
+			return true;
+		}
+
+		foreach (CollectorStatus status in lastStatusList)
+		{
+			var currentMatch = currentStatusList.FirstOrDefault(s => s.pid == status.pid);
+			if (currentMatch == null)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private void LogStatus(List<CollectorStatus> currentStatusList)//TODO improve this to be more visually interesting
+	{
+		if (currentStatusList.Count == 0)
 		{
 			Log.Information($"Collector Status:");
 			Log.Information($"There is no collector currently running\n\n");
@@ -81,12 +102,25 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		}
 		else
 		{
-			Log.Information($"Collector Status:");
-			Log.Information($"Is Running: {currentStatus.isRunning}");
-			Log.Information($"Is Ready: {currentStatus.isReady}");
-			Log.Information($"Process Id: {currentStatus.pid}");
-			Log.Information($"Version: {currentStatus.version}");
-			Log.Information($"OTLP Endpoint: {currentStatus.otlpEndpoint}");
+			var columnNameStyle = new Style(Color.SlateBlue1);
+
+			var table = new Table();
+			var processIdColumn = new TableColumn(new Markup("ProcessId", columnNameStyle));
+			var versionColumn = new TableColumn(new Markup("Version", columnNameStyle));
+			var isReadyColumn = new TableColumn(new Markup("Ready for data", columnNameStyle));
+			var otlpEndpointColumn = new TableColumn(new Markup("OTLP Endpoint", columnNameStyle));
+
+			table.AddColumn(processIdColumn).AddColumn(versionColumn).AddColumn(isReadyColumn).AddColumn(otlpEndpointColumn);
+			foreach (var status in currentStatusList)
+			{
+				var processIdMarkup = new Markup($"[green]{status.pid}[/]");
+				var versionMarkup = new Markup($"{status.version}");
+				var isReadyMarkup = new Markup(status.isReady ? "[green]True[/]" : "[red]False[/]");
+				var otlpEndpointMarkup = new Markup($"{status.otlpEndpoint}");
+
+				table.AddRow(new TableRow(new[] { processIdMarkup, versionMarkup, isReadyMarkup, otlpEndpointMarkup}));
+			}
+			AnsiConsole.Write(table);
 		}
 	}
 }

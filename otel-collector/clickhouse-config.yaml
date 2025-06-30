@@ -47,7 +47,7 @@ exporters:
 extensions:
   servicediscovery:
     discovery_port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
-    discovery_delay: ${env:BEAM_COLLECTOR_DISCOVERY_DELAY_MILLISECONDS}
+    discovery_delay: 100
 
 service:
   extensions: [servicediscovery]

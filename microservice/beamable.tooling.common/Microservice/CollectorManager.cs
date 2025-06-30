@@ -477,59 +477,107 @@ public class CollectorManager
 		}
 	}
 
-	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
+	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger)
 	{
-		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
+		var results = new List<CollectorStatus>();
 
 		for (int i = 0; i < attemptsToConnect; i++)
 		{
-			if (token.IsCancellationRequested)
-			{
-				return new CollectorStatus()
-				{
-					isRunning = false,
-					isReady = false
-				};
-			}
+			var runningResult = await GetRunningCollectorMessage(socket, token);
 
-			if (socket.Available == 0)
+			if (!runningResult.foundCollector)
 			{
 				await Task.Delay(delayBeforeNewMessage);
 				continue;
 			}
 
-			var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
+			var collector = runningResult.message;
 
-			if (byteCount == 0)
+			var alreadyAdded = results.FirstOrDefault(r => r.version == collector.version);
+
+			if (alreadyAdded == null)
 			{
-				// This means we didn't get anything from the collector, so something wrong happened
-				throw new Exception("Didn't get any message from the collector after the timeout");
+				results.Add(new CollectorStatus()
+				{
+					isRunning = true,
+					isReady = collector.status == "READY",
+					pid = collector.pid,
+					otlpEndpoint = collector.otlpEndpoint,
+					version = collector.version
+				});
+			}
+			await Task.Delay(delayBeforeNewMessage);
+		}
+
+		//TODO: This does not guarantee that will have all collectors running in it, since they are fighting
+		// for the broadcasting channel. Is there a better way to handle this?
+		return results;
+	}
+
+	public static async Task<(bool foundCollector, CollectorDiscoveryEntry message)> GetRunningCollectorMessage(Socket socket, CancellationToken token)
+	{
+		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
+
+		if (token.IsCancellationRequested)
+		{
+			return (false, null);
+		}
+
+		if (socket.Available == 0)
+		{
+			return (false, null);
+		}
+
+		var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
+
+		if (byteCount == 0)
+		{
+			// This means we didn't get anything from the collector, so something wrong happened
+			throw new Exception("Didn't get any message from the collector after the timeout");
+		}
+
+		var collectorMessage = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
+
+		var collector = JsonConvert.DeserializeObject<CollectorDiscoveryEntry>(collectorMessage, UnitySerializationSettings.Instance);
+
+		{
+			// it is POSSIBLE that a dead collector's message is in the socket receive queue,
+			//  so before promising that this service exists, do a quick process-check to
+			//  make sure it is actually alive.
+			var isProcessNotWorking = false;
+			try
+			{
+				Process.GetProcessById(collector.pid);
+			}
+			catch
+			{
+				isProcessNotWorking = true;
 			}
 
-			var collectorMessage = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
-
-			var collector = JsonConvert.DeserializeObject<CollectorDiscoveryEntry>(collectorMessage, UnitySerializationSettings.Instance);
-
+			if (isProcessNotWorking)
 			{
-				// it is POSSIBLE that a dead collector's message is in the socket receive queue,
-				//  so before promising that this service exists, do a quick process-check to
-				//  make sure it is actually alive.
-				var isProcessNotWorking = false;
-				try
-				{
-					Process.GetProcessById(collector.pid);
-				}
-				catch
-				{
-					isProcessNotWorking = true;
-				}
+				return (false, null);
+			}
+		}
 
-				if (isProcessNotWorking)
-					continue;
+		return (true, collector);
+	}
 
+	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
+	{
+		for (int i = 0; i < attemptsToConnect; i++)
+		{
+			var runningResult = await GetRunningCollectorMessage(socket, token);
+
+			if (!runningResult.foundCollector)
+			{
+				await Task.Delay(delayBeforeNewMessage);
+				continue;
 			}
 
-			// Then we check if the version of the found collector matches the version supported
+			var collector = runningResult.message;
+
+			// We check if the version of the found collector matches the version supported
 			if (collector.version != Version)
 			{
 				await Task.Delay(delayBeforeNewMessage);
