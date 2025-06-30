@@ -1,0 +1,63 @@
+name: Web SDK Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to release from'
+        required: true
+        default: 'wip/web-sdk'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      # Checkout the specified branch (default: wip/web-sdk)
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      # Setup Node.js LTS version 22.14.0
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.14.0'
+
+      # Install pnpm package manager version 10.8.0 globally
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
+      # Install project dependencies using pnpm
+      - name: Install dependencies
+        run: pnpm install
+
+      # Run code linter
+      - name: Lint
+        run: pnpm lint
+
+      # Run the test suite
+      - name: Test
+        run: pnpm test
+
+      # Run the release command that bumps the version, updates the changelog, and builds the project.
+      - name: Run Release
+        run: pnpm release
+
+      # Commit and push the changes made by the release command.
+      - name: Commit Release Changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          if ! git diff-index --quiet HEAD; then
+            # Using [skip ci] to avoid triggering another build.
+            git commit -m "ci(release): bump version and update changelog [skip ci]"
+            git push origin ${{ github.event.inputs.branch }}
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
