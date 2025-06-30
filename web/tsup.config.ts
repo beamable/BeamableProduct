@@ -14,7 +14,7 @@ const config = {
 };
 
 export default defineConfig([
-  // CJS Node
+  // CJS Node Build
   {
     ...config,
     entry: ['src/index.ts'], // Entry files for the library build
@@ -27,7 +27,7 @@ export default defineConfig([
       options.alias = alias;
     },
   },
-  // ESM Node
+  // ESM Node Build
   {
     ...config,
     entry: ['src/index.ts'], // Entry files for the library build
@@ -38,7 +38,7 @@ export default defineConfig([
       options.alias = alias;
     },
   },
-  // ESM Browser
+  // ESM Browser Build
   {
     ...config,
     entry: ['src/index.browser.ts'], // Entry files for the library build
@@ -52,7 +52,7 @@ export default defineConfig([
       };
     },
   },
-  // IIFE Browser
+  // IIFE Browser Build
   {
     ...config,
     entry: ['src/index.browser.ts'], // Entry files for the library build
@@ -66,6 +66,17 @@ export default defineConfig([
         ...alias,
         '@/index': path.resolve(__dirname, 'src/index.browser.ts'),
       };
+    },
+  },
+  // Common Build (CJS and ESM)
+  {
+    ...config,
+    entry: ['src/schema.ts'], // Entry files for the library build
+    format: ['cjs', 'esm'], // Output formats: CommonJS
+    outDir: 'dist', // Output directory for the build
+    dts: true, // Generate TypeScript declaration (.d.ts) files
+    esbuildOptions(options) {
+      options.alias = alias;
     },
   },
 ]);

@@ -1,5 +1,14 @@
 # beamable-sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- Added WebSocket Implementation
+- Added Announcement Service
+- Added Stats Service
+- Access to SDK schema types via `beamable-sdk/schema`
+
 ## 0.1.7
 
 ### Patch Changes

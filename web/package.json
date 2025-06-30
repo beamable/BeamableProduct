@@ -1,6 +1,6 @@
 {
   "name": "beamable-sdk",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.js",
   "module": "dist/node/index.mjs",
@@ -51,6 +51,11 @@
       "types": "./dist/node/index.d.ts",
       "require": "./dist/node/index.js",
       "import": "./dist/node/index.mjs"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "require": "./dist/schema.js",
+      "import": "./dist/schema.mjs"
     }
   },
   "keywords": [
