@@ -142,9 +142,7 @@ namespace Beamable
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			builder.AddSingleton(_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
-			// builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
-			// builder.ReplaceSingleton<IRuntimeConfigProvider>();
-
+		
 			builder.RemoveIfExists<IRuntimeConfigProvider>();
 			builder.AddSingleton<IRuntimeConfigProvider>(() => BeamEditorContext.Default.BeamCli);
 			builder.RemoveIfExists<IPlatformRequesterHostResolver>();
@@ -196,8 +194,9 @@ namespace Beamable
 
 		static void Initialize()
 		{
-			
+			Debug.Log("Init attempt");
 			if (IsInitialized) return;
+			Debug.Log("Init attempt for real");
 
 			initializeAttemptCount++;
 
