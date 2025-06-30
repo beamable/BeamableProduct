@@ -478,6 +478,7 @@ namespace Beamable.Editor.BeamCli
 
 		public void Cancel()
 		{
+			if (_cts.IsCancellationRequested) return; // no-op
 			_cts.Cancel();
 		}
 

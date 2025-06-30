@@ -70,6 +70,12 @@ namespace Beamable.Editor.BeamCli
 		public EditorUser latestUser;
 		public BeamConfigRoutesCommandResults latestRouteInfo;
 		private StorageHandle<BeamCli> _handle;
+		private ConfigWrapper _configInvoke;
+		private MeWrapper _meInvoke;
+		private OrgRealmsWrapper _realmsInvoke;
+		private OrgGamesWrapper _gamesInvoke;
+		private ConfigRoutesWrapper _routesInvoke;
+		private ProjectAddUnityProjectWrapper _linkCommand;
 
 		// public Dictionary<string, BeamOrgRealmData> pidToRealm = new Dictionary<string, BeamOrgRealmData>();
 
@@ -107,82 +113,87 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Refresh()
 		{
 			// TODO: allow cancelling inflight commands
-			// TODO: check that data stays serialized
 			
 			// TODO: 
 			// var extraPaths = BeamablePackages.GetManifestFileReferences();
 			// args.saveExtraPaths = extraPaths.ToArray();
-
-			// TODO:
-			// var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
-			// {
-			// 	path = "."
-			// });
 			
-			var configInvoke = Command.Config(new ConfigArgs());
-			configInvoke.OnError(dp =>
+			_configInvoke?.Cancel();
+			_configInvoke = Command.Config(new ConfigArgs());
+			_configInvoke.OnError(dp =>
 			{
 				Debug.LogError("Failed to fetch config...");
 				// need to show a login flow
 			});
 
-			configInvoke.OnStreamConfigCommandResult(dp =>
+			_configInvoke.OnStreamConfigCommandResult(dp =>
 			{
 				latestConfig = dp.data;
 			});
 			
-			var meInvoke = Command.Me();
-			meInvoke.OnError(dp =>
+			_meInvoke?.Cancel();
+			_meInvoke = Command.Me();
+			_meInvoke.OnError(dp =>
 			{
 				Debug.Log("Not signed in");
 			});
-			meInvoke.OnStreamAccountMeCommandOutput(dp =>
+			_meInvoke.OnStreamAccountMeCommandOutput(dp =>
 			{
 				latestAccount = dp.data;
 				ReconstituteUser();
 			});
 
-			var realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
-			realmsInvoke.OnError(dp =>
+			_realmsInvoke?.Cancel();
+			_realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
+			_realmsInvoke.OnError(dp =>
 			{
 				Debug.LogError($"failed to fetch realms err=[{dp.data.message}]");
 			});
-			realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
+			_realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
 			{
 				latestRealmInfo = dp.data;
 				latestAlias = latestRealmInfo.CustomerAlias;
 				ReconstituteRealmData();
 			});
 
-			var gamesInvoke = Command.OrgGames(new OrgGamesArgs());
-			gamesInvoke.OnError(dp =>
+			_gamesInvoke?.Cancel();
+			_gamesInvoke = Command.OrgGames(new OrgGamesArgs());
+			_gamesInvoke.OnError(dp =>
 			{
 				Debug.LogError($"failed to fetch games. err=[{dp.data.message}]");
 			});
-			gamesInvoke.OnStreamGameListCommandResults(dp =>
+			_gamesInvoke.OnStreamGameListCommandResults(dp =>
 			{
 				latestGames = dp.data;
 			});
 
-			var routesInvoke = Command.ConfigRoutes(new ConfigArgs());
-			routesInvoke.OnStreamConfigRoutesCommandResults(dp =>
+			_routesInvoke?.Cancel();
+			_routesInvoke = Command.ConfigRoutes(new ConfigArgs());
+			_routesInvoke.OnStreamConfigRoutesCommandResults(dp =>
 			{
 				latestRouteInfo = dp.data;
 			});
 
-			var configPromise = configInvoke.Run();
-			var routePromise = routesInvoke.Run();
-			var mePromise = meInvoke.Run();
+			var configPromise = _configInvoke.Run();
+			var routePromise = _routesInvoke.Run();
+			var mePromise = _meInvoke.Run();
 
+			_linkCommand?.Cancel();
+			_linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
+			{
+				path = "."
+			});
+			var linkPromise = _linkCommand.Run();
+			
 			await configPromise;
 			await mePromise;
 			await routePromise;
-
+			await linkPromise;
 			
 			if (!IsLoggedOut)
 			{
-				var realmsPromise = realmsInvoke.Run();
-				var gamesPromise = gamesInvoke.Run();
+				var realmsPromise = _realmsInvoke.Run();
+				var gamesPromise = _gamesInvoke.Run();
 				await realmsPromise;
 				await gamesPromise;
 			}
@@ -285,6 +296,9 @@ namespace Beamable.Editor.BeamCli
 				email = email,
 				password = password,
 				ignorePid = true,
+				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
+				// var extraPaths = BeamablePackages.GetManifestFileReferences();
+
 			};
 			var command = Command;
 			command.ModifierNextDefault(args =>
