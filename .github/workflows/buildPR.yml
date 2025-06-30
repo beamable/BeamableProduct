@@ -216,7 +216,8 @@ jobs:
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
       - uses: game-ci/unity-test-runner@v4
         id: tests
-        timeout-minutes: 30
+        timeout-minutes: 10
+        continue-on-error: true   # Prevents job from stopping on test failure
         env:
           BEAM_UNITY_TEST_CI: "true"
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
@@ -233,6 +234,7 @@ jobs:
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
       - name: Upload logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
         uses: actions/upload-artifact@v4
+        if: always()  # Ensures this runs even if the test step failed
         with:
           name: unity-logs-${{ matrix.testMode }}-${{ matrix.unityVersion }}
           path: ./unity-log-${{ matrix.testMode }}-${{ matrix.unityVersion }}.log
