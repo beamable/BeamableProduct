@@ -159,227 +159,229 @@ namespace Beamable
 
 		public static IDependencyBuilder BeamEditorContextDependencies;
 
-		// static BeamEditor()
-		// {
-		// 	if (!HasDependencies())
-		// 	{
-		// 		_dependenciesLoadPromise = ImportDependencies();
-		// 		_dependenciesLoadPromise.Then(_ =>
-		// 		{
-		// 			EditorUtility.RequestScriptReload();
-		// 			AssetDatabase.Refresh();
-		// 			Initialize();
-		// 		}).Error(_ =>
-		// 		{
-		// 			Initialize();
-		// 		});
-		// 	}
-		// 	else
-		// 	{
-		// 		Initialize();
-		// 	}
-		// 	
-		// 	AssemblyReloadEvents.beforeAssemblyReload += () =>
-		// 	{
-		// 		BeamEditorContext.StopAll().Wait();
-		// 	};
-		// 	
-		// }
+		static BeamEditor()
+		{
+			if (!HasDependencies())
+			{
+				_dependenciesLoadPromise = ImportDependencies();
+				_dependenciesLoadPromise.Then(_ =>
+				{
+					// EditorUtility.RequestScriptReload();
+					// AssetDatabase.Refresh();
+					// Initialize();
+				}).Error(_ =>
+				{
+					// Initialize();
+				});
+			}
+			else
+			{
+				Initialize();
+			}
+			
+			AssemblyReloadEvents.beforeAssemblyReload += () =>
+			{
+				BeamEditorContext.StopAll().Wait();
+			};
+			
+		}
 
-		// private static int initializeAttemptCount = 0;
+		private static int initializeAttemptCount = 0;
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
 
-		// private static Promise _dependenciesLoadPromise = null;
+		private static Promise _dependenciesLoadPromise = null;
 
-// 		static void Initialize()
-// 		{
-// 			
-// 			Debug.Log("Init attempt");
-// 			if (IsInitialized) return;
-// 			Debug.Log("Init attempt for real");
-//
-// 			initializeAttemptCount++;
-//
-// 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
-// 			{
-// 				Debug.LogWarning($"Beamable Editor is struggling to initialize. Attempt=[{initializeAttemptCount}] exception-count=[{initializationExceptions.Count}]");
-// 				foreach (var ex in initializationExceptions)
-// 				{
-// 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-// 				}
-// 			}
-//
-// 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
-// 			// The ONLY fail case is:
-// 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
-// 			//   - Empirically, we noticed this takes 2~3 attempts (frames) until this is done. So it's an acceptable and unnoticeable wait.
-// 			// Doing this loading in this manner and making our windows delay their initialization until this is initialized (see BeamableAssistantWindow.OnEnable), we can
-// 			// never have to care about this UnityEditor problem in our code that actually does things and we can have a guarantee that these will never throw.
-// 			CoreConfiguration coreConfiguration;
-// 			try
-// 			{
-// 				coreConfiguration = CoreConfiguration = CoreConfiguration.Instance;
-// 				_ = AccountManagementConfiguration.Instance;
-// 				_ = AvatarConfiguration.Instance;
-// 				_ = ConsoleConfiguration.Instance;
-// 				_ = ContentConfiguration.Instance;
-// 				_ = EditorConfiguration.Instance;
-// 				_ = InventoryConfiguration.Instance;
-// 				_ = SessionConfiguration.Instance;
-// 				_ = ShopConfiguration.Instance;
-// 				_ = SoundConfiguration.Instance;
-// 				_ = ThemeConfiguration.Instance;
-// 				_ = TournamentsConfiguration.Instance;
-// 			}
-// 			// Solves a specific issue on first installation of package ---
-// 			catch (ModuleConfigurationNotReadyException ex)
-// 			{
-// 				initializationExceptions.Add(ex);
-// 				EditorApplication.delayCall += () =>
-// 				{
-// 					Initialize();
-// 				};
-// 				return;
-// 			}
-// 			
-// 			FixPathVariable(EditorConfiguration.Instance);
-//
-// 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
-// 			CoreConfiguration.OnValidate();
-// 			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
-// 			if (!Application.isPlaying)
-// 			{
-// 				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
-// 				switch (promiseHandlerConfig)
-// 				{
-// 					case CoreConfiguration.EventHandlerConfig.Guarantee:
-// 					{
-// 						if (!PromiseBase.HasUncaughtErrorHandler)
-// 							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
-//
-// 						break;
-// 					}
-// 					case CoreConfiguration.EventHandlerConfig.Replace:
-// 					case CoreConfiguration.EventHandlerConfig.Add:
-// 					{
-// 						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
-// 						break;
-// 					}
-// 					default:
-// 						throw new ArgumentOutOfRangeException();
-// 				}
-// 			}
-//
-// 			// Reload the current environment data
-// 			BeamableEnvironment.ReloadEnvironment();
-//
-// 			try
-// 			{
-// 				BeamCliUtil.InitializeBeamCli();
-// 			}
-// 			catch (Exception ex)
-// 			{
-// 				initializationExceptions.Add(ex);
-// 				EditorApplication.delayCall += () =>
-// 				{
-// 					Initialize();
-// 				};
-// 				return;
-// 			}
-//
-// 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
-// 			// Initialize Editor instances of Reflection service
-// 			EditorReflectionCache = new ReflectionCache();
-//
-// 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
-// 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-// 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
-// 				coreConfiguration.ReflectionSystemPaths
-// 								 .Where(Directory.Exists)
-// 								 .ToArray());
-//
-// 			// Get ReflectionSystemObjects and sort them
-// 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-// 																	{
-// 																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-// 																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-// 																	})
-// 																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-// 																	.Where(system => system.Enabled)
-// 																	.ToList();
-// 			if (reflectionSystemObjects.Count < 1)
-// 			{
-// 				EditorApplication.delayCall += () =>
-// 				{
-// 					Initialize();
-// 				};
-// 				return;
-// 			}
-// 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
-//
-// 			// Inject them into the ReflectionCache system in the correct order.
-// 			foreach (var reflectionSystemObject in reflectionSystemObjects)
-// 			{
-// 				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
-// 				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
-// 			}
-//
-// 			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
-// 			var contentReflectionCache = new ContentTypeReflectionCache();
-// 			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
-// 			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
-//
-// 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
-// 			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
-// 			// Finally, calls the Generate Reflection cache
-// 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
-//
-// 			// Initialize BeamEditorContext dependencies
-// 			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
-// 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
-//
-// 			GetReflectionSystem<BeamReflectionCache.Registry>()
-// 				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
-//
-// 			// Set flag of SocialsImporter
-// 			BeamableSocialsImporter.SetFlag();
-// 			
-//
-// 			async Promise InitDefaultContext()
-// 			{
-// 				try
-// 				{
-// 					Debug.Log("chris-test-1");
-// 					await BeamEditorContext.Default.InitializePromise;
-//
-// 					Debug.Log("chris-test-2");
-//
-// #if BEAMABLE_DEVELOPER
-// 					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
-// #endif
-// 					IsInitialized = true;
-//
-// #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-// 					// Initialize toolbar
-// 					BeamableToolbarExtender.LoadToolbarExtender();
-//
-// #endif
-// 					Debug.Log("chris-test-3");
-//
-// 				}
-// 				catch (Exception ex)
-// 				{
-// 					Debug.Log("Chris failure");
-// 					Debug.LogError(ex);
-// 					throw;
-// 				}
-// 			}
-//
-// 			InitDefaultContext().Error(Debug.LogError);
-// 		}
+		static void Initialize()
+		{
+			
+			Debug.Log("Init attempt");
+			if (IsInitialized) return;
+			Debug.Log("Init attempt for real");
+
+			initializeAttemptCount++;
+
+			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
+			{
+				Debug.LogWarning($"Beamable Editor is struggling to initialize. Attempt=[{initializeAttemptCount}] exception-count=[{initializationExceptions.Count}]");
+				foreach (var ex in initializationExceptions)
+				{
+					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+				}
+
+				return;
+			}
+
+			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
+			// The ONLY fail case is:
+			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
+			//   - Empirically, we noticed this takes 2~3 attempts (frames) until this is done. So it's an acceptable and unnoticeable wait.
+			// Doing this loading in this manner and making our windows delay their initialization until this is initialized (see BeamableAssistantWindow.OnEnable), we can
+			// never have to care about this UnityEditor problem in our code that actually does things and we can have a guarantee that these will never throw.
+			CoreConfiguration coreConfiguration;
+			try
+			{
+				coreConfiguration = CoreConfiguration = CoreConfiguration.Instance;
+				_ = AccountManagementConfiguration.Instance;
+				_ = AvatarConfiguration.Instance;
+				_ = ConsoleConfiguration.Instance;
+				_ = ContentConfiguration.Instance;
+				_ = EditorConfiguration.Instance;
+				_ = InventoryConfiguration.Instance;
+				_ = SessionConfiguration.Instance;
+				_ = ShopConfiguration.Instance;
+				_ = SoundConfiguration.Instance;
+				_ = ThemeConfiguration.Instance;
+				_ = TournamentsConfiguration.Instance;
+			}
+			// Solves a specific issue on first installation of package ---
+			catch (ModuleConfigurationNotReadyException ex)
+			{
+				initializationExceptions.Add(ex);
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
+				return;
+			}
+			
+			FixPathVariable(EditorConfiguration.Instance);
+
+			// Ensures we have the latest assembly definitions and paths are all correctly setup.
+			CoreConfiguration.OnValidate();
+			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
+			if (!Application.isPlaying)
+			{
+				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+				switch (promiseHandlerConfig)
+				{
+					case CoreConfiguration.EventHandlerConfig.Guarantee:
+					{
+						if (!PromiseBase.HasUncaughtErrorHandler)
+							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+
+						break;
+					}
+					case CoreConfiguration.EventHandlerConfig.Replace:
+					case CoreConfiguration.EventHandlerConfig.Add:
+					{
+						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+						break;
+					}
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
+
+			// Reload the current environment data
+			BeamableEnvironment.ReloadEnvironment();
+
+			try
+			{
+				BeamCliUtil.InitializeBeamCli();
+			}
+			catch (Exception ex)
+			{
+				initializationExceptions.Add(ex);
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
+				return;
+			}
+
+			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
+			// Initialize Editor instances of Reflection service
+			EditorReflectionCache = new ReflectionCache();
+
+			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
+			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
+			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+				coreConfiguration.ReflectionSystemPaths
+								 .Where(Directory.Exists)
+								 .ToArray());
+
+			// Get ReflectionSystemObjects and sort them
+			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
+			if (reflectionSystemObjects.Count < 1)
+			{
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
+				return;
+			}
+			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
+
+			// Inject them into the ReflectionCache system in the correct order.
+			foreach (var reflectionSystemObject in reflectionSystemObjects)
+			{
+				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
+				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
+			}
+
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
+
+			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
+			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
+			// Finally, calls the Generate Reflection cache
+			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
+
+			// Initialize BeamEditorContext dependencies
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
+			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
+
+			GetReflectionSystem<BeamReflectionCache.Registry>()
+				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
+
+			// Set flag of SocialsImporter
+			BeamableSocialsImporter.SetFlag();
+			
+
+			async Promise InitDefaultContext()
+			{
+				try
+				{
+					Debug.Log("chris-test-1");
+					await BeamEditorContext.Default.InitializePromise;
+
+					Debug.Log("chris-test-2");
+
+#if BEAMABLE_DEVELOPER
+					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
+					IsInitialized = true;
+
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+					// Initialize toolbar
+					BeamableToolbarExtender.LoadToolbarExtender();
+
+#endif
+					Debug.Log("chris-test-3");
+
+				}
+				catch (Exception ex)
+				{
+					Debug.Log("Chris failure");
+					Debug.LogError(ex);
+					throw;
+				}
+			}
+
+			InitDefaultContext().Error(Debug.LogError);
+		}
 
 		public static bool HasDependencies()
 		{
