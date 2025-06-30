@@ -117,12 +117,14 @@ namespace Beamable.Editor.Accounts
 								case BEAM_PROD_ENDPOINT:
 									env = Env.Beamable;
 									break;
+								#if BEAMABLE_DEVELOPER
 								case BEAM_STAGE_ENDPOINT:
 									env = Env.Staging;
 									break;
 								case BEAM_DEV_ENDPOINT:
 									env = Env.Dev;
 									break;
+								#endif
 								default:
 									env = Env.Custom;
 									break;
