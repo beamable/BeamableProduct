@@ -217,6 +217,7 @@ jobs:
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 10
+        working-directory: ./
         continue-on-error: true   # Prevents job from stopping on test failure
         env:
           BEAM_UNITY_TEST_CI: "true"
