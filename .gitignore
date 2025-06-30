@@ -172,3 +172,10 @@ client/Assets/BeamSemiAutomatedTester/Reports
 client/BeamableSource/*.nupkg
 cli/.run/UNREAL-*.run.xml
 cli/.run/UNITY-*.run.xml
+
+# Web SDK project files
+web/.idea
+web/dist
+web/docs
+web/node_modules
+web/temp
