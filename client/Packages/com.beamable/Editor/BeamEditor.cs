@@ -574,30 +574,38 @@ namespace Beamable
 
 			async Promise Initialize()
 			{
-				
-				// initialize the default dependencies before a beam context ever gets going.
-				if (ContentIO.EnsureAllDefaultContent())
+				try
 				{
-					AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-					                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-					AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-				}
+					// initialize the default dependencies before a beam context ever gets going.
+					if (ContentIO.EnsureAllDefaultContent())
+					{
+						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+					}
 
-				
-				// fetch latest CLI data, 
-				await BeamCli.Refresh();
 
-				if (!BeamCli.HasCid)
-				{
-					// the user is not signed in...
-					await BeamCli.Logout();
+					// fetch latest CLI data, 
+					await BeamCli.Refresh();
+
+					if (!BeamCli.HasCid)
+					{
+						// the user is not signed in...
+						await BeamCli.Logout();
+						ApplyRequesterToken();
+						return;
+					}
+
 					ApplyRequesterToken();
-					return;
+					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+					PublishDefaultContent();
 				}
-
-				ApplyRequesterToken();
-				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-				PublishDefaultContent();
+				catch (Exception ex)
+				{
+					Debug.LogError("Failed to init Beam Editor Context");
+					Debug.LogError(ex);
+					throw ex;
+				}
 			}
 
 			InitializePromise = Initialize().ToPromise();

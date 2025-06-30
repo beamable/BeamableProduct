@@ -296,9 +296,8 @@ namespace Beamable.Editor.BeamCli
 				email = email,
 				password = password,
 				ignorePid = true,
+				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray(),
 				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
-				// var extraPaths = BeamablePackages.GetManifestFileReferences();
-
 			};
 			var command = Command;
 			command.ModifierNextDefault(args =>
