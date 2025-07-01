@@ -64,6 +64,21 @@ namespace Beamable.Editor.BeamCli
 
 		public static void InstallToolFromLocalPackageSource()
 		{
+			var path = "BeamableNugetSource";
+			if (!Directory.Exists(path))
+			{
+				Debug.Log("------ No package source exists...");
+				return;
+			}
+
+			var files = Directory.GetFiles(path);
+			Debug.Log($"------ Found {files?.Length} files at path package source");
+			foreach (var file in files)
+			{
+				Debug.Log($"----- file=[{file}]");
+			}
+			
+			
 			Debug.Log("------ INSTALL TOOL FROM LOCAL PACKAGE SOURCE");
 			var process = new Process();
 			process.StartInfo.FileName = "dotnet";
