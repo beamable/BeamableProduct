@@ -310,42 +310,42 @@ namespace Beamable
 																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
 																	.Where(system => system.Enabled)
 																	.ToList();
-			if (reflectionSystemObjects.Count < 1)
-			{
-				EditorApplication.delayCall += () =>
-				{
-					Initialize();
-				};
-				return;
-			}
-			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
-
-			// Inject them into the ReflectionCache system in the correct order.
-			foreach (var reflectionSystemObject in reflectionSystemObjects)
-			{
-				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
-				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
-			}
-
-			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
-			var contentReflectionCache = new ContentTypeReflectionCache();
-			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
-			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
-
-			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
-			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
-			// Finally, calls the Generate Reflection cache
-			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
-
-			// Initialize BeamEditorContext dependencies
-			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
-			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
-
-			GetReflectionSystem<BeamReflectionCache.Registry>()
-				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
-
-			// Set flag of SocialsImporter
-			BeamableSocialsImporter.SetFlag();
+			// if (reflectionSystemObjects.Count < 1)
+			// {
+			// 	EditorApplication.delayCall += () =>
+			// 	{
+			// 		Initialize();
+			// 	};
+			// 	return;
+			// }
+			// reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
+			//
+			// // Inject them into the ReflectionCache system in the correct order.
+			// foreach (var reflectionSystemObject in reflectionSystemObjects)
+			// {
+			// 	EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
+			// 	EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
+			// }
+			//
+			// // Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			// var contentReflectionCache = new ContentTypeReflectionCache();
+			// EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			// EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
+			//
+			// // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
+			// // (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
+			// // Finally, calls the Generate Reflection cache
+			// EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
+			//
+			// // Initialize BeamEditorContext dependencies
+			// BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
+			// BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
+			//
+			// GetReflectionSystem<BeamReflectionCache.Registry>()
+			// 	.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
+			//
+			// // Set flag of SocialsImporter
+			// BeamableSocialsImporter.SetFlag();
 			
 
 // 			async Promise InitDefaultContext()
