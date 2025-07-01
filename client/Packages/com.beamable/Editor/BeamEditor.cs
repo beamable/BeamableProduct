@@ -276,19 +276,19 @@ namespace Beamable
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
 			//
-			// try
-			// {
-			// 	BeamCliUtil.InitializeBeamCli();
-			// }
-			// catch (Exception ex)
-			// {
-			// 	initializationExceptions.Add(ex);
-			// 	EditorApplication.delayCall += () =>
-			// 	{
-			// 		Initialize();
-			// 	};
-			// 	return;
-			// }
+			try
+			{
+				BeamCliUtil.InitializeBeamCli();
+			}
+			catch (Exception ex)
+			{
+				initializationExceptions.Add(ex);
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
+				return;
+			}
 			//
 			// // If we ever get to this point, we are guaranteed to run the initialization until the end so we...
 			// // Initialize Editor instances of Reflection service
