@@ -163,26 +163,26 @@ namespace Beamable
 		{
 			if (!HasDependencies())
 			{
-				_dependenciesLoadPromise = ImportDependencies();
-				_dependenciesLoadPromise.Then(_ =>
-				{
-					// EditorUtility.RequestScriptReload();
-					// AssetDatabase.Refresh();
-					// Initialize();
-				}).Error(_ =>
-				{
-					// Initialize();
-				});
+				// _dependenciesLoadPromise = ImportDependencies();
+				// _dependenciesLoadPromise.Then(_ =>
+				// {
+				// 	// EditorUtility.RequestScriptReload();
+				// 	// AssetDatabase.Refresh();
+				// 	// Initialize();
+				// }).Error(_ =>
+				// {
+				// 	// Initialize();
+				// });
 			}
 			else
 			{
 				Initialize();
 			}
 			
-			AssemblyReloadEvents.beforeAssemblyReload += () =>
-			{
-				BeamEditorContext.StopAll().Wait();
-			};
+			// AssemblyReloadEvents.beforeAssemblyReload += () =>
+			// {
+			// 	BeamEditorContext.StopAll().Wait();
+			// };
 			
 		}
 
