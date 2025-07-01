@@ -205,6 +205,8 @@ jobs:
       - name: Copy the nuget packages into unity
         working-directory: ./
         run: |
+          mkdir -p client/BeamableNugetSource/
+          ls BeamableNugetSource
           cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
       
       - name: Cache Unity Folders
