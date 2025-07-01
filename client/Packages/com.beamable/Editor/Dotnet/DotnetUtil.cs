@@ -79,8 +79,12 @@ namespace Beamable.Editor.Dotnet
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
-			proc.WaitForExit();
-
+			if (!proc.WaitForExit(10 * 1000))
+			{
+				Debug.LogError("dotnet new tool-manifest command did not finish fast enough; timed out.");
+				return false;
+			}
+			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
 			if (!string.IsNullOrWhiteSpace(error))
@@ -89,6 +93,7 @@ namespace Beamable.Editor.Dotnet
 			}
 			return proc.ExitCode == 0;
 		}
+		
 
 		static void InstallDotnetToLibrary()
 		{
@@ -219,43 +224,5 @@ namespace Beamable.Editor.Dotnet
 			return false;
 		}
 
-		static bool CheckVersion(string dotnetPath, out PackageVersion version)
-		{
-			version = "0.0.0";
-			var dir = Path.GetDirectoryName(dotnetPath)!;
-			var proc = new Process();
-			proc.StartInfo = new ProcessStartInfo
-			{
-				FileName = Path.GetFullPath(dotnetPath),
-				WorkingDirectory = Path.GetFullPath(dir),
-				Arguments = "--version",
-				CreateNoWindow = true,
-				UseShellExecute = false,
-				RedirectStandardOutput = true
-			};
-
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-
-
-			proc.Start();
-			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", string.Empty);
-			if (string.IsNullOrWhiteSpace(output))
-			{
-				return false;
-			}
-
-			if (!PackageVersion.TryFromSemanticVersionString(output, out version))
-			{
-				return false;
-			}
-
-			return version == REQUIRED_INSTALL_VERSION ;
-		}
-
-		static bool CheckForDotnetAtPath(string dotnetPath)
-		{
-			return File.Exists(dotnetPath);
-		}
 	}
 }

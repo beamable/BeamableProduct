@@ -202,15 +202,11 @@ jobs:
         run: |
           cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
       
-      - name: Install Local CLI Tool
-        working-directory: client
+      - name: Copy the nuget packages into unity
+        working-directory: ./
         run: |
-          dotnet tool install beamable.tools --version 0.0.123.1 --local --create-manifest-if-needed
-      - name: Run CLI Source Build
-        working-directory: cli/cli
-        run: |
-          dotnet build
-
+          cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
+      
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -228,7 +224,7 @@ jobs:
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
-          customParameters: -warnaserror+
+          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.InstallToolFromLocalPackageSource
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}

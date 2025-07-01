@@ -46,13 +46,13 @@ namespace Beamable.Editor.BeamCli
 				Debug.Log("Setting up beam cli2");
 
 				// need to install the CLI
-				// var installResult = InstallTool();
+				var installResult = InstallTool();
 				Debug.Log("Setting up beam cli3");
 
-				// if (!installResult)
-				// {
-				// 	throw new Exception("Beamable could not install the Beam CLI");
-				// }
+				if (!installResult)
+				{
+					throw new Exception("Beamable could not install the Beam CLI");
+				}
 			}
 			catch (Exception ex)
 			{
@@ -62,6 +62,24 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		public static void InstallToolFromLocalPackageSource()
+		{
+			Debug.Log("------ INSTALL TOOL FROM LOCAL PACKAGE SOURCE");
+			var process = new Process();
+			process.StartInfo.FileName = "dotnet";
+			process.StartInfo.Arguments = "nuget add source BeamableNugetSource --name BeamableNugetSource";
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+
+			process.Start();
+			Debug.Log("------ INSTALL LOGS TOOL FROM LOCAL PACKAGE SOURCE");
+			Debug.Log(process.StandardOutput.ReadToEnd());
+			Debug.LogError(process.StandardError.ReadToEnd());
+			process.WaitForExit();
+			Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE");
+		}
+		
 		static bool InstallTool()
 		{
 			if (!DotnetUtil.InstallLocalManifest(out var manifestPath))
@@ -92,7 +110,11 @@ namespace Beamable.Editor.BeamCli
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
-			proc.WaitForExit();
+			if (!proc.WaitForExit(10 * 1000))
+			{
+				Debug.LogError("dotnet tool install command did not finish fast enough; timed out.");
+				return false;
+			}
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
 			if (!string.IsNullOrWhiteSpace(error))
