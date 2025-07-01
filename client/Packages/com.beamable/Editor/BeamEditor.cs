@@ -273,8 +273,8 @@ namespace Beamable
 				}
 			}
 			//
-			// // Reload the current environment data
-			// BeamableEnvironment.ReloadEnvironment();
+			// Reload the current environment data
+			BeamableEnvironment.ReloadEnvironment();
 			//
 			// try
 			// {
