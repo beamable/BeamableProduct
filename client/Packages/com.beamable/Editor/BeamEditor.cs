@@ -245,71 +245,71 @@ namespace Beamable
 				return;
 			}
 			
-			FixPathVariable(EditorConfiguration.Instance);
-
-			// Ensures we have the latest assembly definitions and paths are all correctly setup.
-			CoreConfiguration.OnValidate();
-			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
-			if (!Application.isPlaying)
-			{
-				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
-				switch (promiseHandlerConfig)
-				{
-					case CoreConfiguration.EventHandlerConfig.Guarantee:
-					{
-						if (!PromiseBase.HasUncaughtErrorHandler)
-							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
-
-						break;
-					}
-					case CoreConfiguration.EventHandlerConfig.Replace:
-					case CoreConfiguration.EventHandlerConfig.Add:
-					{
-						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
-						break;
-					}
-					default:
-						throw new ArgumentOutOfRangeException();
-				}
-			}
-
-			// Reload the current environment data
-			BeamableEnvironment.ReloadEnvironment();
-
-			try
-			{
-				BeamCliUtil.InitializeBeamCli();
-			}
-			catch (Exception ex)
-			{
-				initializationExceptions.Add(ex);
-				EditorApplication.delayCall += () =>
-				{
-					Initialize();
-				};
-				return;
-			}
-
-			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
-			// Initialize Editor instances of Reflection service
-			EditorReflectionCache = new ReflectionCache();
-
-			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
-			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
-				coreConfiguration.ReflectionSystemPaths
-								 .Where(Directory.Exists)
-								 .ToArray());
-
-			// Get ReflectionSystemObjects and sort them
-			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-																	{
-																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-																	})
-																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-																	.Where(system => system.Enabled)
-																	.ToList();
+			// FixPathVariable(EditorConfiguration.Instance);
+			//
+			// // Ensures we have the latest assembly definitions and paths are all correctly setup.
+			// CoreConfiguration.OnValidate();
+			// // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
+			// if (!Application.isPlaying)
+			// {
+			// 	var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+			// 	switch (promiseHandlerConfig)
+			// 	{
+			// 		case CoreConfiguration.EventHandlerConfig.Guarantee:
+			// 		{
+			// 			if (!PromiseBase.HasUncaughtErrorHandler)
+			// 				PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+			//
+			// 			break;
+			// 		}
+			// 		case CoreConfiguration.EventHandlerConfig.Replace:
+			// 		case CoreConfiguration.EventHandlerConfig.Add:
+			// 		{
+			// 			PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+			// 			break;
+			// 		}
+			// 		default:
+			// 			throw new ArgumentOutOfRangeException();
+			// 	}
+			// }
+			//
+			// // Reload the current environment data
+			// BeamableEnvironment.ReloadEnvironment();
+			//
+			// try
+			// {
+			// 	BeamCliUtil.InitializeBeamCli();
+			// }
+			// catch (Exception ex)
+			// {
+			// 	initializationExceptions.Add(ex);
+			// 	EditorApplication.delayCall += () =>
+			// 	{
+			// 		Initialize();
+			// 	};
+			// 	return;
+			// }
+			//
+			// // If we ever get to this point, we are guaranteed to run the initialization until the end so we...
+			// // Initialize Editor instances of Reflection service
+			// EditorReflectionCache = new ReflectionCache();
+			//
+			// // Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
+			// // It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
+			// var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+			// 	coreConfiguration.ReflectionSystemPaths
+			// 					 .Where(Directory.Exists)
+			// 					 .ToArray());
+			//
+			// // Get ReflectionSystemObjects and sort them
+			// var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
+			// 														{
+			// 															var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+			// 															return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+			// 														})
+			// 														.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+			// 														.Where(system => system.Enabled)
+			// 														.ToList();
 			// if (reflectionSystemObjects.Count < 1)
 			// {
 			// 	EditorApplication.delayCall += () =>
