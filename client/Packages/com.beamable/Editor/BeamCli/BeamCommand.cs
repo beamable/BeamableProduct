@@ -325,8 +325,9 @@ namespace Beamable.Editor.BeamCli
 
 		public static string GetCommandPrefix()
 		{
-			var beamCli = BeamCliUtil.CLI;
+			// var beamCli = BeamCliUtil.CLI;
 
+			var beamCli = "beam";
 			var isLocalDllFile = beamCli.Contains(".dll");
 
 			if (isLocalDllFile)

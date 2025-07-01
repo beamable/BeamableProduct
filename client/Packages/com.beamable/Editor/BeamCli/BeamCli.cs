@@ -353,6 +353,7 @@ namespace Beamable.Editor.BeamCli
 			get
 			{
 				RealmView realm = null;
+				if (Pid == null) return null;
 				if (pidToRealm?.TryGetValue(Pid, out realm) ?? false)
 				{
 					return realm;
