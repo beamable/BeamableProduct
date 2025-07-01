@@ -278,7 +278,7 @@ namespace Beamable
 			//
 			try
 			{
-				// BeamCliUtil.InitializeBeamCli();
+				BeamCliUtil.InitializeBeamCli();
 			}
 			catch (Exception ex)
 			{

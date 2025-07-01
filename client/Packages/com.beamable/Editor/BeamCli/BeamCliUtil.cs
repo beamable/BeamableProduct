@@ -46,13 +46,13 @@ namespace Beamable.Editor.BeamCli
 				Debug.Log("Setting up beam cli2");
 
 				// need to install the CLI
-				var installResult = InstallTool();
+				// var installResult = InstallTool();
 				Debug.Log("Setting up beam cli3");
 
-				if (!installResult)
-				{
-					throw new Exception("Beamable could not install the Beam CLI");
-				}
+				// if (!installResult)
+				// {
+				// 	throw new Exception("Beamable could not install the Beam CLI");
+				// }
 			}
 			catch (Exception ex)
 			{
