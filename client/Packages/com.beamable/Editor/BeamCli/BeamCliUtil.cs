@@ -19,6 +19,8 @@ namespace Beamable.Editor.BeamCli
 		{
 			get
 			{
+				if (Application.isBatchMode) return false;
+				
 				var config = EditorConfiguration.Instance;
 				if (config == null || !config.AdvancedCli.HasValue) return false;
 
@@ -84,7 +86,7 @@ namespace Beamable.Editor.BeamCli
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
 
-			if (USE_SRC && !Application.isBatchMode)
+			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())
 				{
