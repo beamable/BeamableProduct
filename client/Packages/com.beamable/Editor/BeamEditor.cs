@@ -163,26 +163,26 @@ namespace Beamable
 		{
 			if (!HasDependencies())
 			{
-				// _dependenciesLoadPromise = ImportDependencies();
-				// _dependenciesLoadPromise.Then(_ =>
-				// {
-				// 	// EditorUtility.RequestScriptReload();
-				// 	// AssetDatabase.Refresh();
-				// 	// Initialize();
-				// }).Error(_ =>
-				// {
-				// 	// Initialize();
-				// });
+				_dependenciesLoadPromise = ImportDependencies();
+				_dependenciesLoadPromise.Then(_ =>
+				{
+					EditorUtility.RequestScriptReload();
+					AssetDatabase.Refresh();
+					Initialize();
+				}).Error(_ =>
+				{
+					Initialize();
+				});
 			}
 			else
 			{
 				Initialize();
 			}
 			
-			// AssemblyReloadEvents.beforeAssemblyReload += () =>
-			// {
-			// 	BeamEditorContext.StopAll().Wait();
-			// };
+			AssemblyReloadEvents.beforeAssemblyReload += () =>
+			{
+				BeamEditorContext.StopAll().Wait();
+			};
 			
 		}
 
@@ -190,7 +190,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
 
-		// private static Promise _dependenciesLoadPromise = null;
+		private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{
@@ -278,7 +278,7 @@ namespace Beamable
 			//
 			try
 			{
-				// BeamCliUtil.InitializeBeamCli();
+				BeamCliUtil.InitializeBeamCli();
 			}
 			catch (Exception ex)
 			{
@@ -352,10 +352,7 @@ namespace Beamable
 			{
 				try
 				{
-					Debug.Log("chris-test-1");
 					await BeamEditorContext.Default.InitializePromise;
-
-					Debug.Log("chris-test-2");
 
 #if BEAMABLE_DEVELOPER
 					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
@@ -367,14 +364,12 @@ namespace Beamable
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 					// Initialize toolbar
 					BeamableToolbarExtender.LoadToolbarExtender();
-
 #endif
-					Debug.Log("chris-test-3");
 
 				}
 				catch (Exception ex)
 				{
-					Debug.Log("Chris failure");
+					Debug.Log("Failed in initialize beam editor context. ");
 					Debug.LogError(ex);
 					throw;
 				}

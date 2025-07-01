@@ -373,9 +373,9 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 		public bool HasCid => !string.IsNullOrEmpty(Cid);
-		public string Cid => latestConfig.cid;
-		public string Alias => latestRealmInfo.CustomerAlias;
-		public string Pid => latestConfig.pid;
+		public string Cid => latestConfig?.cid;
+		public string Alias => latestRealmInfo?.CustomerAlias;
+		public string Pid => latestConfig?.pid;
 		public long UserId => latestAccount.id;
 		public bool IsLoggedOut => string.IsNullOrEmpty(latestAccount?.email);
 		public UserPermissions Permissions => new UserPermissions("admin"); // todo; fix this;

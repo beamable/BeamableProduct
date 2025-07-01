@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli
@@ -83,7 +84,7 @@ namespace Beamable.Editor.BeamCli
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
 
-			if (USE_SRC)
+			if (USE_SRC && !Application.isBatchMode)
 			{
 				if (CheckForBuildedSource())
 				{

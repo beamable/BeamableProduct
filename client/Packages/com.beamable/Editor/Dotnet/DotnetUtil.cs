@@ -98,7 +98,11 @@ namespace Beamable.Editor.Dotnet
 				installed = $" Currently installed: {string.Join(", ", versions.Keys)}.";
 			}
 			var message = $"Beamable Unity SDK requires Dotnet SDK {REQUIRED_INSTALL_VERSION} to function properly.{installed} Please download the SDK Installer and proceed with the installation before continuing.";
-			
+
+			if (Application.isBatchMode)
+			{
+				throw new Exception($"Cannot find dotnet, and cannot install in batch-mode. message=[{message}]");
+			}
 			if (EditorUtility.DisplayDialog("Dotnet Installation Required", message,"Download", "Close"))
         	{
 				Application.OpenURL(GetDotnetDownloadLink());
