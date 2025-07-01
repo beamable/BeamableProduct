@@ -245,33 +245,33 @@ namespace Beamable
 				return;
 			}
 			
-			// FixPathVariable(EditorConfiguration.Instance);
-			//
-			// // Ensures we have the latest assembly definitions and paths are all correctly setup.
-			// CoreConfiguration.OnValidate();
-			// // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
-			// if (!Application.isPlaying)
-			// {
-			// 	var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
-			// 	switch (promiseHandlerConfig)
-			// 	{
-			// 		case CoreConfiguration.EventHandlerConfig.Guarantee:
-			// 		{
-			// 			if (!PromiseBase.HasUncaughtErrorHandler)
-			// 				PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
-			//
-			// 			break;
-			// 		}
-			// 		case CoreConfiguration.EventHandlerConfig.Replace:
-			// 		case CoreConfiguration.EventHandlerConfig.Add:
-			// 		{
-			// 			PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
-			// 			break;
-			// 		}
-			// 		default:
-			// 			throw new ArgumentOutOfRangeException();
-			// 	}
-			// }
+			FixPathVariable(EditorConfiguration.Instance);
+			
+			// Ensures we have the latest assembly definitions and paths are all correctly setup.
+			CoreConfiguration.OnValidate();
+			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
+			if (!Application.isPlaying)
+			{
+				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+				switch (promiseHandlerConfig)
+				{
+					case CoreConfiguration.EventHandlerConfig.Guarantee:
+					{
+						if (!PromiseBase.HasUncaughtErrorHandler)
+							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+			
+						break;
+					}
+					case CoreConfiguration.EventHandlerConfig.Replace:
+					case CoreConfiguration.EventHandlerConfig.Add:
+					{
+						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+						break;
+					}
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
 			//
 			// // Reload the current environment data
 			// BeamableEnvironment.ReloadEnvironment();
