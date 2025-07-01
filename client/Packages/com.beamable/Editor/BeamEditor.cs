@@ -278,7 +278,7 @@ namespace Beamable
 			//
 			try
 			{
-				BeamCliUtil.InitializeBeamCli();
+				// BeamCliUtil.InitializeBeamCli();
 			}
 			catch (Exception ex)
 			{
@@ -290,97 +290,97 @@ namespace Beamable
 				return;
 			}
 			//
-			// // If we ever get to this point, we are guaranteed to run the initialization until the end so we...
-			// // Initialize Editor instances of Reflection service
-			// EditorReflectionCache = new ReflectionCache();
-			//
-			// // Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
-			// // It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-			// var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
-			// 	coreConfiguration.ReflectionSystemPaths
-			// 					 .Where(Directory.Exists)
-			// 					 .ToArray());
-			//
-			// // Get ReflectionSystemObjects and sort them
-			// var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-			// 														{
-			// 															var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-			// 															return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-			// 														})
-			// 														.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-			// 														.Where(system => system.Enabled)
-			// 														.ToList();
-			// if (reflectionSystemObjects.Count < 1)
-			// {
-			// 	EditorApplication.delayCall += () =>
-			// 	{
-			// 		Initialize();
-			// 	};
-			// 	return;
-			// }
-			// reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
-			//
-			// // Inject them into the ReflectionCache system in the correct order.
-			// foreach (var reflectionSystemObject in reflectionSystemObjects)
-			// {
-			// 	EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
-			// 	EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
-			// }
-			//
-			// // Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
-			// var contentReflectionCache = new ContentTypeReflectionCache();
-			// EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
-			// EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
-			//
-			// // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
-			// // (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
-			// // Finally, calls the Generate Reflection cache
-			// EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
-			//
-			// // Initialize BeamEditorContext dependencies
-			// BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
-			// BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
-			//
-			// GetReflectionSystem<BeamReflectionCache.Registry>()
-			// 	.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
-			//
-			// // Set flag of SocialsImporter
-			// BeamableSocialsImporter.SetFlag();
+			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
+			// Initialize Editor instances of Reflection service
+			EditorReflectionCache = new ReflectionCache();
+			
+			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
+			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
+			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+				coreConfiguration.ReflectionSystemPaths
+								 .Where(Directory.Exists)
+								 .ToArray());
+			
+			// Get ReflectionSystemObjects and sort them
+			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
+			if (reflectionSystemObjects.Count < 1)
+			{
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
+				return;
+			}
+			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
+			
+			// Inject them into the ReflectionCache system in the correct order.
+			foreach (var reflectionSystemObject in reflectionSystemObjects)
+			{
+				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
+				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
+			}
+			
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
+			
+			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
+			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
+			// Finally, calls the Generate Reflection cache
+			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
+			
+			// Initialize BeamEditorContext dependencies
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
+			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
+			
+			GetReflectionSystem<BeamReflectionCache.Registry>()
+				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
+			
+			// Set flag of SocialsImporter
+			BeamableSocialsImporter.SetFlag();
 			
 
-// 			async Promise InitDefaultContext()
-// 			{
-// 				try
-// 				{
-// 					Debug.Log("chris-test-1");
-// 					await BeamEditorContext.Default.InitializePromise;
-//
-// 					Debug.Log("chris-test-2");
-//
-// #if BEAMABLE_DEVELOPER
-// 					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
-// #endif
-// 					IsInitialized = true;
-//
-// #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-// 					// Initialize toolbar
-// 					BeamableToolbarExtender.LoadToolbarExtender();
-//
-// #endif
-// 					Debug.Log("chris-test-3");
-//
-// 				}
-// 				catch (Exception ex)
-// 				{
-// 					Debug.Log("Chris failure");
-// 					Debug.LogError(ex);
-// 					throw;
-// 				}
-// 			}
+			async Promise InitDefaultContext()
+			{
+				try
+				{
+					Debug.Log("chris-test-1");
+					await BeamEditorContext.Default.InitializePromise;
 
-			// InitDefaultContext().Error(Debug.LogError);
+					Debug.Log("chris-test-2");
+
+#if BEAMABLE_DEVELOPER
+					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
+					IsInitialized = true;
+
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+					// Initialize toolbar
+					BeamableToolbarExtender.LoadToolbarExtender();
+
+#endif
+					Debug.Log("chris-test-3");
+
+				}
+				catch (Exception ex)
+				{
+					Debug.Log("Chris failure");
+					Debug.LogError(ex);
+					throw;
+				}
+			}
+
+			InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static bool HasDependencies()
