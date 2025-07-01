@@ -574,7 +574,7 @@ namespace Beamable
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
 
-			async Promise Initialize()
+			Promise Initialize()
 			{
 				try
 				{
@@ -601,6 +601,7 @@ namespace Beamable
 					// ApplyRequesterToken();
 					// var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 					// PublishDefaultContent();
+					return Promise.Success;
 				}
 				catch (Exception ex)
 				{
