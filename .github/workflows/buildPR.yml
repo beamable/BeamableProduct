@@ -226,7 +226,7 @@ jobs:
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
-          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.InstallToolFromLocalPackageSource
+          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
