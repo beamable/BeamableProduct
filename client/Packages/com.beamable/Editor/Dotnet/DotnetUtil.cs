@@ -79,17 +79,13 @@ namespace Beamable.Editor.Dotnet
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
-			if (!proc.WaitForExit(10 * 1000))
-			{
-				Debug.LogError("dotnet new tool-manifest command did not finish fast enough; timed out.");
-				return false;
-			}
+			var finished = proc.WaitForExit(10 * 1000);
 			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
+			if (!string.IsNullOrWhiteSpace(error) || !finished)
 			{
-				Debug.LogError("Unable to create local manifest: " + error + " / " + output);
+				Debug.LogError($"[{finished}] Unable to create local manifest: " + error + " / " + output);
 			}
 			return proc.ExitCode == 0;
 		}

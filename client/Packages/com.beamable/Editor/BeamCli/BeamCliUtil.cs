@@ -76,7 +76,10 @@ namespace Beamable.Editor.BeamCli
 			Debug.Log("------ INSTALL LOGS TOOL FROM LOCAL PACKAGE SOURCE");
 			Debug.Log(process.StandardOutput.ReadToEnd());
 			Debug.LogError(process.StandardError.ReadToEnd());
-			process.WaitForExit();
+			if (!process.WaitForExit(10 * 1000))
+			{
+				Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE EXPIRED");
+			}
 			Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE");
 		}
 		
