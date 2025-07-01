@@ -2,6 +2,7 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
@@ -12,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Editor.ContentService
 {
@@ -23,6 +25,8 @@ namespace Editor.ContentService
 		private readonly BeamEditorContext _beamContext;
 		private readonly IDependencyProvider _provider;
 		private Dictionary<string, List<LocalContentManifestEntry>> _typeContentCache =  new();
+		private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
+		private HashSet<string> _invalidContents = new();
 
 		public Dictionary<string, LocalContentManifestEntry> CachedManifest { get; }
 		
@@ -36,6 +40,8 @@ namespace Editor.ContentService
 			_beamContext = beamContext;
 			_provider = provider;
 			CachedManifest = new();
+			ContentObject.ValidationContext = ValidationContext;
+			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
 		
@@ -48,10 +54,11 @@ namespace Editor.ContentService
 			saveCommand.Run();
 		}
 
-		public void SyncContents(bool syncModified = true, 
-		                         bool syncCreated = true, 
-		                         bool syncConflicted = true, 
-		                         string filter = null, 
+		public async Task SyncContents(bool syncModified = true,
+		                         bool syncCreated = true,
+		                         bool syncConflicted = true,
+		                         bool syncDeleted = true,
+		                         string filter = null,
 		                         ContentFilterType filterType = default)
 		{
 			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
@@ -59,10 +66,11 @@ namespace Editor.ContentService
 				syncModified = syncModified,
 				syncConflicts = syncConflicted,
 				syncCreated = syncCreated,
+				syncDeleted = syncDeleted,
 				filter = filter,
 				filterType = filterType,
 			});
-			contentSyncCommand.Run();
+			await contentSyncCommand.Run();
 		}
 
 		public void SetContentTags(string contentId, string[] tags)
@@ -90,12 +98,20 @@ namespace Editor.ContentService
 				Debug.Log($"No Entry found with id: {contentId}");
 				return;
 			}
+
+			if (!ValidateNewContentName(newName))
+			{
+				Debug.Log($"{newName} contains invalid characters ({string.Join(", ", Path.GetInvalidFileNameChars())}");
+				return;
+			}
+			
+			var fullName = $"{entry.TypeName}.{newName}.json";
 			
 			string fileDirectoryPath = Path.GetDirectoryName(entry.JsonFilePath);
-			string newFileNamePath = Path.Combine(fileDirectoryPath, newName);
+			string newFileNamePath = Path.Combine(fileDirectoryPath, fullName);
 			if (File.Exists(newFileNamePath))
 			{
-				Debug.Log($"A Content already exists with name: {newName}");
+				Debug.LogWarning($"A Content already exists with name: {newName}");
 				return;
 			}
 
@@ -115,7 +131,12 @@ namespace Editor.ContentService
 				CachedManifest[newId] = entry;
 			}
 			
-			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, $"{entry.TypeName}.{newName}.json");
+			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, fullName);
+		}
+
+		private bool ValidateNewContentName(string newName)
+		{
+			return Path.GetInvalidFileNameChars().All(invalidFileNameChar => !newName.Contains(invalidFileNameChar));
 		}
 
 		public void DeleteContent(string contentId)
@@ -140,12 +161,15 @@ namespace Editor.ContentService
 				use = useLocal ? "local" : "realm"
 			});
 			resolveCommand.Run();
+			var content = CachedManifest[contentId];
+			content.IsInConflict = false;
+			CachedManifest[contentId] = content;
 		}
 
-		public void Publish()
+		public async Task Publish()
 		{
 			var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
-			publishCommand.Run();
+			await publishCommand.Run();
 		}
 
 		public async Promise Reload()
@@ -153,6 +177,7 @@ namespace Editor.ContentService
 			ValidationContext.AllContent.Clear();
 			CachedManifest.Clear();
 			_typeContentCache.Clear();
+			_invalidContents.Clear();
 			if (_contentWatcher != null)
 			{
 				_contentWatcher.Cancel();
@@ -162,7 +187,7 @@ namespace Editor.ContentService
 			TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
 			
 			_contentWatcher = _cli.ContentPs(new ContentPsArgs() {watch = true});
-			_contentWatcher.OnStreamContentPsCommandEvent(report =>
+			_contentWatcher.OnStreamContentPsCommandEvent(async report =>
 			{
 				string currentCid = _beamContext.CurrentRealm.Cid;
 				string currentPid = _beamContext.CurrentRealm.Pid;
@@ -180,6 +205,9 @@ namespace Editor.ContentService
 				{
 					foreach (var entry in changesManifest.Entries)
 					{
+
+						await ValidateForInvalidFields(entry);
+						
 						CachedManifest[entry.FullId] =  entry;
 						ValidationContext.AllContent[entry.FullId] = entry;
 						AddContentToCache(entry);
@@ -191,6 +219,7 @@ namespace Editor.ContentService
 				{
 					foreach (var entry in removeManifest.Entries)
 					{
+						_invalidContents.Remove(entry.FullId);
 						CachedManifest.Remove(entry.FullId);
 						ValidationContext.AllContent.Remove(entry.FullId);
 						RemoveContentFromCache(entry);
@@ -207,12 +236,14 @@ namespace Editor.ContentService
 					manifestIsFetchedTaskCompletion.SetResult(true);
 				}
 
+				ValidationContext.Initialized = true;
+
 			});
 			_ = _contentWatcher.Command.Run();
 			
 			await manifestIsFetchedTaskCompletion.Task;
 		}
-		
+
 		public void ReceiveStorageHandle(StorageHandle<CliContentService> handle)
 		{
 			_handle = handle;
@@ -243,6 +274,34 @@ namespace Editor.ContentService
 
 			return typeContents;
 		}
+		
+		public static async Task<string> LoadContentFileData(LocalContentManifestEntry entry)
+		{
+			FileStream fileStream = new FileStream(entry.JsonFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			StreamReader streamReader = new StreamReader(fileStream);
+
+			string fileContent = await streamReader.ReadToEndAsync();
+			streamReader.Close();
+			fileStream.Close();
+			return fileContent;
+		}
+
+		public bool IsContentInvalid(string entryId)
+		{
+			return _invalidContents.Contains(entryId);
+		}
+		
+		public void UpdateContentValidationStatus(string fullId, bool hasValidationError)
+		{
+			if (hasValidationError)
+			{
+				_invalidContents.Add(fullId);	
+			}
+			else
+			{
+				_invalidContents.Remove(fullId);
+			}
+		}
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
@@ -260,6 +319,22 @@ namespace Editor.ContentService
 			{
 				typeContentList.RemoveAll(item => item.FullId == entry.FullId);
 			}
+		}
+		
+		private async Task ValidateForInvalidFields(LocalContentManifestEntry entry)
+		{
+			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type) || !File.Exists(entry.JsonFilePath))
+			{
+				_invalidContents.Remove(entry.FullId);
+				return;
+			}
+
+			string fileContent = await LoadContentFileData(entry);
+			var contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
+			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
+			bool hasValidationError = contentObject != null && contentObject.HasValidationErrors(ValidationContext, out var _);
+			UpdateContentValidationStatus(entry.FullId, hasValidationError);
+			
 		}
 	}
 }

@@ -367,6 +367,7 @@ namespace Beamable.Common.Content
       public ContentStatus ContentStatus { get; set; }
       public bool IsInConflict { get; set; }
 
+
       [SerializeField]
       private string _serializedValidationGUID { get; set; }
       

@@ -4,6 +4,7 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Content;
 using Beamable.Editor.Util;
 using Beamable.Utility;
+using Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,8 +48,9 @@ namespace Editor.UI.ContentWindow
 		private string _editItemId;
 		private string[] _editLabels;
 		private bool _needToFocusLabel;
-
 		
+		private readonly Color _tableSeparatorColor = new Color(0.13f, 0.13f, 0.13f);
+
 		private void BuildItemsPanelStyles()
 		{
 			_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
@@ -176,7 +178,7 @@ namespace Editor.UI.ContentWindow
 					);
 				}
 				
-				contentRect.xMin += FOLDOUT_WIDTH + BASE_PADDING;
+				contentRect.xMin += FOLDOUT_WIDTH;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
 				float iconSize = 25f;
@@ -200,13 +202,13 @@ namespace Editor.UI.ContentWindow
 				
 				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
 				{
-					int nextIndent = indentLevel + 1;
 					if (items.Count > 0)
 					{
-						float availableSpace = contentRect.width - (nextIndent * CONTENT_GROUP_INDENT_WIDTH);
-						DrawTypeItems(items, nextIndent, availableSpace);
+						float availableSpace = contentRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH);
+						DrawTypeItems(items, indentLevel, availableSpace);
+						GUILayout.Space(BASE_PADDING);
 					}
-					DrawGroupNode(contentType, nextIndent);
+					DrawGroupNode(contentType, indentLevel + 1);
 				}
 			}
 		}
@@ -242,7 +244,7 @@ namespace Editor.UI.ContentWindow
     
 			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
 			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
-			BeamGUI.DrawHorizontalSeparatorLine(headerRect.xMin, headerRect.yMin - 1f, headerRect.width + 1, Color.gray);
+			BeamGUI.DrawHorizontalSeparatorLine(headerRect.xMin, headerRect.yMin - 1f, headerRect.width + 1, _tableSeparatorColor);
 			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
 		}
 
@@ -255,7 +257,7 @@ namespace Editor.UI.ContentWindow
 				DrawItemRow(items[index], index, rowRect, columnWidths);
 				if (index == items.Count - 1)
 				{
-					BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1, Color.gray);
+					BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1, _tableSeparatorColor);
 				}
 			}
 		}
@@ -271,7 +273,10 @@ namespace Editor.UI.ContentWindow
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", "-----"};
-			Texture[] icons = { GetIconForStatus(entry.StatusEnum)};
+			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
+								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
+								: BeamGUI.iconInvalid;
+			Texture[] icons = {iconForEntry};
 			
 			bool[] isEditable = {isEditingName};
 			
@@ -327,21 +332,32 @@ namespace Editor.UI.ContentWindow
 		private void ShowItemOptionsMenu(LocalContentManifestEntry entry)
 		{
 			GenericMenu menu = new GenericMenu();
-			menu.AddItem(new GUIContent("Rename Item"), false, () =>
+			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
-				_editItemId = entry.FullId;
-				_editLabels = new[] {entry.Name};
-				_needToFocusLabel = true;
-			});
-			menu.AddItem(new GUIContent("Delete Item"), false, () =>
+				menu.AddDisabledItem(new GUIContent("Rename Item"));
+				menu.AddDisabledItem(new GUIContent("Delete Item"));
+			}
+			else
 			{
-				if (EditorUtility.DisplayDialog("Delete Content", 
-				                                "Are you sure you want to delete this content?", "Yes", "No"))
+				menu.AddItem(new GUIContent("Rename Item"), false, () =>
 				{
-					_contentService.DeleteContent(entry.FullId);
-				}
-				
-			});
+					_editItemId = entry.FullId;
+					_editLabels = new[] {entry.Name};
+					_needToFocusLabel = true;
+				});
+
+
+				menu.AddItem(new GUIContent("Delete Item"), false, () =>
+				{
+					if (EditorUtility.DisplayDialog("Delete Content",
+					                                "Are you sure you want to delete this content?", "Yes", "No"))
+					{
+						_contentService.DeleteContent(entry.FullId);
+					}
+
+				});
+			}
+
 			menu.ShowAsContext();
 		}
 
@@ -358,7 +374,7 @@ namespace Editor.UI.ContentWindow
 			}
 			
 			float separatorHeight = fullRect.height + SEPARATOR_WIDTH_AREA;
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, Color.gray);
+			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			for (int i = 0; i < labels.Length; i++)
 			{
 				string labelValue = labels[i];
@@ -369,7 +385,7 @@ namespace Editor.UI.ContentWindow
 					float iconSize = fullRect.height - BASE_PADDING;
 					if (icons[i])
 					{
-						Rect iconRect = new Rect(fullRect.xMin, fullRect.center.y - iconSize / 2f, iconSize, fullRect.height);
+						Rect iconRect = new Rect(fullRect.xMin, fullRect.center.y - iconSize / 2f, iconSize, iconSize);
 						GUI.DrawTexture(iconRect, icons[i], ScaleMode.ScaleToFit);
 					}
 					itemWidth -= iconSize;
@@ -398,12 +414,12 @@ namespace Editor.UI.ContentWindow
 				fullRect.xMin += itemWidth;
 				if (i + 1 < labels.Length)
 				{
-					BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, Color.gray);
+					BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 					fullRect.xMin += SEPARATOR_WIDTH_AREA;
 				}
 			}
 
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMax, fullRect.yMin, separatorHeight, Color.gray);
+			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMax, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			return labels;
 		}
 
@@ -426,9 +442,9 @@ namespace Editor.UI.ContentWindow
 				return;
 			}
 			
-			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
-			
-			var contentObject = CreateInstance(type) as IContentObject;
+			string fileContent = await CliContentService.LoadContentFileData(entry);
+
+			var contentObject = CreateInstance(type) as ContentObject;
 			var selectedContentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
 			if (selectedContentObject)
 			{
@@ -450,23 +466,22 @@ namespace Editor.UI.ContentWindow
 				await LoadItemScriptable(entry);
 				return;
 			}
+			
+			contentObject.Tags = entry.Tags.ToArray();
+			contentObject.ContentStatus = entry.StatusEnum;
+			contentObject.IsInConflict = entry.IsInConflict;
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
 				contentObject.SetIdAndVersion(entry.FullId, String.Empty);
-				contentObject.Tags = entry.Tags.ToArray();
 				contentObject.SetContentName(entry.Name);
-				contentObject.ContentStatus = ContentStatus.Deleted;
-				contentObject.IsInConflict = entry.IsInConflict;
 				return;
 			}
-			string fileContent = await File.ReadAllTextAsync(entry.JsonFilePath);
+			
+			string fileContent = await CliContentService.LoadContentFileData(entry);
 			
 			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
 			if (contentObject)
 			{
-				contentObject.Tags = entry.Tags.ToArray();
-				contentObject.ContentStatus = entry.StatusEnum;
-				contentObject.IsInConflict = entry.IsInConflict;
 				contentObject.OnEditorChanged = () =>
 				{
 					SaveContent(contentObject);
@@ -477,6 +492,8 @@ namespace Editor.UI.ContentWindow
 		private void SaveContent(ContentObject selectedContentObject)
 		{
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+			bool hasValidationError = selectedContentObject.HasValidationErrors(_contentService.GetValidationContext(), out var _);
+			_contentService.UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
 			_contentService.SaveContent(selectedContentObject.Id, propertiesJson);
 		}
 
@@ -499,12 +516,15 @@ namespace Editor.UI.ContentWindow
 			}
 		}
 
-		public static Texture GetIconForStatus(ContentStatus statusEnum)
+		public static Texture GetIconForStatus(bool isInConflict, ContentStatus statusEnum)
 		{
+			if(isInConflict)
+				return BeamGUI.iconStatusConflicted;
+			
 			switch (statusEnum)
 			{
 				case ContentStatus.Invalid:
-					return BeamGUI.iconStatusInvalid;
+					return BeamGUI.iconInvalid;
 				case ContentStatus.Created:
 					return BeamGUI.iconStatusAdded;
 				case ContentStatus.Deleted:
@@ -557,9 +577,7 @@ namespace Editor.UI.ContentWindow
 			}
 
 			// Check if matches any status
-			if (statuses.Count > 0 &&
-			    statuses.All(status => !entry.StatusEnum.ToString()
-			                                 .Equals(status, StringComparison.InvariantCultureIgnoreCase)))
+			if (statuses.Count > 0 && !statuses.Any(ValidateEntryStatus))
 			{
 				return false;
 			}
@@ -577,6 +595,21 @@ namespace Editor.UI.ContentWindow
 			                           SelectedContentType.Any(item => entry.TypeName.StartsWith(item + "."));
 			
 			return matchesContentGroup;
+
+			bool ValidateEntryStatus(string status)
+			{
+				if (status == StatusMapToString[ContentFilterStatus.Invalid])
+				{
+					return _contentService.IsContentInvalid(entry.FullId);
+				}
+
+				if (status == StatusMapToString[ContentFilterStatus.Conflicted])
+				{
+					return entry.IsInConflict;
+				}
+
+				return FilterStatusToContentStatus[status] == entry.StatusEnum;
+			}
 		}
 
 		private List<LocalContentManifestEntry> SortItems(IEnumerable<LocalContentManifestEntry> items)

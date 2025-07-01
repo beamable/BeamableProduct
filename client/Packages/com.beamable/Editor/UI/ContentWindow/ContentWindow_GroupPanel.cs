@@ -80,12 +80,14 @@ namespace Editor.UI.ContentWindow
 				margin = new RectOffset(0, 0, 10, 20)
 			};
 			
-			_selectedStyle = new GUIStyle("TV Selection");
 			_nonSelectedStyle = new GUIStyle("Label");
 		}
 
 		private void DrawContentGroupPanel()
 		{
+			_selectedStyle ??= new GUIStyle("TV Selection");
+			
+			
 			EditorGUILayout.BeginVertical(GUILayout.Width(CONTENT_GROUP_PANEL_WIDTH));
 			{
 				EditorGUILayout.Space(5);

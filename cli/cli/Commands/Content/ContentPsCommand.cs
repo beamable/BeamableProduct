@@ -48,7 +48,7 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 		// Auto-sync with latest like when we react to a published manifest.
 		else
 		{
-			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false);
+			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
 		}
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.

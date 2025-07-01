@@ -366,7 +366,7 @@ public class ContentService
 				Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 				try
 				{
-					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false);
+					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
 
 					// Put this on the channel so it gets picked up below.
 					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
@@ -419,7 +419,8 @@ public class ContentService
 	public async Task<LocalContentFiles> GetAllContentFiles(ClientManifestJsonResponse latestManifest = null, string manifestId = "global",
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool getLocalStateOnly = false,
-		bool allowAutoSyncModified = false)
+		bool allowAutoSyncModified = false,
+		bool allowAutoSyncDeleted = false)
 	{
 		filters ??= Array.Empty<string>();
 
@@ -545,7 +546,7 @@ public class ContentService
 				localFiles.ReferenceManifests = (await Task.WhenAll(allRefsPromises)).ToDictionary(g => g.uid.Value, g => g);
 
 				// Compute conflicts and update the state of the local file
-				ComputeCorrectSyncOp(localFiles, allowAutoSyncModified, out var conflicts, out var autoSync, out var updateReference);
+				ComputeCorrectSyncOp(localFiles, allowAutoSyncModified, allowAutoSyncDeleted, out var conflicts, out var autoSync, out var updateReference);
 				for (int i = 0; i < localFiles.ContentFiles.Count; i++)
 				{
 					ContentFile localFilesContentFile = localFiles.ContentFiles[i];
@@ -753,11 +754,11 @@ public class ContentService
 	/// </summary>
 	public async Task<ContentSyncReport> SyncLocalContent(string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
-		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true,
+		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
 		string referenceManifestUid = "")
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted);
 	}
 
 	/// <summary>
@@ -765,7 +766,7 @@ public class ContentService
 	/// </summary>
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
-		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true)
+		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true)
 	{
 		var report = new ContentSyncReport();
 		report.ManifestId = manifestId;
@@ -776,7 +777,7 @@ public class ContentService
 
 		// Fetch our local state relative to the new target manfest.
 		// We either filter after we load into memory OR before, based on whether that's possible.
-		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId, filterType, filters, allowAutoSyncModified: syncModified);
+		var localContentRelativeToNewManifest = await GetAllContentFiles(targetManifest, manifestId, filterType, filters, allowAutoSyncModified: syncModified, allowAutoSyncDeleted: syncDeleted);
 
 		// Get the list of modified and deleted content to re-download from the target manfiest
 		// If given a list of content ids, will ONLY download the given ids
@@ -911,7 +912,7 @@ public class ContentService
 		}
 	}
 
-	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
+	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
 		out HashSet<string> canUpdateReferenceToTargetWithoutDownload)
 	{
 		conflictedContent = new();
@@ -948,7 +949,7 @@ public class ContentService
 				// A. A local change had not been made against the reference manifest -- which means that we can fetch the new content if it is modified.
 				var caseA = statusAgainstReference is ContentStatus.UpToDate && statusAgainstTarget is ContentStatus.Modified;
 				// B. The content is deleted locally against our reference manifest AND there was a change between our reference manifest and the new target manifest.
-				var caseB = statusAgainstTarget is ContentStatus.Deleted;
+				var caseB = allowDeletedInAutoSync && statusAgainstTarget is ContentStatus.Deleted;
 				// C. If we want to syncModified and the status against target is modified
 				var caseC = allowModifiedInAutoSync && statusAgainstTarget is ContentStatus.Modified;
 				// If either of the above cases are true, we can auto-sync this content.
@@ -1085,10 +1086,17 @@ public class ContentService
 	/// </summary>
 	public async Task SaveContentFile(string contentFolder, ContentFile f)
 	{
-		var fileName = Path.Combine(contentFolder, $"{f.Id}.json");
-		SortContentProperties(ref f);
-		var fileContents = JsonSerializer.Serialize(f, GetContentFileSerializationOptions());
-		await File.WriteAllTextAsync(fileName, fileContents);
+		try
+		{
+			var fileName = Path.Combine(contentFolder, $"{f.Id}.json");
+			SortContentProperties(ref f);
+			var fileContents = JsonSerializer.Serialize(f, GetContentFileSerializationOptions());
+			await File.WriteAllTextAsync(fileName, fileContents);
+		}
+		catch(Exception exception)
+		{
+			Console.WriteLine(exception.Message);
+		}
 	}
 
 	public static void SortContentProperties(ref ContentFile f)

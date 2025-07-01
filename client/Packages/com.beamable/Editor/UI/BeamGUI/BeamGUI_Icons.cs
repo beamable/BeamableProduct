@@ -35,11 +35,12 @@ namespace Beamable.Editor.Util
 		public static Texture iconStatusModified;
 		public static Texture iconStatusAdded;
 		public static Texture iconStatusDeleted;
-		public static Texture iconStatusInvalid;
+		public static Texture iconStatusConflicted;
 		public static Texture iconRotate;
 		public static Texture iconSync;
 		public static Texture iconPublish;
 		public static Texture iconRevertAction;
+		public static Texture iconInvalid;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -264,9 +265,14 @@ namespace Beamable.Editor.Util
 				iconStatusDeleted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Deleted.png");
 			}
 
-			if (iconStatusInvalid == null)
+			if (iconStatusConflicted == null)
 			{
-				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
+				iconStatusConflicted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
+			}
+
+			if (iconInvalid == null)
+			{
+				iconInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Invalid.png");
 			}
 
 			if (iconRotate == null)

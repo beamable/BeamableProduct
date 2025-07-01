@@ -2,11 +2,11 @@
 {
 	public enum ContentFilterStatus
 	{
-		Valid,
 		Invalid,
-		LocalOnly,
-		ServerOnly,
+		Created,
+		Deleted,
 		Modified,
-		Sync,
+		UpToDate,
+		Conflicted,
 	}
 }

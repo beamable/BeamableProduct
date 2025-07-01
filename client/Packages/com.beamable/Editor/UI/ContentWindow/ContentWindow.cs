@@ -7,6 +7,7 @@ using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using Editor.ContentService;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -53,7 +54,15 @@ namespace Editor.UI.ContentWindow
 			{
 				_contentService = Scope.GetService<CliContentService>();
 				_contentService.OnManifestUpdated += Build;
-				_ = _contentService.Reload().Then(_ => SetEditorSelection());
+				_ = _contentService.Reload().Then(_ =>
+				{
+					RegisterForOnManifestUpdated();
+					SetEditorSelection();
+				});
+			}
+			else
+			{
+				RegisterForOnManifestUpdated();
 			}
 			
 
@@ -72,6 +81,12 @@ namespace Editor.UI.ContentWindow
 			BuildItemsPanelStyles();
 			
 			Repaint();
+
+			void RegisterForOnManifestUpdated()
+			{
+				_contentService.OnManifestUpdated -= SetEditorSelection;
+				_contentService.OnManifestUpdated += SetEditorSelection;
+			}
 		}
 
 		protected override void DrawGUI()
@@ -104,6 +119,14 @@ namespace Editor.UI.ContentWindow
 				localContentManifestEntries.AddRange(_contentService.CachedManifest.Values);
 			}
 			return localContentManifestEntries;
+		}
+
+		public static async Task RunTaskOnProgressBar(string progressBarTitle, string progressBarDesc, Task task)
+		{
+			EditorUtility.DisplayProgressBar(progressBarTitle, progressBarDesc, 0);
+			await task;
+			EditorUtility.ClearProgressBar();
+			
 		}
 	}
 }

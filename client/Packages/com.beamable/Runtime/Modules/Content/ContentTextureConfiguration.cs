@@ -10,6 +10,7 @@ namespace Modules.Content
 	[Serializable]
 	public class ContentTextureConfiguration
 	{
+#if UNITY_EDITOR
 		public List<ContentTexturePair> TextureConfigurations;
 
 		public static Dictionary<string, Texture> OriginalTypeIcons = new()
@@ -45,11 +46,13 @@ namespace Modules.Content
 			return item == null || !item.Texture ? FallbackTexture : item.Texture;
 		}
 
+		
 		private static Texture GetTextureFromBeamAssets(string fileName)
 		{
 			return EditorResources.Load<Texture>(
 				$"Packages/com.beamable/Editor/UI/Common/Icons/{fileName}");
 		}
+		#endif
 	}
 
 	[Serializable]

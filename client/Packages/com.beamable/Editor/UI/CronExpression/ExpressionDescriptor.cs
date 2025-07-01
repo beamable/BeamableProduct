@@ -705,11 +705,23 @@ namespace Beamable.CronExpression
 					return part[0];
 
 				string converted = string.Empty;
-				
+
 				if (part.Count == 1)
+				{
 					converted += $"{part[0]}";
+				}
 				else if (part.Count != 0)
-					converted += $"{part[0]}-{part[^1]}";
+				{
+					if (part[^1].Contains("/") && part.Count > 2)
+					{
+						converted += $"{part[0]}-{part[^2]}{part[^1]}";
+					}
+					else
+					{
+						converted += $"{part[0]}-{part[^1]}";
+					}
+				}
+					
 
 				return converted;
 			}

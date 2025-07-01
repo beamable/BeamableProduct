@@ -65,8 +65,17 @@ namespace Beamable.Editor.Content.UI
 						iconRect.yMin,
 						statusIconSize,
 						statusIconSize);
-					var icon = ContentWindow.GetIconForStatus(contentObject.ContentStatus);
+					var icon = ContentWindow.GetIconForStatus(contentObject.IsInConflict, contentObject.ContentStatus);
 					GUI.DrawTexture(statusIconRect, icon, ScaleMode.ScaleToFit);
+					if (contentService.IsContentInvalid(contentObject.Id))
+					{
+						var invalidIconRect = new Rect(
+							iconRect.xMax - statusIconSize/2f, 
+							iconRect.yMin, 
+							statusIconSize, 
+							statusIconSize);
+						GUI.DrawTexture(invalidIconRect, BeamGUI.iconInvalid, ScaleMode.ScaleToFit);
+					}
 				}
 
 				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
@@ -122,7 +131,10 @@ namespace Beamable.Editor.Content.UI
 					if (EditorUtility.DisplayDialog("Revert Content", 
 					                                "Are you sure you want to revert this content?", "Yes", "No"))
 					{
-						contentService.SyncContents(filter: content.Id, filterType: ContentFilterType.ExactIds);
+						_ = ContentWindow.RunTaskOnProgressBar("Revert Content", $"Reverting {content.ContentName}...",
+						                                       contentService.SyncContents(
+							                                       filter: content.Id,
+							                                       filterType: ContentFilterType.ExactIds));
 					}
 					
 				}
@@ -148,6 +160,17 @@ namespace Beamable.Editor.Content.UI
 				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
 				{
 					GenericMenu conflictResolveMenu = new GenericMenu();
+					if (contentService.IsContentInvalid(content.Id))
+					{
+						conflictResolveMenu.AddDisabledItem(new GUIContent("Use local", "Cannot resolve using local because it is invalid"));
+					}
+					else
+					{
+						conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
+						{
+							contentService.ResolveConflict(content.Id, true);
+						});	
+					}
 					conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
 					{
 						contentService.ResolveConflict(content.Id, true);

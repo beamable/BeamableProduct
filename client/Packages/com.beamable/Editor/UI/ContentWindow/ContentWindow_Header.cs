@@ -1,10 +1,8 @@
-﻿using Beamable.Common.BeamCli.Contracts;
-using Beamable.Common.Content;
-using Beamable.Editor.BeamCli.Commands;
+﻿using Beamable;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Util;
 using Editor.UI2.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -15,6 +13,13 @@ namespace Editor.UI.ContentWindow
 	public partial class ContentWindow
 	{
 		private const int HEADER_BUTTON_WIDTH = 50;
+		private const string REVERT_ALL_MENU_ITEM = "Revert All Local Changes (Modified, Created, Deleted, and Conflicted)";
+		private const string REVERT_MODIFIED_MENU_ITEM = "Revert Modified Local Changes";
+		private const string REVERT_CONFLICTED_MENU_ITEM = "Revert Conflicted Changes Only";
+		private const string REVERT_DELETED_MENU_ITEM = "Revert Deleted Contents Only";
+		private const string REVERT_NEW_CONTENTS_MENU_ITEM = "Delete All New Created Changes";
+		private const string REVERT_OPERATION_PROGRESS_TITLE = "Revert Operation";
+		
 		private readonly Dictionary<ContentFilterType, HashSet<string>> _activeFilters = new();
 		private List<string> _allTypes = new();
 		private List<string> _allTags = new();
@@ -31,13 +36,22 @@ namespace Editor.UI.ContentWindow
 			{ContentFilterType.Type, "type:"}
 		};
 		
-		private static readonly Dictionary<ContentStatus, string> StatusMapToString = new()
+		private static readonly Dictionary<ContentFilterStatus, string> StatusMapToString = new()
 		{
-			{ContentStatus.Invalid, "invalid"},
-			{ContentStatus.Created, "created"},
-			{ContentStatus.Deleted, "deleted"},
-			{ContentStatus.Modified, "modified"},
-			{ContentStatus.UpToDate, "upToDate"}
+			{ContentFilterStatus.Invalid, "invalid"},
+			{ContentFilterStatus.Created, "created"},
+			{ContentFilterStatus.Deleted, "deleted"},
+			{ContentFilterStatus.Modified, "modified"},
+			{ContentFilterStatus.UpToDate, "upToDate"},
+			{ContentFilterStatus.Conflicted, "conflicted"}
+		};
+
+		private static readonly Dictionary<string, ContentStatus> FilterStatusToContentStatus = new()
+		{
+			{StatusMapToString[ContentFilterStatus.Created], ContentStatus.Created},
+			{StatusMapToString[ContentFilterStatus.Deleted], ContentStatus.Deleted},
+			{StatusMapToString[ContentFilterStatus.Modified], ContentStatus.Modified},
+			{StatusMapToString[ContentFilterStatus.UpToDate], ContentStatus.UpToDate},
 		};
 
 		private static readonly Dictionary<ContentSortOptionType, string> SortTypeNameMap = new()
@@ -98,14 +112,28 @@ namespace Editor.UI.ContentWindow
 			var hasContentToPublish =
 				items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
 					          or ContentStatus.Modified);
+			var hasConflictedOrInvalid =
+				items.Any(item => _contentService.IsContentInvalid(item.FullId) || item.IsInConflict);
+
+			string tooltip = "Publish Content to Current Realm";
+			if (hasConflictedOrInvalid)
+			{
+				tooltip = "There is Conflicted or Invalid Content, unable to Publish.";
+			}
+			else if (!hasContentToPublish)
+			{
+				tooltip = "There is not any modified items to publish. You are up-to-date.";
+			}
+			
+			
 			if (BeamGUI.HeaderButton("Sync", BeamGUI.iconSync, width: HEADER_BUTTON_WIDTH, iconPadding: 2))
 			{
 				ShowSyncMenu();
 			}
 
-			if (BeamGUI.ShowDisabled(hasContentToPublish,
+			if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
 			                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
-			                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2)))
+			                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2, tooltip: tooltip)))
 			{
 				PublishAction();
 			}
@@ -168,73 +196,119 @@ namespace Editor.UI.ContentWindow
 			bool hasModified = false;
 			bool hasNewItems = false;
 			bool hasConflictedItems = false;
+			bool hasDeleted = false;
 			
 			foreach (LocalContentManifestEntry localContentManifestEntry in entries)
 			{
-				hasModified |= localContentManifestEntry.StatusEnum is ContentStatus.Modified or ContentStatus.Deleted;
-				hasNewItems |= localContentManifestEntry.StatusEnum == ContentStatus.Created;
+				hasModified |= localContentManifestEntry.StatusEnum is ContentStatus.Modified or ContentStatus.Invalid;
+				hasNewItems |= localContentManifestEntry.StatusEnum is ContentStatus.Created;
 				hasConflictedItems |= localContentManifestEntry.IsInConflict;
+				hasDeleted |= localContentManifestEntry.StatusEnum is ContentStatus.Deleted;
 				
-				if (hasModified && hasNewItems && hasConflictedItems)
+				if (hasModified && hasNewItems && hasConflictedItems && hasDeleted)
 					break;
 			}
 			
 			GenericMenu menu = new GenericMenu();
-			if (hasModified || hasNewItems || hasConflictedItems)
+			if (hasModified || hasNewItems || hasConflictedItems || hasDeleted)
 			{
-				menu.AddItem(new GUIContent("Revert All Local Changes (Modified, Created, and Conflicted)"), false,
-				             () =>
-				             {
-					             _contentService.SyncContents();
-				             });
+				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM),
+				             false,
+				             RevertAllContents);
 			}
 			else
 			{
-				menu.AddDisabledItem(new GUIContent("Revert All Local Changes (Modified, Created, and Conflicted)"), false);
+				menu.AddDisabledItem(new GUIContent(REVERT_ALL_MENU_ITEM), false);
 			}
 
 			if (hasModified)
 			{
-				menu.AddItem(new GUIContent("Revert Modified Local Changes"), false, () =>
-				{
-					_contentService.SyncContents(syncConflicted: false, syncCreated: false);
-				});
+				menu.AddItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false, RevertModifiedContents);
 			}
 			else
 			{
-				menu.AddDisabledItem(new GUIContent("Revert Modified Local Changes"), false);
+				menu.AddDisabledItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false);
 			}
 
 			if (hasConflictedItems)
 			{
-				menu.AddItem(new GUIContent("Revert Conflicted Changes Only"), false, () =>
-				{
-					_contentService.SyncContents(syncModified: false, syncCreated: false);
-				});
+				menu.AddItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false, RevertConflictedContents);
 			}
 			else
 			{
-				menu.AddDisabledItem(new GUIContent("Revert Conflicted Changes Only"), false);
+				menu.AddDisabledItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false);
+			}
+			
+			if (hasDeleted)
+			{
+				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, RevertDeletedContents);
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false);
 			}
 
 			if (hasNewItems)
 			{
-				menu.AddItem(new GUIContent("Delete All New Created Changes"), false, () =>
-				{
-					_contentService.SyncContents(syncModified: false, syncConflicted: false);
-				});
+				menu.AddItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false, RevertAllNewContents);
 			}
 			else
 			{
-				menu.AddDisabledItem(new GUIContent("Delete All New Created Changes"), false);
+				menu.AddDisabledItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false);
 			}
 
 			menu.ShowAsContext();
 		}
 
+		
+		private void RevertAllContents()
+		{
+			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all local changes?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all local changes", _contentService.SyncContents());
+			}
+		}
+		
+		private void RevertModifiedContents()
+		{
+			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all modified contents?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all modified local changes", _contentService.SyncContents(true, false, false, false));
+			}
+		}
+
+		private void RevertConflictedContents()
+		{
+			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all conflicted contents?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all conflicted local changes", _contentService.SyncContents(false, false, true, false));
+			}
+		}
+
+		private void RevertDeletedContents()
+		{
+			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all deleted contents?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all deleted contents", _contentService.SyncContents(false, false, false, true));
+			}
+		}
+
+		private void RevertAllNewContents()
+		{
+			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all newly created contents?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Deleting all newly created contents", _contentService.SyncContents(false, true, false, false));
+			}
+		}
+
 		private void PublishAction()
 		{
-			_contentService.Publish();
+			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
+			if (EditorUtility.DisplayDialog("Publish Content",
+			                                $"Are you sure you want to publish content changes to realm [{realmName}]?", "Yes", "No"))
+			{
+				_ = RunTaskOnProgressBar("Publish Content", "Publishing Content...",_contentService.Publish());
+			}
 		}
 
 
