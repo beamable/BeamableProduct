@@ -38,15 +38,27 @@ namespace Beamable.Editor.BeamCli
 		/// </summary>
 		public static void InitializeBeamCli()
 		{
-			// we need dotnet before we can initialize the CLI
-			DotnetUtil.InitializeDotnet();
-			
-			// need to install the CLI
-			var installResult = InstallTool();
-
-			if (!installResult)
+			try
 			{
-				throw new Exception("Beamable could not install the Beam CLI");
+				Debug.Log("Setting up beam cli");
+				// we need dotnet before we can initialize the CLI
+				DotnetUtil.InitializeDotnet();
+				Debug.Log("Setting up beam cli2");
+
+				// need to install the CLI
+				var installResult = InstallTool();
+				Debug.Log("Setting up beam cli3");
+
+				if (!installResult)
+				{
+					throw new Exception("Beamable could not install the Beam CLI");
+				}
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError("Failed");
+				Debug.LogError(ex);
+				throw;
 			}
 		}
 
