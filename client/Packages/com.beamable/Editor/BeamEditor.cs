@@ -348,39 +348,39 @@ namespace Beamable
 			BeamableSocialsImporter.SetFlag();
 			
 
-			async Promise InitDefaultContext()
-			{
-				try
-				{
-					Debug.Log("chris-test-1");
-					await BeamEditorContext.Default.InitializePromise;
+// 			async Promise InitDefaultContext()
+// 			{
+// 				try
+// 				{
+// 					Debug.Log("chris-test-1");
+// 					await BeamEditorContext.Default.InitializePromise;
+//
+// 					Debug.Log("chris-test-2");
+//
+// #if BEAMABLE_DEVELOPER
+// 					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
+// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+// #endif
+// 					IsInitialized = true;
+//
+// #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+// 					// Initialize toolbar
+// 					BeamableToolbarExtender.LoadToolbarExtender();
+//
+// #endif
+// 					Debug.Log("chris-test-3");
+//
+// 				}
+// 				catch (Exception ex)
+// 				{
+// 					Debug.Log("Chris failure");
+// 					Debug.LogError(ex);
+// 					throw;
+// 				}
+// 			}
 
-					Debug.Log("chris-test-2");
-
-#if BEAMABLE_DEVELOPER
-					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
-#endif
-					IsInitialized = true;
-
-#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-					// Initialize toolbar
-					BeamableToolbarExtender.LoadToolbarExtender();
-
-#endif
-					Debug.Log("chris-test-3");
-
-				}
-				catch (Exception ex)
-				{
-					Debug.Log("Chris failure");
-					Debug.LogError(ex);
-					throw;
-				}
-			}
-
-			InitDefaultContext().Error(Debug.LogError);
+			// InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static bool HasDependencies()
