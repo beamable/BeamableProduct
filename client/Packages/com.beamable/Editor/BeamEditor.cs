@@ -346,41 +346,41 @@ namespace Beamable
 
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
-// 			
-//
-// 			async Promise InitDefaultContext()
-// 			{
-// 				try
-// 				{
-// 					Debug.Log("chris-test-1");
-// 					await BeamEditorContext.Default.InitializePromise;
-//
-// 					Debug.Log("chris-test-2");
-//
-// #if BEAMABLE_DEVELOPER
-// 					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-// 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
-// #endif
-// 					IsInitialized = true;
-//
-// #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-// 					// Initialize toolbar
-// 					BeamableToolbarExtender.LoadToolbarExtender();
-//
-// #endif
-// 					Debug.Log("chris-test-3");
-//
-// 				}
-// 				catch (Exception ex)
-// 				{
-// 					Debug.Log("Chris failure");
-// 					Debug.LogError(ex);
-// 					throw;
-// 				}
-// 			}
-//
-// 			InitDefaultContext().Error(Debug.LogError);
+			
+
+			async Promise InitDefaultContext()
+			{
+				try
+				{
+					Debug.Log("chris-test-1");
+					await BeamEditorContext.Default.InitializePromise;
+
+					Debug.Log("chris-test-2");
+
+#if BEAMABLE_DEVELOPER
+					Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
+					IsInitialized = true;
+
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+					// Initialize toolbar
+					BeamableToolbarExtender.LoadToolbarExtender();
+
+#endif
+					Debug.Log("chris-test-3");
+
+				}
+				catch (Exception ex)
+				{
+					Debug.Log("Chris failure");
+					Debug.LogError(ex);
+					throw;
+				}
+			}
+
+			InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static bool HasDependencies()
@@ -579,28 +579,28 @@ namespace Beamable
 				try
 				{
 					// initialize the default dependencies before a beam context ever gets going.
-					if (ContentIO.EnsureAllDefaultContent())
-					{
-						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-					}
-
-
-					// fetch latest CLI data, 
-					await BeamCli.Refresh();
-
-					if (!BeamCli.HasCid)
-					{
-						// the user is not signed in...
-						await BeamCli.Logout();
-						ApplyRequesterToken();
-						return;
-					}
-
-					ApplyRequesterToken();
-					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-					PublishDefaultContent();
+					// if (ContentIO.EnsureAllDefaultContent())
+					// {
+					// 	AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+					// 	                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+					// 	AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+					// }
+					//
+					//
+					// // fetch latest CLI data, 
+					// await BeamCli.Refresh();
+					//
+					// if (!BeamCli.HasCid)
+					// {
+					// 	// the user is not signed in...
+					// 	await BeamCli.Logout();
+					// 	ApplyRequesterToken();
+					// 	return;
+					// }
+					//
+					// ApplyRequesterToken();
+					// var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+					// PublishDefaultContent();
 				}
 				catch (Exception ex)
 				{
