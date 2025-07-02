@@ -194,10 +194,7 @@ namespace Beamable
 
 		static void Initialize()
 		{
-			
-			Debug.Log("Init attempt");
 			if (IsInitialized) return;
-			Debug.Log("Init attempt for real");
 
 			initializeAttemptCount++;
 
@@ -208,8 +205,6 @@ namespace Beamable
 				{
 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
 				}
-
-				return;
 			}
 
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
@@ -569,34 +564,33 @@ namespace Beamable
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
 
-			Promise Initialize()
+			async Promise Initialize()
 			{
 				try
 				{
 					// initialize the default dependencies before a beam context ever gets going.
-					// if (ContentIO.EnsureAllDefaultContent())
-					// {
-					// 	AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-					// 	                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-					// 	AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-					// }
-					//
-					//
-					// // fetch latest CLI data, 
-					// await BeamCli.Refresh();
-					//
-					// if (!BeamCli.HasCid)
-					// {
-					// 	// the user is not signed in...
-					// 	await BeamCli.Logout();
-					// 	ApplyRequesterToken();
-					// 	return;
-					// }
-					//
-					// ApplyRequesterToken();
-					// var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-					// PublishDefaultContent();
-					return Promise.Success;
+					if (ContentIO.EnsureAllDefaultContent())
+					{
+						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+					}
+					
+					
+					// fetch latest CLI data, 
+					await BeamCli.Refresh();
+					
+					if (!BeamCli.HasCid)
+					{
+						// the user is not signed in...
+						await BeamCli.Logout();
+						ApplyRequesterToken();
+						return;
+					}
+					
+					ApplyRequesterToken();
+					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+					PublishDefaultContent();
 				}
 				catch (Exception ex)
 				{

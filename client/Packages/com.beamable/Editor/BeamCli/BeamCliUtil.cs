@@ -40,15 +40,11 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
-				Debug.Log("Setting up beam cli");
 				// we need dotnet before we can initialize the CLI
 				DotnetUtil.InitializeDotnet();
-				Debug.Log("Setting up beam cli2");
 
 				// need to install the CLI
 				var installResult = InstallTool();
-				Debug.Log("Setting up beam cli3");
-
 				if (!installResult)
 				{
 					throw new Exception("Beamable could not install the Beam CLI");
@@ -56,12 +52,15 @@ namespace Beamable.Editor.BeamCli
 			}
 			catch (Exception ex)
 			{
-				Debug.LogError("Failed");
+				Debug.LogError("Failed to init beam cli");
 				Debug.LogError(ex);
 				throw;
 			}
 		}
 
+		/// <summary>
+		/// this exists for CI jobs. This function should be run before hand. 
+		/// </summary>
 		public static void InstallToolFromLocalPackageSource()
 		{
 			var path = "BeamableNugetSource";
