@@ -1,8 +1,9 @@
 ﻿using Beamable.Common;
+using cli.DeploymentCommands;
 
 namespace cli.Content;
 
-public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, ContentPublishResult>, ISkipManifest
+public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, ContentPublishResult>, ISkipManifest, IResultSteam<ProgressStreamResultChannel, ContentPublishProgressData>
 {
 	private ContentService _contentService;
 
@@ -39,4 +40,10 @@ public class ContentPublishCommandArgs : ContentCommandArgs
 
 public class ContentPublishResult
 {
+}
+
+public class ContentPublishProgressData
+{
+	private int Type;
+	
 }

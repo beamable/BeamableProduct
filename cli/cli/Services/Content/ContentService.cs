@@ -755,10 +755,10 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		string referenceManifestUid = "")
+		string referenceManifestUid = "", Action<ContentSyncProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate);
 	}
 
 	/// <summary>
@@ -766,7 +766,8 @@ public class ContentService
 	/// </summary>
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
-		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true)
+		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true, 
+		Action<ContentSyncProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var report = new ContentSyncReport();
 		report.ManifestId = manifestId;
@@ -802,14 +803,40 @@ public class ContentService
 		report.ReferenceUpdatedContents = localContentRelativeToNewManifest.ContentFiles.Where(c => c.CanUpdateReferenceWithTarget).Select(c => c.Id).ToArray();
 		report.DeletedCreatedContents = contentToDelete.Select(c => c.Id).ToArray();
 
+		
+		
 		// Download and overwrite the local content for things that have changed based on the hash or don't exist.
 		var downloadPromises = contentToDownload.Select(async c =>
 		{
+			
 			Log.Verbose("Downloading content with id. ID={Id}", c.Id);
+			
+			ContentSyncProgressUpdateData contentSyncProgress = new ContentSyncProgressUpdateData
+			{
+				itemsToRevert = contentToDownload.Length + contentToDelete.Length, 
+				contentName = c.Id
+			};
+
+			JsonElement customRequest;
+			try
+			{
+				customRequest =await _requester.CustomRequest(Method.GET, c.ReferenceContent.uri,
+					parser: s => JsonSerializer.Deserialize<JsonElement>(s));
+			}
+			catch (HttpRequesterException exception)
+			{
+				contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncError;
+				contentSyncProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+				throw;
+			}
+
+			contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncComplete;
+			onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
 			return (
 				localContent: c,
-				downloadedContent: await _requester.CustomRequest(Method.GET, c.ReferenceContent.uri, parser: s => JsonSerializer.Deserialize<JsonElement>(s))
-			);
+				downloadedContent: customRequest
+			);;
 		}).ToArray();
 
 		// Let's try to download all the content paired with the local ContentFile representation.
@@ -845,7 +872,28 @@ public class ContentService
 		await _fileSystemOperationSemaphore.WaitAsync();
 
 		// Delete any files flagged for deletion, if any.
-		foreach (var c in contentToDelete) File.Delete(c.LocalFilePath);
+		foreach (var c in contentToDelete)
+		{
+			ContentSyncProgressUpdateData contentSyncProgress = new ContentSyncProgressUpdateData
+			{
+				itemsToRevert = contentToDownload.Length + contentToDelete.Length, 
+				contentName = c.Id
+			};
+
+			try
+			{
+				File.Delete(c.LocalFilePath);
+			}
+			catch (Exception exception)
+			{
+				contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncError;
+				contentSyncProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+				throw;
+			}
+			contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncComplete;
+			onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+		}
 
 		var saveTasks = new List<Task>();
 		foreach (var (c, j) in downloadedContent)

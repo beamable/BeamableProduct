@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -19,6 +20,8 @@ namespace Editor.ContentService
 {
 	public class CliContentService : IStorageHandler<CliContentService>
 	{
+		private const string SYNC_OPERATION_TITLE = "Sync Contents";
+		
 		private StorageHandle<CliContentService> _handle;
 		private readonly BeamCommands _cli;
 		private ContentPsWrapper _contentWatcher;
@@ -27,6 +30,7 @@ namespace Editor.ContentService
 		private Dictionary<string, List<LocalContentManifestEntry>> _typeContentCache =  new();
 		private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
 		private HashSet<string> _invalidContents = new();
+		private int syncedContents;
 
 		public Dictionary<string, LocalContentManifestEntry> CachedManifest { get; }
 		
@@ -54,12 +58,65 @@ namespace Editor.ContentService
 			saveCommand.Run();
 		}
 
+		public async Task SyncContentsWithProgress(bool syncModified,
+		                                           bool syncNew,
+		                                           bool syncConflicted,
+		                                           bool syncDeleted,
+		                                           string filter = null,
+		                                           ContentFilterType filterType = default)
+		{
+
+			syncedContents = 0;
+			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
+
+			try
+			{
+				await SyncContents(
+					syncModified,
+					syncNew,
+					syncConflicted,
+					syncDeleted,
+					filter,
+					filterType,
+					onProgressUpdate: HandleSyncProgress
+				);
+			}
+			finally
+			{
+				EditorUtility.ClearProgressBar();
+			}
+		}
+		
+		private void HandleSyncProgress(BeamContentSyncProgressUpdateData data)
+		{
+			string description = string.Empty;
+			float progress = (float)syncedContents / data.itemsToRevert;
+			Debug.Log($"Progress:{progress}");
+
+			switch (data.EventType)
+			{
+				case 0: // Sync Complete
+					description = $"Content {data.contentName} synced...";
+					break;
+				case 1: // Error on Sync Content
+					EditorUtility.ClearProgressBar();
+					EditorUtility.DisplayDialog(
+						SYNC_OPERATION_TITLE,
+						$"Error when syncing content {data.contentName}. Error message: {data.errorMessage}",
+						"Okay"
+					);
+					return;
+			}
+
+			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, description, progress);
+		}
+		
 		public async Task SyncContents(bool syncModified = true,
 		                         bool syncCreated = true,
 		                         bool syncConflicted = true,
 		                         bool syncDeleted = true,
 		                         string filter = null,
-		                         ContentFilterType filterType = default)
+		                         ContentFilterType filterType = default, Action<BeamContentSyncProgressUpdateData> onProgressUpdate = null)
 		{
 			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 			{
@@ -69,6 +126,11 @@ namespace Editor.ContentService
 				syncDeleted = syncDeleted,
 				filter = filter,
 				filterType = filterType,
+			});
+
+			contentSyncCommand.OnProgressStreamContentSyncProgressUpdateData(reportData =>
+			{
+				onProgressUpdate?.Invoke(reportData.data);
 			});
 			await contentSyncCommand.Run();
 		}

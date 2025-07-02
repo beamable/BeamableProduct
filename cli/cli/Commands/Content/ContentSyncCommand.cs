@@ -5,7 +5,7 @@ using System.CommandLine;
 
 namespace cli.Content;
 
-public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentSyncResult>, ISkipManifest
+public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentSyncResult>, ISkipManifest, IResultSteam<ProgressStreamResultChannel, ContentSyncProgressUpdateData>
 {
 	private static ConfigurableOptionFlag SYNC_CREATED_OPTION = new("sync-created",
 		"Deletes any created content that is not present in the latest manifest. If filters are provided, will only delete the created content that matches the filter");
@@ -48,7 +48,12 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 		var resetPromises = new List<Task<ContentSyncReport>>();
 		foreach (var manifestId in args.ManifestIdsToReset)
 		{
-			var task = _contentService.SyncLocalContent(manifestId, args.FilterType, args.Filter, args.SyncCreated, args.SyncModified, args.SyncConflicts, args.SyncDeleted, args.TargetManifestUid);
+			var task = _contentService.SyncLocalContent(manifestId, args.FilterType, args.Filter, args.SyncCreated,
+				args.SyncModified, args.SyncConflicts, args.SyncDeleted, args.TargetManifestUid, data =>
+				{
+					this.SendResults<ProgressStreamResultChannel, ContentSyncProgressUpdateData>(data);
+				});
+				
 			resetPromises.Add(task);
 		}
 
@@ -75,4 +80,29 @@ public class ContentSyncCommandArgs : ContentCommandArgs
 public class ContentSyncResult
 {
 	public ContentSyncReport[] Reports;
+}
+
+public class ContentSyncProgressUpdateData
+{
+	/// <summary>
+	/// The engine integration is expected to update the progress bar with the current item to be reverted.
+	/// </summary>
+	public const int EVT_TYPE_SyncComplete = 0;
+
+	/// <summary>
+	/// The engine integration is expected throw an error that the specific content could not be reverted and stop the process.
+	/// </summary>
+	public const int EVT_TYPE_SyncError = 1;
+
+	/// <summary>
+	/// One of <see cref="EVT_TYPE_SyncComplete"/>, <see cref="EVT_TYPE_SyncCompleted"/> or <see cref="EVT_TYPE_SyncError"/>.
+	/// The semantics of each field are defined based on the event and documented on these comments.
+	/// </summary>
+	public int EventType;
+
+	public string contentName;
+
+	public string errorMessage;
+
+	public int itemsToRevert;
 }

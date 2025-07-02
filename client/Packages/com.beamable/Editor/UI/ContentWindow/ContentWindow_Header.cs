@@ -1,10 +1,12 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Util;
 using Editor.UI2.Utils;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,7 +20,7 @@ namespace Editor.UI.ContentWindow
 		private const string REVERT_CONFLICTED_MENU_ITEM = "Revert Conflicted Changes Only";
 		private const string REVERT_DELETED_MENU_ITEM = "Revert Deleted Contents Only";
 		private const string REVERT_NEW_CONTENTS_MENU_ITEM = "Delete All New Created Changes";
-		private const string REVERT_OPERATION_PROGRESS_TITLE = "Revert Operation";
+		
 		
 		private readonly Dictionary<ContentFilterType, HashSet<string>> _activeFilters = new();
 		private List<string> _allTypes = new();
@@ -212,9 +214,7 @@ namespace Editor.UI.ContentWindow
 			GenericMenu menu = new GenericMenu();
 			if (hasModified || hasNewItems || hasConflictedItems || hasDeleted)
 			{
-				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM),
-				             false,
-				             RevertAllContents);
+				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM), false, () => _ = RevertAllContents());
 			}
 			else
 			{
@@ -223,7 +223,7 @@ namespace Editor.UI.ContentWindow
 
 			if (hasModified)
 			{
-				menu.AddItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false, RevertModifiedContents);
+				menu.AddItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false, () => _ = RevertModifiedContents());
 			}
 			else
 			{
@@ -232,7 +232,7 @@ namespace Editor.UI.ContentWindow
 
 			if (hasConflictedItems)
 			{
-				menu.AddItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false, RevertConflictedContents);
+				menu.AddItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false, () => _ = RevertConflictedContents());
 			}
 			else
 			{
@@ -241,7 +241,7 @@ namespace Editor.UI.ContentWindow
 			
 			if (hasDeleted)
 			{
-				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, RevertDeletedContents);
+				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, () => _ = RevertDeletedContents());
 			}
 			else
 			{
@@ -250,7 +250,7 @@ namespace Editor.UI.ContentWindow
 
 			if (hasNewItems)
 			{
-				menu.AddItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false, RevertAllNewContents);
+				menu.AddItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false, () => _ = RevertAllNewContents());
 			}
 			else
 			{
@@ -260,54 +260,59 @@ namespace Editor.UI.ContentWindow
 			menu.ShowAsContext();
 		}
 
-		
-		private void RevertAllContents()
+		private async Task RevertAllContents()
 		{
-			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all local changes?", "Yes", "No"))
+			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all local changes?", "Yes", "No"))
 			{
-				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all local changes", _contentService.SyncContents());
+				return;
 			}
-		}
-		
-		private void RevertModifiedContents()
-		{
-			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all modified contents?", "Yes", "No"))
-			{
-				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all modified local changes", _contentService.SyncContents(true, false, false, false));
-			}
+			await _contentService.SyncContentsWithProgress(true, true, true, true);
 		}
 
-		private void RevertConflictedContents()
+		private async Task RevertModifiedContents()
 		{
-			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all conflicted contents?", "Yes", "No"))
+			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all modified contents?", "Yes", "No"))
 			{
-				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all conflicted local changes", _contentService.SyncContents(false, false, true, false));
+				return;
 			}
+
+			await _contentService.SyncContentsWithProgress(true, false, false, false);
 		}
 
-		private void RevertDeletedContents()
+		private async Task RevertConflictedContents()
 		{
-			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all deleted contents?", "Yes", "No"))
+			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all conflicted contents?", "Yes", "No"))
 			{
-				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Reverting all deleted contents", _contentService.SyncContents(false, false, false, true));
+				return;
 			}
+			await _contentService.SyncContentsWithProgress(false, false, true, false);
 		}
 
-		private void RevertAllNewContents()
+		private async Task RevertDeletedContents()
 		{
-			if (EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all newly created contents?", "Yes", "No"))
+			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all deleted contents?", "Yes", "No"))
 			{
-				_ = RunTaskOnProgressBar(REVERT_OPERATION_PROGRESS_TITLE, "Deleting all newly created contents", _contentService.SyncContents(false, true, false, false));
+				return;
 			}
+			await _contentService.SyncContentsWithProgress(false, false, false, true);
 		}
 
-		private void PublishAction()
+		private async Task RevertAllNewContents()
+		{
+			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all newly created contents?", "Yes", "No"))
+			{
+				return;
+			}
+			await _contentService.SyncContentsWithProgress(false, true, false, false);
+		}
+
+private void PublishAction()
 		{
 			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
 			if (EditorUtility.DisplayDialog("Publish Content",
 			                                $"Are you sure you want to publish content changes to realm [{realmName}]?", "Yes", "No"))
 			{
-				_ = RunTaskOnProgressBar("Publish Content", "Publishing Content...",_contentService.Publish());
+				//_ = RunTaskOnProgressBar("Publish Content", "Publishing Content...",_contentService.Publish());
 			}
 		}
 

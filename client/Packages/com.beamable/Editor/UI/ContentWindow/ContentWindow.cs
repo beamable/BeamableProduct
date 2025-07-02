@@ -120,13 +120,6 @@ namespace Editor.UI.ContentWindow
 			}
 			return localContentManifestEntries;
 		}
-
-		public static async Task RunTaskOnProgressBar(string progressBarTitle, string progressBarDesc, Task task)
-		{
-			EditorUtility.DisplayProgressBar(progressBarTitle, progressBarDesc, 0);
-			await task;
-			EditorUtility.ClearProgressBar();
-			
-		}
+		
 	}
 }

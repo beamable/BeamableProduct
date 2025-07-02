@@ -111,5 +111,10 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
+        public virtual ContentSyncWrapper OnProgressStreamContentSyncProgressUpdateData(System.Action<ReportDataPoint<BeamContentSyncProgressUpdateData>> cb)
+        {
+            this.Command.On("progressStream", cb);
+            return this;
+        }
     }
 }

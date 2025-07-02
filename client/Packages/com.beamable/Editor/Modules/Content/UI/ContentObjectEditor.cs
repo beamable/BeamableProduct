@@ -131,10 +131,7 @@ namespace Beamable.Editor.Content.UI
 					if (EditorUtility.DisplayDialog("Revert Content", 
 					                                "Are you sure you want to revert this content?", "Yes", "No"))
 					{
-						_ = ContentWindow.RunTaskOnProgressBar("Revert Content", $"Reverting {content.ContentName}...",
-						                                       contentService.SyncContents(
-							                                       filter: content.Id,
-							                                       filterType: ContentFilterType.ExactIds));
+						_ = contentService.SyncContentsWithProgress(true, true, true, true, content.Id, ContentFilterType.ExactIds);
 					}
 					
 				}
