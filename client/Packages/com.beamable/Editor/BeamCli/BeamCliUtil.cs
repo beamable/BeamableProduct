@@ -82,7 +82,7 @@ namespace Beamable.Editor.BeamCli
 			Debug.Log("------ INSTALL TOOL FROM LOCAL PACKAGE SOURCE");
 			var process = new Process();
 			process.StartInfo.FileName = "dotnet";
-			process.StartInfo.Arguments = "nuget add source BeamableNugetSource --name BeamableNugetSource";
+			process.StartInfo.Arguments = $"nuget add source {Path.GetFullPath(path)} --name BeamableNugetSource";
 			process.StartInfo.UseShellExecute = false;
 			process.StartInfo.RedirectStandardOutput = true;
 			process.StartInfo.RedirectStandardError = true;
