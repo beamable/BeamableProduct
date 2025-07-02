@@ -81,7 +81,7 @@ namespace Beamable.Editor.Dotnet
 				RedirectStandardError = true
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+			// proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 			proc.Start();
 			var finished = proc.WaitForExit(10 * 1000);
 			
