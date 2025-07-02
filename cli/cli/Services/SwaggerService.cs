@@ -563,27 +563,29 @@ public class SwaggerService
 		}
 
 		var output = await Task.WhenAll(tasks);
+		Log.Information("Downloaded all documents");
 
 
-		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
+		var processors = new List<(string name, Func<OpenApiDocumentResult, List<OpenApiDocumentResult>> processor)>
 		{
-			RewriteStatusCodesTo200,
-			ReduceProtoActorMimeTypes,
-			RewriteInlineResultSchemasAsReferences,
-			SplitTagsIntoSeparateDocuments,
-			AddTitlesToAllSchemasIfNone,
-			RewriteObjectEnumsAsStrings,
-			DetectNonSelfReferentialTypes,
-			FixBasicCloudsavingDataMetadataGet,
-			Reserailize
+			(nameof(RewriteStatusCodesTo200), RewriteStatusCodesTo200),
+			(nameof(ReduceProtoActorMimeTypes), ReduceProtoActorMimeTypes),
+			(nameof(RewriteInlineResultSchemasAsReferences), RewriteInlineResultSchemasAsReferences),
+			(nameof(SplitTagsIntoSeparateDocuments), SplitTagsIntoSeparateDocuments),
+			(nameof(AddTitlesToAllSchemasIfNone), AddTitlesToAllSchemasIfNone),
+			(nameof(RewriteObjectEnumsAsStrings), RewriteObjectEnumsAsStrings),
+			(nameof(DetectNonSelfReferentialTypes), DetectNonSelfReferentialTypes),
+			(nameof(FixBasicCloudsavingDataMetadataGet), FixBasicCloudsavingDataMetadataGet),
+			(nameof(Reserailize), Reserailize)
 		};
 
 
 		var final = output.ToList();
-		foreach (var processor in processors)
+		foreach (var (operationName, processor) in processors)
 		{
 			var startingSet = final.ToList();
 			final.Clear();
+			Log.Information($"Running processor=[{operationName}]");
 			foreach (var elem in startingSet)
 			{
 				foreach (var processed in processor(elem))
