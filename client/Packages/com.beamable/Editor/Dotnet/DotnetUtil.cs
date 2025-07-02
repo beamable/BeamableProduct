@@ -64,7 +64,10 @@ namespace Beamable.Editor.Dotnet
 			var proc = new Process();
 
 			var installCommand = $"new tool-manifest --force";
-
+			if (Application.isBatchMode)
+			{
+				installCommand += " --debug:ephemeral-hive";
+			}
 			var workingDirectory = Path.GetFullPath(".");
 			manifestPath = Path.Combine(workingDirectory, ".config", "dotnet-tools.json");
 			proc.StartInfo = new ProcessStartInfo
@@ -86,7 +89,7 @@ namespace Beamable.Editor.Dotnet
 			var error = proc.StandardError.ReadToEnd();
 			if (!string.IsNullOrWhiteSpace(error) || !finished)
 			{
-				Debug.LogError($"[{finished}] Unable to create local manifest: " + error + " / " + output);
+				Debug.LogError($"[{finished}] [{installCommand}] Unable to create local manifest: " + error + " / " + output);
 			}
 			return proc.ExitCode == 0;
 		}
