@@ -72,7 +72,7 @@ namespace Beamable.Editor.BeamCli
 			}
 
 			var files = Directory.GetFiles(path);
-			Debug.Log($"------ Found {files?.Length} files at path package source");
+			Debug.Log($"------ Found {files?.Length} files at path package source=[{Path.GetFullPath(path)}]");
 			foreach (var file in files)
 			{
 				Debug.Log($"----- file=[{file}]");
@@ -96,6 +96,22 @@ namespace Beamable.Editor.BeamCli
 				Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE EXPIRED");
 			}
 			Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE");
+			
+			process = new Process();
+			process.StartInfo.FileName = "dotnet";
+			process.StartInfo.Arguments = "nuget list source";
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+
+			process.Start();
+			Debug.Log("------ LIST LOCAL SOURCES LOGS");
+			Debug.Log(process.StandardOutput.ReadToEnd());
+			Debug.LogError(process.StandardError.ReadToEnd());
+			if (!process.WaitForExit(10 * 1000))
+			{
+				Debug.Log("------  LIST LOCAL SOURCES EXPIRED");
+			}
 		}
 		
 		static bool InstallTool()
@@ -107,7 +123,13 @@ namespace Beamable.Editor.BeamCli
 			}
 			
 			var proc = new Process();
-			var installCommand = $"tool install beamable.tools --tool-manifest \"{manifestPath}\"";
+			var installCommand = $"tool install Beamable.Tools --tool-manifest \"{manifestPath}\"";
+
+			if (Application.isBatchMode)
+			{
+				installCommand += " --add-source BeamableNugetSource ";
+			}
+			
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";

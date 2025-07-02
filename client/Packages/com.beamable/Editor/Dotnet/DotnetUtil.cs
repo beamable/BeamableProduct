@@ -91,7 +91,7 @@ namespace Beamable.Editor.Dotnet
 			{
 				Debug.LogError($"[{finished}] [{installCommand}] Unable to create local manifest: " + error + " / " + output);
 			}
-			return proc.ExitCode == 0;
+			return finished && proc.ExitCode == 0;
 		}
 		
 
