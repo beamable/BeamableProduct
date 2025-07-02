@@ -139,7 +139,7 @@ namespace Beamable.Editor.Dotnet
 			try
 			{
 				proc.Start();
-				proc.WaitForExit();
+				proc.WaitForExit(10 * 1000);
 
 				var output = proc.StandardOutput.ReadToEnd();
 
