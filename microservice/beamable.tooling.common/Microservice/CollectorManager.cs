@@ -1,4 +1,3 @@
-using System.Collections;
 using Beamable.Common;
 using Beamable.Server.Common;
 using microservice.Extensions;
@@ -13,11 +12,15 @@ using System.Text;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
-using beamable.tooling.common.Microservice;
+using System.Reflection;
 using ZLogger;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
-namespace cli.Services;
+[Serializable]
+public class CollectorVersion
+{
+	public string collectorVersion;
+}
 
 [Serializable]
 public class CollectorZapcoreEntry
@@ -51,6 +54,7 @@ public class CollectorCaller
 [Serializable]
 public class CollectorDiscoveryEntry
 {
+	public string version;
 	public string status;
 	public int pid;
 	public List<CollectorZapcoreEntry> logs;
@@ -67,15 +71,11 @@ public class CollectorManager
 	public const int ReceiveTimeout = 10;
 	public const int ReceiveBufferSize = 4096;
 
-
 	private const string KEY_VERSION = "BEAM_VERSION";
 	private const string KEY_FILE = "BEAM_FILE_NAME";
 
 	private const string COLLECTOR_DOWNLOAD_URL_TEMPLATE =
 		"https://collectors.beamable.com/version/" + KEY_VERSION + "/" + KEY_FILE;
-	
-	public static string CollectorDownloadUrl =
-		"https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME";
 
 	
 	
@@ -87,12 +87,18 @@ public class CollectorManager
 
 	public static CollectorStatus CollectorStatus;
 
-	public static string GetCollectorExecutablePath()
-	{
-		var collectorFileName = GetCollectorName();
-		var collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, collectorFileName);
+	private static string _cachedVersion;
 
-		return collectorFilePath;
+	public static string Version
+	{
+		get
+		{
+			if (_cachedVersion == null)
+			{
+				_cachedVersion = GetCollectorVersion();
+			}
+			return _cachedVersion;
+		}
 	}
 
 	public static OSPlatform GetCurrentPlatform()
@@ -160,14 +166,40 @@ public class CollectorManager
 		return collectorFileName;
 	}
 
-	public static string GetCollectorName()
+	public static string GetCollectorVersion()
 	{
-		var platform = GetCurrentPlatform();
-		var arch = RuntimeInformation.OSArchitecture;
-		return GetCollectorName(platform, arch);
+		var assembly = Assembly.GetExecutingAssembly();
+		var resourceName = "beamable.tooling.common.Microservice.VersionManagement.collector-version.json";
+
+		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+
+		if (version.StartsWith("0.0.123") || version == "1.0.0")
+		{
+			// if the version looks like a local dev version, then
+			//  force the version to be THE local dev version
+			return "0.0.123";
+		}
+
+		Stream stream = assembly.GetManifestResourceStream(resourceName);
+
+		if (stream == null)
+		{
+			throw new FileNotFoundException($"Collector version file not found: '{resourceName}'.\nAvailable resources:\n" +
+			                                string.Join("\n", assembly.GetManifestResourceNames()));
+		}
+
+		string versionJson;
+
+		using(stream)
+		using (var reader = new StreamReader(stream))
+		{
+			versionJson = reader.ReadToEnd();
+		}
+
+		return JsonConvert.DeserializeObject<CollectorVersion>(versionJson).collectorVersion;
 	}
 
-	public static string GetCollectorBasePathForCli(string version=null)
+	public static string GetCollectorBasePathForCli()
 	{
 		/*
 		 * there are several common cases,
@@ -196,20 +228,9 @@ public class CollectorManager
 		 * - 
 		 * 
 		 */
-
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
-		if (version.StartsWith("0.0.123") || version == "1.0.0")
-		{
-			// if the version looks like a local dev version, then 
-			//  force the version to be THE local dev version
-			version = "0.0.123";
-		}
 		
 		string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var root = Path.Combine(localAppData, "beam", "collectors", version);
+		var root = Path.Combine(localAppData, "beam", "collectors", Version);
 		return root;
 	}
 
@@ -224,13 +245,8 @@ public class CollectorManager
 		string absBasePath, 
 		bool allowDownload,
 		OSPlatform platform, 
-		Architecture arch, 
-		string version=null)
+		Architecture arch)
 	{
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
 		
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
@@ -241,7 +257,7 @@ public class CollectorManager
 		if (!File.Exists(collectorPath) && allowDownload)
 		{
 			var collectorUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, collectorName + ".gz");
 			
 			itemsToDownload.Add(new (collectorUrl, collectorPath, true));
@@ -250,7 +266,7 @@ public class CollectorManager
 		if (!File.Exists(configPath) && allowDownload)
 		{
 			var configUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, configFileName + ".gz");
 			itemsToDownload.Add(new (configUrl, configPath, false));
 		}
@@ -540,6 +556,13 @@ public class CollectorManager
 					continue;
 
 			}
+
+			// Then we check if the version of the found collector matches the version supported
+			if (collector.version != Version)
+			{
+				continue;
+			}
+
 			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message , Timestamp = l.Time}).
 				OrderBy(t => t.Timestamp).ToList();
 			return new CollectorStatus()
@@ -594,6 +617,8 @@ public class CollectorManager
 			}
 		}
 
+		//TODO: We should make it possible to pass a OTLP PORT that is free for the collector, it being the same one we are using here in the first place
+
 		var workingDir = Path.GetDirectoryName(fileExe);
 		process.StartInfo.FileName = fileExe;
 		process.StartInfo.Arguments = arguments;
@@ -605,15 +630,15 @@ public class CollectorManager
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
-		Log.Verbose($"Executing: [{fileExe} {arguments}]");
+		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector) {args.Data}");
+			logger.ZLogInformation($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector err) {args.Data}");
+			logger.ZLogInformation($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
@@ -626,7 +651,5 @@ public class CollectorManager
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
-		
-
 	}
 }

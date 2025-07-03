@@ -123,7 +123,7 @@ public class ContentService
 		return path;
 	}
 
-	public void ReplaceLocalContent(string contentDirectory, string sourcePath, string destinationPath)
+	public async Task ReplaceLocalContent(string contentDirectory, string sourcePath, string destinationPath)
 	{
 		Debug.Assert(Directory.Exists(contentDirectory), "If you see this, please make sure that your content directory is created.");
 
@@ -135,6 +135,8 @@ public class ContentService
 			Directory.CreateDirectory(destinationPath);
 		}
 
+		var manifest = await GetManifest();
+		
 		string[] destinationFiles = Directory.GetFiles(destinationPath, "*", SearchOption.AllDirectories);
 
 		foreach (string filePath in destinationFiles)
@@ -144,6 +146,7 @@ public class ContentService
 
 		string[] sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
 
+		// Copy file to the target path
 		foreach (string filePath in sourceFiles)
 		{
 			string relativePath = Path.GetRelativePath(sourcePath, filePath);
@@ -157,9 +160,16 @@ public class ContentService
 			{
 				Directory.CreateDirectory(directoryPath);
 			}
+			
+			string fileJson = await File.ReadAllTextAsync(filePath);
+			JObject jsonObj = JObject.Parse(fileJson);
 
-			File.Copy(filePath, destinationFilePath, overwrite: true);
+			jsonObj[ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID] = manifest.uid.Value;
+			
+			await File.WriteAllTextAsync(destinationFilePath, jsonObj.ToString());
 		}
+		
+		
 	}
 
 	private Dictionary<(string pid, string manifest), FileSystemWatcher> _watchers = new();
@@ -683,7 +693,7 @@ public class ContentService
 					if (val.TryGetProperty("$link", out var linkProp) || val.TryGetProperty("link", out linkProp))
 						meta.Link = OptionalString.FromString(linkProp.GetString());
 
-					if (val.TryGetProperty("$links", out var linksProp) || val.TryGetProperty("link", out linksProp))
+					if (val.TryGetProperty("$links", out var linksProp) || val.TryGetProperty("links", out linksProp))
 						meta.Links = new OptionalArrayOfString(linksProp.EnumerateArray().Select(j => j.GetString()));
 
 					properties.Add(key, meta);
