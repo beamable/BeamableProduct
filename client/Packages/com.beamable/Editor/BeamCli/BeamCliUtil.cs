@@ -115,14 +115,9 @@ namespace Beamable.Editor.BeamCli
 		
 		static bool InstallTool()
 		{
-			if (!DotnetUtil.InstallLocalManifest(out var manifestPath))
-			{
-				BeamableLogger.LogError("Unable to install BeamCLI from package: couldn't create a local manifest for the project.");
-				return false;
-			}
 			
 			var proc = new Process();
-			var installCommand = $"tool install Beamable.Tools --tool-manifest \"{manifestPath}\"";
+			var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed";
 
 			if (Application.isBatchMode)
 			{

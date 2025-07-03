@@ -59,40 +59,6 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
-		public static bool InstallLocalManifest(out string manifestPath)
-		{
-			var proc = new Process();
-
-			var installCommand = $"new tool-manifest --force";
-			if (Application.isBatchMode)
-			{
-				installCommand += " --debug:ephemeral-hive";
-			}
-			var workingDirectory = Path.GetFullPath(".");
-			manifestPath = Path.Combine(workingDirectory, ".config", "dotnet-tools.json");
-			proc.StartInfo = new ProcessStartInfo
-			{
-				FileName = "dotnet",
-				WorkingDirectory = workingDirectory,
-				Arguments = installCommand,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			// proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
-			proc.Start();
-			var finished = proc.WaitForExit(10 * 1000);
-			
-			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error) || !finished)
-			{
-				Debug.LogError($"[{finished}] [{installCommand}] Unable to create local manifest: " + error + " / " + output);
-			}
-			return finished && proc.ExitCode == 0;
-		}
 		
 
 		static void InstallDotnetToLibrary()
