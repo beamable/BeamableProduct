@@ -7,8 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.0.4]
 ### Fixed
-- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set globally as an Admin. 
-  This will change in the near future and realm-scoped permission will be respected instead as well as lowering the required role to `tester`.
+- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set per-realm as an Admin.
 - Beamable content downloads ignore SSL when networking with the known Beamable CDN
 
 ## [5.0.3] - 2025-06-24
