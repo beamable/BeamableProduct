@@ -188,7 +188,7 @@ namespace Beamable
 
 		private static int initializeAttemptCount = 0;
 		private static List<Exception> initializationExceptions = new List<Exception>();
-		private const int WARN_ON_INITIALIZE_ATTEMPT = 2; // could be 50?
+		private const int WARN_ON_INITIALIZE_ATTEMPT = 10; // could be 50?
 
 		private static Promise _dependenciesLoadPromise = null;
 
@@ -205,8 +205,6 @@ namespace Beamable
 				{
 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
 				}
-
-				return;
 			}
 
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
@@ -356,13 +354,13 @@ namespace Beamable
 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 #endif
-					IsInitialized = true;
 
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 					// Initialize toolbar
 					BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 
+					IsInitialized = true;
 				}
 				catch (Exception ex)
 				{
