@@ -3,6 +3,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using cli.Content;
 using cli.Services;
+using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.DependencyInjection;
 using BeamActivity = Beamable.Server.BeamActivity;
 
@@ -35,6 +36,7 @@ public abstract class CommandArgs
 	public BeamoService BeamoService => Provider.GetService<BeamoService>();
 	public ContentService ContentService => Provider.GetService<ContentService>();
 	public ProjectService ProjectService => Provider.GetService<ProjectService>();
+	public DeveloperUserManagerService DeveloperUserManagerService => Provider.GetService<DeveloperUserManagerService>();
 
 	public AppLifecycle Lifecycle => Provider.GetService<AppLifecycle>();
 	public BeamActivity RootActivity => Provider.GetService<BeamActivity>();
