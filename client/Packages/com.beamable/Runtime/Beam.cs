@@ -59,6 +59,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Beamable.Server;
+using Beamable.Utility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
