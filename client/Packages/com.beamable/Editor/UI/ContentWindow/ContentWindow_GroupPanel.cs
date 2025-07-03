@@ -33,7 +33,7 @@ namespace Editor.UI.ContentWindow
 
 		private readonly Dictionary<string, List<string>> _contentTypeHierarchy = new();
 		private readonly Dictionary<string, bool> _groupExpandedStates = new();
-		private GUIStyle _headerStyle;
+		
 		private GUIStyle _selectedStyle;
 		private GUIStyle _nonSelectedStyle;
 
@@ -73,13 +73,6 @@ namespace Editor.UI.ContentWindow
 
 		private void BuildContentStyles()
 		{
-			_headerStyle = new GUIStyle(EditorStyles.label)
-			{
-				fontSize = 16, 
-				alignment = TextAnchor.MiddleLeft, 
-				margin = new RectOffset(0, 0, 10, 20)
-			};
-			
 			_nonSelectedStyle = new GUIStyle("Label");
 		}
 

@@ -64,14 +64,6 @@ MonoBehaviour:
       Texture: {fileID: 0}
     - TypeName: game_types
       Texture: {fileID: 2800000, guid: b307699be7529074db57aa0e49d52058, type: 3}
-    - TypeName: items.weapons
-      Texture: {fileID: 0}
-    - TypeName: items.weapons.melee
-      Texture: {fileID: 0}
-    - TypeName: items.weapons.ranged
-      Texture: {fileID: 0}
-    - TypeName: items.trinkets
-      Texture: {fileID: 0}
     - TypeName: items.inventoryTestItem
       Texture: {fileID: 0}
     - TypeName: currency.gf

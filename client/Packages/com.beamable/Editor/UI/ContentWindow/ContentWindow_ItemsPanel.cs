@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Editor.UI.ContentWindow
 {
-	public partial class ContentWindow
+	partial class ContentWindow
 	{
 		private const float BASE_PADDING = 5f;
 		private const float SEPARATOR_WIDTH_AREA = 3;

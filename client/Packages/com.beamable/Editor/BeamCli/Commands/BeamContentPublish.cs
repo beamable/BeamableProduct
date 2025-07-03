@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
-        public virtual ContentPublishWrapper OnProgressStreamContentPublishProgressData(System.Action<ReportDataPoint<BeamContentPublishProgressData>> cb)
+        public virtual ContentPublishWrapper OnProgressStreamContentProgressUpdateData(System.Action<ReportDataPoint<BeamContentProgressUpdateData>> cb)
         {
             this.Command.On("progressStream", cb);
             return this;

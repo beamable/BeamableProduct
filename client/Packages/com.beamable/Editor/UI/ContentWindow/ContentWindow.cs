@@ -9,6 +9,7 @@ using Beamable.Editor.Util;
 using Editor.ContentService;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -18,8 +19,8 @@ namespace Editor.UI.ContentWindow
 	public partial class ContentWindow : BeamEditorWindow<ContentWindow>
 	{
 		private const int MARGIN_SEPARATOR_WIDTH = 10;
-		
-		private UnityEditor.Editor nestedEditor;
+
+		private ContentWindowStatus _windowStatus = ContentWindowStatus.Normal;
 		
 		[SerializeField]
 		private SearchData _contentSearchData;
@@ -50,6 +51,7 @@ namespace Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
+			_windowStatus = ContentWindowStatus.Normal;
 			if (_contentService == null)
 			{
 				_contentService = Scope.GetService<CliContentService>();
@@ -58,6 +60,14 @@ namespace Editor.UI.ContentWindow
 				{
 					RegisterForOnManifestUpdated();
 					SetEditorSelection();
+					if(!GetCachedManifestEntries().Any(item => 
+						                                   item.StatusEnum is 
+							                                   ContentStatus.Modified or 
+							                                   ContentStatus.Created or 
+							                                   ContentStatus.Deleted))
+					{
+						_windowStatus = ContentWindowStatus.Normal;
+					}
 				});
 			}
 			else
@@ -92,14 +102,20 @@ namespace Editor.UI.ContentWindow
 		protected override void DrawGUI()
 		{
 			DrawHeader();
-
-			DrawContentData();
-			
+			if (_windowStatus == ContentWindowStatus.Normal)
+			{
+				DrawContentData();
+			}
+			else
+			{
+				DrawPublishContent();
+			}
 			RunDelayedActions();
 		}
 
 		private void DrawContentData()
 		{
+			EditorGUILayout.BeginVertical();
 			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
 			EditorGUILayout.BeginHorizontal();
 			{
@@ -109,6 +125,7 @@ namespace Editor.UI.ContentWindow
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
+			EditorGUILayout.EndVertical();
 		}
 		
 		private List<LocalContentManifestEntry> GetCachedManifestEntries()
@@ -121,5 +138,11 @@ namespace Editor.UI.ContentWindow
 			return localContentManifestEntries;
 		}
 		
+	}
+
+	public enum ContentWindowStatus
+	{
+		Normal,
+		Publish
 	}
 }

@@ -646,7 +646,7 @@ public class ContentService
 	///
 	/// For now, users cannot publish UNLESS they make their changes against the latest published manifest.
 	/// </summary>
-	public async Task PublishContent(string manifestId = "global")
+	public async Task PublishContent(string manifestId = "global", Action<ContentProgressUpdateData> onProgressUpdate = null)
 	{
 		// Get the latest manifest id and generate the diff against local files. 
 		var latestManifest = await GetManifest(manifestId);
@@ -664,7 +664,7 @@ public class ContentService
 		}
 
 		// Now, we compute our status against the latest manifest and get ONLY the files that weren't deleted (these are the ones that will be included in the new manifest).
-		var changedContent = localAgainstLatest.ContentFiles
+		var changedContents = localAgainstLatest.ContentFiles
 			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted))
 			.Select(c =>
 			{
@@ -709,36 +709,55 @@ public class ContentService
 			}).ToArray();
 
 		// Then we save them to S3
-		var saveContentRequest = new SaveContentRequest() { content = changedContent, };
-		SaveContentResponse saveContentResponse;
-
-		try
+		var saveContentRequestsTasks = changedContents.Select(async contentDefinition =>
 		{
-			saveContentResponse = await _contentApi.Post(saveContentRequest);
-		}
-		catch (Exception e)
-		{
-			// Handle failure case by just stopping here and erroring out
-			throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={e.Data}");
-		}
+			var contentProgressUpdateData = new ContentProgressUpdateData()
+			{
+				contentName = contentDefinition.id,
+				totalItems = changedContents.Length,
+			};
+			
+			var saveRequest = new SaveContentRequest() { content = new[] { contentDefinition } };
+			SaveContentResponse saveResponse;
+			try
+			{
+				saveResponse = await _contentApi.Post(saveRequest);
+			}
+			catch (Exception exception)
+			{
+				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+				contentProgressUpdateData.errorMessage = exception.Message;
+				onProgressUpdate?.Invoke(contentProgressUpdateData);
+				throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={exception.Data}");
+			}
+			
 
+			contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
+			onProgressUpdate?.Invoke(contentProgressUpdateData);
+			return saveResponse;
+		}).ToArray();
+		
+		var saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
+
+		
 		// Prepare the save manifest request using the response from the save content request.
-		var saveManifestRequest = new SaveManifestRequest()
+		var saveManifestRequest = new SaveManifestRequest
 		{
 			// Manifest ID
 			id = manifestId,
 
 			// This is just a type-conversion
-			references = saveContentResponse.content.Select(c => new ReferenceSuperset()
-			{
-				id = c.id,
-				version = c.version,
-				checksum = c.checksum,
-				type = c.type.ToString().ToLower(),
-				tags = new OptionalArrayOfString(c.tags),
-				uri = c.id,
-				visibility = c.visibility.ToString().ToLower(),
-			}).ToArray(),
+			references = saveContentResponses.SelectMany(contentDefinition => contentDefinition.content).Select(c =>
+				new ReferenceSuperset
+				{
+					id = c.id,
+					version = c.version,
+					checksum = c.checksum,
+					type = c.type.ToString().ToLower(),
+					tags = new OptionalArrayOfString(c.tags),
+					uri = c.id,
+					visibility = c.visibility.ToString().ToLower()
+				}).ToArray()
 		};
 
 		// Update the local reference manifest
@@ -755,7 +774,7 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		string referenceManifestUid = "", Action<ContentSyncProgressUpdateData> onContentSyncProgressUpdate = null)
+		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
 		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate);
@@ -767,7 +786,7 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true, 
-		Action<ContentSyncProgressUpdateData> onContentSyncProgressUpdate = null)
+		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var report = new ContentSyncReport();
 		report.ManifestId = manifestId;
@@ -811,9 +830,9 @@ public class ContentService
 			
 			Log.Verbose("Downloading content with id. ID={Id}", c.Id);
 			
-			ContentSyncProgressUpdateData contentSyncProgress = new ContentSyncProgressUpdateData
+			ContentProgressUpdateData contentProgress = new ContentProgressUpdateData
 			{
-				itemsToRevert = contentToDownload.Length + contentToDelete.Length, 
+				totalItems = contentToDownload.Length + contentToDelete.Length, 
 				contentName = c.Id
 			};
 
@@ -825,18 +844,18 @@ public class ContentService
 			}
 			catch (HttpRequesterException exception)
 			{
-				contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncError;
-				contentSyncProgress.errorMessage = exception.Message;
-				onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+				contentProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentProgress);
 				throw;
 			}
 
-			contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncComplete;
-			onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncComplete;
+			onContentSyncProgressUpdate?.Invoke(contentProgress);
 			return (
 				localContent: c,
 				downloadedContent: customRequest
-			);;
+			);
 		}).ToArray();
 
 		// Let's try to download all the content paired with the local ContentFile representation.
@@ -874,9 +893,9 @@ public class ContentService
 		// Delete any files flagged for deletion, if any.
 		foreach (var c in contentToDelete)
 		{
-			ContentSyncProgressUpdateData contentSyncProgress = new ContentSyncProgressUpdateData
+			ContentProgressUpdateData contentProgress = new ContentProgressUpdateData
 			{
-				itemsToRevert = contentToDownload.Length + contentToDelete.Length, 
+				totalItems = contentToDownload.Length + contentToDelete.Length, 
 				contentName = c.Id
 			};
 
@@ -886,13 +905,13 @@ public class ContentService
 			}
 			catch (Exception exception)
 			{
-				contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncError;
-				contentSyncProgress.errorMessage = exception.Message;
-				onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+				contentProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentProgress);
 				throw;
 			}
-			contentSyncProgress.EventType = ContentSyncProgressUpdateData.EVT_TYPE_SyncComplete;
-			onContentSyncProgressUpdate?.Invoke(contentSyncProgress);
+			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncComplete;
+			onContentSyncProgressUpdate?.Invoke(contentProgress);
 		}
 
 		var saveTasks = new List<Task>();
@@ -1499,4 +1518,35 @@ public struct ContentFile : IEquatable<ContentFile>
 	public static bool operator ==(ContentFile left, ContentFile right) => left.Equals(right);
 
 	public static bool operator !=(ContentFile left, ContentFile right) => !left.Equals(right);
+}
+
+public class ContentProgressUpdateData
+{
+	/// <summary>
+	/// The engine integration is expected throw an error that the specific content could not be reverted and stop the process.
+	/// </summary>
+	public const int EVT_TYPE_SyncError = 0;
+	
+	/// <summary>
+	/// The engine integration is expected to update the progress bar with the current item that was synced.
+	/// </summary>
+	public const int EVT_TYPE_SyncComplete = 1;
+
+	/// <summary>
+	/// The engine integration is expected to update the progress bar with the current item that was published.
+	/// </summary>
+	public const int EVT_TYPE_PublishComplete = 1;
+	
+
+	/// <summary>
+	/// One of <see cref="EVT_TYPE_SyncComplete"/>, <see cref="EVT_TYPE_SyncCompleted"/> or <see cref="EVT_TYPE_SyncError"/>.
+	/// The semantics of each field are defined based on the event and documented on these comments.
+	/// </summary>
+	public int EventType;
+
+	public string contentName;
+
+	public string errorMessage;
+
+	public int totalItems;
 }

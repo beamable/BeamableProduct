@@ -110,44 +110,60 @@ namespace Editor.UI.ContentWindow
 
 		private void DrawTopBarHeader()
 		{
-			var items = GetCachedManifestEntries();
-			var hasContentToPublish =
-				items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
-					          or ContentStatus.Modified);
-			var hasConflictedOrInvalid =
-				items.Any(item => _contentService.IsContentInvalid(item.FullId) || item.IsInConflict);
+			if (_windowStatus is ContentWindowStatus.Normal)
+			{
+				var items = GetCachedManifestEntries();
+				var hasContentToPublish =
+					items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
+						          or ContentStatus.Modified);
+				var hasConflictedOrInvalid =
+					items.Any(item => _contentService.IsContentInvalid(item.FullId) || item.IsInConflict);
 
-			string tooltip = "Publish Content to Current Realm";
-			if (hasConflictedOrInvalid)
-			{
-				tooltip = "There is Conflicted or Invalid Content, unable to Publish.";
-			}
-			else if (!hasContentToPublish)
-			{
-				tooltip = "There is not any modified items to publish. You are up-to-date.";
-			}
-			
-			
-			if (BeamGUI.HeaderButton("Sync", BeamGUI.iconSync, width: HEADER_BUTTON_WIDTH, iconPadding: 2))
-			{
-				ShowSyncMenu();
-			}
+				string tooltip = "Publish Content to Current Realm";
+				if (hasConflictedOrInvalid)
+				{
+					tooltip = "There is Conflicted or Invalid Content, unable to Publish.";
+				}
+				else if (!hasContentToPublish)
+				{
+					tooltip = "There is not any modified items to publish. You are up-to-date.";
+				}
 
-			if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
-			                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
-			                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2, tooltip: tooltip)))
-			{
-				PublishAction();
+
+				if (BeamGUI.HeaderButton("Sync", BeamGUI.iconSync, width: HEADER_BUTTON_WIDTH, iconPadding: 2))
+				{
+					ShowSyncMenu();
+				}
+
+				if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
+				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
+				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                                                    tooltip: tooltip)))
+				{
+					PublishAction();
+				}
+
+				EditorGUILayout.Space(5, false);
+				this.DrawSearchBar(_contentSearchData, true);
+				DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
+				DrawFilterButton(ContentFilterType.Type, BeamGUI.iconType, _allTypes);
+				DrawFilterButton(ContentFilterType.Status, BeamGUI.iconStatus, AllStatus);
 			}
-			EditorGUILayout.Space(5, false);
-			this.DrawSearchBar(_contentSearchData, true);
-			DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
-			DrawFilterButton(ContentFilterType.Type, BeamGUI.iconType, _allTypes);
-			DrawFilterButton(ContentFilterType.Status, BeamGUI.iconStatus, AllStatus);
+			else
+			{
+				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
+				{
+					_windowStatus = ContentWindowStatus.Normal;
+					Repaint();
+				}
+			}
 		}
 
 		private void DrawLowBarHeader()
 		{
+			if(_windowStatus == ContentWindowStatus.Publish)
+				return;
+			
 			GUILayout.Space(15);
 
 			GUIStyle lowBarTextStyle = _lowBarTextStyle ?? EditorStyles.boldLabel;
@@ -306,14 +322,10 @@ namespace Editor.UI.ContentWindow
 			await _contentService.SyncContentsWithProgress(false, true, false, false);
 		}
 
-private void PublishAction()
+		private void PublishAction()
 		{
-			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
-			if (EditorUtility.DisplayDialog("Publish Content",
-			                                $"Are you sure you want to publish content changes to realm [{realmName}]?", "Yes", "No"))
-			{
-				//_ = RunTaskOnProgressBar("Publish Content", "Publishing Content...",_contentService.Publish());
-			}
+			_windowStatus = ContentWindowStatus.Publish;
+			Repaint();
 		}
 
 
