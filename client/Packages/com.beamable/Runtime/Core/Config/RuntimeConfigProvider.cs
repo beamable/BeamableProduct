@@ -15,7 +15,6 @@ namespace Beamable.Config
 
 		public string host;
 		public string portalUrl;
-		public string socketUrl;
 	}
 
 	public class ConfigDatabaseProvider : IRuntimeConfigProvider
@@ -25,8 +24,7 @@ namespace Beamable.Config
 		public string Cid => data?.cid;
 		public string Pid => data?.pid;
 		public string HostUrl => data?.host ?? "https://api.beamable.com";
-		public string SocketUrl => data?.socketUrl;
-		public string PortalUrl => data?.portalUrl;
+		public string PortalUrl => data?.portalUrl ?? "https://portal.beamable.com";
 
 		public bool HasNoHostField => string.IsNullOrEmpty(data?.host);
 		

@@ -108,7 +108,7 @@ namespace Beamable.Editor.Accounts
 					
 					if (wasClicked)
 					{
-						var _ = cli.SwitchRealms(_visibleRealms[realmSelectionIndex].Pid);
+						var _ = context.SwitchRealm(_visibleRealms[realmSelectionIndex].Pid);
 						needsGameSelection = false;
 					}
 				}

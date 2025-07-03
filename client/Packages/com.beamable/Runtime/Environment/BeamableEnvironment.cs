@@ -54,11 +54,6 @@ namespace Beamable
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		
 		/// <summary>
-		/// The websocket address for Beamable
-		/// </summary>
-		public static string SocketUrl => Beam.RuntimeConfigProvider.SocketUrl; // GetSocketUrl();
-		
-		/// <summary>
 		/// True if the <see cref="Environment"/> property is "prod"
 		/// </summary>
 		public static bool IsProduction => !SdkVersion.IsNightly && SdkVersion.Major != 0;

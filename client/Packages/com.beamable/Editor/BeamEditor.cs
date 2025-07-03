@@ -605,7 +605,6 @@ namespace Beamable
 
 		public void ApplyRequesterToken()
 		{
-			
 			Requester.Cid = BeamCli.Cid;
 			Requester.Pid = BeamCli.Pid;
 			Requester.Token = BeamCli.latestToken;
@@ -647,6 +646,7 @@ namespace Beamable
 		{
 			await BeamCli.Login(host, cid, email, password);
 			ApplyRequesterToken();
+			OnUserChange?.Invoke(BeamCli.latestUser);
 
 			if (!ConfigDatabaseProvider.HasConfigFile())
 			{
@@ -661,7 +661,8 @@ namespace Beamable
 				cid = BeamCli.Cid,
 				pid = BeamCli.Pid,
 				alias = BeamCli.Alias,
-				host = BeamCli.HostUrl
+				host = BeamCli.HostUrl,
+				portalUrl = BeamCli.PortalUrl
 			};
 			
 			
@@ -731,7 +732,16 @@ namespace Beamable
 
 		public async Promise SwitchRealm(RealmView realm)
 		{
-			await BeamCli.SwitchRealms(realm.Pid);
+			await SwitchRealm(realm.Pid);
+		}
+		public async Promise SwitchRealm(string pid)
+		{
+			await BeamCli.SwitchRealms(pid);
+			
+			ApplyRequesterToken();
+			await ContentIO.FetchManifest();
+			ContentDatabase.RecalculateIndex();
+			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
 		}
 
 		public static async Task StopAll()
@@ -757,5 +767,6 @@ namespace Beamable
 		public string alias;
 		public string pid;
 		public string host;
+		public string portalUrl;
 	}
 }

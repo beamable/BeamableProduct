@@ -41,17 +41,7 @@ namespace Beamable.Editor.BeamCli
 		, IPlatformRequesterHostResolver
 		, ISerializationCallbackReceiver
 	{
-		
-		[Conditional("BEAMABLE_DEVELOPER")]
-		[MenuItem("BeamableTest/PokeCli")]
-		public static void Poke()
-		{
-			var p = BeamEditorContext.Default.BeamCli.Refresh();
-		}
-		
-		
 		private readonly IDependencyProvider _provider;
-		private readonly BeamEditorContext _ctx;
 
 		public BeamConfigCommandResult latestConfig;
 		public BeamAccountMeCommandOutput latestAccount;
@@ -79,10 +69,9 @@ namespace Beamable.Editor.BeamCli
 
 		// public Dictionary<string, BeamOrgRealmData> pidToRealm = new Dictionary<string, BeamOrgRealmData>();
 
-		public BeamCli(IDependencyProvider provider, BeamEditorContext ctx)
+		public BeamCli(IDependencyProvider provider)
 		{
 			_provider = provider;
-			_ctx = ctx;
 		}
 		
 		public void ReceiveStorageHandle(StorageHandle<BeamCli> handle)
@@ -112,12 +101,6 @@ namespace Beamable.Editor.BeamCli
 
 		public async Promise Refresh()
 		{
-			// TODO: allow cancelling inflight commands
-			
-			// TODO: 
-			// var extraPaths = BeamablePackages.GetManifestFileReferences();
-			// args.saveExtraPaths = extraPaths.ToArray();
-			
 			_configInvoke?.Cancel();
 			_configInvoke = Command.Config(new ConfigArgs());
 			_configInvoke.OnError(dp =>
@@ -190,18 +173,18 @@ namespace Beamable.Editor.BeamCli
 			await routePromise;
 			await linkPromise;
 			
-			if (!IsLoggedOut)
+			if (IsLoggedOut)
+			{
+				pidToRealm.Clear();
+				latestRealms.Clear();
+				latestRealmInfo = default;
+			}
+			else
 			{
 				var realmsPromise = _realmsInvoke.Run();
 				var gamesPromise = _gamesInvoke.Run();
 				await realmsPromise;
 				await gamesPromise;
-			}
-			else
-			{
-				pidToRealm.Clear();
-				latestRealms.Clear();
-				latestRealmInfo = default;
 			}
 		}
 
@@ -379,20 +362,18 @@ namespace Beamable.Editor.BeamCli
 		public string Pid => latestConfig?.pid;
 		public long UserId => latestAccount.id;
 		public bool IsLoggedOut => string.IsNullOrEmpty(latestAccount?.email);
-		public UserPermissions Permissions => new UserPermissions("admin"); // todo; fix this;
+		public UserPermissions Permissions => latestUser?.GetPermissionsForRealm(Pid) ?? new UserPermissions("");
 
 		public string HostUrl => latestConfig?.host;
 		public string Host => latestConfig?.host;
 		public string PortalUrl => latestRouteInfo.portalUri;
-		public string SocketUrl => latestRouteInfo.socketConfig?.uri;
 		public PackageVersion PackageVersion => BeamableEnvironment.SdkVersion;
 		public void OnBeforeSerialize()
 		{
-			// throw new NotImplementedException();
 		}
+		
 		public void OnAfterDeserialize()
 		{
-			// throw new NotImplementedException();
 			ReconstituteRealmData();
 			ReconstituteUser();
 		}
