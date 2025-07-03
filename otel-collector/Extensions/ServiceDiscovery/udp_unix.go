@@ -14,40 +14,38 @@ import (
 
 func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseData) {
 
-	localIP := GetLocalIP()
-	fmt.Println("LOCAL IP ADDRESS: ", localIP)
-	if localIP == nil {
-		fmt.Println("Invalid local IP")
-		os.Exit(1)
-	}
-
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_UDP)
 	if err != nil {
-		fmt.Println("socket error:", err)
+		fmt.Println("Socket error:", err)
 		os.Exit(1)
 	}
 
 	if err := syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1); err != nil {
-		fmt.Println("setsockopt error:", err)
+		fmt.Println("Setsockopt error: ", err)
 		syscall.Close(fd)
 		os.Exit(1)
 	}
 
-	addr := syscall.SockaddrInet4{Port: 0}
-	copy(addr.Addr[:], localIP)
-	if err := syscall.Bind(fd, &addr); err != nil {
-		fmt.Println("bind error:", err)
-		syscall.Close(fd)
+	address := fmt.Sprintf("%s:%d", net.IPv4bcast, discoveryPort)
+
+	addr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		fmt.Println("Failed to resolve address: ", err)
 		os.Exit(1)
 	}
 
-	broadcastIp := net.IPv4bcast
+	addrUnix := syscall.SockaddrInet4{
+		Port: discoveryPort,
+	}
 
-	dest := syscall.SockaddrInet4{Port: discoveryPort}
+	if ip4 := addr.IP.To4(); ip4 != nil {
+		copy(addrUnix.Addr[:], ip4)
+	} else {
+		fmt.Println("Only IPv4 addresses are supported for broadcasting")
+		os.Exit(1)
+	}
 
-	copy(dest.Addr[:], broadcastIp.To4())
-
-	log.Println("Beam Service discovery started at: ", broadcastIp, ":", discoveryPort)
+	log.Println("Beam Service discovery started at: ", net.IPv4bcast, ":", discoveryPort)
 
 	ticker := time.NewTicker(time.Duration(delay) * time.Millisecond)
 	defer ticker.Stop()
@@ -61,12 +59,12 @@ func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseDat
 			fmt.Println("Error deserializing message!", mErr)
 		}
 
-		err := syscall.Sendto(fd, message, 0, &dest)
+		err := syscall.Sendto(fd, message, 0, &addrUnix)
 		if err != nil {
 			errCount += 1
 
 			if errCount >= maxErrors {
-				fmt.Println("sendto error:", err)
+				fmt.Println("Sendto error:", err)
 				os.Exit(1)
 			}
 		} else {
