@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using cli.Dotnet;
 using Spectre.Console;
+using System.Diagnostics;
 
 namespace cli.OtelCommands;
 
@@ -37,8 +38,9 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		
 		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
+		// First take ~1s to check all running collectors 
 		var currentRunningCols = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
-			BeamableZLoggerProvider.LogContext.Value);;
+			BeamableZLoggerProvider.LogContext.Value, attemptsAmountOverride: 10);
 
 		if (args.watch)
 		{
@@ -51,19 +53,58 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 					LogStatus(currentRunningCols);
 					SendResults(currentRunningCols);
 				}
+				
+				lastRunningCols = currentRunningCols.GetRange(0, currentRunningCols.Count);
 
-				lastRunningCols = currentRunningCols;
-				currentRunningCols = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
-					BeamableZLoggerProvider.LogContext.Value);
+				await Task.Delay(100);
 
-				if (HaveStatusChanged(lastRunningCols, currentRunningCols))
+				// Check if there is something running that is new or changed
 				{
-					hasChanged = true;
+					var runningStatus =
+						await CollectorManager.GetRunningCollectorMessage(socket, args.Lifecycle.Source.Token);
+
+					if (runningStatus.foundCollector)
+					{
+						var collector = runningStatus.message;
+						
+						var index = currentRunningCols.FindIndex(s => s.pid == collector.pid);
+
+						var collectorStatus = CollectorManager.GetCollectorStatus(collector);
+
+						if (index >= 0)
+						{
+							currentRunningCols[index] = collectorStatus;
+						}
+						else
+						{
+							currentRunningCols.Add(collectorStatus);
+						}
+					}
 				}
-				else
+
+				// For all running collectors, check if their process is still running, if not then remove from list
 				{
-					hasChanged = false;
+					for (int i = (currentRunningCols.Count - 1); i >= 0; i--)
+					{
+						var collector = currentRunningCols[i];
+						var isProcessNotWorking = false;
+						try
+						{
+							Process.GetProcessById(collector.pid);
+						}
+						catch
+						{
+							isProcessNotWorking = true;
+						}
+
+						if (isProcessNotWorking)
+						{
+							currentRunningCols.RemoveAt(i);
+						}
+					}
 				}
+
+				hasChanged = HaveStatusChanged(lastRunningCols, currentRunningCols);
 			}
 		}
 		else
@@ -82,8 +123,13 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 		foreach (CollectorStatus status in lastStatusList)
 		{
-			var currentMatch = currentStatusList.FirstOrDefault(s => s.pid == status.pid);
+			CollectorStatus currentMatch = currentStatusList.FirstOrDefault(s => s.pid == status.pid);
 			if (currentMatch == null)
+			{
+				return true;
+			}
+			
+			if (status.isReady != currentMatch.isReady)
 			{
 				return true;
 			}

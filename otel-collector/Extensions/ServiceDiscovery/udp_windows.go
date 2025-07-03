@@ -16,13 +16,12 @@ import (
 func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseData) {
 
 	broadcastIp, err := GetBroadcastAddress()
-	fmt.Println("BROADCAST ADDRESS: ", broadcastIp)
 	if err != nil {
 		fmt.Println("socket error:", err)
 		os.Exit(1)
 	}
 
-	address := fmt.Sprintf("%s:%d", broadcastIp, discoveryPort)
+	address := fmt.Sprintf("%s:%d", net.IPv4bcast, discoveryPort)
 
 	addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
@@ -37,8 +36,10 @@ func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseDat
 	}
 	defer windows.Closesocket(socket)
 
-	// Enable broadcast if needed
+	fmt.Println("IPV$ BROADCAST: ", net.IPv4bcast)
+
 	if addr.IP.Equal(net.IPv4bcast) {
+		fmt.Println("SETTING BROADCAST ")
 		err = windows.SetsockoptInt(socket, windows.SOL_SOCKET, windows.SO_BROADCAST, 1)
 		if err != nil {
 			fmt.Println("failed to set broadcast: ", err)

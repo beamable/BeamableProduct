@@ -39,7 +39,7 @@ public class CollectorInfo
 
 public class CollectorManager
 {
-	public const int ReceiveTimeout = 10;
+	public const int ReceiveTimeout = 100;
 	public const int ReceiveBufferSize = 4096;
 
 	private const string KEY_VERSION = "BEAM_VERSION";
@@ -477,11 +477,11 @@ public class CollectorManager
 		}
 	}
 
-	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger)
+	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger, int attemptsAmountOverride = attemptsToConnect)
 	{
 		var results = new List<CollectorStatus>();
 
-		for (int i = 0; i < attemptsToConnect; i++)
+		for (int i = 0; i < attemptsAmountOverride; i++)
 		{
 			var runningResult = await GetRunningCollectorMessage(socket, token);
 
@@ -497,14 +497,7 @@ public class CollectorManager
 
 			if (alreadyAdded == null)
 			{
-				results.Add(new CollectorStatus()
-				{
-					isRunning = true,
-					isReady = collector.status == "READY",
-					pid = collector.pid,
-					otlpEndpoint = collector.otlpEndpoint,
-					version = collector.version
-				});
+				results.Add(GetCollectorStatus(collector));
 			}
 			await Task.Delay(delayBeforeNewMessage);
 		}
@@ -575,7 +568,7 @@ public class CollectorManager
 				continue;
 			}
 
-			var collector = runningResult.message;
+			CollectorDiscoveryEntry collector = runningResult.message;
 
 			// We check if the version of the found collector matches the version supported
 			if (collector.version != Version)
@@ -584,21 +577,34 @@ public class CollectorManager
 				continue;
 			}
 
+			return GetCollectorStatus(collector);
+		}
+
+		return GetCollectorStatus();
+	}
+
+	public static CollectorStatus GetCollectorStatus(CollectorDiscoveryEntry collectorDiscovered = null)
+	{
+		if (collectorDiscovered == null)
+		{
+			return new CollectorStatus()
+			{
+				isRunning = false,
+				isReady = false,
+				pid = 0,
+			};
+		}
+		else
+		{
 			return new CollectorStatus()
 			{
 				isRunning = true,
-				isReady = collector.status == "READY",
-				pid = collector.pid,
-				otlpEndpoint = collector.otlpEndpoint
+				isReady = collectorDiscovered.status == "READY",
+				pid = collectorDiscovered.pid,
+				otlpEndpoint = collectorDiscovered.otlpEndpoint,
+				version = collectorDiscovered.version
 			};
 		}
-
-		return new CollectorStatus()
-		{
-			isRunning = false,
-			isReady = false,
-			pid = 0,
-		};
 	}
 
 	public static void StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)

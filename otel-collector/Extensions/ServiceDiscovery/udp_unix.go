@@ -41,16 +41,11 @@ func StartUDPServer(discoveryPort int, delay int, maxErrors int, rd *responseDat
 		os.Exit(1)
 	}
 
-	broadcastIp, err := GetBroadcastAddress()
-	fmt.Println("BROADCAST ADDRESS: ", broadcastIp)
-	if err != nil {
-		fmt.Println("socket error:", err)
-		os.Exit(1)
-	}
+	broadcastIp := net.IPv4bcast
 
 	dest := syscall.SockaddrInet4{Port: discoveryPort}
 
-	copy(dest.Addr[:], net.ParseIP(broadcastIp).To4())
+	copy(dest.Addr[:], broadcastIp.To4())
 
 	log.Println("Beam Service discovery started at: ", broadcastIp, ":", discoveryPort)
 
