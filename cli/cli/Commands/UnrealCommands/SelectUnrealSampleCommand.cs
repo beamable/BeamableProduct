@@ -88,6 +88,12 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 
 		// Then we regenerate the project files
 		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.BaseDirectory);
+		
+		// Whenever we select a sample, we clear the realm override so that the sample's target realm is respected. 
+		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PLATFORM);
+		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PID);
+		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_CID);
+		args.ConfigService.FlushLocalOverrides();
 
 		return Task.CompletedTask;
 	}
