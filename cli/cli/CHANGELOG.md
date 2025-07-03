@@ -5,8 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.0.4] - 2025-07-02
+## [5.0.4]
 ### Fixed
+- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set globally as an Admin. 
+  This will change in the near future and realm-scoped permission will be respected instead as well as lowering the required role to `tester`.
 - Beamable content downloads ignore SSL when networking with the known Beamable CDN
 
 ## [5.0.3] - 2025-06-24
