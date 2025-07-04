@@ -5,21 +5,24 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/BeamSemiAutomatedTester/TestMainMenu.unity
     guid: 4160c6653fcaec249a4ea30d5d77631b
-  - enabled: 1
+  - enabled: 0
     path: Assets/BeamSemiAutomatedTester/Tests/BeamContextLifecycle/BeamContextLifecycle.unity
     guid: 93b5d15484a52fe408efa44472276cb0
-  - enabled: 1
+  - enabled: 0
     path: Assets/BeamSemiAutomatedTester/Tests/CloudSaving/CloudSaving.unity
     guid: 3b0487251dd05334fbc2f560184ba778
-  - enabled: 1
+  - enabled: 0
     path: Assets/BeamSemiAutomatedTester/Tests/FriendsPSDK/FriendsPSDK.unity
     guid: d7b42fa753dda4c3bbd26e40f9ebbf96
-  - enabled: 1
+  - enabled: 0
     path: Assets/BeamSemiAutomatedTester/Tests/Inventory/Inventory.unity
     guid: 719961af9c7a6834e9c3ecc3db6969e3
+  - enabled: 1
+    path: Assets/Beamable/Scenes/SampleScene.unity
+    guid: 26609a36192e54bb9a3c651373ab02a3
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 52f274da26cb73a49ac06b8a1df87e85,
       type: 2}

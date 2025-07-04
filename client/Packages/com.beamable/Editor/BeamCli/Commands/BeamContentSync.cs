@@ -22,6 +22,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool syncModified;
         /// <summary>This will discard your local changes ONLY on files that ARE conflicted. If filters are provided, will only do this for content that matches the filter</summary>
         public bool syncConflicts;
+        /// <summary>This will revert all your deleted files. If filters are provided, will only do this for content that matches the filter</summary>
+        public bool syncDeleted;
         /// <summary>If you pass in a Manifest's UID, we'll sync with that as the target. If filters are provided, will only do this for content that matches the filter</summary>
         public string target;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -63,6 +65,11 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--sync-conflicts=" + this.syncConflicts));
             }
+            // If the syncDeleted value was not default, then add it to the list of args.
+            if ((this.syncDeleted != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--sync-deleted=" + this.syncDeleted));
+            }
             // If the target value was not default, then add it to the list of args.
             if ((this.target != default(string)))
             {
@@ -102,6 +109,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public virtual ContentSyncWrapper OnStreamContentSyncResult(System.Action<ReportDataPoint<BeamContentSyncResult>> cb)
         {
             this.Command.On("stream", cb);
+            return this;
+        }
+        public virtual ContentSyncWrapper OnProgressStreamContentProgressUpdateData(System.Action<ReportDataPoint<BeamContentProgressUpdateData>> cb)
+        {
+            this.Command.On("progressStream", cb);
             return this;
         }
     }

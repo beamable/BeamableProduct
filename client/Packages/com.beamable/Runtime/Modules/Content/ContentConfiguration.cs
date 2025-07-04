@@ -1,5 +1,7 @@
 ﻿using Beamable.Common.Content;
+using Modules.Content;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -64,6 +66,9 @@ namespace Beamable.Content
 		[Tooltip("This options is used for disable content download exceptions to allow manual repairs.")]
 		public bool DisableContentDownloadExceptions = false;
 
+		[Header("Content Editor")]
+		public ContentTextureConfiguration ContentTextureConfiguration;
+
 		public ContentParameterProvider ParameterProvider
 		{
 			get
@@ -90,6 +95,15 @@ namespace Beamable.Content
                 Debug.LogWarning($"Invalid manifest ID: {message}");
                 EditorManifestID = DEFAULT_MANIFEST_ID;
             }
+
+            var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+            var allTypes = reflectionCache.GetAll().ToList();
+            if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
+            {
+	            
+	            ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+            }
+            
 #endif
 
 			if (!EnableMultipleContentNamespaces)
@@ -102,6 +116,7 @@ namespace Beamable.Content
 				_runtimeManifestID = DEFAULT_MANIFEST_ID;
 			}
 		}
+
 		public static bool IsValidManifestID(string name, out string message)
 		{
 			const int MAX_NAME_LENGTH = 36;
