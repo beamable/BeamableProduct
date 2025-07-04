@@ -144,7 +144,7 @@ namespace Editor.UI.ContentWindow
 				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                                                    tooltip: tooltip)))
 				{
-					PublishAction();
+					ChangeToPublishMode();
 				}
 
 				EditorGUILayout.Space(5, false);
@@ -157,20 +157,36 @@ namespace Editor.UI.ContentWindow
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
-					if (!string.IsNullOrEmpty(_oldItemSelected))
-					{
-						int selectedItemIndex = localContentManifestEntries.FindIndex(item => item.FullId == _oldItemSelected);
-						if (selectedItemIndex != -1)
-						{
-							_ = LoadItemScriptable(localContentManifestEntries[selectedItemIndex]);
-						}
-					}
-
-					_oldItemSelected = string.Empty;
-					_windowStatus = ContentWindowStatus.Normal;
-					Repaint();
+					ChangeToNormalMode(localContentManifestEntries);
 				}
 			}
+		}
+
+		private void ChangeToPublishMode()
+		{
+			_windowStatus = ContentWindowStatus.Publish;
+			if (!string.IsNullOrEmpty(_selectedItemId))
+			{
+				_oldItemSelected = _selectedItemId;
+				Selection.activeObject = null;
+			}
+			Repaint();
+		}
+		
+		private void ChangeToNormalMode(List<LocalContentManifestEntry> localContentManifestEntries)
+		{
+			if (!string.IsNullOrEmpty(_oldItemSelected))
+			{
+				int selectedItemIndex = localContentManifestEntries.FindIndex(item => item.FullId == _oldItemSelected);
+				if (selectedItemIndex != -1)
+				{
+					_ = LoadItemScriptable(localContentManifestEntries[selectedItemIndex]);
+				}
+			}
+
+			_oldItemSelected = string.Empty;
+			_windowStatus = ContentWindowStatus.Normal;
+			Repaint();
 		}
 
 		private void DrawLowBarHeader()
@@ -336,16 +352,7 @@ namespace Editor.UI.ContentWindow
 			await _contentService.SyncContentsWithProgress(false, true, false, false);
 		}
 
-		private void PublishAction()
-		{
-			_windowStatus = ContentWindowStatus.Publish;
-			if (!string.IsNullOrEmpty(_selectedItemId))
-			{
-				_oldItemSelected = _selectedItemId;
-				Selection.activeObject = null;
-			}
-			Repaint();
-		}
+		
 
 
 		private void DrawFilterButton(ContentSearchFilterType searchFilterType, Texture icon, IEnumerable<string> items)

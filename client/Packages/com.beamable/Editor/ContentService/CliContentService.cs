@@ -43,6 +43,8 @@ namespace Editor.ContentService
 
 		public event Action OnManifestUpdated;
 
+		public bool HasConflictedContent => _invalidContents.Count > 0;
+
 		public CliContentService(BeamCommands cli, BeamEditorContext beamContext, IDependencyProvider provider)
 		{
 			_cli = cli;

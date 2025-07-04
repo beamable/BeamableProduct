@@ -22,13 +22,21 @@ namespace Editor.UI.ContentWindow
 
 		private void DrawPublishContent()
 		{
-			var allChangedContents = GetCachedManifestEntries()
+			List<LocalContentManifestEntry> localContentManifestEntries = GetCachedManifestEntries();
+			var allChangedContents = localContentManifestEntries
 			                         .Where(item => item.StatusEnum is ContentStatus.Created or ContentStatus.Deleted
 				                                or ContentStatus.Modified).ToList();
 			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
+
+			if (_contentService.HasConflictedContent || allChangedContents.Any(item => item.IsInConflict) || allChangedContents.Count == 0)
+			{
+				ChangeToNormalMode(localContentManifestEntries);
+			}
+			
 			var allModified = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Modified).ToList();
 			var allCreated = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Created).ToList();
 			var allDeleted = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Deleted).ToList();
+			
 			float minWidth = 900f;
 			float screenWidth = EditorGUIUtility.currentViewWidth;
 			float availableSpace = Mathf.Max(screenWidth, minWidth);
