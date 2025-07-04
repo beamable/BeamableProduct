@@ -148,8 +148,11 @@ namespace Beamable.Server
 						    .SetResourceBuilder(_resourceBuilder)
 						    .AddOtlpExporter(option =>
 						    {
-							    option.Protocol = OtlpExportProtocol.HttpProtobuf;
-							    option.Endpoint = new Uri($"{otlpEndpoint}/v1/logs");
+							    if (ShouldStartStandardOtel())
+							    {
+								    option.Protocol = OtlpExportProtocol.HttpProtobuf;
+								    option.Endpoint = new Uri($"{otlpEndpoint}/v1/logs");
+							    }
 						    });
 				    });
 			    }
@@ -664,6 +667,8 @@ namespace Beamable.Server
 
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute, string otlpEndpoint)
         {
+	        var shouldStartStandardOtel = ShouldStartStandardOtel();
+
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
 			        .AddMeter(Otel.METER_SERVICE_NAME)
 			        .AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
@@ -672,8 +677,12 @@ namespace Beamable.Server
 			        .SetResourceBuilder(_resourceBuilder)
 			        .AddOtlpExporter(option =>
 			        {
-				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");
+				        if (shouldStartStandardOtel)
+				        {
+					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
+					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");
+				        }
+
 			        })
 			        .Build()
 		        ;
@@ -686,8 +695,11 @@ namespace Beamable.Server
 			        .SetSampler<TraceSampler>()
 			        .AddOtlpExporter(option =>
 			        {
-				        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				        option.Endpoint = new Uri($"{otlpEndpoint}/v1/traces");
+				        if (shouldStartStandardOtel)
+				        {
+					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
+					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/traces");
+				        }
 			        })
 			        .Build()
 		        ;
@@ -867,6 +879,18 @@ namespace Beamable.Server
 	        await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
         }
 
+        private static bool ShouldStartStandardOtel()
+        {
+	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
+
+	        if (startStandardOtelEnv == "true")
+	        {
+		        return true;
+	        }
+
+	        return false;
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 			var commandLineArgs = Environment.GetCommandLineArgs();
@@ -876,17 +900,9 @@ namespace Beamable.Server
 		        return;
 	        }
 
-	        bool shouldStartStandardOtel = false;
-	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
-
-	        if (startStandardOtelEnv == "true")
-	        {
-		        shouldStartStandardOtel = true;
-	        }
-
 	        var otlpEndpoint = PortUtil.FreeEndpoint();
 
-	        if (shouldStartStandardOtel)
+	        if (ShouldStartStandardOtel())
 	        {
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
