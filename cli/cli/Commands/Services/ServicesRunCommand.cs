@@ -12,7 +12,7 @@ namespace cli;
 public class ServicesRunCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
-	public bool forceAmdCpuArchitecture = false;
+	public bool preventForceAmdCpuArchitecture = false;
 	public bool autoDeleteContainers;
 }
 
@@ -34,9 +34,9 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 		AddOption(
-			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
-				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
-			(args, i) => args.forceAmdCpuArchitecture = i);
+			new Option<bool>(new string[] { "--prevent-force-amd-cpu-arch", "-pfcpu" }, () => false,
+				"By default, this command forces the services to run with amd64 CPU architecture, which is the architecture used in Docker"),
+			(args, i) => args.preventForceAmdCpuArchitecture = i);
 		
 		AddOption(
 			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
@@ -130,7 +130,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var sequence = Promise.Sequence(promises);
 					await sequence;
 
-					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, 
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, !args.preventForceAmdCpuArchitecture,
 						autoDeleteContainers: args.autoDeleteContainers, 
 						buildPullImageProgress: (beamoId, progress) =>
 					{
