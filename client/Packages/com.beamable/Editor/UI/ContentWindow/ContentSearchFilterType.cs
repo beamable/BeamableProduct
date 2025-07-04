@@ -1,6 +1,6 @@
 ﻿namespace Editor.UI.ContentWindow
 {
-	public enum ContentFilterType
+	public enum ContentSearchFilterType
 	{
 		Tag,
 		Type,

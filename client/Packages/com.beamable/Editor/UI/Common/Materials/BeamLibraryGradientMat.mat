@@ -79,6 +79,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Rect: {r: 339, g: 300, b: 284, a: 128}
-    - _RectPosition: {r: 8, g: 8, b: -15, a: -151}
-    - _Size: {r: 1920, g: 73, b: 1091, a: 695}
+    - _RectPosition: {r: 26, g: 8, b: -15, a: -151}
+    - _Size: {r: 1920, g: 73, b: 974, a: 613}
   m_BuildTextureStacks: []

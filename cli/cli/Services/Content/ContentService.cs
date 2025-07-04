@@ -646,8 +646,10 @@ public class ContentService
 	///
 	/// For now, users cannot publish UNLESS they make their changes against the latest published manifest.
 	/// </summary>
-	public async Task PublishContent(string manifestId = "global", Action<ContentProgressUpdateData> onProgressUpdate = null)
+	public async Task PublishContent(string manifestId = "global", Action<ContentProgressUpdateData> onProgressUpdateAction = null)
 	{
+		const int BATCH_SIZE = 20;
+		
 		// Get the latest manifest id and generate the diff against local files. 
 		var latestManifest = await GetManifest(manifestId);
 		var localAgainstLatest = await GetAllContentFiles(latestManifest, manifestId);
@@ -708,37 +710,48 @@ public class ContentService
 				};
 			}).ToArray();
 
+		var batches = changedContents.Chunk(BATCH_SIZE);
 		// Then we save them to S3
-		var saveContentRequestsTasks = changedContents.Select(async contentDefinition =>
+		var saveContentRequestsTasks = batches.Select(async contentDefinitions =>
 		{
 			var contentProgressUpdateData = new ContentProgressUpdateData()
 			{
-				contentName = contentDefinition.id,
+				contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
 				totalItems = changedContents.Length,
 			};
 			
-			var saveRequest = new SaveContentRequest() { content = new[] { contentDefinition } };
+			var saveRequest = new SaveContentRequest() { content = contentDefinitions };
 			SaveContentResponse saveResponse;
 			try
 			{
+				
 				saveResponse = await _contentApi.Post(saveRequest);
 			}
 			catch (Exception exception)
 			{
 				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
 				contentProgressUpdateData.errorMessage = exception.Message;
-				onProgressUpdate?.Invoke(contentProgressUpdateData);
-				throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={exception.Data}");
+				onProgressUpdateAction?.Invoke(contentProgressUpdateData);
+				throw;
 			}
 			
 
 			contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
-			onProgressUpdate?.Invoke(contentProgressUpdateData);
+			onProgressUpdateAction?.Invoke(contentProgressUpdateData);
 			return saveResponse;
 		}).ToArray();
-		
-		var saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
 
+		SaveContentResponse[] saveContentResponses;
+		try
+		{
+			saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
+		}
+		catch (Exception e)
+		{
+			// Handle failure case by just stopping here and erroring out
+			throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={e.Data}");
+			
+		}
 		
 		// Prepare the save manifest request using the response from the save content request.
 		var saveManifestRequest = new SaveManifestRequest
@@ -759,9 +772,22 @@ public class ContentService
 					visibility = c.visibility.ToString().ToLower()
 				}).ToArray()
 		};
+		
+		foreach (ReferenceSuperset referenceSuperset in saveManifestRequest.references)
+		{
+			Log.Information($"Saving manifest {referenceSuperset.id} - {referenceSuperset.visibility.Value} - {referenceSuperset.version}");
+		}
 
 		// Update the local reference manifest
-		_ = await _contentApi.PostManifest(saveManifestRequest);
+		try
+		{
+			_ = await _contentApi.PostManifest(saveManifestRequest);
+		}
+		catch (RequesterException e)
+		{
+			Log.Information(e.RequestError.error);
+			throw;
+		}
 	}
 
 	/// <summary>

@@ -22,20 +22,23 @@ namespace Editor.UI.ContentWindow
 		private const string REVERT_NEW_CONTENTS_MENU_ITEM = "Delete All New Created Changes";
 		
 		
-		private readonly Dictionary<ContentFilterType, HashSet<string>> _activeFilters = new();
+		private readonly Dictionary<ContentSearchFilterType, HashSet<string>> _activeFilters = new();
 		private List<string> _allTypes = new();
 		private List<string> _allTags = new();
 		
 		private ContentSortOptionType _currentSortOption;
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
+		
+		private string _oldItemSelected;
+		
 		private static List<string> AllStatus => StatusMapToString.Values.ToList();
 
-		private static readonly Dictionary<ContentFilterType, string> ContentFilterTypeToQueryTag = new()
+		private static readonly Dictionary<ContentSearchFilterType, string> ContentFilterTypeToQueryTag = new()
 		{
-			{ContentFilterType.Tag, "tag:"},
-			{ContentFilterType.Status, "status:"},
-			{ContentFilterType.Type, "type:"}
+			{ContentSearchFilterType.Tag, "tag:"},
+			{ContentSearchFilterType.Status, "status:"},
+			{ContentSearchFilterType.Type, "type:"}
 		};
 		
 		private static readonly Dictionary<ContentFilterStatus, string> StatusMapToString = new()
@@ -110,9 +113,10 @@ namespace Editor.UI.ContentWindow
 
 		private void DrawTopBarHeader()
 		{
+			List<LocalContentManifestEntry> localContentManifestEntries = GetCachedManifestEntries();
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				var items = GetCachedManifestEntries();
+				var items = localContentManifestEntries;
 				var hasContentToPublish =
 					items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
 						          or ContentStatus.Modified);
@@ -145,14 +149,24 @@ namespace Editor.UI.ContentWindow
 
 				EditorGUILayout.Space(5, false);
 				this.DrawSearchBar(_contentSearchData, true);
-				DrawFilterButton(ContentFilterType.Tag, BeamGUI.iconTag, _allTags);
-				DrawFilterButton(ContentFilterType.Type, BeamGUI.iconType, _allTypes);
-				DrawFilterButton(ContentFilterType.Status, BeamGUI.iconStatus, AllStatus);
+				DrawFilterButton(ContentSearchFilterType.Tag, BeamGUI.iconTag, _allTags);
+				DrawFilterButton(ContentSearchFilterType.Type, BeamGUI.iconType, _allTypes);
+				DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
 			}
 			else
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
+					if (!string.IsNullOrEmpty(_oldItemSelected))
+					{
+						int selectedItemIndex = localContentManifestEntries.FindIndex(item => item.FullId == _oldItemSelected);
+						if (selectedItemIndex != -1)
+						{
+							_ = LoadItemScriptable(localContentManifestEntries[selectedItemIndex]);
+						}
+					}
+
+					_oldItemSelected = string.Empty;
 					_windowStatus = ContentWindowStatus.Normal;
 					Repaint();
 				}
@@ -325,13 +339,18 @@ namespace Editor.UI.ContentWindow
 		private void PublishAction()
 		{
 			_windowStatus = ContentWindowStatus.Publish;
+			if (!string.IsNullOrEmpty(_selectedItemId))
+			{
+				_oldItemSelected = _selectedItemId;
+				Selection.activeObject = null;
+			}
 			Repaint();
 		}
 
 
-		private void DrawFilterButton(ContentFilterType filterType, Texture icon, IEnumerable<string> items)
+		private void DrawFilterButton(ContentSearchFilterType searchFilterType, Texture icon, IEnumerable<string> items)
 		{
-			bool hasActiveFilter = _activeFilters.TryGetValue(filterType, out var activeItems) && activeItems.Count > 0;
+			bool hasActiveFilter = _activeFilters.TryGetValue(searchFilterType, out var activeItems) && activeItems.Count > 0;
 			Color backgroundColor = hasActiveFilter ? Color.gray : default;
 			bool isClicked = BeamGUI.HeaderButton(null, icon,
 			                                      width: 30,
@@ -345,7 +364,7 @@ namespace Editor.UI.ContentWindow
 				return;
 			}
 
-			var activeItemsOnFilter = GetFilterTypeActiveItems(filterType);
+			var activeItemsOnFilter = GetFilterTypeActiveItems(searchFilterType);
 			var itemStatus = items.ToDictionary(item => item, s => activeItemsOnFilter.Contains(s));
 			ToggleListWindow.Show(buttonRect, new Vector2(200, 250), itemStatus, (item, state) =>
 			{
@@ -372,7 +391,7 @@ namespace Editor.UI.ContentWindow
 
 			string searchText = _contentSearchData.searchText;
 			string[] searchTextParts = searchText.Split(",");
-			foreach ((ContentFilterType contentType, string filterTag) in ContentFilterTypeToQueryTag)
+			foreach ((ContentSearchFilterType contentType, string filterTag) in ContentFilterTypeToQueryTag)
 			{
 				foreach (string searchTextPart in searchTextParts)
 				{
@@ -400,7 +419,7 @@ namespace Editor.UI.ContentWindow
 			var searchTextParts = searchText.Split(',');
 			var newSearchTextParts = new List<string>();
 
-			foreach ((ContentFilterType type, string filterLabel) in ContentFilterTypeToQueryTag)
+			foreach ((ContentSearchFilterType type, string filterLabel) in ContentFilterTypeToQueryTag)
 			{
 				bool hasFilterToType = _activeFilters.TryGetValue(type, out var filterData) && filterData.Count > 0;
 				HashSet<string> data = filterData ?? new HashSet<string>();
@@ -431,7 +450,7 @@ namespace Editor.UI.ContentWindow
 			Repaint();
 		}
 
-		private HashSet<string> GetFilterTypeActiveItems(ContentFilterType type)
+		private HashSet<string> GetFilterTypeActiveItems(ContentSearchFilterType type)
 		{
 			if (!_activeFilters.TryGetValue(type, out HashSet<string> items))
 			{

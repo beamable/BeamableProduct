@@ -5,6 +5,9 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
+		
+		public static readonly float StandardVerticalSpacing = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+		
 		public static void DrawVerticalSeparatorLine(RectOffset margin = null, Color? color = null)
 		{
 			DrawSeparatorLine(true, margin, color);

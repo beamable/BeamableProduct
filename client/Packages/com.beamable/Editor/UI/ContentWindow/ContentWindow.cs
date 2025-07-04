@@ -51,9 +51,9 @@ namespace Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
-			_windowStatus = ContentWindowStatus.Normal;
 			if (_contentService == null)
 			{
+				_windowStatus = ContentWindowStatus.Normal;
 				_contentService = Scope.GetService<CliContentService>();
 				_contentService.OnManifestUpdated += Build;
 				_ = _contentService.Reload().Then(_ =>

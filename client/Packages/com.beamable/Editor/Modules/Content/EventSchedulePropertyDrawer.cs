@@ -1,6 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Content.Utility;
-using Editor.UI.Utils;
+using Beamable.Editor.Util;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -20,18 +20,18 @@ namespace Beamable.Editor.Content
 			if (property.isExpanded)
 			{
 				EditorGUI.indentLevel++;
-				float yOffset = PropertyDrawerUtils.StandardVerticalSpacing;
+				float yOffset = BeamGUI.StandardVerticalSpacing;
 				
 				SerializedProperty descriptionProp = property.FindPropertyRelative("description");
 				Rect descriptionRect = new Rect(position.x, position.y + yOffset, position.width, EditorGUIUtility.singleLineHeight);
 				EditorGUI.PropertyField(descriptionRect, descriptionProp);
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 				
 				
 				SerializedProperty activeToProp = property.FindPropertyRelative("activeTo");
 				Rect activeToRect = new Rect(position.x, position.y + yOffset, position.width, EditorGUIUtility.singleLineHeight);
 				EditorGUI.PropertyField(activeToRect, activeToProp);
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 				var hasValueProp = activeToProp.FindPropertyRelative(nameof(Optional.HasValue));
 				if (hasValueProp.boolValue)
 				{
@@ -63,7 +63,7 @@ namespace Beamable.Editor.Content
 				return EditorGUIUtility.singleLineHeight;
 			}
 
-			float height = PropertyDrawerUtils.StandardVerticalSpacing * 3; // Label + Description + activeTo
+			float height = BeamGUI.StandardVerticalSpacing * 3; // Label + Description + activeTo
 			
 			// Add height for definitions list
 			SerializedProperty definitionsProp = property.FindPropertyRelative("definitions");

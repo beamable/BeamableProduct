@@ -140,8 +140,8 @@ namespace Editor.UI.ContentWindow
 				
 				var items = GetFilteredItems(contentType, true);
 				bool isFilteringActive = !string.IsNullOrEmpty(GetNameSearchPartValue());
-				isFilteringActive |= GetFilterTypeActiveItems(ContentFilterType.Status).Count > 0;
-				isFilteringActive |= GetFilterTypeActiveItems(ContentFilterType.Tag).Count > 0;
+				isFilteringActive |= GetFilterTypeActiveItems(ContentSearchFilterType.Status).Count > 0;
+				isFilteringActive |= GetFilterTypeActiveItems(ContentSearchFilterType.Tag).Count > 0;
 				if (items.Count == 0 && isFilteringActive)
 				{
 					continue;
@@ -541,9 +541,9 @@ namespace Editor.UI.ContentWindow
 			var allItems = GetCachedManifestEntries();
 
 			string nameSearchPartValue = GetNameSearchPartValue();
-			var types = GetFilterTypeActiveItems(ContentFilterType.Type);
-			var tags = GetFilterTypeActiveItems(ContentFilterType.Tag);
-			var statuses = GetFilterTypeActiveItems(ContentFilterType.Status);
+			var types = GetFilterTypeActiveItems(ContentSearchFilterType.Type);
+			var tags = GetFilterTypeActiveItems(ContentSearchFilterType.Tag);
+			var statuses = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
 
 			var localContentManifestEntries =
 				allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue));

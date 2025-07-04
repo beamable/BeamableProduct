@@ -1,8 +1,8 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Editor;
 using Beamable.Editor.Util;
-using Editor.UI.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -12,40 +12,59 @@ namespace Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
+		// Dictionary to track foldout states for each section
+		private Dictionary<string, bool> _foldoutStates = new Dictionary<string, bool>()
+		{
+			{"Created Contents", true}, {"Modified Contents", true}, {"Deleted Contents", true}
+		};
+
+		private Vector2 _mainScrollPosition;
+
 		private void DrawPublishContent()
 		{
 			var allChangedContents = GetCachedManifestEntries()
-				.Where(item => item.StatusEnum is ContentStatus.Created or ContentStatus.Deleted
-					       or ContentStatus.Modified).ToList();
+			                         .Where(item => item.StatusEnum is ContentStatus.Created or ContentStatus.Deleted
+				                                or ContentStatus.Modified).ToList();
+			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
 			var allModified = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Modified).ToList();
 			var allCreated = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Created).ToList();
 			var allDeleted = allChangedContents.Where(item => item.StatusEnum is ContentStatus.Deleted).ToList();
-			float availableSpace = Mathf.Max(EditorGUIUtility.currentViewWidth, 900f);
-			var columnSize = (availableSpace / 3f) - 10f;
-			GUILayout.Space(30);
+			float minWidth = 900f;
+			float screenWidth = EditorGUIUtility.currentViewWidth;
+			float availableSpace = Mathf.Max(screenWidth, minWidth);
 
-			var maxItems = Mathf.Max(allModified.Count, allCreated.Count, allDeleted.Count);
-			
-			var contentRect = EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace), GUILayout.Height(CalculateColumnHeight(maxItems)));
-			var rectController = new EditorGUIRectController(contentRect);
 			EditorGUILayout.BeginVertical();
-			EditorGUILayout.BeginHorizontal();
-			{
-				rectController.ReserveWidth(5);
-				DrawColumn(rectController, columnSize, "Created Contents", "There is no new created content.", BeamGUI.iconStatusAdded, allCreated);
-				rectController.ReserveWidth(5);
-				DrawColumn(rectController, columnSize, "Modified Contents", "There is no modified content.", BeamGUI.iconStatusModified, allModified);
-				rectController.ReserveWidth(5);
-				DrawColumn(rectController, columnSize, "Deleted Contents", "There is no deleted content.", BeamGUI.iconStatusDeleted, allDeleted);
-			}
-			EditorGUILayout.EndHorizontal();
+			GUILayout.Space(40);
+			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, false, screenWidth < minWidth, GUILayout.ExpandWidth(true));
+			availableSpace -= 20f;
 			
+			EditorGUILayout.BeginVertical(GUILayout.MinWidth(minWidth));
+			
+			// Improved help box with larger text and centered alignment
+			var publishHelpBoxRect =
+				EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace),
+				                               GUILayout.Height(BeamGUI.StandardVerticalSpacing * 2));
+			var helpBoxStyle = new GUIStyle(EditorStyles.helpBox)
+			{
+				fontSize = 12, alignment = TextAnchor.MiddleCenter, wordWrap = true
+			};
+			EditorGUI.HelpBox(publishHelpBoxRect, $"", MessageType.Info);
+			EditorGUI.LabelField(publishHelpBoxRect,
+			                     new GUIContent(
+				                     $"Clicking \"Publish Contents\" button will upload all content changes to realm {realmName}. Check the list below for the changes that will be applied."),
+			                     helpBoxStyle);
+
+			DrawChangesContents(availableSpace, "Created Contents", BeamGUI.iconStatusAdded, allCreated);
+			DrawChangesContents(availableSpace, "Modified Contents", BeamGUI.iconStatusModified, allModified);
+			DrawChangesContents(availableSpace, "Deleted Contents", BeamGUI.iconStatusDeleted, allDeleted);
+
 			var buttonsRect = EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace), GUILayout.Height(30f));
 			var buttonContent = new GUIContent("Publish Contents");
 			var buttonSize = GUI.skin.button.CalcSize(buttonContent);
-			if (GUI.Button(new Rect(buttonsRect.center.x - buttonSize.x/2f, buttonsRect.y, buttonSize.x, buttonsRect.height), buttonContent))
+			if (BeamGUI.PrimaryButton(
+				    new Rect(buttonsRect.x + 5f, buttonsRect.y, buttonSize.x, buttonsRect.height),
+				    buttonContent))
 			{
-				string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
 				if (EditorUtility.DisplayDialog("Publish Content",
 				                                $"Are you sure you want to publish content changes to realm [{realmName}]?",
 				                                "Yes", "No"))
@@ -53,55 +72,90 @@ namespace Editor.UI.ContentWindow
 					_ = _contentService.PublishContentsWithProgress();
 				}
 			}
-			
+			EditorGUILayout.EndVertical();
+			EditorGUILayout.EndScrollView();
 			EditorGUILayout.EndVertical();
 		}
 
-		private void DrawColumn(EditorGUIRectController rectController, float columnSize, string headerName, string noItemMessage, Texture icon, List<LocalContentManifestEntry> itemList)
+		private void DrawChangesContents(float width,
+		                                 string headerName,
+		                                 Texture icon,
+		                                 List<LocalContentManifestEntry> itemList)
 		{
-			EditorGUILayout.BeginVertical();
-			var columnRect = rectController.ReserveWidth(columnSize);
-			var columnRectController = new EditorGUIRectController(columnRect);
-				
-			EditorGUI.DrawRect(columnRect, new Color(0.15f, 0.15f, 0.15f));
-			Rect headerRect = columnRectController.ReserveHeight(PropertyDrawerUtils.StandardVerticalSpacing);
-			var itemContent = new GUIContent(headerName);
-			var guiStyle = new GUIStyle(EditorStyles.boldLabel)
-			{
-				alignment = TextAnchor.MiddleCenter,
-			};
-			var contentSize = guiStyle.CalcSize(itemContent);
-			var iconSize = 15f;
-			
-			GUI.DrawTexture(new Rect(headerRect.center.x - contentSize.x/2f - iconSize, headerRect.center.y - iconSize/2f, iconSize, iconSize), icon);
-			EditorGUI.LabelField(new Rect(headerRect.center.x - contentSize.x/2f + iconSize/2f, headerRect.y, contentSize.x, headerRect.height), itemContent, guiStyle);
-
 			if (itemList.Count == 0)
+				return;
+
+			
+			_foldoutStates.TryAdd(headerName, true);
+
+			var heightSize = CalculateHeight(_foldoutStates[headerName], itemList.Count);
+			EditorGUILayout.BeginVertical();
+			var rectController =
+				new EditorGUIRectController(
+					EditorGUILayout.GetControlRect(GUILayout.Width(width), GUILayout.Height(heightSize)));
+
+			GUI.Box(rectController.rect, GUIContent.none, EditorStyles.helpBox);
+			Rect headerRect = rectController.ReserveHeight(BeamGUI.StandardVerticalSpacing * 1.5f);
+
+			
+			var foldoutRect = new Rect(headerRect.x + 5, headerRect.y, 20, headerRect.height);
+			_foldoutStates[headerName] = EditorGUI.Foldout(foldoutRect, _foldoutStates[headerName], GUIContent.none);
+
+			var iconSize = 15f;
+			var iconRect = new Rect(foldoutRect.xMax, headerRect.y + (headerRect.height - iconSize) / 2, iconSize,
+			                        iconSize);
+			GUI.DrawTexture(iconRect, icon);
+
+			var labelRect = new Rect(iconRect.xMax + 5, headerRect.y, headerRect.width - (iconRect.xMax + 5),
+			                         headerRect.height);
+			var guiStyle = new GUIStyle(EditorStyles.boldLabel) {alignment = TextAnchor.MiddleLeft,};
+			EditorGUI.LabelField(labelRect, headerName, guiStyle);
+
+			if (_foldoutStates[headerName])
 			{
-				Rect infoBoxRect = columnRectController.ReserveHeight(PropertyDrawerUtils.StandardVerticalSpacing * 2f);
-				infoBoxRect.xMin += 5;
-				infoBoxRect.width -= 5;
-				EditorGUI.HelpBox(infoBoxRect, noItemMessage, MessageType.Info);
-			}
-			foreach (LocalContentManifestEntry localContentManifestEntry in itemList)
-			{
-				EditorGUILayout.BeginHorizontal();
+				foreach (LocalContentManifestEntry localContentManifestEntry in itemList)
 				{
-					var itemRect = columnRectController.ReserveHeight(PropertyDrawerUtils.StandardVerticalSpacing);
-					itemRect.xMin += 5;
-					itemRect.width -= 5;
-					var entryContent = new GUIContent(localContentManifestEntry.FullId, localContentManifestEntry.FullId);
-					EditorGUI.LabelField(itemRect, entryContent);
+					var itemRect = rectController.ReserveSingleLine();
+					EditorGUILayout.BeginHorizontal();
+					{
+						itemRect.xMin = labelRect.xMin;
+						itemRect.width -= 5;
+
+						var itemRectController = new EditorGUIRectController(itemRect);
+						var buttonRect = itemRectController.ReserveWidthFromRight(80);
+						var contentRect = itemRectController.rect;
+						var entryContent = new GUIContent(localContentManifestEntry.FullId, localContentManifestEntry.FullId);
+						EditorGUI.LabelField(contentRect, entryContent);
+						
+						var revertContent = new GUIContent("Revert", BeamGUI.iconRevertAction, "Revert this content to its previous state");
+						if (GUI.Button(buttonRect, revertContent))
+						{
+							if (EditorUtility.DisplayDialog("Revert Content",
+							                                $"Are you sure you want to revert {localContentManifestEntry.FullId}?",
+							                                "Yes", "No"))
+							{
+								_ = _contentService.SyncContentsWithProgress(true, true, true, true, localContentManifestEntry.FullId, ContentFilterType.ExactIds);
+							}
+						}
+					}
+					EditorGUILayout.EndHorizontal();
+					rectController.ReserveHeight(EditorGUIUtility.standardVerticalSpacing);
 				}
-				EditorGUILayout.EndHorizontal();
 			}
+
 			EditorGUILayout.EndVertical();
 		}
 
-		private float CalculateColumnHeight(int entriesCount)
+		private float CalculateHeight(bool isOpen, int entriesCount)
 		{
-			var minSize = Mathf.Max(entriesCount, 2);
-			return (minSize + 2) * PropertyDrawerUtils.StandardVerticalSpacing;
+			var height = BeamGUI.StandardVerticalSpacing * 1.5f; // Header
+			if (isOpen)
+			{
+				height += BeamGUI.StandardVerticalSpacing * entriesCount; // Items
+				height += EditorGUIUtility.standardVerticalSpacing;
+			}
+
+			return height;
 		}
 	}
 }

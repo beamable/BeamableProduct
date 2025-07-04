@@ -1,6 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.CronExpression;
-using Editor.UI.Utils;
+using Beamable.Editor.Util;
 using Editor.Utility;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,22 +65,22 @@ namespace Beamable.Editor.Content
 			{
 				EditorGUI.indentLevel++;
 
-				float yOffset = PropertyDrawerUtils.StandardVerticalSpacing;
+				float yOffset = BeamGUI.StandardVerticalSpacing;
 
 				Rect cronLabelRect = new Rect(position.x, position.y + yOffset, position.width,
 				                              EditorGUIUtility.singleLineHeight);
 				EditorGUI.LabelField(cronLabelRect, "Raw Cron Expression", EditorStyles.boldLabel);
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 
 				Rect cronValueRect = new Rect(position.x, position.y + yOffset, position.width,
 				                              EditorGUIUtility.singleLineHeight);
 				EditorGUI.LabelField(cronValueRect, new GUIContent(rawCronExpression));
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 
 				Rect humanLabelRect = new Rect(position.x, position.y + yOffset, position.width,
 				                               EditorGUIUtility.singleLineHeight);
 				EditorGUI.LabelField(humanLabelRect, "Human Readable", EditorStyles.boldLabel);
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 
 				Rect humanValueRect = new Rect(
 					position.x, 
@@ -102,7 +102,7 @@ namespace Beamable.Editor.Content
 				TryGetPropertyValue(_propPathsCronPartsFoldouts, propertyPath, out bool propPartFoldout);
 				propPartFoldout = EditorGUI.Foldout(cronFoldoutRect, propPartFoldout, "Cron Values", true);
 				SetPropertyValue(_propPathsCronPartsFoldouts, propertyPath, propPartFoldout);
-				yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+				yOffset += BeamGUI.StandardVerticalSpacing;
 				if (propPartFoldout)
 				{
 					EditorGUI.indentLevel++;
@@ -132,7 +132,7 @@ namespace Beamable.Editor.Content
 
 			EditorGUI.LabelField(labelField, FieldLabels[fieldIndex]);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 
 			EditorGUI.indentLevel++;
 
@@ -146,7 +146,7 @@ namespace Beamable.Editor.Content
 
 			cronTypeParts[fieldIndex] = (CronFieldType)EditorGUI.EnumPopup(typeRect, "Type", cronTypeParts[fieldIndex]);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 			
 			switch (cronTypeParts[fieldIndex])
 			{
@@ -201,7 +201,7 @@ namespace Beamable.Editor.Content
 
 			UpdateCronPartValue($"{cronValue}", i, propertyPath);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 			return yOffset;
 		}
 		
@@ -241,7 +241,7 @@ namespace Beamable.Editor.Content
 
 			UpdateCronPartValue($"{start}-{end}", i, propertyPath);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 			EditorGUI.indentLevel = oldIndentLevel;
 			return yOffset;
 		}
@@ -265,7 +265,7 @@ namespace Beamable.Editor.Content
 			nth = EditorGUI.IntField(nthRect, "Every N", nth);
 			UpdateCronPartValue($"*/{nth}", i, propertyPath);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 			return yOffset;
 		}
 
@@ -315,7 +315,7 @@ namespace Beamable.Editor.Content
 
 			UpdateCronPartValue($"{nthStart}-{nthEnd}/{step}", i, propertyPath);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 
 			EditorGUI.indentLevel = oldIndentLevel;
 			return yOffset;
@@ -337,7 +337,7 @@ namespace Beamable.Editor.Content
 
 			UpdateCronPartValue(customValue, i, propertyPath);
 
-			yOffset += PropertyDrawerUtils.StandardVerticalSpacing;
+			yOffset += BeamGUI.StandardVerticalSpacing;
 			return yOffset;
 		}
 
@@ -403,7 +403,7 @@ namespace Beamable.Editor.Content
 
 			string propertyPropertyPath = property.propertyPath;
 			
-			float height = PropertyDrawerUtils.StandardVerticalSpacing * 5;
+			float height = BeamGUI.StandardVerticalSpacing * 5;
 			
 			height += CalculateHumanCronExpressionHeight(propertyPropertyPath);
 
@@ -418,11 +418,11 @@ namespace Beamable.Editor.Content
 			{
 				for (int i = 0; i < FieldNames.Length; i++)
 				{
-					height += PropertyDrawerUtils.StandardVerticalSpacing;
+					height += BeamGUI.StandardVerticalSpacing;
 
 
 					// Base height for type dropdown
-					height += PropertyDrawerUtils.StandardVerticalSpacing;
+					height += BeamGUI.StandardVerticalSpacing;
 
 					switch (cronTypeParts[i])
 					{
@@ -430,7 +430,7 @@ namespace Beamable.Editor.Content
 							// No additional fields
 							break;
 						default:
-							height += PropertyDrawerUtils.StandardVerticalSpacing;
+							height += BeamGUI.StandardVerticalSpacing;
 							break;
 					}
 

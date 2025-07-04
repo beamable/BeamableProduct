@@ -15,18 +15,18 @@ namespace Editor.UI.ContentWindow
 		{
 			get
 			{
-				if (_activeFilters.TryGetValue(ContentFilterType.Type, out var value))
+				if (_activeFilters.TryGetValue(ContentSearchFilterType.Type, out var value))
 				{
 					return value;
 				}
 
 				value = new HashSet<string>();
-				_activeFilters.Add(ContentFilterType.Type, value);
+				_activeFilters.Add(ContentSearchFilterType.Type, value);
 				return value;
 			}
 			set
 			{
-				_activeFilters[ContentFilterType.Type] = value;
+				_activeFilters[ContentSearchFilterType.Type] = value;
 				UpdateActiveFilterSearchText();
 			}
 		}
