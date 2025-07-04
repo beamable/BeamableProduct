@@ -42,6 +42,7 @@ public class DeveloperUserResult
 {
 	public List<DeveloperUserData> CreatedUsers;
 	public List<DeveloperUserData> DeletedUsers;
+	public List<DeveloperUserData> UpdatedUsers;
 	public List<DeveloperUserData> SavedUsers;
 }
 
@@ -56,15 +57,15 @@ public class DeveloperUserData
 	
 	public long CreateByGamerTag;
 
-	public string AccessToken;
-	public string RefreshToken;
+	public string AccessToken = "";
+	public string RefreshToken = "";
 	public long ExpiresIn;
-	public string Pid;
-	public string Cid;
+	public string Pid = "";
+	public string Cid = "";
 	
-	public string Alias;
+	public string Alias = "";
 
-	public string Description;
+	public string Description = "";
 }
 
 
@@ -280,8 +281,8 @@ public class DeveloperUserManagerService
 		
 		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 		
-		//TODO: Add a alias and a description to the temporary user based on the template user info
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, "" , new string[] { });
+		var temporaryDescription =  $"Created from template {templateUserInfo.DeveloperUser.Alias} - {templateUserInfo.DeveloperUser.GamerTag}"; 
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription , new string[] { });
 
 		await CopyState(templateUserInfo.DeveloperUser, developerUser);
 
@@ -420,7 +421,7 @@ public class DeveloperUserManagerService
 		// Set all currency to zero
 		foreach (var currency in targetInventoryView.currencies)
 		{
-			currencies.Add(currency.id, 0);
+			currencies.Add(currency.id, -currency.amount);
 		}
 		
 		// Set all currency as the source
@@ -428,7 +429,7 @@ public class DeveloperUserManagerService
 		{
 			if (currencies.ContainsKey(currency.id))
 			{
-				currencies[currency.id] = currency.amount;
+				currencies[currency.id] += currency.amount;
 			}
 			else
 			{
@@ -764,35 +765,37 @@ public class DeveloperUserManagerService
 		await SaveUser(cachedUserInfo.DeveloperUser, cachedUserInfo.UserType);
 	}
 
-	public async Task UpdateUserInfo(string identifier, string alias, string description)
+	public async Task<DeveloperUserInfo> UpdateUserInfo(string identifier, string alias, string description, string[] tags)
 	{
 		DeveloperUserInfo cachedUserInfo = LoadCachedUserInfo(identifier);
 		
 		if (!CheckIfUserExists(cachedUserInfo))
 		{
-			return;
+			throw new CliException("User not found");
+		}
+		
+		if (!string.IsNullOrEmpty(alias))
+		{
+			var allDeveloperUserInfo = LoadAllDeveloperUserInfo();
+			
+			foreach (var developerUserInfo in allDeveloperUserInfo)
+			{
+				if (developerUserInfo.DeveloperUser.Alias == alias && developerUserInfo.DeveloperUser.GamerTag != cachedUserInfo.DeveloperUser.GamerTag)
+				{
+					throw new CliException($"The alias [{alias}] already exists.");
+				}
+			}
 		}
 		
 		cachedUserInfo.DeveloperUser.UpdateUserInfo(alias, description);
 		
-		await SaveUser(cachedUserInfo.DeveloperUser, cachedUserInfo.UserType);
-	}
-
-	public async Task UpdateUserTags(string identifier, string[] tags)
-	{
-		DeveloperUserInfo cachedUserInfo = LoadCachedUserInfo(identifier);
-		
-		if (!CheckIfUserExists(cachedUserInfo))
-		{
-			return;
-		}
-		
 		cachedUserInfo.DeveloperUser.UpdateUserTags(tags);
 		
 		await SaveUser(cachedUserInfo.DeveloperUser, cachedUserInfo.UserType);
+
+		return cachedUserInfo;
 	}
-
-
+	
 	public List<DeveloperUserInfo> GetAllAvailableUserInfo()
 	{
 		return LoadAllDeveloperUserInfo();
