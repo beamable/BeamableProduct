@@ -24,6 +24,10 @@ export class AuthApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @deprecated
    * This API method is deprecated and may be removed in future versions.
    * 
@@ -40,11 +44,16 @@ export class AuthApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {RefreshTokenAuthRequest} payload - The `RefreshTokenAuthRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
@@ -58,11 +67,16 @@ export class AuthApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {GuestAuthRequest} payload - The `GuestAuthRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
@@ -76,11 +90,16 @@ export class AuthApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {PasswordAuthRequest} payload - The `PasswordAuthRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<AuthResponse>>} A promise containing the HttpResponse of AuthResponse
@@ -94,11 +113,16 @@ export class AuthApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {ServerTokenAuthRequest} payload - The `ServerTokenAuthRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ServerTokenResponse>>} A promise containing the HttpResponse of ServerTokenResponse
@@ -112,7 +136,8 @@ export class AuthApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
