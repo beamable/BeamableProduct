@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime.Collections;
 using Beamable.Coroutines;
+using Beamable.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
