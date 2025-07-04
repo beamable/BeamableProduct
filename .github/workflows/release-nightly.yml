@@ -3,7 +3,7 @@ name: Trigger Nightly Release (bot)
 on:
   schedule:
     # at 10pm UST (6pm EST), every day.
-    - cron: "0 22 * * *"
+    # - cron: "0 22 * * *"
 
     # every 30 minutes (debug mode)
     # - cron: "*/30 * * * *"

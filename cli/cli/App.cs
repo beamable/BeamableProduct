@@ -52,6 +52,7 @@ using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
+using cli.Services.Web;
 using cli.OtelCommands;
 using cli.OtelCommands.Grafana;
 using Microsoft.Extensions.Logging;
@@ -204,6 +205,7 @@ public class App
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		services.AddSingleton<UnitySourceGenerator>();
 		services.AddSingleton<UnrealSourceGenerator>();
+		services.AddSingleton<WebSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<UnityCliGenerator>();
