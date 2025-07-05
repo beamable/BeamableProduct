@@ -7,6 +7,6 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public partial class BeamContentSyncResult
     {
-        public BeamContentSyncReport Reports;
+        public BeamContentSyncReport[] Reports;
     }
 }

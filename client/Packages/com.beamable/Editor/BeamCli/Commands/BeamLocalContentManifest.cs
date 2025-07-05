@@ -10,6 +10,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string OwnerCid;
         public string OwnerPid;
         public string ManifestId;
-        public BeamLocalContentManifestEntry Entries;
+        public BeamLocalContentManifestEntry[] Entries;
     }
 }

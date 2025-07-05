@@ -157,10 +157,10 @@ namespace Beamable.Editor.Environment
 
 			return api.InitializePromise.Map(_ =>
 			{
-				data.Cid = api.CurrentCustomer.Cid;
-				data.Pid = api.CurrentRealm.Pid;
-				data.CidOrAlias = api.CurrentCustomer.Alias;
-				data.EditorUser = api.CurrentUser;
+				data.Cid = api.BeamCli.Cid;
+				data.Pid = api.BeamCli.Pid;
+				data.CidOrAlias = api.BeamCli.Cid;
+				data.EditorUser = api.BeamCli.latestUser;
 
 				return PromiseBase.Unit;
 			}).Recover(ex =>

@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         ///The default splitter (from Microsoft) does NOT allow you to pass in JSON blobs as arguments.
         ///The custom splitter does its best to support all our commands correctly and accept json blobs as arguments</summary>
         public bool customSplitter;
+        /// <summary>When true, will NOT pre-warm the content service with the latest content manifest</summary>
+        public bool skipContentPrewarm;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -54,6 +56,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.customSplitter != default(bool)))
             {
                 genBeamCommandArgs.Add(("--custom-splitter=" + this.customSplitter));
+            }
+            // If the skipContentPrewarm value was not default, then add it to the list of args.
+            if ((this.skipContentPrewarm != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--skip-content-prewarm=" + this.skipContentPrewarm));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

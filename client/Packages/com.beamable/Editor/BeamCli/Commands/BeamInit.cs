@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string host;
         /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
         public string refreshToken;
+        /// <summary>Ignore the existing pid while initializing</summary>
+        public bool ignorePid;
         /// <summary>Overwrite the stored extra paths for where to find projects</summary>
         public string[] saveExtraPaths;
         /// <summary>Paths to ignore when searching for services</summary>
@@ -59,6 +61,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.refreshToken != default(string)))
             {
                 genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
+            }
+            // If the ignorePid value was not default, then add it to the list of args.
+            if ((this.ignorePid != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--ignore-pid=" + this.ignorePid));
             }
             // If the saveExtraPaths value was not default, then add it to the list of args.
             if ((this.saveExtraPaths != default(string[])))
@@ -136,6 +143,16 @@ namespace Beamable.Editor.BeamCli.Commands
         public virtual InitWrapper OnStreamInitCommandResult(System.Action<ReportDataPoint<BeamInitCommandResult>> cb)
         {
             this.Command.On("stream", cb);
+            return this;
+        }
+        public virtual InitWrapper OnErrorLoginFailedError(System.Action<ReportDataPoint<BeamLoginFailedError>> cb)
+        {
+            this.Command.On("errorLoginFailedError", cb);
+            return this;
+        }
+        public virtual InitWrapper OnErrorInvalidCidError(System.Action<ReportDataPoint<BeamInvalidCidError>> cb)
+        {
+            this.Command.On("errorInvalidCidError", cb);
             return this;
         }
     }

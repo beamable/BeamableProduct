@@ -1202,11 +1202,11 @@ namespace Beamable.Editor.Content
 
 			var api = BeamEditorContext.Default;
 			await api.InitializePromise;
-			var realmToSwitchBackTo = api.CurrentRealm.Pid;
+			var realmToSwitchBackTo = api.BeamCli.Pid;
 			try
 			{
 				var buildRealm = ConfigDatabaseProvider.GetConfigData();
-				var realm = string.IsNullOrEmpty(buildRealm.pid) ? api.CurrentRealm.Pid : buildRealm.pid;
+				var realm = string.IsNullOrEmpty(buildRealm.pid) ? api.BeamCli.Pid : buildRealm.pid;
 
 				BakeLog($"Realm pid: {realm}");
 				api.ServiceScope.GetService<PlatformRequester>().Pid = realm;

@@ -8,6 +8,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using Command = System.CommandLine.Command;
 
@@ -21,11 +22,20 @@ public class InitCommandArgs : LoginCommandArgs
 	public string path;
 	public List<string> addExtraPathsToFile = new List<string>();
 	public List<string> pathsToIgnore = new List<string>();
+	public bool ignoreExistingPid;
+}
+
+[Serializable]
+public class InvalidCidError : ErrorOutput
+{
+	
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	IStandaloneCommand,
 	IHaveRedirectionConcerns<InitCommandArgs>,
+	IReportException<LoginFailedError>,
+	IReportException<InvalidCidError>,
 	ISkipManifest
 {
 	private readonly LoginCommand _loginCommand;
@@ -57,6 +67,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
+		AddOption(new Option<bool>("--ignore-pid", "Ignore the existing pid while initializing"),
+			(args, i) => args.ignoreExistingPid = i);
 		AddOption(
 			new Option<List<string>>(new string[] { "--save-extra-paths" }, () => new List<string>(),
 				"Overwrite the stored extra paths for where to find projects")
@@ -68,7 +80,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				args.addExtraPathsToFile = i;
 			});
-
+		
 		AddOption(
 			new Option<List<string>>(new string[] { "--paths-to-ignore" }, () => new List<string>(),
 				"Paths to ignore when searching for services")
@@ -134,17 +146,22 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				}
 				catch (RequesterException)
 				{
-					throw new CliException($"Organization not found for cid='{cid}', try again");
+					throw new CliException<InvalidCidError>($"Organization not found for cid='{cid}', try again");
 				}
 				catch (AliasService.AliasDoesNotExistException)
 				{
-					throw new CliException($"Organization not found for alias='{cid}', try again");
+					throw new CliException<InvalidCidError>($"Organization not found for alias='{cid}', try again");
 				}
 				catch (Exception e)
 				{
 					BeamableLogger.LogError(e.Message);
 					throw;
 				}
+				
+			}
+			else
+			{
+				// need to validate that cid actually exists...
 				
 			}
 			_configService.SetConfigString(Constants.CONFIG_CID, cid);
@@ -273,7 +290,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	{
 		// [Tech_debt] This is quite hard to read, lots of duplication calls, could use some refactor, also it does way more stuff
 		//  then just returning the pid and auth
-		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
+		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid) && !args.ignoreExistingPid)
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);
@@ -298,6 +315,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
 				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
+				return true;
 			}
 			else
 			{
@@ -415,14 +433,19 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		const string staging = "staging";
 		const string dev = "dev";
 		const string custom = "custom";
-		var env = !string.IsNullOrEmpty(args.selectedEnvironment)
-			? args.selectedEnvironment
-			: AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("What Beamable [green]environment[/] would you like to use?")
-					.AddChoices(prod, staging, dev, custom)
-					.AddBeamHightlight()
-			);
+
+		var env = !string.IsNullOrEmpty(args.selectedEnvironment) ? args.selectedEnvironment : "prod";
+		if (!args.Quiet)
+		{
+			env = !string.IsNullOrEmpty(args.selectedEnvironment)
+				? args.selectedEnvironment
+				: AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("What Beamable [green]environment[/] would you like to use?")
+						.AddChoices(prod, staging, dev, custom)
+						.AddBeamHightlight()
+				);
+		}
 
 		// If we were given a host that is a path, let's just return it.
 		if (env.StartsWith("https"))

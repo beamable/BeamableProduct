@@ -181,10 +181,10 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Serializable]
 		public class AdvancedCliSettings
 		{
-			[Tooltip("When true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
-			public bool UseGlobalCLI;
-
-			public OptionalString UseFromSource = new OptionalString();
+			// [Tooltip("When true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
+			// public bool UseGlobalCLI;
+			//
+			// public OptionalString UseFromSource = new OptionalString();
 		}
 
 		[Serializable]

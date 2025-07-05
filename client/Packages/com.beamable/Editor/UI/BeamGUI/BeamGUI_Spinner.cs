@@ -16,8 +16,6 @@ namespace Beamable.Editor.Util
 			};
 
 			var size = style.CalcSize(content);
-			
-			
 			var bounds = GUILayoutUtility.GetRect(content, style, GUILayout.MinHeight(32 + padding));
 
 			var labelRect = new Rect(bounds.x, bounds.yMax - size.y, bounds.width, size.y);
