@@ -4,14 +4,14 @@ export const POST = 'POST';
 export const PUT = 'PUT';
 export const PATCH = 'PATCH';
 export const DELETE = 'DELETE';
-export const HEADERS = {
-  ACCEPT: 'Accept',
-  AUTHORIZATION: 'Authorization',
-  CONTENT_TYPE: 'Content-Type',
-  BEAM_SCOPE: 'X-BEAM-SCOPE',
-  BEAM_SDK_VERSION: 'X-KS-BEAM-SDK-VERSION',
-  BEAM_SIGNATURE: 'X-BEAM-SIGNATURE',
-  GAME_VERSION: 'X-KS-GAME-VERSION',
-  UA: 'X-KS-USER-AGENT',
-  UA_VERSION: 'X-KS-USER-AGENT-VERSION',
-};
+export const enum HEADERS {
+  ACCEPT = 'Accept',
+  AUTHORIZATION = 'Authorization',
+  CONTENT_TYPE = 'Content-Type',
+  BEAM_SCOPE = 'X-BEAM-SCOPE',
+  BEAM_SDK_VERSION = 'X-KS-BEAM-SDK-VERSION',
+  BEAM_SIGNATURE = 'X-BEAM-SIGNATURE',
+  GAME_VERSION = 'X-KS-GAME-VERSION',
+  UA = 'X-KS-USER-AGENT',
+  UA_VERSION = 'X-KS-USER-AGENT-VERSION',
+}
