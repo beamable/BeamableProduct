@@ -1,25 +1,18 @@
-import { BeamApi } from '@/core/BeamApi';
 import { AnnouncementView } from '@/__generated__/schemas';
-import { PlayerService } from '@/services/PlayerService';
 import { Refreshable } from '@/services/types/Refreshable';
-
-interface AnnouncementsServiceProps {
-  api: BeamApi;
-  player: PlayerService;
-}
+import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 
 export interface AnnouncementIdParams {
   id: string | string[];
 }
 
-export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
-  private readonly api: BeamApi;
-  private readonly player: PlayerService;
-
+export class AnnouncementsService
+  extends ApiService
+  implements Refreshable<AnnouncementView[]>
+{
   /** @internal */
-  constructor(props: AnnouncementsServiceProps) {
-    this.api = props.api;
-    this.player = props.player;
+  constructor(props: ApiServiceProps) {
+    super(props);
   }
 
   /**
@@ -39,16 +32,19 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
    * Fetches all active announcements for the current player.
    * @example
    * ```ts
+   * // client-side
    * const announcements = await beam.announcements.list();
+   * // server-side
+   * const announcements = await beamServer.announcements(playerId).list();
    * ```
    * @throws {BeamError} If the request fails.
    */
   async list(): Promise<AnnouncementView[]> {
     const { body } = await this.api.announcements.getAnnouncementByObjectId(
-      this.player.id,
+      this.playerIdOrThrow,
       false,
     );
-    this.player.announcements = body.announcements;
+    if (this.player) this.player.announcements = body.announcements;
     return body.announcements;
   }
 
@@ -56,9 +52,14 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
    * @remarks This marks the announcements as claimed, allowing the player to access any associated rewards.
    * @example
    * ```ts
-   * await beam.announcements.claim({ id: "id" });
-   * // or to claim multiple announcements
-   * await beam.announcements.claim({ id: ["id-1", "id-2"] });
+   * // client-side:
+   * const announcements = beam.announcements;
+   * // server-side:
+   * const announcements = beamServer.announcements(playerId);
+   * // claim a single announcement
+   * await announcements.claim({ id: "id" });
+   * // or claim multiple announcements
+   * await announcements.claim({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
    */
@@ -70,12 +71,11 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
     const idSet = new Set(ids);
 
     await this.api.announcements.postAnnouncementClaimByObjectId(
-      this.player.id,
-      {
-        announcements: ids,
-      },
+      this.playerIdOrThrow,
+      { announcements: ids },
     );
 
+    if (!this.player) return;
     this.player.announcements = this.player.announcements.map((a) =>
       idSet.has(a.id) ? { ...a, isClaimed: true } : a,
     );
@@ -86,9 +86,14 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
    * Marks one or more announcements as read for the current player.
    * @example
    * ```ts
-   * await beam.announcements.markAsRead({ id: "id" });
-   * // or to mark multiple announcements as read
-   * await beam.announcements.markAsRead({ id: ["id-1", "id-2"] });
+   * // client-side:
+   * const announcements = beam.announcements;
+   * // server-side:
+   * const announcements = beamServer.announcements(playerId);
+   * // mark a single announcement as read
+   * await announcements.claim({ id: "id" });
+   * // or mark multiple announcements as read
+   * await announcements.claim({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
    */
@@ -99,10 +104,12 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.putAnnouncementReadByObjectId(this.player.id, {
-      announcements: ids,
-    });
+    await this.api.announcements.putAnnouncementReadByObjectId(
+      this.playerIdOrThrow,
+      { announcements: ids },
+    );
 
+    if (!this.player) return;
     this.player.announcements = this.player.announcements.map((a) =>
       idSet.has(a.id) ? { ...a, isRead: true } : a,
     );
@@ -113,9 +120,14 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
    * @remarks Ensure any claimable announcements are handled appropriately before deletion.
    * @example
    * ```ts
-   * await beam.announcements.delete({ id: "id" });
-   * // or to delete multiple announcements
-   * await beam.announcements.delete({ id: ["id-1", "id-2"] });
+   * // client-side:
+   * const announcements = beam.announcements;
+   * // server-side:
+   * const announcements = beamServer.announcements(playerId);
+   * // delete a single announcement
+   * await announcements.claim({ id: "id" });
+   * // or delete multiple announcements
+   * await announcements.claim({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
    */
@@ -126,10 +138,12 @@ export class AnnouncementsService implements Refreshable<AnnouncementView[]> {
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.deleteAnnouncementByObjectId(this.player.id, {
-      announcements: ids,
-    });
+    await this.api.announcements.deleteAnnouncementByObjectId(
+      this.playerIdOrThrow,
+      { announcements: ids },
+    );
 
+    if (!this.player) return;
     this.player.announcements = this.player.announcements.filter(
       (a) => !idSet.has(a.id),
     );

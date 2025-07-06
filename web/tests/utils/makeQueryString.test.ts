@@ -29,5 +29,5 @@ describe('makeQueryString()', () => {
   it('should return empty string for all undefined values', () => {
     const qs = makeQueryString({ a: undefined, b: undefined });
     expect(qs).toBe('');
-  })
+  });
 });

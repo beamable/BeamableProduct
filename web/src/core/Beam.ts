@@ -1,16 +1,12 @@
-import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { BeamConfig } from '@/configs/BeamConfig';
-import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
-import packageJson from '../../package.json';
 import { BeamService } from '@/core/BeamService';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
-import { defaultTokenStorage, readConfig, saveConfig } from '@/index';
+import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
 import { saveToken } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
@@ -20,13 +16,12 @@ import { AnnouncementsService } from '@/services/AnnouncementsService';
 import { Refreshable } from '@/services/types/Refreshable';
 import { ContextMap, Subscription, SubscriptionMap } from '@/core/types';
 import { wait } from '@/utils/wait';
+import { HEADERS } from '@/constants';
+import { BeamBase } from '@/core/BeamBase';
+import { StatsService } from '@/services/StatsService';
 
-/** The main class for interacting with the Beam SDK. */
-export class Beam {
-  /**
-   * A namespace of generated API service clients.
-   * Use `beam.api.<serviceName>` to access specific clients.
-   */
+/** The main class for interacting with the Beam Client SDK. */
+export class Beam extends BeamBase {
   public readonly api: BeamApi;
 
   /**
@@ -42,41 +37,20 @@ export class Beam {
    */
   public tokenStorage: TokenStorage;
 
-  private readonly cid: string;
-  private readonly pid: string;
+  private static localTokenStorage: TokenStorage;
   private readonly refreshable: Record<keyof ContextMap, Refreshable<unknown>>;
-  private readonly defaultHeaders: Record<string, string>;
-  private readonly requester: HttpRequester;
-  private envConfig: BeamEnvironmentConfig;
   private ws: BeamWebSocket;
-  // Cached promise for SDK initialization to ensure idempotent ready() calls
-  private readyPromise?: Promise<void>;
-  private isReadyPromise = false;
   private subscriptions: Partial<SubscriptionMap> = {};
+  private readyPromise?: Promise<void>;
+  private isReadyPromise: boolean = false;
 
   constructor(config: BeamConfig) {
-    const env = config.environment;
-    this.cid = config.cid;
-    this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(env ?? 'Prod');
-
-    this.tokenStorage =
+    Beam.localTokenStorage =
       config.tokenStorage ?? defaultTokenStorage(config.instanceTag);
-
-    this.defaultHeaders = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-BEAM-SCOPE': `${this.cid}.${this.pid}`,
-      'X-KS-BEAM-SDK-VERSION': packageJson.version,
-    };
-    this.addOptionalDefaultHeader('X-KS-GAME-VERSION', config.gameVersion);
-    this.addOptionalDefaultHeader('X-KS-USER-AGENT', config.gameEngine);
-    this.addOptionalDefaultHeader(
-      'X-KS-USER-AGENT-VERSION',
-      config.gameEngineVersion,
-    );
-
-    this.requester = this.createBeamRequester(config);
+    super(config);
+    this.tokenStorage = Beam.localTokenStorage;
+    this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
+    this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.gameEngineVersion);
     this.ws = new BeamWebSocket();
     this.api = new BeamApi(this.requester);
     this.player = new PlayerService();
@@ -229,31 +203,11 @@ export class Beam {
     });
   }
 
-  private createBeamRequester(config: BeamConfig): BeamRequester {
-    const tokenProvider = async () =>
-      (await this.tokenStorage.getAccessToken()) ?? '';
-
-    const customRequester = config.requester;
-    if (customRequester) {
-      customRequester.setBaseUrl(this.envConfig.apiUrl);
-      customRequester.setTokenProvider(tokenProvider);
-      Object.entries(this.defaultHeaders).forEach(([key, value]) => {
-        customRequester.setDefaultHeader(key, value);
-      });
-    }
-
-    const baseRequester =
-      customRequester ??
-      new BaseRequester({
-        baseUrl: this.envConfig.apiUrl,
-        defaultHeaders: this.defaultHeaders,
-        tokenProvider,
-      });
-
+  protected createBeamRequester(config: BeamConfig): BeamRequester {
+    const baseRequester = config.requester ?? new BaseRequester();
     return new BeamRequester({
       inner: baseRequester,
-      tokenStorage: this.tokenStorage,
-      cid: this.cid,
+      tokenStorage: Beam.localTokenStorage,
       pid: this.pid,
     });
   }
@@ -283,12 +237,6 @@ export class Beam {
     });
   }
 
-  private addOptionalDefaultHeader(key: string, value?: string): void {
-    if (value) {
-      this.defaultHeaders[key] = value;
-    }
-  }
-
   private checkIfReadyAndSupportedContext(
     context: keyof ContextMap,
     messageType: string,
@@ -310,10 +258,12 @@ export class Beam {
 }
 
 export interface Beam {
-  /** High-level account helper built on top of `beam.api.accounts.*` endpoints */
+  /** High-level account helper built on top of `beam.api.accounts.*` endpoints. */
   account: AccountService;
-  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints */
+  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints. */
   announcements: AnnouncementsService;
-  /** High-level auth helper built on top of `beam.api.auth.*` endpoints */
+  /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
   auth: AuthService;
+  /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
+  stats: StatsService;
 }

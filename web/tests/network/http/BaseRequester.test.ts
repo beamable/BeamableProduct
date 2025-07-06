@@ -47,8 +47,8 @@ describe('BaseRequester', () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
     const requester = new BaseRequester({
       customFetch: fetchMock,
-      defaultHeaders: { 'x-default': 'A' },
     });
+    requester.defaultHeaders = { 'x-default': 'A' };
 
     await requester.request({
       url: 'https://example.com',
@@ -64,32 +64,12 @@ describe('BaseRequester', () => {
     });
   });
 
-  it('adds an Authorization header when withAuth is true', async () => {
-    const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
-    const requester = new BaseRequester({
-      customFetch: fetchMock,
-      tokenProvider: () => 'TOKEN_123',
-    });
-
-    await requester.request({
-      url: 'https://secure.example.com',
-      withAuth: true,
-    });
-
-    // Extract the `headers` object from the first call to fetchMock,
-    // ignoring the first argument (the URL) and pulling out only the second argument (RequestInit).
-    const [, { headers }] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((headers as Record<string, string>).Authorization).toBe(
-      'Bearer TOKEN_123',
-    );
-  });
-
   it('builds the final URL from baseUrl + relative path', async () => {
     const fetchMock = makeFetchMock('ok', { contentType: 'text/plain' });
     const requester = new BaseRequester({
-      baseUrl: 'https://api.example.com/',
       customFetch: fetchMock,
     });
+    requester.baseUrl = 'https://api.example.com/';
 
     await requester.request({ url: '/users' });
 

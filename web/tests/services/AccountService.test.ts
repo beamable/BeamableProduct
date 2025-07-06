@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AccountService } from '@/services/AccountService';
 import type { BeamApi } from '@/core/BeamApi';
 import type { AccountPlayerView } from '@/__generated__/schemas';
+import { PlayerService } from '@/services/PlayerService';
 
 describe('AccountService', () => {
   describe('current', () => {
@@ -21,10 +22,14 @@ describe('AccountService', () => {
         },
       } as unknown as BeamApi;
 
-      const accountService = new AccountService({ api: mockBeamApi });
+      const playerService = new PlayerService();
+      const accountService = new AccountService({
+        api: mockBeamApi,
+        player: playerService,
+      });
       const result = await accountService.current();
 
-      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalled();
+      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalledWith('0');
       expect(result).toEqual(mockBody);
     });
   });
