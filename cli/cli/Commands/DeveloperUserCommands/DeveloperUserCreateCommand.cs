@@ -11,7 +11,6 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableIntOption("max-amount", "The max amount of temporary users that you can have before starting to delete the oldest"), (args, s) => { args.MaxAmount = s; });
 		AddOption(new ConfigurableOption("alias", ""), (args, s) => { args.Alias = s; });
 		AddOption(new ConfigurableOption("template", ""), (args, s) => { args.TemplateIdentifier = s; });
 		AddOption(new ConfigurableOption("description", ""), (args, s) => { args.Description = s; });
@@ -44,7 +43,6 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 public class DeveloperUserCreateArgs : ContentCommandArgs
 {
-	public int MaxAmount;
 	public string TemplateIdentifier;
 	public string Alias;
 	public string Description;

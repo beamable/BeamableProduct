@@ -54,7 +54,7 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 				Alias = item.Alias,
 				CreateByGamerTag = item.CreatedByGamerTag,
 				Description = item.Description,
-				DeveloperUserType = (int)DeveloperUserType.Temporary,
+				DeveloperUserType = (int)DeveloperUserType.Captured,
 				GamerTag = item.GamerTag,
 				TemplatedGamerTag = item.TemplateGamerTag,
 				RefreshToken = item.RefreshToken,

@@ -26,31 +26,34 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 		
 		var developerUserManagerService = args.DeveloperUserManagerService;
 		
-		// Prepare the content entries between our local state and the remote states that are relevant (our reference and the latest publish in the realm).
-		var entriesToEmitAgainstLatest = developerUserManagerService.GetAllAvailableUserInfo().Select(item => new DeveloperUserData()
+		// Get all available users for each type
+		var allAvailableEntries = developerUserManagerService.GetAllAvailableUserInfo().Select(item => new DeveloperUserData()
 		{
-			Alias = item.DeveloperUser.Alias, GamerTag = item.DeveloperUser.GamerTag, DeveloperUserType = (int)item.UserType
+			Alias = item.DeveloperUser.Alias,
+			GamerTag = item.DeveloperUser.GamerTag,
+			DeveloperUserType = (int)item.UserType
 		}).ToList();
 		// Build and emit the event
 		var eventToEmit = new DeveloperUserPsCommandEvent()
 		{
 			EventType = DeveloperUserPsCommandEvent.EVT_TYPE_FullRebuild,
-			ToUpdate = entriesToEmitAgainstLatest
+			ToUpdate = allAvailableEntries
 		};
 		
 		this.SendResults(eventToEmit);
 		this.LogResult(eventToEmit);
 		
-		// If we are meant to watch the content folder, let's set up jobs to do that.
+		// If we are meant to watch the developer user folders, let's set up jobs to do that.
 		if (args.Watch)
 		{
-			// This ensure that only one of the two event streams will resolve at a time.
 			
-			// Set up a task that will emit a ChangedContent event every time local files for this realm+manifestid handle are changed.
+			
+			// Set up a task that will emit a DeveloperUserPsCommandEvent event every time local files changed.
 			// The events will only contain the entries for the modified content objects and expects the engine integration to only rebuild their in-memory representation of the modified object.
 			List<Task> waitTasks = new List<Task>();
 			foreach (DeveloperUserType developerUserType in Enum.GetValues(typeof(DeveloperUserType)))
 			{
+				// This ensure that only one of the two event streams will resolve at a time.
 				var watchSemaphore = new SemaphoreSlim(1, 1);
 				
 				waitTasks.Add(Task.Run(async () =>
@@ -114,7 +117,7 @@ public class DeveloperUserPsArgs : CommandArgs
 public class DeveloperUserPsCommandEvent
 {
 	/// <summary>
-	/// The engine integration is expected to discard all their in-memory state about content and rebuild it with the information in this event.
+	/// The engine integration is expected to discard all their in-memory state about developer users and rebuild it with the information in this event.
 	/// </summary>
 	public const int EVT_TYPE_FullRebuild = 0;
 	
