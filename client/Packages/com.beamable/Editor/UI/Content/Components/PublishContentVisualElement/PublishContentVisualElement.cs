@@ -426,7 +426,7 @@ namespace Beamable.Editor.Content.Components
 			var api = BeamEditorContext.Default;
 			_messageLabel.visible = true;
 			_messageLabel.AddTextWrapStyle();
-			_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW, api.CurrentRealm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
+			_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW, api.BeamCli.CurrentRealm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
 
 		}
 	}

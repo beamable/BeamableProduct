@@ -59,36 +59,7 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
-		public static bool InstallLocalManifest(out string manifestPath)
-		{
-			var proc = new Process();
-
-			var installCommand = $"new tool-manifest --force";
-
-			var workingDirectory = Path.GetFullPath(".");
-			manifestPath = Path.Combine(workingDirectory, ".config", "dotnet-tools.json");
-			proc.StartInfo = new ProcessStartInfo
-			{
-				FileName = "dotnet",
-				WorkingDirectory = workingDirectory,
-				Arguments = installCommand,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			proc.Start();
-			proc.WaitForExit();
-
-			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
-			{
-				Debug.LogError("Unable to create local manifest: " + error + " / " + output);
-			}
-			return proc.ExitCode == 0;
-		}
+		
 
 		static void InstallDotnetToLibrary()
 		{
@@ -98,7 +69,11 @@ namespace Beamable.Editor.Dotnet
 				installed = $" Currently installed: {string.Join(", ", versions.Keys)}.";
 			}
 			var message = $"Beamable Unity SDK requires Dotnet SDK {REQUIRED_INSTALL_VERSION} to function properly.{installed} Please download the SDK Installer and proceed with the installation before continuing.";
-			
+
+			if (Application.isBatchMode)
+			{
+				throw new Exception($"Cannot find dotnet, and cannot install in batch-mode. message=[{message}]");
+			}
 			if (EditorUtility.DisplayDialog("Dotnet Installation Required", message,"Download", "Close"))
         	{
 				Application.OpenURL(GetDotnetDownloadLink());
@@ -130,7 +105,7 @@ namespace Beamable.Editor.Dotnet
 			try
 			{
 				proc.Start();
-				proc.WaitForExit();
+				proc.WaitForExit(10 * 1000);
 
 				var output = proc.StandardOutput.ReadToEnd();
 
@@ -215,43 +190,5 @@ namespace Beamable.Editor.Dotnet
 			return false;
 		}
 
-		static bool CheckVersion(string dotnetPath, out PackageVersion version)
-		{
-			version = "0.0.0";
-			var dir = Path.GetDirectoryName(dotnetPath)!;
-			var proc = new Process();
-			proc.StartInfo = new ProcessStartInfo
-			{
-				FileName = Path.GetFullPath(dotnetPath),
-				WorkingDirectory = Path.GetFullPath(dir),
-				Arguments = "--version",
-				CreateNoWindow = true,
-				UseShellExecute = false,
-				RedirectStandardOutput = true
-			};
-
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-
-
-			proc.Start();
-			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", string.Empty);
-			if (string.IsNullOrWhiteSpace(output))
-			{
-				return false;
-			}
-
-			if (!PackageVersion.TryFromSemanticVersionString(output, out version))
-			{
-				return false;
-			}
-
-			return version == REQUIRED_INSTALL_VERSION ;
-		}
-
-		static bool CheckForDotnetAtPath(string dotnetPath)
-		{
-			return File.Exists(dotnetPath);
-		}
 	}
 }
