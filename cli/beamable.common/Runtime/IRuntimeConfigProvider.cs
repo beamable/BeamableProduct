@@ -26,11 +26,6 @@ namespace Beamable.Common
 		string HostUrl { get; }
 		
 		/// <summary>
-		/// The socket endpoint for Beamable
-		/// </summary>
-		string SocketUrl { get; }
-		
-		/// <summary>
 		/// The portal endpoint for Beamable
 		/// </summary>
 		string PortalUrl { get; }
@@ -45,7 +40,6 @@ namespace Beamable.Common
 
 		public string HostUrl => Fallback.HostUrl;
 		public string PortalUrl => Fallback.PortalUrl;
-		public string SocketUrl => Fallback.SocketUrl;
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Pid"/>
 		public string Pid
