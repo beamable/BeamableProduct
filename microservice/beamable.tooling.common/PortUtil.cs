@@ -21,4 +21,19 @@ public class PortUtil
 		l.Stop();
 		return port;
 	}
+
+	/// <summary>
+	/// This is mainly to get a local endpoint with a free port to use
+	/// </summary>
+	/// <returns></returns>
+	public static string FreeEndpoint()
+	{
+		TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+		l.Start();
+		var endpoint = ((IPEndPoint)l.LocalEndpoint);
+		var address = endpoint.Address.ToString();
+		var port = endpoint.Port;
+		l.Stop();
+		return $"http://{address}:{port}";
+	}
 }

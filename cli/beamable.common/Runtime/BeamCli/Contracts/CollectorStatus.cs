@@ -10,7 +10,8 @@ namespace Beamable.Common.BeamCli.Contracts
         public bool isRunning; // If this is true, it means the collector is running, but not necessarily ready to receive data
         public bool isReady;
         public int pid;
-        public List<CollectorLogEntry> logs;
+        public string otlpEndpoint;
+        public string version;
 
         public bool Equals(CollectorStatus otherStatus)
         {
@@ -31,15 +32,6 @@ namespace Beamable.Common.BeamCli.Contracts
 
             return true;
         }
-    }
-
-    [CliContractType]
-    [Serializable]
-    public class CollectorLogEntry
-    {
-	    public string Level;
-	    public string Message;
-	    public DateTime Timestamp;
     }
 
 }
