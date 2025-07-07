@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -25,30 +22,32 @@ type serviceDiscovery struct {
 	logEventsChan <-chan zapcore.Entry
 }
 
-var Version = "0.0.0" // The actual version is injected here during build time
+var Version = "0.0.123" // The actual version is injected here during build time
 
 func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
-	// Test clickhouse credentials to make sure everything is set for sending data
-	PingClickhouse()
+
+	otlpEndpoint := os.Getenv("BEAM_OTLP_HTTP_ENDPOINT")
 
 	rd := responseData{
-		Status:  NOT_READY,
-		Pid:     os.Getpid(),
-		Logs:    []zapcore.Entry{},
-		Version: Version,
+		Status:       NOT_READY,
+		Pid:          os.Getpid(),
+		Version:      Version,
+		OtlpEndpoint: otlpEndpoint,
 	}
 
-	ringBuffer := NewRingBufferLogs(m.config.LogsBufferSize)
+	fmt.Println("Current collector version: ", Version)
 
 	go func() {
 		for logEntry := range m.logEventsChan {
-			ringBuffer.Append(logEntry)
 			if strings.Contains(logEntry.Message, "Everything is ready. Begin running and processing data.") {
 				rd.Status = READY
 			}
 		}
 	}()
-	go StartUDPServer(m.config.Host, m.config.Port, m.config.DiscoveryDelay, &rd, &ringBuffer.Data)
+	go StartUDPServer(m.config.DiscoveryPort, m.config.DiscoveryDelay, m.config.DiscoveryMaxErrors, &rd)
+
+	// Test clickhouse credentials to make sure everything is set for sending data
+	PingClickhouse()
 
 	return nil
 }
@@ -56,46 +55,6 @@ func (m *serviceDiscovery) Start(_ context.Context, _ component.Host) error {
 func (m *serviceDiscovery) Shutdown(_ context.Context) error {
 	log.Println("Service discovery shutdown")
 	return nil
-}
-
-func StartUDPServer(host string, port string, delay int, rd *responseData, logs *[]zapcore.Entry) {
-
-	broadcastAddr := host
-	broadcastAddr += ":"
-	broadcastAddr += port
-
-	log.Println("Beam Service discovery started at: ", broadcastAddr)
-
-	udpAddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
-	if err != nil {
-		panic(err)
-	}
-
-	conn, err := net.DialUDP("udp", nil, udpAddr)
-
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
-	ticker := time.NewTicker(time.Duration(delay) * time.Millisecond)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rd.Logs = *logs
-
-		message, mErr := json.Marshal(rd)
-
-		if mErr != nil {
-			fmt.Println("Error deserializing message!", mErr)
-		}
-
-		conn.Write(message)
-		// TODO this should be smarter, like: if N errors happened in a row, then quit the app
-		// if err != nil {
-		// 	fmt.Println("Error sending message:", err)
-		// }
-	}
 }
 
 func PingClickhouse() {

@@ -10,10 +10,8 @@ receivers:
           layout: '%Y-%m-%d %H:%M:%S'
   otlp:
     protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
       http:
-        endpoint: 0.0.0.0:4318
+        endpoint: ${env:BEAM_OTLP_HTTP_ENDPOINT}
 processors:
   batch:
     timeout: 5s
@@ -48,12 +46,22 @@ exporters:
         name: "otel_metrics_exp_histogram"
 extensions:
   servicediscovery:
-    host: ${env:BEAM_COLLECTOR_DISCOVERY_HOST}
-    port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
+    discovery_port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
     discovery_delay: 100
 
 service:
   extensions: [servicediscovery]
+  telemetry:
+    metrics:
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: ${env:BEAM_COLLECTOR_PROMETHEUS_PORT} # This is to disable Prometheus from binds to a port and not enable multiple running collectors
+    # logs:
+    #   level: "debug" #Uncomment this to test collector with more verbose logs
   pipelines:
     logs:
       receivers: [otlp]
