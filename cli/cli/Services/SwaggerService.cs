@@ -239,10 +239,6 @@ public class SwaggerService
 
 			foreach ((string _, OpenApiSchema propData) in properties)
 			{
-				if (propData?.Items?.Reference == null)
-				{
-					
-				}
 				var isPropArray = propData.Type == "array";
 
 				if (isPropArray && propData?.Items?.Reference != null)
