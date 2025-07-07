@@ -31,10 +31,11 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public override void Configure()
 	{
+		//TODO bring back older option for force cpu and if it's set to true throw exception
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 		AddOption(
-			new Option<bool>(new string[] { "--prevent-force-amd-cpu-arch", "-pfcpu" }, () => false,
+			new Option<bool>(new string[] { "--force-local-cpu", "-flcpu" }, () => false,
 				"By default, this command forces the services to run with amd64 CPU architecture, which is the architecture used in Docker"),
 			(args, i) => args.preventForceAmdCpuArchitecture = i);
 		
