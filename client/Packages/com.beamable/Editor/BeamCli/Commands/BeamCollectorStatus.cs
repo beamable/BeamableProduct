@@ -49,7 +49,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class CollectorStatusWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual CollectorStatusWrapper OnStreamCollectorStatus(System.Action<ReportDataPoint<Beamable.Common.BeamCli.Contracts.CollectorStatus>> cb)
+        public virtual CollectorStatusWrapper OnStreamCollectorStatusResult(System.Action<ReportDataPoint<BeamCollectorStatusResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

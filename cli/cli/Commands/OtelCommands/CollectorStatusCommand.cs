@@ -14,8 +14,13 @@ public class CollectorStatusCommandArgs : CommandArgs
 	public bool watch;
 }
 
+public class CollectorStatusResult
+{
+	public List<CollectorStatus> collectorsStatus;
+}
 
-public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, List<CollectorStatus>>
+
+public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>
 {
 	public CollectorStatusCommand() : base("status", "Starts a stream of messages containing the status of the collector")
 	{
@@ -38,8 +43,10 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		
 		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
+		CollectorStatusResult result = new CollectorStatusResult();
+
 		// First take ~1s to check all running collectors 
-		var currentRunningCols = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
+		result.collectorsStatus = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
 			BeamableZLoggerProvider.LogContext.Value, attemptsAmountOverride: 10);
 
 		if (args.watch)
@@ -50,11 +57,11 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 			{
 				if (hasChanged)
 				{
-					LogStatus(currentRunningCols);
-					SendResults(currentRunningCols);
+					LogStatus(result.collectorsStatus);
+					SendResults(result);
 				}
 				
-				lastRunningCols = currentRunningCols.GetRange(0, currentRunningCols.Count);
+				lastRunningCols = result.collectorsStatus.GetRange(0, result.collectorsStatus.Count);
 
 				await Task.Delay(100);
 
@@ -67,26 +74,26 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 					{
 						var collector = runningStatus.message;
 						
-						var index = currentRunningCols.FindIndex(s => s.pid == collector.pid);
+						var index = result.collectorsStatus.FindIndex(s => s.pid == collector.pid);
 
 						var collectorStatus = CollectorManager.GetCollectorStatus(collector);
 
 						if (index >= 0)
 						{
-							currentRunningCols[index] = collectorStatus;
+							result.collectorsStatus[index] = collectorStatus;
 						}
 						else
 						{
-							currentRunningCols.Add(collectorStatus);
+							result.collectorsStatus.Add(collectorStatus);
 						}
 					}
 				}
 
 				// For all running collectors, check if their process is still running, if not then remove from list
 				{
-					for (int i = (currentRunningCols.Count - 1); i >= 0; i--)
+					for (int i = (result.collectorsStatus.Count - 1); i >= 0; i--)
 					{
-						var collector = currentRunningCols[i];
+						var collector = result.collectorsStatus[i];
 						var isProcessNotWorking = false;
 						try
 						{
@@ -99,18 +106,18 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 						if (isProcessNotWorking)
 						{
-							currentRunningCols.RemoveAt(i);
+							result.collectorsStatus.RemoveAt(i);
 						}
 					}
 				}
 
-				hasChanged = HaveStatusChanged(lastRunningCols, currentRunningCols);
+				hasChanged = HaveStatusChanged(lastRunningCols, result.collectorsStatus);
 			}
 		}
 		else
 		{
-			LogStatus(currentRunningCols);
-			SendResults(currentRunningCols);
+			LogStatus(result.collectorsStatus);
+			SendResults(result);
 		}
 	}
 
@@ -138,7 +145,7 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		return false;
 	}
 
-	private void LogStatus(List<CollectorStatus> currentStatusList)//TODO improve this to be more visually interesting
+	private void LogStatus(List<CollectorStatus> currentStatusList)
 	{
 		if (currentStatusList.Count == 0)
 		{
