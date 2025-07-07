@@ -11,6 +11,7 @@ using Microsoft.OpenApi.Writers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Beamable.Server;
+using Microsoft.OpenApi.Services;
 using UnityEngine;
 
 namespace cli;
@@ -191,9 +192,11 @@ public class SwaggerService
 		{
 			foreach ((string schemaName, OpenApiSchema openApiSchema) in doc.Components.Schemas)
 			{
+				if (openApiSchema == null) continue;
 				if (string.IsNullOrEmpty(schemaName)) continue;
 
 				var reader = new OpenApiStreamReader();
+				
 				var originalJson = SerializeSchema(openApiSchema);
 				var stream = new MemoryStream(Encoding.UTF8.GetBytes(originalJson));
 				var raw = reader.ReadFragment<OpenApiSchema>(stream, OpenApiSpecVersion.OpenApi3_0, out _);
@@ -238,7 +241,7 @@ public class SwaggerService
 			{
 				var isPropArray = propData.Type == "array";
 
-				if (isPropArray && propData.Items.Reference != null)
+				if (isPropArray && propData?.Items?.Reference != null)
 				{
 					var schemaKey = propData.Items.Reference.Id;
 					if (!outSchemaRefs.Contains(allSchemas[schemaKey]))
@@ -342,6 +345,10 @@ public class SwaggerService
 
 						void RewireSchema(OpenApiSchema schema)
 						{
+							if (schema == null)
+							{
+								return;
+							}
 							if (schema.Reference?.Id == oldName)
 							{
 								schema.Reference.Id = newName;
@@ -563,27 +570,30 @@ public class SwaggerService
 		}
 
 		var output = await Task.WhenAll(tasks);
+		Log.Information("Downloaded all documents");
 
 
-		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
+		var processors = new List<(string name, Func<OpenApiDocumentResult, List<OpenApiDocumentResult>> processor)>
 		{
-			RewriteStatusCodesTo200,
-			ReduceProtoActorMimeTypes,
-			RewriteInlineResultSchemasAsReferences,
-			SplitTagsIntoSeparateDocuments,
-			AddTitlesToAllSchemasIfNone,
-			RewriteObjectEnumsAsStrings,
-			DetectNonSelfReferentialTypes,
-			FixBasicCloudsavingDataMetadataGet,
-			Reserailize
+			(nameof(RewriteStatusCodesTo200), RewriteStatusCodesTo200),
+			(nameof(ReduceProtoActorMimeTypes), ReduceProtoActorMimeTypes),
+			(nameof(RewriteInlineResultSchemasAsReferences), RewriteInlineResultSchemasAsReferences),
+			(nameof(SplitTagsIntoSeparateDocuments), SplitTagsIntoSeparateDocuments),
+			(nameof(ExtractBeamoV2Names), ExtractBeamoV2Names),
+			(nameof(AddTitlesToAllSchemasIfNone), AddTitlesToAllSchemasIfNone),
+			(nameof(RewriteObjectEnumsAsStrings), RewriteObjectEnumsAsStrings),
+			(nameof(DetectNonSelfReferentialTypes), DetectNonSelfReferentialTypes),
+			(nameof(FixBasicCloudsavingDataMetadataGet), FixBasicCloudsavingDataMetadataGet),
+			(nameof(Reserailize), Reserailize)
 		};
 
 
 		var final = output.ToList();
-		foreach (var processor in processors)
+		foreach (var (operationName, processor) in processors)
 		{
 			var startingSet = final.ToList();
 			final.Clear();
+			Log.Information($"Running processor=[{operationName}]");
 			foreach (var elem in startingSet)
 			{
 				foreach (var processed in processor(elem))
@@ -755,6 +765,44 @@ public class SwaggerService
 		return output;
 	}
 
+	private static List<OpenApiDocumentResult> ExtractBeamoV2Names(OpenApiDocumentResult swagger)
+	{
+		if (!string.Equals(swagger.Document.Info.Title, "Beamo Actor", StringComparison.InvariantCultureIgnoreCase))
+		{
+			return new List<OpenApiDocumentResult>
+			{
+				swagger
+			};
+		}
+		
+		// the original version of beamo was written as a basic scala service.
+		//  for legacy reasons, the code-gen for that service must remain for a while.
+		//  and the NEW version of beamo exists as an actor in ProtoActor.
+		//  The actor's schemas need to be unique from the old scala schemas, otherwise
+		//  there are potential breaking changes. 
+
+		string ConvertSchemaName(string oldName) => "BeamoV2" + oldName;
+		
+		var next = Reserailize(swagger)[0];
+		var doc = next.Document;
+		
+		foreach (var (name, schema) in doc.Components.Schemas)
+		{
+			if (!string.IsNullOrEmpty(schema.Reference?.Id))
+			{
+				schema.Reference.Id = ConvertSchemaName(schema.Reference.Id);
+			}
+		}
+
+		doc.Components.Schemas = doc.Components.Schemas.ToDictionary(keySelector: kvp => ConvertSchemaName(kvp.Key), elementSelector: kvp => kvp.Value);
+		
+		
+		return new List<OpenApiDocumentResult>
+		{
+			next
+		};
+	}
+	
 	private static List<OpenApiDocumentResult> RewriteInlineResultSchemasAsReferences(OpenApiDocumentResult swagger)
 	{
 		var output = new List<OpenApiDocumentResult>();
