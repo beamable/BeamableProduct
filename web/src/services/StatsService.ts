@@ -4,6 +4,7 @@ export interface SetStatsParams {
   domainType?: 'client' | 'game';
   accessType: 'public' | 'private';
   stats: Record<string, string>;
+  emitAnalytics?: boolean;
 }
 
 export interface GetStatsParams {
@@ -41,7 +42,7 @@ export class StatsService extends ApiService {
    * ```
    */
   async set(params: SetStatsParams): Promise<void> {
-    const { domainType = 'client', accessType, stats } = params;
+    const { domainType = 'client', accessType, stats, emitAnalytics } = params;
     const objectId = `${domainType}.${accessType}.player.${this.playerIdOrThrow}`;
 
     // convert all stats values to string
@@ -52,7 +53,7 @@ export class StatsService extends ApiService {
     domainType === 'client'
       ? await this.api.stats.postStatClientByObjectId(
           objectId,
-          { set: { ...stats } },
+          { set: { ...stats }, emitAnalytics },
           this.playerIdOrThrow,
         )
       : await this.api.stats.postStatByObjectId(
