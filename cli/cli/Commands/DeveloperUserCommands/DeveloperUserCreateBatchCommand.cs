@@ -54,6 +54,7 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 				Alias = item.Alias,
 				CreateByGamerTag = item.CreatedByGamerTag,
 				Description = item.Description,
+				CreateCopyOnStart = item.CreateCopyOnStart,
 				DeveloperUserType = (int)DeveloperUserType.Captured,
 				GamerTag = item.GamerTag,
 				TemplatedGamerTag = item.TemplateGamerTag,
@@ -61,6 +62,7 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 				AccessToken = item.AccessToken,
 				Cid = item.Cid,
 				Pid = item.Pid,
+				Tags = new List<string>(item.Tags),
 				ExpiresIn = item.ExpiresIn
 			}).ToList(),
 		};

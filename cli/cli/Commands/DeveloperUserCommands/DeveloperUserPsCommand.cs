@@ -31,6 +31,7 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 		{
 			Alias = item.DeveloperUser.Alias,
 			GamerTag = item.DeveloperUser.GamerTag,
+			Tags = item.DeveloperUser.Tags,
 			DeveloperUserType = (int)item.UserType
 		}).ToList();
 		// Build and emit the event
@@ -75,6 +76,8 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 								{
 									Alias = item.DeveloperUser.Alias,
 									Description = item.DeveloperUser.Description,
+									Tags = item.DeveloperUser.Tags,
+									CreateCopyOnStart = item.DeveloperUser.CreateCopyOnStart,
 									GamerTag = item.DeveloperUser.GamerTag,
 									DeveloperUserType = (int)item.UserType
 								}).ToList(),

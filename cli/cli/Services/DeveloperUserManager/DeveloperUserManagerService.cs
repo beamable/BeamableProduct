@@ -23,9 +23,9 @@ namespace cli.Services.DeveloperUserManager;
 
 public enum DeveloperUserType
 {
-	Captured,
-	Shared,
-	Local
+	Captured = 0,
+	Local = 1,
+	Shared = 2,
 }
 
 public class LocalDeveloperUserFileChanges
@@ -36,10 +36,10 @@ public class LocalDeveloperUserFileChanges
 [CliContractType, Serializable]
 public class DeveloperUserResult
 {
-	public List<DeveloperUserData> CreatedUsers;
-	public List<DeveloperUserData> DeletedUsers;
-	public List<DeveloperUserData> UpdatedUsers;
-	public List<DeveloperUserData> SavedUsers;
+	public List<DeveloperUserData> CreatedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> DeletedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> UpdatedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> SavedUsers = new List<DeveloperUserData>();
 }
 
 [CliContractType, Serializable]
@@ -58,8 +58,11 @@ public class DeveloperUserData
 	public long ExpiresIn;
 	public string Pid = "";
 	public string Cid = "";
+	public bool CreateCopyOnStart;
 	
 	public string Alias = "";
+	
+	public List<string> Tags = new List<string>();
 
 	public string Description = "";
 }
@@ -98,7 +101,8 @@ public struct DeveloperUser
 	public long TemplateGamerTag; // Use to reset to template
 	public string Alias;
 	public string Description;
-	public string[] Tags;
+	public bool CreateCopyOnStart;
+	public List<string> Tags = new List<string>();
 	
 	// Backend info
 	public string AccessToken;
@@ -108,7 +112,7 @@ public struct DeveloperUser
 	public string Cid;
 	public long CreatedByGamerTag;
 
-	public DeveloperUser(long gamerTag, long templateGamerTag, TokenResponse tokenResponse, string cid, string pid, string alias, long createdByGamerTag, string description, string[] tags, long createdDate) : this()
+	public DeveloperUser(long gamerTag, long templateGamerTag, TokenResponse tokenResponse, string cid, string pid, string alias, long createdByGamerTag, string description, bool createCopyOnStart, List<string> tags, long createdDate) : this()
 	{
 		UpdateToken(tokenResponse);
 		Cid = cid;
@@ -117,6 +121,7 @@ public struct DeveloperUser
 		CreatedByGamerTag = createdByGamerTag;
 		TemplateGamerTag = templateGamerTag;
 		CreatedDate = createdDate;
+		CreateCopyOnStart = createCopyOnStart;
 		
 		Alias = alias;
 		Description = description;
@@ -132,13 +137,14 @@ public struct DeveloperUser
 		ExpiresIn = tokenResponse.expires_in;
 	}
 
-	public void UpdateUserInfo(string alias, string description)
+	public void UpdateUserInfo(string alias, string description, bool createCopyOnStart)
 	{
 		Alias = alias;
 		Description = description;
+		CreateCopyOnStart = createCopyOnStart;
 	}
 
-	public void UpdateUserTags(string[] tags)
+	public void UpdateUserTags(List<string> tags)
 	{
 		Tags = tags;
 	}
@@ -179,7 +185,7 @@ public class DeveloperUserManagerService
 		
 		_channelChangedDeveloperUserFiles = Channel.CreateUnbounded<ChangedDeveloperUserInfoFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 	}
-	public async Task CreateUserFromTemplate(string identifier, string alias = "", string description = "", string[] tags = null)
+	public async Task CreateUserFromTemplate(string identifier, string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local)
 	{
 		var authApi = _dependencyProvider.GetService<IAuthApi>();
 		var accountApi = _dependencyProvider.GetService<IAccountsApi>();
@@ -215,11 +221,11 @@ public class DeveloperUserManagerService
 		
 		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, tags, DateTime.UtcNow.Ticks);
-
-		await SaveUser(developerUser, DeveloperUserType.Local);
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, developerUserType == DeveloperUserType.Shared, tags, DateTime.UtcNow.Ticks);
 
 		await CopyState(templateUserInfo.DeveloperUser, developerUser);
+
+		await SaveUser(developerUser, developerUserType);
 	}
 	
 	public async Task<List<DeveloperUser>> CreateUserFromTemplate(List<string> identifier, Dictionary<string, int> amountPerIdentifier, int rollingBufferSize)
@@ -281,7 +287,7 @@ public class DeveloperUserManagerService
 		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 		
 		var temporaryDescription =  $"Created from template {templateUserInfo.DeveloperUser.Alias} - {templateUserInfo.DeveloperUser.GamerTag}"; 
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription , new string[] { }, DateTime.UtcNow.Ticks);
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateUserInfo.DeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription, false, new List<string> { }, DateTime.UtcNow.Ticks);
 
 		await CopyState(templateUserInfo.DeveloperUser, developerUser);
 
@@ -307,7 +313,7 @@ public class DeveloperUserManagerService
 	}
 
 	// Create a user from a template user
-	public async Task CreateUser(string alias = "", string description = "", string[] tags = null)
+	public async Task CreateUser(string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local)
 	{
 		if (!string.IsNullOrEmpty(alias))
 		{
@@ -338,9 +344,9 @@ public class DeveloperUserManagerService
 		// Get the new guest user info
 		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 		
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, tags, DateTime.UtcNow.Ticks);
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, developerUserType == DeveloperUserType.Shared, tags, DateTime.UtcNow.Ticks);
 		
-		await SaveUser(developerUser);
+		await SaveUser(developerUser, developerUserType);
 	}
 
 	// Copy state from a developer user to another
@@ -528,14 +534,19 @@ public class DeveloperUserManagerService
 		await Task.WhenAll(writeUserTasks);
 	}
 
-	public void DeleteUser(DeveloperUser developerUser, DeveloperUserType developerUserType = DeveloperUserType.Captured)
+	public void RemoveUser(string identifier)
 	{
-		string directoryPath = GetFullPath(developerUserType);
-		
-		string fileFullPath = Path.Combine(directoryPath, developerUser.GamerTag + ".json");
-		
-		File.Delete(fileFullPath);
+		DeveloperUserInfo developerUserInfo = LoadCachedUserInfo(identifier);
+
+		if (!CheckIfUserExists(developerUserInfo))
+		{
+			throw new CliException($"There's no user with the given identifier {identifier}");
+		}
+
+		DeleteUser(developerUserInfo.DeveloperUser, developerUserInfo.UserType);
 	}
+	
+
 	public DeveloperUserInfo LoadCachedUserInfo(string identifier)
 	{
 		// This always returns a value so we don't need to treat the case of a empty array for the index - 0
@@ -640,13 +651,13 @@ public class DeveloperUserManagerService
 			var lastWriteTime = File.GetLastWriteTime(e.FullPath).ToFileTimeUtc();
 			if (e.ChangeType == WatcherChangeTypes.Created)
 			{
-				var changedUserDeveloper = new ChangedDeveloperUserInfoFile() { };
-				changedUserDeveloper.GamerTag = long.Parse(Path.GetFileNameWithoutExtension(e.Name)!);
-
-
-				changedUserDeveloper.FullFilePath = e.FullPath;
-				changedUserDeveloper.OldFullFilePath = "";
-
+				var changedUserDeveloper = new ChangedDeveloperUserInfoFile
+				{
+					GamerTag = long.Parse(Path.GetFileNameWithoutExtension(e.Name)!),
+					FullFilePath = e.FullPath, 
+					OldFullFilePath = ""
+				};
+				
 				if (!eventDisambiguationHelper.TryGetValue(e.FullPath, out var time) || time != lastWriteTime)
 				{
 					eventDisambiguationHelper[e.FullPath] = lastWriteTime;
@@ -764,7 +775,7 @@ public class DeveloperUserManagerService
 		await SaveUser(cachedUserInfo.DeveloperUser, cachedUserInfo.UserType);
 	}
 
-	public async Task<DeveloperUserInfo> UpdateUserInfo(string identifier, string alias, string description, string[] tags)
+	public async Task<DeveloperUserInfo> UpdateUserInfo(string identifier, string alias, string description, bool createCopyOnStart, List<string> tags)
 	{
 		DeveloperUserInfo cachedUserInfo = LoadCachedUserInfo(identifier);
 		
@@ -786,7 +797,7 @@ public class DeveloperUserManagerService
 			}
 		}
 		
-		cachedUserInfo.DeveloperUser.UpdateUserInfo(alias, description);
+		cachedUserInfo.DeveloperUser.UpdateUserInfo(alias, description, createCopyOnStart);
 		
 		cachedUserInfo.DeveloperUser.UpdateUserTags(tags);
 		
@@ -805,6 +816,15 @@ public class DeveloperUserManagerService
 		return LoadAllCachedDeveloperUsers(type);
 	}
 
+	private void DeleteUser(DeveloperUser developerUser, DeveloperUserType developerUserType = DeveloperUserType.Captured)
+	{
+		string directoryPath = GetFullPath(developerUserType);
+		
+		string fileFullPath = Path.Combine(directoryPath, developerUser.GamerTag + ".json");
+		
+		File.Delete(fileFullPath);
+	}
+	
 	private bool TryGetCachedUser(List<string> identifiers, DeveloperUserType developerUserType, out List<DeveloperUser> cachedUsers)
 	{
 		cachedUsers = new List<DeveloperUser>();
@@ -963,5 +983,5 @@ public class DeveloperUserManagerService
 		}
 		return developerUserInfo.HasDeveloperUserInfo;
 	}
-	
+
 }

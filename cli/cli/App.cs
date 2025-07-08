@@ -668,6 +668,7 @@ public class App
 		Commands.AddSubCommandWithHandler<DeveloperUserCopyStateCommand, DeveloperUserCopyStateArgs, DeveloperUserManagerCommand>();
 		Commands.AddSubCommandWithHandler<DeveloperUserPsCommand, DeveloperUserPsArgs, DeveloperUserManagerCommand>();
 		Commands.AddSubCommandWithHandler<DeveloperUserUpdateInfoCommand, DeveloperUserUpdateInfoArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserRemoveCommand, DeveloperUserRemoveArgs, DeveloperUserManagerCommand>();
 
 		commandConfigurator?.Invoke(Commands);
 
