@@ -18,16 +18,16 @@ namespace Beamable.Server
 	// a class that acts as vessel for extension methods for service clients
 	public class MicroserviceClients
 	{
-		private BeamContext _ctx;
+		private IDependencyProvider _provider;
 
-		public MicroserviceClients(BeamContext context)
+		public MicroserviceClients(IDependencyProvider provider)
 		{
-			_ctx = context;
+			_provider = provider;
 		}
 
-		public TClient GetClient<TClient>() where TClient : MicroserviceClient
+		public TClient  GetClient<TClient>() where TClient : MicroserviceClient
 		{
-			return _ctx.ServiceProvider.GetService<TClient>();
+			return _provider.GetService<TClient>();
 		}
 	}
 
@@ -39,9 +39,14 @@ namespace Beamable.Server
 		public T Data;
 	}
 
-	public class MicroserviceClient
+	public interface IMicroserviceClient_Internal
 	{
-		private readonly IDependencyProvider _provider;
+		void SetProvider(IDependencyProvider provider);
+	}
+
+	public class MicroserviceClient : IMicroserviceClient_Internal
+	{
+		private IDependencyProvider _provider;
 
 		// protected BeamContext _ctx;
 
@@ -74,6 +79,11 @@ namespace Beamable.Server
 		[Obsolete]
 		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		   => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
+
+		void IMicroserviceClient_Internal.SetProvider(IDependencyProvider provider)
+		{
+			_provider = provider;
+		}
 	}
 
 

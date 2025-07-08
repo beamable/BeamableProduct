@@ -161,9 +161,14 @@ namespace Beamable.Reflection
 #endif
 				foreach (var registerBeamableDependencyFunction in toRegister)
 				{
-					var matchesOrigin = origin.HasFlag(registerBeamableDependencyFunction
-													   .AttrAs<RegisterBeamableDependenciesAttribute>().Origin);
-					if (!matchesOrigin) continue;
+					UnityEngine.Debug.Log(registerBeamableDependencyFunction.Info.DeclaringType.FullName);
+
+					var matchesOrigin = registerBeamableDependencyFunction
+					                    .AttrAs<RegisterBeamableDependenciesAttribute>().Origin.HasFlag(origin);
+					if (!matchesOrigin)
+					{
+						continue;
+					}
 					try
 					{
 						var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
