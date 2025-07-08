@@ -3,6 +3,10 @@ import { Refreshable } from '@/services/types/Refreshable';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 
 export interface AnnouncementIdParams {
+  /**
+   * The ID or array of IDs of the announcements to claim, mark as read, or delete.
+   * @remarks This can be a single announcement ID or an array of IDs.
+   */
   id: string | string[];
 }
 

@@ -1,15 +1,42 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 
 export interface SetStatsParams {
+  /**
+   * The type of domain for the stats.
+   * @remarks 'client' for client-side stats, 'game' for game server stats.
+   * @default 'client'
+   */
   domainType?: 'client' | 'game';
+  /**
+   * The type of access for the stats.
+   * @remarks 'public' for public stats, 'private' for private stats.
+   */
   accessType: 'public' | 'private';
+  /**
+   * The stats to set for the current player.
+   * @remarks The keys are stat names and the values are their corresponding values as strings.
+   */
   stats: Record<string, string>;
+  /** Whether to emit analytics for the stats change. */
   emitAnalytics?: boolean;
 }
 
 export interface GetStatsParams {
+  /**
+   * The type of domain for the stats.
+   * @remarks 'client' for client-side stats, 'game' for game server stats.
+   * @default 'client'
+   */
   domainType?: 'client' | 'game';
+  /**
+   * The type of access for the stats.
+   * @remarks 'public' for public stats, 'private' for private stats.
+   */
   accessType: 'public' | 'private';
+  /**
+   * The specific stats to fetch.
+   * @remarks If not provided, all stats for the specified domain and access will be fetched.
+   */
   stats?: string[];
 }
 
