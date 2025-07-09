@@ -1,7 +1,10 @@
 using System.CommandLine;
+using Beamable.Common.BeamCli;
 
 namespace cli;
 
+[CliContractType]
+[Serializable]
 public class ConfigSetCommandArgs : CommandArgs
 {
 	public string name;

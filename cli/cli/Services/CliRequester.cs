@@ -39,7 +39,7 @@ public class CliRequester : IRequester
 	{
 		Log.Verbose($"{method} call: {uri}");
 		
-		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
+		using HttpClient client = GetClient(_ctx.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
 		
 		if (GlobalHeaders != null)
@@ -174,9 +174,47 @@ public class CliRequester : IRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
+	static string GetSuffixFilter(string host)
 	{
-		var client = new HttpClient();
+		if (string.IsNullOrEmpty(host) || host.Contains("localhost"))
+		{
+			return ".beamable.com";
+		}
+
+		var hostLike = host.Replace("dev.api", "dev-api");
+		var filter = "." + string.Join(".", hostLike
+			.Split(".")
+			.Skip(1));
+			   
+		// trim off any pathing in the host 
+		int idx = filter.IndexOf('/');
+		if (idx != -1)
+			filter = filter.Substring(0, idx);
+		return filter;
+	}
+	
+	private static HttpClient GetClient(string host, bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
+	{
+		var handler = new HttpClientHandler();
+		handler.ServerCertificateCustomValidationCallback = (message, _, _, _) =>
+		{
+			if (message?.RequestUri == null) return false;
+			
+			var filter = GetSuffixFilter(host);
+			var isBeamableEndpoint = message.RequestUri.Host.EndsWith(filter);
+			var isContentRelated = message.RequestUri.Fragment.Contains("content/", StringComparison.InvariantCultureIgnoreCase);
+
+			var shouldAvoidSslDueToContentInfra = isBeamableEndpoint && isContentRelated;
+			if (shouldAvoidSslDueToContentInfra)
+			{
+				return false;
+			}
+			
+			return true;
+		};
+
+		var client = new HttpClient(handler);
+
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 
 		var scope = string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";

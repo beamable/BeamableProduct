@@ -47,16 +47,9 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			throw new Exception("There is no port configured for the collector discovery");
 		}
 
-		if (!Int32.TryParse(port, out int portNumber))
+		if (!Int32.TryParse(port, out int _))
 		{
 			throw new Exception("Invalid value for port");
-		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
 		}
 
 		var user = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);

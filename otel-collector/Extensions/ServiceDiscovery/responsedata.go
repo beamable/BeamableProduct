@@ -27,10 +27,10 @@ func (s Status) String() string {
 }
 
 type responseData struct {
-	Status  Status          `json:"status"`
-	Pid     int             `json:"pid"`
-	Logs    []zapcore.Entry `json:"logs"`
-	Version string          `json:"version"`
+	Status       Status `json:"status"`
+	Pid          int    `json:"pid"`
+	Version      string `json:"version"`
+	OtlpEndpoint string `json:"otlpEndpoint"`
 }
 
 type RingBufferLogs struct {
