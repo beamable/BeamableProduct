@@ -169,37 +169,33 @@ export class Beam extends BeamBase {
       try {
         const savedConfig = await readConfig();
         // If the saved config cid does not match the current one, clear the token storage
-        if (this.cid !== savedConfig.cid) {
-          this.tokenStorage.clear();
-        }
-
+        if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
         // If the cid or pid has changed, save the new configuration
-        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
+        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
           await saveConfig({ cid: this.cid, pid: this.pid });
-        }
 
+        let tokenResponse: TokenResponse | undefined;
         const accessToken = await this.tokenStorage.getAccessToken();
-        if (accessToken === null) {
-          // If no access token exists, sign in as a guest and save the tokens
-          const tokenResponse = await this.auth.signInAsGuest();
-          await saveToken(this.tokenStorage, tokenResponse);
+        if (!accessToken) {
+          // If no access token exists, sign in as a guest
+          tokenResponse = await this.auth.signInAsGuest();
         } else if (this.tokenStorage.isExpired) {
           // If the access token is expired, try to refresh it using the refresh token
-          // If no refresh token exists, sign in as a guest and save the tokens
-          let tokenResponse: TokenResponse;
+          // If no refresh token exists, sign in as a guest
           const refreshToken = await this.tokenStorage.getRefreshToken();
-
-          if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
-          else
-            tokenResponse = await this.auth.refreshAuthToken({ refreshToken });
-
-          await saveToken(this.tokenStorage, tokenResponse);
+          tokenResponse = refreshToken
+            ? await this.auth.refreshAuthToken({ refreshToken })
+            : await this.auth.signInAsGuest();
         }
 
-        // If we have a valid access token, fetch the current player account and set it
-        this.player.account = await this.account.current();
+        if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
 
-        await this.setupRealtimeConnection();
+        const [account] = await Promise.all([
+          this.account.current(),
+          this.setupRealtimeConnection(),
+        ]);
+
+        this.player.account = account;
         this.isReadyPromise = true;
         resolve();
       } catch (error) {
@@ -223,24 +219,11 @@ export class Beam extends BeamBase {
     const refreshToken = await this.tokenStorage.getRefreshToken();
     if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
 
-    const realmConfigResponse = await this.api.realms.getRealmsClientDefaults();
-    const realmConfig = realmConfigResponse.body;
-    if (realmConfig.websocketConfig.provider === 'pubnub') {
-      // Web SDK does not support pubnub
-      throw new BeamWebSocketError(
-        'Unsupported websocket provider. Configure your Realm in portal to include: namespace=notification, key=publisher, value=beamable.',
-      );
-    }
-
-    const url = realmConfig.websocketConfig.uri;
-    if (!url) throw new BeamWebSocketError('No websocket URL found');
-
     await this.ws.connect({
       api: this.api,
       cid: this.cid,
       pid: this.pid,
       refreshToken,
-      url,
     });
   }
 

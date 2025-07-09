@@ -8,7 +8,6 @@ import { BeamApi } from '@/core/BeamApi';
 
 interface BeamWebSocketConnect {
   api: BeamApi;
-  url: string;
   cid: string;
   pid: string;
   refreshToken: string;
@@ -28,8 +27,19 @@ export class BeamWebSocket {
   private maxRetries = 3;
 
   private async initWebSocket(): Promise<void> {
-    // Fetch the access token for the new connection
-    const accessToken = await this.getAccessToken();
+    let accessToken: string | null = null;
+    try {
+      const [token] = await Promise.all([
+        this.getAccessToken(),
+        this.setWebSocketUrl(),
+      ]);
+      accessToken = token;
+    } catch (error) {
+      if (error instanceof BeamWebSocketError) {
+        return this.connectPromiseWithResolvers?.reject(error);
+      }
+    }
+
     if (!accessToken) {
       return this.connectPromiseWithResolvers?.reject(
         new BeamWebSocketError(
@@ -84,10 +94,33 @@ export class BeamWebSocket {
     };
   }
 
+  private async setWebSocketUrl(): Promise<void> {
+    if (!this.api) {
+      throw new BeamWebSocketError('API instance is not set');
+    }
+
+    if (this.url) return; // URL already set
+
+    const realmConfigResponse = await this.api.realms.getRealmsClientDefaults();
+    const realmConfig = realmConfigResponse.body;
+    if (realmConfig.websocketConfig.provider === 'pubnub') {
+      // Web SDK does not support pubnub
+      throw new BeamWebSocketError(
+        'Unsupported websocket provider. Configure your Realm in portal to include: namespace=notification, key=publisher, value=beamable.',
+      );
+    }
+
+    const url = realmConfig.websocketConfig.uri;
+    if (!url) throw new BeamWebSocketError('No websocket URL found');
+
+    this.url = url;
+  }
+
   private async getAccessToken(): Promise<string | null> {
     if (!this.api) return null;
 
     try {
+      // Fetch the access token for the new connection
       const accessTokenResponse = await this.api.auth.postAuthRefreshTokenV2({
         customerId: this.cid,
         realmId: this.pid,
@@ -111,7 +144,6 @@ export class BeamWebSocket {
    */
   async connect(param: BeamWebSocketConnect): Promise<void> {
     this.api = param.api;
-    this.url = param.url;
     this.cid = param.cid;
     this.pid = param.pid;
     this.refreshToken = param.refreshToken;
