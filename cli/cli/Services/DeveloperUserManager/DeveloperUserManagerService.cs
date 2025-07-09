@@ -356,11 +356,12 @@ public class DeveloperUserManagerService
 		var res = await realmsApi.GetAdminCustomer();
 		var secretMap = res.customer.projects.ToDictionary(p => p.name, p=> p.secret);
 		
-		// Copy the inventory state from a source developer user to a target developer user
-		await CopyInventoryState(sourceDeveloperUser, targetDeveloperUser, secretMap);
-
-		// Copy the stats state from a source developer user to a target developer user
-		await CopyStatsState(sourceDeveloperUser, targetDeveloperUser, secretMap);
+		List<Task> copyTasks = new List<Task>();
+		
+		copyTasks.Add(CopyInventoryState(sourceDeveloperUser, targetDeveloperUser, secretMap));
+		copyTasks.Add(CopyStatsState(sourceDeveloperUser, targetDeveloperUser, secretMap));
+		
+		await Task.WhenAll(copyTasks);
 	}
 
 	private async Task CopyInventoryState(DeveloperUser sourceDeveloperUser, DeveloperUser targetDeveloperUser, Dictionary<string, string> secretMap)
