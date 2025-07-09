@@ -12,7 +12,7 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 	public override void Configure()
 	{
 		AddOption(new ConfigurableOption("alias", ""), (args, s) => { args.Alias = s; });
-		AddOption(new ConfigurableOption("template", ""), (args, s) => { args.TemplateIdentifier = s; });
+		AddOption(new ConfigurableOption("template", ""), (args, s) => { args.TemplateGamerTag = s; });
 		AddOption(new ConfigurableOption("description", ""), (args, s) => { args.Description = s; });
 		AddOption(new ConfigurableIntOption("user-type", ""), ((args, number) => { args.DeveloperUserType = (DeveloperUserType)number; }));
 		AddOption(new ConfigurableOptionList("tags", ""), (args, s) =>
@@ -26,14 +26,7 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 	public override async Task Handle(DeveloperUserCreateArgs args)
 	{
-		if (!string.IsNullOrEmpty(args.TemplateIdentifier))
-		{
-			await args.DeveloperUserManagerService.CreateUserFromTemplate(args.TemplateIdentifier, args.Alias, args.Description, args.Tags, args.DeveloperUserType);
-		}
-		else
-		{
-			await args.DeveloperUserManagerService.CreateUser(args.Alias, args.Description, args.Tags, args.DeveloperUserType);
-		}
+		await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType);
 	}
 
 	public override Task<DeveloperUserResult> GetResult(DeveloperUserCreateArgs args)
@@ -44,7 +37,7 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 public class DeveloperUserCreateArgs : ContentCommandArgs
 {
-	public string TemplateIdentifier;
+	public string TemplateGamerTag;
 	public string Alias;
 	public string Description;
 	public DeveloperUserType DeveloperUserType;

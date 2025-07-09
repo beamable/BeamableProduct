@@ -37,12 +37,9 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 		}
 
 
-		await args.DeveloperUserManagerService.SaveUsers(developerUsers);
+		await args.DeveloperUserManagerService.SaveDeveloperUsers(developerUsers);
 
-		return new DeveloperUserResult() { SavedUsers = developerUsers.Select(item => new DeveloperUserData()
-		{
-			GamerTag = item.GamerTag
-		}).ToList() };
+		return new DeveloperUserResult() { SavedUsers = developerUsers };
 	}
 }
 

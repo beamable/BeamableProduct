@@ -27,18 +27,16 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 		var developerUserManagerService = args.DeveloperUserManagerService;
 		
 		// Get all available users for each type
-		var allAvailableEntries = developerUserManagerService.GetAllAvailableUserInfo().Select(item => new DeveloperUserData()
-		{
-			Alias = item.DeveloperUser.Alias,
-			GamerTag = item.DeveloperUser.GamerTag,
-			Tags = item.DeveloperUser.Tags,
-			DeveloperUserType = (int)item.UserType
-		}).ToList();
+		var allAvailableEntries = developerUserManagerService.GetAllAvailableUserInfo();
+		
 		// Build and emit the event
 		var eventToEmit = new DeveloperUserPsCommandEvent()
 		{
 			EventType = DeveloperUserPsCommandEvent.EVT_TYPE_FullRebuild,
-			ToUpdate = allAvailableEntries
+			DeveloperUserReport = new DeveloperUserResult()
+			{
+				UpdatedUsers = allAvailableEntries
+			}
 		};
 		
 		this.SendResults(eventToEmit);
@@ -66,22 +64,22 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 
 						try
 						{
-							var allLocalDeletions = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasDeleted()).Select(fc => fc.GamerTag).ToArray();
+							var allDeletions = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasDeleted()).Select(fc => fc.GamerTag).ToArray();
 							var allUpdates = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasChanged() || fc.WasCreated() || fc.WasRenamed()).Select(fc => fc.GamerTag).ToList();
-						
+
+							var allDeveloperUsers = developerUserManagerService.GetAllAvailableUserInfo();
+							
 							var developerUserPsCommandEvent = new DeveloperUserPsCommandEvent()
 							{
 								EventType = DeveloperUserPsCommandEvent.EVT_TYPE_ChangedDeveloperUserInfo,
-								ToUpdate =  developerUserManagerService.GetAllAvailableUserInfo().Where(item => allUpdates.Contains(item.DeveloperUser.GamerTag)).Select(item => new DeveloperUserData()
+								DeveloperUserReport = new DeveloperUserResult()
 								{
-									Alias = item.DeveloperUser.Alias,
-									Description = item.DeveloperUser.Description,
-									Tags = item.DeveloperUser.Tags,
-									CreateCopyOnStart = item.DeveloperUser.CreateCopyOnStart,
-									GamerTag = item.DeveloperUser.GamerTag,
-									DeveloperUserType = (int)item.UserType
-								}).ToList(),
-								ToRemove = allLocalDeletions.ToList()
+									UpdatedUsers = allDeveloperUsers.Where(developerUser => allUpdates.Contains(developerUser.GamerTag)).ToList(),
+									DeletedUsers = allDeletions.Select(gamerTag => new DeveloperUser
+									{
+										GamerTag = gamerTag
+									}).ToList(),
+								}
 							};
 						
 							// Send it out.
@@ -134,12 +132,11 @@ public class DeveloperUserPsCommandEvent
 	/// The semantics of each field are defined based on the event and documented on these comments.
 	/// </summary>
 	public int EventType;
-	
-	public List<DeveloperUserData> ToUpdate = new List<DeveloperUserData>();
-	
-	public List<DeveloperUserData> CorruptedUsers = new List<DeveloperUserData>();
-	
-	public List<long> ToRemove = new List<long>();
+
+	/// <summary>
+	/// Using the same structured that is returned from the CLI calls to return as a report in the PS command
+	/// </summary>
+	public DeveloperUserResult DeveloperUserReport;
 }
 
 

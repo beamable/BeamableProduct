@@ -26,27 +26,12 @@ public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateI
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserUpdateInfoArgs args)
 	{
-		DeveloperUserInfo result = await args.DeveloperUserManagerService.UpdateUserInfo(args.Identifier, args.Alias, args.Description, args.CreateCopyOnStart, args.Tags);
-		var resultDeveloperUser = result.DeveloperUser;
+		DeveloperUser resultDeveloperUser = await args.DeveloperUserManagerService.UpdateDeveloperUserInfo(args.Identifier, args.Alias, args.Description, args.CreateCopyOnStart, args.Tags);
+
 		return new DeveloperUserResult() {
-			UpdatedUsers = new List<DeveloperUserData>()
+			UpdatedUsers = new List<DeveloperUser>()
 			{
-				new DeveloperUserData()
-				{
-					Alias = resultDeveloperUser.Alias,
-					CreateByGamerTag = resultDeveloperUser.CreatedByGamerTag,
-					Description = resultDeveloperUser.Description,
-					CreateCopyOnStart = resultDeveloperUser.CreateCopyOnStart,
-					DeveloperUserType = (int)result.UserType,
-					GamerTag = resultDeveloperUser.GamerTag,
-					TemplatedGamerTag = resultDeveloperUser.TemplateGamerTag,
-					RefreshToken = resultDeveloperUser.RefreshToken,
-					AccessToken = resultDeveloperUser.AccessToken,
-					Cid = resultDeveloperUser.Cid,
-					Pid = resultDeveloperUser.Pid,
-					ExpiresIn = resultDeveloperUser.ExpiresIn,
-					Tags = resultDeveloperUser.Tags
-				}
+				resultDeveloperUser
 			} 
 		};
 	}

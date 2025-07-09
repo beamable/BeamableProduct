@@ -45,26 +45,11 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 			
 			amountPerTemplate.Add(templateIdentifier, amount);
 		}
-		List<DeveloperUser> result = await args.DeveloperUserManagerService.CreateUserFromTemplate(args.TemplatesIdentifiers, amountPerTemplate, args.RollingBufferSize);
+		List<DeveloperUser> result = await args.DeveloperUserManagerService.CreateUsersFromTemplateInBatch(args.TemplatesIdentifiers, amountPerTemplate, args.RollingBufferSize);
 
 		return new DeveloperUserResult()
 		{
-			CreatedUsers = result.Select(item => new DeveloperUserData()
-			{
-				Alias = item.Alias,
-				CreateByGamerTag = item.CreatedByGamerTag,
-				Description = item.Description,
-				CreateCopyOnStart = item.CreateCopyOnStart,
-				DeveloperUserType = (int)DeveloperUserType.Captured,
-				GamerTag = item.GamerTag,
-				TemplatedGamerTag = item.TemplateGamerTag,
-				RefreshToken = item.RefreshToken,
-				AccessToken = item.AccessToken,
-				Cid = item.Cid,
-				Pid = item.Pid,
-				Tags = new List<string>(item.Tags),
-				ExpiresIn = item.ExpiresIn
-			}).ToList(),
+			CreatedUsers = result
 		};
 	}
 }

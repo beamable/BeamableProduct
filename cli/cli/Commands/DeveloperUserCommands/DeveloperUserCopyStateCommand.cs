@@ -14,10 +14,10 @@ public class DeveloperUserCopyStateCommand : AppCommand<DeveloperUserCopyStateAr
 
 	public override async Task Handle(DeveloperUserCopyStateArgs args)
 	{
-		var sourceDeveloperUserInfo =  args.DeveloperUserManagerService.LoadCachedUserInfo(args.SourceIdentifier);
-		var targetDeveloperUserInfo =  args.DeveloperUserManagerService.LoadCachedUserInfo(args.TargetIdentifier);
+		var sourceDeveloperUser =  args.DeveloperUserManagerService.LoadCachedDeveloperUser(args.SourceIdentifier);
+		var targetDeveloperUser =  args.DeveloperUserManagerService.LoadCachedDeveloperUser(args.TargetIdentifier);
 
-		await args.DeveloperUserManagerService.CopyState(sourceDeveloperUserInfo.DeveloperUser, targetDeveloperUserInfo.DeveloperUser);
+		await args.DeveloperUserManagerService.CopyState(sourceDeveloperUser, targetDeveloperUser);
 	}
 }
 
