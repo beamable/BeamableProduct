@@ -12,15 +12,15 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 	public override void Configure()
 	{
 		AddOption(new ConfigurableIntOption("rolling-buffer-size", "The max amount of temporary users that you can have before starting to delete the oldest"), (args, s) => { args.RollingBufferSize = s; });
-		AddOption(new ConfigurableOptionList("templates-list", ""), (args, enumerable) =>
+		AddOption(new ConfigurableOptionList("templates-list", "The gamer tag list for all templates that will be copied into a new player"), (args, enumerable) =>
 		{
 			foreach (var templateIdentifier in enumerable)
 			{
-				args.TemplatesIdentifiers.Add(templateIdentifier);
+				args.TemplatesGamerTag.Add(templateIdentifier);
 			}
 		});
 		
-		AddOption(new ConfigurableOptionList("amount-list", ""), (args, enumerable) =>
+		AddOption(new ConfigurableOptionList("amount-list", "A parallel list of the template-list arg that contains the amount of users for each template"), (args, enumerable) =>
 		{
 			foreach (var amountStr in enumerable)
 			{
@@ -32,20 +32,20 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserCreateBatchArgs args)
 	{
-		if (args.TemplatesIdentifiers.Count != args.PlayersAmount.Count)
+		if (args.TemplatesGamerTag.Count != args.PlayersAmount.Count)
 		{
 			throw new CliException("Invalid number of templates specified");
 		}
 		Dictionary<string, int> amountPerTemplate = new Dictionary<string, int>();
 
-		for (int i = 0; i < args.TemplatesIdentifiers.Count; i++)
+		for (int i = 0; i < args.TemplatesGamerTag.Count; i++)
 		{
-			string templateIdentifier = args.TemplatesIdentifiers[i];
+			string templateIdentifier = args.TemplatesGamerTag[i];
 			int amount = args.PlayersAmount[i];
 			
 			amountPerTemplate.Add(templateIdentifier, amount);
 		}
-		List<DeveloperUser> result = await args.DeveloperUserManagerService.CreateUsersFromTemplateInBatch(args.TemplatesIdentifiers, amountPerTemplate, args.RollingBufferSize);
+		List<DeveloperUser> result = await args.DeveloperUserManagerService.CreateUsersFromTemplateInBatch(args.TemplatesGamerTag, amountPerTemplate, args.RollingBufferSize);
 
 		return new DeveloperUserResult()
 		{
@@ -58,6 +58,6 @@ public class DeveloperUserCreateBatchArgs : ContentCommandArgs
 {
 	public int RollingBufferSize;
 	
-	public readonly List<string> TemplatesIdentifiers = new List<string>();
+	public readonly List<string> TemplatesGamerTag = new List<string>();
 	public readonly List<int> PlayersAmount = new List<int>();
 }

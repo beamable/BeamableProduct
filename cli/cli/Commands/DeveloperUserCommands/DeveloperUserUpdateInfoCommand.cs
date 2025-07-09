@@ -11,11 +11,10 @@ public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateI
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("alias", ""), (args, s) => { args.Alias = s; });
-		AddOption(new ConfigurableOption("identifier", ""), (args, s) => { args.Identifier = s; });
-		AddOption(new ConfigurableOption("description", ""), (args, s) => { args.Description = s; });
-		AddOption(new ConfigurableOptionFlag("create-copy-on-start", ""), (args, b) => { args.CreateCopyOnStart = b; });
-		AddOption(new ConfigurableOptionList("tags", ""), (args, s) =>
+		AddOption(new ConfigurableOption("alias", "A alias (Name) of the user, which is not the same name as in the portal"), (args, s) => { args.Alias = s; });
+		AddOption(new ConfigurableOption("gamer-tag", "The gamer tag of the user to be updated"), (args, s) => { args.GamerTag = s; });
+		AddOption(new ConfigurableOption("description", "A new description for this user"), (args, s) => { args.Description = s; });
+		AddOption(new ConfigurableOptionList("tags", "The tags to set in the local user data"), (args, s) =>
 		{
 			foreach (var tag in s)
 			{
@@ -26,7 +25,7 @@ public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateI
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserUpdateInfoArgs args)
 	{
-		DeveloperUser resultDeveloperUser = await args.DeveloperUserManagerService.UpdateDeveloperUserInfo(args.Identifier, args.Alias, args.Description, args.CreateCopyOnStart, args.Tags);
+		DeveloperUser resultDeveloperUser = await args.DeveloperUserManagerService.UpdateDeveloperUserInfo(args.GamerTag, args.Alias, args.Description, args.Tags);
 
 		return new DeveloperUserResult() {
 			UpdatedUsers = new List<DeveloperUser>()
@@ -39,9 +38,8 @@ public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateI
 
 public class DeveloperUserUpdateInfoArgs : ContentCommandArgs
 {
-	public string Identifier;
+	public string GamerTag;
 	public string Alias;
 	public string Description;
-	public bool CreateCopyOnStart;
 	public readonly List<string> Tags = new List<string>();
 }

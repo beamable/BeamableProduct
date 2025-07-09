@@ -74,7 +74,6 @@ public struct DeveloperUser
 	public long TemplateGamerTag; // Use to reset to template
 	public string Alias;
 	public string Description;
-	public bool CreateCopyOnStart;
 	public List<string> Tags = new List<string>();
 	
 	// Backend info
@@ -89,7 +88,7 @@ public struct DeveloperUser
 	
 	public DeveloperUserType GetDeveloperUserType() => (DeveloperUserType)DeveloperUserType;
 
-	public DeveloperUser(long gamerTag, long templateGamerTag, TokenResponse tokenResponse, string cid, string pid, string alias, long createdByGamerTag, string description, bool createCopyOnStart, List<string> tags, long createdDate, DeveloperUserType developerUserType) : this()
+	public DeveloperUser(long gamerTag, long templateGamerTag, TokenResponse tokenResponse, string cid, string pid, string alias, long createdByGamerTag, string description, List<string> tags, long createdDate, DeveloperUserType developerUserType) : this()
 	{
 		UpdateToken(tokenResponse);
 		Cid = cid;
@@ -98,7 +97,6 @@ public struct DeveloperUser
 		CreatedByGamerTag = createdByGamerTag;
 		TemplateGamerTag = templateGamerTag;
 		CreatedDate = createdDate;
-		CreateCopyOnStart = createCopyOnStart;
 		DeveloperUserType = (int)developerUserType;
 		
 		Alias = alias;
@@ -115,11 +113,10 @@ public struct DeveloperUser
 		ExpiresIn = tokenResponse.expires_in;
 	}
 
-	public void UpdateUserInfo(string alias, string description, bool createCopyOnStart)
+	public void UpdateUserInfo(string alias, string description)
 	{
 		Alias = alias;
 		Description = description;
-		CreateCopyOnStart = createCopyOnStart;
 	}
 
 	public void UpdateUserTags(List<string> tags)
@@ -164,7 +161,7 @@ public class DeveloperUserManagerService
 	/// <param name="tags"></param>
 	/// <param name="developerUserType"></param>
 	/// <exception cref="CliException"></exception>
-	public async Task CreateUser(string templateGamerTag = "", string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local)
+	public async Task<DeveloperUser> CreateUser(string templateGamerTag = "", string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local)
 	{
 		var authApi = _dependencyProvider.GetService<IAuthApi>();
 		var accountApi = _dependencyProvider.GetService<IAccountsApi>();
@@ -187,7 +184,7 @@ public class DeveloperUserManagerService
 		var adminMe = await adminMeTask;
 		
 		// Create the new developer user
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, developerUserType == DeveloperUserType.Shared, tags, DateTime.UtcNow.Ticks, developerUserType);
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, tags, DateTime.UtcNow.Ticks, developerUserType);
 		
 		bool copyFromTemplate = !string.IsNullOrEmpty(templateGamerTag);
 		
@@ -209,6 +206,8 @@ public class DeveloperUserManagerService
 		}
 		
 		await SaveDeveloperUser(developerUser, developerUserType);
+
+		return developerUser;
 	}
 	/// <summary>
 	/// Create users in batch, mostly used for captured users or copy multiple users from different templates
@@ -283,6 +282,17 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
+	/// Save one developer user entry.
+	/// </summary>
+	/// <param name="developerUser"></param>
+	/// <param name="developerUserType"></param>
+	/// <exception cref="ArgumentNullException"></exception>
+	public Task SaveDeveloperUser(DeveloperUser developerUser, DeveloperUserType developerUserType = DeveloperUserType.Captured)
+	{
+		return SaveDeveloperUsers(new List<DeveloperUser>(){developerUser}, developerUserType);
+	}
+	
+	/// <summary>
 	/// Save multiple developer users to disk in a batch
 	/// </summary>
 	/// <param name="developerUsers"></param>
@@ -316,10 +326,10 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
-	/// Remove a user for a given user gamer tag
-	/// This happens synchronous 
+	/// Remove a user for a given user gamer tag from local files
+	/// OBS: It will not delete the user from the backend  
 	/// </summary>
-	public void RemoveUser(string gamerTag)
+	public void DeleteUser(string gamerTag)
 	{
 		DeveloperUser developerUser = LoadCachedDeveloperUser(gamerTag);
 
@@ -475,7 +485,7 @@ public class DeveloperUserManagerService
 	/// <param name="tags"></param>
 	/// <returns></returns>
 	/// <exception cref="CliException"></exception>
-	public async Task<DeveloperUser> UpdateDeveloperUserInfo(string gamerTag, string alias, string description, bool createCopyOnStart, List<string> tags)
+	public async Task<DeveloperUser> UpdateDeveloperUserInfo(string gamerTag, string alias, string description, List<string> tags)
 	{
 		DeveloperUser cachedDeveloperUser = LoadCachedDeveloperUser(gamerTag);
 		
@@ -484,7 +494,7 @@ public class DeveloperUserManagerService
 			throw new CliException($"There's no user with the given gamer tag: {gamerTag}");
 		}
 		
-		cachedDeveloperUser.UpdateUserInfo(alias, description, createCopyOnStart);
+		cachedDeveloperUser.UpdateUserInfo(alias, description);
 		
 		cachedDeveloperUser.UpdateUserTags(tags);
 		
@@ -552,18 +562,6 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
-	/// Save one developer user entry.
-	/// </summary>
-	/// <param name="developerUser"></param>
-	/// <param name="developerUserType"></param>
-	/// <exception cref="ArgumentNullException"></exception>
-	private Task SaveDeveloperUser(DeveloperUser developerUser, DeveloperUserType developerUserType = DeveloperUserType.Captured)
-	{
-		return SaveDeveloperUsers(new List<DeveloperUser>(){developerUser}, developerUserType);
-	}
-	
-	
-	/// <summary>
 	/// Load from the local cache all the users for a given list of gamer tags
 	/// If the gamer tag is not found it will return an item in the list with all fields empty
 	/// You can check if the items are valid using DeveloperUser.IsValidUser()
@@ -616,7 +614,7 @@ public class DeveloperUserManagerService
 		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 		
 		var temporaryDescription =  $"Created from template {templateDeveloperUser.Alias} - {templateDeveloperUser.GamerTag}"; 
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateDeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription, false, new List<string>(), DateTime.UtcNow.Ticks, DeveloperUserType.Captured);
+		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateDeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription, new List<string>(), DateTime.UtcNow.Ticks, DeveloperUserType.Captured);
 
 		await CopyState(templateDeveloperUser, developerUser);
 
@@ -625,21 +623,6 @@ public class DeveloperUserManagerService
 		return developerUser;
 	}
 
-	/// <summary>
-	/// Remove the captured entries if bigger than the rollingBufferSize 
-	/// </summary>
-	/// <param name="rollingBufferSize"></param>
-	private void RemoveOlderEntriesFromCachedBuffer(int rollingBufferSize)
-	{
-		List<DeveloperUser> developerUsers = GetAllUsersOfType(DeveloperUserType.Captured);
-		
-		developerUsers.Sort((x, y) => y.CreatedDate.CompareTo(x.CreatedDate));
-
-		for (int i = rollingBufferSize; i < developerUsers.Count; i++)
-		{
-			DeleteUser(developerUsers[i]);
-		}
-	}
 	
 	/// <summary>
 	/// Copy the inventory state from a developer user to another
@@ -790,77 +773,6 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
-	/// It will try to get the user developer from the local disk
-	/// The file name is the gamer tag for the user developer
-	/// <param name="developerUserType">Defines the folder that the user is saved.</param>
-	/// </summary>
-	private bool TryGetCachedUser(List<string> gamerTags, DeveloperUserType developerUserType, out List<DeveloperUser> cachedUsers)
-	{
-		cachedUsers = new List<DeveloperUser>();
-		
-		string userPath = GetFullPath(developerUserType);
-
-		string[] files = Directory.GetFiles(userPath);
-
-		bool foundAny = false;
-		
-		foreach (var file in files)
-		{
-			string gamerTag = Path.GetFileNameWithoutExtension(file);
-			if (gamerTags.Contains(gamerTag))
-			{
-				string cachedUserJson = File.ReadAllText(file);
-				DeveloperUser developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
-
-				if (!long.TryParse(gamerTag, out developerUser.GamerTag))
-				{
-					developerUser.IsCorrupted = true;
-				}
-
-				developerUser.DeveloperUserType = (int)developerUserType; // Override the developer type based on the folder
-				
-				cachedUsers.Add(developerUser);
-
-				foundAny = true;
-			}
-		}
-		
-		return foundAny;
-	}
-	
-	/// <summary>
-	/// A utility that get the current stats for a player using the stats API
-	/// </summary>
-	/// <param name="uid"></param>
-	/// <param name="statApi"></param>
-	/// <returns></returns>
-	private async Task<Dictionary<string, StatsResponse>> GetStatMap(long uid, IStatsApi statApi)
-	{
-		string[] statsKeys = new string[]
-		{
-			"game.public.player.{0}",
-			"game.private.player.{0}",
-			"client.public.player.{0}",
-			"client.private.player.{0}"
-		};
-		
-		Dictionary<string, StatsResponse> statsResponses = new Dictionary<string, StatsResponse>();
-
-
-		List<Task> statsTasks = new List<Task>();
-		foreach (var statKey in statsKeys)
-		{
-			var statsPromise = statApi.ObjectGet(string.Format(statKey, uid)).Then(item => statsResponses.Add(statKey, item));
-			
-			statsTasks.Add(statsPromise.TaskFromPromise());
-		}
-
-		await Task.WhenAll(statsTasks.ToArray());
-		
-		return statsResponses;
-	}
-	
-	/// <summary>
 	/// Create a signed requester by passing the gamer tag, cid, pid and secret
 	/// </summary>
 	/// <param name="gamerTag"></param>
@@ -931,6 +843,95 @@ public class DeveloperUserManagerService
 	{
 		IRequester requester = CreateSignedRequester(gamerTag, cid, pid, secret);
 		return new StatsApi(requester);
+	}
+	
+	
+	/// <summary>
+	/// It will try to get the user developer from the local disk
+	/// The file name is the gamer tag for the user developer
+	/// <param name="developerUserType">Defines the folder that the user is saved.</param>
+	/// </summary>
+	private bool TryGetCachedUser(List<string> gamerTags, DeveloperUserType developerUserType, out List<DeveloperUser> cachedUsers)
+	{
+		cachedUsers = new List<DeveloperUser>();
+		
+		string userPath = GetFullPath(developerUserType);
+
+		string[] files = Directory.GetFiles(userPath);
+
+		bool foundAny = false;
+		
+		foreach (var file in files)
+		{
+			string gamerTag = Path.GetFileNameWithoutExtension(file);
+			if (gamerTags.Contains(gamerTag))
+			{
+				string cachedUserJson = File.ReadAllText(file);
+				DeveloperUser developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
+
+				if (!long.TryParse(gamerTag, out developerUser.GamerTag))
+				{
+					developerUser.IsCorrupted = true;
+				}
+
+				developerUser.DeveloperUserType = (int)developerUserType; // Override the developer type based on the folder
+				
+				cachedUsers.Add(developerUser);
+
+				foundAny = true;
+			}
+		}
+		
+		return foundAny;
+	}
+	
+	/// <summary>
+	/// A utility that get the current stats for a player using the stats API
+	/// </summary>
+	/// <param name="uid"></param>
+	/// <param name="statApi"></param>
+	/// <returns></returns>
+	private async Task<Dictionary<string, StatsResponse>> GetStatMap(long uid, IStatsApi statApi)
+	{
+		string[] statsKeys = new string[]
+		{
+			"game.public.player.{0}",
+			"game.private.player.{0}",
+			"client.public.player.{0}",
+			"client.private.player.{0}"
+		};
+		
+		Dictionary<string, StatsResponse> statsResponses = new Dictionary<string, StatsResponse>();
+
+
+		List<Task> statsTasks = new List<Task>();
+		foreach (var statKey in statsKeys)
+		{
+			var statsPromise = statApi.ObjectGet(string.Format(statKey, uid)).Then(item => statsResponses.Add(statKey, item));
+			
+			statsTasks.Add(statsPromise.TaskFromPromise());
+		}
+
+		await Task.WhenAll(statsTasks.ToArray());
+		
+		return statsResponses;
+	}
+	
+	
+	/// <summary>
+	/// A utility that remove the captured entries if bigger than the rollingBufferSize 
+	/// </summary>
+	/// <param name="rollingBufferSize"></param>
+	private void RemoveOlderEntriesFromCachedBuffer(int rollingBufferSize)
+	{
+		List<DeveloperUser> developerUsers = GetAllUsersOfType(DeveloperUserType.Captured);
+		
+		developerUsers.Sort((x, y) => y.CreatedDate.CompareTo(x.CreatedDate));
+
+		for (int i = rollingBufferSize; i < developerUsers.Count; i++)
+		{
+			DeleteUser(developerUsers[i]);
+		}
 	}
 	
 	/// <summary>

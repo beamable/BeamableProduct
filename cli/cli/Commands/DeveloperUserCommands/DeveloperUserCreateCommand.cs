@@ -11,11 +11,11 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("alias", ""), (args, s) => { args.Alias = s; });
-		AddOption(new ConfigurableOption("template", ""), (args, s) => { args.TemplateGamerTag = s; });
-		AddOption(new ConfigurableOption("description", ""), (args, s) => { args.Description = s; });
-		AddOption(new ConfigurableIntOption("user-type", ""), ((args, number) => { args.DeveloperUserType = (DeveloperUserType)number; }));
-		AddOption(new ConfigurableOptionList("tags", ""), (args, s) =>
+		AddOption(new ConfigurableOption("alias", "The alias is a chosen name for this player which is not the same as the player name in the backend"), (args, s) => { args.Alias = s; });
+		AddOption(new ConfigurableOption("template", "A gamer tag to a template that will be used to copy the stats and inventory to the created player"), (args, s) => { args.TemplateGamerTag = s; });
+		AddOption(new ConfigurableOption("description", "A shortly description of this new player"), (args, s) => { args.Description = s; });
+		AddOption(new ConfigurableIntOption("user-type", "The user type of this player 0 - Captured 1 - Local 2 - Shared"), ((args, number) => { args.DeveloperUserType = (DeveloperUserType)number; }));
+		AddOption(new ConfigurableOptionList("tags", "A list of tags to set in this new player (only locally)"), (args, s) =>
 		{
 			foreach (var tag in s)
 			{
@@ -23,15 +23,13 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 			}
 		});
 	}
-
-	public override async Task Handle(DeveloperUserCreateArgs args)
+	
+	public override async Task<DeveloperUserResult> GetResult(DeveloperUserCreateArgs args)
 	{
-		await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType);
-	}
-
-	public override Task<DeveloperUserResult> GetResult(DeveloperUserCreateArgs args)
-	{
-		return Task.FromResult(new DeveloperUserResult());
+		return new DeveloperUserResult
+		{
+			CreatedUsers = new List<DeveloperUser> { await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType) }
+		};
 	}
 }
 

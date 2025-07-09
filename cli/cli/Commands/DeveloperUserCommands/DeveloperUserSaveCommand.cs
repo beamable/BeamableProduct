@@ -11,11 +11,11 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOptionList("access-token", ""), (args, s) => { args.AccessToken = s.ToList(); } );
-		AddOption(new ConfigurableOptionList("refresh-token", ""), (args, s) => { args.RefreshToken = s.ToList(); } );
-		AddOption(new ConfigurableOptionList("pid", ""), (args, s) => { args.Pid = s.ToList(); } );
-		AddOption(new ConfigurableOptionList("cid", ""), (args, s) => { args.Cid = s.ToList(); } );
-		AddOption(new ConfigurableOptionList("gamer-tag", ""), (args, s) => { args.GamerTag = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("access-token", "The access token to be saved"), (args, s) => { args.AccessToken = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("refresh-token", "The refresh token to be saved"), (args, s) => { args.RefreshToken = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("pid", "The PID of the user"), (args, s) => { args.Pid = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("cid", "The CID of the user"), (args, s) => { args.Cid = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("gamer-tag", "The Gamer Tag of the user"), (args, s) => { args.GamerTag = s.ToList(); } );
 	}
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserSaveArgs args)
