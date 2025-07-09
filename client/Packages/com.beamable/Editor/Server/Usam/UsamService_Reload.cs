@@ -29,7 +29,7 @@ namespace Beamable.Server.Editor.Usam
 			// make sure the cli has been initialized, 
 			//  otherwise there may be settings or files that haven't 
 			//  been flushed yet. 
-			await _ctx.BeamCli.OnReady;
+			// await _ctx.BeamCli.OnReady;
 
 			var command = _cli.UnityManifest();
 			var checkCommand = _cli.ChecksScan(new ChecksScanArgs());

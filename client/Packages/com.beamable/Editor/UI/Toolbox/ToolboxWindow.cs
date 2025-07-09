@@ -1,4 +1,6 @@
-using Beamable.Editor.Login.UI;
+
+
+using System;
 
 namespace Beamable.Editor.Toolbox.UI
 {
@@ -10,7 +12,8 @@ namespace Beamable.Editor.Toolbox.UI
 		public static void Init()
 		{
 			// toolbox no longer exists in 2.0+, so instead, we'll open the login page. 
-			LoginWindow.Show();
+			// LoginWindow.Show();
+			throw new NotImplementedException("todo; open the new account window");
 		}
 	}
 }

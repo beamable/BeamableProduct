@@ -258,7 +258,13 @@ MonoImporter:
 	{
 		if (runtimeType.Assembly == typeof(UnityCliGenerator).Assembly)
 		{
-			return new CodeTypeReference(GetResultClassName(runtimeType));
+			var type = new CodeTypeReference(GetResultClassName(runtimeType));
+			if (runtimeType.IsArray)
+			{
+				type = new CodeTypeReference(type, 1);
+			}
+
+			return type;
 		}
 
 		if (runtimeType.IsGenericType)

@@ -32,7 +32,7 @@ namespace Editor.UI.ContentWindow
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
 			
-			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
+			string realmName = BeamEditorContext.Default.BeamCli.CurrentRealm.DisplayName;
 
 			void PublishContents()
 			{
@@ -55,7 +55,7 @@ namespace Editor.UI.ContentWindow
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
 			
-			string realmName = BeamEditorContext.Default.CurrentRealm.DisplayName;
+			string realmName = BeamEditorContext.Default.BeamCli.CurrentRealm.DisplayName;
 
 			void RevertContent()
 			{

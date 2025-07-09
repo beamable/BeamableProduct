@@ -303,8 +303,8 @@ namespace Editor.ContentService
 
 			void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
 			{
-				string currentCid = _beamContext.CurrentRealm.Cid;
-				string currentPid = _beamContext.CurrentRealm.Pid;
+				string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
+				string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
 
 				bool ValidateManifest(LocalContentManifest item) => item.OwnerCid == currentCid && item.OwnerPid == currentPid;
 

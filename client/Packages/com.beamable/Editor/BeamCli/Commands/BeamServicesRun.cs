@@ -6,10 +6,12 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ServicesRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
+        /// <summary>[DEPRECATED] Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
+        public bool forceAmdCpuArch;
         /// <summary>The ids for the services you wish to deploy. Ignoring this option deploys all services</summary>
         public string[] ids;
-        /// <summary>Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
-        public bool forceAmdCpuArch;
+        /// <summary>By default, this command forces the services to run with amd64 CPU architecture, which is the architecture used in Docker</summary>
+        public bool forceLocalCpu;
         /// <summary>Automatically remove service containers after they exit</summary>
         public bool keepContainers;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -17,6 +19,11 @@ namespace Beamable.Editor.BeamCli.Commands
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
+            // If the forceAmdCpuArch value was not default, then add it to the list of args.
+            if ((this.forceAmdCpuArch != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--force-amd-cpu-arch=" + this.forceAmdCpuArch));
+            }
             // If the ids value was not default, then add it to the list of args.
             if ((this.ids != default(string[])))
             {
@@ -26,10 +33,10 @@ namespace Beamable.Editor.BeamCli.Commands
                     genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
                 }
             }
-            // If the forceAmdCpuArch value was not default, then add it to the list of args.
-            if ((this.forceAmdCpuArch != default(bool)))
+            // If the forceLocalCpu value was not default, then add it to the list of args.
+            if ((this.forceLocalCpu != default(bool)))
             {
-                genBeamCommandArgs.Add(("--force-amd-cpu-arch=" + this.forceAmdCpuArch));
+                genBeamCommandArgs.Add(("--force-local-cpu=" + this.forceLocalCpu));
             }
             // If the keepContainers value was not default, then add it to the list of args.
             if ((this.keepContainers != default(bool)))

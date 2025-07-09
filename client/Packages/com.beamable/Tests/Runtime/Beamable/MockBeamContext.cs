@@ -19,6 +19,8 @@ namespace Beamable.Tests.Runtime
 	{
 		public string Cid { get; set; } = BeamableTest.DEFAULT_CID;
 		public string Pid { get; set; } = BeamableTest.DEFAULT_PID;
+		public string HostUrl => "https://test.fake.does-not-exist.beamable.com";
+		public string PortalUrl => "https://test.fake.portal.does-not-exist.beamable.com";
 	}
 
 	public class MockBeamContext : BeamContext

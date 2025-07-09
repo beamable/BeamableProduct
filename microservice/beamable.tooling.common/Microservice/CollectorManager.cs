@@ -1,4 +1,3 @@
-using System.Collections;
 using Beamable.Common;
 using Beamable.Server.Common;
 using microservice.Extensions;
@@ -13,47 +12,23 @@ using System.Text;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Util;
 using Beamable.Server;
-using beamable.tooling.common.Microservice;
+using System.Reflection;
 using ZLogger;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
-namespace cli.Services;
-
 [Serializable]
-public class CollectorZapcoreEntry
+public class CollectorVersion
 {
-	public string Level;
-	public DateTime Time;
-	public string LoggerName;
-
-	public string Message;
-
-	public CollectorCaller Caller;
-
-	public string Stack;
-
-}
-
-[Serializable]
-public class CollectorCaller
-{
-	public bool Defined;
-
-	public long PC;
-
-	public string File;
-
-	public int Line;
-
-	public string Function;
+	public string collectorVersion;
 }
 
 [Serializable]
 public class CollectorDiscoveryEntry
 {
+	public string version;
 	public string status;
 	public int pid;
-	public List<CollectorZapcoreEntry> logs;
+	public string otlpEndpoint;
 }
 
 public class CollectorInfo
@@ -64,35 +39,38 @@ public class CollectorInfo
 
 public class CollectorManager
 {
-	public const int ReceiveTimeout = 10;
+	public const int ReceiveTimeout = 100;
 	public const int ReceiveBufferSize = 4096;
-
 
 	private const string KEY_VERSION = "BEAM_VERSION";
 	private const string KEY_FILE = "BEAM_FILE_NAME";
 
 	private const string COLLECTOR_DOWNLOAD_URL_TEMPLATE =
 		"https://collectors.beamable.com/version/" + KEY_VERSION + "/" + KEY_FILE;
-	
-	public static string CollectorDownloadUrl =
-		"https://collectors.beamable.com/version/BEAM_VERSION/BEAM_FILE_NAME";
 
 	
 	
 	
 	public static string configFileName = "clickhouse-config.yaml";
-	private const int attemptsToConnect = 3;
-	private const int attemptsBeforeFailing = 3;
+	private const int attemptsToConnect = 50;
+	private const int attemptsBeforeFailing = 10;
 	private const int delayBeforeNewAttempt = 500;
+	private const int delayBeforeNewMessage = 100;
 
 	public static CollectorStatus CollectorStatus;
 
-	public static string GetCollectorExecutablePath()
-	{
-		var collectorFileName = GetCollectorName();
-		var collectorFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, collectorFileName);
+	private static string _cachedVersion;
 
-		return collectorFilePath;
+	public static string Version
+	{
+		get
+		{
+			if (_cachedVersion == null)
+			{
+				_cachedVersion = GetCollectorVersion();
+			}
+			return _cachedVersion;
+		}
 	}
 
 	public static OSPlatform GetCurrentPlatform()
@@ -160,14 +138,40 @@ public class CollectorManager
 		return collectorFileName;
 	}
 
-	public static string GetCollectorName()
+	public static string GetCollectorVersion()
 	{
-		var platform = GetCurrentPlatform();
-		var arch = RuntimeInformation.OSArchitecture;
-		return GetCollectorName(platform, arch);
+		var assembly = Assembly.GetExecutingAssembly();
+		var resourceName = "beamable.tooling.common.Microservice.VersionManagement.collector-version.json";
+
+		var version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
+
+		if (version.StartsWith("0.0.123") || version == "1.0.0")
+		{
+			// if the version looks like a local dev version, then
+			//  force the version to be THE local dev version
+			return "0.0.123";
+		}
+
+		Stream stream = assembly.GetManifestResourceStream(resourceName);
+
+		if (stream == null)
+		{
+			throw new FileNotFoundException($"Collector version file not found: '{resourceName}'.\nAvailable resources:\n" +
+			                                string.Join("\n", assembly.GetManifestResourceNames()));
+		}
+
+		string versionJson;
+
+		using(stream)
+		using (var reader = new StreamReader(stream))
+		{
+			versionJson = reader.ReadToEnd();
+		}
+
+		return JsonConvert.DeserializeObject<CollectorVersion>(versionJson).collectorVersion;
 	}
 
-	public static string GetCollectorBasePathForCli(string version=null)
+	public static string GetCollectorBasePathForCli()
 	{
 		/*
 		 * there are several common cases,
@@ -196,20 +200,9 @@ public class CollectorManager
 		 * - 
 		 * 
 		 */
-
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
-		if (version.StartsWith("0.0.123") || version == "1.0.0")
-		{
-			// if the version looks like a local dev version, then 
-			//  force the version to be THE local dev version
-			version = "0.0.123";
-		}
 		
 		string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var root = Path.Combine(localAppData, "beam", "collectors", version);
+		var root = Path.Combine(localAppData, "beam", "collectors", Version);
 		return root;
 	}
 
@@ -224,13 +217,8 @@ public class CollectorManager
 		string absBasePath, 
 		bool allowDownload,
 		OSPlatform platform, 
-		Architecture arch, 
-		string version=null)
+		Architecture arch)
 	{
-		if (string.IsNullOrEmpty(version))
-		{
-			version = BeamAssemblyVersionUtil.GetVersion<CollectorManager>();
-		}
 		
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
@@ -241,7 +229,7 @@ public class CollectorManager
 		if (!File.Exists(collectorPath) && allowDownload)
 		{
 			var collectorUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, collectorName + ".gz");
 			
 			itemsToDownload.Add(new (collectorUrl, collectorPath, true));
@@ -250,7 +238,7 @@ public class CollectorManager
 		if (!File.Exists(configPath) && allowDownload)
 		{
 			var configUrl = COLLECTOR_DOWNLOAD_URL_TEMPLATE
-				.Replace(KEY_VERSION, version)
+				.Replace(KEY_VERSION, Version)
 				.Replace(KEY_FILE, configFileName + ".gz");
 			itemsToDownload.Add(new (configUrl, configPath, false));
 		}
@@ -364,21 +352,23 @@ public class CollectorManager
         }
     }
 	
-	public static Socket GetSocket(string host, int portNumber, ILogger logger)
+	public static Socket GetSocket(int portNumber, ILogger logger)
 	{
-		var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-		var ed = new IPEndPoint(IPAddress.Parse(host), portNumber);
+		var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+		var ed = new IPEndPoint(IPAddress.Any, portNumber);
 
 		logger.LogInformation($"collector discovery acquiring socket address=[{ed}]");
 		socket.ReceiveTimeout = CollectorManager.ReceiveTimeout;
 		socket.ReceiveBufferSize = CollectorManager.ReceiveBufferSize;
 		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
+		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
 		socket.Bind(ed);
 
 		return socket;
 	}
 
-	public static async Task<int> StartCollector(
+	public static async Task<CollectorStatus> StartCollector(
 		string absBasePath, 
 		bool allowDownload,
 		bool detach, 
@@ -387,51 +377,8 @@ public class CollectorManager
 	{
 		//TODO Start a signed request to Beamo asking for credentials
 
-		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
-		
-		var connectedPromise = new Promise<int>();
-
-		_ = Task.Run(async () =>
-		{
-			try
-			{
-				await CollectorDiscovery(collectorInfo.filePath, detach, cts, connectedPromise, logger);
-			}
-			catch (Exception ex)
-			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace} All Collector Logs=[\n{
-					string.Join("\n", CollectorStatus.logs.Select(l => $"[{l.Timestamp}] {l.Level} - {l.Message}").ToList())
-				}]");
-
-				Environment.Exit(1);
-				throw;
-			}
-		});
-
-		var collectorProcessId = await connectedPromise; // the first time we wait for the collector to be up before continuing
-
-		return collectorProcessId;
-	}
-
-	public static void AddDefaultCollectorHostAndPortFallback()
-	{
-		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
-		if(string.IsNullOrEmpty(port))
-		{
-			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT, Otel.ENV_COLLECTOR_PORT_DEFAULT_VALUE);
-		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-		if(string.IsNullOrEmpty(host))
-		{
-			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST, Otel.ENV_COLLECTOR_HOST_DEFAULT_VALUE);
-		}
-	}
-
-	private static async Task CollectorDiscovery(string collectorExecutablePath, bool detach, CancellationTokenSource cts, Promise<int> connectedPromise, ILogger logger)
-	{
 		AddDefaultCollectorHostAndPortFallback();
-		
+
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
 		if(string.IsNullOrEmpty(port))
 		{
@@ -452,15 +399,56 @@ public class CollectorManager
 
 		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
 
-		var socket = GetSocket(host, portNumber, logger);
+		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
+		
+		var connectedPromise = new Promise<CollectorStatus>();
 
+		Socket socket = GetSocket(portNumber, logger);
+
+		var backgroundTask = Task.Run(async () =>
+		{
+			try
+			{
+				await CollectorDiscovery(collectorInfo.filePath, socket, detach, cts, connectedPromise, logger);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+
+				Environment.Exit(1);
+				throw;
+			}
+		});
+
+		var collectorStatus = await connectedPromise; // the first time we wait for the collector to be up before continuing
+
+		return collectorStatus;
+	}
+
+	public static void AddDefaultCollectorHostAndPortFallback()
+	{
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
+		if(string.IsNullOrEmpty(port))
+		{
+			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT, Otel.ENV_COLLECTOR_PORT_DEFAULT_VALUE);
+		}
+
+		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
+		if(string.IsNullOrEmpty(host))
+		{
+			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST, Otel.ENV_COLLECTOR_HOST_DEFAULT_VALUE);
+		}
+	}
+
+	private static async Task CollectorDiscovery(string collectorExecutablePath, Socket socket, bool detach, CancellationTokenSource cts, Promise<CollectorStatus> connectedPromise, ILogger logger)
+	{
 		int alarmCounter = 0;
 
 		CollectorStatus = await IsCollectorRunning(socket, cts.Token, logger);
 		if (!CollectorStatus.isRunning)
 		{
 			logger.ZLogInformation($"Starting local process for collector");
-			await StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
+			StartCollectorProcess(collectorExecutablePath, detach, logger, cts);
 		}
 		
 		while (!cts.IsCancellationRequested) // Should we stop this after a number of attempts to find the collector?
@@ -480,7 +468,7 @@ public class CollectorManager
 				if (!connectedPromise.IsCompleted)
 				{
 					logger.ZLogInformation($"Found collector! Events can now be sent to collector");
-					connectedPromise.CompleteSuccess(CollectorStatus.pid);
+					connectedPromise.CompleteSuccess(CollectorStatus);
 				}
 				alarmCounter = 0;
 			}
@@ -489,78 +477,137 @@ public class CollectorManager
 		}
 	}
 
-	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
+	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger, int attemptsAmountOverride = attemptsToConnect)
 	{
-		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
+		var results = new List<CollectorStatus>();
 
-		for (int i = 0; i < attemptsToConnect; i++)
+		for (int i = 0; i < attemptsAmountOverride; i++)
 		{
-			if (token.IsCancellationRequested)
-			{
-				return new CollectorStatus()
-				{
-					isRunning = false,
-					isReady = false
-				};
-			}
+			var runningResult = await GetRunningCollectorMessage(socket, token);
 
-			if (socket.Available == 0)
+			if (!runningResult.foundCollector)
 			{
-				await Task.Delay(delayBeforeNewAttempt);
+				await Task.Delay(delayBeforeNewMessage);
 				continue;
 			}
 
-			var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
+			var collector = runningResult.message;
 
-			if (byteCount == 0)
+			var alreadyAdded = results.FirstOrDefault(r => r.version == collector.version);
+
+			if (alreadyAdded == null)
 			{
-				// This means we didn't get anything from the collector, so something wrong happened
-				throw new Exception("Didn't get any message from the collector after the timeout");
+				results.Add(GetCollectorStatus(collector));
+			}
+			await Task.Delay(delayBeforeNewMessage);
+		}
+
+		//TODO: This does not guarantee that will have all collectors running in it, since they are fighting
+		// for the broadcasting channel. Is there a better way to handle this?
+		return results;
+	}
+
+	public static async Task<(bool foundCollector, CollectorDiscoveryEntry message)> GetRunningCollectorMessage(Socket socket, CancellationToken token)
+	{
+		var buffer = new ArraySegment<byte>(new byte[socket.ReceiveBufferSize]);
+
+		if (token.IsCancellationRequested)
+		{
+			return (false, null);
+		}
+
+		if (socket.Available == 0)
+		{
+			return (false, null);
+		}
+
+		var byteCount = await socket.ReceiveAsync(buffer, SocketFlags.None);
+
+		if (byteCount == 0)
+		{
+			// This means we didn't get anything from the collector, so something wrong happened
+			throw new Exception("Didn't get any message from the collector after the timeout");
+		}
+
+		var collectorMessage = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
+
+		var collector = JsonConvert.DeserializeObject<CollectorDiscoveryEntry>(collectorMessage, UnitySerializationSettings.Instance);
+
+		{
+			// it is POSSIBLE that a dead collector's message is in the socket receive queue,
+			//  so before promising that this service exists, do a quick process-check to
+			//  make sure it is actually alive.
+			var isProcessNotWorking = false;
+			try
+			{
+				Process.GetProcessById(collector.pid);
+			}
+			catch
+			{
+				isProcessNotWorking = true;
 			}
 
-			var collectorMessage = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
-
-			var collector = JsonConvert.DeserializeObject<CollectorDiscoveryEntry>(collectorMessage, UnitySerializationSettings.Instance);
-
+			if (isProcessNotWorking)
 			{
-				// it is POSSIBLE that a dead collector's message is in the socket receive queue,
-				//  so before promising that this service exists, do a quick process-check to
-				//  make sure it is actually alive.
-				var isProcessNotWorking = false;
-				try
-				{
-					Process.GetProcessById(collector.pid);
-				}
-				catch
-				{
-					isProcessNotWorking = true;
-				}
-
-				if (isProcessNotWorking)
-					continue;
-
+				return (false, null);
 			}
-			var logs = collector.logs.Select(l => new CollectorLogEntry() { Level = l.Level, Message = l.Message , Timestamp = l.Time}).
-				OrderBy(t => t.Timestamp).ToList();
+		}
+
+		return (true, collector);
+	}
+
+	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
+	{
+		for (int i = 0; i < attemptsToConnect; i++)
+		{
+			var runningResult = await GetRunningCollectorMessage(socket, token);
+
+			if (!runningResult.foundCollector)
+			{
+				await Task.Delay(delayBeforeNewMessage);
+				continue;
+			}
+
+			CollectorDiscoveryEntry collector = runningResult.message;
+
+			// We check if the version of the found collector matches the version supported
+			if (collector.version != Version)
+			{
+				await Task.Delay(delayBeforeNewMessage);
+				continue;
+			}
+
+			return GetCollectorStatus(collector);
+		}
+
+		return GetCollectorStatus();
+	}
+
+	public static CollectorStatus GetCollectorStatus(CollectorDiscoveryEntry collectorDiscovered = null)
+	{
+		if (collectorDiscovered == null)
+		{
+			return new CollectorStatus()
+			{
+				isRunning = false,
+				isReady = false,
+				pid = 0,
+			};
+		}
+		else
+		{
 			return new CollectorStatus()
 			{
 				isRunning = true,
-				isReady = collector.status == "READY",
-				pid = collector.pid,
-				logs = logs
+				isReady = collectorDiscovered.status == "READY",
+				pid = collectorDiscovered.pid,
+				otlpEndpoint = collectorDiscovered.otlpEndpoint,
+				version = collectorDiscovered.version
 			};
 		}
-
-		return new CollectorStatus()
-		{
-			isRunning = false,
-			isReady = false,
-			pid = 0,
-			logs = CollectorStatus?.logs
-		};
 	}
 
-	public static async Task StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
+	public static void StartCollectorProcess(string collectorExecutablePath, bool detach, ILogger logger, CancellationTokenSource cts)
 	{
 		logger.ZLogInformation($"Using Collector Executable Path: [{collectorExecutablePath}]");
 
@@ -594,7 +641,8 @@ public class CollectorManager
 			}
 		}
 
-		var workingDir = Path.GetDirectoryName(fileExe);
+		//TODO: We should make it possible to pass a OTLP PORT that is free for the collector, it being the same one we are using here in the first place
+
 		process.StartInfo.FileName = fileExe;
 		process.StartInfo.Arguments = arguments;
 		process.StartInfo.WorkingDirectory = Path.GetDirectoryName(fileExe);
@@ -605,15 +653,21 @@ public class CollectorManager
 		process.EnableRaisingEvents = true;
 		process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
-		Log.Verbose($"Executing: [{fileExe} {arguments}]");
+		//TODO: Should we check if that env var was already set and use it?
+		process.StartInfo.Environment.Add("BEAM_COLLECTOR_PROMETHEUS_PORT", PortUtil.FreeTcpPort().ToString());
+
+		var localEndpoint = PortUtil.FreeEndpoint().Replace("http://", "");
+		process.StartInfo.Environment.Add("BEAM_OTLP_HTTP_ENDPOINT", localEndpoint);
+
+		logger.ZLogInformation($"Executing: [{fileExe} {arguments}]");
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector) {args.Data}");
+			logger.ZLogInformation($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			Log.Verbose($"(collector err) {args.Data}");
+			logger.ZLogInformation($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
@@ -625,8 +679,5 @@ public class CollectorManager
 
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
-		await Task.Delay(100); // Not sure if this is necessary, is jut to take the time for the process to start before we listen to incoming data
-		
-
 	}
 }

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
@@ -53,7 +54,7 @@ public class MachineHelper
 			// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
 			cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
 			// Build the actual command to run at this path and pipe it into the cmd.exe.
-			cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+			cmd += @"$bin + ' -projectfiles ""' + $pwd + '\' + $uproject + '""' | cmd.exe";
 
 			// Run the command and print the result
 			var _ = ExecutePowershellCommand(cmd);
@@ -67,11 +68,19 @@ public class MachineHelper
 		processStartInfo.Arguments = $"-Command \"{command}\"";
 		processStartInfo.UseShellExecute = false;
 		processStartInfo.RedirectStandardOutput = true;
+		processStartInfo.CreateNoWindow = true;
+		processStartInfo.RedirectStandardError = true;
 
 		using var process = new Process();
 		process.StartInfo = processStartInfo;
 		process.Start();
 		string output = process.StandardOutput.ReadToEnd();
+		string error = process.StandardError.ReadToEnd(); 
+		process.WaitForExit();
+		if (string.IsNullOrEmpty(error))
+		{
+			BeamableLogger.LogError(error);
+		}
 		return output;
 	}
 }

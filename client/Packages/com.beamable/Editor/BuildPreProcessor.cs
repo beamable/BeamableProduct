@@ -85,7 +85,7 @@ namespace Beamable.Editor
 					Name = "Apply Editor Values and Continue",
 					OnClick = () =>
 					{
-						BeamEditorContext.Default.WriteConfig();
+						BeamEditorContext.Default.CommitConfigDefaults();
 						return true;
 					},
 					Color = new Color(0.29f, 1f, 0.31f),

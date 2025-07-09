@@ -52,6 +52,7 @@ using Beamable.Tooling.Common;
 using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
+using cli.Services.Web;
 using cli.OtelCommands;
 using cli.OtelCommands.Grafana;
 using Microsoft.Extensions.Logging;
@@ -204,6 +205,7 @@ public class App
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		services.AddSingleton<UnitySourceGenerator>();
 		services.AddSingleton<UnrealSourceGenerator>();
+		services.AddSingleton<WebSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<UnityCliGenerator>();
@@ -545,6 +547,7 @@ public class App
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
 		
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
+		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
@@ -598,7 +601,8 @@ public class App
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
-
+		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 
@@ -1109,10 +1113,11 @@ public class App
 					{
 						Console.Error.WriteLine(cliException.Message);
 					}
-					context.ExitCode = cliException.NonZeroOrOneExitCode;
+					Environment.ExitCode = context.ExitCode = cliException.NonZeroOrOneExitCode;
+					
 					break;
 				default:
-					context.ExitCode = 1;
+					Environment.ExitCode = context.ExitCode = 1;
 					Console.Error.WriteLine(ex.Message);
 					Console.Error.WriteLine(ex.StackTrace);
 					break;

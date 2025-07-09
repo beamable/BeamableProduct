@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: BeamIconMat
   m_Shader: {fileID: 4800000, guid: dbaa3cf11e75847c38026e85137ee8ed, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,6 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -78,6 +81,6 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RectPosition: {r: 26, g: 16, b: -15, a: -167}
-    - _Size: {r: 1920, g: 73, b: 974, a: 613}
+    - _RectPosition: {r: 19.999985, g: 588, b: 264, a: 111}
+    - _Size: {r: 277.5, g: 96, b: 877.5, a: 729}
   m_BuildTextureStacks: []

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --version) VERSION="$2"; shift ;;
+    *) echo "Unknown parameter passed: $1"; exit 1 ;;
+  esac
+  shift
+done
+
 platforms=("windows/amd64" "windows/arm64" "linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64")
 
 
@@ -27,6 +35,8 @@ echo "Output:${OUTPUT_DIRECTORY}"
 
 cd beamable-collector/
 
+echo "Building with version: $VERSION"
+
 for platform in "${platforms[@]}"; do
     OS=${platform%/*}
     ARCH=${platform#*/}
@@ -37,7 +47,7 @@ for platform in "${platforms[@]}"; do
     fi
     
     echo "Building Otel Collector for $OS/$ARCH..."
-    GOOS=$OS GOARCH=$ARCH go build -o "$OUTPUT_DIRECTORY/$output"
+    GOOS=$OS GOARCH=$ARCH go build  -ldflags "-X 'github.com/beamable/BeamableProduct/servicediscovery.Version=$VERSION'" -o "$OUTPUT_DIRECTORY/$output"
 done
 
 cd ..

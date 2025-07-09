@@ -12,8 +12,9 @@ namespace cli;
 public class ServicesRunCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
-	public bool forceAmdCpuArchitecture = false;
+	public bool forceLocalCpu = false;
 	public bool autoDeleteContainers;
+	public bool forceAmdCpuArchitecture;
 }
 
 public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
@@ -31,12 +32,20 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public override void Configure()
 	{
+		//This option is deprecated, we only keep it in here to give better error message in case of anyone using it still
+		AddOption(
+			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
+				"[DEPRECATED] Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
+			(args, i) => args.forceAmdCpuArchitecture = i);
+
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 		AddOption(
-			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
-				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
-			(args, i) => args.forceAmdCpuArchitecture = i);
+			new Option<bool>(new string[] { "--force-local-cpu", "-flcpu" }, () => false,
+				"By default, this command forces the services to run with amd64 CPU architecture, which is the architecture used in Docker"),
+			(args, i) => args.forceLocalCpu = i);
+
+
 		
 		AddOption(
 			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
@@ -52,6 +61,11 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public override async Task Handle(ServicesRunCommandArgs args)
 	{
+		if (args.forceAmdCpuArchitecture)
+		{
+			throw new CliException("Error: The option [--force-amd-cpu-arch, -fcpu] is obsolete. Amd CPU architecture is already being enforced by default");
+		}
+
 		_localBeamo = args.BeamoLocalSystem;
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
@@ -130,7 +144,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var sequence = Promise.Sequence(promises);
 					await sequence;
 
-					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, 
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, !args.forceLocalCpu,
 						autoDeleteContainers: args.autoDeleteContainers, 
 						buildPullImageProgress: (beamoId, progress) =>
 					{

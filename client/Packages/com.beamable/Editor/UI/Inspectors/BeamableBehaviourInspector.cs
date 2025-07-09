@@ -68,7 +68,7 @@ namespace Beamable.Editor.Inspectors
         {
             var api = BeamEditorContext.Default;
             string url =
-                $"{BeamableEnvironment.PortalUrl}/{ctx.Cid}/games/{api.ProductionRealm.Pid}/realms/{ctx.Pid}/players/{ctx.PlayerId}?refresh_token={api.Requester.Token.RefreshToken}";
+                $"{BeamableEnvironment.PortalUrl}/{ctx.Cid}/games/{api.BeamCli.ProductionRealm.Pid}/realms/{ctx.Pid}/players/{ctx.PlayerId}?refresh_token={api.Requester.Token.RefreshToken}";
             return url;
         }
     }
