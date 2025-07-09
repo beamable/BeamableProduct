@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using cli.DeploymentCommands;
+using cli.Services;
 
 namespace cli.Content;
 
@@ -24,13 +25,13 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 		var publishPromises = new List<Task>();
 		foreach (string manifestId in args.ManifestIdsToPublish)
 		{
-			publishPromises.Add(_contentService.PublishContent(manifestId, this.SendResults<ProgressStreamResultChannel, ContentProgressUpdateData>));
+			publishPromises.Add(_contentService.PublishContent(args.Lifecycle, manifestId, this.SendResults<ProgressStreamResultChannel, ContentProgressUpdateData>));
 		}
-
 		await Task.WhenAll(publishPromises);
 
 		return new();
 	}
+	
 }
 
 public class ContentPublishCommandArgs : ContentCommandArgs

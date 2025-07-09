@@ -48,7 +48,7 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 		var resetPromises = new List<Task<ContentSyncReport>>();
 		foreach (var manifestId in args.ManifestIdsToReset)
 		{
-			var task = _contentService.SyncLocalContent(manifestId, args.FilterType, args.Filter, args.SyncCreated,
+			var task = _contentService.SyncLocalContent(args.Lifecycle, manifestId, args.FilterType, args.Filter, args.SyncCreated,
 				args.SyncModified, args.SyncConflicts, args.SyncDeleted, args.TargetManifestUid, this.SendResults<ProgressStreamResultChannel, ContentProgressUpdateData>);
 				
 			resetPromises.Add(task);

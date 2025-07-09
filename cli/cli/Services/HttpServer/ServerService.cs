@@ -420,6 +420,11 @@ public class ServerReporterService : IDataReporterService
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
 						App.GlobalLogger.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
+						await Task.Delay(250);
+						if (_lifecycle.ShouldWaitForCancel)
+						{
+							await _lifecycle.WaitForCancelCompleted();
+						}
 						break;
 					}
 				}

@@ -952,6 +952,10 @@ public class App
 					{
 						const int GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT = 250;
 						await Task.Delay(GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT);
+						if (lifecycle.ShouldWaitForCancel)
+						{
+							await lifecycle.WaitForCancelCompleted();
+						}
 						Log.Global.LogDebug("Done waiting for graceful shutdown...");
 						Environment.Exit(0);
 					});
