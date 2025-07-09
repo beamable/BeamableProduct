@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Beamable.Server;
+using System.Text;
 using static cli.Unreal.UnrealSourceGenerator;
 
 namespace cli.Unreal;
@@ -91,7 +92,15 @@ public struct UnrealEndpointDeclaration
 		stringBuilder.Append("FString QueryParams = TEXT(\"\");\n\t");
 		stringBuilder.Append("QueryParams.Reserve(1024);\n\t");
 		stringBuilder.Append("bool bIsFirstQueryParam = true;\n\t");
-		stringBuilder.Append(string.Join("\n\t", RequestQueryParameters.Select(BuildAppendQueryParamImpl)));
+		try
+		{
+			stringBuilder.Append(string.Join("\n\t", RequestQueryParameters.Select(BuildAppendQueryParamImpl)));
+		}
+		catch (Exception e)
+		{
+			Log.Error($"Failed BuildAppendQueryParamImpl -- Endpoint={EndpointRoute}");
+			throw;
+		}
 
 		// Add line that builds the route in its entirety
 		stringBuilder.Append("\n\tRouteString.Appendf(TEXT(\"%s%s\"), *Route, *QueryParams);");
@@ -284,7 +293,7 @@ public struct UnrealEndpointDeclaration
 		}
 		else if (routeParameterDeclaration.PropertyUnrealType.IsUnrealGuid())
 		{
-			return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsWithHyphensLower));";
+			return $"Route = Route.Replace(TEXT(\"{{id}}\"), *{routeParameterDeclaration.PropertyName}.ToString(EGuidFormats::DigitsWithHyphensLower));";
 		}
 
 		// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
@@ -331,6 +340,14 @@ public struct UnrealEndpointDeclaration
 		else if (q.NonOptionalTypeName.IsUnrealBool())
 		{
 			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName} ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
+		}
+		else if (q.NonOptionalTypeName.IsUnrealDateTime() && isOptional)
+		{
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val.ToIso8601());\n\t");
+		}
+		else if (q.NonOptionalTypeName.IsUnrealDateTime())
+		{
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.ToIso8601());\n\t");
 		}
 		else
 		{
