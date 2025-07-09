@@ -455,7 +455,7 @@ namespace Beamable
 
 			oldScope?.Hydrate(_serviceScope);
 
-			var config = _serviceScope.GetService<IRuntimeConfigProvider>();
+			var config = Beam.RuntimeConfigProvider;
 			InitServices(config.Cid, config.Pid);
 			_behaviour.Initialize(this);
 			_initPromise = new Promise();
@@ -709,7 +709,7 @@ namespace Beamable
 			void SetupEmitEvents()
 			{
 				if (silent) return;
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
+				ContentApi.Instance.CompleteSuccess(Content);
 				OnReloadUser?.Invoke();
 			}
 

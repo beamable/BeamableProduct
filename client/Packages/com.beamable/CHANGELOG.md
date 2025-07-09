@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
 - `Core.Platform` namespace moved into `Beamable` namespace
 
+### Fixed
+- `Beam.SwitchToPid` resets content instance [3547](https://github.com/beamable/BeamableProduct/issues/3547)
+
 ## [2.4.0] - 2025-06-11 
 
 ### Fixed

@@ -401,6 +401,12 @@ namespace Beamable
 			{
 				await ctx.Stop();
 			}
+			
+			// when there are no running contexts, there can be no
+			//  assigned content singleton proxy. When a new context
+			//  gets started, this will be re-assigned to the new context's
+			//  content api.
+			ContentApi.Instance = new Promise<IContentApi>();
 		}
 
 		/// <summary>
