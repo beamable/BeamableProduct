@@ -9,6 +9,7 @@ import { AnnouncementsService } from '@/services/AnnouncementsService';
 import { AuthService } from '@/services/AuthService';
 import { StatsService } from '@/services/StatsService';
 import { BeamService } from '@/core/BeamService';
+import { LeaderboardsService } from '@/services/LeaderboardsService';
 
 /** The main class for interacting with the Beam Server SDK. */
 export class BeamServer extends BeamBase {
@@ -34,11 +35,13 @@ export class BeamServer extends BeamBase {
 
 export interface BeamServer {
   /** High-level account helper built on top of `beam.api.accounts.*` endpoints. */
-  account: (playerId: string) => AccountService;
+  account: (userId: string) => AccountService;
   /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints. */
-  announcements: (playerId: string) => AnnouncementsService;
+  announcements: (userId: string) => AnnouncementsService;
   /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
-  auth: (playerId: string) => AuthService;
+  auth: (userId: string) => AuthService;
+  /** High-level leaderboards helper built on top of `beam.api.leaderboards.*` endpoints. */
+  leaderboards: (userId: string) => LeaderboardsService;
   /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
-  stats: (playerId: string) => StatsService;
+  stats: (userId: string) => StatsService;
 }

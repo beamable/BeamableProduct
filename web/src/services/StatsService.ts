@@ -1,5 +1,24 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 
+export interface GetStatsParams {
+  /**
+   * The type of domain for the stats.
+   * @remarks 'client' for client-side stats, 'game' for game server stats.
+   * @default 'client'
+   */
+  domainType?: 'client' | 'game';
+  /**
+   * The type of access for the stats.
+   * @remarks 'public' for public stats, 'private' for private stats.
+   */
+  accessType: 'public' | 'private';
+  /**
+   * The specific stats to fetch.
+   * @remarks If not provided, all stats for the specified domain and access will be fetched.
+   */
+  stats?: string[];
+}
+
 export interface SetStatsParams {
   /**
    * The type of domain for the stats.
@@ -21,29 +40,60 @@ export interface SetStatsParams {
   emitAnalytics?: boolean;
 }
 
-export interface GetStatsParams {
-  /**
-   * The type of domain for the stats.
-   * @remarks 'client' for client-side stats, 'game' for game server stats.
-   * @default 'client'
-   */
-  domainType?: 'client' | 'game';
-  /**
-   * The type of access for the stats.
-   * @remarks 'public' for public stats, 'private' for private stats.
-   */
-  accessType: 'public' | 'private';
-  /**
-   * The specific stats to fetch.
-   * @remarks If not provided, all stats for the specified domain and access will be fetched.
-   */
-  stats?: string[];
-}
-
 export class StatsService extends ApiService {
   /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /**
+   * Fetches stats for the current player.
+   * @remarks Game domain stats can only be fetched by the game server.
+   * @example
+   * ```ts
+   * // client-side: fetch private or public stats for a client domain
+   * const stats = await beam.stats.get({
+   *   accessType: 'private', // or 'public'
+   *   stats: ['CURRENT_LEVEL', 'SCORE'], // optional, fetches all stats if not provided
+   * });
+   * // server-side: fetch private or public stats for a game domain
+   * const gameStats = await beamServer.stats(playerId).get({
+   *   domainType: 'game',
+   *   accessType: 'private', // or 'public'
+   *   stats: ['CURRENT_LEVEL', 'SCORE'], // optional, fetches all stats if not provided
+   * });
+   * ```
+   * @throws {BeamError} If the request fails or the stats do not exist.
+   */
+  async get(params: GetStatsParams): Promise<Record<string, string>> {
+    const { domainType = 'client', accessType, stats: keys = [] } = params;
+    const objectId = `${domainType}.${accessType}.player.${this.accountId}`;
+    const stats = keys.length > 0 ? keys.join(',') : undefined;
+    const { body } =
+      domainType === 'client'
+        ? await this.api.stats.getStatClientByObjectId(
+            objectId,
+            stats,
+            this.accountId,
+          )
+        : await this.api.stats.getStatByObjectId(
+            objectId,
+            stats,
+            this.accountId,
+          );
+
+    // convert all stats values to string
+    Object.keys(body.stats).forEach((key) => {
+      body.stats[key] = String(body.stats[key]);
+    });
+
+    if (!this.player) return body.stats;
+
+    this.player.stats = {
+      ...this.player.stats,
+      ...body.stats,
+    };
+    return body.stats;
   }
 
   /**
@@ -52,8 +102,8 @@ export class StatsService extends ApiService {
    * @example
    * ```ts
    * const stats = {
-   *  CURRENT_LEVEL: '10',
-   *  SCORE: '1000',
+   *   CURRENT_LEVEL: '10',
+   *   SCORE: '1000',
    * };
    * // client-side: set stats for a client domain
    * await beam.stats.set({
@@ -62,15 +112,16 @@ export class StatsService extends ApiService {
    * });
    * // server-side: set stats for a game domain
    * await beamServer.stats(playerId).set({
-   *  domainType: 'game',
-   *  accessType: 'private', // or 'public'
-   *  stats,
+   *   domainType: 'game',
+   *   accessType: 'private', // or 'public'
+   *   stats,
    * });
    * ```
+   * @throws {BeamError} If the request fails or the stats cannot be set.
    */
   async set(params: SetStatsParams): Promise<void> {
     const { domainType = 'client', accessType, stats, emitAnalytics } = params;
-    const objectId = `${domainType}.${accessType}.player.${this.playerIdOrThrow}`;
+    const objectId = `${domainType}.${accessType}.player.${this.accountId}`;
 
     // convert all stats values to string
     Object.keys(stats).forEach((key) => {
@@ -81,71 +132,19 @@ export class StatsService extends ApiService {
       ? await this.api.stats.postStatClientByObjectId(
           objectId,
           { set: { ...stats }, emitAnalytics },
-          this.playerIdOrThrow,
+          this.accountId,
         )
       : await this.api.stats.postStatByObjectId(
           objectId,
           { set: { ...stats } },
-          this.playerIdOrThrow,
+          this.accountId,
         );
 
     if (!this.player) return;
+
     this.player.stats = {
       ...this.player.stats,
       ...stats,
     };
-  }
-
-  /**
-   * Fetches stats for the current player.
-   * @remarks Game domain stats can only be fetched by the game server.
-   * @example
-   * ```ts
-   * // client-side: fetch specific private or public stats
-   * const stats = await beam.stats.get({
-   *   accessType: 'private', // or 'public'
-   *   stats: ['CURRENT_LEVEL', 'SCORE'],
-   * });
-   * // client-side: or fetch all private or public stats
-   * const allStats = await beam.stats.get({
-   *   accessType: 'private', // or 'public'
-   * });
-   * // server-side: fetch stats for a game domain
-   * const gameStats = await beamServer.stats(playerId).get({
-   *  domainType: 'game',
-   *  accessType: 'private', // or 'public'
-   *  stats: ['CURRENT_LEVEL', 'SCORE'],
-   * });
-   * ```
-   */
-  async get(params: GetStatsParams): Promise<Record<string, string>> {
-    const { domainType = 'client', accessType, stats: keys = [] } = params;
-    const objectId = `${domainType}.${accessType}.player.${this.playerIdOrThrow}`;
-    const stats = keys.length > 0 ? keys.join(',') : undefined;
-    const { body } =
-      domainType === 'client'
-        ? await this.api.stats.getStatClientByObjectId(
-            objectId,
-            stats,
-            this.playerIdOrThrow,
-          )
-        : await this.api.stats.getStatByObjectId(
-            objectId,
-            stats,
-            this.playerIdOrThrow,
-          );
-
-    // convert all stats values to string
-    Object.keys(body.stats).forEach((key) => {
-      body.stats[key] = String(body.stats[key]);
-    });
-
-    if (this.player) {
-      this.player.stats = {
-        ...this.player.stats,
-        ...body.stats,
-      };
-    }
-    return body.stats;
   }
 }

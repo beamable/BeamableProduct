@@ -4,6 +4,7 @@ import { AccountService } from '@/services/AccountService';
 import { AnnouncementsService } from '@/services/AnnouncementsService';
 import { BeamServer } from '@/core/BeamServer';
 import { StatsService } from '@/services/StatsService';
+import { LeaderboardsService } from '@/services/LeaderboardsService';
 
 /**
  * Container for all Beamable services.
@@ -19,21 +20,21 @@ export class BeamService {
       player: beam.player,
     });
     beam.auth = new AuthService({ api: beam.api, player: beam.player });
+    beam.leaderboards = new LeaderboardsService({
+      api: beam.api,
+      player: beam.player,
+    });
     beam.stats = new StatsService({ api: beam.api, player: beam.player });
   }
 
   /** Attaches all services to a Beam Server instance. */
   static attachServicesToServer(beam: BeamServer) {
-    beam.account = (playerId: string) =>
-      new AccountService({ api: beam.api, playerId });
-    beam.announcements = (playerId: string) =>
-      new AnnouncementsService({
-        api: beam.api,
-        playerId,
-      });
-    beam.auth = (playerId: string) =>
-      new AuthService({ api: beam.api, playerId });
-    beam.stats = (playerId: string) =>
-      new StatsService({ api: beam.api, playerId });
+    beam.account = (userId) => new AccountService({ api: beam.api, userId });
+    beam.announcements = (userId) =>
+      new AnnouncementsService({ api: beam.api, userId });
+    beam.auth = (userId) => new AuthService({ api: beam.api, userId });
+    beam.leaderboards = (userId) =>
+      new LeaderboardsService({ api: beam.api, userId });
+    beam.stats = (userId) => new StatsService({ api: beam.api, userId });
   }
 }

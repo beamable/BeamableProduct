@@ -29,7 +29,9 @@ describe('AccountService', () => {
       });
       const result = await accountService.current();
 
-      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalledWith('0');
+      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalledWith(
+        undefined,
+      );
       expect(result).toEqual(mockBody);
     });
   });

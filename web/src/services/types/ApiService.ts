@@ -1,32 +1,31 @@
 import { BeamApi } from '@/core/BeamApi';
 import { PlayerService } from '@/services/PlayerService';
-import { BeamError } from '@/constants/Errors';
 
 export interface ApiServiceProps {
   api: BeamApi;
   player?: PlayerService;
-  playerId?: string;
+  userId?: string;
 }
 
 export abstract class ApiService {
   protected readonly api: BeamApi;
   protected readonly player?: PlayerService;
-  protected readonly playerId?: string;
+  protected readonly userId: string;
 
   protected constructor(props: ApiServiceProps) {
     this.api = props.api;
     this.player = props.player;
-    this.playerId = props.playerId;
+    this.userId = props.userId ?? '';
   }
 
-  protected get playerIdOrThrow(): string {
+  /**
+   * Gets the account ID for the current player or admin.
+   * @remarks This is used to identify the player or admin in API requests.
+   */
+  protected get accountId(): string {
     if (this.player?.id) {
       return this.player.id;
-    } else if (this.playerId) {
-      return this.playerId;
     }
-    throw new BeamError(
-      'Player ID is not set. Please provide an instance of PlayerService or playerId string.',
-    );
+    return this.userId;
   }
 }

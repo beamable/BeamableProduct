@@ -19,6 +19,7 @@ import { wait } from '@/utils/wait';
 import { HEADERS } from '@/constants';
 import { BeamBase } from '@/core/BeamBase';
 import { StatsService } from '@/services/StatsService';
+import { LeaderboardsService } from '@/services/LeaderboardsService';
 
 /** The main class for interacting with the Beam Client SDK. */
 export class Beam extends BeamBase {
@@ -264,6 +265,8 @@ export interface Beam {
   announcements: AnnouncementsService;
   /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
   auth: AuthService;
+  /** High-level leaderboards helper built on top of `beam.api.leaderboards.*` endpoints. */
+  leaderboards: LeaderboardsService;
   /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
   stats: StatsService;
 }

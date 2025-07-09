@@ -45,10 +45,13 @@ export class AnnouncementsService
    */
   async list(): Promise<AnnouncementView[]> {
     const { body } = await this.api.announcements.getAnnouncementByObjectId(
-      this.playerIdOrThrow,
+      this.accountId,
       false,
     );
-    if (this.player) this.player.announcements = body.announcements;
+
+    if (!this.player) return body.announcements;
+
+    this.player.announcements = body.announcements;
     return body.announcements;
   }
 
@@ -75,11 +78,12 @@ export class AnnouncementsService
     const idSet = new Set(ids);
 
     await this.api.announcements.postAnnouncementClaimByObjectId(
-      this.playerIdOrThrow,
+      this.accountId,
       { announcements: ids },
     );
 
     if (!this.player) return;
+
     this.player.announcements = this.player.announcements.map((a) =>
       idSet.has(a.id) ? { ...a, isClaimed: true } : a,
     );
@@ -108,12 +112,12 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.putAnnouncementReadByObjectId(
-      this.playerIdOrThrow,
-      { announcements: ids },
-    );
+    await this.api.announcements.putAnnouncementReadByObjectId(this.accountId, {
+      announcements: ids,
+    });
 
     if (!this.player) return;
+
     this.player.announcements = this.player.announcements.map((a) =>
       idSet.has(a.id) ? { ...a, isRead: true } : a,
     );
@@ -142,12 +146,12 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.deleteAnnouncementByObjectId(
-      this.playerIdOrThrow,
-      { announcements: ids },
-    );
+    await this.api.announcements.deleteAnnouncementByObjectId(this.accountId, {
+      announcements: ids,
+    });
 
     if (!this.player) return;
+
     this.player.announcements = this.player.announcements.filter(
       (a) => !idSet.has(a.id),
     );

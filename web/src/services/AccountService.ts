@@ -20,7 +20,7 @@ export class AccountService extends ApiService {
    */
   async current(): Promise<AccountPlayerView> {
     const { body } = await this.api.accounts.getAccountsMe(
-      this.playerIdOrThrow === '0' ? undefined : this.playerIdOrThrow,
+      this.accountId === '0' ? undefined : this.accountId,
     );
     return body;
   }
