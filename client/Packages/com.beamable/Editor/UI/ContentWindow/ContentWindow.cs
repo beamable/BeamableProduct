@@ -51,31 +51,26 @@ namespace Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
+			if(_windowStatus == ContentWindowStatus.Building && _contentService != null)
+				return;
+			
 			if (_contentService == null)
 			{
-				_windowStatus = ContentWindowStatus.Normal;
+				ChangeWindowStatus(ContentWindowStatus.Building, false);
 				_contentService = Scope.GetService<CliContentService>();
-				_contentService.OnManifestUpdated += Build;
-				_ = _contentService.Reload().Then(_ =>
+				_contentService.OnServiceReload += () =>
 				{
-					RegisterForOnManifestUpdated();
+					ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					RegisterServiceEvents();
 					SetEditorSelection();
-					if(!GetCachedManifestEntries().Any(item => 
-						                                   item.StatusEnum is 
-							                                   ContentStatus.Modified or 
-							                                   ContentStatus.Created or 
-							                                   ContentStatus.Deleted))
-					{
-						_windowStatus = ContentWindowStatus.Normal;
-					}
-				});
+					Build();
+				};
+				_ = _contentService.Reload();
+				return;
 			}
-			else
-			{
-				RegisterForOnManifestUpdated();
-			}
-			
 
+			RegisterServiceEvents();
+			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
 			_contentConfiguration = ContentConfiguration.Instance;
@@ -89,26 +84,67 @@ namespace Editor.UI.ContentWindow
 			BuildContentStyles();
 			
 			BuildItemsPanelStyles();
+
+			ClearCaches();
 			
 			Repaint();
 
-			void RegisterForOnManifestUpdated()
+			void RegisterServiceEvents()
 			{
-				_contentService.OnManifestUpdated -= SetEditorSelection;
-				_contentService.OnManifestUpdated += SetEditorSelection;
+				_contentService.OnManifestUpdated -= OnServiceChange;
+				_contentService.OnManifestUpdated += OnServiceChange;
+
+				_contentService.OnServiceReload -= OnServiceChange;
+				_contentService.OnServiceReload += OnServiceChange;
 			}
+		}
+
+		private void OnServiceChange()
+		{
+			ClearCaches();
+			_allTags = _contentService.TagsCache;
+			SetEditorSelection();
+			
+			if(!_contentService.HasChangedContents && _windowStatus is not ContentWindowStatus.Building)
+			{
+				ChangeWindowStatus(ContentWindowStatus.Normal);
+			}
+			Repaint();
+		}
+
+		private void ClearCaches()
+		{
+			_filteredCache.Clear();
+			_sortedCache.Clear();
 		}
 
 		protected override void DrawGUI()
 		{
-			DrawHeader();
-			if (_windowStatus == ContentWindowStatus.Normal)
+			if (_contentService == null)
 			{
-				DrawContentData();
+				Build();
+				return;
 			}
-			else
+
+			if (_windowStatus == ContentWindowStatus.Building)
 			{
-				DrawPublishContent();
+				DrawBlockLoading("Loading Contents...");
+				return;
+			}
+			
+			DrawHeader();
+			GUILayout.Space(1);
+			switch (_windowStatus)
+			{
+				case ContentWindowStatus.Normal:
+					DrawContentData();
+					break;
+				case ContentWindowStatus.Publish:
+					DrawPublishPanel();
+					break;
+				case ContentWindowStatus.Revert:
+					DrawRevertPanel();
+					break;
 			}
 			RunDelayedActions();
 		}
@@ -143,6 +179,8 @@ namespace Editor.UI.ContentWindow
 	public enum ContentWindowStatus
 	{
 		Normal,
-		Publish
+		Publish,
+		Building,
+		Revert
 	}
 }

@@ -67,6 +67,8 @@ namespace Beamable.Content
 		public bool DisableContentDownloadExceptions = false;
 
 		[Header("Content Editor")]
+		[Tooltip("This option will change the Max size of Content Items before showing it as a list.")]
+		public int MaxContentVisibleItems = 15;
 		public ContentTextureConfiguration ContentTextureConfiguration;
 
 		public ContentParameterProvider ParameterProvider

@@ -1,13 +1,11 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
-using Beamable.Content;
 using Beamable.Editor.Util;
-using Beamable.Utility;
+using Beamable.Common.Util;
 using Editor.ContentService;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -17,14 +15,21 @@ namespace Editor.UI.ContentWindow
 {
 	partial class ContentWindow
 	{
+		private static readonly NaturalStringComparer NaturalStringComparer = new();
 		private const float BASE_PADDING = 5f;
 		private const float SEPARATOR_WIDTH_AREA = 3;
 		private const float ITEMS_TABLE_ROW_HEIGHT = 20;
+		private const float ITEM_GROUP_HEIGHT = 35;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
+		
+		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
+		
+		private readonly Dictionary<string, List<LocalContentManifestEntry>> _filteredCache = new();
+		private readonly Dictionary<(string filterKey, ContentSortOptionType sortOption), List<LocalContentManifestEntry>> _sortedCache = new();
 
 		private Vector2 _itemsPanelScrollPos;
-		private string _selectedItemId
+		private string SelectedItemId
 		{
 			get
 			{
@@ -50,7 +55,7 @@ namespace Editor.UI.ContentWindow
 		private bool _needToFocusLabel;
 		
 		private readonly Color _tableSeparatorColor = new Color(0.13f, 0.13f, 0.13f);
-
+		
 		private void BuildItemsPanelStyles()
 		{
 			_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
@@ -119,7 +124,10 @@ namespace Editor.UI.ContentWindow
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
 		{
 			var contentTypeItems = SortContentGroups(_contentTypeHierarchy);
-			if (!contentTypeItems.TryGetValue(parentPath, out List<string> value)) return;
+			if (!contentTypeItems.TryGetValue(parentPath, out List<string> value))
+			{
+				return;
+			}
 
 			foreach (string contentType in value)
 			{
@@ -158,7 +166,6 @@ namespace Editor.UI.ContentWindow
 				GUILayout.Space(BASE_PADDING);
 				GUIStyle rowStyle = EditorStyles.helpBox;
 
-				const float ITEM_GROUP_HEIGHT = 35;
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEM_GROUP_HEIGHT));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 				
@@ -204,7 +211,7 @@ namespace Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						float availableSpace = contentRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH);
+						float availableSpace = rowRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH);
 						DrawTypeItems(items, indentLevel, availableSpace);
 						GUILayout.Space(BASE_PADDING);
 					}
@@ -212,6 +219,7 @@ namespace Editor.UI.ContentWindow
 				}
 			}
 		}
+		
 
 		private void CreateNewItem(string itemType)
 		{
@@ -232,7 +240,7 @@ namespace Editor.UI.ContentWindow
 		{
 			float[] columnWidths = CalculateColumnWidths(availableWidth);
 			DrawItemsPanelHeader(columnWidths, indentLevel);
-			DrawTypeItemsNodes(items, indentLevel, columnWidths);
+			DrawTypeItemsNodes(items, indentLevel, columnWidths, availableWidth);
 		}
 		
 		private void DrawItemsPanelHeader(float[] columnWidths, int indentLevel)
@@ -248,23 +256,73 @@ namespace Editor.UI.ContentWindow
 			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
 		}
 
-		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths)
+		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth)
 		{
-			for (int index = 0; index < items.Count; index++)
+			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
+			if (items.Count <= maxVisibleItems)
 			{
-				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
-				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
-				DrawItemRow(items[index], index, rowRect, columnWidths);
-				if (index == items.Count - 1)
+				// Draw all items if there are few enough
+				for (int index = 0; index < items.Count; index++)
 				{
-					BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1, _tableSeparatorColor);
+					Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
+					rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+					DrawItemRow(items[index], index, rowRect, columnWidths);
+
+					if (index == items.Count - 1)
+					{
+						BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1,
+						                                    _tableSeparatorColor);
+					}
 				}
 			}
+			else
+			{
+				// virtual scrolling
+				string scrollKey = items.First().TypeName;
+
+				if (!_groupScrollPositions.TryGetValue(scrollKey, out var scrollPos))
+				{
+					scrollPos = Vector2.zero;
+					_groupScrollPositions[scrollKey] = scrollPos;
+				}
+
+				float totalHeight = items.Count * ITEMS_TABLE_ROW_HEIGHT;
+				float visibleHeight = maxVisibleItems * ITEMS_TABLE_ROW_HEIGHT;
+
+				int firstVisible = Mathf.FloorToInt(scrollPos.y / ITEMS_TABLE_ROW_HEIGHT);
+				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems - 1);
+
+				firstVisible = Mathf.Max(0, firstVisible - 2);
+				lastVisible = Mathf.Min(items.Count - 1, lastVisible + 2);
+				
+				scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(visibleHeight));
+				_groupScrollPositions[scrollKey] = scrollPos;
+				
+				GUILayout.Space(totalHeight);
+
+				Rect groupRect = GUILayoutUtility.GetLastRect();
+				for (int index = firstVisible; index <= lastVisible; index++)
+				{
+					Rect rowRect = new Rect(
+						indentLevel * CONTENT_GROUP_INDENT_WIDTH + 3f,
+						groupRect.y + index * ITEMS_TABLE_ROW_HEIGHT,
+						totalWidth - 12 , // Scrollbar width
+						ITEMS_TABLE_ROW_HEIGHT
+					);
+
+					DrawItemRow(items[index], index, rowRect, columnWidths);
+				}
+
+				GUILayout.EndScrollView();
+				Rect last = GUILayoutUtility.GetLastRect();
+				BeamGUI.DrawHorizontalSeparatorLine(indentLevel * CONTENT_GROUP_INDENT_WIDTH + 3f, last.yMax, totalWidth,
+				                                    _tableSeparatorColor);
+			}
 		}
-		
+
 		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
 		{
-			GUIStyle style = _selectedItemId == entry.FullId ? _rowSelectedItemStyle :
+			GUIStyle style = SelectedItemId == entry.FullId ? _rowSelectedItemStyle :
 				index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
 
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
@@ -309,7 +367,7 @@ namespace Editor.UI.ContentWindow
 					ShowItemOptionsMenu(entry);
 					return;
 				}
-				if (_selectedItemId == entry.FullId)
+				if (SelectedItemId == entry.FullId)
 				{
 					Selection.activeObject = null;
 				}
@@ -501,11 +559,9 @@ namespace Editor.UI.ContentWindow
 		{
 			if (Selection.activeObject is ContentObject contentObject)
 			{
-				var entries = GetCachedManifestEntries();
-				var itemIndex = entries.FindIndex(item => item.FullId == contentObject.Id);
-				if (itemIndex != -1)
+				if(_contentService.CachedManifest.TryGetValue(contentObject.Id, out var entry))
 				{
-					_ = LoadScriptableOnActiveObject(entries[itemIndex]);
+					_ = LoadScriptableOnActiveObject(entry);
 					return;
 				}
 			}
@@ -538,16 +594,22 @@ namespace Editor.UI.ContentWindow
 
 		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "", bool shouldSort = false)
 		{
-			var allItems = GetCachedManifestEntries();
-
 			string nameSearchPartValue = GetNameSearchPartValue();
 			var types = GetFilterTypeActiveItems(ContentSearchFilterType.Type);
 			var tags = GetFilterTypeActiveItems(ContentSearchFilterType.Tag);
 			var statuses = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
+			
+			var filterKey = $"{specificType}|{nameSearchPartValue}|{string.Join("-",tags)}|{string.Join("-",statuses)}|{string.Join("-",statuses)}";
 
-			var localContentManifestEntries =
-				allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue));
-			return shouldSort ? SortItems(localContentManifestEntries) : localContentManifestEntries.ToList();
+			if (!_filteredCache.TryGetValue(filterKey, out var filteredItems))
+			{
+				var allItems = GetCachedManifestEntries();
+				filteredItems = allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue)).ToList();
+				_filteredCache[filterKey] = filteredItems;
+			}
+
+			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems) : filteredItems;
+			return contentManifestEntries;
 		}
 
 		private bool FilterItem(string specificType,
@@ -612,23 +674,30 @@ namespace Editor.UI.ContentWindow
 			}
 		}
 
-		private List<LocalContentManifestEntry> SortItems(IEnumerable<LocalContentManifestEntry> items)
+		private List<LocalContentManifestEntry> SortItems(string cacheKey, IEnumerable<LocalContentManifestEntry> items)
 		{
-			switch (_currentSortOption)
+			var sortKey = (cacheKey, _currentSortOption);
+
+			if (_sortedCache.TryGetValue(sortKey, out var sortedItems))
 			{
-				case ContentSortOptionType.IdAscending:
-					return items.OrderBy(item => item.Name).ToList();
-				case ContentSortOptionType.IdDescending:
-					return items.OrderByDescending(item => item.Name).ToList();
-				case ContentSortOptionType.TypeAscending:
-					return items.OrderBy(item => item.TypeName).ThenBy(item => item.Name).ToList();
-				case ContentSortOptionType.TypeDescending:
-					return items.OrderByDescending(item => item.TypeName).ThenBy(item => item.Name).ToList();
-				case ContentSortOptionType.Status:
-					return items.OrderBy(item => item.CurrentStatus).ThenBy(item => item.Name).ToList();
-				default:
-					throw new ArgumentOutOfRangeException();
+				return sortedItems;
 			}
+
+			sortedItems = (_currentSortOption switch
+			{
+				ContentSortOptionType.IdAscending => items.OrderBy(item => item.Name, NaturalStringComparer),
+				ContentSortOptionType.IdDescending => items.OrderByDescending(item => item.Name, NaturalStringComparer),
+				ContentSortOptionType.TypeAscending => items.OrderBy(item => item.TypeName, NaturalStringComparer)
+				                                            .ThenBy(item => item.Name),
+				ContentSortOptionType.TypeDescending => items
+				                                        .OrderByDescending(item => item.TypeName, NaturalStringComparer)
+				                                        .ThenBy(item => item.Name),
+				ContentSortOptionType.Status => items.OrderBy(item => item.CurrentStatus)
+				                                     .ThenBy(item => item.Name, NaturalStringComparer),
+				_ => throw new ArgumentOutOfRangeException()
+			}).ToList();
+			_sortedCache[sortKey] = sortedItems;
+			return sortedItems;
 		}
 
 		private Dictionary<string, List<string>> SortContentGroups(Dictionary<string, List<string>> baseDictionary)

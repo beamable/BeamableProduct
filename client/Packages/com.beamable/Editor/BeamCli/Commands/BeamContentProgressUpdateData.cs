@@ -11,5 +11,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string contentName;
         public string errorMessage;
         public int totalItems;
+        public int processedItems;
     }
 }

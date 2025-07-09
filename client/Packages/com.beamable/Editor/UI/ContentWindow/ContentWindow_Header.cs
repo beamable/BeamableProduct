@@ -79,16 +79,7 @@ namespace Editor.UI.ContentWindow
 			                                       .Select(pair => pair.Name)
 			                                       .ToList();
 			
-			HashSet<string> tags = new();
-			var entries = GetCachedManifestEntries();
-			foreach (LocalContentManifestEntry cachedManifestEntry in entries)
-			{
-				foreach (string tag in cachedManifestEntry.Tags)
-				{
-					tags.Add(tag);
-				}
-			}
-			_allTags = new List<string>(tags);
+			_allTags = _contentService.TagsCache;
 		}
 
 		private void BuildHeaderStyles()
@@ -113,15 +104,11 @@ namespace Editor.UI.ContentWindow
 
 		private void DrawTopBarHeader()
 		{
-			List<LocalContentManifestEntry> localContentManifestEntries = GetCachedManifestEntries();
+			
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				var items = localContentManifestEntries;
-				var hasContentToPublish =
-					items.Any(item => item.StatusEnum is ContentStatus.Deleted or ContentStatus.Created
-						          or ContentStatus.Modified);
-				var hasConflictedOrInvalid =
-					items.Any(item => _contentService.IsContentInvalid(item.FullId) || item.IsInConflict);
+				var hasContentToPublish = _contentService.HasChangedContents;
+				var hasConflictedOrInvalid = _contentService.HasConflictedContent || _contentService.HasInvalidContent;
 
 				string tooltip = "Publish Content to Current Realm";
 				if (hasConflictedOrInvalid)
@@ -157,54 +144,74 @@ namespace Editor.UI.ContentWindow
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
-					ChangeToNormalMode(localContentManifestEntries);
+					ChangeWindowStatus(ContentWindowStatus.Normal);
 				}
 			}
 		}
 
 		private void ChangeToPublishMode()
 		{
-			_windowStatus = ContentWindowStatus.Publish;
-			if (!string.IsNullOrEmpty(_selectedItemId))
+			AddDelayedAction(() =>
 			{
-				_oldItemSelected = _selectedItemId;
-				Selection.activeObject = null;
-			}
-			Repaint();
+				ChangeWindowStatus(ContentWindowStatus.Publish);
+				_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
+			});
 		}
-		
-		private void ChangeToNormalMode(List<LocalContentManifestEntry> localContentManifestEntries)
+
+		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)
 		{
-			if (!string.IsNullOrEmpty(_oldItemSelected))
+			if(_windowStatus == windowStatus)
+				return;
+			_windowStatus = windowStatus;
+			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				int selectedItemIndex = localContentManifestEntries.FindIndex(item => item.FullId == _oldItemSelected);
-				if (selectedItemIndex != -1)
+				if (!string.IsNullOrEmpty(_oldItemSelected))
 				{
-					_ = LoadItemScriptable(localContentManifestEntries[selectedItemIndex]);
+					if (_contentService.CachedManifest.TryGetValue(_oldItemSelected, out var entry))
+					{
+						_ = LoadItemScriptable(entry);
+					}
+				}
+
+				_oldItemSelected = string.Empty;
+			}
+			else
+			{
+				if (!string.IsNullOrEmpty(SelectedItemId))
+				{
+					_oldItemSelected = SelectedItemId;
+					Selection.activeObject = null;
 				}
 			}
 
-			_oldItemSelected = string.Empty;
-			_windowStatus = ContentWindowStatus.Normal;
-			Repaint();
+			if(shouldRepaint)
+				Repaint();
 		}
 
 		private void DrawLowBarHeader()
 		{
-			if(_windowStatus == ContentWindowStatus.Publish)
+			if (_windowStatus is not ContentWindowStatus.Normal)
+			{
+				GUILayout.Space(40);
 				return;
+			}
+				
 			
 			GUILayout.Space(15);
 
 			GUIStyle lowBarTextStyle = _lowBarTextStyle ?? EditorStyles.boldLabel;
+			
+			int filteredItemsCount = GetFilteredItems().Count;
+			int totalItems = GetCachedManifestEntries().Count;
+			
+			var itemsCounts = new GUIContent($"{filteredItemsCount}/{totalItems}");
+			var itemsCountsSize = lowBarTextStyle.CalcSize(itemsCounts);
 			var itemsFilterLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.Width(50), GUILayout.ExpandHeight(true));
+				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.Width(itemsCountsSize.x), GUILayout.ExpandHeight(true));
 			var contentTreeLabelRect =
 				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
-			var entries = GetCachedManifestEntries();
-			int filteredItemsCount = GetFilteredItems().Count;
-			int totalItems = entries.Count;
+			
+			
 			string contentTreeLabelValue = "All Content";
 			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
@@ -240,27 +247,20 @@ namespace Editor.UI.ContentWindow
 		
 		private void ShowSyncMenu()
 		{
-			var entries = GetCachedManifestEntries();
-			bool hasModified = false;
-			bool hasNewItems = false;
-			bool hasConflictedItems = false;
-			bool hasDeleted = false;
-			
-			foreach (LocalContentManifestEntry localContentManifestEntry in entries)
-			{
-				hasModified |= localContentManifestEntry.StatusEnum is ContentStatus.Modified or ContentStatus.Invalid;
-				hasNewItems |= localContentManifestEntry.StatusEnum is ContentStatus.Created;
-				hasConflictedItems |= localContentManifestEntry.IsInConflict;
-				hasDeleted |= localContentManifestEntry.StatusEnum is ContentStatus.Deleted;
-				
-				if (hasModified && hasNewItems && hasConflictedItems && hasDeleted)
-					break;
-			}
+			bool hasModified = _contentService.GetAllContentFromStatus(ContentStatus.Modified).Count > 0;
+			bool hasNewItems = _contentService.GetAllContentFromStatus(ContentStatus.Created).Count > 0;
+			bool hasDeleted = _contentService.GetAllContentFromStatus(ContentStatus.Deleted).Count > 0;
+			bool hasConflictedItems = _contentService.HasConflictedContent;
 			
 			GenericMenu menu = new GenericMenu();
 			if (hasModified || hasNewItems || hasConflictedItems || hasDeleted)
 			{
-				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM), false, () => _ = RevertAllContents());
+				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM), false, () =>
+				{
+					ChangeWindowStatus(ContentWindowStatus.Revert);
+					_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
+					_revertAction = RevertAllContents;
+				});
 			}
 			else
 			{
@@ -269,7 +269,12 @@ namespace Editor.UI.ContentWindow
 
 			if (hasModified)
 			{
-				menu.AddItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false, () => _ = RevertModifiedContents());
+				menu.AddItem(new GUIContent(REVERT_MODIFIED_MENU_ITEM), false, () =>
+				{
+					ChangeWindowStatus(ContentWindowStatus.Revert);
+					_statusToDraw = ContentStatus.Modified;
+					_revertAction = RevertModifiedContents;
+				});
 			}
 			else
 			{
@@ -278,7 +283,12 @@ namespace Editor.UI.ContentWindow
 
 			if (hasConflictedItems)
 			{
-				menu.AddItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false, () => _ = RevertConflictedContents());
+				menu.AddItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false, () =>
+				{
+					ChangeWindowStatus(ContentWindowStatus.Revert);
+					_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
+					_revertAction = RevertConflictedContents;
+				});
 			}
 			else
 			{
@@ -287,7 +297,12 @@ namespace Editor.UI.ContentWindow
 			
 			if (hasDeleted)
 			{
-				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, () => _ = RevertDeletedContents());
+				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, () =>
+				{
+					ChangeWindowStatus(ContentWindowStatus.Revert);
+					_statusToDraw = ContentStatus.Deleted;
+					_revertAction = RevertDeletedContents;
+				});
 			}
 			else
 			{
@@ -296,7 +311,12 @@ namespace Editor.UI.ContentWindow
 
 			if (hasNewItems)
 			{
-				menu.AddItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false, () => _ = RevertAllNewContents());
+				menu.AddItem(new GUIContent(REVERT_NEW_CONTENTS_MENU_ITEM), false, () =>
+				{
+					ChangeWindowStatus(ContentWindowStatus.Revert);
+					_statusToDraw = ContentStatus.Created;
+					_revertAction = RevertAllNewContents;
+				});
 			}
 			else
 			{
@@ -308,47 +328,26 @@ namespace Editor.UI.ContentWindow
 
 		private async Task RevertAllContents()
 		{
-			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all local changes?", "Yes", "No"))
-			{
-				return;
-			}
 			await _contentService.SyncContentsWithProgress(true, true, true, true);
 		}
 
 		private async Task RevertModifiedContents()
 		{
-			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all modified contents?", "Yes", "No"))
-			{
-				return;
-			}
-
 			await _contentService.SyncContentsWithProgress(true, false, false, false);
 		}
 
 		private async Task RevertConflictedContents()
 		{
-			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all conflicted contents?", "Yes", "No"))
-			{
-				return;
-			}
 			await _contentService.SyncContentsWithProgress(false, false, true, false);
 		}
 
 		private async Task RevertDeletedContents()
 		{
-			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all deleted contents?", "Yes", "No"))
-			{
-				return;
-			}
 			await _contentService.SyncContentsWithProgress(false, false, false, true);
 		}
 
 		private async Task RevertAllNewContents()
 		{
-			if (!EditorUtility.DisplayDialog("Revert Content", "Are you sure you want to revert all newly created contents?", "Yes", "No"))
-			{
-				return;
-			}
 			await _contentService.SyncContentsWithProgress(false, true, false, false);
 		}
 

@@ -1,5 +1,6 @@
 ﻿using Beamable;
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
@@ -32,8 +33,12 @@ namespace Editor.ContentService
 		private readonly BeamEditorContext _beamContext;
 		private readonly IDependencyProvider _provider;
 		private Dictionary<string, List<LocalContentManifestEntry>> _typeContentCache = new();
+		private Dictionary<ContentStatus, List<LocalContentManifestEntry>> _statusContentCache = new();
+		private Dictionary<string, LocalContentManifestEntry> _conflictedContentCache = new();
 		private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
-		private HashSet<string> _invalidContents = new();
+		private Dictionary<string, LocalContentManifestEntry> _invalidContents = new();
+		private readonly Dictionary<string, List<string>> _contentIdTagsCache = new();
+		private List<string> _tagsCache = new();
 		private int syncedContents;
 		private int publishedContents;
 
@@ -42,8 +47,26 @@ namespace Editor.ContentService
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 
 		public event Action OnManifestUpdated;
+		public event Action OnServiceReload;
 
-		public bool HasConflictedContent => _invalidContents.Count > 0;
+		public bool HasConflictedContent => _conflictedContentCache.Count > 0;
+
+		public bool HasInvalidContent => _invalidContents.Count > 0;
+
+		public bool HasChangedContents
+		{
+			get
+			{
+				bool hasModified = GetAllContentFromStatus(ContentStatus.Modified).Count > 0;
+				bool hasDeleted = GetAllContentFromStatus(ContentStatus.Deleted).Count > 0;
+				bool hasCreated = GetAllContentFromStatus(ContentStatus.Created).Count > 0;
+				return hasModified || hasDeleted || hasCreated;
+			}
+		}
+
+		public Dictionary<string, List<LocalContentManifestEntry>> TypeContentCache => _typeContentCache;
+
+		public List<string> TagsCache => _tagsCache;
 
 		public CliContentService(BeamCommands cli, BeamEditorContext beamContext, IDependencyProvider provider)
 		{
@@ -67,7 +90,7 @@ namespace Editor.ContentService
 		}
 
 		public async Task SyncContentsWithProgress(bool syncModified,
-		                                           bool syncNew,
+		                                           bool syncCreated,
 		                                           bool syncConflicted,
 		                                           bool syncDeleted,
 		                                           string filter = null,
@@ -75,22 +98,36 @@ namespace Editor.ContentService
 		{
 
 			syncedContents = 0;
-			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
-
+			
 			try
 			{
-				await SyncContents(
-					syncModified,
-					syncNew,
-					syncConflicted,
-					syncDeleted,
-					filter,
-					filterType,
-					onProgressUpdate: data =>
-					{
-						HandleProgressUpdate(data, SYNC_OPERATION_TITLE, SYNC_OPERATION_SUCCESS_BASE_MESSAGE,
-						                   SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents);
-					});
+				var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
+				{
+					syncModified = syncModified,
+					syncConflicts = syncConflicted,
+					syncCreated = syncCreated,
+					syncDeleted = syncDeleted,
+					filter = filter,
+					filterType = filterType,
+				});
+
+				contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
+				{
+					HandleProgressUpdate(reportData.data, SYNC_OPERATION_TITLE, SYNC_OPERATION_SUCCESS_BASE_MESSAGE,
+					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents, () =>
+					                     {
+						                     contentSyncCommand.Cancel();
+						                     EditorUtility.ClearProgressBar();
+					                     });
+				});
+				await contentSyncCommand.Run();
+
+				if (EditorUtility.DisplayCancelableProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0))
+				{
+					contentSyncCommand.Cancel();
+					EditorUtility.ClearProgressBar();
+				}
+
 			}
 			finally
 			{
@@ -103,8 +140,7 @@ namespace Editor.ContentService
 		                               bool syncConflicted = true,
 		                               bool syncDeleted = true,
 		                               string filter = null,
-		                               ContentFilterType filterType = default,
-		                               Action<BeamContentProgressUpdateData> onProgressUpdate = null)
+		                               ContentFilterType filterType = default)
 		{
 			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 			{
@@ -115,11 +151,7 @@ namespace Editor.ContentService
 				filter = filter,
 				filterType = filterType,
 			});
-
-			contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
-			{
-				onProgressUpdate?.Invoke(reportData.data);
-			});
+			
 			await contentSyncCommand.Run();
 		}
 
@@ -169,19 +201,15 @@ namespace Editor.ContentService
 			}
 
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
-			if (entry.StatusEnum is ContentStatus.Created)
+			if (entry.StatusEnum is not ContentStatus.Created)
 			{
-				entry.Name = newName;
-				CachedManifest[contentId] = entry;
-			}
-			else
-			{
+				RemoveContentFromCache(entry);
 				entry.CurrentStatus = (int)ContentStatus.Deleted;
-				CachedManifest[contentId] = entry;
+				AddContentToCache(entry);
 				entry.Name = newName;
 				entry.CurrentStatus = (int)ContentStatus.Created;
-				var newId = $"{entry.TypeName}.{entry.Name}";
-				CachedManifest[newId] = entry;
+				entry.FullId = $"{entry.TypeName}.{entry.Name}";
+				AddContentToCache(entry);
 			}
 
 			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, fullName);
@@ -200,8 +228,13 @@ namespace Editor.ContentService
 				return;
 			}
 
-			entry.CurrentStatus = (int)ContentStatus.Deleted;
-			CachedManifest[contentId] = entry;
+			RemoveContentFromCache(entry);
+			if (entry.StatusEnum is not ContentStatus.Created)
+			{
+				entry.CurrentStatus = (int)ContentStatus.Deleted;
+				AddContentToCache(entry);
+			}
+
 			File.Delete(entry.JsonFilePath);
 		}
 
@@ -222,16 +255,26 @@ namespace Editor.ContentService
 		public async Task PublishContentsWithProgress()
 		{
 			publishedContents = 0;
-			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 
 			try
 			{
-				await PublishContents(
-					onProgressUpdate: data =>
-					{
-						HandleProgressUpdate(data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
-						                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents);
-					});
+				var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
+				publishCommand.OnProgressStreamContentProgressUpdateData(report =>
+				{
+					HandleProgressUpdate(report.data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
+					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents, () =>
+					                     {
+						                     publishCommand.Cancel();
+						                     EditorUtility.ClearProgressBar();
+					                     });
+				});
+				await publishCommand.Run();
+
+				if (EditorUtility.DisplayCancelableProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0))
+				{
+					publishCommand.Cancel();
+					EditorUtility.ClearProgressBar();
+				}
 			}
 			finally
 			{
@@ -239,19 +282,15 @@ namespace Editor.ContentService
 			}
 		}
 
-		public async Task PublishContents(Action<BeamContentProgressUpdateData> onProgressUpdate = null)
+		public async Task PublishContents()
 		{
 			var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
-			publishCommand.OnProgressStreamContentProgressUpdateData(report => { onProgressUpdate?.Invoke(report.data); });
 			await publishCommand.Run();
 		}
 
 		public async Promise Reload()
 		{
-			ValidationContext.AllContent.Clear();
-			CachedManifest.Clear();
-			_typeContentCache.Clear();
-			_invalidContents.Clear();
+			ClearCaches();
 			if (_contentWatcher != null)
 			{
 				_contentWatcher.Cancel();
@@ -261,43 +300,52 @@ namespace Editor.ContentService
 			TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
 
 			_contentWatcher = _cli.ContentPs(new ContentPsArgs() {watch = true});
-			_contentWatcher.OnStreamContentPsCommandEvent(async report =>
+
+			void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
 			{
 				string currentCid = _beamContext.CurrentRealm.Cid;
 				string currentPid = _beamContext.CurrentRealm.Pid;
 
-				bool ValidateManifest(LocalContentManifest item) =>
-					item.OwnerCid == currentCid && item.OwnerPid == currentPid;
+				bool ValidateManifest(LocalContentManifest item) => item.OwnerCid == currentCid && item.OwnerPid == currentPid;
 
 				var reportData = report.data;
 				var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
 				var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
 
-				bool hasChangeManifest = changesManifest != null;
-				bool hasRemoveManifest = removeManifest != null;
+				bool hasChangeManifest = changesManifest != null && changesManifest.Entries.Length > 0;
+				bool hasRemoveManifest = removeManifest != null && removeManifest.Entries.Length > 0;
 
 				if (hasChangeManifest)
 				{
 					foreach (var entry in changesManifest.Entries)
 					{
+						_ = ValidateForInvalidFields(entry);
 
-						await ValidateForInvalidFields(entry);
-
-						CachedManifest[entry.FullId] = entry;
+						if (CachedManifest.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+						{
+							RemoveContentFromCache(oldEntry);
+						}
+						
 						ValidationContext.AllContent[entry.FullId] = entry;
 						AddContentToCache(entry);
 					}
 				}
 
-
 				if (hasRemoveManifest)
 				{
 					foreach (var entry in removeManifest.Entries)
 					{
-						_invalidContents.Remove(entry.FullId);
-						CachedManifest.Remove(entry.FullId);
+						if (CachedManifest.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+						{
+							RemoveContentFromCache(oldEntry);
+						}
+
+						if (oldEntry.StatusEnum is not ContentStatus.Created)
+						{
+							AddContentToCache(entry);
+						}
+
 						ValidationContext.AllContent.Remove(entry.FullId);
-						RemoveContentFromCache(entry);
 					}
 				}
 
@@ -312,11 +360,25 @@ namespace Editor.ContentService
 				}
 
 				ValidationContext.Initialized = true;
+				ComputeTags();
+			}
 
-			});
+			_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
 			_ = _contentWatcher.Command.Run();
 
 			await manifestIsFetchedTaskCompletion.Task;
+			OnServiceReload?.Invoke();
+		}
+
+		private void ClearCaches()
+		{
+			ValidationContext.AllContent.Clear();
+			CachedManifest.Clear();
+			TypeContentCache.Clear();
+			_invalidContents.Clear();
+			_statusContentCache.Clear();
+			_conflictedContentCache.Clear();
+			_contentIdTagsCache.Clear();
 		}
 
 		public void ReceiveStorageHandle(StorageHandle<CliContentService> handle)
@@ -343,12 +405,47 @@ namespace Editor.ContentService
 		public List<LocalContentManifestEntry> GetContentsFromType(Type contentType)
 		{
 			var contentTypeName = ContentTypeReflectionCache.GetContentTypeName(contentType);
-			if (!_typeContentCache.TryGetValue(contentTypeName, out var typeContents))
+			return GetContentFromTypeName(contentTypeName);
+		}
+
+		public List<LocalContentManifestEntry> GetContentFromTypeName(string contentTypeName)
+		{
+			if (!TypeContentCache.TryGetValue(contentTypeName, out var typeContents))
 			{
 				return new List<LocalContentManifestEntry>();
 			}
 
 			return typeContents;
+		}
+
+		public List<LocalContentManifestEntry> GetAllContentFromStatus(ContentStatus status)
+		{
+			if (!_statusContentCache.TryGetValue(status, out var contents))
+			{
+				return new  List<LocalContentManifestEntry>();
+			}
+			return contents;
+		}
+
+		public List<LocalContentManifestEntry> GetAllConflictedContents()
+		{
+			return _conflictedContentCache.Values.ToList();
+		}
+
+		public List<LocalContentManifestEntry> GetAllInvalidContents()
+		{
+			return _invalidContents.Values.ToList();
+		}
+
+		private void ComputeTags()
+		{
+			HashSet<string> tags = new HashSet<string>();
+			foreach (var keyValuePair in _contentIdTagsCache)
+			{
+				keyValuePair.Value.ForEach(tag => tags.Add(tag));
+			}
+
+			_tagsCache = tags.ToList();
 		}
 
 		public static async Task<string> LoadContentFileData(LocalContentManifestEntry entry)
@@ -365,38 +462,67 @@ namespace Editor.ContentService
 
 		public bool IsContentInvalid(string entryId)
 		{
-			return _invalidContents.Contains(entryId);
+			return _invalidContents.ContainsKey(entryId);
 		}
 
-		public void UpdateContentValidationStatus(string fullId, bool hasValidationError)
+		public void UpdateContentValidationStatus(string itemId, bool hasValidationError)
 		{
-			if (hasValidationError)
+			
+			if (hasValidationError && CachedManifest.TryGetValue(itemId, out var entry))
 			{
-				_invalidContents.Add(fullId);
+				_invalidContents[entry.FullId] = entry;
 			}
 			else
 			{
-				_invalidContents.Remove(fullId);
+				_invalidContents.Remove(itemId);
 			}
 		}
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
-			if (!_typeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
+			if (!TypeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
 			{
-				typeContentList = new List<LocalContentManifestEntry>();
-				_typeContentCache.Add(entry.TypeName, typeContentList);
+				TypeContentCache[entry.TypeName] = typeContentList = new List<LocalContentManifestEntry>();;
+			}
+			
+			typeContentList.Add(entry);
+
+			if (!_statusContentCache.TryGetValue(entry.StatusEnum, out var statusContents))
+			{
+				_statusContentCache[entry.StatusEnum] = statusContents = new List<LocalContentManifestEntry>();
+			}
+			statusContents.Add(entry);
+
+			_conflictedContentCache.Remove(entry.FullId);
+			if (entry.IsInConflict)
+			{
+				_conflictedContentCache.Add(entry.FullId, entry);
 			}
 
-			typeContentList.Add(entry);
+			_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
+			
+			CachedManifest[entry.FullId] = entry;
 		}
 
 		private void RemoveContentFromCache(LocalContentManifestEntry entry)
 		{
-			if (_typeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
+			if (TypeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
 			{
 				typeContentList.RemoveAll(item => item.FullId == entry.FullId);
 			}
+
+			if (_statusContentCache.TryGetValue(entry.StatusEnum, out var statusContents))
+			{
+				statusContents.RemoveAll(item => item.FullId == entry.FullId);
+			}
+			
+			_conflictedContentCache.Remove(entry.FullId);
+			
+			_invalidContents.Remove(entry.FullId);
+			
+			CachedManifest.Remove(entry.FullId);
+			
+			_contentIdTagsCache.Remove(entry.FullId);
 		}
 
 		private async Task ValidateForInvalidFields(LocalContentManifestEntry entry)
@@ -422,7 +548,7 @@ namespace Editor.ContentService
 		private void HandleProgressUpdate(BeamContentProgressUpdateData data,
 		                                string operationTitle,
 		                                string onSuccessBaseMessage,
-		                                string onErrorBaseMessage, ref int countItem)
+		                                string onErrorBaseMessage, ref int countItem, Action onCancelOperation)
 		{
 			string description = string.Empty;
 			float progress = (float)countItem / data.totalItems;
@@ -440,11 +566,16 @@ namespace Editor.ContentService
 				case 1: // Sync Complete
 				case 2: // Publish Complete
 					description = string.Format(onSuccessBaseMessage, data.contentName);
-					countItem++;
 					break;
-
+				case 3: // Update Processed item count
+					countItem = data.processedItems;
+					break;
 			}
-			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+
+			if (EditorUtility.DisplayCancelableProgressBar(operationTitle, description, progress))
+			{
+				onCancelOperation?.Invoke();
+			}
 		}
 	}
 }
