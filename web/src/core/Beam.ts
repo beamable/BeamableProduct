@@ -47,7 +47,8 @@ export class Beam extends BeamBase {
 
   constructor(config: BeamConfig) {
     Beam.localTokenStorage =
-      config.tokenStorage ?? defaultTokenStorage(config.instanceTag);
+      config.tokenStorage ??
+      defaultTokenStorage(config.pid, config.instanceTag);
     super(config);
     this.tokenStorage = Beam.localTokenStorage;
     this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
@@ -167,8 +168,13 @@ export class Beam extends BeamBase {
     return new Promise(async (resolve, reject) => {
       try {
         const savedConfig = await readConfig();
+        // If the saved config cid does not match the current one, clear the token storage
+        if (this.cid !== savedConfig.cid) {
+          this.tokenStorage.clear();
+        }
+
+        // If the cid or pid has changed, save the new configuration
         if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
-          this.tokenStorage.clear(); // TODO: consider namespacing by pid
           await saveConfig({ cid: this.cid, pid: this.pid });
         }
 
