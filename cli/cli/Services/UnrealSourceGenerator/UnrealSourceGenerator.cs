@@ -569,6 +569,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			var header = UnrealCsvSerializableTypeDeclaration.CSV_SERIALIZABLE_TYPE_HEADER.ProcessReplacement(processDictionary);
 			var cpp = UnrealCsvSerializableTypeDeclaration.CSV_SERIALIZABLE_TYPE_CPP.ProcessReplacement(processDictionary);
+			processDictionary.Clear();
 			return (decl, header, cpp);
 		});
 		outputFiles.AddRange(csvResponseTypesCode.SelectMany((s, idx) =>
@@ -589,6 +590,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			var header = UnrealCsvRowTypeDeclaration.CSV_ROW_TYPE_HEADER.ProcessReplacement(processDictionary);
 			var cpp = UnrealCsvRowTypeDeclaration.CSV_ROW_TYPE_CPP.ProcessReplacement(processDictionary);
+			processDictionary.Clear();
 
 			return (decl, header, cpp);
 		});
