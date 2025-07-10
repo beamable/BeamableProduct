@@ -356,7 +356,7 @@ namespace Beamable.Common.Content
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
-	  [NonSerialized, IgnoreContentField]
+	  [NonSerialized, IgnoreContentField, HideInInspector]
       public Action OnEditorChanged;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
