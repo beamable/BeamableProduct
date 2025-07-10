@@ -71,7 +71,7 @@ namespace Beamable.Api.Connectivity
 		private IEnumerator MonitorConnectivity()
 		{
 			yield return new ConnectivityService.PromiseYieldInstruction(_connectivityService.SetHasInternet(true));
-			while (_provider.IsActive)
+			while (_provider.IsActive && _provider.GetService<IConnectivityChecker>() == this)
 			{
 				yield return _delay; // don't spam the internet checking...
 
