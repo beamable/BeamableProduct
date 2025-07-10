@@ -93,6 +93,17 @@ namespace Beamable.Server.Generator
 				},
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
+			
+			targetClass.Members.Add(new CodeConstructor()
+			{
+				Attributes = MemberAttributes.Public,
+				Parameters =
+				{
+					new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(IDependencyProvider)),
+						"provider")
+				},
+				BaseConstructorArgs = { new CodeArgumentReferenceExpression("provider") }
+			});
 
 			var parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
@@ -117,15 +128,19 @@ namespace Beamable.Server.Generator
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
 			};
 			registrationMethod.CustomAttributes.Add(
-				new CodeAttributeDeclaration(new CodeTypeReference(typeof(RegisterBeamableDependenciesAttribute))));
+				new CodeAttributeDeclaration(new CodeTypeReference(typeof(RegisterBeamableDependenciesAttribute)), new CodeAttributeArgument(new CodeSnippetExpression("50")), new CodeAttributeArgument(new CodeSnippetExpression("Beamable.Common.Dependencies.RegistrationOrigin.EDITOR | Beamable.Common.Dependencies.RegistrationOrigin.RUNTIME"))));
 			registrationMethod.Name = "RegisterService";
 			registrationMethod.Parameters.Add(
 				new CodeParameterDeclarationExpression(typeof(IDependencyBuilder), "builder"));
+
+			registrationMethod.Statements.Add(
+				new CodeVariableDeclarationStatement($"System.Func<Beamable.Common.Dependencies.{nameof(IDependencyProvider)}, {TargetClassName}>", "factory", new CodeSnippetExpression($"p => new {TargetClassName}(p)")));
 			registrationMethod.Statements.Add(new CodeMethodInvokeExpression
 			{
 				Method = new CodeMethodReferenceExpression(
 					new CodeArgumentReferenceExpression("builder"),
-					nameof(IDependencyBuilder.AddScoped), new CodeTypeReference(TargetClassName))
+					nameof(IDependencyBuilder.AddScoped), new CodeTypeReference(TargetClassName)),
+				Parameters = { new CodeVariableReferenceExpression("factory") }
 			});
 
 			var extensionMethod = new CodeMemberMethod()
