@@ -702,28 +702,52 @@ namespace Beamable.CronExpression
 			string Convert(IReadOnlyList<string> part)
 			{
 				if (part.Contains("*") && part.Count == 1)
-					return part[0];
+					return "*";
 
-				string converted = string.Empty;
+				var outputParts = new List<string>();
+				var currentRange = new List<int>();
+				int? lastNumber = null;
 
-				if (part.Count == 1)
+				void AddCurrentRangeToOutput(string partValue = null)
 				{
-					converted += $"{part[0]}";
-				}
-				else if (part.Count != 0)
-				{
-					if (part[^1].Contains("/") && part.Count > 2)
-					{
-						converted += $"{part[0]}-{part[^2]}{part[^1]}";
-					}
-					else
-					{
-						converted += $"{part[0]}-{part[^1]}";
-					}
-				}
-					
+					if (currentRange.Count == 0)
+						return;
 
-				return converted;
+					currentRange.Sort();
+					int start = currentRange[0];
+					int end = currentRange[^1];
+
+					string result = (start == end) ? $"{start}" : $"{start}-{end}";
+					if (partValue != null)
+					{
+						result += partValue;
+					}
+
+					outputParts.Add(result);
+					currentRange.Clear();
+					lastNumber = null;
+				}
+
+				foreach (var item in part)
+				{
+					if (item.StartsWith("/"))
+					{
+						AddCurrentRangeToOutput(item);
+					}
+					else if (int.TryParse(item, out int num))
+					{
+						if (lastNumber.HasValue && num != lastNumber.Value + 1)
+						{
+							AddCurrentRangeToOutput();
+						}
+
+						currentRange.Add(num);
+						lastNumber = num;
+					}
+				}
+
+				AddCurrentRangeToOutput();
+				return string.Join(",", outputParts);
 			}
 
 			var second = Convert(scheduleDefinition.second);
