@@ -1006,7 +1006,7 @@ public class ContentService
 		// Delete any files flagged for deletion, if any.
 		for (int index = 0; index < contentToDelete.Length; index++)
 		{
-			await Delay(1);
+			await Delay(10);
 			if (lifecycle.IsCancelled)
 			{
 				await ReturnArchivedFilesToManifest();
@@ -1044,7 +1044,7 @@ public class ContentService
 			};
 			onContentSyncProgressUpdate?.Invoke(updateProcessedItems);
 		}
-		await Delay(1);
+		await Delay(10);
 		if (lifecycle.IsCancelled)
 		{
 			await ReturnArchivedFilesToManifest();
