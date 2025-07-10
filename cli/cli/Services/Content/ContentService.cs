@@ -975,25 +975,8 @@ public class ContentService
 				string[][] returnBatches = Directory.GetFiles(archiveFolder).Chunk(CliConstants.CONTENT_SYNC_BATCH_SIZE).ToArray();
 				foreach (string[] filesToReturn in returnBatches)
 				{
-					await Parallel.ForEachAsync(filesToReturn, (file, _) =>
-					{
-						try
-						{
-							string destFile = Path.Combine(contentFolder, Path.GetFileName(file));
-					
-							if (File.Exists(destFile))
-								File.Replace(file, destFile, null);
-							else
-								File.Move(file, destFile);
-						}
-						catch (Exception ex)
-						{
-							Log.Error($"Failed to restore archived file '{file}': {ex.Message}");
-						}
-
-						return ValueTask.CompletedTask;
-					});
-					await Delay(50);
+					await MoveFilesAsync(filesToReturn, contentFolder);
+					await Delay(50); // Wait a few ms to not overflow the IO Internal Buffer being used by 'content ps'
 				}
 				Directory.Delete(archiveFolder, true);
 			}
@@ -1003,29 +986,30 @@ public class ContentService
 			}
 		}
 		
-		// Delete any files flagged for deletion, if any.
-		for (int index = 0; index < contentToDelete.Length; index++)
+		var filesToDeleteBatches = contentToDelete.Chunk(CliConstants.CONTENT_SYNC_BATCH_SIZE).ToArray();
+
+		for (int index = 0; index < filesToDeleteBatches.Length; index++)
 		{
-			await Delay(10);
+			ContentFile[] contentsToDelete = filesToDeleteBatches[index];
+			string[] filesToMove = contentsToDelete.Select(c => c.LocalFilePath).ToArray();
 			if (lifecycle.IsCancelled)
 			{
 				await ReturnArchivedFilesToManifest();
 				throw new CliException($"Sync operation is cancelled.");
 			}
-			
-			ContentFile c = contentToDelete[index];
-			ContentProgressUpdateData contentProgress = new ContentProgressUpdateData
-			{
-				totalItems = totalItems, contentName = c.Id
-			};
 
+			var contentProgress = new ContentProgressUpdateData
+			{
+				totalItems = totalItems, 
+				contentName = string.Join(", ", contentsToDelete.Select(c => c.Id))
+			};
 			try
 			{
-				// Move it to archive folder instead of deleting, this way we can revert if the operation is cancelled or if it had an error during moving process
-				File.Move(c.LocalFilePath, Path.Combine(archiveFolder,  Path.GetFileName(c.LocalFilePath)));
+				await MoveFilesAsync(filesToMove, archiveFolder);
 			}
 			catch (Exception exception)
 			{
+				// Send Sync Error
 				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
 				contentProgress.errorMessage = exception.Message;
 				onContentSyncProgressUpdate?.Invoke(contentProgress);
@@ -1033,18 +1017,18 @@ public class ContentService
 				throw;
 			}
 
+			// Send Sync Complete
 			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncComplete;
 			onContentSyncProgressUpdate?.Invoke(contentProgress);
 
-			var updateProcessedItems = new ContentProgressUpdateData()
-			{
-				totalItems = totalItems,
-				processedItems = (index + 1) + downloadedContent.Count,
-				EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount
-			};
-			onContentSyncProgressUpdate?.Invoke(updateProcessedItems);
+			// Update processedItems
+			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount;
+			contentProgress.processedItems = (index + 1) * CliConstants.CONTENT_SYNC_BATCH_SIZE;
+			onContentSyncProgressUpdate?.Invoke(contentProgress);
+
+			await Delay(50); // Wait a few ms to not overflow the IO Internal Buffer being used by 'content ps'
 		}
-		await Delay(10);
+		
 		if (lifecycle.IsCancelled)
 		{
 			await ReturnArchivedFilesToManifest();
@@ -1116,6 +1100,28 @@ public class ContentService
 		{
 			_fileSystemOperationSemaphore.Release();
 		}
+	}
+
+	private static async Task MoveFilesAsync(string[] filesToReturn, string newFolder)
+	{
+		await Parallel.ForEachAsync(filesToReturn, (file, _) =>
+		{
+			try
+			{
+				string destFile = Path.Combine(newFolder, Path.GetFileName(file));
+					
+				if (File.Exists(destFile))
+					File.Replace(file, destFile, null);
+				else
+					File.Move(file, destFile);
+			}
+			catch (Exception ex)
+			{
+				Log.Error($"Failed to move file '{file}': {ex.Message}");
+			}
+
+			return ValueTask.CompletedTask;
+		});
 	}
 
 	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,

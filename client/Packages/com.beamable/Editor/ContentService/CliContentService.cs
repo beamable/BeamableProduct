@@ -101,6 +101,11 @@ namespace Editor.ContentService
 			
 			try
 			{
+				if (_contentWatcher != null)
+				{
+					_contentWatcher.Cancel();
+					_contentWatcher = null;
+				}
 				var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 				{
 					syncModified = syncModified,
@@ -117,7 +122,7 @@ namespace Editor.ContentService
 					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents, () =>
 					                     {
 						                     contentSyncCommand.Cancel();
-						                     EditorUtility.ClearProgressBar();
+						                     FinishActionProgress();
 					                     });
 				});
 				await contentSyncCommand.Run();
@@ -125,13 +130,13 @@ namespace Editor.ContentService
 				if (EditorUtility.DisplayCancelableProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0))
 				{
 					contentSyncCommand.Cancel();
-					EditorUtility.ClearProgressBar();
+					FinishActionProgress();
 				}
 
 			}
 			finally
 			{
-				EditorUtility.ClearProgressBar();
+				FinishActionProgress();
 			}
 		}
 
@@ -256,6 +261,12 @@ namespace Editor.ContentService
 		{
 			publishedContents = 0;
 
+			if (_contentWatcher != null)
+			{
+				_contentWatcher.Cancel();
+				_contentWatcher = null;
+			}
+			
 			try
 			{
 				var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
@@ -265,7 +276,7 @@ namespace Editor.ContentService
 					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents, () =>
 					                     {
 						                     publishCommand.Cancel();
-						                     EditorUtility.ClearProgressBar();
+						                     FinishActionProgress();
 					                     });
 				});
 				await publishCommand.Run();
@@ -273,13 +284,19 @@ namespace Editor.ContentService
 				if (EditorUtility.DisplayCancelableProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0))
 				{
 					publishCommand.Cancel();
-					EditorUtility.ClearProgressBar();
+					FinishActionProgress();
 				}
 			}
 			finally
 			{
-				EditorUtility.ClearProgressBar();
+				FinishActionProgress();
 			}
+		}
+
+		private void FinishActionProgress()
+		{
+			EditorUtility.ClearProgressBar();
+			_ = Reload();
 		}
 
 		public async Task PublishContents()

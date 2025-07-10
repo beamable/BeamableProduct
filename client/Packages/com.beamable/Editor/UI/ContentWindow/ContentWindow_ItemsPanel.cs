@@ -212,7 +212,7 @@ namespace Editor.UI.ContentWindow
 					if (items.Count > 0)
 					{
 						float availableSpace = rowRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH);
-						DrawTypeItems(items, indentLevel, availableSpace);
+						DrawTypeItems(items, indentLevel, availableSpace, contentType);
 						GUILayout.Space(BASE_PADDING);
 					}
 					DrawGroupNode(contentType, indentLevel + 1);
@@ -236,11 +236,11 @@ namespace Editor.UI.ContentWindow
 			Selection.activeObject = contentObject;
 		}
 
-		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth)
+		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth, string groupName)
 		{
 			float[] columnWidths = CalculateColumnWidths(availableWidth);
 			DrawItemsPanelHeader(columnWidths, indentLevel);
-			DrawTypeItemsNodes(items, indentLevel, columnWidths, availableWidth);
+			DrawTypeItemsNodes(items, indentLevel, columnWidths, availableWidth, groupName);
 		}
 		
 		private void DrawItemsPanelHeader(float[] columnWidths, int indentLevel)
@@ -256,7 +256,7 @@ namespace Editor.UI.ContentWindow
 			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
 		}
 
-		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth)
+		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth, string groupName)
 		{
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
 			if (items.Count <= maxVisibleItems)
@@ -277,46 +277,80 @@ namespace Editor.UI.ContentWindow
 			}
 			else
 			{
-				// virtual scrolling
-				string scrollKey = items.First().TypeName;
-
-				if (!_groupScrollPositions.TryGetValue(scrollKey, out var scrollPos))
+				if (!_groupScrollPositions.TryGetValue(groupName, out var scrollPos))
 				{
 					scrollPos = Vector2.zero;
-					_groupScrollPositions[scrollKey] = scrollPos;
+					_groupScrollPositions[groupName] = scrollPos;
 				}
 
 				float totalHeight = items.Count * ITEMS_TABLE_ROW_HEIGHT;
 				float visibleHeight = maxVisibleItems * ITEMS_TABLE_ROW_HEIGHT;
 
+				
+				Rect areaRect = GUILayoutUtility.GetRect(totalWidth, visibleHeight);
+				
+				GUI.Box(areaRect, GUIContent.none);
+				
+				
+				GUI.SetNextControlName(groupName);
+				
+				if (areaRect.Contains(Event.current.mousePosition))
+				{
+					GUI.FocusControl(groupName);
+				}
+				
+				Rect contentRect = new Rect(0, 0, totalWidth - 20, totalHeight); // -20 for scrollbar width
+				
+				// Using this to prevent Unity from reusing ScrollID when there is multiple scrolls in screen
+				// causing the scroll move each other
+				if (Event.current.type == EventType.ScrollWheel && areaRect.Contains(Event.current.mousePosition))
+				{
+					scrollPos.y += Event.current.delta.y * 10f;
+					scrollPos.y = Mathf.Clamp(scrollPos.y, 0, totalHeight - visibleHeight);
+					_groupScrollPositions[groupName] = scrollPos;
+					Event.current.Use();
+				}
+				
+				// Begin scroll view
+				var newScrollPos = GUI.BeginScrollView(
+					areaRect,
+					scrollPos,
+					contentRect,
+					false,
+					true // vertical scrollbar only
+				);
+				
+				// Calculate visible range
 				int firstVisible = Mathf.FloorToInt(scrollPos.y / ITEMS_TABLE_ROW_HEIGHT);
 				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems - 1);
 
-				firstVisible = Mathf.Max(0, firstVisible - 2);
-				lastVisible = Mathf.Min(items.Count - 1, lastVisible + 2);
 				
-				scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(visibleHeight));
-				_groupScrollPositions[scrollKey] = scrollPos;
-				
-				GUILayout.Space(totalHeight);
-
-				Rect groupRect = GUILayoutUtility.GetLastRect();
 				for (int index = firstVisible; index <= lastVisible; index++)
 				{
 					Rect rowRect = new Rect(
 						indentLevel * CONTENT_GROUP_INDENT_WIDTH + 3f,
-						groupRect.y + index * ITEMS_TABLE_ROW_HEIGHT,
-						totalWidth - 12 , // Scrollbar width
+						index * ITEMS_TABLE_ROW_HEIGHT,
+						contentRect.width,
 						ITEMS_TABLE_ROW_HEIGHT
 					);
 
 					DrawItemRow(items[index], index, rowRect, columnWidths);
 				}
 
-				GUILayout.EndScrollView();
-				Rect last = GUILayoutUtility.GetLastRect();
-				BeamGUI.DrawHorizontalSeparatorLine(indentLevel * CONTENT_GROUP_INDENT_WIDTH + 3f, last.yMax, totalWidth,
-				                                    _tableSeparatorColor);
+				
+				GUI.EndScrollView();
+				
+				if (Event.current.type == EventType.Repaint || areaRect.Contains(Event.current.mousePosition))
+				{
+					_groupScrollPositions[groupName] = newScrollPos;
+				}
+				
+				BeamGUI.DrawHorizontalSeparatorLine(
+					areaRect.x,
+					areaRect.y + areaRect.height,
+					areaRect.width,
+					_tableSeparatorColor
+				);
 			}
 		}
 
@@ -606,6 +640,7 @@ namespace Editor.UI.ContentWindow
 				var allItems = GetCachedManifestEntries();
 				filteredItems = allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue)).ToList();
 				_filteredCache[filterKey] = filteredItems;
+				Debug.Log("New Filter");
 			}
 
 			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems) : filteredItems;
@@ -697,6 +732,7 @@ namespace Editor.UI.ContentWindow
 				_ => throw new ArgumentOutOfRangeException()
 			}).ToList();
 			_sortedCache[sortKey] = sortedItems;
+			Debug.Log("new sorted");
 			return sortedItems;
 		}
 
