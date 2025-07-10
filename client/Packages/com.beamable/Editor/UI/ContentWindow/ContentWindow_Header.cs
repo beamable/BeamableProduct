@@ -110,18 +110,24 @@ namespace Editor.UI.ContentWindow
 				var hasContentToPublish = _contentService.HasChangedContents;
 				var hasConflictedOrInvalid = _contentService.HasConflictedContent || _contentService.HasInvalidContent;
 
-				string tooltip = "Publish Content to Current Realm";
+				string publishTooltip = "Publish Content to Current Realm";
+				string syncTooltip = "Sync contents with Current Realm";
 				if (hasConflictedOrInvalid)
 				{
-					tooltip = "There is Conflicted or Invalid Content, unable to Publish.";
+					publishTooltip = "There is Conflicted or Invalid Content, unable to Publish.";
 				}
 				else if (!hasContentToPublish)
 				{
-					tooltip = "There is not any modified items to publish. You are up-to-date.";
+					publishTooltip = "There is not any modified items to publish. You are up-to-date.";
+					syncTooltip = "There is not any modified items to sync. You are up-to-date.";
 				}
 
 
-				if (BeamGUI.HeaderButton("Sync", BeamGUI.iconSync, width: HEADER_BUTTON_WIDTH, iconPadding: 2))
+
+				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
+				                         () => BeamGUI.HeaderButton("Sync", BeamGUI.iconSync,
+				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                                                    tooltip: syncTooltip)))
 				{
 					ShowSyncMenu();
 				}
@@ -129,7 +135,7 @@ namespace Editor.UI.ContentWindow
 				if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
 				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
 				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: tooltip)))
+				                                                    tooltip: publishTooltip)))
 				{
 					ChangeToPublishMode();
 				}
