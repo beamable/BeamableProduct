@@ -35,6 +35,7 @@ namespace Beamable.Api.Sessions
 		/// </summary>
 		/// <param name="gamerTag">The player id of the player to find the <see cref="Session"/> for.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="Session"/></returns>
+		[Obsolete("This will be removed in a future version.")]
 		Promise<Session> GetHeartbeat(long gamerTag);
 
 		/// <summary>

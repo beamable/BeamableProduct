@@ -1,3 +1,4 @@
+using System;
 using Beamable.Api;
 using Beamable.Api.Commerce;
 using Beamable.Common.Content;
@@ -77,10 +78,10 @@ namespace Beamable
 		[Tooltip("It allows to globally enable/disable offline cache.")]
 		public bool UseOfflineCache = true;
 
-		[Tooltip("It will enable/disable hearbeat service default behaviour.\n" +
-				 "Disabling it allows to reduce amount of calls to Beamable with cost of disabling support for matchmaking services.")]
-		public bool SendHeartbeat = true;
+		[Tooltip("Force the emission of heartbeat calls to beamable. This is not required when the realm is using the beamable notification channel. ")]
+		public OptionalBool SendLegacyHeartbeat = false;
 
+		
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
