@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Admin console command `HEARTBEAT` has been removed
 
+### Added
+- `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
+
+
 ## [2.4.0] - 2025-06-11 
 
 ### Fixed
