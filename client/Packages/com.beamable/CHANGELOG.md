@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
 - `Core.Platform` namespace moved into `Beamable` namespace
 
+### Removed
+- Admin console command `HEARTBEAT` has been removed
+
 ## [2.4.0] - 2025-06-11 
 
 ### Fixed

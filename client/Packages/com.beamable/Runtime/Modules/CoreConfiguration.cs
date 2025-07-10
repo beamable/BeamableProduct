@@ -79,7 +79,7 @@ namespace Beamable
 		public bool UseOfflineCache = true;
 
 		[Tooltip("Force the emission of heartbeat calls to beamable. This is not required when the realm is using the beamable notification channel. ")]
-		public bool SendLegacyHeartbeat = false;
+		public OptionalBool SendLegacyHeartbeat = false;
 
 		
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +

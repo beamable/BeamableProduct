@@ -687,7 +687,12 @@ namespace Beamable
 				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 
-				if (config.IsUsingPubnubNotifications() || CoreConfiguration.Instance.SendLegacyHeartbeat)
+				bool sendHeartbeat = config.IsUsingPubnubNotifications();
+				if (CoreConfiguration.Instance.SendLegacyHeartbeat.TryGet(out var overrideSendHeartbeat))
+				{
+					sendHeartbeat = overrideSendHeartbeat;
+				} 
+				if (sendHeartbeat)
 				{
 					_heartbeatService.Start();
 				}
