@@ -50,7 +50,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_U_STRUCT_PREFIX = new("F");
 	public static readonly UnrealType UNREAL_U_POLY_WRAPPER_PREFIX = new("UOneOf_");
 	public static readonly UnrealType UNREAL_U_HTML_TEXT_RESPONSE_TYPE = new("UHtmlResponse*");
-	
+
 	public static readonly UnrealType UNREAL_U_BEAM_NODE_PREFIX = new("UK2BeamNode");
 	public static readonly UnrealType UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = new("UBeamPlainTextResponseBody*");
 	// End of Special Case Types
@@ -61,7 +61,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// that'll exist in Unreal as a Categories for the BP. 
 	/// </summary>
 	public static readonly Dictionary<string, string> SERVICE_NAME_OVERRIDES;
-	
+
 	/// <summary>
 	/// These overrides are applied in <see cref="GetNamespacedTypeNameFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
 	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
@@ -81,7 +81,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// TODO: Over time, we should probably move this into its own partial file of this type.
 	/// </summary>
 	public static readonly Dictionary<string, UnrealType> POLYMORPHIC_WRAPPER_TYPE_OVERRIDES;
-	
 
 
 	// Start of Semantic Types
@@ -152,11 +151,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", new("UBeamJobType*") }
 		};
 
-		SERVICE_NAME_OVERRIDES = new()
-		{
-			{"PlayerParty","Party"},
-			{"Social", "Friends"},
-		};
+		SERVICE_NAME_OVERRIDES = new() { { "PlayerParty", "Party" }, { "Social", "Friends" }, };
 
 		UNREAL_ALL_SEMTYPES = new List<UnrealType>
 		{
@@ -196,13 +191,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Typically, this is the same as <see cref="headerFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string includeStatementPrefix = "BeamableCore/Public/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to describe a prefix to add before the path to the autogen folder in include statements.
 	/// Typically, this is the same as <see cref="blueprintHeaderFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string blueprintIncludeStatementPrefix = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to control where the AutoGen folder will be created.
 	/// It can be the same as <see cref="cppFileOutputPath"/>.
@@ -693,13 +688,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		output.CsvResponseTypes.EnsureCapacity(context.Schemas.Count);
 		output.CsvRowTypes.EnsureCapacity(context.Schemas.Count);
 		output.PolymorphicWrappersDeclarations.EnsureCapacity(context.Schemas.Count);
-		
+
 		// Allocate a list to keep track of all Schema types that we have already declared.
 		var listOfAlreadyDeclaredTypes = new List<NamespacedType>(context.Schemas.Count);
 
 		// Add replacement types so that we don't generate them when we see them
 		listOfAlreadyDeclaredTypes.AddRange(context.AllNamespacedReplacementTypes);
-		if(genType == GenerationType.Microservice)
+		if (genType == GenerationType.Microservice)
 		{
 			listOfAlreadyDeclaredTypes.AddRange(previousGenerationPassesData.InEngineTypeToIncludePaths.Keys.Select(s => GetNamespacedTypeNameFromUnrealType(new UnrealType() { TypeString = s })));
 		}
@@ -736,9 +731,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			var schema = namedOpenApiSchema.Schema;
 			UnrealType schemaUnrealType = GetNonOptionalUnrealTypeForField(context, namedOpenApiSchema.Document, schema);
 			NamespacedType schemaNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType);
-			
+
 			GetNamespacedServiceNameFromApiDoc(namedOpenApiSchema.Document.Info, out var serviceTitle, out var serviceName);
-			
+
 			// Make sure we don't declare two types with the same name
 			if (listOfAlreadyDeclaredTypes.Contains(schemaNamespacedType)) continue;
 			listOfAlreadyDeclaredTypes.Add(schemaNamespacedType);
@@ -770,8 +765,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						PropertyUnrealType = unrealType,
 						PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType),
-						PropertyName = fieldName.Capitalize(),
-						PropertyDisplayName = fieldName.Capitalize(),
+						PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(fieldName.Capitalize()),
+						PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(fieldName.Capitalize()),
 						RawFieldName = fieldName,
 
 						// We don't support Optional types here.
@@ -861,8 +856,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						PropertyUnrealType = unrealType,
 						PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType),
-						PropertyName = propertyName,
-						PropertyDisplayName = propertyDisplayName.SpaceOutOnUpperCase(),
+						PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(propertyName),
+						PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(propertyDisplayName.SpaceOutOnUpperCase()),
 						RawFieldName = fieldName,
 						NonOptionalTypeName = nonOptionalUnrealType,
 					};
@@ -1219,18 +1214,31 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			foreach ((string endpointPath, OpenApiPathItem endpoint) in openApiDocument.Paths)
 			{
-
-				// If the method is hidden we should not Generate Client Code for it
-				if (endpoint.Extensions.TryGetValue(METHOD_SKIP_CLIENT_GENERATION_KEY, out var isHidden) &&
-				    isHidden is OpenApiBoolean { Value: true })
+				// For microservices, skip non-callable endpoints and endpoints flagged with skip-client-gen.
+				if (genType == GenerationType.Microservice)
 				{
-					continue;
+					// If the method is hidden we should not Generate Client Code for it
+					if (endpoint.Extensions.TryGetValue(METHOD_SKIP_CLIENT_GENERATION_KEY, out var isHidden) &&
+					    isHidden is OpenApiBoolean { Value: true })
+					{
+						continue;
+					}
 				}
-				
+
 				foreach ((OperationType operationType, OpenApiOperation endpointData) in endpoint.Operations)
 				{
 					var unrealEndpoint = new UnrealEndpointDeclaration();
 
+					// For microservices, we don't generate non-callable operations
+					if (isMsGen)
+					{
+						if (!endpointData.Extensions.TryGetValue(OPERATION_CALLABLE_METHOD_TYPE_KEY,
+							    out var methodTypeExt) || methodTypeExt is not OpenApiString methodType)
+						{
+							continue;
+						}
+					}
+					
 					// Find the service type from the document
 					var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 					if (isMsGen)
@@ -1254,8 +1262,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
-											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1296,10 +1304,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						var unrealProperty = new UnrealPropertyDeclaration();
 						unrealProperty.PropertyUnrealType = GetUnrealTypeForField(out _, context, openApiDocument, paramSchema, paramFieldHandle);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
-						unrealProperty.PropertyName =
-							UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
+						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
 						unrealProperty.RawFieldName = param.Name;
-						unrealProperty.PropertyDisplayName = unrealProperty.PropertyName.SpaceOutOnUpperCase();
+						unrealProperty.PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(unrealProperty.PropertyName.SpaceOutOnUpperCase());
 						unrealProperty.NonOptionalTypeName = GetNonOptionalUnrealTypeForField(context, openApiDocument, paramSchema);
 						unrealProperty.BriefCommentString = $"{param.Description}";
 
@@ -1362,7 +1369,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
 							// Make the new property declaration for this field.
 							var unrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
-							
+
 							// Check if it don't exist in the schema and if it is NOT a raw primitive type 
 							if (jsonResponse.Schema.Reference != null && !unrealType.IsRawPrimitive())
 							{
@@ -1397,7 +1404,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									IsResponseBodyType = ResponseBodyType.PrimitiveWrapper,
 								};
 
-						
+
 								var fieldName = "Value";
 								var propertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealType, fieldName, kSchemaGenerationBuilder);
 								var propertyDisplayName = propertyName;
@@ -1405,8 +1412,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								{
 									PropertyUnrealType = unrealType,
 									PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType),
-									PropertyName = propertyName,
-									PropertyDisplayName = propertyDisplayName.SpaceOutOnUpperCase(),
+									PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(propertyName),
+									PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(propertyDisplayName.SpaceOutOnUpperCase()),
 									RawFieldName = fieldName,
 									NonOptionalTypeName = unrealType,
 								};
@@ -1554,9 +1561,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			UPropertyDeclarations = ptrWrappedTypes.Select(wrappedUnrealType => new UnrealPropertyDeclaration
 			{
 				PropertyUnrealType = new(wrappedUnrealType),
-				PropertyName = context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize(),
+				PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize()),
+				PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize()),
 				RawFieldName = context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType],
-				PropertyDisplayName = context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize(),
 				NonOptionalTypeName = MakeUnrealUObjectTypeFromNamespacedType(GetNamespacedTypeNameFromUnrealType(wrappedUnrealType))
 			}).ToList(),
 			PropertyIncludes = ptrWrappedTypes.Select(t => GetIncludeStatementForUnrealType(context, t)).ToList(),
@@ -1621,7 +1628,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// With that unreal type and the list of possible values for the enum, it creates the declaration for it. 
 	/// </summary>
 	private static UnrealEnumDeclaration MakeEnumDeclaration(UnrealType unrealType, List<string> enumValuesNames, string serviceName) =>
-		new() { UnrealTypeName = unrealType, NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), EnumValues = enumValuesNames, ServiceName = serviceName};
+		new() { UnrealTypeName = unrealType, NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), EnumValues = enumValuesNames, ServiceName = serviceName };
 
 
 	/// <summary>
@@ -1739,7 +1746,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		serviceTitle = serviceNames.Length == 1 ? "Basic" : serviceNames[1].Sanitize().Capitalize();
 
 		string serviceNameCapitalize = serviceNames[0].Sanitize().Capitalize();
-		
+
 		if (!SERVICE_NAME_OVERRIDES.TryGetValue(serviceNameCapitalize, out serviceName))
 		{
 			serviceName = serviceNameCapitalize;
@@ -1844,12 +1851,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				routeParams.Add(routeParamExtension);
 				routeParamExtension = "";
 			}
-			else if(isInParam)
+			else if (isInParam)
 			{
 				routeParamExtension += endpointPath[i];
 			}
 		}
-		
+
 		// Capitalize the name
 		methodName = methodName.Length > 1 ? methodName.Capitalize() : methodName;
 
@@ -1882,7 +1889,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				_ => throw new Exception($"Should not be possible for service {serviceName} to fall here.")
 			};
 			methodName = conflictResolutionPrefix + methodName;
-			
+
 			// Lets append the route params
 			if (routeParams.Count != 0)
 				methodName += $"By{string.Join("And", routeParams.Select(r => r.Sanitize().Capitalize()))}";
@@ -1919,8 +1926,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-										$"Please change your Microservice name to resolve this.");
+			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+			                            $"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1941,7 +1948,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Ensure we don't have '-', '/' and others in the name
 		methodName = methodName.Sanitize();
-		
+
 		// If the name here is empty (happens in routes like this "/object/mail/{objectId}/"), we'll use the service's own name as the method name.
 		methodName = string.IsNullOrEmpty(methodName) ? serviceName : methodName;
 		methodName = $"{methodName}";
@@ -1951,8 +1958,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-										$"Please rename all overloads to resolve this.");
+			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			                            $"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -2002,7 +2009,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsNumericPrimitive() => IsUnrealByte() || IsUnrealShort() || IsUnrealInt() || IsUnrealLong() || IsUnrealFloat() || IsUnrealDouble();
 
 		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool();
-		
+
 		public bool IsUnrealArray() => AsStr.StartsWith(UNREAL_ARRAY);
 		public bool IsUnrealMap() => AsStr.StartsWith(UNREAL_MAP);
 		public bool IsUnrealEnum() => AsStr.StartsWith(UNREAL_U_ENUM_PREFIX);
@@ -2056,7 +2063,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool ContainsAnySemanticType() => UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(AsStr.Contains);
 
 		public bool IsUnrealJson() => AsStr.StartsWith(UNREAL_JSON);
-		
+
 		#endregion
 	}
 
@@ -2132,7 +2139,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case ("array", _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_ARRAY_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_ARRAY_STATSTYPE);
 
-	
+
 			case (_, _, _, _) when string.Equals(semType, "Cid", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID);
 			case (_, _, _, _) when string.Equals(semType, "Pid", StringComparison.InvariantCultureIgnoreCase):
@@ -2150,7 +2157,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			case (_, _, _, _) when isArbitraryJsonObject:
 				return new UnrealType(nonOverridenType = UNREAL_JSON);
-			
+
 			// Handle replacement types (types that we replace by hand-crafted types inside the SDK)
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId) && context.ReplacementTypes.TryGetValue(referenceId, out var replacementTypeInfo):
 			{
@@ -2173,7 +2180,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var val = defaults.Default as OpenApiString;
 						if (context.PolymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
-							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
+						    (existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
@@ -2187,7 +2194,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					? appliedOverride
 					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenType}"));
 			}
-			case  ("object", _, "System.DateTime", _) :
+			case ("object", _, "System.DateTime", _):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME);
 			case ("string", _, "System.Guid", _):
 				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
@@ -2502,7 +2509,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		if (unrealTypeName.IsUnrealDouble())
 			return new("Double");
-		
+
 
 		// F"AnyTypes"/E"AnyEnums" we just remove the F's/E's
 		if (char.IsUpper(unrealTypeName.AsStr[1]) && (unrealTypeName.IsUnrealStruct() || unrealTypeName.IsUnrealEnum()))
@@ -2596,10 +2603,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.IsUnrealJson())
 				return @"#include ""Dom/JsonObject.h""";
-			
-			if(unrealType.IsRawPrimitive())
+
+			if (unrealType.IsRawPrimitive())
 				return @"#include ""Serialization/BeamJsonUtils.h""";
-			
+
 			if (context.ReplacementTypesIncludes.TryGetValue(unrealType, out var replacementTypeInclude))
 				return replacementTypeInclude;
 		}
@@ -2716,7 +2723,7 @@ public static class StringExtensions
 			// Replace doesn't fail if key is not found, so we can just ask it to try to replace...
 			res = res.Replace(key, value);
 		}
-		
+
 
 		return res;
 	}

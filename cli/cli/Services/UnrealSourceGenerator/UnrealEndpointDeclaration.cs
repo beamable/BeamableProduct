@@ -510,7 +510,7 @@ U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespac
 		const auto BeamRequestProcessor = Backend->MakeBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
 			(OutRequestId, RequestData, OnSuccess, OnError, OnComplete);
 		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);		
+		Backend->SendPreparedRequest(OutRequestId, CallingContext);		
 	}}";
 
 	public const string RAW_BP_DEFINITION = $@"
@@ -566,7 +566,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
 	    
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
+		Backend->SendPreparedRequest(OutRequestId, CallingContext);	
 	}}";
 
 	public const string RAW_AUTH_BP_DEFINITION = $@"
@@ -622,7 +622,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
+		Backend->SendPreparedRequest(OutRequestId, CallingContext);	
 	}}";
 
 	public const string RAW_CPP_DEFINITION = $@"
@@ -675,7 +675,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
 		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId);	
+		Backend->SendPreparedRequest(OutRequestId, CallingContext);	
 	}}";
 
 	public const string RAW_AUTH_CPP_DEFINITION = $@"
@@ -758,8 +758,8 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
 
     int64 OutRequestId;
-	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
+	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, AuthenticatedUser.AuthToken, Request, Handler, OutRequestId, OpHandle, CallingContext);
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, UserSlot, AS_None}};
 }}
 ";
 
@@ -820,8 +820,8 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
 
 	int64 OutRequestId;
-	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, AuthenticatedUser.AuthToken, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, UserSlot, AS_None}};
 }}
 ";
 
