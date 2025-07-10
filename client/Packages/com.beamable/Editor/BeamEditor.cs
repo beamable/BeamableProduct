@@ -121,6 +121,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => p.GetService<BeamCli>());
 
 			DependencyBuilder.AddGlobalStorage<UsamService, SessionStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<CliContentService, SessionStorageLayer>();
 			DependencyBuilder.AddSingleton(() => MicroserviceConfiguration.Instance);
 			DependencyBuilder.AddSingleton<CommonAreaService>();
 			
