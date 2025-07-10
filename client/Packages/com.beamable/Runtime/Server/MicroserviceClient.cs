@@ -39,12 +39,7 @@ namespace Beamable.Server
 		public T Data;
 	}
 
-	public interface IMicroserviceClient_Internal
-	{
-		void SetProvider(IDependencyProvider provider);
-	}
-
-	public class MicroserviceClient : IMicroserviceClient_Internal
+	public class MicroserviceClient
 	{
 		private IDependencyProvider _provider;
 
@@ -79,11 +74,6 @@ namespace Beamable.Server
 		[Obsolete]
 		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		   => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
-
-		void IMicroserviceClient_Internal.SetProvider(IDependencyProvider provider)
-		{
-			_provider = provider;
-		}
 	}
 
 
