@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
 - `Core.Platform` namespace moved into `Beamable` namespace
 
+### Added
+- `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
+
 ## [2.4.0] - 2025-06-11 
 
 ### Fixed
