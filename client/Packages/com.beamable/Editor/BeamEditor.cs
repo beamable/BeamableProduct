@@ -39,6 +39,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
@@ -126,7 +127,7 @@ namespace Beamable
 			DependencyBuilder.AddGlobalStorage<UsamService, SessionStorageLayer>();
 			DependencyBuilder.AddSingleton(() => MicroserviceConfiguration.Instance);
 			DependencyBuilder.AddSingleton<CommonAreaService>();
-			
+			DependencyBuilder.AddScoped<MicroserviceClients>();
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -532,6 +533,7 @@ namespace Beamable
 		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
 		/// </summary>
 		public UserPermissions Permissions => BeamCli.Permissions;
+		public MicroserviceClients Microservices => ServiceScope.GetService<MicroserviceClients>();
 
 		public bool HasToken => Requester.Token != null;
 
@@ -757,7 +759,6 @@ namespace Beamable
 			IsStopped = true;
 			await ServiceScope.Dispose();
 		}
-
 	}
 
 	[Serializable]

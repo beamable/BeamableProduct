@@ -18,7 +18,7 @@ namespace Beamable.Server.Editor
 		/// DI scope than a runtime game will. 
 		/// </summary>
 		/// <param name="builder"></param>
-		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]
+		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME | RegistrationOrigin.EDITOR)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<IServiceRoutingResolution, UsamRoutingResolution>();
