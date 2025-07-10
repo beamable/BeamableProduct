@@ -28,9 +28,9 @@ public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateI
 		DeveloperUser resultDeveloperUser = await args.DeveloperUserManagerService.UpdateDeveloperUserInfo(args.GamerTag, args.Alias, args.Description, args.Tags);
 
 		return new DeveloperUserResult() {
-			UpdatedUsers = new List<DeveloperUser>()
+			UpdatedUsers = new List<DeveloperUserData>()
 			{
-				resultDeveloperUser
+				DeveloperUserManagerService.DeveloperUserToDeveloperUserData(resultDeveloperUser)
 			} 
 		};
 	}

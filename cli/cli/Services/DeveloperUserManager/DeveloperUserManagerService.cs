@@ -36,13 +36,11 @@ public class LocalDeveloperUserFileChanges
 [CliContractType, Serializable]
 public class DeveloperUserResult
 {
-	public List<DeveloperUser> CreatedUsers = new List<DeveloperUser>();
-	public List<DeveloperUser> DeletedUsers = new List<DeveloperUser>();
-	public List<DeveloperUser> UpdatedUsers = new List<DeveloperUser>();
-	public List<DeveloperUser> SavedUsers = new List<DeveloperUser>();
-	public List<DeveloperUser> CorruptedUsers = new List<DeveloperUser>();
+	public List<DeveloperUserData> CreatedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> DeletedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> UpdatedUsers = new List<DeveloperUserData>();
+	public List<DeveloperUserData> SavedUsers = new List<DeveloperUserData>();
 }
-
 
 public struct ChangedDeveloperUserFile
 {
@@ -57,13 +55,37 @@ public struct ChangedDeveloperUserFile
 	public bool WasChanged() => !WasCreated() && !WasDeleted() && FullFilePath == OldFullFilePath;
 }
 
+[CliContractType, Serializable]
+public class DeveloperUserData
+{
+	// User Management Info
+	public long GamerTag;
+	public long TemplateGamerTag; // Use to reset to template
+	
+	public bool IsCorrupted;
+	
+	public int DeveloperUserType;
+	
+	public string Alias = "";
+	public string Description = "";
+	public List<string> Tags = new List<string>();
+
+	public long CreatedDate;
+	
+	// Backend info
+	public string AccessToken = "";
+	public string RefreshToken = "";
+	public string Pid = "";
+	public string Cid = "";
+	
+	public long ExpiresIn;
+}
 
 // This will represent the cached information for the developer user
-[CliContractType, Serializable]
+[Serializable]
 public struct DeveloperUser
 {
 	// User Management Info
-
 	public long GamerTag;
 	
 	public bool IsCorrupted;
@@ -254,13 +276,34 @@ public class DeveloperUserManagerService
 				createUserTaskBatch.Add(CreateUserFromTemplate(authApi, adminMe, templateUserInfo));
 			}
 		}
-
+		// Create user task in batch
+		// If we throw any error here we will not save any developer user to local 
 		await Task.WhenAll(createUserTaskBatch);
+
+		List<DeveloperUser> resultDeveloperUsers = new List<DeveloperUser>();
+		
+		List<Task> saveDeveloperUserTasks = new List<Task>();
+		
+		foreach (var createUserTask in createUserTaskBatch)
+		{
+			var developerUser = createUserTask.Result;
+			
+			resultDeveloperUsers.Add(developerUser);
+			
+			saveDeveloperUserTasks.Add(SaveDeveloperUser(developerUser));
+		}
+		
+		// All fail - 
+		// Backend Fail
+		// File System Local Fail
+		
+		// Wait until save all developer user
+		await Task.WhenAll(saveDeveloperUserTasks);
 
 		// In order to don't create infinity users in the manager we can set a value to be the max amount of users sorted by creation date
 		RemoveOlderEntriesFromCachedBuffer(rollingBufferSize);
 
-		return createUserTaskBatch.Select(developerTask => developerTask.Result).ToList();
+		return resultDeveloperUsers;
 	}
 	/// <summary>
 	/// Copy state from a developer user to another
@@ -511,9 +554,9 @@ public class DeveloperUserManagerService
 	{
 		List<DeveloperUser> developerUsers = new List<DeveloperUser>();
 
-		foreach (DeveloperUserType type in Enum.GetValues(typeof(DeveloperUserType)))
+		foreach (DeveloperUserType developerUserType in Enum.GetValues(typeof(DeveloperUserType)))
 		{
-			string userPath = GetFullPath(type);
+			string userPath = GetFullPath(developerUserType);
 
 			if (!Directory.Exists(userPath))
 			{
@@ -525,9 +568,29 @@ public class DeveloperUserManagerService
 			foreach (var file in files)
 			{
 				string cachedUserJson = File.ReadAllText(file);
-				DeveloperUser developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
-				developerUser.GamerTag = long.Parse(Path.GetFileNameWithoutExtension(file));
-				developerUser.DeveloperUserType = (int)type; // Override the developer type based on the folder
+				DeveloperUser developerUser;
+				
+				try
+				{
+					developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
+				}
+				catch
+				{
+					developerUser = new DeveloperUser
+					{
+						Alias = file,
+						IsCorrupted = true
+					};
+				}
+				
+				if (!long.TryParse(Path.GetFileNameWithoutExtension(file), out developerUser.GamerTag))
+				{
+					developerUser.IsCorrupted = true;
+					developerUser.Alias = file;
+				}
+	
+				developerUser.DeveloperUserType = (int)developerUserType; // Override the developer type based on the folder
+				
 				developerUsers.Add(developerUser);
 			}
 		}
@@ -551,8 +614,25 @@ public class DeveloperUserManagerService
 		foreach (var file in files)
 		{
 			string cachedUserJson = File.ReadAllText(file);
-			DeveloperUser developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
-			developerUser.GamerTag = long.Parse(Path.GetFileNameWithoutExtension(file));
+			DeveloperUser developerUser;
+			try
+			{
+				developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
+			}
+			catch
+			{
+				developerUser = new DeveloperUser
+				{
+					Alias = file,
+					IsCorrupted = true
+				};
+			}
+			
+			if (!long.TryParse(Path.GetFileNameWithoutExtension(file), out developerUser.GamerTag))
+			{
+				developerUser.Alias = file;
+				developerUser.IsCorrupted = true;
+			}
 			developerUser.DeveloperUserType = (int)developerUserType; // Override the developer type based on the folder
 			
 			cachedDevelopersUsers.Add(developerUser);
@@ -617,8 +697,6 @@ public class DeveloperUserManagerService
 		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, templateDeveloperUser.GamerTag, tokenResponse, _appContext.Cid, _appContext.Pid, "", adminMe.id, temporaryDescription, new List<string>(), DateTime.UtcNow.Ticks, DeveloperUserType.Captured);
 
 		await CopyState(templateDeveloperUser, developerUser);
-
-		await SaveDeveloperUser(developerUser);
 
 		return developerUser;
 	}
@@ -712,7 +790,7 @@ public class DeveloperUserManagerService
 		}
 		
 		inventoryUpdateRequest.currencies.Set(currencies);
-		
+
 		await targetInventoryApi.ObjectPut(targetDeveloperUser.GamerTag, inventoryUpdateRequest);
 	}
 
@@ -867,11 +945,24 @@ public class DeveloperUserManagerService
 			if (gamerTags.Contains(gamerTag))
 			{
 				string cachedUserJson = File.ReadAllText(file);
-				DeveloperUser developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
+				DeveloperUser developerUser;
+				try
+				{
+					developerUser = JsonConvert.DeserializeObject<DeveloperUser>(cachedUserJson);
+				}
+				catch
+				{
+					developerUser = new DeveloperUser
+					{
+						Alias = file,
+						IsCorrupted = true
+					};
+				}
 
 				if (!long.TryParse(gamerTag, out developerUser.GamerTag))
 				{
 					developerUser.IsCorrupted = true;
+					developerUser.Alias = file;
 				}
 
 				developerUser.DeveloperUserType = (int)developerUserType; // Override the developer type based on the folder
@@ -982,6 +1073,32 @@ public class DeveloperUserManagerService
 			BeamableLogger.LogError($"Developer user not found with gamer tag: {developerUser.Alias}");
 		}
 		return developerUser.IsValidUser();
+	}
+
+	public static IEnumerable<DeveloperUserData> DeveloperUsersToDeveloperUsersData(List<DeveloperUser> developerUsers)
+	{
+		return developerUsers.Select(DeveloperUserToDeveloperUserData);
+	}
+	public static DeveloperUserData DeveloperUserToDeveloperUserData(DeveloperUser developerUser)
+	{
+		DeveloperUserData developerUserData = new DeveloperUserData
+		{
+			GamerTag = !developerUser.IsCorrupted ? developerUser.GamerTag : new Random().NextInt64(0, Int64.MaxValue),
+			TemplateGamerTag = developerUser.TemplateGamerTag,
+			Alias	= developerUser.Alias,
+			AccessToken = developerUser.AccessToken,
+			RefreshToken = developerUser.RefreshToken,
+			Cid = developerUser.Cid,
+			Pid = developerUser.Pid,
+			CreatedDate = developerUser.CreatedDate,
+			Description = developerUser.Description,
+			DeveloperUserType = developerUser.DeveloperUserType,
+			ExpiresIn = developerUser.ExpiresIn,
+			Tags = developerUser.Tags,
+			IsCorrupted = developerUser.IsCorrupted,
+		};
+		
+		return developerUserData;
 	}
 
 }

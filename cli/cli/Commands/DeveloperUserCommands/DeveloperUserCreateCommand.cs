@@ -26,9 +26,13 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserCreateArgs args)
 	{
+		var developerUser = await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType);
 		return new DeveloperUserResult
 		{
-			CreatedUsers = new List<DeveloperUser> { await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType) }
+			CreatedUsers = new List<DeveloperUserData>
+			{
+				DeveloperUserManagerService.DeveloperUserToDeveloperUserData(developerUser)
+			}
 		};
 	}
 }

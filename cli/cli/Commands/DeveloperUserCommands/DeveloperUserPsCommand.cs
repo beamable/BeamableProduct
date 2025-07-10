@@ -27,7 +27,7 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 		var developerUserManagerService = args.DeveloperUserManagerService;
 		
 		// Get all available users for each type
-		var allAvailableEntries = developerUserManagerService.GetAllAvailableUserInfo();
+		var allAvailableEntries = DeveloperUserManagerService.DeveloperUsersToDeveloperUsersData(developerUserManagerService.GetAllAvailableUserInfo());
 		
 		// Build and emit the event
 		var eventToEmit = new DeveloperUserPsCommandEvent()
@@ -35,7 +35,7 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 			EventType = DeveloperUserPsCommandEvent.EVT_TYPE_FullRebuild,
 			DeveloperUserReport = new DeveloperUserResult()
 			{
-				UpdatedUsers = allAvailableEntries
+				UpdatedUsers = allAvailableEntries.ToList()
 			}
 		};
 		
@@ -67,7 +67,7 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 							var allDeletions = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasDeleted()).Select(fc => fc.GamerTag).ToArray();
 							var allUpdates = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasChanged() || fc.WasCreated() || fc.WasRenamed()).Select(fc => fc.GamerTag).ToList();
 
-							var allDeveloperUsers = developerUserManagerService.GetAllAvailableUserInfo();
+							var allDeveloperUsers = DeveloperUserManagerService.DeveloperUsersToDeveloperUsersData(developerUserManagerService.GetAllAvailableUserInfo());
 							
 							var developerUserPsCommandEvent = new DeveloperUserPsCommandEvent()
 							{
@@ -75,7 +75,7 @@ public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSt
 								DeveloperUserReport = new DeveloperUserResult()
 								{
 									UpdatedUsers = allDeveloperUsers.Where(developerUser => allUpdates.Contains(developerUser.GamerTag)).ToList(),
-									DeletedUsers = allDeletions.Select(gamerTag => new DeveloperUser
+									DeletedUsers = allDeletions.Select(gamerTag => new DeveloperUserData
 									{
 										GamerTag = gamerTag
 									}).ToList(),

@@ -18,11 +18,12 @@ public class DeveloperUserRemoveCommand : AtomicCommand<DeveloperUserRemoveArgs,
 	public override Task<DeveloperUserResult> GetResult(DeveloperUserRemoveArgs args)
 	{
 		args.DeveloperUserManagerService.DeleteUser(args.GamerTag);
+		
 		return Task.FromResult(new DeveloperUserResult
 		{
-			DeletedUsers = new List<DeveloperUser>()
+			DeletedUsers = new List<DeveloperUserData>()
 			{
-				new DeveloperUser()
+				new DeveloperUserData()
 				{
 					GamerTag = long.Parse(args.GamerTag)
 				}

@@ -49,7 +49,7 @@ public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreate
 
 		return new DeveloperUserResult()
 		{
-			CreatedUsers = result
+			CreatedUsers = DeveloperUserManagerService.DeveloperUsersToDeveloperUsersData(result).ToList()
 		};
 	}
 }
