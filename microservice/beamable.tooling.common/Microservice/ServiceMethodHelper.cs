@@ -247,9 +247,8 @@ namespace Beamable.Server
 	      }
 	      else
 	      {
-		      var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-
-		      if (isAsync)
+		      var isTaskBased = resultType.IsAssignableTo(typeof(Task));
+		      if (isTaskBased)
 		      {
 			      executor = (target, args) =>
 			      {

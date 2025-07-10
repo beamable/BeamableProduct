@@ -363,5 +363,39 @@ namespace microserviceTests.microservice
             throw;
          }
       }
+      
+      // WORKS
+      [Callable]
+      public RandomResponse Random1()
+      {
+	      return new RandomResponse {number = 123};
+      }
+		
+      // WORKS
+      [Callable]
+      public async Task<RandomResponse> Random2()
+      {
+	      return await Task.FromResult(new RandomResponse {number = 123});
+      }
+		
+      // DOES NOT WORK
+      [Callable]
+      public Task<RandomResponse> Random3()
+      {
+	      return Task.FromResult(new RandomResponse {number = 123});
+      }
+
+      // WORKS
+      [Callable]
+      public async Task<RandomResponse> Random4()
+      {
+	      return new RandomResponse {number = 123};
+      }
    }
+}
+
+[Serializable]
+public class RandomResponse
+{
+	public int number;
 }
