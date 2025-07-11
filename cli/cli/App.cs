@@ -53,8 +53,10 @@ using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
 using cli.Services.Web;
+using cli.DeveloperUserCommands;
 using cli.OtelCommands;
 using cli.OtelCommands.Grafana;
+using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -187,6 +189,7 @@ public class App
 		// register services
 		services.AddSingleton<BeamLogSwitch>(LogSwitch);
 		services.AddSingleton<IAppContext, DefaultAppContext>();
+		services.AddSingleton<IRequesterInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<NoAuthHttpRequester>();
@@ -200,6 +203,7 @@ public class App
 		services.AddSingleton<BeamoService>();
 		services.AddSingleton<BeamoLocalSystem>();
 		services.AddSingleton<ContentService, ContentService>();
+		services.AddSingleton<DeveloperUserManagerService, DeveloperUserManagerService>();
 		services.AddSingleton<CliEnvironment>();
 		services.AddSingleton<SwaggerService>();
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
@@ -220,6 +224,8 @@ public class App
 		services.AddSingleton<IFileOpenerService, FileOpenerService>();
 		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
 		services.AddSingleton<HttpSignedRequester>();
+		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
+		
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -654,6 +660,18 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
 		Commands.AddSubCommandWithHandler<ContentTagRemoveCommand, ContentTagRemoveCommandArgs, ContentTagCommand>();
+		
+		// Developer User Management 
+		Commands.AddRootCommand<DeveloperUserManagerCommand>();
+
+		Commands.AddSubCommandWithHandler<DeveloperUserCreateCommand, DeveloperUserCreateArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserCreateBatchCommand, DeveloperUserCreateBatchArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserSaveCommand, DeveloperUserSaveArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserCopyStateCommand, DeveloperUserCopyStateArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserPsCommand, DeveloperUserPsArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserUpdateInfoCommand, DeveloperUserUpdateInfoArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserRemoveCommand, DeveloperUserRemoveArgs, DeveloperUserManagerCommand>();
+		Commands.AddSubCommandWithHandler<DeveloperUserCleanCapturedUsersBufferCommand, DeveloperUserCleanCapturedUsersBufferArgs, DeveloperUserManagerCommand>();
 
 		commandConfigurator?.Invoke(Commands);
 

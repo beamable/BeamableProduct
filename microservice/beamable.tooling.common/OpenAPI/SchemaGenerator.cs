@@ -133,11 +133,11 @@ public class SchemaGenerator
 		{
 			case {} x when x.IsAssignableTo(typeof(Optional)):
 				var instance = Activator.CreateInstance(runtimeType) as Optional;
-				return Convert(instance.GetOptionalType());
+				return Convert(instance.GetOptionalType(), depth - 1);
 			case {} x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
-				return Convert(x.GetGenericArguments()[0]);
+				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
-				return Convert(x.GetGenericArguments()[0]);
+				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double"};
 			case { } x when x == typeof(float):
