@@ -63,7 +63,7 @@ namespace microservice.Common
       /// A simple method to check if the microservice can send and receive network traffic.
       /// </summary>
       /// <returns>The word "responsive" if all is well.</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       public string HealthCheck()
       {
          return "responsive";
@@ -78,7 +78,7 @@ namespace microservice.Common
       /// The summary, remarks, returns, and parameter tags are supported.
       /// </remarks>
       /// <returns>A json OpenAPI document</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       [CustomResponseSerializationAttribute]
       public string Docs()
       {
@@ -108,7 +108,7 @@ namespace microservice.Common
       /// </para>
       /// </remarks>
       /// <returns>Metadata for the service</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       public MicroserviceRuntimeMetadata Metadata()
       {
 	      var version = BeamAssemblyVersionUtil.GetVersion<AdminRoutes>();
