@@ -119,19 +119,12 @@ namespace Editor.ContentService
 				contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
 				{
 					HandleProgressUpdate(reportData.data, SYNC_OPERATION_TITLE, SYNC_OPERATION_SUCCESS_BASE_MESSAGE,
-					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents, () =>
-					                     {
-						                     contentSyncCommand.Cancel();
-						                     FinishActionProgress();
-					                     });
+					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents);
 				});
 				await contentSyncCommand.Run();
 
-				if (EditorUtility.DisplayCancelableProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0))
-				{
-					contentSyncCommand.Cancel();
-					FinishActionProgress();
-				}
+				EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
+
 
 			}
 			finally
@@ -164,7 +157,7 @@ namespace Editor.ContentService
 		{
 			if (!CachedManifest.TryGetValue(contentId, out var entry))
 			{
-				Debug.Log($"No Entry found with id: {contentId}");
+				Debug.LogError($"No Entry found with id: {contentId}");
 				return;
 			}
 
@@ -184,13 +177,13 @@ namespace Editor.ContentService
 		{
 			if (!CachedManifest.TryGetValue(contentId, out var entry))
 			{
-				Debug.Log($"No Entry found with id: {contentId}");
+				Debug.LogError($"No Entry found with id: {contentId}");
 				return;
 			}
 
 			if (!ValidateNewContentName(newName))
 			{
-				Debug.Log(
+				Debug.LogError(
 					$"{newName} contains invalid characters ({string.Join(", ", Path.GetInvalidFileNameChars())}");
 				return;
 			}
@@ -201,7 +194,7 @@ namespace Editor.ContentService
 			string newFileNamePath = Path.Combine(fileDirectoryPath, fullName);
 			if (File.Exists(newFileNamePath))
 			{
-				Debug.LogWarning($"A Content already exists with name: {newName}");
+				Debug.LogError($"A Content already exists with name: {newName}");
 				return;
 			}
 
@@ -229,7 +222,7 @@ namespace Editor.ContentService
 		{
 			if (!CachedManifest.TryGetValue(contentId, out var entry))
 			{
-				Debug.Log($"No Content found with id: {contentId}");
+				Debug.LogError($"No Content found with id: {contentId}");
 				return;
 			}
 
@@ -273,19 +266,11 @@ namespace Editor.ContentService
 				publishCommand.OnProgressStreamContentProgressUpdateData(report =>
 				{
 					HandleProgressUpdate(report.data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
-					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents, () =>
-					                     {
-						                     publishCommand.Cancel();
-						                     FinishActionProgress();
-					                     });
+					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents);
 				});
 				await publishCommand.Run();
 
-				if (EditorUtility.DisplayCancelableProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0))
-				{
-					publishCommand.Cancel();
-					FinishActionProgress();
-				}
+				EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			}
 			finally
 			{
@@ -565,7 +550,7 @@ namespace Editor.ContentService
 		private void HandleProgressUpdate(BeamContentProgressUpdateData data,
 		                                string operationTitle,
 		                                string onSuccessBaseMessage,
-		                                string onErrorBaseMessage, ref int countItem, Action onCancelOperation)
+		                                string onErrorBaseMessage, ref int countItem)
 		{
 			string description = string.Empty;
 			float progress = (float)countItem / data.totalItems;
@@ -589,10 +574,7 @@ namespace Editor.ContentService
 					break;
 			}
 
-			if (EditorUtility.DisplayCancelableProgressBar(operationTitle, description, progress))
-			{
-				onCancelOperation?.Invoke();
-			}
+			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
 		}
 	}
 }

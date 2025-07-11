@@ -43,12 +43,12 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 		_ = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
 		if (created)
 		{
-			await contentService.SyncLocalContent(args.Lifecycle, latestManifest.GetResult(), manifestId);
+			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId);
 		}
 		// Auto-sync with latest like when we react to a published manifest.
 		else
 		{
-			_ = await contentService.SyncLocalContent(args.Lifecycle, latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
+			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
 		}
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.

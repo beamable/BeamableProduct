@@ -378,7 +378,7 @@ public class ContentService
 				Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 				try
 				{
-					var syncReport = await SyncLocalContent(lifecycle, newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
+					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
 
 					// Put this on the channel so it gets picked up below.
 					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
@@ -804,7 +804,7 @@ public class ContentService
 		
 		foreach (ReferenceSuperset referenceSuperset in saveManifestRequest.references)
 		{
-			Log.Information($"Saving manifest {referenceSuperset.id} - {referenceSuperset.visibility.Value} - {referenceSuperset.version}");
+			Log.Verbose($"Saving manifest {referenceSuperset.id} - {referenceSuperset.visibility.Value} - {referenceSuperset.version}");
 		}
 		
 		// Update the local reference manifest
@@ -832,15 +832,15 @@ public class ContentService
 		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(lifecycle, targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate);
 	}
 
 	/// <summary>
 	/// <inheritdoc cref="SyncLocalContent(string,string[],ContentFilterType,bool,string)"/>
 	/// </summary>
-	public async Task<ContentSyncReport> SyncLocalContent(AppLifecycle lifecycle, ClientManifestJsonResponse targetManifest, string manifestId,
+	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
-		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true, 
+		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
 		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var report = new ContentSyncReport();
@@ -922,11 +922,6 @@ public class ContentService
 		{
 			for (int index = 0; index < batches.Length; index++)
 			{
-				if (lifecycle.IsCancelled)
-				{
-					throw new CliException($"Sync operation is cancelled.");
-				}
-				
 				Func<Task<(ContentFile, JsonElement)>>[] batch = batches[index];
 				var items = await WhenAll(batch.Select(item => item()));
 				downloadedContent.AddRange(items);
@@ -965,39 +960,13 @@ public class ContentService
 		// Save the downloaded content to disk (this is locked by this semaphore so it doesn't interfere with other function calls that might be triggered simultaneously).
 		await _fileSystemOperationSemaphore.WaitAsync();
 
-		var archiveFolder = $"{contentFolder}_archive";
-		Directory.CreateDirectory(archiveFolder);
-		async Task ReturnArchivedFilesToManifest()
-		{
-			lifecycle.ShouldWaitForCancel = true;
-			try
-			{
-				string[][] returnBatches = Directory.GetFiles(archiveFolder).Chunk(CliConstants.CONTENT_SYNC_BATCH_SIZE).ToArray();
-				foreach (string[] filesToReturn in returnBatches)
-				{
-					await MoveFilesAsync(filesToReturn, contentFolder);
-					await Delay(50); // Wait a few ms to not overflow the IO Internal Buffer being used by 'content ps'
-				}
-				Directory.Delete(archiveFolder, true);
-			}
-			finally
-			{
-				lifecycle.MarkCancelCompleted();
-			}
-		}
-		
 		var filesToDeleteBatches = contentToDelete.Chunk(CliConstants.CONTENT_SYNC_BATCH_SIZE).ToArray();
 
 		for (int index = 0; index < filesToDeleteBatches.Length; index++)
 		{
 			ContentFile[] contentsToDelete = filesToDeleteBatches[index];
-			string[] filesToMove = contentsToDelete.Select(c => c.LocalFilePath).ToArray();
-			if (lifecycle.IsCancelled)
-			{
-				await ReturnArchivedFilesToManifest();
-				throw new CliException($"Sync operation is cancelled.");
-			}
-
+			string[] filesPath = contentsToDelete.Select(c => c.LocalFilePath).ToArray();
+			
 			var contentProgress = new ContentProgressUpdateData
 			{
 				totalItems = totalItems, 
@@ -1005,7 +974,19 @@ public class ContentService
 			};
 			try
 			{
-				await MoveFilesAsync(filesToMove, archiveFolder);
+				await Parallel.ForEachAsync(filesPath, (file, _) =>
+				{
+					try
+					{
+						File.Delete(file);
+					}
+					catch (Exception ex)
+					{
+						Log.Error($"Failed to delete file '{file}': {ex.Message}");
+					}
+
+					return ValueTask.CompletedTask;
+				});
 			}
 			catch (Exception exception)
 			{
@@ -1013,7 +994,6 @@ public class ContentService
 				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
 				contentProgress.errorMessage = exception.Message;
 				onContentSyncProgressUpdate?.Invoke(contentProgress);
-				await ReturnArchivedFilesToManifest();
 				throw;
 			}
 
@@ -1028,14 +1008,6 @@ public class ContentService
 
 			await Delay(50); // Wait a few ms to not overflow the IO Internal Buffer being used by 'content ps'
 		}
-		
-		if (lifecycle.IsCancelled)
-		{
-			await ReturnArchivedFilesToManifest();
-			throw new CliException($"Sync operation is cancelled.");
-		}
-
-		Directory.Delete(archiveFolder, true);
 
 		var saveTasks = new List<Task>();
 		foreach (var (c, j) in downloadedContent)
@@ -1101,28 +1073,7 @@ public class ContentService
 			_fileSystemOperationSemaphore.Release();
 		}
 	}
-
-	private static async Task MoveFilesAsync(string[] filesToReturn, string newFolder)
-	{
-		await Parallel.ForEachAsync(filesToReturn, (file, _) =>
-		{
-			try
-			{
-				string destFile = Path.Combine(newFolder, Path.GetFileName(file));
-					
-				if (File.Exists(destFile))
-					File.Replace(file, destFile, null);
-				else
-					File.Move(file, destFile);
-			}
-			catch (Exception ex)
-			{
-				Log.Error($"Failed to move file '{file}': {ex.Message}");
-			}
-
-			return ValueTask.CompletedTask;
-		});
-	}
+	
 
 	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
 		out HashSet<string> canUpdateReferenceToTargetWithoutDownload)

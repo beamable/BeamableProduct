@@ -168,6 +168,7 @@ namespace Editor.UI.ContentWindow
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEM_GROUP_HEIGHT));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+				rowRect.width -= BASE_PADDING * 3;
 				
 				GUI.Box(rowRect, GUIContent.none, rowStyle);
 				
@@ -211,7 +212,8 @@ namespace Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						float availableSpace = rowRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH);
+						float availableSpace = Mathf.Max(0, rowRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH));
+						
 						DrawTypeItems(items, indentLevel, availableSpace, contentType);
 						GUILayout.Space(BASE_PADDING);
 					}
@@ -246,6 +248,7 @@ namespace Editor.UI.ContentWindow
 		private void DrawItemsPanelHeader(float[] columnWidths, int indentLevel)
 		{
 			Rect headerRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
+			headerRect.width -= BASE_PADDING * 3;
 			headerRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 			
 			string[] labels = { "Name", "Tags", "Latest Update" };
@@ -265,6 +268,7 @@ namespace Editor.UI.ContentWindow
 				for (int index = 0; index < items.Count; index++)
 				{
 					Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
+					rowRect.width -= BASE_PADDING * 3;
 					rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 					DrawItemRow(items[index], index, rowRect, columnWidths);
 
@@ -288,6 +292,7 @@ namespace Editor.UI.ContentWindow
 
 				
 				Rect areaRect = GUILayoutUtility.GetRect(totalWidth, visibleHeight);
+				areaRect.width -= BASE_PADDING * 3.5f;
 				
 				GUI.Box(areaRect, GUIContent.none);
 				
@@ -299,7 +304,7 @@ namespace Editor.UI.ContentWindow
 					GUI.FocusControl(groupName);
 				}
 				
-				Rect contentRect = new Rect(0, 0, totalWidth - 20, totalHeight); // -20 for scrollbar width
+				Rect contentRect = new Rect(0, 0, totalWidth - 18, totalHeight); // -18 for scrollbar width
 				
 				// Using this to prevent Unity from reusing ScrollID when there is multiple scrolls in screen
 				// causing the scroll move each other
@@ -442,7 +447,7 @@ namespace Editor.UI.ContentWindow
 				menu.AddItem(new GUIContent("Delete Item"), false, () =>
 				{
 					if (EditorUtility.DisplayDialog("Delete Content",
-					                                "Are you sure you want to delete this content?", "Yes", "No"))
+					                                "Are you sure you want to delete this content?", "Delete", "Cancel"))
 					{
 						_contentService.DeleteContent(entry.FullId);
 					}
@@ -640,7 +645,6 @@ namespace Editor.UI.ContentWindow
 				var allItems = GetCachedManifestEntries();
 				filteredItems = allItems.Where(entry => FilterItem(specificType, types, entry, tags, statuses, nameSearchPartValue)).ToList();
 				_filteredCache[filterKey] = filteredItems;
-				Debug.Log("New Filter");
 			}
 
 			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems) : filteredItems;
@@ -732,7 +736,7 @@ namespace Editor.UI.ContentWindow
 				_ => throw new ArgumentOutOfRangeException()
 			}).ToList();
 			_sortedCache[sortKey] = sortedItems;
-			Debug.Log("new sorted");
+			
 			return sortedItems;
 		}
 

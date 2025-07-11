@@ -129,7 +129,7 @@ namespace Beamable.Editor.Content.UI
 				if (GUI.Button(revertButtonRect, revertContent, buttonStyle))
 				{
 					if (EditorUtility.DisplayDialog("Revert Content", 
-					                                "Are you sure you want to revert this content?", "Yes", "No"))
+					                                "Are you sure you want to revert this content?", "Revert", "Cancel"))
 					{
 						_ = contentService.SyncContentsWithProgress(true, true, true, true, content.Id, ContentFilterType.ExactIds);
 					}

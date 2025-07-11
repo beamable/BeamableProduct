@@ -36,7 +36,7 @@ namespace Editor.UI.ContentWindow
 
 			void PublishContents()
 			{
-				if (EditorUtility.DisplayDialog("Publish Content", $"Are you sure you want to publish content changes to realm [{realmName}]?", "Yes", "No"))
+				if (EditorUtility.DisplayDialog("Publish Content", $"Are you sure you want to publish content changes to realm [{realmName}]?", "Publish", "Cancel"))
 				{
 					_ = _contentService.PublishContentsWithProgress();
 				}
@@ -59,7 +59,7 @@ namespace Editor.UI.ContentWindow
 
 			void RevertContent()
 			{
-				if (EditorUtility.DisplayDialog("Revert Content", $"Are you sure you want to revert content changes. All changes will be reverted to match contents from realm [{realmName}]?", "Yes", "No"))
+				if (EditorUtility.DisplayDialog("Revert Content", $"Are you sure you want to revert content changes. All changes will be reverted to match contents from realm [{realmName}]?", "Revert", "Cancel"))
 				{
 					_ = _revertAction?.Invoke();
 				}
@@ -187,7 +187,7 @@ namespace Editor.UI.ContentWindow
 							{
 								if (EditorUtility.DisplayDialog("Revert Content",
 								                                $"Are you sure you want to revert {localContentManifestEntry.FullId}?",
-								                                "Yes", "No"))
+								                                "Revert", "Cancel"))
 								{
 									_ = _contentService.SyncContentsWithProgress(
 										true, true, true, true, localContentManifestEntry.FullId,
