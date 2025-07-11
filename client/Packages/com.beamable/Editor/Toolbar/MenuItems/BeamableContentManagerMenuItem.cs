@@ -1,5 +1,5 @@
 using Beamable.Editor.Content;
-using Editor.UI.ContentWindow;
+using Beamable.Editor.UI.ContentWindow;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender

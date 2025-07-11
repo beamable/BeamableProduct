@@ -6,7 +6,7 @@ using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
-using Editor.ContentService;
+using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;

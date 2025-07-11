@@ -42,7 +42,7 @@ using System.Linq;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
-using Editor.ContentService;
+using Beamable.Editor.ContentService;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;

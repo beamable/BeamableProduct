@@ -10,7 +10,7 @@ using Beamable.Editor.Accounts;
 using Beamable.Editor.Content;
 using Beamable.Editor.Library;
 using Beamable.Editor.Microservice.UI2;
-using Editor.UI.ContentWindow;
+using Beamable.Editor.UI.ContentWindow;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
 using UnityEditor.PackageManager.UI;
@@ -385,8 +385,8 @@ namespace Beamable.Editor.UI
 							onQuit = UsamWindow.Init;
 							onQuitMessage = "Open Services";
 							break;
-						case ContentWindow:
-							onQuit = () => _ = ContentWindow.Init();
+						case ContentWindow.ContentWindow:
+							onQuit = () => _ = ContentWindow.ContentWindow.Init();
 							onQuitMessage = "Open Content";
 							break;
 					}

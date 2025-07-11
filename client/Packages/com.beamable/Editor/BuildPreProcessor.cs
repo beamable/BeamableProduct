@@ -3,7 +3,7 @@ using Beamable.Config;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.OptionDialogWindow;
-using Editor.ContentService;
+using Beamable.Editor.ContentService;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

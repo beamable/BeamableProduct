@@ -3,7 +3,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Util;
-using Editor.UI2.Utils;
+using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

@@ -3,7 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Editor.Util;
 using Beamable.Common.Util;
-using Editor.ContentService;
+using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
