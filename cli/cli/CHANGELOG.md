@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+ - Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
+  - `developer-user-manager ps` command that watches your developer users files to check if there's any user created/removed/updated.
+  - `developer-user-manager create-user-batch` command that create multiple developer users in a batch, it can received a list of templates to copy from.
+  - `developer-user-manager create-user` command that can create one developer user.
+  - `developer-user-manager remove-user` command that remove the user from the local files (it will not remove from the portal).
+  - `developer-user-manager save-user` command that can save a new developer user in the local files.
+  - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
+  
+
 ## [5.0.4] - 2025-07-02
 ### Fixed
 - Beamable content downloads ignore SSL when networking with the known Beamable CDN

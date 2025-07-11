@@ -66,19 +66,18 @@ public class DeveloperUserData
 	
 	public int DeveloperUserType;
 	
-	public string Alias = "";
-	public string Description = "";
+	public string Alias = string.Empty;
+	public string Description = string.Empty;
 	public List<string> Tags = new List<string>();
-
-	public long CreatedDate;
 	
 	// Backend info
-	public string AccessToken = "";
-	public string RefreshToken = "";
-	public string Pid = "";
-	public string Cid = "";
-	
+	public string AccessToken = string.Empty;
+	public string RefreshToken = string.Empty;
+	public string Pid = string.Empty;
+	public string Cid = string.Empty;
 	public long ExpiresIn;
+	
+	public long CreatedDate;
 }
 
 // This will represent the cached information for the developer user
@@ -88,12 +87,15 @@ public struct DeveloperUser
 	// User Management Info
 	public long GamerTag;
 	
+	[JsonIgnore]
 	public bool IsCorrupted;
 	
+	[JsonIgnore]
 	public int DeveloperUserType;
 
 	public long CreatedDate;
 	public long TemplateGamerTag; // Use to reset to template
+	
 	public string Alias;
 	public string Description;
 	public List<string> Tags = new List<string>();
@@ -105,6 +107,39 @@ public struct DeveloperUser
 	public string Pid;
 	public string Cid;
 	public long CreatedByGamerTag;
+	
+	/// <summary>
+	/// We are preventing serialization for shared users of the AccessToken
+	/// As those users are going to be versioned in git.\
+	/// Docs: https://www.newtonsoft.com/json/help/html/conditionalproperties.htm#:~:text=To%20conditionally%20serialize%20a%20property,whether%20the%20property%20is%20serialized
+	/// </summary>
+	/// <returns></returns>
+	public bool ShouldSerializeAccessToken()
+	{
+		return DeveloperUserType != (int)DeveloperUserManager.DeveloperUserType.Shared;
+	}
+	
+	/// <summary>
+	/// We are preventing serialization for shared users of the RefreshToken
+	/// As those users are going to be versioned in git.
+	/// Docs: https://www.newtonsoft.com/json/help/html/conditionalproperties.htm#:~:text=To%20conditionally%20serialize%20a%20property,whether%20the%20property%20is%20serialized
+	/// </summary>
+	/// <returns></returns>
+	public bool ShouldSerializeRefreshToken()
+	{
+		return DeveloperUserType != (int)DeveloperUserManager.DeveloperUserType.Shared;
+	}
+	
+	/// <summary>
+	/// We are preventing serialization for shared users of the ExpiresIn
+	/// As those users are going to be versioned in git.
+	/// Docs: https://www.newtonsoft.com/json/help/html/conditionalproperties.htm#:~:text=To%20conditionally%20serialize%20a%20property,whether%20the%20property%20is%20serialized
+	/// </summary>
+	/// <returns></returns>
+	public bool ShouldSerializeExpiresIn()
+	{
+		return DeveloperUserType != (int)DeveloperUserManager.DeveloperUserType.Shared;
+	}
 	
 	public bool IsValidUser() => GamerTag != 0;
 	
@@ -149,10 +184,12 @@ public struct DeveloperUser
 
 public class DeveloperUserManagerService
 {
-	private static readonly string CapturedUserPath = "CapturedUser";
-	private static readonly string SharedUserPath = "SharedUser";
-	private static readonly string LocalUserPath = "LocalUser";
-	private static readonly string BaseUserPath = "DeveloperUser";
+	private static readonly string SharedUserPath = "sharedUser";
+	
+	private static readonly string CapturedUserPath = "capturedUser";
+	private static readonly string LocalUserPath = "localUser";
+	
+	private static readonly string BaseUserPath = "developerUser";
 
 	public static readonly int BACKEND_ERROR = 400;
 	public static readonly int UNKOWN_SERVER_ERROR = 500;
@@ -176,7 +213,7 @@ public class DeveloperUserManagerService
 		
 		_channelChangedDeveloperUserFiles = Channel.CreateUnbounded<ChangedDeveloperUserFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 	}
-	
+
 	/// <summary>
 	/// Create a new user and save in the disk,
 	/// if you pass a valid template after the user creation it will copy the stats and inventory from the given template gamer tag
@@ -186,8 +223,10 @@ public class DeveloperUserManagerService
 	/// <param name="description"></param>
 	/// <param name="tags"></param>
 	/// <param name="developerUserType"></param>
+	/// <param name="rollingBufferSize"></param>
 	/// <exception cref="CliException"></exception>
-	public async Task<DeveloperUser> CreateUser(string templateGamerTag = "", string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local)
+	public async Task<DeveloperUser> CreateUser(string templateGamerTag = "", string alias = "", string description = "", List<string> tags = null, DeveloperUserType developerUserType = DeveloperUserType.Local,
+		int rollingBufferSize = 0)
 	{
 		var authApi = _dependencyProvider.GetService<IAuthApi>();
 		var accountApi = _dependencyProvider.GetService<IAccountsApi>();
@@ -271,6 +310,8 @@ public class DeveloperUserManagerService
 			throw new CliException($"Generic error on save file", SAVE_FILE_ERROR, true);
 		}
 		
+		RemoveOlderEntriesFromCachedBuffer(rollingBufferSize);
+		
 		return developerUser;
 	}
 	/// <summary>
@@ -287,23 +328,14 @@ public class DeveloperUserManagerService
 		{
 			throw new CliException($"Missing gamer tags {string.Join("-", except)}");
 		}
-		
+
 		// Load all developer users for the given gamer tags
-		List<DeveloperUser> templateDeveloperUsers = LoadCachedUsersInfo(gamerTags);
-
-		List<string> missingUsers = new List<string>();
-		foreach (var templateDeveloperUser in templateDeveloperUsers)
-		{
-			if (!IsUserDeveloperValid(templateDeveloperUser))
-			{
-				missingUsers.Add($"{templateDeveloperUser.Alias}");
-			}
-		}
-
+		List<DeveloperUser> templateDeveloperUsers = LoadCachedUsersInfo(gamerTags, out List<DeveloperUser> missingDeveloperUsers);
+		
 		// Throw an exception if there's any missing template in the batches
-		if (missingUsers.Count > 0)
+		if (missingDeveloperUsers.Count > 0)
 		{
-			throw new CliException($"Missing users for template gamer tags: {string.Join("-", missingUsers)}");
+			throw new CliException($"Missing users for template gamer tags: {string.Join("-", missingDeveloperUsers.Select(item => item.Alias))}");
 		}
 
 		List<DeveloperUser> resultDeveloperUsers = new List<DeveloperUser>();
@@ -417,9 +449,13 @@ public class DeveloperUserManagerService
 		}
 
 		List<Task> writeUserTasks = new List<Task>();
-		foreach (var developerUser in developerUsers)
+		foreach (DeveloperUser developerUser in developerUsers)
 		{
-			string developerUserJson = JsonConvert.SerializeObject(developerUser, Formatting.Indented);
+			var developerUserCopy = developerUser;
+			// Making sure that we are saving the developer user with the correct properties
+			developerUserCopy.DeveloperUserType = (int)developerUserType;
+			
+			string developerUserJson = JsonConvert.SerializeObject(developerUserCopy, Formatting.Indented);
 
 			if (!Directory.Exists(directoryPath))
 			{
@@ -455,8 +491,12 @@ public class DeveloperUserManagerService
 	/// </summary>
 	public DeveloperUser LoadCachedDeveloperUser(string gamerTag)
 	{
-		// This always returns a value so we don't need to treat the case of an empty array for the index - 0
-		return LoadCachedUsersInfo(new List<string>() { gamerTag })[0];
+		List<DeveloperUser> developerUsers = LoadCachedUsersInfo(new List<string>() { gamerTag }, out List<DeveloperUser> missingDeveloperUsers);
+		if (missingDeveloperUsers.Count > 0)
+		{
+			return missingDeveloperUsers[0];
+		}
+		return developerUsers[0];
 	}
 
 	public async IAsyncEnumerable<LocalDeveloperUserFileChanges> ListenToLocalDeveloperUserFileChanges(DeveloperUserType developerUserType, [EnumeratorCancellation] CancellationToken token = default)
@@ -713,12 +753,36 @@ public class DeveloperUserManagerService
 		return cachedDevelopersUsers;
 	}
 	
+		
+	/// <summary>
+	/// A utility that remove the captured entries if bigger than the rollingBufferSize 
+	/// </summary>
+	/// <param name="rollingBufferSize"></param>
+	public List<DeveloperUser> RemoveOlderEntriesFromCachedBuffer(int rollingBufferSize)
+	{
+		var result = new List<DeveloperUser>();
+		if(rollingBufferSize == 0)
+			return result;
+		
+		List<DeveloperUser> developerUsers = GetAllUsersOfType(DeveloperUserType.Captured);
+		
+		developerUsers.Sort((x, y) => y.CreatedDate.CompareTo(x.CreatedDate));
+
+		for (int i = rollingBufferSize; i < developerUsers.Count; i++)
+		{
+			result.Add(developerUsers[i]);
+			DeleteUser(developerUsers[i]);
+		}
+
+		return result;
+	}
+	
 	/// <summary>
 	/// Load from the local cache all the users for a given list of gamer tags
-	/// If the gamer tag is not found it will return an item in the list with all fields empty
+	/// If the gamer tag is not found it will return in the out missingDeveloperUsers arg
 	/// You can check if the items are valid using DeveloperUser.IsValidUser()
 	/// </summary>
-	private List<DeveloperUser> LoadCachedUsersInfo(List<string> gamerTags)
+	private List<DeveloperUser> LoadCachedUsersInfo(List<string> gamerTags , out List<DeveloperUser> missingDeveloperUsers)
 	{
 		List<DeveloperUser> cachedUsersResult = new List<DeveloperUser>();
 		
@@ -731,19 +795,15 @@ public class DeveloperUserManagerService
 			}
 		}
 
-		// If the amount of loaded user is equal to the given gamer tag list so it's all loaded successful
-		if (cachedUsersResult.Count == gamerTags.Count)
-		{
-			return cachedUsersResult;
-		}
-
 		// Get the list of all gamer tags loaded as string to do an except with the received gamer tag list and check what was missing.
 		IEnumerable<string> missingGamerTag = cachedUsersResult.Select(item => item.GamerTag.ToString());
 		
-		return gamerTags.Except(missingGamerTag).Select(gamerTag =>  new DeveloperUser()
+		missingDeveloperUsers = gamerTags.Except(missingGamerTag).Select(gamerTag =>  new DeveloperUser()
 		{
 			Alias = gamerTag
 		}).ToList();
+		
+		return cachedUsersResult;
 	}
 
 	
@@ -790,7 +850,7 @@ public class DeveloperUserManagerService
 
 		if (!secretMap.ContainsKey(targetDeveloperUser.Pid))
 		{
-			throw new CliException($"There's no secret realm key for the target developer pid {sourceDeveloperUser.Pid}");
+			throw new CliException($"There's no secret realm key for the target developer pid {targetDeveloperUser.Pid}");
 		}
 	
 		var sourceInventoryApi = CreateInventoryApi(sourceDeveloperUser.GamerTag, sourceDeveloperUser.Cid, sourceDeveloperUser.Pid, secretMap[sourceDeveloperUser.Pid]);
@@ -799,11 +859,15 @@ public class DeveloperUserManagerService
 
 		
 		// Get the target account
-		InventoryView targetInventoryView = await targetInventoryApi.ObjectGet(targetDeveloperUser.GamerTag);
+		Promise<InventoryView> targetInventoryViewPromise = targetInventoryApi.ObjectGet(targetDeveloperUser.GamerTag);
 		
 		// Get the source inventory
-		InventoryView sourceInventoryView = await sourceInventoryApi.ObjectGet(sourceDeveloperUser.GamerTag);
-
+		Promise<InventoryView> sourceInventoryViewPromise = sourceInventoryApi.ObjectGet(sourceDeveloperUser.GamerTag);
+		
+		InventoryView targetInventoryView = await targetInventoryViewPromise;
+		
+		InventoryView sourceInventoryView = await sourceInventoryViewPromise;
+		
 		InventoryUpdateRequest inventoryUpdateRequest = new InventoryUpdateRequest();
 
 		List<ItemDeleteRequest> deleteRequests = new List<ItemDeleteRequest>();
@@ -876,9 +940,15 @@ public class DeveloperUserManagerService
 	{
 		IStatsApi adminStatsApi = CreateStatsApi(sourceDeveloperUser.GamerTag, _appContext.Cid, _appContext.Pid, secretMap[_appContext.Pid]);
 		
-		Dictionary<string, StatsResponse> sourceStatMap = await GetStatMap(sourceDeveloperUser.GamerTag, adminStatsApi);
 		
-		Dictionary<string, StatsResponse> targetStatMap = await GetStatMap(targetDeveloperUser.GamerTag, adminStatsApi);
+		Task<Dictionary<string, StatsResponse>> sourceStatMapTask = GetStatMap(sourceDeveloperUser.GamerTag, adminStatsApi);
+		
+		Task<Dictionary<string, StatsResponse>> targetStatMapTask = GetStatMap(targetDeveloperUser.GamerTag, adminStatsApi);
+
+		await Task.WhenAll(sourceStatMapTask, targetStatMapTask);
+		
+		Dictionary<string, StatsResponse> sourceStatMap = sourceStatMapTask.Result;
+		Dictionary<string, StatsResponse> targetStatMap = targetStatMapTask.Result;
 		
 		// As we don't have a batch delete for stats it will delete one by one.
 		List<Task> deleteStatTasks = new List<Task>();
@@ -1082,22 +1152,6 @@ public class DeveloperUserManagerService
 	
 	
 	/// <summary>
-	/// A utility that remove the captured entries if bigger than the rollingBufferSize 
-	/// </summary>
-	/// <param name="rollingBufferSize"></param>
-	private void RemoveOlderEntriesFromCachedBuffer(int rollingBufferSize)
-	{
-		List<DeveloperUser> developerUsers = GetAllUsersOfType(DeveloperUserType.Captured);
-		
-		developerUsers.Sort((x, y) => y.CreatedDate.CompareTo(x.CreatedDate));
-
-		for (int i = rollingBufferSize; i < developerUsers.Count; i++)
-		{
-			DeleteUser(developerUsers[i]);
-		}
-	}
-	
-	/// <summary>
 	/// A utility to get the folder path from the developer user type
 	/// </summary>
 	/// <param name="developerUserType"></param>
@@ -1157,16 +1211,16 @@ public class DeveloperUserManagerService
 		{
 			GamerTag = !developerUser.IsCorrupted ? developerUser.GamerTag : new Random().NextInt64(0, Int64.MaxValue),
 			TemplateGamerTag = developerUser.TemplateGamerTag,
-			Alias	= developerUser.Alias,
-			AccessToken = developerUser.AccessToken,
-			RefreshToken = developerUser.RefreshToken,
-			Cid = developerUser.Cid,
-			Pid = developerUser.Pid,
+			Alias	=  string.IsNullOrEmpty(developerUser.Alias) ? "" : developerUser.Alias,
+			AccessToken = string.IsNullOrEmpty(developerUser.AccessToken) ? "" : developerUser.AccessToken,
+			RefreshToken = string.IsNullOrEmpty(developerUser.RefreshToken) ? "" : developerUser.RefreshToken,
+			Cid = string.IsNullOrEmpty(developerUser.Cid) ? "" : developerUser.Cid,
+			Pid = string.IsNullOrEmpty(developerUser.Pid) ? "" : developerUser.Pid,
+			Description = string.IsNullOrEmpty(developerUser.Description) ? "" : developerUser.Description,
 			CreatedDate = developerUser.CreatedDate,
-			Description = developerUser.Description,
 			DeveloperUserType = developerUser.DeveloperUserType,
 			ExpiresIn = developerUser.ExpiresIn,
-			Tags = developerUser.Tags,
+			Tags = developerUser.Tags ?? new List<string>(),
 			IsCorrupted = developerUser.IsCorrupted,
 		};
 		

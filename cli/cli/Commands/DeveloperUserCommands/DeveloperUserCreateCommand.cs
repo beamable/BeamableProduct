@@ -11,6 +11,7 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 
 	public override void Configure()
 	{
+		AddOption(new ConfigurableIntOption("rolling-buffer-size", "The max amount of captured users that you can have before starting to delete the oldest (0 means infinity)"), (args, s) => { args.RollingBufferSize = s; });
 		AddOption(new ConfigurableOption("alias", "The alias is a chosen name for this player which is not the same as the player name in the backend"), (args, s) => { args.Alias = s; });
 		AddOption(new ConfigurableOption("template", "A gamer tag to a template that will be used to copy the stats and inventory to the created player"), (args, s) => { args.TemplateGamerTag = s; });
 		AddOption(new ConfigurableOption("description", "A shortly description of this new player"), (args, s) => { args.Description = s; });
@@ -26,7 +27,7 @@ public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs,
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserCreateArgs args)
 	{
-		var developerUser = await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType);
+		var developerUser = await args.DeveloperUserManagerService.CreateUser(args.TemplateGamerTag, args.Alias, args.Description, args.Tags, args.DeveloperUserType, args.RollingBufferSize);
 		return new DeveloperUserResult
 		{
 			CreatedUsers = new List<DeveloperUserData>
@@ -44,4 +45,6 @@ public class DeveloperUserCreateArgs : ContentCommandArgs
 	public string Description;
 	public DeveloperUserType DeveloperUserType;
 	public readonly List<string> Tags = new List<string>();
+	
+	public int RollingBufferSize;
 }

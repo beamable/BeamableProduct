@@ -11,7 +11,7 @@ public class DeveloperUserRemoveCommand : AtomicCommand<DeveloperUserRemoveArgs,
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("gamer-tag", "The gamer tag of the player that you would like to remove"), (args, s) => { args.GamerTag = s; });
+		AddOption(new ConfigurableOption("gamer-tag", "The gamer tag of the player that you would like to remove, it will not remove from the portal."), (args, s) => { args.GamerTag = s; });
 	}
 	
 
