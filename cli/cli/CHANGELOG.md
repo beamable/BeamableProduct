@@ -16,8 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
   
 
+### Changed
+- `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+
 ## [5.0.4] - 2025-07-02
 ### Fixed
+- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set per-realm as an Admin.
 - Beamable content downloads ignore SSL when networking with the known Beamable CDN
 
 ## [5.0.3] - 2025-06-24

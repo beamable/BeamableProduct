@@ -886,7 +886,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public void OpenPortalToReleaseSection()
 		{
-			var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.CurrentCustomer.Cid}/games/{_ctx.ProductionRealm.Pid}/realms/{_ctx.CurrentRealm.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
+			var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.BeamCli.Cid}/games/{_ctx.BeamCli.ProductionRealm.Pid}/realms/{_ctx.BeamCli.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
 			Application.OpenURL(url);
 		}
 

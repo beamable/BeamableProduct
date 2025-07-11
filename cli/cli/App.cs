@@ -553,6 +553,7 @@ public class App
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
 		
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
+		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
@@ -606,7 +607,8 @@ public class App
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
-
+		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 
@@ -983,7 +985,7 @@ public class App
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
-			appContext.Apply(ctx.BindingContext);
+			await appContext.Apply(ctx.BindingContext);
 			
 			// update log information before dependency injection is sealed.
 			{

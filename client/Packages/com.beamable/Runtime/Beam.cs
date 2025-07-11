@@ -59,6 +59,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Beamable.Server;
+using Beamable.Utility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -145,7 +146,10 @@ namespace Beamable
 			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
 			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
 			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
-			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider, ConfigDatabaseProvider>();
+			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => p.GetService<ConfigDatabaseProvider>());
+			GlobalDependencyBuilder.AddSingleton(BeamableEnvironment.Data);
+			GlobalDependencyBuilder.AddSingleton<ConfigDatabaseProvider>();
+			GlobalDependencyBuilder.AddSingleton<IPlatformRequesterHostResolver, ConfigPlatformHostResolver>();
 			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
 
 			// allow customization to the global scope
@@ -168,14 +172,16 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			
+			DependencyBuilder.AddSingleton<ConfigDatabaseProvider>(() => GlobalScope.GetService<ConfigDatabaseProvider>());
+			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => GlobalScope.GetService<IPlatformRequesterHostResolver>());
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(() => GlobalScope.GetService<IRuntimeConfigProvider>());
 			DependencyBuilder.AddSingleton<IRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
-			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
-			DependencyBuilder.AddSingleton<GatewayConnectivityChecker>();
-			RegisterConnectivityChecker();
+			DependencyBuilder.AddSingleton<IConnectivityChecker, GatewayConnectivityChecker>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
@@ -244,7 +250,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<GameRelayService>();
 			DependencyBuilder.AddTransient<ISimFaultHandler, DefaultSimFaultHandler>();
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
-																   provider.GetService<IPlatformService>(),
+				                                                   provider.GetService<IPlatformService>(),
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
@@ -319,54 +325,6 @@ namespace Beamable
 				}
 			};
 #endif
-		}
-
-		private static void RegisterConnectivityChecker()
-		{
-			// XXX: Whenever the presence API is stable enough to use as a connectivity source, replace this hardcoded value with a CoreConfig option
-			var strategy = ConnectivityStrategy.BeamableGateway;
-
-			#region example core config option
-			// [Tooltip("The ConnectivityStrategy allows the developer to configure how Beamable determines connectivity to the internet. " +
-			//          "Without connectivity, Beamable will not function as intended. By default, the \"BeamableGateway\" strategy will " + 
-			//          "configure the SDK to send periodic requests to api.beamable.com/health. The result of those network requests will " +
-			// 		 "determine connectivity for the rest of the SDK. \n\n" + 
-			//          "The \"BeamablePresence\" strategy will use the results of the existing " + 
-			//          "presence heartbeat to determine network connectivity. If the " + nameof(SendHeartbeat) + @" property is disabled, " + 
-			//          "then \"BeamablePresence\" is invalid. \n\n" +
-			//          "Finally, the \"None\" strategy will not create any connectivity checker. In this case, it is up to the developer " +
-			//          "to register a custom IConnectivityChecker with the BeamContext dependencies. If no IConnectivityChecker is registered, " +
-			//          "an exception will be thrown on startup."
-			// )]
-			// public ConnectivityStrategy ConnectivityStrategy = ConnectivityStrategy.BeamableGateway;
-			#endregion
-
-			void Register<T>() where T : IConnectivityChecker
-			{
-				DependencyBuilder.AddSingleton<IConnectivityChecker>(p =>
-				{
-					var checker = p.GetService<T>();
-					checker.ConnectivityCheckingEnabled = true;
-					return checker;
-				});
-			}
-
-			switch (strategy)
-			{
-				case ConnectivityStrategy.BeamableGateway:
-					Register<GatewayConnectivityChecker>();
-					break;
-				case ConnectivityStrategy.BeamablePresence when !CoreConfiguration.Instance.SendHeartbeat:
-					throw new InvalidOperationException(
-						"It is invalid to set the Beamable ConnectivityStrategy to BeamablePresence when the SendHeartbeat flag is false.");
-				case ConnectivityStrategy.BeamablePresence:
-					Register<IPresenceApi>();
-					break;
-				case ConnectivityStrategy.None:
-				default:
-					// it is up the developer to add a service
-					break;
-			}
 		}
 
 		/// <summary>

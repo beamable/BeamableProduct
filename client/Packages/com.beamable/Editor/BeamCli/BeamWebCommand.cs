@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Editor.Modules.EditorConfig;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -90,20 +91,17 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
-		private IBeamableRequester _requester;
 
 		public BeamWebCommandFactory(
-			IBeamableRequester requester, 
 			BeamableDispatcher dispatcher, 
 			BeamWebCliCommandHistory history, 
 			BeamWebCommandFactoryOptions options)
 		{
-			_requester = requester;
 			this.dispatcher = dispatcher;
 			_history = history;
 			_options = options;
 			processFactory = new BeamCommandFactory(dispatcher);
-			processCommands = new BeamCommands(requester, processFactory);
+			processCommands = new BeamCommands(processFactory);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
 			
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
@@ -254,8 +252,10 @@ namespace Beamable.Editor.BeamCli
 				port = port,
 				owner = "\"" + Owner + "\"",
 				autoIncPort = true,
-				selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15), // TODO: validate that a low ttl will restart the server
+				// selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15), // TODO: validate that a low ttl will restart the server
 				customSplitter = true,
+				skipContentPrewarm = true,
+				requireProcessId = Process.GetCurrentProcess().Id
 			};
 			var p = args.port;
 			_serverCommand = processCommands.ServerServe(args);
@@ -315,7 +315,7 @@ namespace Beamable.Editor.BeamCli
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
-				var versionMatches = res.version == Version;
+				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement || res.version == Version;
 
 				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 
@@ -479,6 +479,7 @@ namespace Beamable.Editor.BeamCli
 
 		public void Cancel()
 		{
+			if (_cts.IsCancellationRequested) return; // no-op
 			_cts.Cancel();
 		}
 

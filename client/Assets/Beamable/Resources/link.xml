@@ -10,7 +10,6 @@
 <assembly fullname="Beamable.Extensions" preserve="all"/>
 <assembly fullname="Beamable.JsonSerializable" preserve="all"/>
 <assembly fullname="Beamable.LightBeam.Boot" preserve="all"/>
-<assembly fullname="Beamable.Microservice.CacheDependentMS" preserve="all"/>
 <assembly fullname="Beamable.Platform" preserve="all"/>
 <assembly fullname="Beamable.Pooling" preserve="all"/>
 <assembly fullname="Beamable.Runtime.Input" preserve="all"/>
@@ -18,6 +17,7 @@
 <assembly fullname="Beamable.SmallerJSON" preserve="all"/>
 <assembly fullname="Beamable.Spew" preserve="all"/>
 <assembly fullname="Beamable.UnityUIExtensions" preserve="all"/>
+<assembly fullname="Beamable.Utility" preserve="all"/>
 <assembly fullname="Unity.Beamable" preserve="all"/>
 <assembly fullname="Unity.Beamable.Customer.Common" preserve="all"/>
 <assembly fullname="Unity.Beamable.Customer.MicroserviceClients" preserve="all"/>
@@ -29,8 +29,6 @@
 <assembly fullname="Unity.Beamable.Runtime.UserStorageObject.xxxx" preserve="all"/>
 <assembly fullname="Unity.Beamable.Samples.Runtime" preserve="all"/>
 <assembly fullname="Unity.Beamable.Server.Runtime" preserve="all"/>
-<assembly fullname="Unity.Beamable.Server.Runtime.Common" preserve="all"/>
-<assembly fullname="Unity.Beamable.Server.Runtime.Mocks" preserve="all"/>
 <assembly fullname="Unity.Beamable.Server.Runtime.Shared" preserve="all"/>
 <assembly fullname="Unity.Beamable.Server.Runtime.Tests" preserve="all"/>
 <assembly fullname="Unity.Beamable.Server.Templates" preserve="all"/>

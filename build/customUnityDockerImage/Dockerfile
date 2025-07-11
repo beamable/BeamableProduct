@@ -17,7 +17,6 @@ RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 
 # Set environment variables for global availability
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="${DOTNET_ROOT}:${PATH}"
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 # Verify installation
 RUN dotnet --info
