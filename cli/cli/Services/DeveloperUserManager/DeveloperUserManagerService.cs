@@ -153,6 +153,10 @@ public class DeveloperUserManagerService
 	private static readonly string SharedUserPath = "SharedUser";
 	private static readonly string LocalUserPath = "LocalUser";
 	private static readonly string BaseUserPath = "DeveloperUser";
+
+	public static readonly int BACKEND_ERROR = 400;
+	public static readonly int UNKOWN_SERVER_ERROR = 500;
+	public static readonly int SAVE_FILE_ERROR = 300;
 	
 	private readonly IAppContext _appContext;
 	private readonly ConfigService _configService;
@@ -198,15 +202,32 @@ public class DeveloperUserManagerService
 		}, includeAuthHeader: false);
 
 		var accountsApi = CreateAccountsApi(tokenResponse.access_token, tokenResponse.refresh_token, _appContext.Cid, _appContext.Pid);
-		
-		// Get the account info to save in the local disk 
-		AccountPlayerView accountPlayerView = await accountsApi.GetMe();
 
-		// Wait for the admin me finish the process
-		var adminMe = await adminMeTask;
+		long gamerTag = -1;
+		long adminGamerTag = -1;
+		try
+		{
+			// Get the account info to save in the local disk 
+			AccountPlayerView accountPlayerView = await accountsApi.GetMe();
+			gamerTag = accountPlayerView.id;
+
+			// Wait for the admin me finish the process
+			var adminMe = await adminMeTask;
+			adminGamerTag = adminMe.id;
+		}
+		catch (RequesterException e) // Backend Exception
+		{
+			BeamableLogger.LogError(e);
+			throw new CliException("Backend error on get the account or admin me", BACKEND_ERROR, true);
+		}
+		catch (Exception e) // Any generic exception
+		{
+			BeamableLogger.LogError(e);
+			throw new CliException($"Generic error on get the account or admin me", UNKOWN_SERVER_ERROR, true);
+		}
 		
 		// Create the new developer user
-		DeveloperUser developerUser = new DeveloperUser(accountPlayerView.id, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminMe.id, description, tags, DateTime.UtcNow.Ticks, developerUserType);
+		DeveloperUser developerUser = new DeveloperUser(gamerTag, 0, tokenResponse, _appContext.Cid, _appContext.Pid, alias, adminGamerTag, description, tags, DateTime.UtcNow.Ticks, developerUserType);
 		
 		bool copyFromTemplate = !string.IsNullOrEmpty(templateGamerTag);
 		
@@ -224,11 +245,32 @@ public class DeveloperUserManagerService
 			
 			// This copy the state from the template to the new user.
 			// Stats state and Inventory State.
-			await CopyState(templateDeveloperUser, developerUser);
+			try
+			{
+				await CopyState(templateDeveloperUser, developerUser);
+			}
+			catch (RequesterException e) // Backend Exception
+			{
+				BeamableLogger.LogError(e);
+				throw new CliException("Backend error on create the users from the template", BACKEND_ERROR, true);
+			}
+			catch (Exception e) // Any generic exception
+			{
+				BeamableLogger.LogError(e);
+				throw new CliException($"Generic error on create the users from the template", UNKOWN_SERVER_ERROR, true);
+			}
 		}
 		
-		await SaveDeveloperUser(developerUser, developerUserType);
-
+		try{
+			await SaveDeveloperUser(developerUser, developerUserType);
+		}
+		catch (Exception e) // Any generic exception on save the users
+		{
+			BeamableLogger.LogError(e);
+				
+			throw new CliException($"Generic error on save file", SAVE_FILE_ERROR, true);
+		}
+		
 		return developerUser;
 	}
 	/// <summary>
@@ -263,42 +305,65 @@ public class DeveloperUserManagerService
 		{
 			throw new CliException($"Missing users for template gamer tags: {string.Join("-", missingUsers)}");
 		}
-		
-		var adminMe = await accountApi.GetAdminMe();
-
-		List<Task<DeveloperUser>> createUserTaskBatch = new List<Task<DeveloperUser>>();
-		
-		// Create a task for each user that needs to be created.
-		foreach (var templateUserInfo in templateDeveloperUsers)
-		{
-			for (int i = 0; i < amountPerGamerTag[templateUserInfo.GamerTag.ToString()]; i++)
-			{
-				createUserTaskBatch.Add(CreateUserFromTemplate(authApi, adminMe, templateUserInfo));
-			}
-		}
-		// Create user task in batch
-		// If we throw any error here we will not save any developer user to local 
-		await Task.WhenAll(createUserTaskBatch);
 
 		List<DeveloperUser> resultDeveloperUsers = new List<DeveloperUser>();
 		
 		List<Task> saveDeveloperUserTasks = new List<Task>();
-		
-		foreach (var createUserTask in createUserTaskBatch)
+
+		try
 		{
-			var developerUser = createUserTask.Result;
-			
-			resultDeveloperUsers.Add(developerUser);
-			
-			saveDeveloperUserTasks.Add(SaveDeveloperUser(developerUser));
+			var adminMe = await accountApi.GetAdminMe();
+
+			List<Task<DeveloperUser>> createUserTaskBatch = new List<Task<DeveloperUser>>();
+
+			// Create a task for each user that needs to be created.
+			foreach (var templateUserInfo in templateDeveloperUsers)
+			{
+				for (int i = 0; i < amountPerGamerTag[templateUserInfo.GamerTag.ToString()]; i++)
+				{
+					createUserTaskBatch.Add(CreateUserFromTemplate(authApi, adminMe, templateUserInfo));
+				}
+			}
+
+			// Create user task in batch
+			// If we throw any error here we will not save any developer user to local 
+
+			// If there's any problem with the backend request it will trigger a error
+			await Task.WhenAll(createUserTaskBatch);
+
+			foreach (var createUserTask in createUserTaskBatch)
+			{
+				var developerUser = createUserTask.Result;
+
+				resultDeveloperUsers.Add(developerUser);
+
+				saveDeveloperUserTasks.Add(SaveDeveloperUser(developerUser));
+			}
+
+		}
+		catch (RequesterException e) // Backend Exception
+		{
+			BeamableLogger.LogError(e);
+			throw new CliException("Backend error on create the users from the template", BACKEND_ERROR, true);
+		}catch (Exception e) // Any generic exception
+		{
+			BeamableLogger.LogError(e);
+			throw new CliException($"Generic error on create the users from the template", UNKOWN_SERVER_ERROR, true);
 		}
 		
-		// All fail - 
-		// Backend Fail
-		// File System Local Fail
+
+		try
+		{
+			// Wait until save all developer user
+			await Task.WhenAll(saveDeveloperUserTasks);
+		}
+		catch (Exception e) // Any generic exception on save the users
+		{
+			BeamableLogger.LogError(e);
+			
+			throw new CliException($"Generic error on save file", SAVE_FILE_ERROR, true);
+		}
 		
-		// Wait until save all developer user
-		await Task.WhenAll(saveDeveloperUserTasks);
 
 		// In order to don't create infinity users in the manager we can set a value to be the max amount of users sorted by creation date
 		RemoveOlderEntriesFromCachedBuffer(rollingBufferSize);
@@ -540,9 +605,16 @@ public class DeveloperUserManagerService
 		cachedDeveloperUser.UpdateUserInfo(alias, description);
 		
 		cachedDeveloperUser.UpdateUserTags(tags);
-		
-		await SaveDeveloperUser(cachedDeveloperUser, cachedDeveloperUser.GetDeveloperUserType());
-
+		try{
+			await SaveDeveloperUser(cachedDeveloperUser, cachedDeveloperUser.GetDeveloperUserType());
+		}
+		catch (Exception e) // Any generic exception on save the users
+		{
+			// Ignored
+			BeamableLogger.LogError(e);
+				
+			throw new CliException($"Generic error on save file", SAVE_FILE_ERROR, true);
+		}
 		return cachedDeveloperUser;
 	}
 	

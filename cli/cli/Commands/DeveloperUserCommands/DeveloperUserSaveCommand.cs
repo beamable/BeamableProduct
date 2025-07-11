@@ -1,4 +1,5 @@
-﻿using cli.Content;
+﻿using Beamable.Common;
+using cli.Content;
 using cli.Services.DeveloperUserManager;
 
 namespace cli.DeveloperUserCommands;
@@ -36,9 +37,15 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 			developerUsers.Add(developerUser);
 		}
 
-
-		await args.DeveloperUserManagerService.SaveDeveloperUsers(developerUsers);
-
+		try{
+			await args.DeveloperUserManagerService.SaveDeveloperUsers(developerUsers);
+		}
+		catch (Exception e) // Any generic exception on save the users
+		{
+			BeamableLogger.LogError(e);
+				
+			throw new CliException($"Generic error on save file", DeveloperUserManagerService.SAVE_FILE_ERROR, true);
+		}
 		return new DeveloperUserResult() { SavedUsers = DeveloperUserManagerService.DeveloperUsersToDeveloperUsersData(developerUsers).ToList() };
 	}
 }
