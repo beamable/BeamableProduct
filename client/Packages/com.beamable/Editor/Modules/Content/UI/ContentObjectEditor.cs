@@ -74,7 +74,7 @@ namespace Beamable.Editor.Content.UI
 							iconRect.yMin, 
 							statusIconSize, 
 							statusIconSize);
-						GUI.DrawTexture(invalidIconRect, BeamGUI.iconInvalid, ScaleMode.ScaleToFit);
+						GUI.DrawTexture(invalidIconRect, BeamGUI.iconStatusInvalid, ScaleMode.ScaleToFit);
 					}
 				}
 

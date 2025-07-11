@@ -30,7 +30,7 @@ namespace Editor.ContentService
 
 			var contentService = api.ServiceScope.GetService<CliContentService>();
 
-			var allContent = contentService.CachedManifest.Values;
+			var allContent = contentService.EntriesCache.Values;
 
 			List<LocalContentManifestEntry> contentList = allContent.ToList();
 

@@ -6,6 +6,7 @@
 		IdDescending,
 		TypeAscending,
 		TypeDescending,
-		Status
+		Status,
+		ValidStatus,
 	}
 }

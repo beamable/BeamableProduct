@@ -28,12 +28,13 @@ namespace Editor.UI.ContentWindow
 		private CliContentService _contentService;
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
+		private int _lastManifestChangedCount;
 
 		static ContentWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "New Content Manager",
+				Title = "Content Manager",
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				FocusOnShow = false,
 				RequireLoggedUser = true,
@@ -58,18 +59,13 @@ namespace Editor.UI.ContentWindow
 			{
 				ChangeWindowStatus(ContentWindowStatus.Building, false);
 				_contentService = Scope.GetService<CliContentService>();
-				_contentService.OnServiceReload += () =>
+				_ = _contentService.Reload().Then(_ =>
 				{
 					ChangeWindowStatus(ContentWindowStatus.Normal, false);
-					RegisterServiceEvents();
-					SetEditorSelection();
 					Build();
-				};
-				_ = _contentService.Reload();
+				});
 				return;
 			}
-
-			RegisterServiceEvents();
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
@@ -88,28 +84,18 @@ namespace Editor.UI.ContentWindow
 			ClearCaches();
 			
 			Repaint();
-
-			void RegisterServiceEvents()
-			{
-				_contentService.OnManifestUpdated -= OnServiceChange;
-				_contentService.OnManifestUpdated += OnServiceChange;
-
-				_contentService.OnServiceReload -= OnServiceChange;
-				_contentService.OnServiceReload += OnServiceChange;
-			}
 		}
 
-		private void OnServiceChange()
+		private void ReloadData()
 		{
 			ClearCaches();
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents && _windowStatus is not ContentWindowStatus.Building)
+			if(!_contentService.HasChangedContents)
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
-			Repaint();
 		}
 
 		private void ClearCaches()
@@ -131,6 +117,12 @@ namespace Editor.UI.ContentWindow
 				DrawBlockLoading("Loading Contents...");
 				return;
 			}
+
+			if (_contentService.ManifestChangedCount != _lastManifestChangedCount)
+			{
+				_lastManifestChangedCount = _contentService.ManifestChangedCount;
+				ReloadData();
+			}
 			
 			DrawHeader();
 			GUILayout.Space(1);
@@ -144,6 +136,9 @@ namespace Editor.UI.ContentWindow
 					break;
 				case ContentWindowStatus.Revert:
 					DrawRevertPanel();
+					break;
+				case ContentWindowStatus.Validate:
+					DrawValidatePanel();
 					break;
 			}
 			RunDelayedActions();
@@ -169,7 +164,7 @@ namespace Editor.UI.ContentWindow
 			var localContentManifestEntries = new List<LocalContentManifestEntry>();
 			if (_contentService != null)
 			{
-				localContentManifestEntries.AddRange(_contentService.CachedManifest.Values);
+				localContentManifestEntries.AddRange(_contentService.EntriesCache.Values);
 			}
 			return localContentManifestEntries;
 		}
@@ -181,6 +176,7 @@ namespace Editor.UI.ContentWindow
 		Normal,
 		Publish,
 		Building,
-		Revert
+		Revert,
+		Validate
 	}
 }
