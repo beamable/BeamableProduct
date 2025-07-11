@@ -889,6 +889,10 @@ namespace Beamable
 		/// </summary>
 		public async Promise Stop()
 		{
+		
+			
+			if (_isStopped) return;
+
 			// when there are no running contexts, there can be no
 			//  assigned content singleton proxy. When a new context
 			//  gets started, this will be re-assigned to the new context's
@@ -898,8 +902,6 @@ namespace Beamable
 				ContentApi.Instance = new Promise<IContentApi>();
 			}
 			
-			if (_isStopped) return;
-
 			_isStopped = true;
 
 			// clear all events...
