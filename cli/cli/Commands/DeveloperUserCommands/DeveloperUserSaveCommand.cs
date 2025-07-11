@@ -6,7 +6,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, DeveloperUserResult>
 {
-	public DeveloperUserSaveCommand() : base("save-user", "")
+	public DeveloperUserSaveCommand() : base("save-user", "Create a new developer user in the local files")
 	{
 	}
 

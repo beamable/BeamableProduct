@@ -10,7 +10,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserPsCommand : AppCommand<DeveloperUserPsArgs>, IResultSteam<DefaultStreamResultChannel, DeveloperUserPsCommandEvent>, ISkipManifest
 {
-	public DeveloperUserPsCommand() : base("ps", "")
+	public DeveloperUserPsCommand() : base("ps", "The ps commands manage the files for the developer users folders, it can keep watching changes in the file system and emit events to the engine")
 	{
 	}
 

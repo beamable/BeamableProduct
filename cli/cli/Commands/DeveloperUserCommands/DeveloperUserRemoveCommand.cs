@@ -5,13 +5,13 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserRemoveCommand : AtomicCommand<DeveloperUserRemoveArgs, DeveloperUserResult>, ISkipManifest
 {
-	public DeveloperUserRemoveCommand() : base("remove-user", "")
+	public DeveloperUserRemoveCommand() : base("remove-user", "Remove a user from the local files, it will not remove it from the portal")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("gamer-tag", "The gamer tag of the player that you would like to remove, it will not remove from the portal."), (args, s) => { args.GamerTag = s; });
+		AddOption(new ConfigurableOption("gamer-tag", "The gamer tag of the player that you would like to remove, it will not remove from the portal"), (args, s) => { args.GamerTag = s; });
 	}
 	
 

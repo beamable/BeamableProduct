@@ -5,7 +5,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserCreateBatchCommand : AtomicCommand<DeveloperUserCreateBatchArgs, DeveloperUserResult>, ISkipManifest
 {
-	public DeveloperUserCreateBatchCommand() : base("create-user-batch", "")
+	public DeveloperUserCreateBatchCommand() : base("create-user-batch", "Create multiple users from multiples templates doing the request in parallel")
 	{
 	}
 

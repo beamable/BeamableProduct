@@ -8,8 +8,8 @@ public class DeveloperUserCopyStateCommand : AppCommand<DeveloperUserCopyStateAr
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("source", "The identifier to the source user to copy from."), ((args, s) => { args.SourceIdentifier = s; }));
-		AddOption(new ConfigurableOption("target", "The identifier to the target user to copy to."), ((args, s) => { args.TargetIdentifier = s; }));
+		AddOption(new ConfigurableOption("source", "The identifier to the source user to copy from"), ((args, s) => { args.SourceIdentifier = s; }));
+		AddOption(new ConfigurableOption("target", "The identifier to the target user to copy to"), ((args, s) => { args.TargetIdentifier = s; }));
 	}
 
 	public override async Task Handle(DeveloperUserCopyStateArgs args)

@@ -5,7 +5,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserUpdateInfoCommand : AtomicCommand<DeveloperUserUpdateInfoArgs, DeveloperUserResult>, ISkipManifest
 {
-	public DeveloperUserUpdateInfoCommand() : base("update-info", "")
+	public DeveloperUserUpdateInfoCommand() : base("update-info", "Update the info of the developer user (Alias, Description etc)")
 	{
 	}
 

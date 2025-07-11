@@ -5,7 +5,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserCreateCommand : AtomicCommand<DeveloperUserCreateArgs, DeveloperUserResult>, ISkipManifest
 {
-	public DeveloperUserCreateCommand() : base("create-user", "")
+	public DeveloperUserCreateCommand() : base("create-user", "Create a single user that can be from a template or just create new empty user")
 	{
 	}
 

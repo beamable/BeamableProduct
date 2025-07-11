@@ -5,7 +5,7 @@ namespace cli.DeveloperUserCommands;
 
 public class DeveloperUserCleanCapturedUsersBufferCommand : AtomicCommand<DeveloperUserCleanCapturedUsersBufferArgs, DeveloperUserResult>, ISkipManifest
 {
-	public DeveloperUserCleanCapturedUsersBufferCommand() : base("clean-captured-user-buffer", "")
+	public DeveloperUserCleanCapturedUsersBufferCommand() : base("clean-captured-user-buffer", "Clean up the captured users files based on a rolling buffer, the criteria is the oldest to the newer")
 	{
 	}
 
