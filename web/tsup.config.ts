@@ -47,6 +47,10 @@ export default defineConfig([
       options.alias = {
         ...alias,
         '@/defaults': path.resolve(__dirname, 'src/defaults.browser.ts'),
+        '@/utils/createHash': path.resolve(
+          __dirname,
+          'src/utils/createHashStub.ts',
+        ),
       };
     },
   },
@@ -62,6 +66,10 @@ export default defineConfig([
       options.alias = {
         ...alias,
         '@/defaults': path.resolve(__dirname, 'src/defaults.browser.ts'),
+        '@/utils/createHash': path.resolve(
+          __dirname,
+          'src/utils/createHashStub.ts',
+        ),
       };
     },
   },

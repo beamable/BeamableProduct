@@ -13,7 +13,7 @@ import { DELETE, GET, HEADERS } from '@/constants';
 import { HttpMethod } from '@/network/http/types/HttpMethod';
 import process from 'node:process';
 import { getPathAndQuery } from '@/utils/getPathAndQuery';
-import { createHash } from 'node:crypto';
+import { createHash } from '@/utils/createHash';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
