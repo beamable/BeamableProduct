@@ -135,7 +135,7 @@ namespace Beamable.Common.Content
 			// never save the legacy teams...
 			legacyTeams = null;
 
-			if (newFederatedGameServerNamespace.HasValue)
+			if( newFederatedGameServerNamespace is { HasValue: true })
 			{
 				federatedGameServerNamespace.HasValue = true;
 				federatedGameServerNamespace.Value = $"{newFederatedGameServerNamespace.Value.Name}";
