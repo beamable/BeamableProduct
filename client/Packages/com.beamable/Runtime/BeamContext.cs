@@ -660,6 +660,10 @@ namespace Beamable
 					Debug.LogWarning("Lost internet during Beamable initiation. unpredictable behaviour may occur.");
 				}
 			}
+			
+			// allow the content refs to update
+			ContentApi.Instance.CompleteSuccess(Content);
+
 
 			async Promise SetupBeamableNotificationChannel(RealmConfiguration config)
 			{
@@ -720,7 +724,6 @@ namespace Beamable
 			void SetupEmitEvents()
 			{
 				if (silent) return;
-				ContentApi.Instance.CompleteSuccess(Content);
 				OnReloadUser?.Invoke();
 			}
 
