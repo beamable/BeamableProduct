@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -59,7 +60,7 @@ namespace Beamable.Common.Content.Validation
 
 		string GetTypeName(Type type);
 
-		bool TryGetContent(string id, out IContentObject content);
+		bool TryGetContent(string id, out LocalContentManifestEntry content);
 	}
 
 
@@ -76,7 +77,7 @@ namespace Beamable.Common.Content.Validation
 	/// </summary>
 	public class ValidationContext : IValidationContext
 	{
-		public Dictionary<string, IContentObject> AllContent = new Dictionary<string, IContentObject>();
+		public Dictionary<string, LocalContentManifestEntry> AllContent = new Dictionary<string, LocalContentManifestEntry>();
 
 		public bool ContentExists(string id) => AllContent?.ContainsKey(id) ?? false;
 
@@ -92,7 +93,7 @@ namespace Beamable.Common.Content.Validation
 		}
 
 
-		public bool TryGetContent(string id, out IContentObject content)
+		public bool TryGetContent(string id, out LocalContentManifestEntry content)
 		{
 			return AllContent.TryGetValue(id, out content);
 		}

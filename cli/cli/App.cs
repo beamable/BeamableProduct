@@ -967,7 +967,7 @@ public class App
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
-			appContext.Apply(ctx.BindingContext);
+			await appContext.Apply(ctx.BindingContext);
 			
 			// update log information before dependency injection is sealed.
 			{

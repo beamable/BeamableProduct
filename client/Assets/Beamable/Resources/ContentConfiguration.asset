@@ -12,6 +12,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a5b40dc58386f46a327adbbd3aab00, type: 3}
   m_Name: ContentConfiguration
   m_EditorClassIdentifier: 
-  EnableMultipleContentNamespaces: 1
+  EnableMultipleContentNamespaces: 0
+  multipleContentNamespacesSettingLocked: 0
   EditorManifestID: global
+  EditorDownloadBatchSize:
+    HasValue: 0
+    Value: 0
+  EnablePropertyOrderDependenceForContentChecksum: 1
+  EnableLocalContentInEditor: 0
+  LocalContentReferenceDelaySeconds:
+    HasValue: 0
+    Value: 0
+  LocalContentManifestDelaySeconds:
+    HasValue: 0
+    Value: 0
   _runtimeManifestID: global
+  EnableBakedContentCompression: 1
+  BakeContentOnBuild: 1
+  DisableContentDownloadExceptions: 0
+  ContentTextureConfiguration:
+    TextureConfigurations:
+    - TypeName: calendars
+      Texture: {fileID: 0}
+    - TypeName: tournaments
+      Texture: {fileID: 0}
+    - TypeName: listings
+      Texture: {fileID: 2800000, guid: bfa6ada30d687284e84318144132cd74, type: 3}
+    - TypeName: skus
+      Texture: {fileID: 0}
+    - TypeName: stores
+      Texture: {fileID: 2800000, guid: c2ea84d5aea6d0b4a9d060a9face059b, type: 3}
+    - TypeName: leaderboards
+      Texture: {fileID: 0}
+    - TypeName: currency
+      Texture: {fileID: 2800000, guid: f3bb948c0ed0ac24da35d975f399c3b5, type: 3}
+    - TypeName: items
+      Texture: {fileID: 2800000, guid: 0b4f39d979837f3468a419fa99bd1b24, type: 3}
+    - TypeName: vip
+      Texture: {fileID: 0}
+    - TypeName: donations
+      Texture: {fileID: 0}
+    - TypeName: api.announcementApi
+      Texture: {fileID: 0}
+    - TypeName: announcements
+      Texture: {fileID: 2800000, guid: 64dba7b8de5a7ce44a6b327df9bc9427, type: 3}
+    - TypeName: api
+      Texture: {fileID: 0}
+    - TypeName: emails
+      Texture: {fileID: 0}
+    - TypeName: events
+      Texture: {fileID: 0}
+    - TypeName: game_types
+      Texture: {fileID: 2800000, guid: b307699be7529074db57aa0e49d52058, type: 3}
+    - TypeName: items.inventoryTestItem
+      Texture: {fileID: 0}
+    - TypeName: currency.gf
+      Texture: {fileID: 0}
+    - TypeName: currency.gf.test
+      Texture: {fileID: 0}
+    - TypeName: example
+      Texture: {fileID: 0}

@@ -53,10 +53,9 @@ namespace Beamable.Editor.Content
 			else if (!_typeToContent.ContainsKey(referenceType) || time > _typeToRefreshAt[referenceType])
 			{
 				_typeToRefreshAt[referenceType] = time + 5; // every five seconds; rescan
-
-				var _ = ContentIO.EnsureDefaultContentByType(referenceType, _beamable.ContentIO.ContentDatabase);
+				
 				var allContent =
-				   new HashSet<string>(_beamable.ContentDatabase.GetContent(referenceType).Select(x => x.contentId));
+				   new HashSet<string>(_beamable.CliContentService.GetContentsFromType(referenceType).Select(x => x.FullId));
 				_typeToContent[referenceType] = allContent;
 			}
 
@@ -222,21 +221,20 @@ namespace Beamable.Editor.Content
 			var de = BeamEditorContext.Default;
 			await de.InitializePromise;
 			
-			var _ = ContentIO.EnsureDefaultContentByType(referenceType, de.ContentDatabase);
-			var contentEntries = de.ContentDatabase.GetContent(referenceType);
+			var contentEntries = de.CliContentService.GetContentsFromType(referenceType);
 			_options = new List<Option>();
 			_idToOption = new Dictionary<string, Option>();
 			foreach (var content in contentEntries)
 			{
-				var displayName = content.contentId.Substring(_typeName.Length + 1);
+				var displayName = content.FullId.Substring(_typeName.Length + 1);
 				var option = new Option
 				{
-					Id = content.contentId,
+					Id = content.FullId,
 					DisplayName = displayName,
 					DisplayNameLower = displayName.ToLower()
 				};
 				_options.Add(option);
-				_idToOption.Add(content.contentId, option);
+				_idToOption.Add(content.FullId, option);
 			}
 
 			var nullOption = new Option

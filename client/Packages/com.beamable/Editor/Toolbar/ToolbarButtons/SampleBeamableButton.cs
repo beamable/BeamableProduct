@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Editor.Content;
+using Editor.UI.ContentWindow;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
@@ -18,7 +19,7 @@ namespace Beamable.Editor.ToolbarExtender
 		public override GenericMenu GetDropdownOptions(BeamEditorContext editorAPI)
 		{
 			GenericMenu menu = new GenericMenu();
-			menu.AddItem(new GUIContent("Open Beamable Content 💼"), false, async () => await ContentManagerWindow.Init());
+			menu.AddItem(new GUIContent("Open Beamable Content 💼"), false, async () => await ContentWindow.Init());
 
 			return menu;
 		}

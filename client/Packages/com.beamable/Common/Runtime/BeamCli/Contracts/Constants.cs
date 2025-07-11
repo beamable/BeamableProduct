@@ -26,6 +26,8 @@ namespace Beamable.Common.BeamCli.Contracts
 		public const string UNITY_ASSEMBLY_ITEM_NAME = "UnityAssembly";
 		public const string HINT_PATH_ITEM_TAG = "HintPath";
 		public const string PROJECT_BEAMABLE_SETTING = "BeamableSetting";
+		public const int CONTENT_PUBLISH_BATCH_SIZE = 10;
+		public const int CONTENT_SYNC_BATCH_SIZE = 10;
 
 		public static string BeamableSettingLabel(string beamId) => "CLI_SETTINGS_" + beamId;
 	}

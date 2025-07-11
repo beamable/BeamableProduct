@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
@@ -8,6 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+#if UNITY_EDITOR
+using Unity.EditorCoroutines.Editor;
+using UnityEditor;
+#endif
 
 namespace Beamable.Common.Content
 {
@@ -223,6 +228,7 @@ namespace Beamable.Common.Content
 		public string Created { get; private set; }
 		public long LastChanged { get; set; }
 		public ContentCorruptedException ContentException { get; set; }
+		
 		public bool IsDeprecated => Version == Constants.Features.Content.CONTENT_DEPRECATED;
 		/// <summary>
 		/// Set the %id and %version
@@ -347,11 +353,20 @@ namespace Beamable.Common.Content
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
+	  [NonSerialized, IgnoreContentField, HideInInspector]
+      public Action OnEditorChanged;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
+      private EditorCoroutine _validateCoroutine;
+
       public Guid ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
+	
+      
+      public ContentStatus ContentStatus { get; set; }
+      public bool IsInConflict { get; set; }
+
 
       [SerializeField]
       private string _serializedValidationGUID { get; set; }
@@ -385,25 +400,48 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-	      
-         if (ValidationContext == null)
-         {
-	         // if we have no validation context assigned yet, then we cannot possibly validate.
-	         return;
-         }
-         OnEditorValidation?.Invoke();
-         
-         if (HasValidationExceptions(ValidationContext, out var exceptions))
-         {
-            _hadValidationErrors = true;
-            OnValidationChanged?.Invoke(exceptions);
 
-         }
-         else if (_hadValidationErrors)
-         {
-            _hadValidationErrors = false;
-            OnValidationChanged?.Invoke(null);
-         }
+	      if (_validateCoroutine != null)
+	      {
+		      EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+	      }
+	      _validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+	      
+
+	      if (ValidationContext == null)
+	      {
+		      // if we have no validation context assigned yet, then we cannot possibly validate.
+		      return;
+	      }
+	      OnEditorValidation?.Invoke();
+         
+	      if (HasValidationExceptions(ValidationContext, out var exceptions))
+	      {
+		      _hadValidationErrors = true;
+		      OnValidationChanged?.Invoke(exceptions);
+
+	      }
+	      else if (_hadValidationErrors)
+	      {
+		      _hadValidationErrors = false;
+		      OnValidationChanged?.Invoke(null);
+	      }
+      }
+
+      private IEnumerator DelayedValidate()
+      {
+	      double baseTime = EditorApplication.timeSinceStartup;
+	      double elapsed = 0d;
+	      double delay = 0.3d;
+	      
+	      while (elapsed < delay)
+	      {
+		     elapsed = EditorApplication.timeSinceStartup - baseTime;
+		     yield return null;
+	      }
+	      
+	      OnEditorChanged?.Invoke();
+	      _validateCoroutine = null;
       }
 
       public void ForceValidate()
