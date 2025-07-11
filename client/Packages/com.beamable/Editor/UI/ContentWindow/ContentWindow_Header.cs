@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI.ContentWindow
+namespace Beamable.Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{

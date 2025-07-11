@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI2.Utils
+namespace Beamable.Editor.UI2.Utils
 {
     public class ToggleListWindow : EditorWindow, IDelayedActionWindow
     {

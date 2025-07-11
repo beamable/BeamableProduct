@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Editor.ContentService
+namespace Beamable.Editor.ContentService
 {
 	public static class ContentUtils
 	{

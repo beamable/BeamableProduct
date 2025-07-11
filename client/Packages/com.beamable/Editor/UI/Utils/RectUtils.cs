@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI2.Utils
+namespace Beamable.Editor.UI2.Utils
 {
 	public static class RectUtils
 	{
