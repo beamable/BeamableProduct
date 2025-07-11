@@ -73,7 +73,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
-			_contentConfiguration = ContentConfiguration.Instance;
+			_contentConfiguration = Scope.GetService<ContentConfiguration>();
 			
 			BuildHeaderFilters();
 			

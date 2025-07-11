@@ -1,10 +1,8 @@
 ﻿using Beamable.Common.Content;
 using Modules.Content;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 using static Beamable.Common.Constants.Features.ContentManager;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
@@ -98,14 +96,18 @@ namespace Beamable.Content
                 EditorManifestID = DEFAULT_MANIFEST_ID;
             }
 
-            var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
-            var allTypes = reflectionCache.GetAll().ToList();
-            if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
+            // var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+            // var allTypes = reflectionCache.GetAll().ToList();
+            // if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
+            // {
+	           //  
+	           //  ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+            // }
+            //
+            if (ContentTextureConfiguration == null)
             {
-	            
-	            ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+	            ContentTextureConfiguration = new ContentTextureConfiguration(Array.Empty<ContentTypePair>());
             }
-            
 #endif
 
 			if (!EnableMultipleContentNamespaces)
