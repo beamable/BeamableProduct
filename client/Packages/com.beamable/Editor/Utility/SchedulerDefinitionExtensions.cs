@@ -2,7 +2,7 @@ using Beamable.Common.Content;
 using Beamable.CronExpression;
 using UnityEngine;
 
-namespace Editor.Utility
+namespace Beamable.Editor.Utility
 {
 	public static class SchedulerDefinitionExtensions
 	{
