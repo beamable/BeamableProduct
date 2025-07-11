@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.ContentService
+namespace Beamable.Editor.ContentService
 {
 	public class CliContentService : IStorageHandler<CliContentService>
 	{

@@ -17,7 +17,7 @@ using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
 
-namespace Editor.ContentService
+namespace Beamable.Editor.ContentService
 {
 	public class ContentBaker
 	{
