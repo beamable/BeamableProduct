@@ -27,7 +27,7 @@ namespace Beamable.Editor.ToolbarExtender
 				foreach (var proj in editor.BeamCli.latestRealms)
 				{
 					if (proj.Archived) continue;
-					if (proj.GamePid != editor.BeamCli?.ProductionRealm.Pid) continue;
+					if (proj.GamePid != editor.BeamCli?.ProductionRealm?.Pid) continue;
 
 					projects.Add(proj);
 				}
