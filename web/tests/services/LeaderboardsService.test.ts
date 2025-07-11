@@ -9,6 +9,7 @@ import {
 import { PlayerService } from '@/services/PlayerService';
 import type { LeaderBoardViewResponse } from '@/__generated__/schemas/LeaderBoardViewResponse';
 import type { LeaderBoardView } from '@/__generated__/schemas';
+import type { LeaderboardAssignmentInfo } from '@/__generated__/schemas';
 
 describe('LeaderboardsService', () => {
   describe('get', () => {
@@ -82,6 +83,52 @@ describe('LeaderboardsService', () => {
       const params: GetLeaderboardParams = { id: 'lb2' };
       const result = await service.get(params);
 
+      expect(result).toEqual(mockView);
+    });
+  });
+
+  describe('getAssignedBoard', () => {
+    it('throws BeamError when assignment is not found', async () => {
+      const service = new LeaderboardsService({
+        api: {} as unknown as BeamApi,
+        userId: 'user1',
+      });
+      vi.spyOn(service as any, 'getAssignment').mockResolvedValue(
+        undefined as any,
+      );
+      await expect(
+        service.getAssignedBoard({ id: 'assignmentId' }),
+      ).rejects.toThrow(BeamError);
+    });
+
+    it('calls getAssignment and get with the returned leaderboardId', async () => {
+      const assignment: LeaderboardAssignmentInfo = {
+        leaderboardId: 'lbNew',
+      } as LeaderboardAssignmentInfo;
+      const mockView: LeaderBoardView = {
+        boardSize: 1n,
+        lbId: 'lbNew',
+        rankings: [],
+      };
+      const service = new LeaderboardsService({
+        api: {} as unknown as BeamApi,
+        player: new PlayerService(),
+      });
+      const params: GetLeaderboardParams = {
+        id: 'assignId',
+        from: 1,
+        max: 2,
+        focus: 'f',
+        outlier: 'o',
+      };
+      vi.spyOn(service as any, 'getAssignment').mockResolvedValue(assignment);
+      vi.spyOn(service, 'get').mockResolvedValue(mockView);
+      const result = await service.getAssignedBoard(params);
+      expect((service as any).getAssignment).toHaveBeenCalledWith(
+        'assignId',
+        true,
+      );
+      expect(service.get).toHaveBeenCalledWith({ ...params, id: 'lbNew' });
       expect(result).toEqual(mockView);
     });
   });
@@ -171,6 +218,10 @@ describe('LeaderboardsService', () => {
         api: mockBeamApi,
         player: playerService,
       });
+      // mock assignment resolution
+      vi.spyOn(service as any, 'getAssignment').mockResolvedValue({
+        leaderboardId: getParams.id,
+      } as LeaderboardAssignmentInfo);
       service.get = vi
         .fn()
         .mockResolvedValue({ boardSize: 0n, lbId: '', rankings: [] });
@@ -190,6 +241,54 @@ describe('LeaderboardsService', () => {
         playerService.id,
       );
       expect(service.get).toHaveBeenCalledWith(getParams);
+    });
+
+    it('throws BeamError when assignment is not found', async () => {
+      const mockBeamApi = {} as unknown as BeamApi;
+      const playerService = new PlayerService();
+      const service = new LeaderboardsService({
+        api: mockBeamApi,
+        player: playerService,
+      });
+      vi.spyOn(service as any, 'getAssignment').mockResolvedValue(
+        undefined as any,
+      );
+      await expect(
+        service.setScore({ id: 'lb', score: 1 } as SetLeaderboardScoreParams),
+      ).rejects.toThrow(BeamError);
+    });
+
+    it('does not call get when no player is present', async () => {
+      const mockBeamApi = {
+        leaderboards: {
+          putLeaderboardEntryByObjectId: vi.fn().mockResolvedValue({}),
+        },
+      } as unknown as BeamApi;
+      const service = new LeaderboardsService({
+        api: mockBeamApi,
+        userId: 'user1',
+      });
+      vi.spyOn(service as any, 'getAssignment').mockResolvedValue({
+        leaderboardId: 'lb',
+      } as LeaderboardAssignmentInfo);
+      service.get = vi.fn();
+      await service.setScore({
+        id: 'lb',
+        score: 2,
+      } as SetLeaderboardScoreParams);
+      expect(
+        mockBeamApi.leaderboards.putLeaderboardEntryByObjectId,
+      ).toHaveBeenCalledWith(
+        'lb',
+        {
+          id: (service as any).accountId,
+          score: 2,
+          increment: false,
+          stats: undefined,
+        },
+        (service as any).accountId,
+      );
+      expect(service.get).not.toHaveBeenCalled();
     });
   });
 

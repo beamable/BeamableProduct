@@ -1,6 +1,7 @@
 import {
   AccountPlayerView,
   AnnouncementView,
+  LeaderboardAssignmentInfo,
   LeaderBoardView,
 } from '@/__generated__/schemas';
 import { GetLeaderboardParams } from '@/services/LeaderboardsService';
@@ -11,6 +12,10 @@ export class PlayerService {
   private playerAnnouncements: AnnouncementView[] = [];
   private playerLeaderboards: Record<string, LeaderBoardView> = {};
   private playerLeaderboardsParams: Record<string, GetLeaderboardParams> = {};
+  private playerLeaderboardsAssignments: Record<
+    string,
+    LeaderboardAssignmentInfo
+  > = {};
   private playerStats: Record<string, string> = {};
 
   /** @internal */
@@ -85,6 +90,24 @@ export class PlayerService {
    */
   get leaderboardsParams(): Record<string, GetLeaderboardParams> {
     return this.playerLeaderboardsParams;
+  }
+
+  /**
+   * @internal
+   * Sets the assignment info for the current player's leaderboards.
+   */
+  set leaderboardsAssignments(
+    params: Record<string, LeaderboardAssignmentInfo>,
+  ) {
+    this.playerLeaderboardsAssignments = params;
+  }
+
+  /**
+   * @internal
+   * Retrieves the assignment info for the current player's leaderboards.
+   */
+  get leaderboardsAssignments(): Record<string, LeaderboardAssignmentInfo> {
+    return this.playerLeaderboardsAssignments;
   }
 
   /**

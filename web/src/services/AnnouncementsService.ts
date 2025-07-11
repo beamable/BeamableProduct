@@ -47,6 +47,7 @@ export class AnnouncementsService
     const { body } = await this.api.announcements.getAnnouncementByObjectId(
       this.accountId,
       false,
+      this.accountId,
     );
 
     if (!this.player) return body.announcements;
@@ -65,7 +66,7 @@ export class AnnouncementsService
    * const announcements = beamServer.announcements(playerId);
    * // claim a single announcement
    * await announcements.claim({ id: "id" });
-   * // or claim multiple announcements
+   * // claim multiple announcements
    * await announcements.claim({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
@@ -80,6 +81,7 @@ export class AnnouncementsService
     await this.api.announcements.postAnnouncementClaimByObjectId(
       this.accountId,
       { announcements: ids },
+      this.accountId,
     );
 
     if (!this.player) return;
@@ -99,9 +101,9 @@ export class AnnouncementsService
    * // server-side:
    * const announcements = beamServer.announcements(playerId);
    * // mark a single announcement as read
-   * await announcements.claim({ id: "id" });
-   * // or mark multiple announcements as read
-   * await announcements.claim({ id: ["id-1", "id-2"] });
+   * await announcements.markAsRead({ id: "id" });
+   * // mark multiple announcements as read
+   * await announcements.markAsRead({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
    */
@@ -112,9 +114,11 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.putAnnouncementReadByObjectId(this.accountId, {
-      announcements: ids,
-    });
+    await this.api.announcements.putAnnouncementReadByObjectId(
+      this.accountId,
+      { announcements: ids },
+      this.accountId,
+    );
 
     if (!this.player) return;
 
@@ -133,9 +137,9 @@ export class AnnouncementsService
    * // server-side:
    * const announcements = beamServer.announcements(playerId);
    * // delete a single announcement
-   * await announcements.claim({ id: "id" });
-   * // or delete multiple announcements
-   * await announcements.claim({ id: ["id-1", "id-2"] });
+   * await announcements.delete({ id: "id" });
+   * // delete multiple announcements
+   * await announcements.delete({ id: ["id-1", "id-2"] });
    * ```
    * @throws {BeamError} If the announcement ID is invalid or the operation fails.
    */
@@ -146,9 +150,11 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.deleteAnnouncementByObjectId(this.accountId, {
-      announcements: ids,
-    });
+    await this.api.announcements.deleteAnnouncementByObjectId(
+      this.accountId,
+      { announcements: ids },
+      this.accountId,
+    );
 
     if (!this.player) return;
 

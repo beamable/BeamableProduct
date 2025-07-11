@@ -1,6 +1,9 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import { BeamError } from '@/constants/Errors';
-import { LeaderBoardView } from '@/__generated__/schemas';
+import {
+  LeaderboardAssignmentInfo,
+  LeaderBoardView,
+} from '@/__generated__/schemas';
 
 export interface GetLeaderboardParams {
   /** The ID of the leaderboard to fetch. */
@@ -21,15 +24,9 @@ export interface GetLeaderboardParams {
    * @remarks This is used to include a specific player in the leaderboard view.
    */
   outlier?: bigint | string;
-  /**
-   * Include friends in the leaderboard.
-   * @default false
-   */
+  /** Whether to include friends in the leaderboard. */
   includeFriends?: boolean;
-  /**
-   * Include group members in the leaderboard.
-   * @default false
-   */
+  /** Whether to include group members in the leaderboard. */
   includeGuilds?: boolean;
 }
 
@@ -91,15 +88,8 @@ export class LeaderboardsService extends ApiService {
    * @throws {BeamError} If the request fails or the leaderboard does not exist.
    */
   async get(params: GetLeaderboardParams): Promise<LeaderBoardView> {
-    const {
-      id,
-      from,
-      max,
-      focus,
-      outlier,
-      includeFriends = false,
-      includeGuilds = false,
-    } = params;
+    const { id, from, max, focus, outlier, includeFriends, includeGuilds } =
+      params;
     const { body } = await this.api.leaderboards.getLeaderboardViewByObjectId(
       id,
       focus,
@@ -113,12 +103,42 @@ export class LeaderboardsService extends ApiService {
 
     if (!this.player) return body.lb;
 
-    this.player.leaderboards = { ...this.player.leaderboards, [id]: body.lb };
+    const lbId = this.splitByLastPart(id);
+    this.player.leaderboards = { ...this.player.leaderboards, [lbId]: body.lb };
     this.player.leaderboardsParams = {
       ...this.player.leaderboardsParams,
-      [id]: params,
+      [lbId]: params,
     };
     return body.lb;
+  }
+
+  /**
+   * Fetches the partitioned or cohorted leaderboard view for the current player.
+   * @remarks This method is used to fetch a leaderboard that has been assigned to the current player.
+   * @example
+   * ```ts
+   * // client-side:
+   * const leaderboards = beam.leaderboards;
+   * // server-side:
+   * const leaderboards = beamServer.leaderboards(playerId);
+   * const assignedBoard = await leaderboards.getAssignedBoard({ id: 'leaderboard-id' });
+   * ```
+   * @throws {BeamError} If the assignment does not exist or the leaderboard cannot be fetched.
+   */
+  async getAssignedBoard(
+    params: GetLeaderboardParams,
+  ): Promise<LeaderBoardView> {
+    const assignment = await this.getAssignment(params.id, true);
+    if (!assignment) {
+      throw new BeamError(
+        `Leaderboard assignment not found for ID: ${params.id}`,
+      );
+    }
+
+    return await this.get({
+      ...params,
+      id: assignment.leaderboardId,
+    });
   }
 
   /**
@@ -191,8 +211,15 @@ export class LeaderboardsService extends ApiService {
    */
   async setScore(params: SetLeaderboardScoreParams): Promise<void> {
     const { id, score, increment = false, stats } = params;
+    const assignment = await this.getAssignment(params.id, true);
+    if (!assignment) {
+      throw new BeamError(
+        `Leaderboard assignment not found for ID: ${params.id}`,
+      );
+    }
+
     await this.api.leaderboards.putLeaderboardEntryByObjectId(
-      id,
+      assignment.leaderboardId,
       {
         id: this.accountId,
         score,
@@ -204,7 +231,12 @@ export class LeaderboardsService extends ApiService {
 
     if (!this.player) return;
 
-    await this.get(this.player.leaderboardsParams[id]);
+    const lbId = assignment.leaderboardId;
+    await this.get(
+      this.player.leaderboardsParams[this.splitByLastPart(lbId)] ?? {
+        id: lbId,
+      },
+    );
   }
 
   /**
@@ -229,5 +261,36 @@ export class LeaderboardsService extends ApiService {
       id,
       this.accountId,
     );
+  }
+
+  // Returns the leaderboard assignment for the current player, using a cached assignment if available, or joining the leaderboard if not.
+  private async getAssignment(
+    id: string,
+    joinBoard: boolean,
+  ): Promise<LeaderboardAssignmentInfo> {
+    if (this.player) {
+      const cachedAssignment =
+        this.player.leaderboardsAssignments[`${this.player.id}:${id}`];
+
+      if (cachedAssignment) return cachedAssignment;
+    }
+
+    const { body } = await this.api.leaderboards.getLeaderboardsAssignment(
+      id,
+      joinBoard,
+      this.accountId,
+    );
+
+    if (!this.player) return body;
+
+    this.player.leaderboardsAssignments[`${this.player.id}:${id}`] = body;
+    return body;
+  }
+
+  // Splits the leaderboard ID by the last occurrence of '#' to get the main ID.
+  private splitByLastPart(id: string): string {
+    const i = id.lastIndexOf('#');
+    if (i === -1) return id;
+    return id.slice(0, i);
   }
 }
