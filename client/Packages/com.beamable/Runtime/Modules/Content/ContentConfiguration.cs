@@ -1,5 +1,5 @@
 ﻿using Beamable.Common.Content;
-using Modules.Content;
+using Beamable.Modules.Content;
 using System;
 using System.Linq;
 using UnityEngine;

@@ -96,6 +96,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IAnalyticsTracker, NoOpAnalyticsTracker>();
 			DependencyBuilder.AddSingleton<ITokenEventSettings>(() => CoreConfiguration.Instance);
+			DependencyBuilder.AddSingleton(() => ContentConfiguration.Instance);
 			
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
@@ -354,12 +355,13 @@ namespace Beamable
 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 #endif
 
+					IsInitialized = true;
+
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 					// Initialize toolbar
 					BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 
-					IsInitialized = true;
 				}
 				catch (Exception ex)
 				{

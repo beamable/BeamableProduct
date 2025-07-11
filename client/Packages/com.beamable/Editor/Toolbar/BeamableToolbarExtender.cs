@@ -76,7 +76,10 @@ namespace Beamable.Editor.ToolbarExtender
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 
 			if (!BeamEditor.IsInitialized)
+			{
+				Debug.LogError("Beamable Toolbar cannot load because Beamable is not initialized. ");
 				return;
+			}
 
 			var api = BeamEditorContext.Default;
 			_editorAPI = api;
@@ -303,7 +306,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.height = 24;
 #endif
 
-#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
+#if UNITY_2019_1_OR_NEWER
 			var beamableToolbarButtonEnd = rightRect.xMax -= space; // Space between collab and Beamable Toolbar
 			var beamableToolbarButtonStart = rightRect.xMax -= beamableToolbarButtonWidth; // Beamable Toolbar Button
 			var beamableToolbarButtonRect = new Rect(beamableToolbarButtonStart, rightRect.y + 2, beamableToolbarButtonEnd - beamableToolbarButtonStart, dropdownHeight);

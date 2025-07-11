@@ -102,15 +102,15 @@ namespace Beamable.Editor.ToolbarExtender
 					// Adds the configured container to the Toolbar VisualElement list.  
 					mRoot?.Add(container);
 					
-#if UNITY_2022_1_OR_NEWER
-					BeamableVersionButton versionButton = new BeamableVersionButton();
-					versionButton.Init();
-
-					var toolbarZoneRightAlign = GetTargetToolbar(mRoot);
-					toolbarZoneRightAlign?.Add(versionButton);
-#endif
-
-#else
+// #if UNITY_2022_1_OR_NEWER
+// 					BeamableVersionButton versionButton = new BeamableVersionButton();
+// 					versionButton.Init();
+//
+// 					var toolbarZoneRightAlign = GetTargetToolbar(mRoot);
+// 					toolbarZoneRightAlign?.Add(versionButton);
+// #endif
+//
+// #else
 #if UNITY_2020_1_OR_NEWER
                     var windowBackend = m_windowBackend.GetValue(m_currentToolbar);
 
@@ -122,7 +122,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 					// Get first child which 'happens' to be toolbar IMGUIContainer
-					var container = (IMGUIContainer)visualTree[0];
+					container = (IMGUIContainer)visualTree[0];
 
 					// (Re)attach handler
 					var handler = (Action)m_imguiContainerOnGui.GetValue(container);

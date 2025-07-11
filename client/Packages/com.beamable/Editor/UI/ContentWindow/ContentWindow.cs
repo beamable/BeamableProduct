@@ -33,7 +33,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "New Content Manager",
+				Title = "Beam Content",
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				FocusOnShow = false,
 				RequireLoggedUser = true,
@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Content Manager",
+			"Beam Content",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => _ = await GetFullyInitializedWindow();

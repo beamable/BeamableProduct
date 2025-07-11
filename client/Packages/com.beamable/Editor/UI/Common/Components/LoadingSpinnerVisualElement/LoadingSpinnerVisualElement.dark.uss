@@ -1,3 +1,0 @@
-TemplateContainer {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/loading_dark.png");
-}
