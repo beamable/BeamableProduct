@@ -119,6 +119,31 @@ namespace Editor.UI.ContentWindow
 				GUILayout.EndScrollView();
 			}
 			GUILayout.EndVertical();
+			
+			if (!string.IsNullOrEmpty(SelectedItemId) && Event.current.type == EventType.KeyDown &&
+			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
+			{
+				
+				if (Event.current.control || Event.current.alt || Event.current.shift || Event.current.command)
+				{
+					return;
+				}
+
+				if (_contentService.EntriesCache.TryGetValue(SelectedItemId, out var entry) &&
+				    entry.StatusEnum is not ContentStatus.Deleted)
+				{
+					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
+					                                                "Are you sure you want to delete this content?",
+					                                                "Delete", "Cancel");
+					if (shouldDelete)
+					{
+						_contentService.DeleteContent(entry.FullId);
+						Selection.activeObject = null;
+						Event.current.Use();
+						Repaint();
+					}
+				}
+			}
 		}
 		
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
@@ -205,7 +230,7 @@ namespace Editor.UI.ContentWindow
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
 				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
 				{
-					CreateOrCloneNewItem(contentType);
+					CreateNewItem(contentType);
 				}
 				
 				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
@@ -223,7 +248,7 @@ namespace Editor.UI.ContentWindow
 		}
 		
 
-		private void CreateOrCloneNewItem(string itemType)
+		private void CreateNewItem(string itemType)
 		{
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
 			{
@@ -235,6 +260,11 @@ namespace Editor.UI.ContentWindow
 			int itemsWithBaseNameCount =  _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
 			contentObject.SetContentName($"{baseName}_{itemsWithBaseNameCount}");
 			contentObject.ContentStatus = ContentStatus.Created;
+			contentObject.OnEditorChanged = () =>
+			{
+				_contentService.SaveContent(contentObject);
+			};
+			_contentService.ValidateForInvalidFields(contentObject);
 			_contentService.SaveContent(contentObject);
 			Selection.activeObject = contentObject;
 		}

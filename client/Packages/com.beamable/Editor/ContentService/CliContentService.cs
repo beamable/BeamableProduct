@@ -340,7 +340,6 @@ namespace Editor.ContentService
 							RemoveContentFromCache(oldEntry);
 						}
 						
-						ValidationContext.AllContent[entry.FullId] = entry;
 						AddContentToCache(entry);
 					}
 				}
@@ -518,12 +517,16 @@ namespace Editor.ContentService
 			EntriesCache[entry.FullId] = entry;
 			
 			CacheScriptableContent(entry);
+
+			if (entry.StatusEnum is not ContentStatus.Deleted)
+			{
+				ValidationContext.AllContent[entry.FullId] = entry;
+			}
 		}
 
 		private void CacheScriptableContent(LocalContentManifestEntry entry)
 		{
-			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type) ||
-			    !File.Exists(entry.JsonFilePath))
+			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
 				_invalidContents.Remove(entry.FullId);
 				ContentScriptableCache.Remove(entry.FullId);
@@ -538,7 +541,8 @@ namespace Editor.ContentService
 				deletedObject.SetContentName(entry.Name);
 				deletedObject.ContentStatus = ContentStatus.Deleted;
 				deletedObject.IsInConflict = entry.IsInConflict;
-				Selection.activeObject = deletedObject;
+				ContentScriptableCache[entry.FullId] = deletedObject;
+				_invalidContents.Remove(entry.FullId);
 				return;
 			}
 			
@@ -586,7 +590,7 @@ namespace Editor.ContentService
 			_contentIdTagsCache.Remove(entry.FullId);
 		}
 
-		private void ValidateForInvalidFields(ContentObject contentObject)
+		public void ValidateForInvalidFields(ContentObject contentObject)
 		{
 			bool hasValidationError =
 				contentObject != null && contentObject.HasValidationErrors(ValidationContext, out var _);
