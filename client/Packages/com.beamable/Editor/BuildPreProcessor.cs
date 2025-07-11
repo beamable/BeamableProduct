@@ -98,7 +98,11 @@ namespace Beamable.Editor
 
 			if (ContentConfiguration.Instance.BakeContentOnBuild)
 			{
+#if !BEAMABLE_CONTENT_BAKE_ONLY_FROM_LOCAL
 				await ContentIO.BakeContent(skipCheck: true);
+#else
+				await ContentIO.BakeLiveContent();
+#endif
 			}
 			if (CoreConfiguration.Instance.PreventCodeStripping)
 			{
