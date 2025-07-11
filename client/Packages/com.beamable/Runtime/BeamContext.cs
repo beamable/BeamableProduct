@@ -661,9 +661,6 @@ namespace Beamable
 				}
 			}
 			
-			// allow the content refs to update
-			ContentApi.Instance.CompleteSuccess(Content);
-
 
 			async Promise SetupBeamableNotificationChannel(RealmConfiguration config)
 			{
@@ -724,6 +721,8 @@ namespace Beamable
 			void SetupEmitEvents()
 			{
 				if (silent) return;
+				// allow the content refs to update
+				ContentApi.Instance.CompleteSuccess(Content);
 				OnReloadUser?.Invoke();
 			}
 
