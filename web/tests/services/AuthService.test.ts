@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AuthService } from '@/services/AuthService';
-import type { BeamApi } from '@/core/BeamApi';
+import * as apis from '@/__generated__/apis';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type {
   TokenRequestWrapper,
   TokenResponse,
@@ -23,16 +24,16 @@ describe('AuthService', () => {
         refresh_token: 'test-refresh-token',
         scopes: ['scope1', 'scope2'],
       };
-      const mockBeamApi = {
-        auth: {
-          postAuthToken: vi.fn().mockResolvedValue({ body: mockBody }),
-        },
-      } as unknown as BeamApi;
-
-      const authService = new AuthService({ api: mockBeamApi });
+      vi.spyOn(apis, 'postAuthToken').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+      const mockRequester = {} as HttpRequester;
+      const authService = new AuthService({ requester: mockRequester });
       const result = await authService.signInAsGuest();
 
-      expect(mockBeamApi.auth.postAuthToken).toHaveBeenCalledWith(payload);
+      expect(apis.postAuthToken).toHaveBeenCalledWith(mockRequester, payload);
       expect(result).toEqual(mockBody);
     });
   });
@@ -51,16 +52,16 @@ describe('AuthService', () => {
         refresh_token: 'new-refresh-token',
         scopes: ['scopeA'],
       };
-      const mockBeamApi = {
-        auth: {
-          postAuthToken: vi.fn().mockResolvedValue({ body: mockBody }),
-        },
-      } as unknown as BeamApi;
-
-      const authService = new AuthService({ api: mockBeamApi });
+      vi.spyOn(apis, 'postAuthToken').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+      const mockRequester = {} as HttpRequester;
+      const authService = new AuthService({ requester: mockRequester });
       const result = await authService.refreshAuthToken({ refreshToken });
 
-      expect(mockBeamApi.auth.postAuthToken).toHaveBeenCalledWith(payload);
+      expect(apis.postAuthToken).toHaveBeenCalledWith(mockRequester, payload);
       expect(result).toEqual(mockBody);
     });
   });

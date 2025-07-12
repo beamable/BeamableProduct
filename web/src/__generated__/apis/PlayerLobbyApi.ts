@@ -6,55 +6,50 @@ import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { Lobby } from '@/__generated__/schemas/Lobby';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
+import { playerIdPlaceholder } from '@/__generated__/apis/constants';
 
-export class PlayerLobbyApi {
-  constructor(
-    private readonly r: HttpRequester
-  ) {
-  }
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - Player Id
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function getPlayerLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
+  let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - Player Id
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
-   */
-  async getPlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
-    let e = "/api/players/{playerId}/lobbies".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<Lobby>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<Lobby>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - Player Id
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function deletePlayerLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
+  let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - Player Id
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>>} A promise containing the HttpResponse of ApiPlayersLobbiesDeletePlayerLobbyResponse
-   */
-  async deletePlayerLobbiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
-    let e = "/api/players/{playerId}/lobbies".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<ApiPlayersLobbiesDeletePlayerLobbyResponse>({
-      r: this.r,
-      e,
-      m: DELETE,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<ApiPlayersLobbiesDeletePlayerLobbyResponse>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    g: gamertag,
+    w: true
+  });
 }

@@ -5,101 +5,98 @@ import { GET } from '@/constants';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
 import { Party } from '@/__generated__/schemas/Party';
 import { PartyInvitesForPlayerResponse } from '@/__generated__/schemas/PartyInvitesForPlayerResponse';
+import { playerIdPlaceholder } from '@/__generated__/apis/constants';
 
-export class PlayerPartyApi {
-  constructor(
-    private readonly r: HttpRequester
-  ) {
-  }
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - Player Id
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function getPlayerPartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Party>> {
+  let endpoint = "/api/players/{playerId}/parties".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - Player Id
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
-   */
-  async getPlayerPartiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<Party>> {
-    let e = "/api/players/{playerId}/parties".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<Party>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<Party>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - Player Id
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function deletePlayerPartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>> {
+  let endpoint = "/api/players/{playerId}/parties".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - Player Id
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>>} A promise containing the HttpResponse of ApiPlayersPartiesDeletePlayerPartyResponse
-   */
-  async deletePlayerPartiesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>> {
-    let e = "/api/players/{playerId}/parties".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<ApiPlayersPartiesDeletePlayerPartyResponse>({
-      r: this.r,
-      e,
-      m: DELETE,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<ApiPlayersPartiesDeletePlayerPartyResponse>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - PlayerId
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function getPlayerPartiesInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
+  let endpoint = "/api/players/{playerId}/parties/invites".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - PlayerId
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
-   */
-  async getPlayerPartiesInvitesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
-    let e = "/api/players/{playerId}/parties/invites".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<PartyInvitesForPlayerResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<PartyInvitesForPlayerResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerId - PlayerId
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function getPlayerPartyInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
+  let endpoint = "/api/players/{playerId}/party/invites".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} playerId - PlayerId
-   * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
-   * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
-   */
-  async getPlayerPartyInvitesByPlayerId(playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
-    let e = "/api/players/{playerId}/party/invites".replace(objectIdPlaceholder, endpointEncoder(playerId));
-    
-    // Make the API request
-    return makeApiRequest<PartyInvitesForPlayerResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<PartyInvitesForPlayerResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
 }

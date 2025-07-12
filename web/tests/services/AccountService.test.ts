@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AccountService } from '@/services/AccountService';
-import type { BeamApi } from '@/core/BeamApi';
+import * as apis from '@/__generated__/apis';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { AccountPlayerView } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 
@@ -16,22 +17,20 @@ describe('AccountService', () => {
         external: [],
         language: 'en',
       };
-      const mockBeamApi = {
-        accounts: {
-          getAccountsMe: vi.fn().mockResolvedValue({ body: mockBody }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'getAccountsMe').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const accountService = new AccountService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const result = await accountService.current();
 
-      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalledWith(
-        undefined,
-      );
+      expect(apis.getAccountsMe).toHaveBeenCalledWith(mockRequester, undefined);
       expect(result).toEqual(mockBody);
     });
   });

@@ -22,12 +22,19 @@ public static class OpenApiMethodNameGenerator
 	public static string GenerateMethodName(string apiEndpoint, string httpMethod)
 	{
 		var isInternalApi = apiEndpoint.StartsWith("/api/internal", StringComparison.OrdinalIgnoreCase);
+		var isBeamoApi = apiEndpoint.StartsWith("/api/beamo", StringComparison.OrdinalIgnoreCase);
 
 		// 1) Split raw segments
 		var rawSegments = apiEndpoint
 			.Split(Separator, StringSplitOptions.RemoveEmptyEntries)
 			.Where(s => !SkippablePrefixes.Contains(s, StringComparer.OrdinalIgnoreCase))
 			.ToList();
+
+		if (isBeamoApi)
+		{
+			IEnumerable<string> enumerable = rawSegments.Prepend("api");
+			rawSegments = enumerable.ToList();
+		}
 
 		// 2) Detect param vs static in original segments
 		var rawParamSegments = rawSegments.Where(IsParameter).ToList();

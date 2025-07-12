@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BeamApi } from '@/core/BeamApi';
+import * as apis from '@/__generated__/apis';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import {
   AnnouncementQueryResponse,
   AnnouncementView,
@@ -26,24 +27,25 @@ describe('AnnouncementsService', () => {
           },
         ],
       };
-      const mockBeamApi = {
-        announcements: {
-          getAnnouncementByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: mockBody }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'getAnnouncementByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const announcementsService = new AnnouncementsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const result = await announcementsService.list();
 
-      expect(
-        mockBeamApi.announcements.getAnnouncementByObjectId,
-      ).toHaveBeenCalled();
+      expect(apis.getAnnouncementByObjectId).toHaveBeenCalledWith(
+        mockRequester,
+        playerService.id,
+        false,
+        playerService.id,
+      );
       expect(result).toEqual(mockBody.announcements);
     });
   });
@@ -63,25 +65,22 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
-      const mockBeamApi = {
-        announcements: {
-          postAnnouncementClaimByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { result: 'ok', data: {} } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'postAnnouncementClaimByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { result: 'ok', data: {} },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       await announcementsService.claim({ id: announcementId });
 
-      expect(
-        mockBeamApi.announcements.postAnnouncementClaimByObjectId,
-      ).toHaveBeenCalledWith(
+      expect(apis.postAnnouncementClaimByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         playerService.id,
         { announcements: [announcementId] },
         playerService.id,
@@ -105,25 +104,22 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
-      const mockBeamApi = {
-        announcements: {
-          putAnnouncementReadByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { result: 'ok', data: {} } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'putAnnouncementReadByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { result: 'ok', data: {} },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       await announcementsService.markAsRead({ id: announcementId });
 
-      expect(
-        mockBeamApi.announcements.putAnnouncementReadByObjectId,
-      ).toHaveBeenCalledWith(
+      expect(apis.putAnnouncementReadByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         playerService.id,
         { announcements: [announcementId] },
         playerService.id,
@@ -147,25 +143,22 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
-      const mockBeamApi = {
-        announcements: {
-          deleteAnnouncementByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { result: 'ok', data: {} } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'deleteAnnouncementByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { result: 'ok', data: {} },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       await announcementsService.delete({ id: announcementId });
 
-      expect(
-        mockBeamApi.announcements.deleteAnnouncementByObjectId,
-      ).toHaveBeenCalledWith(
+      expect(apis.deleteAnnouncementByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         playerService.id,
         { announcements: [announcementId] },
         playerService.id,

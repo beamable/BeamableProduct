@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BeamApi } from '@/core/BeamApi';
+import * as apis from '@/__generated__/apis';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import { PlayerService } from '@/services/PlayerService';
 import { StatsService } from '@/services/StatsService';
 
@@ -10,26 +11,25 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
-      const mockBeamApi = {
-        stats: {
-          postStatClientByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { result: 'ok' } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'postStatClientByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { result: 'ok' },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const objectId = `client.private.player.${playerService.id}`;
       await statsService.set({ accessType: 'private', stats: mockStats });
 
-      expect(mockBeamApi.stats.postStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.postStatClientByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         objectId,
         { set: mockStats },
-        '0',
+        playerService.id,
       );
       expect(playerService.stats).toEqual(mockStats);
     });
@@ -39,17 +39,15 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
-      const mockBeamApi = {
-        stats: {
-          postStatByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { result: 'ok' } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'postStatByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { result: 'ok' },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const objectId = `game.private.player.${playerService.id}`;
@@ -59,10 +57,11 @@ describe('StatsService', () => {
         stats: mockStats,
       });
 
-      expect(mockBeamApi.stats.postStatByObjectId).toHaveBeenCalledWith(
+      expect(apis.postStatByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         objectId,
         { set: mockStats },
-        '0',
+        playerService.id,
       );
       expect(playerService.stats).toEqual(mockStats);
     });
@@ -74,26 +73,25 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
-      const mockBeamApi = {
-        stats: {
-          getStatClientByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { stats: mockStats } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'getStatClientByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { id: '123', stats: mockStats },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const objectId = `client.public.player.${playerService.id}`;
       const result = await statsService.get({ accessType: 'public' });
 
-      expect(mockBeamApi.stats.getStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.getStatClientByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         objectId,
         undefined,
-        '0',
+        playerService.id,
       );
       expect(playerService.stats).toEqual(result);
     });
@@ -103,17 +101,15 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
-      const mockBeamApi = {
-        stats: {
-          getStatByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { stats: mockStats } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'getStatByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { id: '123', stats: mockStats },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const objectId = `game.public.player.${playerService.id}`;
@@ -122,10 +118,11 @@ describe('StatsService', () => {
         accessType: 'public',
       });
 
-      expect(mockBeamApi.stats.getStatByObjectId).toHaveBeenCalledWith(
+      expect(apis.getStatByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         objectId,
         undefined,
-        '0',
+        playerService.id,
       );
       expect(playerService.stats).toEqual(result);
     });
@@ -137,18 +134,16 @@ describe('StatsService', () => {
       const scoreStats: Record<string, string> = {
         score: '1000',
       };
-      const mockBeamApi = {
-        stats: {
-          getStatClientByObjectId: vi
-            .fn()
-            .mockResolvedValue({ body: { stats: scoreStats } }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'getStatClientByObjectId').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { id: '123', stats: scoreStats },
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       playerService.stats = levelStats; // Initial stats
       const statsService = new StatsService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const objectId = `client.public.player.${playerService.id}`;
@@ -157,10 +152,11 @@ describe('StatsService', () => {
         stats: ['score'],
       });
 
-      expect(mockBeamApi.stats.getStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.getStatClientByObjectId).toHaveBeenCalledWith(
+        mockRequester,
         objectId,
         'score',
-        '0',
+        playerService.id,
       );
       expect(result).toEqual(scoreStats);
       expect(playerService.stats).toEqual({ ...levelStats, ...scoreStats });

@@ -4,6 +4,14 @@ import {
   LeaderboardAssignmentInfo,
   LeaderBoardView,
 } from '@/__generated__/schemas';
+import {
+  getLeaderboardFriendsByObjectId,
+  getLeaderboardRanksByObjectId,
+  getLeaderboardsAssignment,
+  getLeaderboardViewByObjectId,
+  putLeaderboardEntryByObjectId,
+  putLeaderboardFreezeByObjectId,
+} from '@/__generated__/apis';
 
 export interface GetLeaderboardParams {
   /** The ID of the leaderboard to fetch. */
@@ -90,7 +98,8 @@ export class LeaderboardsService extends ApiService {
   async get(params: GetLeaderboardParams): Promise<LeaderBoardView> {
     const { id, from, max, focus, outlier, includeFriends, includeGuilds } =
       params;
-    const { body } = await this.api.leaderboards.getLeaderboardViewByObjectId(
+    const { body } = await getLeaderboardViewByObjectId(
+      this.requester,
       id,
       focus,
       includeFriends,
@@ -159,11 +168,11 @@ export class LeaderboardsService extends ApiService {
     params: GetLeaderboardFriendsParams,
   ): Promise<LeaderBoardView> {
     const { id } = params;
-    const { body } =
-      await this.api.leaderboards.getLeaderboardFriendsByObjectId(
-        id,
-        this.accountId,
-      );
+    const { body } = await getLeaderboardFriendsByObjectId(
+      this.requester,
+      id,
+      this.accountId,
+    );
     return body.lb;
   }
 
@@ -184,7 +193,8 @@ export class LeaderboardsService extends ApiService {
    */
   async getRanks(params: GetLeaderboardRanksParams): Promise<LeaderBoardView> {
     const { id, playerIds } = params;
-    const { body } = await this.api.leaderboards.getLeaderboardRanksByObjectId(
+    const { body } = await getLeaderboardRanksByObjectId(
+      this.requester,
       id,
       playerIds.join(','),
       this.accountId,
@@ -211,14 +221,13 @@ export class LeaderboardsService extends ApiService {
    */
   async setScore(params: SetLeaderboardScoreParams): Promise<void> {
     const { id, score, increment = false, stats } = params;
-    const assignment = await this.getAssignment(params.id, true);
+    const assignment = await this.getAssignment(id, true);
     if (!assignment) {
-      throw new BeamError(
-        `Leaderboard assignment not found for ID: ${params.id}`,
-      );
+      throw new BeamError(`Leaderboard assignment not found for ID: ${id}`);
     }
 
-    await this.api.leaderboards.putLeaderboardEntryByObjectId(
+    await putLeaderboardEntryByObjectId(
+      this.requester,
       assignment.leaderboardId,
       {
         id: this.accountId,
@@ -257,10 +266,7 @@ export class LeaderboardsService extends ApiService {
     }
 
     const { id } = params;
-    await this.api.leaderboards.putLeaderboardFreezeByObjectId(
-      id,
-      this.accountId,
-    );
+    await putLeaderboardFreezeByObjectId(this.requester, id, this.accountId);
   }
 
   // Returns the leaderboard assignment for the current player, using a cached assignment if available, or joining the leaderboard if not.
@@ -275,7 +281,8 @@ export class LeaderboardsService extends ApiService {
       if (cachedAssignment) return cachedAssignment;
     }
 
-    const { body } = await this.api.leaderboards.getLeaderboardsAssignment(
+    const { body } = await getLeaderboardsAssignment(
+      this.requester,
       id,
       joinBoard,
       this.accountId,

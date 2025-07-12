@@ -1,5 +1,6 @@
 import { AccountPlayerView } from '@/__generated__/schemas';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
+import { getAccountsMe } from '@/__generated__/apis';
 
 export class AccountService extends ApiService {
   /** @internal */
@@ -19,7 +20,8 @@ export class AccountService extends ApiService {
    * @throws {BeamError} If the request fails.
    */
   async current(): Promise<AccountPlayerView> {
-    const { body } = await this.api.accounts.getAccountsMe(
+    const { body } = await getAccountsMe(
+      this.requester,
       this.accountId === '0' ? undefined : this.accountId,
     );
     return body;
