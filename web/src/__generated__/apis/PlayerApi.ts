@@ -16,6 +16,10 @@ export class PlayerApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - The `playerId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>>} A promise containing the HttpResponse of ApiPlayersPresencePutPlayerPresenceResponse
@@ -28,11 +32,16 @@ export class PlayerApi {
       r: this.r,
       e,
       m: PUT,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - The `playerId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<OnlineStatus>>} A promise containing the HttpResponse of OnlineStatus
@@ -45,11 +54,16 @@ export class PlayerApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {SetPresenceStatusRequest} payload - The `SetPresenceStatusRequest` instance to use for the API request
    * @param {string} playerId - The `playerId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -64,7 +78,8 @@ export class PlayerApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }
