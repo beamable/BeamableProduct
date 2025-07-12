@@ -26,6 +26,10 @@ export class SchedulerApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {JobExecutionEvent} payload - The `JobExecutionEvent` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<JobExecutionResult>>} A promise containing the HttpResponse of JobExecutionResult
@@ -39,11 +43,16 @@ export class SchedulerApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {JobDefinitionSaveRequest} payload - The `JobDefinitionSaveRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<JobDefinitionView>>} A promise containing the HttpResponse of JobDefinitionView
@@ -57,11 +66,16 @@ export class SchedulerApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {JobDefinitionSaveRequest} payload - The `JobDefinitionSaveRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<JobDefinitionView>>} A promise containing the HttpResponse of JobDefinitionView
@@ -75,11 +89,16 @@ export class SchedulerApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @deprecated
    * This API method is deprecated and may be removed in future versions.
    * 
@@ -102,11 +121,16 @@ export class SchedulerApi {
         name,
         source
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} cursor - The `cursor` parameter to include in the API request.
    * @param {string} name - The `name` parameter to include in the API request.
    * @param {boolean} onlyUnique - The `onlyUnique` parameter to include in the API request.
@@ -128,11 +152,16 @@ export class SchedulerApi {
         onlyUnique,
         source
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} cursor - The `cursor` parameter to include in the API request.
    * @param {Date} from - The `from` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -150,11 +179,16 @@ export class SchedulerApi {
         cursor,
         from
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} jobId - The `jobId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<JobDefinitionView>>} A promise containing the HttpResponse of JobDefinitionView
@@ -167,11 +201,16 @@ export class SchedulerApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} jobId - The `jobId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobDeleteSchedulerResponse
@@ -184,11 +223,16 @@ export class SchedulerApi {
       r: this.r,
       e,
       m: DELETE,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @deprecated
    * This API method is deprecated and may be removed in future versions.
    * 
@@ -208,11 +252,16 @@ export class SchedulerApi {
       q: {
         limit
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} jobId - The `jobId` parameter to include in the API request.
    * @param {string} cursor - The `cursor` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -229,11 +278,16 @@ export class SchedulerApi {
       q: {
         cursor
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} cursor - The `cursor` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<JobActivityViewCursorPagedResult>>} A promise containing the HttpResponse of JobActivityViewCursorPagedResult
@@ -249,11 +303,16 @@ export class SchedulerApi {
       q: {
         cursor
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} jobId - The `jobId` parameter to include in the API request.
    * @param {Date} from - The `from` parameter to include in the API request.
    * @param {number} limit - The `limit` parameter to include in the API request.
@@ -272,11 +331,16 @@ export class SchedulerApi {
         from,
         limit
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} jobId - The `jobId` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>>} A promise containing the HttpResponse of ApiSchedulerJobCancelPutSchedulerResponse
@@ -289,7 +353,8 @@ export class SchedulerApi {
       r: this.r,
       e,
       m: PUT,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

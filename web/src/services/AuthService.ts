@@ -1,21 +1,15 @@
-import { BeamApi } from '@/core/BeamApi';
 import { TokenRequestWrapper, TokenResponse } from '@/__generated__/schemas';
 import { getUserDeviceAndPlatform } from '@/utils/getUserDeviceAndPlatform';
-
-interface AuthServiceProps {
-  api: BeamApi;
-}
+import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 
 export interface RefreshTokenParams {
   refreshToken: string;
 }
 
-export class AuthService {
-  private readonly api: BeamApi;
-
+export class AuthService extends ApiService {
   /** @internal */
-  constructor(props: AuthServiceProps) {
-    this.api = props.api;
+  constructor(props: ApiServiceProps) {
+    super(props);
   }
 
   /**

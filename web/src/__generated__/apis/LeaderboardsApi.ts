@@ -182,6 +182,10 @@ export class LeaderboardsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} objectId - Gamertag of the player.
    * @param {string} ids - The `ids` parameter to include in the API request.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -198,7 +202,8 @@ export class LeaderboardsApi {
       q: {
         ids
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -297,6 +302,10 @@ export class LeaderboardsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} objectId - Gamertag of the player.
    * @param {number} poolSize - The `poolSize` parameter to include in the API request.
    * @param {number} windowSize - The `windowSize` parameter to include in the API request.
@@ -317,7 +326,8 @@ export class LeaderboardsApi {
         windowSize,
         windows
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -368,6 +378,10 @@ export class LeaderboardsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {LeaderboardAddRequest} payload - The `LeaderboardAddRequest` instance to use for the API request
    * @param {string} objectId - Gamertag of the player.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -382,7 +396,8 @@ export class LeaderboardsApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -461,6 +476,10 @@ export class LeaderboardsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} objectId - Gamertag of the player.
    * @param {bigint | string} focus - The `focus` parameter to include in the API request.
    * @param {boolean} friends - The `friends` parameter to include in the API request.
@@ -487,7 +506,8 @@ export class LeaderboardsApi {
         max,
         outlier
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   

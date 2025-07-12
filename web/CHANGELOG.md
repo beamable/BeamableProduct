@@ -1,12 +1,20 @@
 # beamable-sdk
 
+## 0.3.0
+
+### Minor Changes
+
+- Added Signed Requests Implementation
+- Added `Leaderboard` Service
+- New `BeamServer` class for server-side integration with the Beam SDK
+
 ## 0.2.0
 
 ### Minor Changes
 
 - Added WebSocket Implementation
-- Added Announcement Service
-- Added Stats Service
+- Added `Announcements` Service
+- Added `Stats` Service
 - Access to SDK schema types via `beamable-sdk/schema`
 
 ## 0.1.7
@@ -54,7 +62,7 @@
 ### Patch Changes
 
 - New `ready` function to initialize the sdk
-- Initial Auth, Account and Player services for the sdk
+- Initial `Auth`, `Account` and `Player` services for the sdk
 
 ## 0.1.0
 
@@ -75,4 +83,4 @@
 
 ### Patch Changes
 
-- 3ef8c13: Web SDK initial project setup
+- Web SDK initial project setup

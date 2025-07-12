@@ -5,7 +5,7 @@ import { HttpMethod } from '@/network/http/types/HttpMethod';
  * @template TReq - The expected type of the request body.
  */
 export interface HttpRequest<TReq = any> {
-  /** The full URL to which the HTTP request will be sent. */
+  /** The URL for the request. Can be a full URL or a path relative to the base URL. */
   url: string;
 
   /**

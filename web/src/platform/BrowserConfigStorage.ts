@@ -1,4 +1,4 @@
-export interface Config {
+interface Config {
   cid: string;
   pid: string;
 }

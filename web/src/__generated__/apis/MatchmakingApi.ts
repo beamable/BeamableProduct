@@ -20,6 +20,10 @@ export class MatchmakingApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - Match ID
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Match>>} A promise containing the HttpResponse of Match
@@ -32,11 +36,16 @@ export class MatchmakingApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {boolean} IncludeInactive - The `IncludeInactive` parameter to include in the API request.
    * @param {number} Limit - The `Limit` parameter to include in the API request.
    * @param {string[]} Players - The `Players` parameter to include in the API request.
@@ -58,11 +67,16 @@ export class MatchmakingApi {
         Players,
         Skip
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {TicketReservationRequest} payload - The `TicketReservationRequest` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<TicketReservationResponse>>} A promise containing the HttpResponse of TicketReservationResponse
@@ -76,11 +90,16 @@ export class MatchmakingApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - Ticket ID
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Ticket>>} A promise containing the HttpResponse of Ticket
@@ -93,11 +112,16 @@ export class MatchmakingApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - The `id` parameter to include in the API request.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>>} A promise containing the HttpResponse of ApiMatchmakingTicketsDeleteTicketResponse
@@ -110,7 +134,8 @@ export class MatchmakingApi {
       r: this.r,
       e,
       m: DELETE,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

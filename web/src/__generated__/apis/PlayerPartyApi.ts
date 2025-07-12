@@ -16,6 +16,10 @@ export class PlayerPartyApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - Player Id
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
@@ -28,11 +32,16 @@ export class PlayerPartyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - Player Id
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>>} A promise containing the HttpResponse of ApiPlayersPartiesDeletePlayerPartyResponse
@@ -45,11 +54,16 @@ export class PlayerPartyApi {
       r: this.r,
       e,
       m: DELETE,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - PlayerId
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
@@ -62,11 +76,16 @@ export class PlayerPartyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - PlayerId
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<PartyInvitesForPlayerResponse>>} A promise containing the HttpResponse of PartyInvitesForPlayerResponse
@@ -79,7 +98,8 @@ export class PlayerPartyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

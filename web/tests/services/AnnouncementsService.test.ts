@@ -81,9 +81,11 @@ describe('AnnouncementsService', () => {
 
       expect(
         mockBeamApi.announcements.postAnnouncementClaimByObjectId,
-      ).toHaveBeenCalledWith(playerService.id, {
-        announcements: [announcementId],
-      });
+      ).toHaveBeenCalledWith(
+        playerService.id,
+        { announcements: [announcementId] },
+        playerService.id,
+      );
       expect(playerService.announcements[0].isClaimed).toEqual(true);
     });
   });
@@ -121,9 +123,11 @@ describe('AnnouncementsService', () => {
 
       expect(
         mockBeamApi.announcements.putAnnouncementReadByObjectId,
-      ).toHaveBeenCalledWith(playerService.id, {
-        announcements: [announcementId],
-      });
+      ).toHaveBeenCalledWith(
+        playerService.id,
+        { announcements: [announcementId] },
+        playerService.id,
+      );
       expect(playerService.announcements[0].isRead).toEqual(true);
     });
   });
@@ -161,9 +165,11 @@ describe('AnnouncementsService', () => {
 
       expect(
         mockBeamApi.announcements.deleteAnnouncementByObjectId,
-      ).toHaveBeenCalledWith(playerService.id, {
-        announcements: [announcementId],
-      });
+      ).toHaveBeenCalledWith(
+        playerService.id,
+        { announcements: [announcementId] },
+        playerService.id,
+      );
       expect(playerService.announcements.length).toEqual(0);
     });
   });

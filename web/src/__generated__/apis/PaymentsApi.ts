@@ -1190,6 +1190,10 @@ export class PaymentsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
    * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
@@ -1202,7 +1206,8 @@ export class PaymentsApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

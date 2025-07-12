@@ -25,6 +25,10 @@ export class PartyApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {CreateParty} payload - The `CreateParty` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
@@ -38,11 +42,16 @@ export class PartyApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {UpdateParty} payload - The `UpdateParty` instance to use for the API request
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -57,11 +66,16 @@ export class PartyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
@@ -74,11 +88,16 @@ export class PartyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Party>>} A promise containing the HttpResponse of Party
@@ -91,11 +110,16 @@ export class PartyApi {
       r: this.r,
       e,
       m: PUT,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {PromoteNewLeader} payload - The `PromoteNewLeader` instance to use for the API request
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -110,11 +134,16 @@ export class PartyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {InviteToParty} payload - The `InviteToParty` instance to use for the API request
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -129,11 +158,16 @@ export class PartyApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {CancelInviteToParty} payload - The `CancelInviteToParty` instance to use for the API request
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -148,11 +182,16 @@ export class PartyApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {LeaveParty} payload - The `LeaveParty` instance to use for the API request
    * @param {string} id - Id of the party
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -167,7 +206,8 @@ export class PartyApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

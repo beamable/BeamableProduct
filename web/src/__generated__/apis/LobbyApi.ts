@@ -26,6 +26,10 @@ export class LobbyApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {number} Limit - The `Limit` parameter to include in the API request.
    * @param {string} MatchType - The `MatchType` parameter to include in the API request.
    * @param {number} Skip - The `Skip` parameter to include in the API request.
@@ -45,11 +49,16 @@ export class LobbyApi {
         MatchType,
         Skip
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {CreateLobby} payload - The `CreateLobby` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
@@ -63,11 +72,16 @@ export class LobbyApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} id - The lobby id.
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
@@ -80,11 +94,16 @@ export class LobbyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {JoinLobby} payload - The `JoinLobby` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -99,11 +118,16 @@ export class LobbyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {RemoveFromLobby} payload - The `RemoveFromLobby` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -118,11 +142,16 @@ export class LobbyApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {JoinLobby} payload - The `JoinLobby` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
@@ -136,11 +165,16 @@ export class LobbyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {UpdateLobby} payload - The `UpdateLobby` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -155,11 +189,16 @@ export class LobbyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {AddTags} payload - The `AddTags` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -174,11 +213,16 @@ export class LobbyApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {RemoveTags} payload - The `RemoveTags` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -193,11 +237,16 @@ export class LobbyApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {CreateFederatedGameServer} payload - The `CreateFederatedGameServer` instance to use for the API request
    * @param {string} id - Id of the lobby
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -212,7 +261,8 @@ export class LobbyApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

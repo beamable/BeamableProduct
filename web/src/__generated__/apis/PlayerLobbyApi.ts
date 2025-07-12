@@ -15,6 +15,10 @@ export class PlayerLobbyApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - Player Id
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<Lobby>>} A promise containing the HttpResponse of Lobby
@@ -27,11 +31,16 @@ export class PlayerLobbyApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - Player Id
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>>} A promise containing the HttpResponse of ApiPlayersLobbiesDeletePlayerLobbyResponse
@@ -44,7 +53,8 @@ export class PlayerLobbyApi {
       r: this.r,
       e,
       m: DELETE,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

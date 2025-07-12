@@ -2,7 +2,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 
-export interface Config {
+interface Config {
   cid: string;
   pid: string;
 }
