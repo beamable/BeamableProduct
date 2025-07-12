@@ -4,20 +4,19 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class ContentResetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class DeveloperUserManagerRemoveUserArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return all manifests</summary>
-        public string[] manifestIds;
+        /// <summary>The gamer tag of the player that you would like to remove, it will not remove from the portal</summary>
+        public string gamerTag;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // If the manifestIds value was not default, then add it to the list of args.
-            if ((this.manifestIds != default(string[])))
+            // If the gamerTag value was not default, then add it to the list of args.
+            if ((this.gamerTag != default(string)))
             {
-                genBeamCommandArgs.Add((("--manifest-ids=\"" + this.manifestIds) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--gamer-tag=" + this.gamerTag));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -27,30 +26,30 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ContentResetWrapper ContentReset(ContentResetArgs resetArgs)
+        public virtual DeveloperUserManagerRemoveUserWrapper DeveloperUserManagerRemoveUser(DeveloperUserManagerRemoveUserArgs removeUserArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("content");
-            genBeamCommandArgs.Add("reset");
-            genBeamCommandArgs.Add(resetArgs.Serialize());
+            genBeamCommandArgs.Add("developer-user-manager");
+            genBeamCommandArgs.Add("remove-user");
+            genBeamCommandArgs.Add(removeUserArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            ContentResetWrapper genBeamCommandWrapper = new ContentResetWrapper();
+            DeveloperUserManagerRemoveUserWrapper genBeamCommandWrapper = new DeveloperUserManagerRemoveUserWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class ContentResetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class DeveloperUserManagerRemoveUserWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual ContentResetWrapper OnStreamLocalContentState(System.Action<ReportDataPoint<BeamLocalContentState>> cb)
+        public virtual DeveloperUserManagerRemoveUserWrapper OnStreamDeveloperUserResult(System.Action<ReportDataPoint<BeamDeveloperUserResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;
