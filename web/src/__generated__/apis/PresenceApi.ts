@@ -12,6 +12,10 @@ export class PresenceApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {OnlineStatusQuery} payload - The `OnlineStatusQuery` instance to use for the API request
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<PlayersStatusResponse>>} A promise containing the HttpResponse of PlayersStatusResponse
@@ -25,7 +29,8 @@ export class PresenceApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

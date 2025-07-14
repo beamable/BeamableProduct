@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI.CronEditorWindow
+namespace Beamable.Editor.UI.CronEditorWindow
 {
 	public class CronEditorWindow : EditorWindow
 	{

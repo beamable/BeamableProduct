@@ -12,13 +12,20 @@ import type { TokenStorage } from '@/platform/types/TokenStorage';
 type ObjReq = { date: Date; big: bigint; normal: string };
 type ObjRes = { date: Date; num: bigint };
 
+vi.mock('node:crypto', () => {
+  const update = vi.fn().mockReturnThis();
+  const digest = vi.fn().mockReturnValue('fake-b64');
+  const createHash = vi.fn(() => ({ update, digest }));
+  return { createHash };
+});
+
 describe('BeamRequester', () => {
-  const cid = 'cid';
   const pid = 'pid';
   let tokenStorage: TokenStorage;
 
   beforeEach(() => {
     tokenStorage = {
+      getAccessToken: vi.fn().mockResolvedValue('test_token'),
       getRefreshToken: vi.fn(),
       setAccessToken: vi.fn(),
       setRefreshToken: vi.fn(),
@@ -35,7 +42,12 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     const reqBody: ObjReq = {
       date: new Date('2025-01-01T00:00:00.000Z'),
@@ -61,7 +73,12 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     const original: ObjReq = {
       date: new Date('2025-01-02T00:00:00.000Z'),
@@ -91,7 +108,12 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     const raw = 'not a json';
     await requester.request<unknown, string>({ url: '/test', body: raw });
@@ -114,7 +136,12 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     const res = await requester.request<ObjRes, unknown>({ url: '/test' });
     expect(res.body).toEqual({ date, num: BigInt(numStr) });
@@ -129,30 +156,15 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(res.body).toBe('not json');
-  });
-
-  it('forwards setBaseUrl, setDefaultHeader, and setTokenProvider to inner requester', () => {
-    const inner = {
-      request: vi.fn(),
-      setBaseUrl: vi.fn(),
-      setDefaultHeader: vi.fn(),
-      setTokenProvider: vi.fn(),
-    } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
-
-    requester.setBaseUrl('url');
-    expect(inner.setBaseUrl).toHaveBeenCalledWith('url');
-
-    requester.setDefaultHeader('key', 'value');
-    expect(inner.setDefaultHeader).toHaveBeenCalledWith('key', 'value');
-
-    const provider = () => 'token';
-    requester.setTokenProvider(provider);
-    expect(inner.setTokenProvider).toHaveBeenCalledWith(provider);
   });
 
   it('refreshes token and retries request on 401', async () => {
@@ -173,7 +185,12 @@ describe('BeamRequester', () => {
     vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
       mockRefreshResponse as any,
     );
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(inner.request).toHaveBeenCalledTimes(2);
     expect(tokenStorage.getRefreshToken).toHaveBeenCalled();
@@ -196,7 +213,12 @@ describe('BeamRequester', () => {
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
     (tokenStorage.getRefreshToken as any).mockResolvedValue(null);
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
     await expect(requester.request({ url: '/test' })).rejects.toBeInstanceOf(
       NoRefreshTokenError,
     );
@@ -216,7 +238,12 @@ describe('BeamRequester', () => {
     vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
       mockRefreshResponse as any,
     );
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
     await expect(requester.request({ url: '/test' })).rejects.toBeInstanceOf(
       RefreshAccessTokenError,
     );
@@ -232,10 +259,95 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    const requester = new BeamRequester({ inner, tokenStorage, cid, pid });
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
 
     await expect(requester.request({ url: '/test' })).rejects.toThrow(
       "Request to '/test' failed with status 404: Not Found",
+    );
+  });
+
+  it('should not sign request if useSignedRequest is false', async () => {
+    const inner = {
+      request: vi
+        .fn()
+        .mockResolvedValue({ status: 200, headers: {}, body: '' }),
+      setBaseUrl: vi.fn(),
+      setDefaultHeader: vi.fn(),
+      setTokenProvider: vi.fn(),
+    } as unknown as HttpRequester;
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
+
+    await requester.request({ url: '/test' });
+
+    const calledReq = (inner.request as any).mock.calls[0][0];
+    if (calledReq.headers) {
+      expect(calledReq.headers).not.toHaveProperty('X-BEAM-SIGNATURE');
+    } else {
+      expect(calledReq.headers).toBeUndefined();
+    }
+  });
+
+  it('should sign request if useSignedRequest is true', async () => {
+    process.env.BEAM_REALM_SECRET = 'test_secret';
+    const inner = {
+      request: vi
+        .fn()
+        .mockResolvedValue({ status: 200, headers: {}, body: '' }),
+      setBaseUrl: vi.fn(),
+      setDefaultHeader: vi.fn(),
+      setTokenProvider: vi.fn(),
+    } as unknown as HttpRequester;
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: true,
+    });
+
+    await requester.request({
+      url: '/test',
+      method: 'POST',
+      body: { foo: 'bar' },
+    });
+
+    const calledReq = (inner.request as any).mock.calls[0][0];
+    expect(calledReq.headers).toHaveProperty('X-BEAM-SIGNATURE');
+    expect(calledReq.headers['X-BEAM-SIGNATURE']).toBe('fake-b64');
+  });
+
+  it('should include access token if withAuth is true and useSignedRequest is false', async () => {
+    const inner = {
+      request: vi
+        .fn()
+        .mockResolvedValue({ status: 200, headers: {}, body: '' }),
+      setBaseUrl: vi.fn(),
+      setDefaultHeader: vi.fn(),
+      setTokenProvider: vi.fn(),
+    } as unknown as HttpRequester;
+
+    const requester = new BeamRequester({
+      inner,
+      tokenStorage,
+      pid,
+      useSignedRequest: false,
+    });
+
+    await requester.request({ url: '/test', withAuth: true });
+
+    const calledReq = (inner.request as any).mock.calls[0][0];
+    expect(calledReq.headers).toHaveProperty(
+      'Authorization',
+      'Bearer test_token',
     );
   });
 });

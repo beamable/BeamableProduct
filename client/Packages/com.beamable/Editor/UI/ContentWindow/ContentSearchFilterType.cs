@@ -1,4 +1,4 @@
-﻿namespace Editor.UI.ContentWindow
+﻿namespace Beamable.Editor.UI.ContentWindow
 {
 	public enum ContentSearchFilterType
 	{

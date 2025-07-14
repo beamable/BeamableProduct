@@ -6,26 +6,16 @@ import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { GET } from '@/constants';
 import { BeamError } from '@/constants/Errors';
 
-/**
- * A basic HttpRequester implementation using the Fetch API.
- * Supports base URL, default headers, timeout, and optional token-based authentication.
- * Applies custom JSON deserialization using `BeamJsonUtils.reviver`.
- */
+/** A basic HttpRequester implementation using the Fetch API. */
 export class BaseRequester implements HttpRequester {
   private readonly timeout: number;
-  private readonly defaultHeaders: Record<string, string>;
-  private readonly withCredentials: boolean;
   private readonly fetchImpl: typeof fetch;
-  private tokenProvider?: () => Promise<string> | string;
-  private baseUrl?: string;
+  private _baseUrl?: string;
+  private _defaultHeaders?: Record<string, string>;
 
   constructor(config: BaseRequesterConfig = {}) {
     this.timeout = config.timeout ?? 10_000; // defaults to 10 seconds
-    this.baseUrl = config.baseUrl;
-    this.defaultHeaders = config.defaultHeaders ?? {};
-    this.withCredentials = config.withCredentials ?? false;
     this.fetchImpl = config.customFetch ?? fetch;
-    this.tokenProvider = config.tokenProvider;
 
     this.fetchImpl =
       config.customFetch ??
@@ -35,7 +25,7 @@ export class BaseRequester implements HttpRequester {
 
     if (typeof this.fetchImpl !== 'function') {
       throw new Error(
-        'Fetch is not available. Provide a customFetch or use Node 18+ / browser.',
+        'Fetch is not available. Provide a customFetch implementation.',
       );
     }
   }
@@ -46,16 +36,14 @@ export class BaseRequester implements HttpRequester {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-    const finalUrl = this.baseUrl
-      ? new URL(req.url, this.baseUrl).toString()
+    const finalUrl = this._baseUrl
+      ? new URL(req.url, this._baseUrl).toString()
       : req.url;
 
     const requestHeaders = {
-      ...this.defaultHeaders,
+      ...this._defaultHeaders,
       ...req.headers,
     };
-
-    if (req.withAuth) await this.AddAuthHeader(requestHeaders);
 
     try {
       const response = await this.fetchImpl(finalUrl, {
@@ -63,7 +51,7 @@ export class BaseRequester implements HttpRequester {
         headers: requestHeaders,
         body: req.body as BodyInit | null | undefined,
         signal: controller.signal,
-        credentials: this.withCredentials ? 'include' : 'same-origin',
+        credentials: 'same-origin',
       });
 
       const contentType = response.headers.get('content-type');
@@ -107,28 +95,11 @@ export class BaseRequester implements HttpRequester {
     }
   }
 
-  setBaseUrl(url: string): void {
-    this.baseUrl = url;
+  set baseUrl(url: string) {
+    this._baseUrl = url;
   }
 
-  setDefaultHeader(key: string, value?: string): void {
-    if (typeof value === 'string') {
-      this.defaultHeaders[key] = value;
-    } else {
-      delete this.defaultHeaders[key];
-    }
-  }
-
-  setTokenProvider(provider: () => Promise<string> | string) {
-    this.tokenProvider = provider;
-  }
-
-  private async AddAuthHeader(
-    requestHeaders: Record<string, string>,
-  ): Promise<void> {
-    const token = await this.tokenProvider?.();
-    if (!token) return;
-
-    requestHeaders['Authorization'] = `Bearer ${token}`;
+  set defaultHeaders(headers: Record<string, string>) {
+    this._defaultHeaders = headers;
   }
 }

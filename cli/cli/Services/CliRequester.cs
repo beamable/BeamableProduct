@@ -7,22 +7,23 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
 using Beamable.Server;
+
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
 
 public class CliRequester : IRequester
 {
-	private readonly IAppContext _ctx;
-	public IAccessToken AccessToken => _ctx.Token;
+	private readonly IRequesterInfo _requesterInfo;
+	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
 	public string Cid => AccessToken.Cid;
 
 	public Dictionary<string, string> GlobalHeaders { get; } = new Dictionary<string, string>();
 
-	public CliRequester(IAppContext ctx)
+	public CliRequester(IRequesterInfo requesterInfo)
 	{
-		_ctx = ctx;
+		_requesterInfo = requesterInfo;
 	}
 
 	public async Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body,
@@ -39,8 +40,8 @@ public class CliRequester : IRequester
 	{
 		Log.Verbose($"{method} call: {uri}");
 		
-		using HttpClient client = GetClient(_ctx.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
-		var request = PrepareRequest(method, _ctx.Host, uri, body);
+		using HttpClient client = GetClient(_requesterInfo.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
+		var request = PrepareRequest(method, _requesterInfo.Host, uri, body);
 		
 		if (GlobalHeaders != null)
 		{
@@ -71,7 +72,7 @@ public class CliRequester : IRequester
 
 		Log.Verbose($"Calling: {request}");
 
-		if (_ctx.IsDryRun)
+		if (_requesterInfo.IsDryRun)
 		{
 			Log.Verbose($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
 			return default(T);
@@ -137,12 +138,12 @@ public class CliRequester : IRequester
 						{
 							Log.Debug(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_ctx.SetToken(rsp);
+							_requesterInfo.SetToken(rsp);
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException { Status: > 500 and < 510 }:
-					BeamableLogger.LogWarning($"Problems with host {_ctx.Host}, trying again in few seconds...");
+					BeamableLogger.LogWarning($"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
 						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 			}

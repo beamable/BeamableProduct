@@ -1,19 +1,16 @@
-﻿using Beamable;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
-using Beamable.Editor;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
-using Beamable.Editor.UI;
 using Beamable.Editor.Util;
-using Editor.ContentService;
+using Beamable.Editor.ContentService;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI.ContentWindow
+namespace Beamable.Editor.UI.ContentWindow
 {
 	public partial class ContentWindow : BeamEditorWindow<ContentWindow>
 	{
