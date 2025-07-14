@@ -1,15 +1,11 @@
-﻿using Beamable;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
-using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using Beamable.Editor.ContentService;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -28,12 +24,13 @@ namespace Beamable.Editor.UI.ContentWindow
 		private CliContentService _contentService;
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
+		private int _lastManifestChangedCount;
 
 		static ContentWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "New Content Manager",
+				Title = "Content Manager",
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				FocusOnShow = false,
 				RequireLoggedUser = true,
@@ -58,18 +55,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				ChangeWindowStatus(ContentWindowStatus.Building, false);
 				_contentService = Scope.GetService<CliContentService>();
-				_contentService.OnServiceReload += () =>
+				_ = _contentService.Reload().Then(_ =>
 				{
 					ChangeWindowStatus(ContentWindowStatus.Normal, false);
-					RegisterServiceEvents();
-					SetEditorSelection();
 					Build();
-				};
-				_ = _contentService.Reload();
+				});
 				return;
 			}
-
-			RegisterServiceEvents();
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
@@ -88,28 +80,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			ClearCaches();
 			
 			Repaint();
-
-			void RegisterServiceEvents()
-			{
-				_contentService.OnManifestUpdated -= OnServiceChange;
-				_contentService.OnManifestUpdated += OnServiceChange;
-
-				_contentService.OnServiceReload -= OnServiceChange;
-				_contentService.OnServiceReload += OnServiceChange;
-			}
 		}
 
-		private void OnServiceChange()
+		private void ReloadData()
 		{
 			ClearCaches();
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents && _windowStatus is not ContentWindowStatus.Building)
+			if(!_contentService.HasChangedContents)
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
-			Repaint();
 		}
 
 		private void ClearCaches()
@@ -131,6 +113,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawBlockLoading("Loading Contents...");
 				return;
 			}
+
+			if (_contentService.ManifestChangedCount != _lastManifestChangedCount)
+			{
+				_lastManifestChangedCount = _contentService.ManifestChangedCount;
+				ReloadData();
+			}
 			
 			DrawHeader();
 			GUILayout.Space(1);
@@ -145,7 +133,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				case ContentWindowStatus.Revert:
 					DrawRevertPanel();
 					break;
+				case ContentWindowStatus.Validate:
+					DrawValidatePanel();
+					break;
 			}
+			
 			RunDelayedActions();
 		}
 
@@ -161,6 +153,60 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
+			
+			var bottomRect = EditorGUILayout.GetControlRect( GUILayout.Height(30f));
+			
+			var bottomRectController = new EditorGUIRectController(bottomRect);
+
+			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created);
+			if (createdContents.Count > 0)
+			{
+				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
+				bottomRectController.ReserveWidth(BASE_PADDING);
+			}
+			
+			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
+			if (modifiedContents.Count > 0)
+			{
+				DrawFooterButton($"{modifiedContents.Count}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
+				bottomRectController.ReserveWidth(BASE_PADDING);
+			}
+			
+			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted);
+			if (deletedContents.Count > 0)
+			{
+				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
+			}
+			
+
+			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum)
+			{
+				float lineSize = EditorGUIUtility.singleLineHeight;
+				GUIStyle buttonStyle = new GUIStyle(EditorStyles.label)
+				{
+					fixedHeight = lineSize,
+					alignment = TextAnchor.MiddleRight,
+					padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0,0)
+				};
+				
+				var btnContent = new GUIContent(buttonText);
+				var btnSize = buttonStyle.CalcSize(btnContent);
+				Rect footerAreaRect = bottomRectController.ReserveWidth(btnSize.x + lineSize + BASE_PADDING * 3);
+				var buttonRect = new Rect(footerAreaRect.x,  footerAreaRect.center.y - lineSize/2f, footerAreaRect.width, btnSize.y);
+				
+				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
+				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
+				
+				if (GUI.Button(buttonRect, btnContent, buttonStyle))
+				{
+					_activeFilters.Clear();
+					HashSet<string> statusFilter = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
+					string item = StatusMapToString[statusEnum];
+					statusFilter.Add(item);
+					UpdateActiveFilterSearchText();
+				}
+			}
+			
 			EditorGUILayout.EndVertical();
 		}
 		
@@ -169,10 +215,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			var localContentManifestEntries = new List<LocalContentManifestEntry>();
 			if (_contentService != null)
 			{
-				localContentManifestEntries.AddRange(_contentService.CachedManifest.Values);
+				localContentManifestEntries.AddRange(_contentService.EntriesCache.Values);
 			}
 			return localContentManifestEntries;
 		}
+		
 		
 	}
 
@@ -181,6 +228,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		Normal,
 		Publish,
 		Building,
-		Revert
+		Revert,
+		Validate
 	}
 }

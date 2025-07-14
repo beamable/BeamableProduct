@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.ContentWindow
 	partial class ContentWindow
 	{
 		private static readonly NaturalStringComparer NaturalStringComparer = new();
-		private const float BASE_PADDING = 5f;
+		private const int BASE_PADDING = 5;
 		private const float SEPARATOR_WIDTH_AREA = 3;
 		private const float ITEMS_TABLE_ROW_HEIGHT = 20;
 		private const float ITEM_GROUP_HEIGHT = 35;
@@ -119,6 +119,31 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUILayout.EndScrollView();
 			}
 			GUILayout.EndVertical();
+			
+			if (!string.IsNullOrEmpty(SelectedItemId) && Event.current.type == EventType.KeyDown &&
+			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
+			{
+				
+				if (Event.current.control || Event.current.alt || Event.current.shift || Event.current.command)
+				{
+					return;
+				}
+
+				if (_contentService.EntriesCache.TryGetValue(SelectedItemId, out var entry) &&
+				    entry.StatusEnum is not ContentStatus.Deleted)
+				{
+					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
+					                                                "Are you sure you want to delete this content?",
+					                                                "Delete", "Cancel");
+					if (shouldDelete)
+					{
+						_contentService.DeleteContent(entry.FullId);
+						Selection.activeObject = null;
+						Event.current.Use();
+						Repaint();
+					}
+				}
+			}
 		}
 		
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
@@ -229,12 +254,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				return;
 			}
+			
 			var contentObject = CreateInstance(type) as ContentObject;
 			string baseName = $"New_{itemType.Replace(".","_")}";
 			int itemsWithBaseNameCount =  _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
 			contentObject.SetContentName($"{baseName}_{itemsWithBaseNameCount}");
 			contentObject.ContentStatus = ContentStatus.Created;
-			SaveContent(contentObject);
+			contentObject.OnEditorChanged = () =>
+			{
+				_contentService.SaveContent(contentObject);
+			};
+			_contentService.ValidateForInvalidFields(contentObject);
+			_contentService.SaveContent(contentObject);
 			Selection.activeObject = contentObject;
 		}
 
@@ -372,7 +403,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", "-----"};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
 								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
-								: BeamGUI.iconInvalid;
+								: BeamGUI.iconStatusInvalid;
 			Texture[] icons = {iconForEntry};
 			
 			bool[] isEditable = {isEditingName};
@@ -412,7 +443,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					_ = LoadItemScriptable(entry);
+					SetEntryIdAsSelected(entry.FullId);
 				}
 				Event.current.Use();
 				Repaint();
@@ -422,20 +453,44 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void RenameEntry(string entryId, string newName)
 		{
 			_editItemId = string.Empty;
-			_contentService.RenameContent(entryId, newName);
+			var newId = _contentService.RenameContent(entryId, newName);
+			SetEntryIdAsSelected(newId);
 			Repaint();
 		}
 
 		private void ShowItemOptionsMenu(LocalContentManifestEntry entry)
 		{
 			GenericMenu menu = new GenericMenu();
+			
+			
+			
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
+				menu.AddDisabledItem(new GUIContent("Duplicate Item"));
 				menu.AddDisabledItem(new GUIContent("Rename Item"));
 				menu.AddDisabledItem(new GUIContent("Delete Item"));
 			}
 			else
 			{
+				menu.AddItem(new  GUIContent("Open File Item"), false, () =>
+				{
+					EditorUtility.OpenWithDefaultApp(entry.JsonFilePath);
+				});
+				menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
+				{
+					if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+					{
+						var duplicatedObject = Instantiate(contentObject);
+						string baseName = $"{contentObject.ContentName}_Copy";
+						int itemsWithBaseNameCount =  _contentService.GetContentsFromType(contentObject.GetType()).Count(item => item.Name.StartsWith(baseName));
+						duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+						duplicatedObject.ContentStatus = ContentStatus.Created;
+						_contentService.SaveContent(duplicatedObject);
+						Selection.activeObject = duplicatedObject;
+					}
+				
+				});
+				
 				menu.AddItem(new GUIContent("Rename Item"), false, () =>
 				{
 					_editItemId = entry.FullId;
@@ -454,6 +509,24 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				});
 			}
+
+			if (entry.StatusEnum is not ContentStatus.UpToDate)
+			{
+				menu.AddItem(new GUIContent("Revert Item"), false, () =>
+				{
+					_ = _contentService.SyncContentsWithProgress(true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Revert Item"));
+			}
+			
+			menu.AddSeparator("");
+			menu.AddItem(new GUIContent("Copy content ID to clipboard"), false, () =>
+			{
+				GUIUtility.systemCopyBuffer = entry.FullId;
+			});
 
 			menu.ShowAsContext();
 		}
@@ -520,94 +593,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			return labels;
 		}
 
-		private async Task LoadItemScriptable(LocalContentManifestEntry entry)
-		{
-			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
-			{
-				return;
-			}
-
-			if (entry.StatusEnum is ContentStatus.Deleted)
-			{
-				var deletedObject = CreateInstance(type) as ContentObject;
-				deletedObject.SetIdAndVersion(entry.FullId, String.Empty);
-				deletedObject.Tags = entry.Tags.ToArray();
-				deletedObject.SetContentName(entry.Name);
-				deletedObject.ContentStatus = ContentStatus.Deleted;
-				deletedObject.IsInConflict = entry.IsInConflict;
-				Selection.activeObject = deletedObject;
-				return;
-			}
-			
-			string fileContent = await CliContentService.LoadContentFileData(entry);
-
-			var contentObject = CreateInstance(type) as ContentObject;
-			var selectedContentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
-			if (selectedContentObject)
-			{
-				selectedContentObject.Tags = entry.Tags.ToArray();
-				selectedContentObject.ContentStatus = entry.StatusEnum;
-				selectedContentObject.IsInConflict = entry.IsInConflict;
-				Selection.activeObject = selectedContentObject;
-				selectedContentObject.OnEditorChanged = () =>
-				{
-					SaveContent(selectedContentObject);
-				};
-			}
-		}
-
-		private async Task LoadScriptableOnActiveObject(LocalContentManifestEntry entry)
-		{
-			if (Selection.activeObject is not ContentObject contentObject)
-			{
-				await LoadItemScriptable(entry);
-				return;
-			}
-			
-			contentObject.Tags = entry.Tags.ToArray();
-			contentObject.ContentStatus = entry.StatusEnum;
-			contentObject.IsInConflict = entry.IsInConflict;
-			if (entry.StatusEnum is ContentStatus.Deleted)
-			{
-				contentObject.SetIdAndVersion(entry.FullId, String.Empty);
-				contentObject.SetContentName(entry.Name);
-				return;
-			}
-			
-			string fileContent = await CliContentService.LoadContentFileData(entry);
-			
-			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
-			if (contentObject)
-			{
-				contentObject.OnEditorChanged = () =>
-				{
-					SaveContent(contentObject);
-				};
-			}
-		} 
-
-		private void SaveContent(ContentObject selectedContentObject)
-		{
-			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
-			bool hasValidationError = selectedContentObject.HasValidationErrors(_contentService.GetValidationContext(), out var _);
-			_contentService.UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
-			_contentService.SaveContent(selectedContentObject.Id, propertiesJson);
-		}
-
 		private void SetEditorSelection()
 		{
 			if (Selection.activeObject is ContentObject contentObject)
 			{
-				if(_contentService.CachedManifest.TryGetValue(contentObject.Id, out var entry))
+				if(!_contentService.ContentScriptableCache.ContainsKey(contentObject.Id))
 				{
-					_ = LoadScriptableOnActiveObject(entry);
-					return;
+					Selection.activeObject = null;
 				}
-			}
-
-			if (Selection.activeObject is ContentObject)
-			{
-				Selection.activeObject = null;
 			}
 		}
 
@@ -619,7 +612,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			switch (statusEnum)
 			{
 				case ContentStatus.Invalid:
-					return BeamGUI.iconInvalid;
+					return BeamGUI.iconStatusInvalid;
 				case ContentStatus.Created:
 					return BeamGUI.iconStatusAdded;
 				case ContentStatus.Deleted:
@@ -628,6 +621,14 @@ namespace Beamable.Editor.UI.ContentWindow
 					return BeamGUI.iconStatusModified;
 				default:
 					return null;
+			}
+		}
+		
+		private void SetEntryIdAsSelected(string entryId)
+		{
+			if(_contentService.ContentScriptableCache.TryGetValue(entryId, out ContentObject value))
+			{
+				Selection.activeObject = value;
 			}
 		}
 
@@ -647,7 +648,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				_filteredCache[filterKey] = filteredItems;
 			}
 
-			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems) : filteredItems;
+			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems, _currentSortOption) : filteredItems;
 			return contentManifestEntries;
 		}
 
@@ -713,9 +714,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
-		private List<LocalContentManifestEntry> SortItems(string cacheKey, IEnumerable<LocalContentManifestEntry> items)
+		private List<LocalContentManifestEntry> SortItems(string cacheKey, IEnumerable<LocalContentManifestEntry> items, ContentSortOptionType option)
 		{
-			var sortKey = (cacheKey, _currentSortOption);
+			var sortKey = (cacheKey, option);
 
 			if (_sortedCache.TryGetValue(sortKey, out var sortedItems))
 			{
@@ -733,6 +734,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				                                        .ThenBy(item => item.Name),
 				ContentSortOptionType.Status => items.OrderBy(item => item.CurrentStatus)
 				                                     .ThenBy(item => item.Name, NaturalStringComparer),
+				ContentSortOptionType.ValidStatus => items.OrderBy(item => _contentService.IsContentInvalid(item.FullId))
+				                                          .ThenBy(item => item.CurrentStatus)
+				                                          .ThenBy(item => item.Name, NaturalStringComparer),
 				_ => throw new ArgumentOutOfRangeException()
 			}).ToList();
 			_sortedCache[sortKey] = sortedItems;
