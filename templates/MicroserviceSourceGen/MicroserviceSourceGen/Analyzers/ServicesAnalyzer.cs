@@ -238,8 +238,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		var method = (MethodDeclarationSyntax)context.Node;
 		IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(method);
 		
-		if(methodSymbol == null)
+		if (methodSymbol == null || !methodSymbol.GetAttributes().Any(IsCallableAttribute))
+		{
 			return;
+		}
 		
 		ValidateReturnType(context, methodSymbol, method);
 		ValidateParameters(context, methodSymbol);

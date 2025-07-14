@@ -119,6 +119,35 @@ jobs:
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Test
         run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true
+  testSourceGen:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: base-image-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
+      cancel-in-progress: true
+    strategy:
+      max-parallel: 1
+      matrix:
+        dotnet-version: [ '9.0.x' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Install dependencies
+        run: dotnet restore templates/SourceGen/MicroserviceSourceGen.Tests
+      - name: Build
+        run: dotnet build --configuration Release --no-restore templates/SourceGen/MicroserviceSourceGen.Tests
+      - name: Test
+        run: dotnet test --configuration Release --no-build templates/SourceGen/MicroserviceSourceGen.Tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
