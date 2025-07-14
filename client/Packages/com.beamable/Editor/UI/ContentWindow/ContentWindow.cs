@@ -3,13 +3,12 @@ using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
+using Beamable.Editor;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using Editor.ContentService;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -141,6 +140,7 @@ namespace Editor.UI.ContentWindow
 					DrawValidatePanel();
 					break;
 			}
+			
 			RunDelayedActions();
 		}
 
@@ -156,6 +156,60 @@ namespace Editor.UI.ContentWindow
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
+			
+			var bottomRect = EditorGUILayout.GetControlRect( GUILayout.Height(30f));
+			
+			var bottomRectController = new EditorGUIRectController(bottomRect);
+
+			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created);
+			if (createdContents.Count > 0)
+			{
+				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
+				bottomRectController.ReserveWidth(BASE_PADDING);
+			}
+			
+			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
+			if (modifiedContents.Count > 0)
+			{
+				DrawFooterButton($"{modifiedContents.Count}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
+				bottomRectController.ReserveWidth(BASE_PADDING);
+			}
+			
+			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted);
+			if (deletedContents.Count > 0)
+			{
+				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
+			}
+			
+
+			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum)
+			{
+				float lineSize = EditorGUIUtility.singleLineHeight;
+				GUIStyle buttonStyle = new GUIStyle(EditorStyles.label)
+				{
+					fixedHeight = lineSize,
+					alignment = TextAnchor.MiddleRight,
+					padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0,0)
+				};
+				
+				var btnContent = new GUIContent(buttonText);
+				var btnSize = buttonStyle.CalcSize(btnContent);
+				Rect footerAreaRect = bottomRectController.ReserveWidth(btnSize.x + lineSize + BASE_PADDING * 3);
+				var buttonRect = new Rect(footerAreaRect.x,  footerAreaRect.center.y - lineSize/2f, footerAreaRect.width, btnSize.y);
+				
+				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
+				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
+				
+				if (GUI.Button(buttonRect, btnContent, buttonStyle))
+				{
+					_activeFilters.Clear();
+					HashSet<string> statusFilter = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
+					string item = StatusMapToString[statusEnum];
+					statusFilter.Add(item);
+					UpdateActiveFilterSearchText();
+				}
+			}
+			
 			EditorGUILayout.EndVertical();
 		}
 		
@@ -168,6 +222,7 @@ namespace Editor.UI.ContentWindow
 			}
 			return localContentManifestEntries;
 		}
+		
 		
 	}
 

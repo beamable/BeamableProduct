@@ -107,7 +107,7 @@ namespace Editor.ContentService
 		{
 
 			syncedContents = 0;
-			
+			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
 			try
 			{
 				if (_contentWatcher != null)
@@ -131,10 +131,6 @@ namespace Editor.ContentService
 					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents);
 				});
 				await contentSyncCommand.Run();
-
-				EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
-
-
 			}
 			finally
 			{
@@ -266,6 +262,7 @@ namespace Editor.ContentService
 		
 		public async Task PublishContentsWithProgress()
 		{
+			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;
 
 			if (_contentWatcher != null)
@@ -283,8 +280,6 @@ namespace Editor.ContentService
 					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents);
 				});
 				await publishCommand.Run();
-
-				EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			}
 			finally
 			{

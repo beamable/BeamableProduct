@@ -5,7 +5,6 @@ using Beamable.Editor;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -262,10 +261,11 @@ namespace Editor.UI.ContentWindow
 			if (itemList.Count == 0)
 				return;
 
+			var sortedList = SortItems(headerName, itemList, ContentSortOptionType.IdAscending);
 			
 			_foldoutStates.TryAdd(headerName, true);
 
-			var heightSize = CalculateContentsHeight(_foldoutStates[headerName], itemList.Count);
+			var heightSize = CalculateContentsHeight(_foldoutStates[headerName], sortedList.Count);
 			EditorGUILayout.BeginVertical();
 			var rectController =
 				new EditorGUIRectController(
@@ -290,7 +290,7 @@ namespace Editor.UI.ContentWindow
 
 			if (_foldoutStates[headerName])
 			{
-				foreach (LocalContentManifestEntry localContentManifestEntry in itemList)
+				foreach (LocalContentManifestEntry localContentManifestEntry in sortedList)
 				{
 					var itemRect = rectController.ReserveSingleLine();
 					EditorGUILayout.BeginHorizontal();
