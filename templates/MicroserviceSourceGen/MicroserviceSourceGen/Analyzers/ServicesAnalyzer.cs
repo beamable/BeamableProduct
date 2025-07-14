@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -60,10 +61,14 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	
 	private void OnCompilationStart(CompilationStartAnalysisContext context)
 	{
-		var microserviceInfos = new List<MicroserviceInfo>();
+		var microserviceInfos = new ConcurrentBag<MicroserviceInfo>();
 		context.RegisterSymbolAction(symbolContext =>
 		{
-			ValidateMicroservice(symbolContext, microserviceInfos);
+			MicroserviceInfo? validateMicroservice = ValidateMicroservice(symbolContext);
+			if (validateMicroservice.HasValue)
+			{
+				microserviceInfos.Add(validateMicroservice.Value);
+			}
 		}, SymbolKind.NamedType);
 
 		var analyzerConfigOptions = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions;
@@ -74,8 +79,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 		context.RegisterSyntaxNodeAction(ValidateMethodReturnAndParametersType, SyntaxKind.MethodDeclaration);
 		
-
-
 		context.RegisterCompilationEndAction(analysisContext =>
 		{
 			// Diagnostics generated after the compilation end do not appear as red squiggle in the code
@@ -85,6 +88,22 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			{
 				var err = Diagnostic.Create(Diagnostics.Srv.NoMicroserviceClassesDetected, null);
 				analysisContext.ReportDiagnostic(err);
+			}
+			
+			if (microserviceInfos.Select(item => item.Name).Distinct().Count() > 1)
+			{
+				MicroserviceInfo microserviceInfo = microserviceInfos.OrderBy(item => item.Name).First();
+				string otherMicroservices = string.Join(", ", microserviceInfos
+					.Where(item => item.Name != microserviceInfo.Name)
+					.Select(info => info.Name).ToList());
+				
+				var diag = Diagnostic.Create(
+					Diagnostics.Srv.MultipleMicroserviceClassesDetected,
+					microserviceInfo.MicroserviceClassLocation,
+					otherMicroservices
+				);
+		
+				analysisContext.ReportDiagnostic(diag);
 			}
 		});
 	}
@@ -113,13 +132,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		                            string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
 	}
 
-	private void ValidateMicroservice(SymbolAnalysisContext symbolContext, List<MicroserviceInfo> microserviceInfos)
+	private MicroserviceInfo? ValidateMicroservice(SymbolAnalysisContext symbolContext)
 	{
 		var namedSymbol = (INamedTypeSymbol)symbolContext.Symbol;
 
 		if (namedSymbol.TypeKind != TypeKind.Class || namedSymbol.BaseType is not { Name: nameof(Server.Microservice) })
 		{
-			return;
+			return null;
 		}
 			
 		var classDeclarationSyntaxes = namedSymbol.DeclaringSyntaxReferences.Where(reference => reference.GetSyntax() is ClassDeclarationSyntax)
@@ -154,22 +173,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			symbolContext.ReportDiagnostic(err);
 		}
 
-		if (!microserviceInfos.Any(i => i.Name.Equals(namedSymbol.Name)))
-		{
-			microserviceInfos.Add(new MicroserviceInfo(namedSymbol));
-		}
-
-		if (microserviceInfos.Count(info => info.Name != namedSymbol.Name) >= 1)
-		{
-			var otherMicroservices = string.Join(", ",microserviceInfos.Select(info => info.Name).ToList());
-			var diag = Diagnostic.Create(
-				Diagnostics.Srv.MultipleMicroserviceClassesDetected,
-				location,
-				otherMicroservices
-			);
-		
-			symbolContext.ReportDiagnostic(diag);
-		}
+		return new MicroserviceInfo(namedSymbol);
 	}
 
 	private static void AnalyzeCallableMethods(SyntaxNodeAnalysisContext context)
@@ -238,8 +242,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		var method = (MethodDeclarationSyntax)context.Node;
 		IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(method);
 		
-		if(methodSymbol == null)
+		if (methodSymbol == null || !methodSymbol.GetAttributes().Any(IsCallableAttribute))
+		{
 			return;
+		}
 		
 		ValidateReturnType(context, methodSymbol, method);
 		ValidateParameters(context, methodSymbol);

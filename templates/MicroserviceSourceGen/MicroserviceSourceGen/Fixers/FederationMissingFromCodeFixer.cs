@@ -79,7 +79,7 @@ public class FederationMissingFromCodeFixer : CodeFixProvider
 				.AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
 				.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(nameof(IFederationId))))
 				.AddAttributeLists(newAttributeList)
-				.NormalizeWhitespace();
+				.WithAdditionalAnnotations(Formatter.Annotation);
 
 		var newRoot = editor.GetChangedRoot();
 		var updatedMicroserviceClass = newRoot.DescendantNodes().OfType<ClassDeclarationSyntax>()
