@@ -128,7 +128,7 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 
 	private static string NormalizeLineEndings(string input)
 	{
-		return input.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
+		return input.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
 	}
 	
 	private static void AddAssemblyReferences(SolutionState state)
