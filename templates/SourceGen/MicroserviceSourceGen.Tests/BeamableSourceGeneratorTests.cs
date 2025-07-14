@@ -136,7 +136,7 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 			.Replace("\n\r", "\n")
 			.Replace("\r", "\n");
 		
-		normalized = normalized.Replace("\n", "\r\n");
+		normalized = normalized.Replace("\n", Environment.NewLine);
 
 		return normalized;
 	}
