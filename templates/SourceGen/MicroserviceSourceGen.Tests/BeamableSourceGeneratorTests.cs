@@ -90,12 +90,26 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 	{
 		AddAssemblyReferences(ctx.TestState);
 		
-		ctx.TestCode = userCode;
-		ctx.FixedCode = fixedCode;
-		
-		ctx.TestBehaviors |= TestBehaviors.SkipGeneratedCodeCheck;
 		ctx.CodeActionValidationMode = CodeActionValidationMode.SemanticStructure;
+		ctx.TestCode = NormalizeLineEndings(userCode);
+		ctx.FixedCode = NormalizeLineEndings(fixedCode);
 		
+		ctx.SolutionTransforms.Add((solution, projectId) =>
+		{
+			var project = solution.GetProject(projectId)!;
+
+			foreach (var doc in project.Documents)
+			{
+				var text = doc.GetTextAsync().Result;
+				var normalizedText = Microsoft.CodeAnalysis.Text.SourceText.From(
+					NormalizeLineEndings(text.ToString()),
+					text.Encoding
+				);
+				solution = solution.WithDocumentText(doc.Id, normalizedText);
+			}
+
+			return solution;
+		});
 		
 		if (cfg != null)
 		{
@@ -112,6 +126,11 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		}
 	}
 
+	private static string NormalizeLineEndings(string input)
+	{
+		return input.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", Environment.NewLine);
+	}
+	
 	private static void AddAssemblyReferences(SolutionState state)
 	{
 		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
