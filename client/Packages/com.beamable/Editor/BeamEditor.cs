@@ -161,21 +161,21 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			if (!HasDependencies())
-			{
-				_dependenciesLoadPromise = ImportDependencies();
-				_dependenciesLoadPromise.Then(_ =>
-				{
-					Debug.Log("Beamable is requesting a script reload because the beamable editor dependencies were not detected yet.");
-					EditorUtility.RequestScriptReload();
-					AssetDatabase.Refresh();
-					Initialize();
-				}).Error(_ =>
-				{
-					Initialize();
-				});
-			}
-			else
+			// if (!HasDependencies())
+			// {
+			// 	_dependenciesLoadPromise = ImportDependencies();
+			// 	_dependenciesLoadPromise.Then(_ =>
+			// 	{
+			// 		Debug.Log("Beamable is requesting a script reload because the beamable editor dependencies were not detected yet.");
+			// 		EditorUtility.RequestScriptReload();
+			// 		AssetDatabase.Refresh();
+			// 		Initialize();
+			// 	}).Error(_ =>
+			// 	{
+			// 		Initialize();
+			// 	});
+			// }
+			// else
 			{
 				Initialize();
 			}
