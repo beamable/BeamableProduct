@@ -4,6 +4,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
+using Beamable.Server;
 
 namespace cli;
 
@@ -45,6 +46,7 @@ public class NoAuthHttpRequester : IRequester
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
 		req.RequestUri = new Uri(uri);
+		Log.Verbose($"no auth request uri=[{uri}]");
 
 		if (body is string bodyStr)
 		{

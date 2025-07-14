@@ -191,7 +191,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 10; // could be 50?
 
-		private static Promise _dependenciesLoadPromise = null;
+		// private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{

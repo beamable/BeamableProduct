@@ -96,17 +96,12 @@ namespace Beamable.Content
                 EditorManifestID = DEFAULT_MANIFEST_ID;
             }
 
-            // var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
-            // var allTypes = reflectionCache.GetAll().ToList();
-            // if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
-            // {
-	           //  
-	           //  ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
-            // }
-            //
-            if (ContentTextureConfiguration == null)
+            var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+            var allTypes = reflectionCache.GetAll().ToList();
+            if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
             {
-	            ContentTextureConfiguration = new ContentTextureConfiguration(Array.Empty<ContentTypePair>());
+	            
+	            ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
             }
 #endif
 
