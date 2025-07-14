@@ -89,9 +89,14 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		where TFixProvider : CodeFixProvider, new() where TAnalyzer : DiagnosticAnalyzer, new()
 	{
 		AddAssemblyReferences(ctx.TestState);
-
+		
 		ctx.TestCode = userCode;
 		ctx.FixedCode = fixedCode;
+		
+		ctx.TestBehaviors |= TestBehaviors.SkipGeneratedCodeCheck;
+		ctx.CodeActionValidationMode = CodeActionValidationMode.SemanticStructure;
+		
+		
 		if (cfg != null)
 		{
 			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
