@@ -9,11 +9,16 @@ import {
   NoRefreshTokenError,
   BeamError,
 } from '@/constants/Errors';
+import { DELETE, GET, HEADERS } from '@/constants';
+import { HttpMethod } from '@/network/http/types/HttpMethod';
+import process from 'node:process';
+import { getPathAndQuery } from '@/utils/getPathAndQuery';
+import { createHash } from '@/utils/createHash';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
-  tokenStorage: TokenStorage;
-  cid: string;
+  tokenStorage?: TokenStorage;
+  useSignedRequest?: boolean;
   pid: string;
 };
 
@@ -23,17 +28,19 @@ type BeamRequesterConfig = {
  * - Serializes request bodies using `BeamJsonUtils.replacer` (supports BigInt, Date, etc.).
  * - Deserializes JSON response bodies using `BeamJsonUtils.reviver`.
  * - Leaves non-JSON bodies (e.g., FormData) untouched.
+ * - Automatically attaches the Bearer token to the `Authorization` header for authenticated requests.
+ * - Signs requests with a signature header when `useSignedRequest` is enabled.
  */
 export class BeamRequester implements HttpRequester {
   private readonly inner: HttpRequester;
-  private readonly tokenStorage: TokenStorage;
-  private readonly cid: string;
+  private readonly tokenStorage?: TokenStorage;
+  private readonly useSignedRequest?: boolean;
   private readonly pid: string;
 
   constructor(config: BeamRequesterConfig) {
     this.inner = config.inner;
     this.tokenStorage = config.tokenStorage;
-    this.cid = config.cid;
+    this.useSignedRequest = config.useSignedRequest;
     this.pid = config.pid;
   }
 
@@ -63,10 +70,28 @@ export class BeamRequester implements HttpRequester {
       }
     }
 
-    const newReq: HttpRequest<any> = { ...req, body };
+    if (this.useSignedRequest) {
+      const body = this.getBodyToSign(req.method ?? GET, req.body);
+      // add the signature to the request headers
+      req.headers = {
+        ...req.headers,
+        [HEADERS.BEAM_SIGNATURE]: this.generateSignature(req.url, body),
+      };
+    } else if (req.withAuth) {
+      const token = await this.tokenStorage?.getAccessToken();
+      if (token) {
+        // add the bearer token to the request headers
+        req.headers = {
+          ...req.headers,
+          [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
+        };
+      }
+    }
+
+    const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
-    if (response.status === 401) {
+    if (response.status === 401 && !this.useSignedRequest) {
       await this.handleRefresh();
       response = await this.inner.request<TRes, TReq>(req);
     }
@@ -90,20 +115,37 @@ export class BeamRequester implements HttpRequester {
     return { ...response, body: newBody };
   }
 
-  setBaseUrl(url: string): void {
-    this.inner.setBaseUrl(url);
+  set baseUrl(url: string) {
+    this.inner.baseUrl = url;
   }
 
-  setDefaultHeader(key: string, value?: string): void {
-    this.inner.setDefaultHeader(key, value);
+  set defaultHeaders(headers: Record<string, string>) {
+    this.inner.defaultHeaders = headers;
   }
 
-  setTokenProvider(provider: () => Promise<string> | string): void {
-    this.inner.setTokenProvider(provider);
+  private getBodyToSign(method: HttpMethod, body: unknown): string | null {
+    if (method === GET || method === DELETE) return null;
+    if (body == null) return null;
+    if (typeof body === 'string') return body;
+    return JSON.stringify(body, BeamJsonUtils.replacer);
+  }
+
+  private generateSignature(url: string, body: string | null): string {
+    const version = '1';
+    const secret = process.env.BEAM_REALM_SECRET;
+    if (!secret) {
+      throw new BeamError('BEAM_REALM_SECRET environment variable is not set');
+    }
+
+    let data = `${secret}${this.pid}${version}${getPathAndQuery(url)}`;
+    if (body) data += body;
+
+    // hash using md5 to base64 string
+    return createHash('md5').update(data).digest('base64');
   }
 
   private async handleRefresh(): Promise<void> {
-    const refreshToken = await this.tokenStorage.getRefreshToken();
+    const refreshToken = await this.tokenStorage?.getRefreshToken();
     if (!refreshToken) {
       throw new NoRefreshTokenError();
     }
@@ -113,7 +155,7 @@ export class BeamRequester implements HttpRequester {
       refresh_token: refreshToken,
     });
     if (response.status !== 200) {
-      await this.tokenStorage.removeRefreshToken();
+      await this.tokenStorage?.removeRefreshToken();
       throw new RefreshAccessTokenError();
     }
 
@@ -124,15 +166,15 @@ export class BeamRequester implements HttpRequester {
     } = response.body;
 
     if (newAccessToken) {
-      await this.tokenStorage.setAccessToken(newAccessToken);
+      await this.tokenStorage?.setAccessToken(newAccessToken);
     }
 
     if (newRefreshToken) {
-      await this.tokenStorage.setRefreshToken(newRefreshToken);
+      await this.tokenStorage?.setRefreshToken(newRefreshToken);
     }
 
     if (newExpiresIn) {
-      await this.tokenStorage.setExpiresIn(Date.now() + Number(newExpiresIn));
+      await this.tokenStorage?.setExpiresIn(Date.now() + Number(newExpiresIn));
     }
   }
 }

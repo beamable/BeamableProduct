@@ -45,10 +45,13 @@ public static class WebApi
 
 		foreach (var document in ctxDocuments)
 		{
-			var apiName = ToPascalCaseIdentifier(document.Info.Title.Split(' ').First()) + "Api";
+			var services = document.Info.Title.Split(' ');
+			var serviceName = services.First();
+			var serviceType = services.Last();
+			var apiName = ToPascalCaseIdentifier(serviceName) + "Api";
 			if (apiDeclarations.TryGetValue(apiName, out var declaration))
 			{
-				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums);
+				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType);
 				continue;
 			}
 
@@ -60,7 +63,7 @@ public static class WebApi
 			var tsConstructor = new TsConstructor().AddParameter(tsConstructorParam);
 			tsClass.SetConstructor(tsConstructor);
 
-			GenerateApiMethod(document, tsImports, tsClass, enums);
+			GenerateApiMethod(document, tsImports, tsClass, enums, serviceName, serviceType);
 			apiDeclarations.Add(apiName, (tsImports, tsClass));
 		}
 
@@ -94,7 +97,7 @@ public static class WebApi
 	}
 
 	private static void GenerateApiMethod(OpenApiDocument document, Dictionary<string, TsImport> tsImports,
-		TsClass tsClass, List<TsEnum> enums)
+		TsClass tsClass, List<TsEnum> enums, string serviceName, string serviceType)
 	{
 		foreach (var (apiEndpoint, pathItem) in document.Paths)
 		{
@@ -107,21 +110,22 @@ public static class WebApi
 
 			foreach (var (httpMethod, operation) in pathItem.Operations)
 			{
-				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsClass, enums);
+				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsClass, enums,
+					serviceName, serviceType);
 			}
 		}
 	}
 
 	private static void ProcessOperation(string apiEndpoint, OperationType httpMethod, OpenApiOperation operation,
 		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, TsClass tsClass,
-		List<TsEnum> enums)
+		List<TsEnum> enums, string serviceName, string serviceType)
 	{
 		if (!TryGetMediaTypeAndResponseType(operation, out var responseType))
 			return;
 
 		AddResponseTypeImport(tsImports, responseType);
 
-		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation);
+		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation, serviceName, serviceType);
 		var deprecatedDoc = DetermineIfDeprecated(operation);
 		var apiMethodType = httpMethod.ToString().ToUpper();
 		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
@@ -221,10 +225,12 @@ public static class WebApi
 	}
 
 	private static (bool requiresAuth, string requiresAuthRemarks) DetermineAuth(
-		OpenApiOperation operation)
+		OpenApiOperation operation, string serviceName, string serviceType)
 	{
-		var requiresAuth = operation.Security.Count >= 1 &&
-		                   operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+		var requiresAuth = !serviceType.Equals("basic", StringComparison.InvariantCultureIgnoreCase) ||
+		                   serviceName.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+		                   (operation.Security.Count >= 1 &&
+		                    operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user"));
 		var remarks = requiresAuth
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;

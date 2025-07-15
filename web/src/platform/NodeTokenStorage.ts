@@ -11,9 +11,9 @@ export class NodeTokenStorage extends TokenStorage {
   private readonly prefix: string;
   private readonly filePath: string;
 
-  constructor(tag?: string) {
+  constructor(pid: string, tag?: string) {
     super();
-    this.prefix = tag ? `${tag}_` : '';
+    this.prefix = tag ? `${tag}_${pid}_` : `${pid}_`;
     const directory = path.join(os.homedir(), '.beamable_node');
     this.filePath = path.join(directory, `${this.prefix}beam_tokens.json`);
     try {
@@ -92,11 +92,23 @@ export class NodeTokenStorage extends TokenStorage {
   }
 
   async clear(): Promise<void> {
-    await Promise.all([
-      this.removeAccessToken(),
-      this.removeRefreshToken(),
-      this.removeExpiresIn(),
-    ]);
+    // Remove all token files from disk regardless of prefix
+    const dir = path.join(os.homedir(), '.beamable_node');
+    try {
+      const files = await fs.promises.readdir(dir);
+      await Promise.all(
+        files
+          .filter((file) => file.endsWith('beam_tokens.json'))
+          .map((file) => fs.promises.unlink(path.join(dir, file))),
+      );
+    } catch {
+      // Ignore errors (e.g., directory does not exist)
+    }
+
+    // Reset in-memory values
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.expiresIn = null;
   }
 
   dispose(): void {}

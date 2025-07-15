@@ -13,6 +13,10 @@ export class PlayerTicketApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {string} playerId - Player Id
    * @param {string} gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
    * @returns {Promise<HttpResponse<TicketQueryResponse>>} A promise containing the HttpResponse of TicketQueryResponse
@@ -25,7 +29,8 @@ export class PlayerTicketApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

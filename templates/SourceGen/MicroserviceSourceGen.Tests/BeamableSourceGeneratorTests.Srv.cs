@@ -83,12 +83,12 @@ using Beamable.Common;
 namespace TestNamespace;
 
 [Microservice(""id"")]
-public class {|#0:SomeUserMicroservice|} : Microservice
+public partial class SomeUserMicroservice : Microservice
 {		
 }
 
 [Microservice(""id2"")]
-public class {|#1:SomeOtherUserMicroservice|} : Microservice
+public partial class {|#0:SomeOtherUserMicroservice|} : Microservice
 {		
 }
 ";
@@ -101,11 +101,6 @@ public class {|#1:SomeOtherUserMicroservice|} : Microservice
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
 			.WithLocation(0)
-			.WithArguments("SomeOtherUserMicroservice")
-			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
-		
-		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
-			.WithLocation(1)
 			.WithArguments("SomeUserMicroservice")
 			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
 		
@@ -272,6 +267,7 @@ public partial class MyMicroservice : Microservice
 		return new DTO_Nested{ x = 1 };
 	}
 
+
 	[ClientCallable]
 	public async {|#2:Task<DTO_MicroserviceScope>|} CallServiceAsync(DTO_MicroserviceScope {|#3:param|}) 
 	{
@@ -314,6 +310,50 @@ public class DTO_MicroserviceScope
 			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
 				.WithLocation(3)
 				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
+
+		string config = $@"
+is_global = true
+build_property.BeamValidateCallableTypesExistInSharedLibraries = true
+";
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ReturnTypeNonCallableMethod()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+
+	public class DTO_Nested
+	{
+		public int x;
+	}
+
+	
+	public DTO_Nested CallService_Nested() 
+	{
+		return new DTO_Nested{ x = 1 };
+	}
+
+
+	
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 
 		string config = $@"
 is_global = true

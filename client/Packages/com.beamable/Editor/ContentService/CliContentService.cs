@@ -42,12 +42,12 @@ namespace Beamable.Editor.ContentService
 		private int syncedContents;
 		private int publishedContents;
 
-		public Dictionary<string, LocalContentManifestEntry> CachedManifest { get; }
+		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
+		public Dictionary<string, ContentObject> ContentScriptableCache { get; }
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
-
-		public event Action OnManifestUpdated;
-		public event Action OnServiceReload;
+		
+		public int ManifestChangedCount { get; private set; }
 
 		public bool HasConflictedContent => _conflictedContentCache.Count > 0;
 
@@ -73,11 +73,20 @@ namespace Beamable.Editor.ContentService
 			_cli = cli;
 			_beamContext = beamContext;
 			_provider = provider;
-			CachedManifest = new();
+			EntriesCache = new();
+			ContentScriptableCache = new();
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
+		
+		public void SaveContent(ContentObject selectedContentObject)
+		{
+			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
+			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
+			SaveContent(selectedContentObject.Id, propertiesJson);
+		}
 
 		public void SaveContent(string contentId, string contentPropertiesJson)
 		{
@@ -98,7 +107,7 @@ namespace Beamable.Editor.ContentService
 		{
 
 			syncedContents = 0;
-			
+			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
 			try
 			{
 				if (_contentWatcher != null)
@@ -122,10 +131,6 @@ namespace Beamable.Editor.ContentService
 					                     SYNC_OPERATION_ERROR_BASE_MESSAGE, ref syncedContents);
 				});
 				await contentSyncCommand.Run();
-
-				EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
-
-
 			}
 			finally
 			{
@@ -155,14 +160,14 @@ namespace Beamable.Editor.ContentService
 
 		public void SetContentTags(string contentId, string[] tags)
 		{
-			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			if (!EntriesCache.TryGetValue(contentId, out var entry))
 			{
 				Debug.LogError($"No Entry found with id: {contentId}");
 				return;
 			}
 
 			entry.Tags = tags;
-			CachedManifest[contentId] = entry;
+			EntriesCache[contentId] = entry;
 
 			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
 			{
@@ -173,29 +178,33 @@ namespace Beamable.Editor.ContentService
 			setContentTagCommand.Run();
 		}
 
-		public void RenameContent(string contentId, string newName)
+		public string RenameContent(string contentId, string newName)
 		{
-			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			if (!EntriesCache.TryGetValue(contentId, out var entry))
 			{
 				Debug.LogError($"No Entry found with id: {contentId}");
-				return;
+				return contentId;
 			}
+			
+			if(entry.Name == newName)
+				return contentId;
 
 			if (!ValidateNewContentName(newName))
 			{
 				Debug.LogError(
 					$"{newName} contains invalid characters ({string.Join(", ", Path.GetInvalidFileNameChars())}");
-				return;
+				return contentId;
 			}
 
-			var fullName = $"{entry.TypeName}.{newName}.json";
+			string newFullId = $"{entry.TypeName}.{newName}";
+			var fullName = $"{newFullId}.json";
 
 			string fileDirectoryPath = Path.GetDirectoryName(entry.JsonFilePath);
 			string newFileNamePath = Path.Combine(fileDirectoryPath, fullName);
 			if (File.Exists(newFileNamePath))
 			{
 				Debug.LogError($"A Content already exists with name: {newName}");
-				return;
+				return contentId;
 			}
 
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
@@ -206,11 +215,12 @@ namespace Beamable.Editor.ContentService
 				AddContentToCache(entry);
 				entry.Name = newName;
 				entry.CurrentStatus = (int)ContentStatus.Created;
-				entry.FullId = $"{entry.TypeName}.{entry.Name}";
+				entry.FullId = newFullId;
 				AddContentToCache(entry);
 			}
 
 			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, fullName);
+			return newFullId;
 		}
 
 		private bool ValidateNewContentName(string newName)
@@ -220,15 +230,15 @@ namespace Beamable.Editor.ContentService
 
 		public void DeleteContent(string contentId)
 		{
-			if (!CachedManifest.TryGetValue(contentId, out var entry))
+			if (!EntriesCache.TryGetValue(contentId, out var entry))
 			{
 				Debug.LogError($"No Content found with id: {contentId}");
 				return;
 			}
-
-			RemoveContentFromCache(entry);
+			
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
+				RemoveContentFromCache(entry);
 				entry.CurrentStatus = (int)ContentStatus.Deleted;
 				AddContentToCache(entry);
 			}
@@ -245,13 +255,14 @@ namespace Beamable.Editor.ContentService
 				use = useLocal ? "local" : "realm"
 			});
 			resolveCommand.Run();
-			var content = CachedManifest[contentId];
+			var content = EntriesCache[contentId];
 			content.IsInConflict = false;
-			CachedManifest[contentId] = content;
+			EntriesCache[contentId] = content;
 		}
 		
 		public async Task PublishContentsWithProgress()
 		{
+			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;
 
 			if (_contentWatcher != null)
@@ -269,8 +280,6 @@ namespace Beamable.Editor.ContentService
 					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents);
 				});
 				await publishCommand.Run();
-
-				EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			}
 			finally
 			{
@@ -321,14 +330,11 @@ namespace Beamable.Editor.ContentService
 				{
 					foreach (var entry in changesManifest.Entries)
 					{
-						_ = ValidateForInvalidFields(entry);
-
-						if (CachedManifest.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+						if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
 						{
 							RemoveContentFromCache(oldEntry);
 						}
 						
-						ValidationContext.AllContent[entry.FullId] = entry;
 						AddContentToCache(entry);
 					}
 				}
@@ -337,7 +343,7 @@ namespace Beamable.Editor.ContentService
 				{
 					foreach (var entry in removeManifest.Entries)
 					{
-						if (CachedManifest.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+						if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
 						{
 							RemoveContentFromCache(oldEntry);
 						}
@@ -353,7 +359,7 @@ namespace Beamable.Editor.ContentService
 
 				if (hasRemoveManifest || hasChangeManifest)
 				{
-					OnManifestUpdated?.Invoke();
+					ManifestChangedCount++;
 				}
 
 				if (!manifestIsFetchedTaskCompletion.Task.IsCompleted)
@@ -369,13 +375,13 @@ namespace Beamable.Editor.ContentService
 			_ = _contentWatcher.Command.Run();
 
 			await manifestIsFetchedTaskCompletion.Task;
-			OnServiceReload?.Invoke();
+			ManifestChangedCount++;
 		}
 
 		private void ClearCaches()
 		{
 			ValidationContext.AllContent.Clear();
-			CachedManifest.Clear();
+			EntriesCache.Clear();
 			TypeContentCache.Clear();
 			_invalidContents.Clear();
 			_statusContentCache.Clear();
@@ -395,7 +401,7 @@ namespace Beamable.Editor.ContentService
 
 			await api.CliContentService.Reload();
 
-			return api.CliContentService.CachedManifest.Any(item => item.Value.StatusEnum is not ContentStatus
+			return api.CliContentService.EntriesCache.Any(item => item.Value.StatusEnum is not ContentStatus
 				                                                .UpToDate);
 		}
 
@@ -417,16 +423,16 @@ namespace Beamable.Editor.ContentService
 				return new List<LocalContentManifestEntry>();
 			}
 
-			return typeContents;
+			return new List<LocalContentManifestEntry>(typeContents);
 		}
 
 		public List<LocalContentManifestEntry> GetAllContentFromStatus(ContentStatus status)
 		{
 			if (!_statusContentCache.TryGetValue(status, out var contents))
 			{
-				return new  List<LocalContentManifestEntry>();
+				return new List<LocalContentManifestEntry>();
 			}
-			return contents;
+			return new List<LocalContentManifestEntry>(contents);
 		}
 
 		public List<LocalContentManifestEntry> GetAllConflictedContents()
@@ -470,7 +476,7 @@ namespace Beamable.Editor.ContentService
 		public void UpdateContentValidationStatus(string itemId, bool hasValidationError)
 		{
 			
-			if (hasValidationError && CachedManifest.TryGetValue(itemId, out var entry))
+			if (hasValidationError && EntriesCache.TryGetValue(itemId, out var entry))
 			{
 				_invalidContents[entry.FullId] = entry;
 			}
@@ -503,7 +509,59 @@ namespace Beamable.Editor.ContentService
 
 			_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
 			
-			CachedManifest[entry.FullId] = entry;
+			EntriesCache[entry.FullId] = entry;
+			
+			CacheScriptableContent(entry);
+
+			if (entry.StatusEnum is not ContentStatus.Deleted)
+			{
+				ValidationContext.AllContent[entry.FullId] = entry;
+			}
+		}
+
+		private void CacheScriptableContent(LocalContentManifestEntry entry)
+		{
+			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
+			{
+				_invalidContents.Remove(entry.FullId);
+				ContentScriptableCache.Remove(entry.FullId);
+				return;
+			}
+			
+			if (entry.StatusEnum is ContentStatus.Deleted)
+			{
+				var deletedObject = ScriptableObject.CreateInstance(type) as ContentObject;
+				deletedObject.SetIdAndVersion(entry.FullId, String.Empty);
+				deletedObject.Tags = entry.Tags.ToArray();
+				deletedObject.SetContentName(entry.Name);
+				deletedObject.ContentStatus = ContentStatus.Deleted;
+				deletedObject.IsInConflict = entry.IsInConflict;
+				ContentScriptableCache[entry.FullId] = deletedObject;
+				_invalidContents.Remove(entry.FullId);
+				return;
+			}
+			
+			string fileContent = File.ReadAllText(entry.JsonFilePath);
+
+			if(!ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+			{
+				contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
+				ContentScriptableCache[entry.FullId] = contentObject;
+			}
+			                                      
+			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
+			if (contentObject)
+			{
+				contentObject.Tags = entry.Tags.ToArray();
+				contentObject.ContentStatus = entry.StatusEnum;
+				contentObject.IsInConflict = entry.IsInConflict;
+				contentObject.OnEditorChanged = () =>
+				{
+					SaveContent(contentObject);
+				};
+			}
+			
+			ValidateForInvalidFields(contentObject);
 		}
 
 		private void RemoveContentFromCache(LocalContentManifestEntry entry)
@@ -522,28 +580,16 @@ namespace Beamable.Editor.ContentService
 			
 			_invalidContents.Remove(entry.FullId);
 			
-			CachedManifest.Remove(entry.FullId);
+			EntriesCache.Remove(entry.FullId);
 			
 			_contentIdTagsCache.Remove(entry.FullId);
 		}
 
-		private async Task ValidateForInvalidFields(LocalContentManifestEntry entry)
+		public void ValidateForInvalidFields(ContentObject contentObject)
 		{
-			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type) ||
-			    !File.Exists(entry.JsonFilePath))
-			{
-				_invalidContents.Remove(entry.FullId);
-				return;
-			}
-
-			string fileContent = await LoadContentFileData(entry);
-			var contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
-			contentObject =
-				ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as
-					ContentObject;
 			bool hasValidationError =
 				contentObject != null && contentObject.HasValidationErrors(ValidationContext, out var _);
-			UpdateContentValidationStatus(entry.FullId, hasValidationError);
+			UpdateContentValidationStatus(contentObject.Id, hasValidationError);
 
 		}
 

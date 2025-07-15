@@ -26,6 +26,17 @@ const fakeApi: any = {
   auth: { postAuthRefreshTokenV2 },
 };
 
+// stub realms config response for WebSocket URL setup
+const getRealmsClientDefaults = vi.fn().mockResolvedValue({
+  body: {
+    websocketConfig: {
+      provider: 'beamable',
+      uri: 'ws://test',
+    },
+  },
+});
+fakeApi.realms = { getRealmsClientDefaults };
+
 // mock WebSocket implementation
 class MockWebSocket {
   static CONNECTING = 0;
@@ -78,7 +89,6 @@ describe('BeamWebSocket', () => {
 
     const connectPromise = ws.connect({
       api: fakeApi,
-      url: 'wss://example.com',
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -97,7 +107,6 @@ describe('BeamWebSocket', () => {
 
     const connectPromise = ws.connect({
       api: fakeApi,
-      url: 'wss://example.com',
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -124,7 +133,6 @@ describe('BeamWebSocket', () => {
 
     const p = ws.connect({
       api: fakeApi,
-      url: 'wss://example.com',
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -140,7 +148,6 @@ describe('BeamWebSocket', () => {
 
     const connectPromise = ws.connect({
       api: fakeApi,
-      url: 'wss://example.com',
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',

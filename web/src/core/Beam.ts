@@ -1,16 +1,12 @@
-import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { BeamConfig } from '@/configs/BeamConfig';
-import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamApi } from '@/core/BeamApi';
-import packageJson from '../../package.json';
 import { BeamService } from '@/core/BeamService';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
-import { defaultTokenStorage, readConfig, saveConfig } from '@/index';
+import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
 import { saveToken } from '@/core/BeamUtils';
 import { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
@@ -20,13 +16,13 @@ import { AnnouncementsService } from '@/services/AnnouncementsService';
 import { Refreshable } from '@/services/types/Refreshable';
 import { ContextMap, Subscription, SubscriptionMap } from '@/core/types';
 import { wait } from '@/utils/wait';
+import { HEADERS } from '@/constants';
+import { BeamBase } from '@/core/BeamBase';
+import { StatsService } from '@/services/StatsService';
+import { LeaderboardsService } from '@/services/LeaderboardsService';
 
-/** The main class for interacting with the Beam SDK. */
-export class Beam {
-  /**
-   * A namespace of generated API service clients.
-   * Use `beam.api.<serviceName>` to access specific clients.
-   */
+/** The main class for interacting with the Beam Client SDK. */
+export class Beam extends BeamBase {
   public readonly api: BeamApi;
 
   /**
@@ -42,41 +38,21 @@ export class Beam {
    */
   public tokenStorage: TokenStorage;
 
-  private readonly cid: string;
-  private readonly pid: string;
+  private static localTokenStorage: TokenStorage;
   private readonly refreshable: Record<keyof ContextMap, Refreshable<unknown>>;
-  private readonly defaultHeaders: Record<string, string>;
-  private readonly requester: HttpRequester;
-  private envConfig: BeamEnvironmentConfig;
   private ws: BeamWebSocket;
-  // Cached promise for SDK initialization to ensure idempotent ready() calls
-  private readyPromise?: Promise<void>;
-  private isReadyPromise = false;
   private subscriptions: Partial<SubscriptionMap> = {};
+  private readyPromise?: Promise<void>;
+  private isReadyPromise: boolean = false;
 
   constructor(config: BeamConfig) {
-    const env = config.environment;
-    this.cid = config.cid;
-    this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(env ?? 'Prod');
-
-    this.tokenStorage =
-      config.tokenStorage ?? defaultTokenStorage(config.instanceTag);
-
-    this.defaultHeaders = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-BEAM-SCOPE': `${this.cid}.${this.pid}`,
-      'X-KS-BEAM-SDK-VERSION': packageJson.version,
-    };
-    this.addOptionalDefaultHeader('X-KS-GAME-VERSION', config.gameVersion);
-    this.addOptionalDefaultHeader('X-KS-USER-AGENT', config.gameEngine);
-    this.addOptionalDefaultHeader(
-      'X-KS-USER-AGENT-VERSION',
-      config.gameEngineVersion,
-    );
-
-    this.requester = this.createBeamRequester(config);
+    Beam.localTokenStorage =
+      config.tokenStorage ??
+      defaultTokenStorage(config.pid, config.instanceTag);
+    super(config);
+    this.tokenStorage = Beam.localTokenStorage;
+    this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
+    this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.gameEngineVersion);
     this.ws = new BeamWebSocket();
     this.api = new BeamApi(this.requester);
     this.player = new PlayerService();
@@ -192,33 +168,34 @@ export class Beam {
     return new Promise(async (resolve, reject) => {
       try {
         const savedConfig = await readConfig();
-        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid) {
-          this.tokenStorage.clear(); // TODO: consider namespacing by pid
+        // If the saved config cid does not match the current one, clear the token storage
+        if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
+        // If the cid or pid has changed, save the new configuration
+        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
           await saveConfig({ cid: this.cid, pid: this.pid });
-        }
 
+        let tokenResponse: TokenResponse | undefined;
         const accessToken = await this.tokenStorage.getAccessToken();
-        if (accessToken === null) {
-          // If no access token exists, sign in as a guest and save the tokens
-          const tokenResponse = await this.auth.signInAsGuest();
-          await saveToken(this.tokenStorage, tokenResponse);
+        if (!accessToken) {
+          // If no access token exists, sign in as a guest
+          tokenResponse = await this.auth.signInAsGuest();
         } else if (this.tokenStorage.isExpired) {
           // If the access token is expired, try to refresh it using the refresh token
-          // If no refresh token exists, sign in as a guest and save the tokens
-          let tokenResponse: TokenResponse;
+          // If no refresh token exists, sign in as a guest
           const refreshToken = await this.tokenStorage.getRefreshToken();
-
-          if (!refreshToken) tokenResponse = await this.auth.signInAsGuest();
-          else
-            tokenResponse = await this.auth.refreshAuthToken({ refreshToken });
-
-          await saveToken(this.tokenStorage, tokenResponse);
+          tokenResponse = refreshToken
+            ? await this.auth.refreshAuthToken({ refreshToken })
+            : await this.auth.signInAsGuest();
         }
 
-        // If we have a valid access token, fetch the current player account and set it
-        this.player.account = await this.account.current();
+        if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
 
-        await this.setupRealtimeConnection();
+        const [account] = await Promise.all([
+          this.account.current(),
+          this.setupRealtimeConnection(),
+        ]);
+
+        this.player.account = account;
         this.isReadyPromise = true;
         resolve();
       } catch (error) {
@@ -229,31 +206,11 @@ export class Beam {
     });
   }
 
-  private createBeamRequester(config: BeamConfig): BeamRequester {
-    const tokenProvider = async () =>
-      (await this.tokenStorage.getAccessToken()) ?? '';
-
-    const customRequester = config.requester;
-    if (customRequester) {
-      customRequester.setBaseUrl(this.envConfig.apiUrl);
-      customRequester.setTokenProvider(tokenProvider);
-      Object.entries(this.defaultHeaders).forEach(([key, value]) => {
-        customRequester.setDefaultHeader(key, value);
-      });
-    }
-
-    const baseRequester =
-      customRequester ??
-      new BaseRequester({
-        baseUrl: this.envConfig.apiUrl,
-        defaultHeaders: this.defaultHeaders,
-        tokenProvider,
-      });
-
+  protected createBeamRequester(config: BeamConfig): BeamRequester {
+    const baseRequester = config.requester ?? new BaseRequester();
     return new BeamRequester({
       inner: baseRequester,
-      tokenStorage: this.tokenStorage,
-      cid: this.cid,
+      tokenStorage: Beam.localTokenStorage,
       pid: this.pid,
     });
   }
@@ -262,31 +219,12 @@ export class Beam {
     const refreshToken = await this.tokenStorage.getRefreshToken();
     if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
 
-    const realmConfigResponse = await this.api.realms.getRealmsClientDefaults();
-    const realmConfig = realmConfigResponse.body;
-    if (realmConfig.websocketConfig.provider === 'pubnub') {
-      // Web SDK does not support pubnub
-      throw new BeamWebSocketError(
-        'Unsupported websocket provider. Configure your Realm in portal to include: namespace=notification, key=publisher, value=beamable.',
-      );
-    }
-
-    const url = realmConfig.websocketConfig.uri;
-    if (!url) throw new BeamWebSocketError('No websocket URL found');
-
     await this.ws.connect({
       api: this.api,
       cid: this.cid,
       pid: this.pid,
       refreshToken,
-      url,
     });
-  }
-
-  private addOptionalDefaultHeader(key: string, value?: string): void {
-    if (value) {
-      this.defaultHeaders[key] = value;
-    }
   }
 
   private checkIfReadyAndSupportedContext(
@@ -310,10 +248,14 @@ export class Beam {
 }
 
 export interface Beam {
-  /** High-level account helper built on top of `beam.api.accounts.*` endpoints */
+  /** High-level account helper built on top of `beam.api.accounts.*` endpoints. */
   account: AccountService;
-  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints */
+  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints. */
   announcements: AnnouncementsService;
-  /** High-level auth helper built on top of `beam.api.auth.*` endpoints */
+  /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
   auth: AuthService;
+  /** High-level leaderboards helper built on top of `beam.api.leaderboards.*` endpoints. */
+  leaderboards: LeaderboardsService;
+  /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
+  stats: StatsService;
 }
