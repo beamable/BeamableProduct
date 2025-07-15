@@ -63,16 +63,17 @@ namespace Beamable.Editor.Util
 			public T window;
 			public Vector2 startSize;
 		}
-		
-		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
-		                                     GUIContent current, 
-		                                     GUILayoutOption widthOption, 
-		                                     Func<DropdownMetadata<T>> windowFactory,
-		                                     out Rect contentBounds,
-		                                     int yPadding=5,
-		                                     int yShift=1,
-		                                     Color backdropColor=default)
-			where T : EditorWindow
+
+		public static bool LayoutDropDownButton(GUIContent current)
+		{
+			return LayoutDropDownButton(current, out _, out _);
+		}
+		public static bool LayoutDropDownButton(GUIContent current, 
+		                                  out Rect contentBounds,
+		                                  out Rect paddedRect,
+		                                  int yPadding=5,
+		                                  int yShift=1,
+		                                  Color backdropColor=default)
 		{
 			if (backdropColor == default)
 			{
@@ -92,7 +93,7 @@ namespace Beamable.Editor.Util
 
 			// const int yPadding = 5;
 			// const int yShift = 1;
-			var paddedRect = new Rect(bounds.x, bounds.y + yPadding + yShift, bounds.width, bounds.height - yPadding * 2);
+			paddedRect = new Rect(bounds.x, bounds.y + yPadding + yShift, bounds.width, bounds.height - yPadding * 2);
 			contentBounds = paddedRect;
 			var contentRect = new Rect(paddedRect.x, paddedRect.y, paddedRect.width - arrowWidth, paddedRect.height);
 			var arrowRect = new Rect(paddedRect.xMax - arrowWidth, paddedRect.y, arrowWidth, paddedRect.height);
@@ -136,6 +137,22 @@ namespace Beamable.Editor.Util
 			}
 
 
+			return buttonClicked;
+		}
+		
+		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
+		                                     GUIContent current, 
+		                                     GUILayoutOption widthOption, 
+		                                     Func<DropdownMetadata<T>> windowFactory,
+		                                     out Rect contentBounds,
+		                                     int yPadding=5,
+		                                     int yShift=1,
+		                                     Color backdropColor=default)
+			where T : EditorWindow
+		{
+
+			var buttonClicked =
+				LayoutDropDownButton(current, out contentBounds, out var paddedRect, yPadding, yShift, backdropColor);
 			if (buttonClicked)
 			{
 

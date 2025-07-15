@@ -193,6 +193,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if(_windowStatus == windowStatus)
 				return;
+			
 			_windowStatus = windowStatus;
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
@@ -216,7 +217,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				Repaint();
 		}
 
-		private void DrawLowBarHeader()
+		private void DrawLowBarHeader(Rect rect)
 		{
 			if (_windowStatus is not ContentWindowStatus.Normal)
 			{
@@ -234,30 +235,21 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			var itemsCounts = new GUIContent($"{filteredItemsCount}/{totalItems}");
 			var itemsCountsSize = lowBarTextStyle.CalcSize(itemsCounts);
-			var itemsFilterLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.Width(itemsCountsSize.x), GUILayout.ExpandHeight(true));
-			var contentTreeLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-			
-			
+
+			var itemsFilterLabelRect = new Rect(rect.x + 4, rect.y, itemsCountsSize.x, rect.height);
+			var contentTreeLabelRect = new Rect(itemsFilterLabelRect.xMax + 2, rect.y, 350, rect.height);
+
 			string contentTreeLabelValue = "All Content";
 			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
 				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
-
-
+			
 			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", lowBarTextStyle);
 			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
-
 			EditorGUILayout.Space(1, true);
-			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]} ▼");
-			GUIStyle lowBarDropdownStyle = _lowBarDropdownStyle ?? EditorStyles.toolbarDropDown;
-			Vector2 itemWidth = lowBarDropdownStyle.CalcSize(dropdownContent);
-			if (EditorGUILayout.DropdownButton(
-				    dropdownContent,
-				    FocusType.Passive,
-				    lowBarDropdownStyle,
-				    GUILayout.Width(itemWidth.x)))
+			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]}"); // ▼
+			
+			if (BeamGUI.LayoutDropDownButton(dropdownContent))
 			{
 				GenericMenu menu = new GenericMenu();
 				foreach ((ContentSortOptionType type, string stringValue) in SortTypeNameMap)
@@ -270,6 +262,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				menu.ShowAsContext();
 			}
+
+			EditorGUILayout.Space(4, false);
 
 		}
 		
