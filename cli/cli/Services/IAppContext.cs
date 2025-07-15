@@ -154,6 +154,7 @@ public class DefaultAppContext : IAppContext
 	private string _cid, _pid, _host;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
+	private IDependencyProvider _provider;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -166,8 +167,9 @@ public class DefaultAppContext : IAppContext
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
-		PreferRemoteFederationOption routeMapOption)
+		PreferRemoteFederationOption routeMapOption, IDependencyProvider provider)
 	{
+		_provider = provider;
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -326,10 +328,13 @@ public class DefaultAppContext : IAppContext
 
 	public async Task Set(string cid, string pid, string host)
 	{
+		_host = host;
+
 		if (!string.IsNullOrEmpty(cid))
 		{
-			var aliasService = new AliasService(new NoAuthHttpRequester(host));
-			var aliasResolve = await aliasService.Resolve(cid);
+			var service = _provider.GetService<IAliasService>();
+			service.Requester = new NoAuthHttpRequester(host);
+			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
 		}
 		else
@@ -337,7 +342,6 @@ public class DefaultAppContext : IAppContext
 			_cid = cid;
 		}
 		_pid = pid;
-		_host = host;
 		_token.Cid = _cid;
 		_token.Pid = _pid;
 	}
