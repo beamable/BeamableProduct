@@ -18,7 +18,7 @@ import { SubscriberDetailsResponse } from '@/__generated__/schemas/SubscriberDet
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationChannel(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostChannelBasic(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/channel";
   
   // Make the API request
@@ -42,7 +42,7 @@ export async function postNotificationChannel(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationPlayer(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostPlayerBasic(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/player";
   
   // Make the API request
@@ -66,7 +66,7 @@ export async function postNotificationPlayer(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationCustom(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostCustomBasic(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/custom";
   
   // Make the API request
@@ -90,7 +90,7 @@ export async function postNotificationCustom(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationServer(requester: HttpRequester, payload: ServerEvent, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostServerBasic(requester: HttpRequester, payload: ServerEvent, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/server";
   
   // Make the API request
@@ -114,7 +114,7 @@ export async function postNotificationServer(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationGeneric(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostGenericBasic(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/generic";
   
   // Make the API request
@@ -137,7 +137,7 @@ export async function postNotificationGeneric(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getNotification(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<SubscriberDetailsResponse>> {
+export async function notificationGetBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<SubscriberDetailsResponse>> {
   let endpoint = "/basic/notification/";
   
   // Make the API request
@@ -160,7 +160,7 @@ export async function getNotification(requester: HttpRequester, gamertag?: strin
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postNotificationGame(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function notificationPostGameBasic(requester: HttpRequester, payload: NotificationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/notification/game";
   
   // Make the API request

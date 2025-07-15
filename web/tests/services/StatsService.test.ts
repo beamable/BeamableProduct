@@ -6,12 +6,12 @@ import { StatsService } from '@/services/StatsService';
 
 describe('StatsService', () => {
   describe('set', () => {
-    it('calls postStatClientByObjectId on the stats API and updates the stats if domainType is "client"', async () => {
+    it('calls statsPostClientByObjectId on the stats API and updates the stats if domainType is "client"', async () => {
       const mockStats: Record<string, string> = {
         level: '10',
         score: '1000',
       };
-      vi.spyOn(apis, 'postStatClientByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'statsPostClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok' },
@@ -25,7 +25,7 @@ describe('StatsService', () => {
       const objectId = `client.private.player.${playerService.id}`;
       await statsService.set({ accessType: 'private', stats: mockStats });
 
-      expect(apis.postStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.statsPostClientByObjectId).toHaveBeenCalledWith(
         mockRequester,
         objectId,
         { set: mockStats },
@@ -34,12 +34,12 @@ describe('StatsService', () => {
       expect(playerService.stats).toEqual(mockStats);
     });
 
-    it('calls postStatByObjectId on the stats API and updates the stats if domainType is "game"', async () => {
+    it('calls statsPostByObjectId on the stats API and updates the stats if domainType is "game"', async () => {
       const mockStats: Record<string, string> = {
         level: '10',
         score: '1000',
       };
-      vi.spyOn(apis, 'postStatByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'statsPostByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok' },
@@ -57,7 +57,7 @@ describe('StatsService', () => {
         stats: mockStats,
       });
 
-      expect(apis.postStatByObjectId).toHaveBeenCalledWith(
+      expect(apis.statsPostByObjectId).toHaveBeenCalledWith(
         mockRequester,
         objectId,
         { set: mockStats },
@@ -68,12 +68,12 @@ describe('StatsService', () => {
   });
 
   describe('get', () => {
-    it('calls getStatClientByObjectId on the stats API and returns all stats if domainType is "client"', async () => {
+    it('calls statsGetClientByObjectId on the stats API and returns all stats if domainType is "client"', async () => {
       const mockStats: Record<string, string> = {
         level: '10',
         score: '1000',
       };
-      vi.spyOn(apis, 'getStatClientByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'statsGetClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: mockStats },
@@ -87,7 +87,7 @@ describe('StatsService', () => {
       const objectId = `client.public.player.${playerService.id}`;
       const result = await statsService.get({ accessType: 'public' });
 
-      expect(apis.getStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.statsGetClientByObjectId).toHaveBeenCalledWith(
         mockRequester,
         objectId,
         undefined,
@@ -96,12 +96,12 @@ describe('StatsService', () => {
       expect(playerService.stats).toEqual(result);
     });
 
-    it('calls getStatByObjectId on the stats API and returns all stats if domainType is "game"', async () => {
+    it('calls statsGetByObjectId on the stats API and returns all stats if domainType is "game"', async () => {
       const mockStats: Record<string, string> = {
         level: '10',
         score: '1000',
       };
-      vi.spyOn(apis, 'getStatByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'statsGetByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: mockStats },
@@ -118,7 +118,7 @@ describe('StatsService', () => {
         accessType: 'public',
       });
 
-      expect(apis.getStatByObjectId).toHaveBeenCalledWith(
+      expect(apis.statsGetByObjectId).toHaveBeenCalledWith(
         mockRequester,
         objectId,
         undefined,
@@ -127,14 +127,14 @@ describe('StatsService', () => {
       expect(playerService.stats).toEqual(result);
     });
 
-    it('calls getStatClientByObjectId on the stats API and returns specific stats', async () => {
+    it('calls statsGetClientByObjectId on the stats API and returns specific stats', async () => {
       const levelStats: Record<string, string> = {
         level: '10',
       };
       const scoreStats: Record<string, string> = {
         score: '1000',
       };
-      vi.spyOn(apis, 'getStatClientByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'statsGetClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: scoreStats },
@@ -152,7 +152,7 @@ describe('StatsService', () => {
         stats: ['score'],
       });
 
-      expect(apis.getStatClientByObjectId).toHaveBeenCalledWith(
+      expect(apis.statsGetClientByObjectId).toHaveBeenCalledWith(
         mockRequester,
         objectId,
         'score',

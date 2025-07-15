@@ -30,7 +30,7 @@ import { TokenResponse } from '@/__generated__/schemas/TokenResponse';
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postAuthRefreshToken(requester: HttpRequester, payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
+export async function authPostRefreshToken(requester: HttpRequester, payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
   let endpoint = "/api/auth/refresh-token";
   
   // Make the API request
@@ -54,7 +54,7 @@ export async function postAuthRefreshToken(requester: HttpRequester, payload: Re
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postAuthRefreshTokenV2(requester: HttpRequester, payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
+export async function authPostTokensRefreshToken(requester: HttpRequester, payload: RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
   let endpoint = "/api/auth/tokens/refresh-token";
   
   // Make the API request
@@ -78,7 +78,7 @@ export async function postAuthRefreshTokenV2(requester: HttpRequester, payload: 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postGuestToken(requester: HttpRequester, payload: GuestAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
+export async function authPostTokensGuest(requester: HttpRequester, payload: GuestAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
   let endpoint = "/api/auth/tokens/guest";
   
   // Make the API request
@@ -102,7 +102,7 @@ export async function postGuestToken(requester: HttpRequester, payload: GuestAut
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postPasswordToken(requester: HttpRequester, payload: PasswordAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
+export async function authPostTokensPassword(requester: HttpRequester, payload: PasswordAuthRequest, gamertag?: string): Promise<HttpResponse<AuthResponse>> {
   let endpoint = "/api/auth/tokens/password";
   
   // Make the API request
@@ -126,7 +126,7 @@ export async function postPasswordToken(requester: HttpRequester, payload: Passw
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postAuthServer(requester: HttpRequester, payload: ServerTokenAuthRequest, gamertag?: string): Promise<HttpResponse<ServerTokenResponse>> {
+export async function authPostServer(requester: HttpRequester, payload: ServerTokenAuthRequest, gamertag?: string): Promise<HttpResponse<ServerTokenResponse>> {
   let endpoint = "/api/auth/server";
   
   // Make the API request
@@ -154,7 +154,7 @@ export async function postAuthServer(requester: HttpRequester, payload: ServerTo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAuthTokenList(requester: HttpRequester, gamerTagOrAccountId: bigint | string, page: number, pageSize: number, cid?: bigint | string, pid?: string, gamertag?: string): Promise<HttpResponse<ListTokenResponse>> {
+export async function authGetTokenListBasic(requester: HttpRequester, gamerTagOrAccountId: bigint | string, page: number, pageSize: number, cid?: bigint | string, pid?: string, gamertag?: string): Promise<HttpResponse<ListTokenResponse>> {
   let endpoint = "/basic/auth/token/list";
   
   // Make the API request
@@ -180,7 +180,7 @@ export async function getAuthTokenList(requester: HttpRequester, gamerTagOrAccou
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAuthToken(requester: HttpRequester, token: string, gamertag?: string): Promise<HttpResponse<Token>> {
+export async function authGetTokenBasic(requester: HttpRequester, token: string, gamertag?: string): Promise<HttpResponse<Token>> {
   let endpoint = "/basic/auth/token";
   
   // Make the API request
@@ -201,7 +201,7 @@ export async function getAuthToken(requester: HttpRequester, token: string, game
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postAuthToken(requester: HttpRequester, payload: TokenRequestWrapper, gamertag?: string): Promise<HttpResponse<TokenResponse>> {
+export async function authPostTokenBasic(requester: HttpRequester, payload: TokenRequestWrapper, gamertag?: string): Promise<HttpResponse<TokenResponse>> {
   let endpoint = "/basic/auth/token";
   
   // Make the API request
@@ -224,7 +224,7 @@ export async function postAuthToken(requester: HttpRequester, payload: TokenRequ
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putAuthTokenRevoke(requester: HttpRequester, payload: RevokeTokenRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function authPutTokenRevokeBasic(requester: HttpRequester, payload: RevokeTokenRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/auth/token/revoke";
   
   // Make the API request

@@ -29,7 +29,7 @@ import { PUT } from '@/constants';
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postSchedulerJobExecuteInternal(requester: HttpRequester, payload: JobExecutionEvent, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
+export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: JobExecutionEvent, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
   let endpoint = "/api/internal/scheduler/job/execute";
   
   // Make the API request
@@ -53,7 +53,7 @@ export async function postSchedulerJobExecuteInternal(requester: HttpRequester, 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postSchedulerJob(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerPostJob(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/scheduler/job";
   
   // Make the API request
@@ -77,7 +77,7 @@ export async function postSchedulerJob(requester: HttpRequester, payload: JobDef
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postSchedulerJobInternal(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerPostJobInternal(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/internal/scheduler/job";
   
   // Make the API request
@@ -106,7 +106,7 @@ export async function postSchedulerJobInternal(requester: HttpRequester, payload
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobs(requester: HttpRequester, limit?: number, name?: string, source?: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobsGetSchedulerResponse>> {
+export async function schedulerGetJobs(requester: HttpRequester, limit?: number, name?: string, source?: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobsGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/jobs";
   
   // Make the API request
@@ -137,7 +137,7 @@ export async function getSchedulerJobs(requester: HttpRequester, limit?: number,
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobsPaged(requester: HttpRequester, cursor?: string, name?: string, onlyUnique?: boolean, source?: string, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
+export async function schedulerGetJobsPaged(requester: HttpRequester, cursor?: string, name?: string, onlyUnique?: boolean, source?: string, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs-paged";
   
   // Make the API request
@@ -167,7 +167,7 @@ export async function getSchedulerJobsPaged(requester: HttpRequester, cursor?: s
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobsSuspended(requester: HttpRequester, cursor?: string, from?: Date, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
+export async function schedulerGetJobsSuspended(requester: HttpRequester, cursor?: string, from?: Date, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs/suspended";
   
   // Make the API request
@@ -194,7 +194,7 @@ export async function getSchedulerJobsSuspended(requester: HttpRequester, cursor
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerGetJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/scheduler/job/{jobId}".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -217,7 +217,7 @@ export async function getSchedulerJobByJobId(requester: HttpRequester, jobId: st
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteSchedulerJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>> {
+export async function schedulerDeleteJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -244,7 +244,7 @@ export async function deleteSchedulerJobByJobId(requester: HttpRequester, jobId:
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobActivityByJobId(requester: HttpRequester, jobId: string, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>> {
+export async function schedulerGetJobActivityByJobId(requester: HttpRequester, jobId: string, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/activity".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -271,7 +271,7 @@ export async function getSchedulerJobActivityByJobId(requester: HttpRequester, j
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobActivityPagedByJobId(requester: HttpRequester, jobId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
+export async function schedulerGetJobActivityPagedByJobId(requester: HttpRequester, jobId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/job/{jobId}/activity-paged".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -297,7 +297,7 @@ export async function getSchedulerJobActivityPagedByJobId(requester: HttpRequest
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobsActivityPaged(requester: HttpRequester, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
+export async function schedulerGetJobsActivityPaged(requester: HttpRequester, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs/activity-paged";
   
   // Make the API request
@@ -325,7 +325,7 @@ export async function getSchedulerJobsActivityPaged(requester: HttpRequester, cu
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getSchedulerJobNextExecutionsByJobId(requester: HttpRequester, jobId: string, from?: Date, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>> {
+export async function schedulerGetJobNextExecutionsByJobId(requester: HttpRequester, jobId: string, from?: Date, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/next-executions".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -352,7 +352,7 @@ export async function getSchedulerJobNextExecutionsByJobId(requester: HttpReques
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putSchedulerJobCancelByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>> {
+export async function schedulerPutJobCancelByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/cancel".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request

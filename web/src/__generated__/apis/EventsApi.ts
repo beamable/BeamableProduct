@@ -26,7 +26,7 @@ import { SetContentRequest } from '@/__generated__/schemas/SetContentRequest';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventsContent(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EventContentResponse>> {
+export async function eventsGetContentBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EventContentResponse>> {
   let endpoint = "/basic/events/content";
   
   // Make the API request
@@ -52,7 +52,7 @@ export async function getEventsContent(requester: HttpRequester, gamertag?: stri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventsCalendar(requester: HttpRequester, from?: string, limit?: number, query?: string, to?: string, gamertag?: string): Promise<HttpResponse<EventsInDateRangeResponse>> {
+export async function eventsGetCalendarBasic(requester: HttpRequester, from?: string, limit?: number, query?: string, to?: string, gamertag?: string): Promise<HttpResponse<EventsInDateRangeResponse>> {
   let endpoint = "/basic/events/calendar";
   
   // Make the API request
@@ -81,7 +81,7 @@ export async function getEventsCalendar(requester: HttpRequester, from?: string,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postEventApplyContent(requester: HttpRequester, payload: EventApplyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventsPostApplyContentBasic(requester: HttpRequester, payload: EventApplyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/events/applyContent";
   
   // Make the API request
@@ -100,7 +100,7 @@ export async function postEventApplyContent(requester: HttpRequester, payload: E
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventsRunning(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EventQueryResponse>> {
+export async function eventsGetRunningBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EventQueryResponse>> {
   let endpoint = "/basic/events/running";
   
   // Make the API request
@@ -123,7 +123,7 @@ export async function getEventsRunning(requester: HttpRequester, gamertag?: stri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putEventEndPhaseByObjectId(requester: HttpRequester, objectId: string, payload: EventPhaseEndRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventsPutEndPhaseByObjectId(requester: HttpRequester, objectId: string, payload: EventPhaseEndRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/events/{objectId}/endPhase".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -147,7 +147,7 @@ export async function putEventEndPhaseByObjectId(requester: HttpRequester, objec
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<EventObjectData>> {
+export async function eventsGetByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<EventObjectData>> {
   let endpoint = "/object/events/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -170,7 +170,7 @@ export async function getEventByObjectId(requester: HttpRequester, objectId: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventPingByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<PingRsp>> {
+export async function eventsGetPingByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<PingRsp>> {
   let endpoint = "/object/events/{objectId}/ping".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -194,7 +194,7 @@ export async function getEventPingByObjectId(requester: HttpRequester, objectId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putEventContentByObjectId(requester: HttpRequester, objectId: string, payload: SetContentRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventsPutContentByObjectId(requester: HttpRequester, objectId: string, payload: SetContentRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/events/{objectId}/content".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -218,7 +218,7 @@ export async function putEventContentByObjectId(requester: HttpRequester, object
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteEventContentByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventsDeleteContentByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/events/{objectId}/content".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -241,7 +241,7 @@ export async function deleteEventContentByObjectId(requester: HttpRequester, obj
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putEventRefreshByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventsPutRefreshByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/events/{objectId}/refresh".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

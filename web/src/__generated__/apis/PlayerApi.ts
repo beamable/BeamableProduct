@@ -19,7 +19,7 @@ import { SetPresenceStatusRequest } from '@/__generated__/schemas/SetPresenceSta
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putPlayerPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
+export async function playersPutPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
   let endpoint = "/api/players/{playerId}/presence".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -42,7 +42,7 @@ export async function putPlayerPresenceByPlayerId(requester: HttpRequester, play
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getPlayerPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
+export async function playersGetPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
   let endpoint = "/api/players/{playerId}/presence".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -66,7 +66,7 @@ export async function getPlayerPresenceByPlayerId(requester: HttpRequester, play
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putPlayerPresenceStatusByPlayerId(requester: HttpRequester, playerId: string, payload: SetPresenceStatusRequest, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
+export async function playersPutPresenceStatusByPlayerId(requester: HttpRequester, playerId: string, payload: SetPresenceStatusRequest, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
   let endpoint = "/api/players/{playerId}/presence/status".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

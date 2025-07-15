@@ -31,7 +31,7 @@ import { UpdatePlayerStatusRequest } from '@/__generated__/schemas/UpdatePlayerS
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTournamentSearchGroups(requester: HttpRequester, payload: GetStatusForGroupsRequest, gamertag?: string): Promise<HttpResponse<GetStatusForGroupsResponse>> {
+export async function tournamentsPostSearchGroupsBasic(requester: HttpRequester, payload: GetStatusForGroupsRequest, gamertag?: string): Promise<HttpResponse<GetStatusForGroupsResponse>> {
   let endpoint = "/basic/tournaments/search/groups";
   
   // Make the API request
@@ -52,7 +52,7 @@ export async function postTournamentSearchGroups(requester: HttpRequester, paylo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournaments(requester: HttpRequester, contentId?: string, cycle?: number, isRunning?: boolean, gamertag?: string): Promise<HttpResponse<TournamentQueryResponse>> {
+export async function tournamentsGetBasic(requester: HttpRequester, contentId?: string, cycle?: number, isRunning?: boolean, gamertag?: string): Promise<HttpResponse<TournamentQueryResponse>> {
   let endpoint = "/basic/tournaments/";
   
   // Make the API request
@@ -79,7 +79,7 @@ export async function getTournaments(requester: HttpRequester, contentId?: strin
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTournament(requester: HttpRequester, payload: JoinRequest, gamertag?: string): Promise<HttpResponse<PlayerStatus>> {
+export async function tournamentsPostBasic(requester: HttpRequester, payload: JoinRequest, gamertag?: string): Promise<HttpResponse<PlayerStatus>> {
   let endpoint = "/basic/tournaments/";
   
   // Make the API request
@@ -103,7 +103,7 @@ export async function postTournament(requester: HttpRequester, payload: JoinRequ
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsMeGroup(requester: HttpRequester, contentId?: string, gamertag?: string): Promise<HttpResponse<GetGroupStatusResponse>> {
+export async function tournamentsGetMeGroupBasic(requester: HttpRequester, contentId?: string, gamertag?: string): Promise<HttpResponse<GetGroupStatusResponse>> {
   let endpoint = "/basic/tournaments/me/group";
   
   // Make the API request
@@ -130,7 +130,7 @@ export async function getTournamentsMeGroup(requester: HttpRequester, contentId?
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsRewards(requester: HttpRequester, contentId?: string, tournamentId?: string, gamertag?: string): Promise<HttpResponse<RewardsResponse>> {
+export async function tournamentsGetRewardsBasic(requester: HttpRequester, contentId?: string, tournamentId?: string, gamertag?: string): Promise<HttpResponse<RewardsResponse>> {
   let endpoint = "/basic/tournaments/rewards";
   
   // Make the API request
@@ -157,7 +157,7 @@ export async function getTournamentsRewards(requester: HttpRequester, contentId?
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTournamentRewards(requester: HttpRequester, payload: RewardsRequest, gamertag?: string): Promise<HttpResponse<RewardsResponse>> {
+export async function tournamentsPostRewardsBasic(requester: HttpRequester, payload: RewardsRequest, gamertag?: string): Promise<HttpResponse<RewardsResponse>> {
   let endpoint = "/basic/tournaments/rewards";
   
   // Make the API request
@@ -186,7 +186,7 @@ export async function postTournamentRewards(requester: HttpRequester, payload: R
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsGlobal(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
+export async function tournamentsGetGlobalBasic(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
   let endpoint = "/basic/tournaments/global";
   
   // Make the API request
@@ -222,7 +222,7 @@ export async function getTournamentsGlobal(requester: HttpRequester, tournamentI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsStandingsGroup(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
+export async function tournamentsGetStandingsGroupBasic(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
   let endpoint = "/basic/tournaments/standings/group";
   
   // Make the API request
@@ -258,7 +258,7 @@ export async function getTournamentsStandingsGroup(requester: HttpRequester, tou
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsStandings(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
+export async function tournamentsGetStandingsBasic(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetStandingsResponse>> {
   let endpoint = "/basic/tournaments/standings";
   
   // Make the API request
@@ -292,7 +292,7 @@ export async function getTournamentsStandings(requester: HttpRequester, tourname
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsAdminPlayer(requester: HttpRequester, playerId: bigint | string, contentId?: string, hasUnclaimedRewards?: boolean, tournamentId?: string, gamertag?: string): Promise<HttpResponse<AdminGetPlayerStatusResponse>> {
+export async function tournamentsGetAdminPlayerBasic(requester: HttpRequester, playerId: bigint | string, contentId?: string, hasUnclaimedRewards?: boolean, tournamentId?: string, gamertag?: string): Promise<HttpResponse<AdminGetPlayerStatusResponse>> {
   let endpoint = "/basic/tournaments/admin/player";
   
   // Make the API request
@@ -321,7 +321,7 @@ export async function getTournamentsAdminPlayer(requester: HttpRequester, player
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putTournamentAdminPlayer(requester: HttpRequester, payload: UpdatePlayerStatusRequest, gamertag?: string): Promise<HttpResponse<AdminPlayerStatus>> {
+export async function tournamentsPutAdminPlayerBasic(requester: HttpRequester, payload: UpdatePlayerStatusRequest, gamertag?: string): Promise<HttpResponse<AdminPlayerStatus>> {
   let endpoint = "/basic/tournaments/admin/player";
   
   // Make the API request
@@ -347,7 +347,7 @@ export async function putTournamentAdminPlayer(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsMe(requester: HttpRequester, contentId?: string, hasUnclaimedRewards?: boolean, tournamentId?: string, gamertag?: string): Promise<HttpResponse<GetPlayerStatusResponse>> {
+export async function tournamentsGetMeBasic(requester: HttpRequester, contentId?: string, hasUnclaimedRewards?: boolean, tournamentId?: string, gamertag?: string): Promise<HttpResponse<GetPlayerStatusResponse>> {
   let endpoint = "/basic/tournaments/me";
   
   // Make the API request
@@ -377,7 +377,7 @@ export async function getTournamentsMe(requester: HttpRequester, contentId?: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsChampions(requester: HttpRequester, cycles: number, tournamentId: string, contentId?: string, gamertag?: string): Promise<HttpResponse<GetChampionsResponse>> {
+export async function tournamentsGetChampionsBasic(requester: HttpRequester, cycles: number, tournamentId: string, contentId?: string, gamertag?: string): Promise<HttpResponse<GetChampionsResponse>> {
   let endpoint = "/basic/tournaments/champions";
   
   // Make the API request
@@ -401,7 +401,7 @@ export async function getTournamentsChampions(requester: HttpRequester, cycles: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTournamentScore(requester: HttpRequester, payload: ScoreRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function tournamentsPostScoreBasic(requester: HttpRequester, payload: ScoreRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/tournaments/score";
   
   // Make the API request
@@ -429,7 +429,7 @@ export async function postTournamentScore(requester: HttpRequester, payload: Sco
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentsGroups(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetGroupsResponse>> {
+export async function tournamentsGetGroupsBasic(requester: HttpRequester, tournamentId: string, contentId?: string, cycle?: number, focus?: bigint | string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<GetGroupsResponse>> {
   let endpoint = "/basic/tournaments/groups";
   
   // Make the API request
@@ -460,7 +460,7 @@ export async function getTournamentsGroups(requester: HttpRequester, tournamentI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTournamentByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<TournamentClientView>> {
+export async function tournamentsGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<TournamentClientView>> {
   let endpoint = "/object/tournaments/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

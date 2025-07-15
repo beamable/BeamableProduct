@@ -16,7 +16,7 @@ import { SendReq } from '@/__generated__/schemas/SendReq';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postPushRegister(requester: HttpRequester, payload: RegisterReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
+export async function pushPostRegisterBasic(requester: HttpRequester, payload: RegisterReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
   let endpoint = "/basic/push/register";
   
   // Make the API request
@@ -40,7 +40,7 @@ export async function postPushRegister(requester: HttpRequester, payload: Regist
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postPushSend(requester: HttpRequester, payload: SendReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
+export async function pushPostSendBasic(requester: HttpRequester, payload: SendReq, gamertag?: string): Promise<HttpResponse<EmptyRsp>> {
   let endpoint = "/basic/push/send";
   
   // Make the API request

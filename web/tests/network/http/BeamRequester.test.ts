@@ -187,7 +187,7 @@ describe('BeamRequester', () => {
       headers: {},
       body: { access_token: 'at', refresh_token: 'nrt' },
     };
-    vi.spyOn(apis, 'postAuthToken').mockResolvedValue(
+    vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({
@@ -199,7 +199,7 @@ describe('BeamRequester', () => {
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(inner.request).toHaveBeenCalledTimes(2);
     expect(tokenStorage.getRefreshToken).toHaveBeenCalled();
-    expect(apis.postAuthToken).toHaveBeenCalledWith(requester, {
+    expect(apis.authPostTokenBasic).toHaveBeenCalledWith(requester, {
       grant_type: 'refresh_token',
       refresh_token: 'rt',
     });
@@ -240,7 +240,7 @@ describe('BeamRequester', () => {
     } as unknown as HttpRequester;
     (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
     const mockRefreshResponse = { status: 400, body: {} };
-    vi.spyOn(apis, 'postAuthToken').mockResolvedValue(
+    vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({

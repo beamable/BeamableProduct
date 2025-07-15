@@ -22,7 +22,7 @@ import { PUT } from '@/constants';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getEventPlayersByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EventPlayerView>> {
+export async function eventPlayersGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EventPlayerView>> {
   let endpoint = "/object/event-players/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -46,7 +46,7 @@ export async function getEventPlayersByObjectId(requester: HttpRequester, object
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postEventPlayersClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EventClaimRequest, gamertag?: string): Promise<HttpResponse<EventClaimResponse>> {
+export async function eventPlayersPostClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EventClaimRequest, gamertag?: string): Promise<HttpResponse<EventClaimResponse>> {
   let endpoint = "/object/event-players/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -71,7 +71,7 @@ export async function postEventPlayersClaimByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putEventPlayersScoreByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EventScoreRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function eventPlayersPutScoreByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EventScoreRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/event-players/{objectId}/score".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

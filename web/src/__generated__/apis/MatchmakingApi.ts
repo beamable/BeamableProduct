@@ -23,7 +23,7 @@ import { TicketReservationResponse } from '@/__generated__/schemas/TicketReserva
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getMatchmakingMatchesById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Match>> {
+export async function matchmakingGetMatchesById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Match>> {
   let endpoint = "/api/matchmaking/matches/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -49,7 +49,7 @@ export async function getMatchmakingMatchesById(requester: HttpRequester, id: st
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getMatchmakingTickets(requester: HttpRequester, IncludeInactive?: boolean, Limit?: number, Players?: string[], Skip?: number, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
+export async function matchmakingGetTickets(requester: HttpRequester, IncludeInactive?: boolean, Limit?: number, Players?: string[], Skip?: number, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
   let endpoint = "/api/matchmaking/tickets";
   
   // Make the API request
@@ -78,7 +78,7 @@ export async function getMatchmakingTickets(requester: HttpRequester, IncludeIna
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postMatchmakingTickets(requester: HttpRequester, payload: TicketReservationRequest, gamertag?: string): Promise<HttpResponse<TicketReservationResponse>> {
+export async function matchmakingPostTickets(requester: HttpRequester, payload: TicketReservationRequest, gamertag?: string): Promise<HttpResponse<TicketReservationResponse>> {
   let endpoint = "/api/matchmaking/tickets";
   
   // Make the API request
@@ -102,7 +102,7 @@ export async function postMatchmakingTickets(requester: HttpRequester, payload: 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getMatchmakingTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Ticket>> {
+export async function matchmakingGetTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Ticket>> {
   let endpoint = "/api/matchmaking/tickets/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -125,7 +125,7 @@ export async function getMatchmakingTicketsById(requester: HttpRequester, id: st
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteMatchmakingTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
+export async function matchmakingDeleteTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
   let endpoint = "/api/matchmaking/tickets/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request

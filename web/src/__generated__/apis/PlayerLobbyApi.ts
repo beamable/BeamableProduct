@@ -18,7 +18,7 @@ import { playerIdPlaceholder } from '@/__generated__/apis/constants';
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getPlayerLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function playersGetLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -41,7 +41,7 @@ export async function getPlayerLobbiesByPlayerId(requester: HttpRequester, playe
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deletePlayerLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
+export async function playersDeleteLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
   let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

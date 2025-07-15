@@ -5,8 +5,8 @@ import {
   PromiseWithResolversPolyfill,
 } from '@/utils/promiseWithResolvers';
 import {
-  getRealmsClientDefaults,
-  postAuthRefreshTokenV2,
+  authPostTokensRefreshToken,
+  realmsGetClientDefaultsBasic,
 } from '@/__generated__/apis';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
 
@@ -103,7 +103,9 @@ export class BeamWebSocket {
 
     if (this.url) return; // URL already set
 
-    const realmConfigResponse = await getRealmsClientDefaults(this.requester);
+    const realmConfigResponse = await realmsGetClientDefaultsBasic(
+      this.requester,
+    );
     const realmConfig = realmConfigResponse.body;
     if (realmConfig.websocketConfig.provider === 'pubnub') {
       // Web SDK does not support pubnub
@@ -123,11 +125,14 @@ export class BeamWebSocket {
 
     try {
       // Fetch the access token for the new connection
-      const accessTokenResponse = await postAuthRefreshTokenV2(this.requester, {
-        customerId: this.cid,
-        realmId: this.pid,
-        refreshToken: this.refreshToken,
-      });
+      const accessTokenResponse = await authPostTokensRefreshToken(
+        this.requester,
+        {
+          customerId: this.cid,
+          realmId: this.pid,
+          refreshToken: this.refreshToken,
+        },
+      );
       return accessTokenResponse.body.accessToken ?? null;
     } catch {
       return null;

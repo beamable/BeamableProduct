@@ -20,7 +20,7 @@ import { POST } from '@/constants';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCalendarClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CalendarClaimRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function calendarsPostClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CalendarClaimRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/calendars/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -44,7 +44,7 @@ export async function postCalendarClaimByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCalendarByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CalendarQueryResponse>> {
+export async function calendarsGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CalendarQueryResponse>> {
   let endpoint = "/object/calendars/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

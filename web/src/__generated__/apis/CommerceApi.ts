@@ -33,7 +33,7 @@ import { StatSubscriptionNotification } from '@/__generated__/schemas/StatSubscr
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCommerceCatalogLegacy(requester: HttpRequester, payload: SaveCatalogRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
+export async function commercePostCatalogLegacyBasic(requester: HttpRequester, payload: SaveCatalogRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
   let endpoint = "/basic/commerce/catalog/legacy";
   
   // Make the API request
@@ -57,7 +57,7 @@ export async function postCommerceCatalogLegacy(requester: HttpRequester, payloa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceCatalog(requester: HttpRequester, version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetCatalogResponse>> {
+export async function commerceGetCatalogBasic(requester: HttpRequester, version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetCatalogResponse>> {
   let endpoint = "/basic/commerce/catalog";
   
   // Make the API request
@@ -79,7 +79,7 @@ export async function getCommerceCatalog(requester: HttpRequester, version?: big
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceSkus(requester: HttpRequester, version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetSKUsResponse>> {
+export async function commerceGetSkusBasic(requester: HttpRequester, version?: bigint | string, gamertag?: string): Promise<HttpResponse<GetSKUsResponse>> {
   let endpoint = "/basic/commerce/skus";
   
   // Make the API request
@@ -104,7 +104,7 @@ export async function getCommerceSkus(requester: HttpRequester, version?: bigint
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCommerceSkus(requester: HttpRequester, payload: SaveSKUsRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
+export async function commercePostSkusBasic(requester: HttpRequester, payload: SaveSKUsRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
   let endpoint = "/basic/commerce/skus";
   
   // Make the API request
@@ -129,7 +129,7 @@ export async function postCommerceSkus(requester: HttpRequester, payload: SaveSK
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceByObjectId(requester: HttpRequester, objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
+export async function commerceGetByObjectId(requester: HttpRequester, objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
   let endpoint = "/object/commerce/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -155,7 +155,7 @@ export async function getCommerceByObjectId(requester: HttpRequester, objectId: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceCouponsCountByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GetTotalCouponResponse>> {
+export async function commerceGetCouponsCountByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GetTotalCouponResponse>> {
   let endpoint = "/object/commerce/{objectId}/coupons/count".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -179,7 +179,7 @@ export async function getCommerceCouponsCountByObjectId(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putCommerceListingsCooldownByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CooldownModifierRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function commercePutListingsCooldownByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CooldownModifierRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/listings/cooldown".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -206,7 +206,7 @@ export async function putCommerceListingsCooldownByObjectId(requester: HttpReque
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceOffersAdminByObjectId(requester: HttpRequester, objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
+export async function commerceGetOffersAdminByObjectId(requester: HttpRequester, objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
   let endpoint = "/object/commerce/{objectId}/offersAdmin".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -235,7 +235,7 @@ export async function getCommerceOffersAdminByObjectId(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCommercePurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function commercePostPurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/purchase".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -260,7 +260,7 @@ export async function postCommercePurchaseByObjectId(requester: HttpRequester, o
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putCommercePurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: ReportPurchaseRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
+export async function commercePutPurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: ReportPurchaseRequest, gamertag?: string): Promise<HttpResponse<ResultResponse>> {
   let endpoint = "/object/commerce/{objectId}/purchase".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -287,7 +287,7 @@ export async function putCommercePurchaseByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceListingsByObjectId(requester: HttpRequester, objectId: bigint | string, listing: string, store?: string, time?: string, gamertag?: string): Promise<HttpResponse<ActiveListingResponse>> {
+export async function commerceGetListingsByObjectId(requester: HttpRequester, objectId: bigint | string, listing: string, store?: string, time?: string, gamertag?: string): Promise<HttpResponse<ActiveListingResponse>> {
   let endpoint = "/object/commerce/{objectId}/listings".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -316,7 +316,7 @@ export async function getCommerceListingsByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteCommerceStatusByObjectId(requester: HttpRequester, objectId: bigint | string, payload: ClearStatusRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function commerceDeleteStatusByObjectId(requester: HttpRequester, objectId: bigint | string, payload: ClearStatusRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/status".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -341,7 +341,7 @@ export async function deleteCommerceStatusByObjectId(requester: HttpRequester, o
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCommerceCouponsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GiveCouponReq, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function commercePostCouponsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GiveCouponReq, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/coupons".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -366,7 +366,7 @@ export async function postCommerceCouponsByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCommerceStatsUpdateByObjectId(requester: HttpRequester, objectId: bigint | string, payload: StatSubscriptionNotification, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function commercePostStatsUpdateByObjectId(requester: HttpRequester, objectId: bigint | string, payload: StatSubscriptionNotification, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/stats/update".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -393,7 +393,7 @@ export async function postCommerceStatsUpdateByObjectId(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCommerceOffersByObjectId(requester: HttpRequester, objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
+export async function commerceGetOffersByObjectId(requester: HttpRequester, objectId: bigint | string, language?: string, stores?: string, time?: string, gamertag?: string): Promise<HttpResponse<GetActiveOffersResponse>> {
   let endpoint = "/object/commerce/{objectId}/offers".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

@@ -36,7 +36,7 @@ import { PUT } from '@/constants';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardsList(requester: HttpRequester, includePartitions?: boolean, limit?: number, prefix?: string, skip?: number, gamertag?: string): Promise<HttpResponse<LeaderboardListResponse>> {
+export async function leaderboardsGetListBasic(requester: HttpRequester, includePartitions?: boolean, limit?: number, prefix?: string, skip?: number, gamertag?: string): Promise<HttpResponse<LeaderboardListResponse>> {
   let endpoint = "/basic/leaderboards/list";
   
   // Make the API request
@@ -65,7 +65,7 @@ export async function getLeaderboardsList(requester: HttpRequester, includeParti
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardsPlayer(requester: HttpRequester, dbid: bigint | string, gamertag?: string): Promise<HttpResponse<ListLeaderBoardViewResponse>> {
+export async function leaderboardsGetPlayerBasic(requester: HttpRequester, dbid: bigint | string, gamertag?: string): Promise<HttpResponse<ListLeaderBoardViewResponse>> {
   let endpoint = "/basic/leaderboards/player";
   
   // Make the API request
@@ -92,7 +92,7 @@ export async function getLeaderboardsPlayer(requester: HttpRequester, dbid: bigi
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardsAssignment(requester: HttpRequester, boardId: string, joinBoard?: boolean, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
+export async function leaderboardsGetAssignmentBasic(requester: HttpRequester, boardId: string, joinBoard?: boolean, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
   let endpoint = "/basic/leaderboards/assignment";
   
   // Make the API request
@@ -118,7 +118,7 @@ export async function getLeaderboardsAssignment(requester: HttpRequester, boardI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardsUid(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<LeaderboardUidResponse>> {
+export async function leaderboardsGetUidBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<LeaderboardUidResponse>> {
   let endpoint = "/basic/leaderboards/uid";
   
   // Make the API request
@@ -141,7 +141,7 @@ export async function getLeaderboardsUid(requester: HttpRequester, gamertag?: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteLeaderboardEntriesByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsDeleteEntriesByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/entries".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -165,7 +165,7 @@ export async function deleteLeaderboardEntriesByObjectId(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardMembershipByObjectId(requester: HttpRequester, objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardMembershipResponse>> {
+export async function leaderboardsGetMembershipByObjectId(requester: HttpRequester, objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardMembershipResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/membership".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -192,7 +192,7 @@ export async function getLeaderboardMembershipByObjectId(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardRanksByObjectId(requester: HttpRequester, objectId: string, ids: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
+export async function leaderboardsGetRanksByObjectId(requester: HttpRequester, objectId: string, ids: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/ranks".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -219,7 +219,7 @@ export async function getLeaderboardRanksByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardPartitionByObjectId(requester: HttpRequester, objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardPartitionInfo>> {
+export async function leaderboardsGetPartitionByObjectId(requester: HttpRequester, objectId: string, playerId: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderboardPartitionInfo>> {
   let endpoint = "/object/leaderboards/{objectId}/partition".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -245,7 +245,7 @@ export async function getLeaderboardPartitionByObjectId(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardFriendsByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
+export async function leaderboardsGetFriendsByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/friends".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -269,7 +269,7 @@ export async function getLeaderboardFriendsByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postLeaderboardByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardCreateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsPostByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardCreateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -293,7 +293,7 @@ export async function postLeaderboardByObjectId(requester: HttpRequester, object
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteLeaderboardByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsDeleteByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -319,7 +319,7 @@ export async function deleteLeaderboardByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardMatchesByObjectId(requester: HttpRequester, objectId: string, poolSize: number, windowSize: number, windows: number, gamertag?: string): Promise<HttpResponse<MatchMakingMatchesPvpResponse>> {
+export async function leaderboardsGetMatchesByObjectId(requester: HttpRequester, objectId: string, poolSize: number, windowSize: number, windows: number, gamertag?: string): Promise<HttpResponse<MatchMakingMatchesPvpResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/matches".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -347,7 +347,7 @@ export async function getLeaderboardMatchesByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardAssignmentByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
+export async function leaderboardsGetAssignmentByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<LeaderboardAssignmentInfo>> {
   let endpoint = "/object/leaderboards/{objectId}/assignment".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -371,7 +371,7 @@ export async function getLeaderboardAssignmentByObjectId(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteLeaderboardAssignmentByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardRemoveCacheEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsDeleteAssignmentByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardRemoveCacheEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/assignment".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -396,7 +396,7 @@ export async function deleteLeaderboardAssignmentByObjectId(requester: HttpReque
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putLeaderboardEntryByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardAddRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsPutEntryByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardAddRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/entry".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -421,7 +421,7 @@ export async function putLeaderboardEntryByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteLeaderboardEntryByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardRemoveEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsDeleteEntryByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardRemoveEntryRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/entry".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -445,7 +445,7 @@ export async function deleteLeaderboardEntryByObjectId(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putLeaderboardFreezeByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsPutFreezeByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/freeze".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -470,7 +470,7 @@ export async function putLeaderboardFreezeByObjectId(requester: HttpRequester, o
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardDetailsByObjectId(requester: HttpRequester, objectId: string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<LeaderboardDetails>> {
+export async function leaderboardsGetDetailsByObjectId(requester: HttpRequester, objectId: string, from?: number, max?: number, gamertag?: string): Promise<HttpResponse<LeaderboardDetails>> {
   let endpoint = "/object/leaderboards/{objectId}/details".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -503,7 +503,7 @@ export async function getLeaderboardDetailsByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getLeaderboardViewByObjectId(requester: HttpRequester, objectId: string, focus?: bigint | string, friends?: boolean, from?: number, guild?: boolean, max?: number, outlier?: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
+export async function leaderboardsGetViewByObjectId(requester: HttpRequester, objectId: string, focus?: bigint | string, friends?: boolean, from?: number, guild?: boolean, max?: number, outlier?: bigint | string, gamertag?: string): Promise<HttpResponse<LeaderBoardViewResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/view".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -535,7 +535,7 @@ export async function getLeaderboardViewByObjectId(requester: HttpRequester, obj
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putLeaderboardSwapByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardSwapRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function leaderboardsPutSwapByObjectId(requester: HttpRequester, objectId: string, payload: LeaderboardSwapRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/leaderboards/{objectId}/swap".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

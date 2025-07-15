@@ -9,7 +9,7 @@ import type {
 
 describe('AuthService', () => {
   describe('signInAsGuest', () => {
-    it('calls postAuthToken on the auth API and returns the token response body', async () => {
+    it('calls authPostTokenBasic on the auth API and returns the token response body', async () => {
       const payload: TokenRequestWrapper = {
         grant_type: 'guest',
         context: {
@@ -24,7 +24,7 @@ describe('AuthService', () => {
         refresh_token: 'test-refresh-token',
         scopes: ['scope1', 'scope2'],
       };
-      vi.spyOn(apis, 'postAuthToken').mockResolvedValue({
+      vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -33,13 +33,16 @@ describe('AuthService', () => {
       const authService = new AuthService({ requester: mockRequester });
       const result = await authService.signInAsGuest();
 
-      expect(apis.postAuthToken).toHaveBeenCalledWith(mockRequester, payload);
+      expect(apis.authPostTokenBasic).toHaveBeenCalledWith(
+        mockRequester,
+        payload,
+      );
       expect(result).toEqual(mockBody);
     });
   });
 
   describe('refreshAuthToken', () => {
-    it('calls postAuthToken on the auth API with refresh_token payload and returns the token response body', async () => {
+    it('calls authPostTokenBasic on the auth API with refresh_token payload and returns the token response body', async () => {
       const refreshToken = 'existing-refresh-token';
       const payload: TokenRequestWrapper = {
         grant_type: 'refresh_token',
@@ -52,7 +55,7 @@ describe('AuthService', () => {
         refresh_token: 'new-refresh-token',
         scopes: ['scopeA'],
       };
-      vi.spyOn(apis, 'postAuthToken').mockResolvedValue({
+      vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -61,7 +64,10 @@ describe('AuthService', () => {
       const authService = new AuthService({ requester: mockRequester });
       const result = await authService.refreshAuthToken({ refreshToken });
 
-      expect(apis.postAuthToken).toHaveBeenCalledWith(mockRequester, payload);
+      expect(apis.authPostTokenBasic).toHaveBeenCalledWith(
+        mockRequester,
+        payload,
+      );
       expect(result).toEqual(mockBody);
     });
   });

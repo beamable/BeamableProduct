@@ -29,7 +29,7 @@ import { POST } from '@/constants';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getGroupUsersAvailabilityByObjectId(requester: HttpRequester, objectId: bigint | string, type: GroupType, name?: string, subGroup?: boolean, tag?: string, gamertag?: string): Promise<HttpResponse<AvailabilityResponse>> {
+export async function groupUsersGetAvailabilityByObjectId(requester: HttpRequester, objectId: bigint | string, type: GroupType, name?: string, subGroup?: boolean, tag?: string, gamertag?: string): Promise<HttpResponse<AvailabilityResponse>> {
   let endpoint = "/object/group-users/{objectId}/availability".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -58,7 +58,7 @@ export async function getGroupUsersAvailabilityByObjectId(requester: HttpRequest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getGroupUsersRecommendedByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
+export async function groupUsersGetRecommendedByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
   let endpoint = "/object/group-users/{objectId}/recommended".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -82,7 +82,7 @@ export async function getGroupUsersRecommendedByObjectId(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupUsersJoinByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
+export async function groupUsersPostJoinByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
   let endpoint = "/object/group-users/{objectId}/join".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -107,7 +107,7 @@ export async function postGroupUsersJoinByObjectId(requester: HttpRequester, obj
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteGroupUsersJoinByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
+export async function groupUsersDeleteJoinByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupMembershipRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
   let endpoint = "/object/group-users/{objectId}/join".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -132,7 +132,7 @@ export async function deleteGroupUsersJoinByObjectId(requester: HttpRequester, o
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupUsersByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupCreate, gamertag?: string): Promise<HttpResponse<GroupCreateResponse>> {
+export async function groupUsersPostGroupByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupCreate, gamertag?: string): Promise<HttpResponse<GroupCreateResponse>> {
   let endpoint = "/object/group-users/{objectId}/group".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -168,7 +168,7 @@ export async function postGroupUsersByObjectId(requester: HttpRequester, objectI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getGroupUsersSearchByObjectId(requester: HttpRequester, objectId: bigint | string, type: GroupType, enrollmentTypes?: string, hasSlots?: boolean, limit?: number, name?: string, offset?: number, scoreMax?: bigint | string, scoreMin?: bigint | string, sortField?: string, sortValue?: number, subGroup?: boolean, userScore?: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
+export async function groupUsersGetSearchByObjectId(requester: HttpRequester, objectId: bigint | string, type: GroupType, enrollmentTypes?: string, hasSlots?: boolean, limit?: number, name?: string, offset?: number, scoreMax?: bigint | string, scoreMin?: bigint | string, sortField?: string, sortValue?: number, subGroup?: boolean, userScore?: bigint | string, gamertag?: string): Promise<HttpResponse<GroupSearchResponse>> {
   let endpoint = "/object/group-users/{objectId}/search".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -205,7 +205,7 @@ export async function getGroupUsersSearchByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getGroupUsersByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupUser>> {
+export async function groupUsersGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<GroupUser>> {
   let endpoint = "/object/group-users/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

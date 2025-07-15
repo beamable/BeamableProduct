@@ -27,7 +27,7 @@ import { TransferRequest } from '@/__generated__/schemas/TransferRequest';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getInventoryItems(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ItemContentResponse>> {
+export async function inventoryGetItemsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ItemContentResponse>> {
   let endpoint = "/basic/inventory/items";
   
   // Make the API request
@@ -49,7 +49,7 @@ export async function getInventoryItems(requester: HttpRequester, gamertag?: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getInventoryCurrency(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<CurrencyContentResponse>> {
+export async function inventoryGetCurrencyBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<CurrencyContentResponse>> {
   let endpoint = "/basic/inventory/currency";
   
   // Make the API request
@@ -73,7 +73,7 @@ export async function getInventoryCurrency(requester: HttpRequester, gamertag?: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putInventoryPreviewByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<PreviewVipBonusResponse>> {
+export async function inventoryPutPreviewByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<PreviewVipBonusResponse>> {
   let endpoint = "/object/inventory/{objectId}/preview".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -97,7 +97,7 @@ export async function putInventoryPreviewByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getInventoryMultipliersByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MultipliersGetResponse>> {
+export async function inventoryGetMultipliersByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MultipliersGetResponse>> {
   let endpoint = "/object/inventory/{objectId}/multipliers".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -121,7 +121,7 @@ export async function getInventoryMultipliersByObjectId(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteInventoryTransactionByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EndTransactionRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function inventoryDeleteTransactionByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EndTransactionRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/inventory/{objectId}/transaction".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -146,7 +146,7 @@ export async function deleteInventoryTransactionByObjectId(requester: HttpReques
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getInventoryByObjectId(requester: HttpRequester, objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<InventoryView>> {
+export async function inventoryGetByObjectId(requester: HttpRequester, objectId: bigint | string, scope?: string, gamertag?: string): Promise<HttpResponse<InventoryView>> {
   let endpoint = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -173,7 +173,7 @@ export async function getInventoryByObjectId(requester: HttpRequester, objectId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postInventoryByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryQueryRequest, gamertag?: string): Promise<HttpResponse<InventoryView>> {
+export async function inventoryPostByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryQueryRequest, gamertag?: string): Promise<HttpResponse<InventoryView>> {
   let endpoint = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -198,7 +198,7 @@ export async function postInventoryByObjectId(requester: HttpRequester, objectId
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putInventoryByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function inventoryPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -222,7 +222,7 @@ export async function putInventoryByObjectId(requester: HttpRequester, objectId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putInventoryProxyReloadByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function inventoryPutProxyReloadByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/inventory/{objectId}/proxy/reload".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -246,7 +246,7 @@ export async function putInventoryProxyReloadByObjectId(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putInventoryTransferByObjectId(requester: HttpRequester, objectId: bigint | string, payload: TransferRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function inventoryPutTransferByObjectId(requester: HttpRequester, objectId: bigint | string, payload: TransferRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/inventory/{objectId}/transfer".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

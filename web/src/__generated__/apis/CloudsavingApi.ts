@@ -24,7 +24,7 @@ import { URLSResponse } from '@/__generated__/schemas/URLSResponse';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCloudsavingDataReplace(requester: HttpRequester, payload: ReplaceObjectsRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
+export async function cloudsavingPostDataReplaceBasic(requester: HttpRequester, payload: ReplaceObjectsRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
   let endpoint = "/basic/cloudsaving/data/replace";
   
   // Make the API request
@@ -48,7 +48,7 @@ export async function postCloudsavingDataReplace(requester: HttpRequester, paylo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteCloudsavingData(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function cloudsavingDeleteDataBasic(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/cloudsaving/data";
   
   // Make the API request
@@ -72,7 +72,7 @@ export async function deleteCloudsavingData(requester: HttpRequester, payload: O
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCloudsavingDataDownloadURL(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
+export async function cloudsavingPostDataDownloadURLBasic(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
   let endpoint = "/basic/cloudsaving/data/downloadURL";
   
   // Make the API request
@@ -96,7 +96,7 @@ export async function postCloudsavingDataDownloadURL(requester: HttpRequester, p
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCloudsavingDataDownloadURLFromPortal(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
+export async function cloudsavingPostDataDownloadURLFromPortalBasic(requester: HttpRequester, payload: ObjectRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
   let endpoint = "/basic/cloudsaving/data/downloadURLFromPortal";
   
   // Make the API request
@@ -120,7 +120,7 @@ export async function postCloudsavingDataDownloadURLFromPortal(requester: HttpRe
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putCloudsavingDataMove(requester: HttpRequester, payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
+export async function cloudsavingPutDataMoveBasic(requester: HttpRequester, payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
   let endpoint = "/basic/cloudsaving/data/move";
   
   // Make the API request
@@ -144,7 +144,7 @@ export async function putCloudsavingDataMove(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putCloudsavingDataMoveFromPortal(requester: HttpRequester, payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
+export async function cloudsavingPutDataMoveFromPortalBasic(requester: HttpRequester, payload: PlayerBasicCloudDataRequest, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
   let endpoint = "/basic/cloudsaving/data/moveFromPortal";
   
   // Make the API request
@@ -168,7 +168,7 @@ export async function putCloudsavingDataMoveFromPortal(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCloudsavingDataUploadURLFromPortal(requester: HttpRequester, payload: UploadRequestsFromPortal, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
+export async function cloudsavingPostDataUploadURLFromPortalBasic(requester: HttpRequester, payload: UploadRequestsFromPortal, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
   let endpoint = "/basic/cloudsaving/data/uploadURLFromPortal";
   
   // Make the API request
@@ -192,7 +192,7 @@ export async function postCloudsavingDataUploadURLFromPortal(requester: HttpRequ
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putCloudsavingDataCommitManifest(requester: HttpRequester, payload: UploadRequests, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
+export async function cloudsavingPutDataCommitManifestBasic(requester: HttpRequester, payload: UploadRequests, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
   let endpoint = "/basic/cloudsaving/data/commitManifest";
   
   // Make the API request
@@ -216,7 +216,7 @@ export async function putCloudsavingDataCommitManifest(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postCloudsavingDataUploadURL(requester: HttpRequester, payload: UploadRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
+export async function cloudsavingPostDataUploadURLBasic(requester: HttpRequester, payload: UploadRequests, gamertag?: string): Promise<HttpResponse<URLSResponse>> {
   let endpoint = "/basic/cloudsaving/data/uploadURL";
   
   // Make the API request
@@ -236,7 +236,7 @@ export async function postCloudsavingDataUploadURL(requester: HttpRequester, pay
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getCloudsaving(requester: HttpRequester, playerId?: bigint | string, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
+export async function cloudsavingGetBasic(requester: HttpRequester, playerId?: bigint | string, gamertag?: string): Promise<HttpResponse<CloudsavingBasicManifest>> {
   let endpoint = "/basic/cloudsaving/";
   
   // Make the API request

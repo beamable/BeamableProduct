@@ -2,10 +2,10 @@ import { AnnouncementView } from '@/__generated__/schemas';
 import { Refreshable } from '@/services/types/Refreshable';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import {
-  deleteAnnouncementByObjectId,
-  getAnnouncementByObjectId,
-  postAnnouncementClaimByObjectId,
-  putAnnouncementReadByObjectId,
+  announcementsDeleteByObjectId,
+  announcementsGetByObjectId,
+  announcementsPostClaimByObjectId,
+  announcementsPutReadByObjectId,
 } from '@/__generated__/apis';
 
 export interface AnnouncementIdParams {
@@ -50,7 +50,7 @@ export class AnnouncementsService
    * @throws {BeamError} If the request fails.
    */
   async list(): Promise<AnnouncementView[]> {
-    const { body } = await getAnnouncementByObjectId(
+    const { body } = await announcementsGetByObjectId(
       this.requester,
       this.accountId,
       false,
@@ -85,7 +85,7 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await postAnnouncementClaimByObjectId(
+    await announcementsPostClaimByObjectId(
       this.requester,
       this.accountId,
       { announcements: ids },
@@ -122,7 +122,7 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await putAnnouncementReadByObjectId(
+    await announcementsPutReadByObjectId(
       this.requester,
       this.accountId,
       { announcements: ids },
@@ -159,7 +159,7 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await deleteAnnouncementByObjectId(
+    await announcementsDeleteByObjectId(
       this.requester,
       this.accountId,
       { announcements: ids },

@@ -28,7 +28,7 @@ import { PUT } from '@/constants';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementsListTags(requester: HttpRequester, tagNameFilter?: string, gamertag?: string): Promise<HttpResponse<ListTagsResponse>> {
+export async function announcementsGetListTagsBasic(requester: HttpRequester, tagNameFilter?: string, gamertag?: string): Promise<HttpResponse<ListTagsResponse>> {
   let endpoint = "/basic/announcements/list/tags";
   
   // Make the API request
@@ -53,7 +53,7 @@ export async function getAnnouncementsListTags(requester: HttpRequester, tagName
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementsList(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+export async function announcementsGetListBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
   let endpoint = "/basic/announcements/list";
   
   // Make the API request
@@ -76,7 +76,7 @@ export async function getAnnouncementsList(requester: HttpRequester, gamertag?: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementsSearch(requester: HttpRequester, date?: string, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+export async function announcementsGetSearchBasic(requester: HttpRequester, date?: string, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
   let endpoint = "/basic/announcements/search";
   
   // Make the API request
@@ -101,7 +101,7 @@ export async function getAnnouncementsSearch(requester: HttpRequester, date?: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementsListDefinitions(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ListDefinitionsResponse>> {
+export async function announcementsGetListDefinitionsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ListDefinitionsResponse>> {
   let endpoint = "/basic/announcements/list/definitions";
   
   // Make the API request
@@ -124,7 +124,7 @@ export async function getAnnouncementsListDefinitions(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postAnnouncement(requester: HttpRequester, payload: AnnouncementDto, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function announcementsPostBasic(requester: HttpRequester, payload: AnnouncementDto, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/announcements/";
   
   // Make the API request
@@ -148,7 +148,7 @@ export async function postAnnouncement(requester: HttpRequester, payload: Announ
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteAnnouncement(requester: HttpRequester, payload: DeleteAnnouncementRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function announcementsDeleteBasic(requester: HttpRequester, payload: DeleteAnnouncementRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/announcements/";
   
   // Make the API request
@@ -171,7 +171,7 @@ export async function deleteAnnouncement(requester: HttpRequester, payload: Dele
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementsContent(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+export async function announcementsGetContentBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
   let endpoint = "/basic/announcements/content";
   
   // Make the API request
@@ -195,7 +195,7 @@ export async function getAnnouncementsContent(requester: HttpRequester, gamertag
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putAnnouncementReadByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function announcementsPutReadByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/announcements/{objectId}/read".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -220,7 +220,7 @@ export async function putAnnouncementReadByObjectId(requester: HttpRequester, ob
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postAnnouncementClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function announcementsPostClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/announcements/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -244,7 +244,7 @@ export async function postAnnouncementClaimByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementRawByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
+export async function announcementsGetRawByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
   let endpoint = "/object/announcements/{objectId}/raw".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -268,7 +268,7 @@ export async function getAnnouncementRawByObjectId(requester: HttpRequester, obj
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getAnnouncementByObjectId(requester: HttpRequester, objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
+export async function announcementsGetByObjectId(requester: HttpRequester, objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
   let endpoint = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -295,7 +295,7 @@ export async function getAnnouncementByObjectId(requester: HttpRequester, object
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteAnnouncementByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function announcementsDeleteByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

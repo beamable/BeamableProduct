@@ -3,7 +3,7 @@ import { HttpRequest } from './types/HttpRequest';
 import { HttpResponse } from './types/HttpResponse';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { postAuthToken } from '@/__generated__/apis';
+import { authPostTokenBasic } from '@/__generated__/apis';
 import {
   RefreshAccessTokenError,
   NoRefreshTokenError,
@@ -150,7 +150,7 @@ export class BeamRequester implements HttpRequester {
       throw new NoRefreshTokenError();
     }
 
-    const response = await postAuthToken(this, {
+    const response = await authPostTokenBasic(this, {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     });

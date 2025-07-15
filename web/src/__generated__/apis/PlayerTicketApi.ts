@@ -16,7 +16,7 @@ import { TicketQueryResponse } from '@/__generated__/schemas/TicketQueryResponse
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getPlayerMatchmakingTicketsByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
+export async function playersGetMatchmakingTicketsByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
   let endpoint = "/api/players/{playerId}/matchmaking/tickets".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

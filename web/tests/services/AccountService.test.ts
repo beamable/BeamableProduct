@@ -7,7 +7,7 @@ import { PlayerService } from '@/services/PlayerService';
 
 describe('AccountService', () => {
   describe('current', () => {
-    it('calls getAccountsMe on the accounts API and returns the account player view', async () => {
+    it('calls accountsGetMeBasic on the accounts API and returns the account player view', async () => {
       const mockBody: AccountPlayerView = {
         deviceIds: ['device1'],
         id: 'player-id',
@@ -17,7 +17,7 @@ describe('AccountService', () => {
         external: [],
         language: 'en',
       };
-      vi.spyOn(apis, 'getAccountsMe').mockResolvedValue({
+      vi.spyOn(apis, 'accountsGetMeBasic').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -30,7 +30,10 @@ describe('AccountService', () => {
       });
       const result = await accountService.current();
 
-      expect(apis.getAccountsMe).toHaveBeenCalledWith(mockRequester, undefined);
+      expect(apis.accountsGetMeBasic).toHaveBeenCalledWith(
+        mockRequester,
+        undefined,
+      );
       expect(result).toEqual(mockBody);
     });
   });

@@ -72,7 +72,7 @@ import { SupportedFederationsResponse } from '@/__generated__/schemas/SupportedF
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoManifests(requester: HttpRequester, payload: BeamoV2PostManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2ManifestChecksum>> {
+export async function beamoPostManifests(requester: HttpRequester, payload: BeamoV2PostManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2ManifestChecksum>> {
   let endpoint = "/api/beamo/manifests";
   
   // Make the API request
@@ -98,7 +98,7 @@ export async function postApiBeamoManifests(requester: HttpRequester, payload: B
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoManifests(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoV2GetManifestsResponse>> {
+export async function beamoGetManifests(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoV2GetManifestsResponse>> {
   let endpoint = "/api/beamo/manifests";
   
   // Make the API request
@@ -127,7 +127,7 @@ export async function getApiBeamoManifests(requester: HttpRequester, archived?: 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoManifestsByManifestId(requester: HttpRequester, manifestId: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
+export async function beamoGetManifestsByManifestId(requester: HttpRequester, manifestId: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
   let endpoint = "/api/beamo/manifests/{manifestId}".replace(manifestIdPlaceholder, endpointEncoder(manifestId));
   
   // Make the API request
@@ -153,7 +153,7 @@ export async function getApiBeamoManifestsByManifestId(requester: HttpRequester,
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoManifestsCurrent(requester: HttpRequester, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
+export async function beamoGetManifestsCurrent(requester: HttpRequester, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
   let endpoint = "/api/beamo/manifests/current";
   
   // Make the API request
@@ -178,7 +178,7 @@ export async function getApiBeamoManifestsCurrent(requester: HttpRequester, arch
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoManifestsCurrent(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPostManifestsCurrent(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/manifests/current";
   
   // Make the API request
@@ -204,7 +204,7 @@ export async function postApiBeamoManifestsCurrent(requester: HttpRequester, gam
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoManifestsPromote(requester: HttpRequester, payload: BeamoV2PromoteBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPostManifestsPromote(requester: HttpRequester, payload: BeamoV2PromoteBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/manifests/promote";
   
   // Make the API request
@@ -227,7 +227,7 @@ export async function postApiBeamoManifestsPromote(requester: HttpRequester, pay
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoTemplates(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetTemplatesResponse>> {
+export async function beamoGetTemplates(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetTemplatesResponse>> {
   let endpoint = "/api/beamo/templates";
   
   // Make the API request
@@ -249,7 +249,7 @@ export async function getApiBeamoTemplates(requester: HttpRequester, gamertag?: 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoStatus(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetStatusResponse>> {
+export async function beamoGetStatus(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetStatusResponse>> {
   let endpoint = "/api/beamo/status";
   
   // Make the API request
@@ -271,7 +271,7 @@ export async function getApiBeamoStatus(requester: HttpRequester, gamertag?: str
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoRegistryUri(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
+export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
   let endpoint = "/api/beamo/registry-uri";
   
   // Make the API request
@@ -294,7 +294,7 @@ export async function getApiBeamoRegistryUri(requester: HttpRequester, gamertag?
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoServicesRegistrations(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2ServiceRegistrationResponse>> {
+export async function beamoPostServicesRegistrations(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2ServiceRegistrationResponse>> {
   let endpoint = "/api/beamo/services/registrations";
   
   // Make the API request
@@ -318,7 +318,7 @@ export async function postApiBeamoServicesRegistrations(requester: HttpRequester
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoServicesFederation(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2FederationRegistrationResponse>> {
+export async function beamoPostServicesFederation(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2FederationRegistrationResponse>> {
   let endpoint = "/api/beamo/services/federation";
   
   // Make the API request
@@ -343,7 +343,7 @@ export async function postApiBeamoServicesFederation(requester: HttpRequester, p
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putApiBeamoServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPutServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/federation/traffic".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -368,7 +368,7 @@ export async function putApiBeamoServicesFederationTrafficByServiceName(requeste
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteApiBeamoServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2DeleteRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoDeleteServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2DeleteRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/federation/traffic".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -393,7 +393,7 @@ export async function deleteApiBeamoServicesFederationTrafficByServiceName(reque
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoServicesMetricsRequestByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2GetMetricsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
+export async function beamoPostServicesMetricsRequestByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2GetMetricsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
   let endpoint = "/api/beamo/services/{serviceName}/metrics-request".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -418,7 +418,7 @@ export async function postApiBeamoServicesMetricsRequestByServiceName(requester:
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postApiBeamoServicesLogsQueryByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2StartServiceLogsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2QueryResponse>> {
+export async function beamoPostServicesLogsQueryByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2StartServiceLogsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2QueryResponse>> {
   let endpoint = "/api/beamo/services/{serviceName}/logs/query".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -442,7 +442,7 @@ export async function postApiBeamoServicesLogsQueryByServiceName(requester: Http
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteApiBeamoServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse>> {
+export async function beamoDeleteServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse>> {
   let endpoint = "/api/beamo/services/logs/query/{queryId}".replace(queryIdPlaceholder, endpointEncoder(queryId));
   
   // Make the API request
@@ -465,7 +465,7 @@ export async function deleteApiBeamoServicesLogsQueryByQueryId(requester: HttpRe
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
+export async function beamoGetServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
   let endpoint = "/api/beamo/services/logs/query/{queryId}".replace(queryIdPlaceholder, endpointEncoder(queryId));
   
   // Make the API request
@@ -490,7 +490,7 @@ export async function getApiBeamoServicesLogsQueryByQueryId(requester: HttpReque
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoServicesSecret(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetServiceSecretResponse>> {
+export async function beamoGetServicesSecret(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetServiceSecretResponse>> {
   let endpoint = "/api/beamo/services/secret";
   
   // Make the API request
@@ -512,7 +512,7 @@ export async function getApiBeamoServicesSecret(requester: HttpRequester, gamert
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoStorageConnection(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2ConnectionStringResponse>> {
+export async function beamoGetStorageConnection(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2ConnectionStringResponse>> {
   let endpoint = "/api/beamo/storage/connection";
   
   // Make the API request
@@ -539,7 +539,7 @@ export async function getApiBeamoStorageConnection(requester: HttpRequester, gam
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getApiBeamoStoragePerformanceByStorageObjectName(requester: HttpRequester, storageObjectName: string, EndTime?: Date, Granularity?: string, Period?: string, StartTime?: Date, gamertag?: string): Promise<HttpResponse<BeamoV2StoragePerformance>> {
+export async function beamoGetStoragePerformanceByStorageObjectName(requester: HttpRequester, storageObjectName: string, EndTime?: Date, Granularity?: string, Period?: string, StartTime?: Date, gamertag?: string): Promise<HttpResponse<BeamoV2StoragePerformance>> {
   let endpoint = "/api/beamo/storage/{storageObjectName}/performance".replace(storageObjectNamePlaceholder, endpointEncoder(storageObjectName));
   
   // Make the API request
@@ -568,7 +568,7 @@ export async function getApiBeamoStoragePerformanceByStorageObjectName(requester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoMicroserviceRegistrations(requester: HttpRequester, payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<MicroserviceRegistrationsResponse>> {
+export async function beamoPostMicroserviceRegistrationsBasic(requester: HttpRequester, payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<MicroserviceRegistrationsResponse>> {
   let endpoint = "/basic/beamo/microservice/registrations";
   
   // Make the API request
@@ -592,7 +592,7 @@ export async function postBeamoMicroserviceRegistrations(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putBeamoMicroserviceFederationTraffic(requester: HttpRequester, payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function beamoPutMicroserviceFederationTrafficBasic(requester: HttpRequester, payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/beamo/microservice/federation/traffic";
   
   // Make the API request
@@ -616,7 +616,7 @@ export async function putBeamoMicroserviceFederationTraffic(requester: HttpReque
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteBeamoMicroserviceFederationTraffic(requester: HttpRequester, payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function beamoDeleteMicroserviceFederationTrafficBasic(requester: HttpRequester, payload: MicroserviceRegistrationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/beamo/microservice/federation/traffic";
   
   // Make the API request
@@ -640,7 +640,7 @@ export async function deleteBeamoMicroserviceFederationTraffic(requester: HttpRe
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoImageUrls(requester: HttpRequester, payload: GetServiceURLsRequest, gamertag?: string): Promise<HttpResponse<PreSignedUrlsResponse>> {
+export async function beamoPostImageUrlsBasic(requester: HttpRequester, payload: GetServiceURLsRequest, gamertag?: string): Promise<HttpResponse<PreSignedUrlsResponse>> {
   let endpoint = "/basic/beamo/image/urls";
   
   // Make the API request
@@ -664,7 +664,7 @@ export async function postBeamoImageUrls(requester: HttpRequester, payload: GetS
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoMetricsUrl(requester: HttpRequester, payload: GetMetricsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
+export async function beamoPostMetricsUrlBasic(requester: HttpRequester, payload: GetMetricsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
   let endpoint = "/basic/beamo/metricsUrl";
   
   // Make the API request
@@ -687,7 +687,7 @@ export async function postBeamoMetricsUrl(requester: HttpRequester, payload: Get
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoMicroserviceSecret(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<MicroserviceSecretResponse>> {
+export async function beamoGetMicroserviceSecretBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<MicroserviceSecretResponse>> {
   let endpoint = "/basic/beamo/microservice/secret";
   
   // Make the API request
@@ -710,7 +710,7 @@ export async function getBeamoMicroserviceSecret(requester: HttpRequester, gamer
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoQueryLogsResult(requester: HttpRequester, payload: Query, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
+export async function beamoPostQueryLogsResultBasic(requester: HttpRequester, payload: Query, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
   let endpoint = "/basic/beamo/queryLogs/result";
   
   // Make the API request
@@ -738,7 +738,7 @@ export async function postBeamoQueryLogsResult(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoStoragePerformance(requester: HttpRequester, granularity: string, storageObjectName: string, endDate?: string, period?: string, startDate?: string, gamertag?: string): Promise<HttpResponse<PerformanceResponse>> {
+export async function beamoGetStoragePerformanceBasic(requester: HttpRequester, granularity: string, storageObjectName: string, endDate?: string, period?: string, startDate?: string, gamertag?: string): Promise<HttpResponse<PerformanceResponse>> {
   let endpoint = "/basic/beamo/storage/performance";
   
   // Make the API request
@@ -770,7 +770,7 @@ export async function getBeamoStoragePerformance(requester: HttpRequester, granu
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoManifests(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoBasicGetManifestsResponse>> {
+export async function beamoGetManifestsBasic(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoBasicGetManifestsResponse>> {
   let endpoint = "/basic/beamo/manifests";
   
   // Make the API request
@@ -797,7 +797,7 @@ export async function getBeamoManifests(requester: HttpRequester, archived?: boo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoTemplates(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetTemplatesResponse>> {
+export async function beamoGetTemplatesBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetTemplatesResponse>> {
   let endpoint = "/basic/beamo/templates";
   
   // Make the API request
@@ -820,7 +820,7 @@ export async function getBeamoTemplates(requester: HttpRequester, gamertag?: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoQueryLogs(requester: HttpRequester, payload: GetLogsInsightUrlRequest, gamertag?: string): Promise<HttpResponse<Query>> {
+export async function beamoPostQueryLogsBasic(requester: HttpRequester, payload: GetLogsInsightUrlRequest, gamertag?: string): Promise<HttpResponse<Query>> {
   let endpoint = "/basic/beamo/queryLogs";
   
   // Make the API request
@@ -844,7 +844,7 @@ export async function postBeamoQueryLogs(requester: HttpRequester, payload: GetL
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteBeamoQueryLogs(requester: HttpRequester, payload: Query, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function beamoDeleteQueryLogsBasic(requester: HttpRequester, payload: Query, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/beamo/queryLogs";
   
   // Make the API request
@@ -868,7 +868,7 @@ export async function deleteBeamoQueryLogs(requester: HttpRequester, payload: Qu
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoLogsUrl(requester: HttpRequester, payload: GetLogsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
+export async function beamoPostLogsUrlBasic(requester: HttpRequester, payload: GetLogsUrlRequest, gamertag?: string): Promise<HttpResponse<GetSignedUrlResponse>> {
   let endpoint = "/basic/beamo/logsUrl";
   
   // Make the API request
@@ -892,7 +892,7 @@ export async function postBeamoLogsUrl(requester: HttpRequester, payload: GetLog
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putBeamoImageCommit(requester: HttpRequester, payload: CommitImageRequest, gamertag?: string): Promise<HttpResponse<LambdaResponse>> {
+export async function beamoPutImageCommitBasic(requester: HttpRequester, payload: CommitImageRequest, gamertag?: string): Promise<HttpResponse<LambdaResponse>> {
   let endpoint = "/basic/beamo/image/commit";
   
   // Make the API request
@@ -915,7 +915,7 @@ export async function putBeamoImageCommit(requester: HttpRequester, payload: Com
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoUploadAPI(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetLambdaURI>> {
+export async function beamoGetUploadAPIBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetLambdaURI>> {
   let endpoint = "/basic/beamo/uploadAPI";
   
   // Make the API request
@@ -937,7 +937,7 @@ export async function getBeamoUploadAPI(requester: HttpRequester, gamertag?: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoStatus(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetStatusResponse>> {
+export async function beamoGetStatusBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetStatusResponse>> {
   let endpoint = "/basic/beamo/status";
   
   // Make the API request
@@ -960,7 +960,7 @@ export async function getBeamoStatus(requester: HttpRequester, gamertag?: string
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoManifestCurrent(requester: HttpRequester, archived?: boolean, gamertag?: string): Promise<HttpResponse<GetCurrentManifestResponse>> {
+export async function beamoGetManifestCurrentBasic(requester: HttpRequester, archived?: boolean, gamertag?: string): Promise<HttpResponse<GetCurrentManifestResponse>> {
   let endpoint = "/basic/beamo/manifest/current";
   
   // Make the API request
@@ -986,7 +986,7 @@ export async function getBeamoManifestCurrent(requester: HttpRequester, archived
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoManifestPull(requester: HttpRequester, payload: PullBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoBasicManifestChecksums>> {
+export async function beamoPostManifestPullBasic(requester: HttpRequester, payload: PullBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoBasicManifestChecksums>> {
   let endpoint = "/basic/beamo/manifest/pull";
   
   // Make the API request
@@ -1009,7 +1009,7 @@ export async function postBeamoManifestPull(requester: HttpRequester, payload: P
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoRegistry(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetElasticContainerRegistryURI>> {
+export async function beamoGetRegistryBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetElasticContainerRegistryURI>> {
   let endpoint = "/basic/beamo/registry";
   
   // Make the API request
@@ -1031,7 +1031,7 @@ export async function getBeamoRegistry(requester: HttpRequester, gamertag?: stri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoManifestDeploy(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function beamoPostManifestDeployBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/beamo/manifest/deploy";
   
   // Make the API request
@@ -1054,7 +1054,7 @@ export async function postBeamoManifestDeploy(requester: HttpRequester, gamertag
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoMicroserviceFederation(requester: HttpRequester, payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<SupportedFederationsResponse>> {
+export async function beamoPostMicroserviceFederationBasic(requester: HttpRequester, payload: MicroserviceRegistrationsQuery, gamertag?: string): Promise<HttpResponse<SupportedFederationsResponse>> {
   let endpoint = "/basic/beamo/microservice/federation";
   
   // Make the API request
@@ -1077,7 +1077,7 @@ export async function postBeamoMicroserviceFederation(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoStorageConnection(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ConnectionString>> {
+export async function beamoGetStorageConnectionBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ConnectionString>> {
   let endpoint = "/basic/beamo/storage/connection";
   
   // Make the API request
@@ -1101,7 +1101,7 @@ export async function getBeamoStorageConnection(requester: HttpRequester, gamert
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getBeamoManifest(requester: HttpRequester, id: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<GetManifestResponse>> {
+export async function beamoGetManifestBasic(requester: HttpRequester, id: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<GetManifestResponse>> {
   let endpoint = "/basic/beamo/manifest";
   
   // Make the API request
@@ -1128,7 +1128,7 @@ export async function getBeamoManifest(requester: HttpRequester, id: string, arc
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postBeamoManifest(requester: HttpRequester, payload: PostManifestRequest, gamertag?: string): Promise<HttpResponse<PostManifestResponse>> {
+export async function beamoPostManifestBasic(requester: HttpRequester, payload: PostManifestRequest, gamertag?: string): Promise<HttpResponse<PostManifestResponse>> {
   let endpoint = "/basic/beamo/manifest";
   
   // Make the API request

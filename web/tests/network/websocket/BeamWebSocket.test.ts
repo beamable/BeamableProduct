@@ -21,13 +21,13 @@ vi.mock('@/utils/promiseWithResolvers', () => {
 
 // mock generated API calls for token refresh and realm config
 vi.mock('@/__generated__/apis', () => {
-  const postAuthRefreshTokenV2 = vi
+  const authPostTokensRefreshToken = vi
     .fn()
     .mockResolvedValue({ body: { accessToken: 'access-from-refresh' } });
-  const getRealmsClientDefaults = vi.fn().mockResolvedValue({
+  const realmsGetClientDefaultsBasic = vi.fn().mockResolvedValue({
     body: { websocketConfig: { provider: 'beamable', uri: 'ws://test' } },
   });
-  return { postAuthRefreshTokenV2, getRealmsClientDefaults };
+  return { authPostTokensRefreshToken, realmsGetClientDefaultsBasic };
 });
 
 const fakeRequester: any = {};
@@ -94,7 +94,7 @@ describe('BeamWebSocket', () => {
 
     await expect(connectPromise).resolves.toBeUndefined();
     // refresh token endpoint was called once
-    expect(apis.postAuthRefreshTokenV2).toHaveBeenCalledTimes(1);
+    expect(apis.authPostTokensRefreshToken).toHaveBeenCalledTimes(1);
   });
 
   it('disconnect() closes the socket and can be called safely twice', async () => {
@@ -122,7 +122,7 @@ describe('BeamWebSocket', () => {
     const ws = new BeamWebSocket();
 
     // patch the refresh-token API call to return null
-    vi.spyOn(apis, 'postAuthRefreshTokenV2').mockResolvedValueOnce({
+    vi.spyOn(apis, 'authPostTokensRefreshToken').mockResolvedValueOnce({
       status: 200,
       headers: {},
       body: { accessToken: null },
@@ -160,7 +160,7 @@ describe('BeamWebSocket', () => {
     await vi.runAllTimersAsync();
 
     // check that the connect() promise resolves again
-    expect(apis.postAuthRefreshTokenV2).toHaveBeenCalledTimes(2);
+    expect(apis.authPostTokensRefreshToken).toHaveBeenCalledTimes(2);
     await expect(connectPromise).resolves.toBeUndefined();
   });
 });

@@ -40,7 +40,7 @@ import { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentManifestsUnarchive(requester: HttpRequester, payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function contentPostManifestsUnarchiveBasic(requester: HttpRequester, payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/content/manifests/unarchive";
   
   // Make the API request
@@ -64,7 +64,7 @@ export async function postContentManifestsUnarchive(requester: HttpRequester, pa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentManifestPull(requester: HttpRequester, payload: PullManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentPostManifestPullBasic(requester: HttpRequester, payload: PullManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
   let endpoint = "/basic/content/manifest/pull";
   
   // Make the API request
@@ -89,7 +89,7 @@ export async function postContentManifestPull(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestHistory(requester: HttpRequester, id?: string, limit?: number, gamertag?: string): Promise<HttpResponse<GetManifestHistoryResponse>> {
+export async function contentGetManifestHistoryBasic(requester: HttpRequester, id?: string, limit?: number, gamertag?: string): Promise<HttpResponse<GetManifestHistoryResponse>> {
   let endpoint = "/basic/content/manifest/history";
   
   // Make the API request
@@ -116,7 +116,7 @@ export async function getContentManifestHistory(requester: HttpRequester, id?: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentBinary(requester: HttpRequester, payload: SaveBinaryRequest, gamertag?: string): Promise<HttpResponse<SaveBinaryResponse>> {
+export async function contentPostBinaryBasic(requester: HttpRequester, payload: SaveBinaryRequest, gamertag?: string): Promise<HttpResponse<SaveBinaryResponse>> {
   let endpoint = "/basic/content/binary";
   
   // Make the API request
@@ -140,7 +140,7 @@ export async function postContentBinary(requester: HttpRequester, payload: SaveB
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentManifestsPull(requester: HttpRequester, payload: PullAllManifestsRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
+export async function contentPostManifestsPullBasic(requester: HttpRequester, payload: PullAllManifestsRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
   let endpoint = "/basic/content/manifests/pull";
   
   // Make the API request
@@ -165,7 +165,7 @@ export async function postContentManifestsPull(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContent(requester: HttpRequester, contentId: string, version: string, gamertag?: string): Promise<HttpResponse<ContentOrText>> {
+export async function contentGetBasic(requester: HttpRequester, contentId: string, version: string, gamertag?: string): Promise<HttpResponse<ContentOrText>> {
   let endpoint = "/basic/content/content";
   
   // Make the API request
@@ -191,7 +191,7 @@ export async function getContent(requester: HttpRequester, contentId: string, ve
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentLocalizations(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetLocalizationsResponse>> {
+export async function contentGetLocalizationsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<GetLocalizationsResponse>> {
   let endpoint = "/basic/content/localizations";
   
   // Make the API request
@@ -214,7 +214,7 @@ export async function getContentLocalizations(requester: HttpRequester, gamertag
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putContentLocalizations(requester: HttpRequester, payload: PutLocalizationsRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function contentPutLocalizationsBasic(requester: HttpRequester, payload: PutLocalizationsRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/content/localizations";
   
   // Make the API request
@@ -238,7 +238,7 @@ export async function putContentLocalizations(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteContentLocalizations(requester: HttpRequester, payload: DeleteLocalizationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function contentDeleteLocalizationsBasic(requester: HttpRequester, payload: DeleteLocalizationRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/content/localizations";
   
   // Make the API request
@@ -262,7 +262,7 @@ export async function deleteContentLocalizations(requester: HttpRequester, paylo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentText(requester: HttpRequester, payload: SaveTextRequest, gamertag?: string): Promise<HttpResponse<SaveTextResponse>> {
+export async function contentPostTextBasic(requester: HttpRequester, payload: SaveTextRequest, gamertag?: string): Promise<HttpResponse<SaveTextResponse>> {
   let endpoint = "/basic/content/text";
   
   // Make the API request
@@ -286,7 +286,7 @@ export async function postContentText(requester: HttpRequester, payload: SaveTex
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestExact(requester: HttpRequester, uid: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentGetManifestExactBasic(requester: HttpRequester, uid: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
   let endpoint = "/basic/content/manifest/exact";
   
   // Make the API request
@@ -313,7 +313,7 @@ export async function getContentManifestExact(requester: HttpRequester, uid: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifest(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentGetManifestBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
   let endpoint = "/basic/content/manifest";
   
   // Make the API request
@@ -340,7 +340,7 @@ export async function getContentManifest(requester: HttpRequester, id?: string, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentManifest(requester: HttpRequester, payload: SaveManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentPostManifestBasic(requester: HttpRequester, payload: SaveManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
   let endpoint = "/basic/content/manifest";
   
   // Make the API request
@@ -364,7 +364,7 @@ export async function postContentManifest(requester: HttpRequester, payload: Sav
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContentManifestsArchive(requester: HttpRequester, payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function contentPostManifestsArchiveBasic(requester: HttpRequester, payload: ArchiveOrUnarchiveManifestsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/content/manifests/archive";
   
   // Make the API request
@@ -388,7 +388,7 @@ export async function postContentManifestsArchive(requester: HttpRequester, payl
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postContent(requester: HttpRequester, payload: SaveContentRequest, gamertag?: string): Promise<HttpResponse<SaveContentResponse>> {
+export async function contentPostBasic(requester: HttpRequester, payload: SaveContentRequest, gamertag?: string): Promise<HttpResponse<SaveContentResponse>> {
   let endpoint = "/basic/content/";
   
   // Make the API request
@@ -409,7 +409,7 @@ export async function postContent(requester: HttpRequester, payload: SaveContent
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestPublic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
+export async function contentGetManifestPublicBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
   let endpoint = "/basic/content/manifest/public";
   
   // Make the API request
@@ -432,7 +432,7 @@ export async function getContentManifestPublic(requester: HttpRequester, id?: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestPublicJson(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
+export async function contentGetManifestPublicJsonBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
   let endpoint = "/basic/content/manifest/public/json";
   
   // Make the API request
@@ -458,7 +458,7 @@ export async function getContentManifestPublicJson(requester: HttpRequester, id?
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putContentManifestRepeat(requester: HttpRequester, payload: RepeatManifestRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function contentPutManifestRepeatBasic(requester: HttpRequester, payload: RepeatManifestRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/content/manifest/repeat";
   
   // Make the API request
@@ -483,7 +483,7 @@ export async function putContentManifestRepeat(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestPrivateJson(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
+export async function contentGetManifestPrivateJsonBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
   let endpoint = "/basic/content/manifest/private/json";
   
   // Make the API request
@@ -511,7 +511,7 @@ export async function getContentManifestPrivateJson(requester: HttpRequester, id
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestPrivate(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
+export async function contentGetManifestPrivateBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
   let endpoint = "/basic/content/manifest/private";
   
   // Make the API request
@@ -537,7 +537,7 @@ export async function getContentManifestPrivate(requester: HttpRequester, id?: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestChecksums(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
+export async function contentGetManifestChecksumsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksums>> {
   let endpoint = "/basic/content/manifest/checksums";
   
   // Make the API request
@@ -557,7 +557,7 @@ export async function getContentManifestChecksums(requester: HttpRequester, game
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifestChecksum(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksum>> {
+export async function contentGetManifestChecksumBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksum>> {
   let endpoint = "/basic/content/manifest/checksum";
   
   // Make the API request
@@ -582,7 +582,7 @@ export async function getContentManifestChecksum(requester: HttpRequester, id?: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getContentManifests(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ContentBasicGetManifestsResponse>> {
+export async function contentGetManifestsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ContentBasicGetManifestsResponse>> {
   let endpoint = "/basic/content/manifests";
   
   // Make the API request

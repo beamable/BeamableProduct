@@ -30,7 +30,7 @@ import { UpdateMailRequest } from '@/__generated__/schemas/UpdateMailRequest';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putMailAttachments(requester: HttpRequester, payload: AcceptMultipleAttachments, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPutAttachmentsBasic(requester: HttpRequester, payload: AcceptMultipleAttachments, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/basic/mail/attachments";
   
   // Make the API request
@@ -51,7 +51,7 @@ export async function putMailAttachments(requester: HttpRequester, payload: Acce
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getMailTemplate(requester: HttpRequester, gamerTag: bigint | string, templateName: string, gamertag?: string): Promise<HttpResponse<MailTemplate>> {
+export async function mailGetTemplateBasic(requester: HttpRequester, gamerTag: bigint | string, templateName: string, gamertag?: string): Promise<HttpResponse<MailTemplate>> {
   let endpoint = "/basic/mail/template";
   
   // Make the API request
@@ -73,7 +73,7 @@ export async function getMailTemplate(requester: HttpRequester, gamerTag: bigint
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getMail(requester: HttpRequester, mid: bigint | string, gamertag?: string): Promise<HttpResponse<MailResponse>> {
+export async function mailGetBasic(requester: HttpRequester, mid: bigint | string, gamertag?: string): Promise<HttpResponse<MailResponse>> {
   let endpoint = "/basic/mail/";
   
   // Make the API request
@@ -98,7 +98,7 @@ export async function getMail(requester: HttpRequester, mid: bigint | string, ga
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putMail(requester: HttpRequester, payload: UpdateMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPutBasic(requester: HttpRequester, payload: UpdateMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/basic/mail/";
   
   // Make the API request
@@ -122,7 +122,7 @@ export async function putMail(requester: HttpRequester, payload: UpdateMailReque
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postMailBulk(requester: HttpRequester, payload: BulkSendMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPostBulkBasic(requester: HttpRequester, payload: BulkSendMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/basic/mail/bulk";
   
   // Make the API request
@@ -147,7 +147,7 @@ export async function postMailBulk(requester: HttpRequester, payload: BulkSendMa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getMailDetailByObjectId(requester: HttpRequester, objectId: bigint | string, mid: bigint | string, gamertag?: string): Promise<HttpResponse<MailResponse>> {
+export async function mailGetDetailByObjectId(requester: HttpRequester, objectId: bigint | string, mid: bigint | string, gamertag?: string): Promise<HttpResponse<MailResponse>> {
   let endpoint = "/object/mail/{objectId}/detail".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -173,7 +173,7 @@ export async function getMailDetailByObjectId(requester: HttpRequester, objectId
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getMailCategoriesByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<ListMailCategoriesResponse>> {
+export async function mailGetCategoriesByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<ListMailCategoriesResponse>> {
   let endpoint = "/object/mail/{objectId}/categories".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -197,7 +197,7 @@ export async function getMailCategoriesByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postMailSearchByObjectId(requester: HttpRequester, objectId: bigint | string, payload: MailSearchRequest, gamertag?: string): Promise<HttpResponse<MailSearchResponse>> {
+export async function mailPostSearchByObjectId(requester: HttpRequester, objectId: bigint | string, payload: MailSearchRequest, gamertag?: string): Promise<HttpResponse<MailSearchResponse>> {
   let endpoint = "/object/mail/{objectId}/search".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -222,7 +222,7 @@ export async function postMailSearchByObjectId(requester: HttpRequester, objectI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postMailBulkByObjectId(requester: HttpRequester, objectId: bigint | string, payload: BulkSendMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPostBulkByObjectId(requester: HttpRequester, objectId: bigint | string, payload: BulkSendMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/object/mail/{objectId}/bulk".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -247,7 +247,7 @@ export async function postMailBulkByObjectId(requester: HttpRequester, objectId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putMailBulkByObjectId(requester: HttpRequester, objectId: bigint | string, payload: BulkUpdateMailObjectRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPutBulkByObjectId(requester: HttpRequester, objectId: bigint | string, payload: BulkUpdateMailObjectRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/object/mail/{objectId}/bulk".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -272,7 +272,7 @@ export async function putMailBulkByObjectId(requester: HttpRequester, objectId: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putMailAcceptManyByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AcceptMultipleAttachments, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPutAcceptManyByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AcceptMultipleAttachments, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/object/mail/{objectId}/accept/many".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -296,7 +296,7 @@ export async function putMailAcceptManyByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getMailByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MailQueryResponse>> {
+export async function mailGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<MailQueryResponse>> {
   let endpoint = "/object/mail/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -320,7 +320,7 @@ export async function getMailByObjectId(requester: HttpRequester, objectId: bigi
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postMailByObjectId(requester: HttpRequester, objectId: bigint | string, payload: SendMailObjectRequest, gamertag?: string): Promise<HttpResponse<SendMailResponse>> {
+export async function mailPostByObjectId(requester: HttpRequester, objectId: bigint | string, payload: SendMailObjectRequest, gamertag?: string): Promise<HttpResponse<SendMailResponse>> {
   let endpoint = "/object/mail/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -345,7 +345,7 @@ export async function postMailByObjectId(requester: HttpRequester, objectId: big
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putMailByObjectId(requester: HttpRequester, objectId: bigint | string, payload: UpdateMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
+export async function mailPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: UpdateMailRequest, gamertag?: string): Promise<HttpResponse<MailSuccessResponse>> {
   let endpoint = "/object/mail/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

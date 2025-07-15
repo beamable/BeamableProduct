@@ -14,14 +14,14 @@ import type { LeaderboardAssignmentInfo } from '@/__generated__/schemas';
 
 describe('LeaderboardsService', () => {
   describe('get', () => {
-    it('calls getLeaderboardViewByObjectId on the leaderboards API and updates player leaderboards and params', async () => {
+    it('calls leaderboardsGetViewByObjectId on the leaderboards API and updates player leaderboards and params', async () => {
       const mockView: LeaderBoardView = {
         boardSize: 100n,
         lbId: 'testLb',
         rankings: [],
       };
       const mockBody: LeaderBoardViewResponse = { lb: mockView, result: 'ok' };
-      vi.spyOn(apis, 'getLeaderboardViewByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsGetViewByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -44,7 +44,7 @@ describe('LeaderboardsService', () => {
       };
       const result = await service.get(params);
 
-      expect(apis.getLeaderboardViewByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsGetViewByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lb1',
         'player',
@@ -67,7 +67,7 @@ describe('LeaderboardsService', () => {
         rankings: [],
       };
       const mockBody: LeaderBoardViewResponse = { lb: mockView, result: 'ok' };
-      vi.spyOn(apis, 'getLeaderboardViewByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsGetViewByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -134,14 +134,14 @@ describe('LeaderboardsService', () => {
   });
 
   describe('getFriendRanks', () => {
-    it('calls getLeaderboardFriendsByObjectId on the leaderboards API and returns the leaderboard view', async () => {
+    it('calls leaderboardsGetFriendsByObjectId on the leaderboards API and returns the leaderboard view', async () => {
       const mockView: LeaderBoardView = {
         boardSize: 5n,
         lbId: 'friendsLb',
         rankings: [],
       };
       const mockBody: LeaderBoardViewResponse = { lb: mockView, result: 'ok' };
-      vi.spyOn(apis, 'getLeaderboardFriendsByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsGetFriendsByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -155,7 +155,7 @@ describe('LeaderboardsService', () => {
       });
       const result = await service.getFriendRanks({ id: 'lbFriends' });
 
-      expect(apis.getLeaderboardFriendsByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsGetFriendsByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lbFriends',
         playerService.id,
@@ -165,14 +165,14 @@ describe('LeaderboardsService', () => {
   });
 
   describe('getRanks', () => {
-    it('calls getLeaderboardRanksByObjectId on the leaderboards API and returns the leaderboard view', async () => {
+    it('calls leaderboardsGetRanksByObjectId on the leaderboards API and returns the leaderboard view', async () => {
       const mockView: LeaderBoardView = {
         boardSize: 3n,
         lbId: 'ranksLb',
         rankings: [],
       };
       const mockBody: LeaderBoardViewResponse = { lb: mockView, result: 'ok' };
-      vi.spyOn(apis, 'getLeaderboardRanksByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsGetRanksByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -189,7 +189,7 @@ describe('LeaderboardsService', () => {
         playerIds: ['a', 'b'],
       });
 
-      expect(apis.getLeaderboardRanksByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsGetRanksByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lbRanks',
         'a,b',
@@ -200,8 +200,8 @@ describe('LeaderboardsService', () => {
   });
 
   describe('setScore', () => {
-    it('calls putLeaderboardEntryByObjectId on the leaderboards API and then calls get with previous params', async () => {
-      vi.spyOn(apis, 'putLeaderboardEntryByObjectId').mockResolvedValue({
+    it('calls leaderboardsPutEntryByObjectId on the leaderboards API and then calls get with previous params', async () => {
+      vi.spyOn(apis, 'leaderboardsPutEntryByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
@@ -232,7 +232,7 @@ describe('LeaderboardsService', () => {
 
       await service.setScore(params);
 
-      expect(apis.putLeaderboardEntryByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsPutEntryByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lb',
         {
@@ -262,7 +262,7 @@ describe('LeaderboardsService', () => {
     });
 
     it('does not call get when no player is present', async () => {
-      vi.spyOn(apis, 'putLeaderboardEntryByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsPutEntryByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
@@ -280,7 +280,7 @@ describe('LeaderboardsService', () => {
         id: 'lb',
         score: 2,
       } as SetLeaderboardScoreParams);
-      expect(apis.putLeaderboardEntryByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsPutEntryByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lb',
         {
@@ -297,7 +297,7 @@ describe('LeaderboardsService', () => {
 
   describe('freeze', () => {
     it('throws BeamError when called on client (player present)', async () => {
-      vi.spyOn(apis, 'putLeaderboardFreezeByObjectId').mockResolvedValue({
+      vi.spyOn(apis, 'leaderboardsPutFreezeByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
@@ -314,8 +314,8 @@ describe('LeaderboardsService', () => {
       );
     });
 
-    it('calls putLeaderboardFreezeByObjectId on the leaderboards API when no player is present', async () => {
-      vi.spyOn(apis, 'putLeaderboardFreezeByObjectId').mockResolvedValue({
+    it('calls leaderboardsPutFreezeByObjectId on the leaderboards API when no player is present', async () => {
+      vi.spyOn(apis, 'leaderboardsPutFreezeByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
@@ -328,7 +328,7 @@ describe('LeaderboardsService', () => {
 
       await service.freeze({ id: 'lbFreeze' });
 
-      expect(apis.putLeaderboardFreezeByObjectId).toHaveBeenCalledWith(
+      expect(apis.leaderboardsPutFreezeByObjectId).toHaveBeenCalledWith(
         mockRequester,
         'lbFreeze',
         'adminId',

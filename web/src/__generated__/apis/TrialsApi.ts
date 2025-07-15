@@ -28,7 +28,7 @@ import { UploadTrialDataRequest } from '@/__generated__/schemas/UploadTrialDataR
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTrialsAdminData(requester: HttpRequester, id: bigint | string, gamertag?: string): Promise<HttpResponse<GetS3DataResponse>> {
+export async function trialsGetAdminDataBasic(requester: HttpRequester, id: bigint | string, gamertag?: string): Promise<HttpResponse<GetS3DataResponse>> {
   let endpoint = "/basic/trials/admin/data";
   
   // Make the API request
@@ -54,7 +54,7 @@ export async function getTrialsAdminData(requester: HttpRequester, id: bigint | 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTrialData(requester: HttpRequester, payload: UploadTrialDataRequest, gamertag?: string): Promise<HttpResponse<SaveGameDataResponse>> {
+export async function trialsPostDataBasic(requester: HttpRequester, payload: UploadTrialDataRequest, gamertag?: string): Promise<HttpResponse<SaveGameDataResponse>> {
   let endpoint = "/basic/trials/data";
   
   // Make the API request
@@ -78,7 +78,7 @@ export async function postTrialData(requester: HttpRequester, payload: UploadTri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteTrialData(requester: HttpRequester, payload: DeleteTrialDataRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsDeleteDataBasic(requester: HttpRequester, payload: DeleteTrialDataRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/data";
   
   // Make the API request
@@ -102,7 +102,7 @@ export async function deleteTrialData(requester: HttpRequester, payload: DeleteT
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putTrialPause(requester: HttpRequester, payload: PauseTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsPutPauseBasic(requester: HttpRequester, payload: PauseTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/pause";
   
   // Make the API request
@@ -126,7 +126,7 @@ export async function putTrialPause(requester: HttpRequester, payload: PauseTria
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putTrialSchedule(requester: HttpRequester, payload: ScheduleTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsPutScheduleBasic(requester: HttpRequester, payload: ScheduleTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/schedule";
   
   // Make the API request
@@ -149,7 +149,7 @@ export async function putTrialSchedule(requester: HttpRequester, payload: Schedu
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTrials(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ListTrialsResponse>> {
+export async function trialsGetBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ListTrialsResponse>> {
   let endpoint = "/basic/trials/";
   
   // Make the API request
@@ -172,7 +172,7 @@ export async function getTrials(requester: HttpRequester, gamertag?: string): Pr
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postTrial(requester: HttpRequester, payload: CreateTrialRestRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsPostBasic(requester: HttpRequester, payload: CreateTrialRestRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/";
   
   // Make the API request
@@ -196,7 +196,7 @@ export async function postTrial(requester: HttpRequester, payload: CreateTrialRe
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteTrial(requester: HttpRequester, payload: DeleteTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsDeleteBasic(requester: HttpRequester, payload: DeleteTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/";
   
   // Make the API request
@@ -220,7 +220,7 @@ export async function deleteTrial(requester: HttpRequester, payload: DeleteTrial
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getTrialsAdmin(requester: HttpRequester, dbid: bigint | string, gamertag?: string): Promise<HttpResponse<GetPlayerTrialsResponse>> {
+export async function trialsGetAdminBasic(requester: HttpRequester, dbid: bigint | string, gamertag?: string): Promise<HttpResponse<GetPlayerTrialsResponse>> {
   let endpoint = "/basic/trials/admin";
   
   // Make the API request
@@ -246,7 +246,7 @@ export async function getTrialsAdmin(requester: HttpRequester, dbid: bigint | st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putTrialStart(requester: HttpRequester, payload: StartTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
+export async function trialsPutStartBasic(requester: HttpRequester, payload: StartTrialRequest, gamertag?: string): Promise<HttpResponse<TrialSuccessResponse>> {
   let endpoint = "/basic/trials/start";
   
   // Make the API request

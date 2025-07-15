@@ -19,7 +19,7 @@ import { StartSessionResponse } from '@/__generated__/schemas/StartSessionRespon
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSessionHeartbeat(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<SessionHeartbeat>> {
+export async function sessionPostHeartbeatBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<SessionHeartbeat>> {
   let endpoint = "/basic/session/heartbeat";
   
   // Make the API request
@@ -44,7 +44,7 @@ export async function postSessionHeartbeat(requester: HttpRequester, gamertag?: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getSessionHistory(requester: HttpRequester, dbid: bigint | string, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<SessionHistoryResponse>> {
+export async function sessionGetHistoryBasic(requester: HttpRequester, dbid: bigint | string, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<SessionHistoryResponse>> {
   let endpoint = "/basic/session/history";
   
   // Make the API request
@@ -73,7 +73,7 @@ export async function getSessionHistory(requester: HttpRequester, dbid: bigint |
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getSessionStatus(requester: HttpRequester, intervalSecs: bigint | string, playerIds: string, gamertag?: string): Promise<HttpResponse<OnlineStatusResponses>> {
+export async function sessionGetStatusBasic(requester: HttpRequester, intervalSecs: bigint | string, playerIds: string, gamertag?: string): Promise<HttpResponse<OnlineStatusResponses>> {
   let endpoint = "/basic/session/status";
   
   // Make the API request
@@ -101,7 +101,7 @@ export async function getSessionStatus(requester: HttpRequester, intervalSecs: b
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getSessionClientHistory(requester: HttpRequester, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<SessionClientHistoryResponse>> {
+export async function sessionGetClientHistoryBasic(requester: HttpRequester, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<SessionClientHistoryResponse>> {
   let endpoint = "/basic/session/client/history";
   
   // Make the API request
@@ -128,7 +128,7 @@ export async function getSessionClientHistory(requester: HttpRequester, month?: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSession(requester: HttpRequester, payload: StartSessionRequest, gamertag?: string): Promise<HttpResponse<StartSessionResponse>> {
+export async function sessionPostBasic(requester: HttpRequester, payload: StartSessionRequest, gamertag?: string): Promise<HttpResponse<StartSessionResponse>> {
   let endpoint = "/basic/session/";
   
   // Make the API request

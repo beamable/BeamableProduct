@@ -15,7 +15,7 @@ import { POST } from '@/constants';
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postMailboxPublish(requester: HttpRequester, payload: MessageRequest, gamertag?: string): Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>> {
+export async function mailboxPostPublish(requester: HttpRequester, payload: MessageRequest, gamertag?: string): Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>> {
   let endpoint = "/api/mailbox/publish";
   
   // Make the API request

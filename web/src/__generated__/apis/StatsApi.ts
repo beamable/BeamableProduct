@@ -32,7 +32,7 @@ import { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatU
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putStatSubscribe(requester: HttpRequester, payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function statsPutSubscribeBasic(requester: HttpRequester, payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/stats/subscribe";
   
   // Make the API request
@@ -56,7 +56,7 @@ export async function putStatSubscribe(requester: HttpRequester, payload: StatsS
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteStatSubscribe(requester: HttpRequester, payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function statsDeleteSubscribeBasic(requester: HttpRequester, payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/stats/subscribe";
   
   // Make the API request
@@ -78,7 +78,7 @@ export async function deleteStatSubscribe(requester: HttpRequester, payload: Sta
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getStatsClientBatch(requester: HttpRequester, objectIds: string, format?: string, stats?: string, gamertag?: string): Promise<HttpResponse<BatchReadStatsResponse>> {
+export async function statsGetClientBatchBasic(requester: HttpRequester, objectIds: string, format?: string, stats?: string, gamertag?: string): Promise<HttpResponse<BatchReadStatsResponse>> {
   let endpoint = "/basic/stats/client/batch";
   
   // Make the API request
@@ -105,7 +105,7 @@ export async function getStatsClientBatch(requester: HttpRequester, objectIds: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatBatch(requester: HttpRequester, payload: BatchSetStatsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function statsPostBatchBasic(requester: HttpRequester, payload: BatchSetStatsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/stats/batch";
   
   // Make the API request
@@ -129,7 +129,7 @@ export async function postStatBatch(requester: HttpRequester, payload: BatchSetS
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatSearch(requester: HttpRequester, payload: StatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsSearchResponse>> {
+export async function statsPostSearchBasic(requester: HttpRequester, payload: StatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsSearchResponse>> {
   let endpoint = "/basic/stats/search";
   
   // Make the API request
@@ -153,7 +153,7 @@ export async function postStatSearch(requester: HttpRequester, payload: StatsSea
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatSearchExtended(requester: HttpRequester, payload: SearchExtendedRequest, gamertag?: string): Promise<HttpResponse<SearchExtendedResponse>> {
+export async function statsPostSearchExtendedBasic(requester: HttpRequester, payload: SearchExtendedRequest, gamertag?: string): Promise<HttpResponse<SearchExtendedResponse>> {
   let endpoint = "/basic/stats/search/extended";
   
   // Make the API request
@@ -178,7 +178,7 @@ export async function postStatSearchExtended(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatClientStringlistByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function statsPostClientStringlistByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/stats/{objectId}/client/stringlist".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -203,7 +203,7 @@ export async function postStatClientStringlistByObjectId(requester: HttpRequeste
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getStatByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
+export async function statsGetByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
   let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -230,7 +230,7 @@ export async function getStatByObjectId(requester: HttpRequester, objectId: stri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function statsPostByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -255,7 +255,7 @@ export async function postStatByObjectId(requester: HttpRequester, objectId: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteStatByObjectId(requester: HttpRequester, objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function statsDeleteByObjectId(requester: HttpRequester, objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -280,7 +280,7 @@ export async function deleteStatByObjectId(requester: HttpRequester, objectId: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getStatClientByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
+export async function statsGetClientByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
   let endpoint = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -307,7 +307,7 @@ export async function getStatClientByObjectId(requester: HttpRequester, objectId
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postStatClientByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function statsPostClientByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

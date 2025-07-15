@@ -31,7 +31,7 @@ import { VerifyPurchaseRequest } from '@/__generated__/schemas/VerifyPurchaseReq
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackWindowsPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostWindowsPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/windows/purchase/track";
   
   // Make the API request
@@ -56,7 +56,7 @@ export async function trackWindowsPurchase(requester: HttpRequester, payload: Tr
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentsAudits(requester: HttpRequester, limit?: number, player?: bigint | string, provider?: string, providerid?: string, start?: number, state?: string, txid?: bigint | string, gamertag?: string): Promise<HttpResponse<ListAuditResponse>> {
+export async function paymentsGetAuditsBasic(requester: HttpRequester, limit?: number, player?: bigint | string, provider?: string, providerid?: string, start?: number, state?: string, txid?: bigint | string, gamertag?: string): Promise<HttpResponse<ListAuditResponse>> {
   let endpoint = "/basic/payments/audits";
   
   // Make the API request
@@ -83,7 +83,7 @@ export async function getPaymentsAudits(requester: HttpRequester, limit?: number
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeWindowsPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostWindowsPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/windows/purchase/complete";
   
   // Make the API request
@@ -106,7 +106,7 @@ export async function completeWindowsPurchase(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginTestPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostTestPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/test/purchase/begin";
   
   // Make the API request
@@ -128,7 +128,7 @@ export async function beginTestPurchase(requester: HttpRequester, payload: Begin
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentFacebookUpdate(requester: HttpRequester, hubChallenge: string, hubMode: string, hubVerifyToken: string, gamertag?: string): Promise<HttpResponse<SubscriptionVerificationResponse>> {
+export async function paymentsGetFacebookUpdateBasic(requester: HttpRequester, hubChallenge: string, hubMode: string, hubVerifyToken: string, gamertag?: string): Promise<HttpResponse<SubscriptionVerificationResponse>> {
   let endpoint = "/basic/payments/facebook/update";
   
   // Make the API request
@@ -151,7 +151,7 @@ export async function getPaymentFacebookUpdate(requester: HttpRequester, hubChal
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postPaymentFacebookUpdate(requester: HttpRequester, payload: FacebookPaymentUpdateRequest, gamertag?: string): Promise<HttpResponse<FacebookPaymentUpdateResponse>> {
+export async function paymentsPostFacebookUpdateBasic(requester: HttpRequester, payload: FacebookPaymentUpdateRequest, gamertag?: string): Promise<HttpResponse<FacebookPaymentUpdateResponse>> {
   let endpoint = "/basic/payments/facebook/update";
   
   // Make the API request
@@ -174,7 +174,7 @@ export async function postPaymentFacebookUpdate(requester: HttpRequester, payloa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failSteamPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostSteamPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/steam/purchase/fail";
   
   // Make the API request
@@ -194,7 +194,7 @@ export async function failSteamPurchase(requester: HttpRequester, payload: FailP
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeFacebookPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostFacebookPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/complete";
   
   // Make the API request
@@ -217,7 +217,7 @@ export async function completeFacebookPurchase(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failFacebookPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostFacebookPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/fail";
   
   // Make the API request
@@ -237,7 +237,7 @@ export async function failFacebookPurchase(requester: HttpRequester, payload: Fa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeTestPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostTestPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/test/purchase/complete";
   
   // Make the API request
@@ -256,7 +256,7 @@ export async function completeTestPurchase(requester: HttpRequester, payload: Co
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentItunesProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetItunesProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/itunes/product";
   
   // Make the API request
@@ -277,7 +277,7 @@ export async function getPaymentItunesProduct(requester: HttpRequester, sku: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeGoogleplayPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostGoogleplayPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/complete";
   
   // Make the API request
@@ -296,7 +296,7 @@ export async function completeGoogleplayPurchase(requester: HttpRequester, paylo
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackTestPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostTestPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/test/purchase/track";
   
   // Make the API request
@@ -319,7 +319,7 @@ export async function trackTestPurchase(requester: HttpRequester, payload: Track
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginGoogleplayPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostGoogleplayPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/begin";
   
   // Make the API request
@@ -343,7 +343,7 @@ export async function beginGoogleplayPurchase(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginItunesPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostItunesPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/begin";
   
   // Make the API request
@@ -363,7 +363,7 @@ export async function beginItunesPurchase(requester: HttpRequester, payload: Beg
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyGoogleplayPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostGoogleplayPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/verify";
   
   // Make the API request
@@ -386,7 +386,7 @@ export async function verifyGoogleplayPurchase(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelFacebookPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostFacebookPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/cancel";
   
   // Make the API request
@@ -406,7 +406,7 @@ export async function cancelFacebookPurchase(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackCouponPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostCouponPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/track";
   
   // Make the API request
@@ -425,7 +425,7 @@ export async function trackCouponPurchase(requester: HttpRequester, payload: Tra
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeSteamPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostSteamPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/steam/purchase/complete";
   
   // Make the API request
@@ -444,7 +444,7 @@ export async function completeSteamPurchase(requester: HttpRequester, payload: C
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackFacebookPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostFacebookPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/track";
   
   // Make the API request
@@ -467,7 +467,7 @@ export async function trackFacebookPurchase(requester: HttpRequester, payload: T
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failItunesPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostItunesPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/fail";
   
   // Make the API request
@@ -487,7 +487,7 @@ export async function failItunesPurchase(requester: HttpRequester, payload: Fail
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyTestPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostTestPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/test/purchase/verify";
   
   // Make the API request
@@ -510,7 +510,7 @@ export async function verifyTestPurchase(requester: HttpRequester, payload: Veri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelTestPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostTestPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/test/purchase/cancel";
   
   // Make the API request
@@ -530,7 +530,7 @@ export async function cancelTestPurchase(requester: HttpRequester, payload: Canc
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackGoogleplayPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostGoogleplayPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/track";
   
   // Make the API request
@@ -549,7 +549,7 @@ export async function trackGoogleplayPurchase(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentSteamPrices(requester: HttpRequester, steamId: bigint | string, gamertag?: string): Promise<HttpResponse<LocalizedPriceMap>> {
+export async function paymentsGetSteamPricesBasic(requester: HttpRequester, steamId: bigint | string, gamertag?: string): Promise<HttpResponse<LocalizedPriceMap>> {
   let endpoint = "/basic/payments/steam/prices";
   
   // Make the API request
@@ -570,7 +570,7 @@ export async function getPaymentSteamPrices(requester: HttpRequester, steamId: b
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyWindowsPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostWindowsPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/windows/purchase/verify";
   
   // Make the API request
@@ -593,7 +593,7 @@ export async function verifyWindowsPurchase(requester: HttpRequester, payload: V
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failTestPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostTestPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/test/purchase/fail";
   
   // Make the API request
@@ -617,7 +617,7 @@ export async function failTestPurchase(requester: HttpRequester, payload: FailPu
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelCouponPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostCouponPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/cancel";
   
   // Make the API request
@@ -637,7 +637,7 @@ export async function cancelCouponPurchase(requester: HttpRequester, payload: Ca
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyItunesPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostItunesPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/verify";
   
   // Make the API request
@@ -656,7 +656,7 @@ export async function verifyItunesPurchase(requester: HttpRequester, payload: Ve
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeItunesPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostItunesPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/complete";
   
   // Make the API request
@@ -679,7 +679,7 @@ export async function completeItunesPurchase(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginCouponPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostCouponPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/begin";
   
   // Make the API request
@@ -699,7 +699,7 @@ export async function beginCouponPurchase(requester: HttpRequester, payload: Beg
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyFacebookPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostFacebookPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/verify";
   
   // Make the API request
@@ -718,7 +718,7 @@ export async function verifyFacebookPurchase(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackSteamPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostSteamPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/steam/purchase/track";
   
   // Make the API request
@@ -741,7 +741,7 @@ export async function trackSteamPurchase(requester: HttpRequester, payload: Trac
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginFacebookPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostFacebookPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/facebook/purchase/begin";
   
   // Make the API request
@@ -765,7 +765,7 @@ export async function beginFacebookPurchase(requester: HttpRequester, payload: B
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentSteamOrder(requester: HttpRequester, orderId: string, gamertag?: string): Promise<HttpResponse<SteamOrderInfoResponse>> {
+export async function paymentsGetSteamOrderBasic(requester: HttpRequester, orderId: string, gamertag?: string): Promise<HttpResponse<SteamOrderInfoResponse>> {
   let endpoint = "/basic/payments/steam/order";
   
   // Make the API request
@@ -787,7 +787,7 @@ export async function getPaymentSteamOrder(requester: HttpRequester, orderId: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifyCouponPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostCouponPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/verify";
   
   // Make the API request
@@ -810,7 +810,7 @@ export async function verifyCouponPurchase(requester: HttpRequester, payload: Ve
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginWindowsPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostWindowsPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/windows/purchase/begin";
   
   // Make the API request
@@ -830,7 +830,7 @@ export async function beginWindowsPurchase(requester: HttpRequester, payload: Be
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentWindowsProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetWindowsProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/windows/product";
   
   // Make the API request
@@ -855,7 +855,7 @@ export async function getPaymentWindowsProduct(requester: HttpRequester, sku: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failGoogleplayPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostGoogleplayPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/fail";
   
   // Make the API request
@@ -875,7 +875,7 @@ export async function failGoogleplayPurchase(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentFacebookProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetFacebookProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/facebook/product";
   
   // Make the API request
@@ -900,7 +900,7 @@ export async function getPaymentFacebookProduct(requester: HttpRequester, sku: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelGoogleplayPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostGoogleplayPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/cancel";
   
   // Make the API request
@@ -920,7 +920,7 @@ export async function cancelGoogleplayPurchase(requester: HttpRequester, payload
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentCouponProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetCouponProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/coupon/product";
   
   // Make the API request
@@ -945,7 +945,7 @@ export async function getPaymentCouponProduct(requester: HttpRequester, sku: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failCouponPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostCouponPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/fail";
   
   // Make the API request
@@ -969,7 +969,7 @@ export async function failCouponPurchase(requester: HttpRequester, payload: Fail
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beginSteamPurchase(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+export async function paymentsPostSteamPurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
   let endpoint = "/basic/payments/steam/purchase/begin";
   
   // Make the API request
@@ -989,7 +989,7 @@ export async function beginSteamPurchase(requester: HttpRequester, payload: Begi
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentSteamProducts(requester: HttpRequester, steamId: bigint | string, gamertag?: string): Promise<HttpResponse<GetProductsResponse>> {
+export async function paymentsGetSteamProductsBasic(requester: HttpRequester, steamId: bigint | string, gamertag?: string): Promise<HttpResponse<GetProductsResponse>> {
   let endpoint = "/basic/payments/steam/products";
   
   // Make the API request
@@ -1014,7 +1014,7 @@ export async function getPaymentSteamProducts(requester: HttpRequester, steamId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelSteamPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostSteamPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/steam/purchase/cancel";
   
   // Make the API request
@@ -1034,7 +1034,7 @@ export async function cancelSteamPurchase(requester: HttpRequester, payload: Can
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postPaymentSteamAuth(requester: HttpRequester, payload: SteamAuthRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function paymentsPostSteamAuthBasic(requester: HttpRequester, payload: SteamAuthRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/payments/steam/auth";
   
   // Make the API request
@@ -1053,7 +1053,7 @@ export async function postPaymentSteamAuth(requester: HttpRequester, payload: St
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentSteamProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetSteamProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/steam/product";
   
   // Make the API request
@@ -1074,7 +1074,7 @@ export async function getPaymentSteamProduct(requester: HttpRequester, sku: stri
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function completeCouponPurchase(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostCouponPurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/coupon/purchase/complete";
   
   // Make the API request
@@ -1097,7 +1097,7 @@ export async function completeCouponPurchase(requester: HttpRequester, payload: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelWindowsPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostWindowsPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/windows/purchase/cancel";
   
   // Make the API request
@@ -1117,7 +1117,7 @@ export async function cancelWindowsPurchase(requester: HttpRequester, payload: C
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentGoogleplayProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetGoogleplayProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/googleplay/product";
   
   // Make the API request
@@ -1142,7 +1142,7 @@ export async function getPaymentGoogleplayProduct(requester: HttpRequester, sku:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function failWindowsPurchase(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostWindowsPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/windows/purchase/fail";
   
   // Make the API request
@@ -1166,7 +1166,7 @@ export async function failWindowsPurchase(requester: HttpRequester, payload: Fai
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function cancelItunesPurchase(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostItunesPurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/cancel";
   
   // Make the API request
@@ -1186,7 +1186,7 @@ export async function cancelItunesPurchase(requester: HttpRequester, payload: Ca
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPaymentTestProduct(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+export async function paymentsGetTestProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
   let endpoint = "/basic/payments/test/product";
   
   // Make the API request
@@ -1207,7 +1207,7 @@ export async function getPaymentTestProduct(requester: HttpRequester, sku: strin
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function verifySteamPurchase(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostSteamPurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/steam/purchase/verify";
   
   // Make the API request
@@ -1226,7 +1226,7 @@ export async function verifySteamPurchase(requester: HttpRequester, payload: Ver
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function trackItunesPurchase(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+export async function paymentsPostItunesPurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/itunes/purchase/track";
   
   // Make the API request
@@ -1249,7 +1249,7 @@ export async function trackItunesPurchase(requester: HttpRequester, payload: Tra
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getPayment(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function paymentsGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/payments/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

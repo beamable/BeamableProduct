@@ -31,7 +31,7 @@ import { RoleChangeRequest } from '@/__generated__/schemas/RoleChangeRequest';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putGroupRoleByObjectId(requester: HttpRequester, objectId: bigint | string, payload: RoleChangeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsPutRoleByObjectId(requester: HttpRequester, objectId: bigint | string, payload: RoleChangeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/role".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -56,7 +56,7 @@ export async function putGroupRoleByObjectId(requester: HttpRequester, objectId:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupKickByObjectId(requester: HttpRequester, objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
+export async function groupsPostKickByObjectId(requester: HttpRequester, objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
   let endpoint = "/object/groups/{objectId}/kick".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -81,7 +81,7 @@ export async function postGroupKickByObjectId(requester: HttpRequester, objectId
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupApplyByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsPostApplyByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/apply".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -106,7 +106,7 @@ export async function postGroupApplyByObjectId(requester: HttpRequester, objectI
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupDonationsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CreateDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function groupsPostDonationsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: CreateDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/groups/{objectId}/donations".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -131,7 +131,7 @@ export async function postGroupDonationsByObjectId(requester: HttpRequester, obj
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putGroupDonationsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: MakeDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function groupsPutDonationsByObjectId(requester: HttpRequester, objectId: bigint | string, payload: MakeDonationRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/groups/{objectId}/donations".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -156,7 +156,7 @@ export async function putGroupDonationsByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteGroupMemberByObjectId(requester: HttpRequester, objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
+export async function groupsDeleteMemberByObjectId(requester: HttpRequester, objectId: bigint | string, payload: KickRequest, gamertag?: string): Promise<HttpResponse<GroupMembershipResponse>> {
   let endpoint = "/object/groups/{objectId}/member".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -180,7 +180,7 @@ export async function deleteGroupMemberByObjectId(requester: HttpRequester, obje
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getGroupByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Group>> {
+export async function groupsGetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Group>> {
   let endpoint = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -204,7 +204,7 @@ export async function getGroupByObjectId(requester: HttpRequester, objectId: big
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putGroupByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupUpdate, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupUpdate, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -229,7 +229,7 @@ export async function putGroupByObjectId(requester: HttpRequester, objectId: big
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteGroupByObjectId(requester: HttpRequester, objectId: bigint | string, payload: DisbandRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsDeleteByObjectId(requester: HttpRequester, objectId: bigint | string, payload: DisbandRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -253,7 +253,7 @@ export async function deleteGroupByObjectId(requester: HttpRequester, objectId: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function putGroupDonationsClaimByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function groupsPutDonationsClaimByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/object/groups/{objectId}/donations/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -277,7 +277,7 @@ export async function putGroupDonationsClaimByObjectId(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupInviteByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupInvite, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsPostInviteByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupInvite, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/invite".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
@@ -302,7 +302,7 @@ export async function postGroupInviteByObjectId(requester: HttpRequester, object
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postGroupPetitionByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function groupsPostPetitionByObjectId(requester: HttpRequester, objectId: bigint | string, payload: GroupApplication, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/groups/{objectId}/petition".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request

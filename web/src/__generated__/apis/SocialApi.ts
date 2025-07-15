@@ -23,7 +23,7 @@ import { Social } from '@/__generated__/schemas/Social';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getSocialMy(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<Social>> {
+export async function socialGetMyBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<Social>> {
   let endpoint = "/basic/social/my";
   
   // Make the API request
@@ -46,7 +46,7 @@ export async function getSocialMy(requester: HttpRequester, gamertag?: string): 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSocialFriendsInvite(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function socialPostFriendsInviteBasic(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/social/friends/invite";
   
   // Make the API request
@@ -70,7 +70,7 @@ export async function postSocialFriendsInvite(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteSocialFriendsInvite(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function socialDeleteFriendsInviteBasic(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/social/friends/invite";
   
   // Make the API request
@@ -94,7 +94,7 @@ export async function deleteSocialFriendsInvite(requester: HttpRequester, payloa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteSocialFriends(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function socialDeleteFriendsBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/social/friends";
   
   // Make the API request
@@ -118,7 +118,7 @@ export async function deleteSocialFriends(requester: HttpRequester, payload: Pla
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSocialFriendsImport(requester: HttpRequester, payload: ImportFriendsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function socialPostFriendsImportBasic(requester: HttpRequester, payload: ImportFriendsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/social/friends/import";
   
   // Make the API request
@@ -142,7 +142,7 @@ export async function postSocialFriendsImport(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSocialFriendsMake(requester: HttpRequester, payload: MakeFriendshipRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function socialPostFriendsMakeBasic(requester: HttpRequester, payload: MakeFriendshipRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/social/friends/make";
   
   // Make the API request
@@ -166,7 +166,7 @@ export async function postSocialFriendsMake(requester: HttpRequester, payload: M
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function getSocial(requester: HttpRequester, playerIds: string[], gamertag?: string): Promise<HttpResponse<GetSocialStatusesResponse>> {
+export async function socialGetBasic(requester: HttpRequester, playerIds: string[], gamertag?: string): Promise<HttpResponse<GetSocialStatusesResponse>> {
   let endpoint = "/basic/social/";
   
   // Make the API request
@@ -192,7 +192,7 @@ export async function getSocial(requester: HttpRequester, playerIds: string[], g
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function postSocialBlocked(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
+export async function socialPostBlockedBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
   let endpoint = "/basic/social/blocked";
   
   // Make the API request
@@ -216,7 +216,7 @@ export async function postSocialBlocked(requester: HttpRequester, payload: Playe
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function deleteSocialBlocked(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
+export async function socialDeleteBlockedBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
   let endpoint = "/basic/social/blocked";
   
   // Make the API request

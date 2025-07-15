@@ -31,7 +31,7 @@ import { UpdateLobby } from '@/__generated__/schemas/UpdateLobby';
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getLobbies(requester: HttpRequester, Limit?: number, MatchType?: string, Skip?: number, gamertag?: string): Promise<HttpResponse<LobbyQueryResponse>> {
+export async function lobbiesGet(requester: HttpRequester, Limit?: number, MatchType?: string, Skip?: number, gamertag?: string): Promise<HttpResponse<LobbyQueryResponse>> {
   let endpoint = "/api/lobbies";
   
   // Make the API request
@@ -59,7 +59,7 @@ export async function getLobbies(requester: HttpRequester, Limit?: number, Match
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postLobby(requester: HttpRequester, payload: CreateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesPost(requester: HttpRequester, payload: CreateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies";
   
   // Make the API request
@@ -83,7 +83,7 @@ export async function postLobby(requester: HttpRequester, payload: CreateLobby, 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function getLobbyById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesGetById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -107,7 +107,7 @@ export async function getLobbyById(requester: HttpRequester, id: string, gamerta
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putLobbyById(requester: HttpRequester, id: string, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesPutById(requester: HttpRequester, id: string, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -132,7 +132,7 @@ export async function putLobbyById(requester: HttpRequester, id: string, payload
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteLobbyById(requester: HttpRequester, id: string, payload: RemoveFromLobby, gamertag?: string): Promise<HttpResponse<Acknowledge>> {
+export async function lobbiesDeleteById(requester: HttpRequester, id: string, payload: RemoveFromLobby, gamertag?: string): Promise<HttpResponse<Acknowledge>> {
   let endpoint = "/api/lobbies/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -156,7 +156,7 @@ export async function deleteLobbyById(requester: HttpRequester, id: string, payl
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putLobbyPasscode(requester: HttpRequester, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesPutPasscode(requester: HttpRequester, payload: JoinLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/passcode";
   
   // Make the API request
@@ -181,7 +181,7 @@ export async function putLobbyPasscode(requester: HttpRequester, payload: JoinLo
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putLobbyMetadataById(requester: HttpRequester, id: string, payload: UpdateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesPutMetadataById(requester: HttpRequester, id: string, payload: UpdateLobby, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/{id}/metadata".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -206,7 +206,7 @@ export async function putLobbyMetadataById(requester: HttpRequester, id: string,
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function putLobbyTagsById(requester: HttpRequester, id: string, payload: AddTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesPutTagsById(requester: HttpRequester, id: string, payload: AddTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/{id}/tags".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -231,7 +231,7 @@ export async function putLobbyTagsById(requester: HttpRequester, id: string, pay
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function deleteLobbyTagsById(requester: HttpRequester, id: string, payload: RemoveTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
+export async function lobbiesDeleteTagsById(requester: HttpRequester, id: string, payload: RemoveTags, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/lobbies/{id}/tags".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -256,7 +256,7 @@ export async function deleteLobbyTagsById(requester: HttpRequester, id: string, 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function postLobbyServerById(requester: HttpRequester, id: string, payload: CreateFederatedGameServer, gamertag?: string): Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>> {
+export async function lobbiesPostServerById(requester: HttpRequester, id: string, payload: CreateFederatedGameServer, gamertag?: string): Promise<HttpResponse<ApiLobbiesServerPostLobbyResponse>> {
   let endpoint = "/api/lobbies/{id}/server".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
