@@ -111,6 +111,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				analysisContext.ReportDiagnostic(err);
 			}
 			
+			// Check if there is more than one microservice in the cs proj.
+			// This needs to run at the end of the compilation to ensure that all microservices classes were be detected
+			// The Distinct is used to we ignore multiple partial classes of the same name
+			// Then we get the first one by order so we keep the diagnostic always on the same class 
 			if (microserviceInfos.Select(item => item.Name).Distinct().Count() > 1)
 			{
 				MicroserviceInfo microserviceInfo = microserviceInfos.OrderBy(item => item.Name).First();
@@ -376,6 +380,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 		
 		var fullName = typeSymbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		// Promises and Tasks are the only non-serializable types that can be found in callable method declaration
 		if (PromiseAndTaskBaseName.Any(s => fullName.Contains(s)))
 		{
 			return;
@@ -390,8 +395,15 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		reportDiagnostic.Invoke(diagnostic);
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="reportDiagnostic"></param>
+	/// <param name="typeSymbol"></param>
+	/// <param name="checkBeamGenAttr"></param>
 	private void ValidateMembersInSymbol(Action<Diagnostic> reportDiagnostic, ITypeSymbol typeSymbol, bool checkBeamGenAttr = false)
 	{
+		// Recursively checks all generic types
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
@@ -402,7 +414,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		string fullName = typeSymbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 		
-		// Skip Primitive types, and Generic Tasks and Promises.
+		// Skip Primitive types, and Generic Tasks and Promises because all the members of these types don't need to be evaluated
 		if (PromiseAndTaskBaseName.Any(s => fullName.Contains(s)) || !IsTypeValidatable(typeSymbol))
 		{
 			return;
