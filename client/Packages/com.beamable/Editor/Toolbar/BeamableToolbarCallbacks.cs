@@ -89,7 +89,7 @@ namespace Beamable.Editor.ToolbarExtender
 #if UNITY_2022_1_OR_NEWER
 						_ = (bool) m_SendEventToIMGUI.Invoke(_container, new object[]{evt, true, false});
 #else
-						container.HandleEvent(evt);
+						_container.HandleEvent(evt);
 #endif
 						
 					});
