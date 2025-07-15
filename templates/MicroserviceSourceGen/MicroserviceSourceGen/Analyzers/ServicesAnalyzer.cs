@@ -26,14 +26,30 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private const string VALIDATE_CALLABLE_TYPES_PROPERTY_NAME = "build_property.beamvalidatecallabletypesexistinsharedlibraries";
 	private const string BEAM_ID_PROPERTY_NAME = "build_property.beamid";
 	private static readonly string LibraryGeneratedPath = Path.Combine("Library", "BeamableEditor", "GeneratedProjects");
+
+	private static readonly string[] ExtendedPrimitiveList = {
+		"System.Void",
+		"void",
+		"System.String",
+		"string",
+		"System.DateTime",
+		"System.Guid",
+		"System.Threading.Tasks.Task",
+		"Beamable.Common.Promise",
+	};
 	
+	private static readonly string[] PromiseAndTaskBaseName = {
+		"System.Threading.Tasks.Task",
+		"Beamable.Common.Promise",
+	};
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
 		ImmutableArray.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
 			Diagnostics.Srv.MultipleMicroserviceClassesDetected, Diagnostics.Srv.MissingMicroserviceId,
 			Diagnostics.Srv.NonPartialMicroserviceClassDetected, Diagnostics.Srv.NoMicroserviceClassesDetected,
 			Diagnostics.Srv.CallableTypeInsideMicroserviceScope, Diagnostics.Srv.CallableMethodTypeIsNested,
 			Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested, Diagnostics.Srv.MicroserviceIdInvalidFromCsProj,
-			Diagnostics.Srv.StaticFieldFoundInMicroservice);
+			Diagnostics.Srv.StaticFieldFoundInMicroservice, Diagnostics.Srv.MissingSerializableAttributeOnType);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -55,6 +71,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			var classDeclaration = namedSymbol.DeclaringSyntaxReferences.FirstOrDefault(reference => reference.GetSyntax() is ClassDeclarationSyntax).GetSyntax() as ClassDeclarationSyntax;
 			var location = classDeclaration.Identifier.GetLocation();
 			ValidateNestedType(context.ReportDiagnostic, location, namedSymbol);
+			ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, namedSymbol);
 		}
 	}
 
@@ -251,13 +268,25 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		ValidateParameters(context, methodSymbol);
 	}
 
+	private bool IsTypeValidatable(ITypeSymbol symbol)
+	{
+		if (symbol?.TypeKind is not (TypeKind.Class or TypeKind.Struct or TypeKind.Interface or TypeKind.Enum))
+			return false;
+
+		string fullName = symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+			.Replace("global::", "");
+
+		return !ExtendedPrimitiveList.Contains(fullName);
+	}
+
 	private void ValidateReturnType(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol,
 		MethodDeclarationSyntax method)
 	{
-		if (methodSymbol.ReturnType.TypeKind is not (TypeKind.Class or TypeKind.Struct or TypeKind.Interface))
+		if (!IsTypeValidatable(methodSymbol.ReturnType))
 		{
 			return;
 		}
+		
 		
 		var methodAssembly = methodSymbol.ContainingAssembly;
 		if (_checkAssemblyReferences)
@@ -267,12 +296,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 
 		ValidateNestedType(context.ReportDiagnostic, method.ReturnType.GetLocation(), methodSymbol.ReturnType, methodSymbol.Name);
+		ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, methodSymbol.ReturnType);
 	}
 
 	private void ValidateParameters(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol)
 	{
-		var parametersToCheck = methodSymbol.Parameters
-			.Where(parameter => parameter.Type.TypeKind is TypeKind.Class or TypeKind.Struct or TypeKind.Interface);
+		var parametersToCheck = methodSymbol.Parameters.Where(parameter => IsTypeValidatable(parameter.Type));
 		var methodAssembly = methodSymbol.ContainingAssembly;
 		
 		foreach (var parameterSymbol in parametersToCheck)
@@ -285,6 +314,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 
 			ValidateNestedType(context.ReportDiagnostic, parameterSymbol.Locations.FirstOrDefault(), parameterSymbol.Type, methodSymbol.Name);
+			ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, parameterSymbol.Type);
 		}
 
 	}
@@ -320,6 +350,31 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				location, methodName, typeSymbol.Name);
 			context.ReportDiagnostic(diagnostic);
 		}
+	}
+
+	private void ValidateSerializableAttributeOnSymbol(Action<Diagnostic> reportDiagnostic, ITypeSymbol typeSymbol)
+	{
+		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
+		{
+			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
+			{
+				ValidateSerializableAttributeOnSymbol(reportDiagnostic, typeMember);
+			}
+		}
+		
+		var fullName = typeSymbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		if (PromiseAndTaskBaseName.Any(s => fullName.Contains(s)))
+		{
+			return;
+		}
+		
+		bool hasSerializableAttribute = typeSymbol.GetAttributes().Any(attr => attr.AttributeClass?.Name == nameof(SerializableAttribute));
+		if(hasSerializableAttribute || typeSymbol.TypeKind is TypeKind.Interface)
+			return;
+		
+		var diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeOnType,
+			typeSymbol.Locations.First(), typeSymbol.Name);
+		reportDiagnostic.Invoke(diagnostic);
 	}
 
 	/// <summary>
