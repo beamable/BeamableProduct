@@ -96,6 +96,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IAnalyticsTracker, NoOpAnalyticsTracker>();
 			DependencyBuilder.AddSingleton<ITokenEventSettings>(() => CoreConfiguration.Instance);
+			DependencyBuilder.AddSingleton(() => ContentConfiguration.Instance);
 			
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
@@ -160,20 +161,21 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			if (!HasDependencies())
-			{
-				_dependenciesLoadPromise = ImportDependencies();
-				_dependenciesLoadPromise.Then(_ =>
-				{
-					EditorUtility.RequestScriptReload();
-					AssetDatabase.Refresh();
-					Initialize();
-				}).Error(_ =>
-				{
-					Initialize();
-				});
-			}
-			else
+			// if (!HasDependencies())
+			// {
+			// 	_dependenciesLoadPromise = ImportDependencies();
+			// 	_dependenciesLoadPromise.Then(_ =>
+			// 	{
+			// 		Debug.Log("Beamable is requesting a script reload because the beamable editor dependencies were not detected yet.");
+			// 		EditorUtility.RequestScriptReload();
+			// 		AssetDatabase.Refresh();
+			// 		Initialize();
+			// 	}).Error(_ =>
+			// 	{
+			// 		Initialize();
+			// 	});
+			// }
+			// else
 			{
 				Initialize();
 			}
@@ -189,7 +191,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 10; // could be 50?
 
-		private static Promise _dependenciesLoadPromise = null;
+		// private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{
@@ -354,12 +356,13 @@ namespace Beamable
 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 #endif
 
+					IsInitialized = true;
+
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 					// Initialize toolbar
 					BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 
-					IsInitialized = true;
 				}
 				catch (Exception ex)
 				{

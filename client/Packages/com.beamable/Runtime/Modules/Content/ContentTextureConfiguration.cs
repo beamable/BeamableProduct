@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor.Experimental;
 using UnityEngine;
 
-namespace Modules.Content
+namespace Beamable.Modules.Content
 {
 	[Serializable]
 	public class ContentTextureConfiguration

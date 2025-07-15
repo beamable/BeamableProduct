@@ -3,6 +3,7 @@ using Beamable.Reflection;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.Reflection
 {
@@ -48,6 +49,8 @@ namespace Beamable.Editor.Reflection
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
 
 
+				Debug.Log(
+					"Beamable is requesting an AssetDatabase refresh because the reflection-cache files have been changed");
 				AssetDatabase.Refresh();
 			}
 
@@ -55,6 +58,9 @@ namespace Beamable.Editor.Reflection
 			{
 				//UnityEditor.MonoScript
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
+				Debug.Log(
+					"Beamable is requesting an AssetDatabase refresh because the reflection-cache files have been changed (maybe deleted). ");
+
 				AssetDatabase.Refresh();
 			}
 		}
