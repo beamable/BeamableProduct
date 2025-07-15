@@ -162,7 +162,6 @@ public class DefaultAppContext : IAppContext
 	private string _cid, _pid, _host;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
-	private readonly IAliasService _aliasService;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -175,7 +174,7 @@ public class DefaultAppContext : IAppContext
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
-		PreferRemoteFederationOption routeMapOption, IAliasService aliasService)
+		PreferRemoteFederationOption routeMapOption)
 	{
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
@@ -196,7 +195,6 @@ public class DefaultAppContext : IAppContext
 		_routeMapOption = routeMapOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
-		_aliasService = aliasService;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
@@ -338,7 +336,8 @@ public class DefaultAppContext : IAppContext
 	{
 		if (!string.IsNullOrEmpty(cid))
 		{
-			var aliasResolve = await _aliasService.Resolve(cid);
+			var aliasService = new AliasService(new NoAuthHttpRequester(host));
+			var aliasResolve = await aliasService.Resolve(cid);
 			_cid = aliasResolve.Cid;
 		}
 		else
