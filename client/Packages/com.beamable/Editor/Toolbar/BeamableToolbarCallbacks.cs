@@ -72,10 +72,10 @@ namespace Beamable.Editor.ToolbarExtender
 					
 					// This IMGUI Container is what draws the toolbar extension
 					_container = new IMGUIContainer();
-					// _container.style.flexGrow = 1;
 					_container.onGUIHandler += OnGUI;
 					_container.focusable = false;
 					_container.style.flexGrow = 0;
+					_container.style.marginRight = 2;
 					
 					// In Unity 2021.3 LTS, the IMGUIContainer is not capturing events by default when placed inside the toolbar. This is likely to do with how the
 					// internals of the Toolbar component have changed from Unity 2020. To solve this, we manually forward the event from any clicks of the toolbar into
