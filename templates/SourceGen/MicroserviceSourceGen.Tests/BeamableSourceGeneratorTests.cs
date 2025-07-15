@@ -15,6 +15,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using UnityEngine;
 
 namespace Microservice.SourceGen.Tests;
 
@@ -146,8 +147,10 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
 		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
 		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
+		var unityAssembly = Assembly.GetAssembly(typeof(ScriptableObject));
 		state.AdditionalReferences.Add(serverAssembly!);
 		state.AdditionalReferences.Add(runtimeAssembly!);
+		state.AdditionalReferences.Add(unityAssembly!);
 	}
 
 	public void Dispose()
