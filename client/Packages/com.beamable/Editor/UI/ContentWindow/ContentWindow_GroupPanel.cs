@@ -80,8 +80,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			_selectedStyle ??= new GUIStyle("TV Selection");
 			
-			
-			EditorGUILayout.BeginVertical(GUILayout.Width(CONTENT_GROUP_PANEL_WIDTH));
+			EditorGUILayout.BeginVertical();
 			{
 				EditorGUILayout.Space(5);
 				bool isSelected = SelectedContentType.Count == 0;
