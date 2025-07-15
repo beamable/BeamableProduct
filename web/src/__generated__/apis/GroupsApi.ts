@@ -51,6 +51,10 @@ export class GroupsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {KickRequest} payload - The `KickRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -65,7 +69,8 @@ export class GroupsApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -142,6 +147,10 @@ export class GroupsApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {KickRequest} payload - The `KickRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -156,11 +165,16 @@ export class GroupsApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
    * @returns {Promise<HttpResponse<Group>>} A promise containing the HttpResponse of Group
@@ -173,11 +187,16 @@ export class GroupsApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {GroupUpdate} payload - The `GroupUpdate` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -192,11 +211,16 @@ export class GroupsApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {DisbandRequest} payload - The `DisbandRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -211,7 +235,8 @@ export class GroupsApi {
       e,
       m: DELETE,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   

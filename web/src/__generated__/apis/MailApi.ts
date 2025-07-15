@@ -138,6 +138,10 @@ export class MailApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {bigint | string} mid - The `mid` parameter to include in the API request.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -154,11 +158,16 @@ export class MailApi {
       q: {
         mid
       },
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
    * @returns {Promise<HttpResponse<ListMailCategoriesResponse>>} A promise containing the HttpResponse of ListMailCategoriesResponse
@@ -171,11 +180,16 @@ export class MailApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {MailSearchRequest} payload - The `MailSearchRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -190,7 +204,8 @@ export class MailApi {
       e,
       m: POST,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -219,6 +234,10 @@ export class MailApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {BulkUpdateMailObjectRequest} payload - The `BulkUpdateMailObjectRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -233,11 +252,16 @@ export class MailApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {AcceptMultipleAttachments} payload - The `AcceptMultipleAttachments` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -252,11 +276,16 @@ export class MailApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
    * @returns {Promise<HttpResponse<MailQueryResponse>>} A promise containing the HttpResponse of MailQueryResponse
@@ -269,7 +298,8 @@ export class MailApi {
       r: this.r,
       e,
       m: GET,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
   
@@ -298,6 +328,10 @@ export class MailApi {
   }
   
   /**
+   * @remarks
+   * **Authentication:**
+   * This method requires a valid bearer token in the `Authorization` header.
+   * 
    * @param {UpdateMailRequest} payload - The `UpdateMailRequest` instance to use for the API request
    * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
    * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -312,7 +346,8 @@ export class MailApi {
       e,
       m: PUT,
       p: payload,
-      g: gamertag
+      g: gamertag,
+      w: true
     });
   }
 }

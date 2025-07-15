@@ -20,13 +20,11 @@ public class AppServices : IServiceProvider
 	public object GetService(Type serviceType) => duck.GetService(serviceType);
 }
 
-public interface IAppContext : IRealmInfo
+public interface IAppContext : IRealmInfo, IRequesterInfo
 {
-	public bool IsDryRun { get; }
 	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
 	public string Pid { get; }
-	public string Host { get; }
 	public bool PreferRemoteFederation { get; }
 	public bool UsePipeOutput { get; }
 	public bool ShowRawOutput { get; }
@@ -34,7 +32,6 @@ public interface IAppContext : IRealmInfo
 	public string DotnetPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
 	public string WorkingDirectory { get; }
-	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
 	bool ShouldUseLogFile { get; }
 	bool TryGetTempLogFilePath(out string logFile);
@@ -64,11 +61,6 @@ public interface IAppContext : IRealmInfo
 	/// </summary>
 	/// <param name="bindingContext"></param>
 	Task Apply(BindingContext bindingContext);
-	
-	/// <summary>
-	/// Sets the active token that we use to make authenticated requests. Again, only at runtime. This does not affect the files inside the '.beamable' folder.
-	/// </summary>
-	void SetToken(TokenResponse response);
 
 	/// <summary>
 	/// Sets a new cid/pid/host combination ONLY at runtime. Does not actually save this to disk.
@@ -350,9 +342,9 @@ public class DefaultAppContext : IAppContext
 		_token.Pid = _pid;
 	}
 
-	public void SetToken(TokenResponse response)
+	public void SetToken(TokenResponse tokenResponse)
 	{
-		_token = new CliToken(response, _cid, _pid);
+		_token = new CliToken(tokenResponse, _cid, _pid);
 	}
 
 	string IRealmInfo.CustomerID => _cid;

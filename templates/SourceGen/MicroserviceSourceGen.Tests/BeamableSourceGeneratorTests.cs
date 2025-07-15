@@ -89,9 +89,28 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		where TFixProvider : CodeFixProvider, new() where TAnalyzer : DiagnosticAnalyzer, new()
 	{
 		AddAssemblyReferences(ctx.TestState);
+		
+		ctx.CodeActionValidationMode = CodeActionValidationMode.SemanticStructure;
+		ctx.TestCode = NormalizeLineEndings(userCode);
+		ctx.FixedCode = NormalizeLineEndings(fixedCode);
+		
+		ctx.SolutionTransforms.Add((solution, projectId) =>
+		{
+			var project = solution.GetProject(projectId)!;
 
-		ctx.TestCode = userCode;
-		ctx.FixedCode = fixedCode;
+			foreach (var doc in project.Documents)
+			{
+				var text = doc.GetTextAsync().Result;
+				var normalizedText = Microsoft.CodeAnalysis.Text.SourceText.From(
+					NormalizeLineEndings(text.ToString()),
+					text.Encoding
+				);
+				solution = solution.WithDocumentText(doc.Id, normalizedText);
+			}
+
+			return solution;
+		});
+		
 		if (cfg != null)
 		{
 			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
@@ -107,6 +126,21 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		}
 	}
 
+	private static string NormalizeLineEndings(string input)
+	{
+		if (string.IsNullOrEmpty(input))
+			return input;
+		
+		string normalized = input
+			.Replace("\r\n", "\n")
+			.Replace("\n\r", "\n")
+			.Replace("\r", "\n");
+		
+		normalized = normalized.Replace("\n", Environment.NewLine);
+
+		return normalized;
+	}
+	
 	private static void AddAssemblyReferences(SolutionState state)
 	{
 		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes

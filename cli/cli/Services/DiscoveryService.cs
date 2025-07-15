@@ -105,7 +105,7 @@ public class DiscoveryService
 		IsDiscovering = true;
 		try
 		{
-			var adminSelfTask = args.Provider.GetService<IAccountsApi>().GetAdminMe();
+			var adminSelfTask = args.Provider.GetService<IAccountsApi>().GetAdminMe ();
 			var childCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(token);
 
 			var hostDiscoveryQueue = new ConcurrentQueue<HostServiceEvent>();

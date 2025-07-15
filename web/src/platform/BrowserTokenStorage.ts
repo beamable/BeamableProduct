@@ -20,9 +20,9 @@ export class BrowserTokenStorage extends TokenStorage {
   private bc: BroadcastChannel | null = null;
   private readonly storageListener: (e: StorageEvent) => void;
 
-  constructor(tag?: string) {
+  constructor(pid: string, tag?: string) {
     super();
-    this.prefix = tag ? `${tag}_` : '';
+    this.prefix = tag ? `${tag}_${pid}_` : `${pid}_`;
 
     // Initialize in-memory values from localStorage,
     this.accessToken = localStorage.getItem(this.accessTokenKey);
@@ -138,11 +138,30 @@ export class BrowserTokenStorage extends TokenStorage {
   }
 
   async clear(): Promise<void> {
-    await Promise.all([
-      this.removeAccessToken(),
-      this.removeRefreshToken(),
-      this.removeExpiresIn(),
-    ]);
+    // Remove all 'access token', 'refresh token' and 'expires in' entries from localStorage regardless of prefix
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key !== null &&
+        (key.endsWith(BASE_ACCESS_TOKEN_KEY) ||
+          key.endsWith(BASE_REFRESH_TOKEN_KEY) ||
+          key.endsWith(BASE_EXPIRES_IN_KEY))
+      ) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => localStorage.removeItem(key));
+
+    // Reset in-memory values
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.expiresIn = null;
+
+    // Broadcast removal to other tabs for this prefix
+    this.bc?.postMessage({ type: 'access', value: null });
+    this.bc?.postMessage({ type: 'refresh', value: null });
+    this.bc?.postMessage({ type: 'expiresIn', value: null });
   }
 
   dispose(): void {

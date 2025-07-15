@@ -34,6 +34,18 @@ public struct UnrealPropertyDeclaration
 
 	public string BriefCommentString;
 
+	/// <summary>
+	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
+	/// Funny does not mean funny here.
+	/// </summary>
+	public static string GetSanitizedPropertyName(string n) => n.StartsWith('$') ? n[1..] : n;
+
+	/// <summary>
+	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
+	/// Funny does not mean funny here.
+	/// </summary>
+	public static string GetSanitizedPropertyDisplayName(string n) => n.StartsWith('$') ? n[1..] : n;
+
 	public void IntoProcessMap(Dictionary<string, string> helperDict)
 	{
 		helperDict.Add(nameof(PropertyUnrealType), PropertyUnrealType);
@@ -72,12 +84,12 @@ public struct UnrealPropertyDeclaration
 
 	// Fallback for non-supported types
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	
+
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
-	
+
 	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 
-	
+
 	public const string UNREAL_JSON_FIELD_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -212,7 +224,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_SERIALIZE;
-		
+
 		if (unrealType.IsRawPrimitive())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
@@ -240,7 +252,7 @@ public struct UnrealPropertyDeclaration
 			{
 				return isSemType ? OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_WRAPPER_U_PROPERTY_DESERIALIZE;
 			}
-			
+
 			return isSemType ? OPTIONAL_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_U_PROPERTY_DESERIALIZE;
 		}
 
@@ -259,10 +271,10 @@ public struct UnrealPropertyDeclaration
 			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
-		
+
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_DESERIALIZE;
-		
+
 		if (unrealType.IsRawPrimitive())
 			return UNREAL_RAW_PRIMITIVE_DESERIALIZE;
 
@@ -275,8 +287,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealStruct())
 			return U_STRUCT_U_PROPERTY_DESERIALIZE;
-			
-		
+
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}
@@ -289,6 +300,15 @@ public struct UnrealPropertyDeclaration
 		do
 		{
 			idx = fieldName.IndexOf("_", wordStartIdx, StringComparison.Ordinal);
+
+			// If we start with "_", we change the field name after the underscore
+			if (idx == 0)
+			{
+				wordStartIdx = 1;
+				idx = -1;
+			}
+
+			// // Otherwise, we keep the full name if 
 			var length = idx == -1 ? fieldName.Length - wordStartIdx : idx - wordStartIdx;
 
 			var word = fieldName.AsSpan(wordStartIdx, length);
@@ -303,6 +323,6 @@ public struct UnrealPropertyDeclaration
 			stringBuilder.Insert(0, "b");
 		}
 
-		return stringBuilder.ToString();
+		return GetSanitizedPropertyName(stringBuilder.ToString());
 	}
 }
