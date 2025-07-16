@@ -281,16 +281,19 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		if (symbol == null)
 			return false;
 		
+		string fullName = symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+			.Replace("global::", "");
+
+		if (fullName.StartsWith("System."))
+			return false;
+		
 		// Ignore built-in types and primitive types
 		if(symbol.SpecialType != SpecialType.None)
 			return false;
 		
 		if (symbol.TypeKind is not (TypeKind.Class or TypeKind.Struct or TypeKind.Interface or TypeKind.Enum))
 			return false;
-
-		string fullName = symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-			.Replace("global::", "");
-
+		
 		return !ExtendedPrimitiveList.Contains(fullName);
 	}
 
@@ -379,9 +382,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 		}
 		
-		var fullName = typeSymbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		var fullName = typeSymbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
 		// Promises and Tasks are the only non-serializable types that can be found in callable method declaration
-		if (PromiseAndTaskBaseName.Any(s => fullName.Contains(s)))
+		if (PromiseAndTaskBaseName.Any(s => fullName.Contains(s)) && fullName.StartsWith("System."))
 		{
 			return;
 		}
@@ -389,9 +392,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		bool hasSerializableAttribute = typeSymbol.GetAttributes().Any(attr => attr.AttributeClass?.Name == nameof(SerializableAttribute));
 		if(hasSerializableAttribute || typeSymbol.TypeKind is TypeKind.Interface)
 			return;
-		
+
+		Location location = typeSymbol.Locations.First() ?? Location.None; 
 		var diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeOnType,
-			typeSymbol.Locations.First(), typeSymbol.Name);
+			location, typeSymbol.Name);
 		reportDiagnostic.Invoke(diagnostic);
 	}
 
@@ -425,7 +429,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			if (member is IPropertySymbol propertySymbol)
 			{
 				// if it is Property, we warn the customer that it will not be detected for client code gen
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertySymbol.Locations.First(), propertySymbol.Name);
+				Location propertyLocation = propertySymbol.Locations.First() ?? Location.None;
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, propertySymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
 			}
@@ -436,10 +441,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 			
 			// Validate if Field is subtype from ContentObject
+			Location location = fieldSymbol.Locations.First() ?? Location.None;
 			if (fieldSymbol.Type.BaseType?.Name == nameof(ContentObject) &&
 			    fieldSymbol.Type.Name != nameof(ContentObject))
 			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.FieldIsContentObjectSubtype,  fieldSymbol.Locations.First(), fieldSymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.FieldIsContentObjectSubtype,  location, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
 
@@ -447,7 +453,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			if (fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated ||
 			    fieldSymbol.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
 			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldSymbol.Locations.First(), fieldSymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, location, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
 			
@@ -462,7 +468,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			if(hasBeamGenerateAttr || !isValidatableType)
 				continue;
 			
-			var missingAttrDiagnostic = Diagnostic.Create(Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, fieldSymbol.Locations.First(), fieldSymbol.Name);
+			var missingAttrDiagnostic = Diagnostic.Create(Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, location, fieldSymbol.Name);
 			reportDiagnostic.Invoke(missingAttrDiagnostic);
 			
 		}
