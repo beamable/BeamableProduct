@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			sw.Start();
 			_legacyContentGuids = BeamableAssetDatabase.FindAssets<ContentObject>(_legacyContentFolders);
 			sw.Stop();
-			Debug.Log($"Content migration detection took {sw.Elapsed.TotalMilliseconds}ms");
+			// Debug.Log($"Content migration detection took {sw.Elapsed.TotalMilliseconds}ms");
 		}
 
 		public void DrawMigration()

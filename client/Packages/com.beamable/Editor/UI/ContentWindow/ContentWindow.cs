@@ -113,16 +113,17 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (_contentService == null)
 			{
-				Build();
+				DrawBlockLoading("Loading Content...");
 				return;
 			}
-
+			
+			
 			if (_windowStatus == ContentWindowStatus.Building)
 			{
 				DrawBlockLoading("Loading Contents...");
 				return;
 			}
-
+			
 			if (_contentService.ManifestChangedCount != _lastManifestChangedCount)
 			{
 				_lastManifestChangedCount = _contentService.ManifestChangedCount;
