@@ -6,12 +6,22 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		
+
+		public static void DrawHeaderSection(EditorWindow window,
+		                                     BeamEditorContext context,
+		                                     Action drawTopBarGui,
+		                                     Action drawLowBarGui,
+		                                     Action onClickedHelp,
+		                                     Action onClickedRefresh)
+		{
+			DrawHeaderSection(window, context, drawTopBarGui, _ => drawLowBarGui(), onClickedHelp, onClickedRefresh);
+		}
+
 		public static void DrawHeaderSection(
 			EditorWindow window, 
 			BeamEditorContext context, 
 			Action drawTopBarGui,
-			Action drawLowBarGui,
+			Action<Rect> drawLowBarGui,
 			Action onClickedHelp,
 			Action onClickedRefresh
 			)
@@ -56,7 +66,8 @@ namespace Beamable.Editor.Util
 				                                GUILayout.Height(30));
 				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
 
-				drawLowBarGui.Invoke();
+				EditorGUILayout.Space(1, true);
+				drawLowBarGui.Invoke(rect);
 				
 				EditorGUILayout.EndHorizontal();
 			}
