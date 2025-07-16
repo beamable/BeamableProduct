@@ -14,10 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `developer-user-manager remove-user` command that remove the user from the local files (it will not remove from the portal).
   - `developer-user-manager save-user` command that can save a new developer user in the local files.
   - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
-  
+- Improved diagnostic information for failures in `beam project generate-client --logs v` and better error messaging  
 
 ### Changed
 - `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+
+### Fixed
+- Fixed issue in the `beam checks scan -f *` command that would cause the fixed code to break serialization of federations.
+- Fixed issue in `beam project generate-client` command (for Unreal's code-generation) that caused internal `AdminRoutes`'s Callables (health-check/docs every microservice has) to be seen by the UE generation.
 
 ## [5.0.4] - 2025-07-02
 ### Fixed

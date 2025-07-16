@@ -7,8 +7,10 @@ using Beamable.Editor.Util;
 using Beamable.Editor.ContentService;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Beamable.Editor.ThirdParty.Splitter;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.Editor.UI.ContentWindow
 {
@@ -30,7 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "Content Manager",
+				Title = "Beam Content",
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				FocusOnShow = false,
 				RequireLoggedUser = true,
@@ -41,7 +43,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Content Manager",
+			"Beam Content",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => _ = await GetFullyInitializedWindow();
@@ -65,7 +67,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
-			_contentConfiguration = ContentConfiguration.Instance;
+			_contentConfiguration = Scope.GetService<ContentConfiguration>();
 			
 			BuildHeaderFilters();
 			
@@ -141,15 +143,31 @@ namespace Beamable.Editor.UI.ContentWindow
 			RunDelayedActions();
 		}
 
+		public EditorGUISplitView mainSplitter;
+			
 		private void DrawContentData()
 		{
 			EditorGUILayout.BeginVertical();
 			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
+			
 			EditorGUILayout.BeginHorizontal();
 			{
+				if (mainSplitter == null)
+				{
+					var windowWidth = this.position.width;
+					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
+					var normalizedWidth = startingWidthOfTypes / windowWidth;
+					mainSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
+
+					// the first time the splitter gets created, the window needs to force redraw itself
+					//  so that the splitter can size itself correctly. 
+					EditorApplication.delayCall += Repaint;
+				}
+				mainSplitter.BeginSplitView();
 				DrawContentGroupPanel();
-				BeamGUI.DrawVerticalSeparatorLine(new RectOffset(MARGIN_SEPARATOR_WIDTH, MARGIN_SEPARATOR_WIDTH, 15, 15), Color.gray);
+				mainSplitter.Split(this);
 				DrawContentItemPanel();
+				mainSplitter.EndSplitView();
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();

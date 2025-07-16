@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
@@ -17,6 +18,7 @@ namespace Beamable.Server.Editor
 
 		public void EnsureAreas(out AssemblyDefinitionAsset commonAssemblyAsset)
 		{
+			Debug.Log("Beamable is creating a common area for shared code between Unity and Microservices.");
 			AssetDatabase.StartAssetEditing();
 			try
 			{

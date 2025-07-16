@@ -127,7 +127,7 @@ public struct UnrealEndpointDeclaration
 			{
 				if (bodyParamDecl.PropertyUnrealType.IsUnrealUObject())
 				{
-					var serializableType = serializableTypes.First(t => t.NamespacedTypeName == bodyParamDecl.PropertyNamespacedType);
+					var serializableType = serializableTypes.FirstOrDefault(t => t.NamespacedTypeName == bodyParamDecl.PropertyNamespacedType);
 					return serializableType.UPropertyDeclarations.Select(tp => $"{tp.PropertyUnrealType} {GetBodyParamName(list, tp)}");
 				}
 
