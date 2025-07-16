@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Content;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 
@@ -58,6 +59,11 @@ public static class Diagnostics
 		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
 		public const string MICROSERVICE_ID_INVALID_FROM_CS_PROJ_ID = "BEAM_SRV_0010";
 		public const string STATIC_FIELD_FOUND_IN_MICROSERVICE_ID = "BEAM_SRV_0011";
+		public const string MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID = "BEAM_SRV_0012";
+		public const string PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0013";
+		public const string NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0014";
+		public const string FIELD_IS_CONTENT_OBJECT_SUBTYPE_ID = "BEAM_SRV_0015";
+		public const string TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID = "BEAM_SRV_0016";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -156,7 +162,52 @@ public static class Diagnostics
 				$"Consider making {{0}} a readonly field. Otherwise the value may be inconsistent in production environments.",
 				Category_Services,
 				DiagnosticSeverity.Warning,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-microservice-id",
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#static-field-in-microservice",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor MissingSerializableAttributeOnType
+			= new(MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID,
+				$"Types used in Microservice methods or marked with [BeamGenerateSchema] must be serializable",
+				$"Add the [Serializable] attribute to type '{{0}}'",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#missing-serializable-attribute-on-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor PropertiesFoundInSerializableTypes
+			= new(PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID,
+				$"Properties in serializable types are ignored by the client code generator",
+				$"Consider changing property '{{0}}' to a field to include it in client-generated code",
+				Category_Services,
+				DiagnosticSeverity.Warning,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#property-found-in-serializable-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor NullableFieldsInSerializableTypes
+			= new(NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID,
+				$"Nullable fields are not supported in serializable types",
+				$"Change field '{{0}}' to use {nameof(Optional)}<T> instead of a nullable type",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#nullable-field-in-serializable-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor FieldIsContentObjectSubtype
+			= new(FIELD_IS_CONTENT_OBJECT_SUBTYPE_ID,
+				$"Fields of type {nameof(ContentObject)} subtypes are not supported in serializable types",
+				$"Change field '{{0}}' to use the base {nameof(ContentObject)} type instead of a subtype",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#field-is-contentobject-subtype",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor TypeInBeamGeneratedIsMissingBeamGeneratedAttribute
+			= new(TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID,
+				$"Types used in fields of [BeamGenerateSchema] classes must also be marked with [BeamGenerateSchema]",
+				$"Add the [BeamGenerateSchema] attribute to type '{{0}}'",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
 				isEnabledByDefault: true);
 	}
 
