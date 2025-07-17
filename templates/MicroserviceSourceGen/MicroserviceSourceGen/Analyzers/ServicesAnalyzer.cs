@@ -394,8 +394,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 				Location parameterLocation = Diagnostics.GetValidLocation(parameterSymbol.Locations.FirstOrDefault(), context.Compilation);
 
-				context.ReportDiagnostic(Diagnostics.GetVerbose(
-					$"ValidateParameters | Parameter {parameterSymbol.Name} location: {parameterLocation.GetLineSpan()}",
+				context.ReportDiagnostic(Diagnostics.GetVerbose("ValidateParameters", $"Parameter {parameterSymbol.Name} location: {parameterLocation.GetLineSpan()}",
 					parameterLocation, context.Compilation));
 				if (_checkAssemblyReferences)
 				{
@@ -457,7 +456,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 			if (typeSymbol.ContainingAssembly == null)
 			{
-				context.ReportDiagnostic(Diagnostics.GetVerbose($"ValidateTypeAssembly | type: {typeSymbol.Name} have a null assembly", location, context.Compilation));
+				context.ReportDiagnostic(Diagnostics.GetVerbose("ValidateTypeAssembly",$"type: {typeSymbol.Name} have a null assembly", location, context.Compilation));
 				return;
 			}
 
@@ -481,11 +480,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		Location location = Diagnostics.GetValidLocation(typeSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-			$"SerializableValidate | Symbol {typeSymbol.Name} location: {location.GetLineSpan()}", location, compilation));
+			"SerializableValidate",$"Symbol {typeSymbol.Name} location: {location.GetLineSpan()}", location, compilation));
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-				$"SerializableValidate | {typeSymbol.Name} is a GenericType, validating each generic type", location, compilation));
+				"SerializableValidate",$"{typeSymbol.Name} is a GenericType, validating each generic type", location, compilation));
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
 				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, fallbackLocation);
@@ -499,12 +498,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		    typeSymbol.NullableAnnotation is NullableAnnotation.Annotated)
 		{
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-				$"SerializableValidate | {typeSymbol.Name} is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", location, compilation));
+				"SerializableValidate",$"{typeSymbol.Name} is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", location, compilation));
 			return;
 		}
 
 		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-			$"SerializableValidate | {typeSymbol.Name} is not a Primitive, Bult-in, or Nullable Type", location, compilation));
+			"SerializableValidate",$"{typeSymbol.Name} is not a Primitive, Bult-in, or Nullable Type", location, compilation));
 
 		var attributes = string.Join(" | ", typeSymbol.GetAttributes().Select(a =>
 				$"Name: {a.AttributeClass?.Name ?? string.Empty}, " +
@@ -516,20 +515,20 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			.ToList());
 
 		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-			$"SerializableValidate | {typeSymbol.Name} has the following attributes: {attributes}", location, compilation));
+			"SerializableValidate",$"{typeSymbol.Name} has the following attributes: {attributes}", location, compilation));
 		
 		bool isSerializable = typeSymbol is INamedTypeSymbol { IsSerializable: true };
-		reportDiagnostic.Invoke(Diagnostics.GetVerbose($"SerializableValidate | IsTypeSerializable: {isSerializable}",  location, compilation));
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose("SerializableValidate",$"IsTypeSerializable: {isSerializable}",  location, compilation));
 
 		if (isSerializable)
 		{
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-				$"SerializableValidate | {typeSymbol.Name} has SerializableAttribute", location, compilation));
+				"SerializableValidate",$"{typeSymbol.Name} has SerializableAttribute", location, compilation));
 			return;
 		}
 
 		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
-			$"SerializableValidate | {typeSymbol.Name} hasn't SerializableAttribute", location, compilation));
+			"SerializableValidate",$"{typeSymbol.Name} hasn't SerializableAttribute", location, compilation));
 
 		// Try to get type location, if not found because it is out of scope, try to get the fallback.
 		// If none fallback is passed, use Location.None so we don't throw any Exception.
@@ -553,7 +552,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
 			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} is a GenericType, validating each generic type", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} is a GenericType, validating each generic type", fallbackLocation, compilation));
 			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
@@ -567,16 +566,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		    typeSymbol.SpecialType == SpecialType.System_Nullable_T ||
 		    typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
 		{
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name}  is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
 			return;
 		}
 		
-		reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is not a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name}  is not a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
 
 		// We only need to validate Members for Classes and Structs
 		if (typeSymbol.TypeKind is not (TypeKind.Class or TypeKind.Struct))
 		{
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is not a Class or Struct, we can skip member validation for it", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name}  is not a Class or Struct, we can skip member validation for it", fallbackLocation, compilation));
 			return;
 		}
 
@@ -587,9 +586,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				// if it is Property, we warn the customer that it will not be detected for client code gen
 				Location propertyLocation = Diagnostics.GetValidLocation(propertySymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 				
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | Property {propertySymbol.Name} location: {propertyLocation.GetLineSpan()}", propertyLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"Property {propertySymbol.Name} location: {propertyLocation.GetLineSpan()}", propertyLocation, compilation));
 				
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is a property", propertyLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} is a property", propertyLocation, compilation));
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, propertySymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
@@ -597,52 +596,59 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 			if (member is not IFieldSymbol fieldSymbol)
 			{
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is not a Field, skipping it", fallbackLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} is not a Field, skipping it", fallbackLocation, compilation));
 				continue;
 			}
 			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is a Field", fallbackLocation, compilation));
+			// We only need to validate Members for Classes and Structs
+			if (fieldSymbol.Type.TypeKind is not (TypeKind.Class or TypeKind.Struct))
+			{
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} type is not a Class or Struct, we can skip member validation for it", fallbackLocation, compilation));
+				continue;
+			}
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} is a Field", fallbackLocation, compilation));
 			
 			// Validate if Field is subtype from ContentObject
 			Location fieldLocation = Diagnostics.GetValidLocation(fieldSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} location: {fieldLocation.GetLineSpan().ToString()}", fieldLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers",$"{typeSymbol.Name} - Field {fieldSymbol.Name} location: {fieldLocation.GetLineSpan().ToString()}", fieldLocation, compilation));
 			
 			if (fieldSymbol.Type.BaseType?.Name == nameof(ContentObject) &&
 			    fieldSymbol.Type.Name != nameof(ContentObject))
 			{
 				
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is a ContentObject Subtype", fieldLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers",$"{typeSymbol.Name} - Field {fieldSymbol.Name} is a ContentObject Subtype", fieldLocation, compilation));
 				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.FieldIsContentObjectSubtype,  fieldLocation, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
 			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is not a ContentObject Subtype", fieldLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers",$"{typeSymbol.Name} - Field {fieldSymbol.Name} is not a ContentObject Subtype", fieldLocation, compilation));
 
 			// Validate if Field is nullable, code gen do not support it
 			if (fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated ||
 			    fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T)
 			{
 				
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is Nullable", fieldLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Field {fieldSymbol.Name} is Nullable", fieldLocation, compilation));
 				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
 			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {fieldSymbol.Name} is not Nullable", fieldLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {fieldSymbol.Name} is not Nullable", fieldLocation, compilation));
 			
 			//Validate if field type is also serializable
 			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, fieldSymbol.Type, fallbackLocation);
 
 			if (!checkBeamGenAttr)
 			{
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | No need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"No need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
 				continue;
 			}
 
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | Need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"Need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
 
 
 			// Validate if type contains attribute as well
@@ -658,9 +664,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					$"{a.AttributeClass?.ContainingNamespace.Name ?? string.Empty}" +
 					$"{a.AttributeClass?.ContainingNamespace.ToDisplayString() ?? string.Empty}")
 				.ToList());
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} has the following Attributes: {stringAttributes}", fallbackLocation, compilation));
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} Is Beam or Primitive Type: {isPrimitiveOrBeamableType}", fallbackLocation, compilation));
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} Has BeamGenAttributes: {hasBeamGenerateAttr}", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} has the following Attributes: {stringAttributes}", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} Is Beam or Primitive Type: {isPrimitiveOrBeamableType}", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} Has BeamGenAttributes: {hasBeamGenerateAttr}", fallbackLocation, compilation));
 			
 			if(hasBeamGenerateAttr || isPrimitiveOrBeamableType)
 				continue;

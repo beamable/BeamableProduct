@@ -14,16 +14,16 @@ public static class Diagnostics
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
 
 	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
-	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Warning,
+	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Hidden,
 		true);
 	
 	public static readonly DiagnosticDescriptor BeamExceptionDescriptor = new("BEAM_EXC_0001", "Beamable Exception Debug", "{0}", Category_Debug, DiagnosticSeverity.Error,
 		true);
 	
 	
-	public static Diagnostic GetVerbose(string message, Location location, Compilation compilation, Location fallbackLocation = null)
+	public static Diagnostic GetVerbose(string title, string message, Location location, Compilation compilation, Location fallbackLocation = null)
 	{
-		return Diagnostic.Create(BeamVerboseDescriptor, GetValidLocation(location,compilation, fallbackLocation), message);
+		return Diagnostic.Create(BeamVerboseDescriptor, GetValidLocation(location,compilation, fallbackLocation), $"{title} | {message}");
 	}
 
 	public static Diagnostic GetException(Exception exception, Location location, Compilation compilation, Location fallbackLocation = null)
@@ -31,7 +31,7 @@ public static class Diagnostics
 		return Diagnostic.Create(BeamExceptionDescriptor, GetValidLocation(location,compilation, fallbackLocation),$"Exception | {exception.Message} | Stacktrace: {exception.StackTrace}");
 	}
 	
-	// TODO: Add comment that Microsoft does this to check location...
+	// Microsoft does this to check location to see if it is valid, we are checking it beforehand so we don't send invalid locations to the Diagnostic.
 	public static Location GetValidLocation(Location location, Compilation compilation, Location fallback = null)
 	{
 		bool isLocationNull = location == null;
