@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.tem
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "beamable.templates\templates\CommonLibrary\CommonLibrary.csproj", "{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.exporter", "beamable.otel.exporter\beamable.otel.exporter.csproj", "{658250C8-C929-428B-8425-EC5D1100B7D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

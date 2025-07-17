@@ -9,6 +9,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using Beamable.Common.Util;
+using beamable.otel.exporter;
 using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
@@ -57,6 +58,7 @@ using cli.OtelCommands;
 using cli.OtelCommands.Grafana;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -135,7 +137,11 @@ public class App
 					opts.IncludeScopes = true;
 					
 					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
-					opts.AddOtlpExporter();
+					opts.AddBeamableExporter(opts =>
+					{
+						var configPath = provider.GetService<ConfigService>().ConfigTempOtelLogsDirectoryPath;
+						opts.ExportPath = configPath ?? ".";
+					});
 				});
 			}
 
@@ -262,11 +268,17 @@ public class App
 						opts.RecordException = true;
 					})
 					.AddSource(Otel.METER_CLI_NAME)
-					.AddOtlpExporter()
+					.AddBeamableExporter(opt =>
+					{
+						var path = p.GetService<ConfigService>().ConfigTempOtelTracesDirectoryPath;
+						opt.ExportPath = path ?? ".";
+					})
 					.Build();
+
 			}
 			return null;
 		});
+
 		services.AddSingleton<MeterProvider>(p =>
 		{
 			var resourceBuilder = p.GetService<ResourceBuilder>();
@@ -277,7 +289,11 @@ public class App
 					.AddRuntimeInstrumentation()
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation()
-					.AddOtlpExporter()
+					.AddBeamableExporter(opts =>
+					{
+						var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
+						opts.ExportPath = path ?? ".";
+					})
 					.Build();
 			}
 
