@@ -14,7 +14,7 @@ public static class Diagnostics
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
 
 	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
-	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Hidden,
+	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Warning,
 		true);
 	
 	public static readonly DiagnosticDescriptor BeamExceptionDescriptor = new("BEAM_EXC_0001", "Beamable Exception Debug", "{0}", Category_Debug, DiagnosticSeverity.Error,
