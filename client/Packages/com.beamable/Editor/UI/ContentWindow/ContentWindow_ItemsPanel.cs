@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.ContentWindow
@@ -474,7 +475,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				menu.AddItem(new  GUIContent("Open File Item"), false, () =>
 				{
-					EditorUtility.OpenWithDefaultApp(entry.JsonFilePath);
+					InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1);
 				});
 				menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 				{

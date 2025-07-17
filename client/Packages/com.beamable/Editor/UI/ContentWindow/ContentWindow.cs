@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using System;
+using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
@@ -68,6 +69,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			
 			_contentConfiguration = Scope.GetService<ContentConfiguration>();
+
+			FindLegacyContent();
 			
 			BuildHeaderFilters();
 			
@@ -106,16 +109,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (_contentService == null)
 			{
-				Build();
+				DrawBlockLoading("Loading Content...");
 				return;
 			}
-
+			
 			if (_windowStatus == ContentWindowStatus.Building)
 			{
 				DrawBlockLoading("Loading Contents...");
 				return;
 			}
-
+			
 			if (_contentService.ManifestChangedCount != _lastManifestChangedCount)
 			{
 				_lastManifestChangedCount = _contentService.ManifestChangedCount;
@@ -147,6 +150,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 		private void DrawContentData()
 		{
+			if (NeedsMigration)
+			{
+				DrawNestedContent(DrawMigration);
+				return;
+			}
+			
 			EditorGUILayout.BeginVertical();
 			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
 			
@@ -237,7 +246,20 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			return localContentManifestEntries;
 		}
-		
+
+		public void DrawNestedContent(Action drawContent)
+		{
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.Space(1, true);
+			EditorGUILayout.BeginVertical(new GUIStyle()
+			{
+				padding = new RectOffset(0,0,12,12)
+			}, GUILayout.MaxWidth(position.width * .4f));
+			drawContent();
+			EditorGUILayout.EndVertical();
+			EditorGUILayout.Space(1, true);
+			EditorGUILayout.EndHorizontal();
+		}
 		
 	}
 
