@@ -211,7 +211,6 @@ namespace Beamable.Editor.Microservice.UI2
 				drawLowBarGui: () =>
 				{
 					{ // draw the dropdowns
-						
 						if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
 						{
 							BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),

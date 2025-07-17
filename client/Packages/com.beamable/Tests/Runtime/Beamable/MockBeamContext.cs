@@ -50,6 +50,8 @@ namespace Beamable.Tests.Runtime
 			// var cid = requester.AccessToken.Cid;
 			// var pid = requester.AccessToken.Pid;
 			var configProvider = new TestConfigProvider();
+			Beam.RuntimeConfigProvider.Fallback = configProvider;
+
 			new AccessTokenStorage(playerCode).DeleteTokenForRealm(configProvider.Cid, configProvider.Pid);
 			ctx.Requester = requester;
 			var builder = Beam.DependencyBuilder.Clone();

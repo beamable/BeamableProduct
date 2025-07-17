@@ -10,6 +10,7 @@ using Beamable.Editor.Accounts;
 using Beamable.Editor.Content;
 using Beamable.Editor.Library;
 using Beamable.Editor.Microservice.UI2;
+using Beamable.Editor.UI.ContentWindow;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
 using UnityEditor.PackageManager.UI;
@@ -123,13 +124,6 @@ namespace Beamable.Editor.UI
 
 		public virtual void OnEnable()
 		{
-			// TODO: render for loading
-
-			if (ShowLoading)
-			{
-				ShowFullWindowLoading();
-			}
-
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
@@ -203,9 +197,6 @@ namespace Beamable.Editor.UI
 		protected virtual async Promise BuildSetup()
 		{
 			await Load();
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-
 			await BuildAsync();
 		}
 		
@@ -258,33 +249,28 @@ namespace Beamable.Editor.UI
 			BeamGUI.CreateButtonStyles();
 			
 			titleContent = new GUIContent(InitializedConfig.Title, BeamGUI.iconBeamableSmall);
-			var root = this.GetRootVisualContainer();
-
+			
 			var ctx = ActiveContext;
 			if (ctx == null)
 			{
-				root.Clear();
 				DrawNoContextGui();
 				return;
 			}
 			
 			if (!ctx.InitializePromise.IsCompleted)
 			{
-				root.Clear();
 				DrawWaitingForContextGui();
 				return;
 			}
 
 			if (InitializedConfig.RequireLoggedUser && !ctx.IsAuthenticated)
 			{
-				root.Clear();
 				DrawNotLoggedInGui();
 				return;
 			}
 			
 			if (InitializedConfig.RequirePid && ctx.BeamCli?.Pid == null)
 			{
-				root.Clear();
 				DrawNoRealmGui();
 				return;
 			}
@@ -296,14 +282,6 @@ namespace Beamable.Editor.UI
 		protected virtual void DrawGUI()
 		{
 			
-		}
-
-		protected virtual void ShowFullWindowLoading()
-		{
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-			var label = new Label("Loading...");
-			root.Add(label);
 		}
 
 		protected void RunDelayedActions()
@@ -384,8 +362,8 @@ namespace Beamable.Editor.UI
 							onQuit = UsamWindow.Init;
 							onQuitMessage = "Open Services";
 							break;
-						case ContentManagerWindow:
-							onQuit = () => _ = ContentManagerWindow.Init();
+						case ContentWindow.ContentWindow:
+							onQuit = () => _ = ContentWindow.ContentWindow.Init();
 							onQuitMessage = "Open Content";
 							break;
 					}

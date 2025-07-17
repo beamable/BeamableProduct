@@ -258,6 +258,40 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
 
+      
+      [TestCase(nameof(SimpleMicroservice.Random1))]
+      [TestCase(nameof(SimpleMicroservice.Random2))]
+      [TestCase(nameof(SimpleMicroservice.Random3))]
+      [TestCase(nameof(SimpleMicroservice.Random4))]
+      [NonParallelizable]
+      public async Task GH_Issue_4156(string methodName)
+      {
+
+          TestSocket testSocket = null;
+          var ms = new TestSetup(new TestSocketProvider(socket =>
+          {
+              testSocket = socket;
+              socket.AddStandardMessageHandlers()
+                  .AddMessageHandler(
+                      MessageMatcher
+                          .WithReqId(1)
+                          .WithStatus(200)
+                          .WithPayload<RandomResponse>(rr => rr.number == 123),
+                      MessageResponder.NoResponse(),
+                      MessageFrequency.OnlyOnce()
+                  );
+          }));
+
+          await ms.Start<SimpleMicroservice>(new TestArgs());
+          Assert.IsTrue(ms.HasInitialized);
+
+          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", methodName, 1, 1));
+
+          // simulate shutdown event...
+          await ms.OnShutdown(this, null);
+          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
       [Test]
       [NonParallelizable]
       public async Task Call_PromiseMethod()

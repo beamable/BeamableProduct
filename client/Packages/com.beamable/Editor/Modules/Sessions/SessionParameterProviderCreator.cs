@@ -87,6 +87,7 @@ namespace Beamable.Editor.Modules.Sessions
 				return;
 			}
 
+			Debug.Log("Beamable is creating a session parameter provider creator.");
 			var assetPath = Path.ChangeExtension(path, ".asset");
 			AssetDatabase.CreateAsset(assetInstance, assetPath);
 

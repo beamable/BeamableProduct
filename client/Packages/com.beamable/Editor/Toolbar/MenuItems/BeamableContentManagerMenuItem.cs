@@ -1,4 +1,5 @@
 using Beamable.Editor.Content;
+using Beamable.Editor.UI.ContentWindow;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -13,7 +14,7 @@ namespace Beamable.Editor.ToolbarExtender
 	{
 		public override async void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			await ContentManagerWindow.Init();
+			await ContentWindow.Init();
 		}
 	}
 }

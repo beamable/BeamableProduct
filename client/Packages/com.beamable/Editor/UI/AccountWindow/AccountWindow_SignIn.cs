@@ -256,7 +256,7 @@ namespace Beamable.Editor.Accounts
 							_loginPromise = context.Login(GetHostString(), cidOrAlias, email, password);
 							_loginPromise.Then(_ =>
 							{
-								if (cli.latestGames.VisibleGames.Length > 1) // if there is only one game, there is no reason to make a selection
+								if (cli.latestGames?.VisibleGames.Length > 1) // if there is only one game, there is no reason to make a selection
 								{
 									needsGameSelection = true;
 								}

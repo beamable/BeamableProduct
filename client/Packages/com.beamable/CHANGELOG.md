@@ -8,9 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Heartbeats are no longer sent when Realm is configured to use the Beamable websocket. 
 - Able to use the new Client Code Generator from CLI that uses OpenAPI instead of the old one that uses Reflection
 - `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
 - `Core.Platform` namespace moved into `Beamable` namespace
+
+### Fixed
+- `Beam.SwitchToPid` resets content instance [3547](https://github.com/beamable/BeamableProduct/issues/3547)
+
+### Removed
+- Admin console command `HEARTBEAT` has been removed
+
+### Added
+- `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
+
 
 ## [2.4.0] - 2025-06-11 
 

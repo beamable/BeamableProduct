@@ -4,12 +4,13 @@ using Beamable.Common.Api;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Endel.NativeWebSocket;
-using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Beamable.Api.Connectivity;
+using Beamable.Api.Sessions;
 using UnityEngine;
 
 namespace Beamable.Connection
@@ -213,6 +214,35 @@ namespace Beamable.Connection
 		public async Promise OnDispose()
 		{
 			await Disconnect();
+		}
+
+		bool IHeartbeatService.IsRunning
+		{
+			get
+			{
+				// the websocket is always "running", in that it is always
+				//  either connected, or trying to connect. 
+				return true;
+			}
+		}
+
+		void IHeartbeatService.Start()
+		{
+			// no-op.
+			//  the websocket doesn't start/stop. 
+			//  it is in a constant state of connection or reconnection. 
+		}
+		void IHeartbeatService.ResetLegacyInterval()
+		{
+			// no-op
+			//  the websocket does not need to change its interval,
+			//  because its connection is defined by the connectivity of the
+			//  socket itself.
+		}
+		void IHeartbeatService.UpdateLegacyInterval(int seconds)
+		{
+			// no-op
+			//  save as ResetLegacyInterval.
 		}
 	}
 }

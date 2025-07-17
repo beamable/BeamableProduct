@@ -39,8 +39,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
+using Beamable.Editor.ContentService;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -76,9 +78,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IRequester>(provider => provider.GetService<IPlatformRequester>());
 			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
 			DependencyBuilder.AddSingleton<IAuthApi>(provider => provider.GetService<IEditorAuthApi>());
-			DependencyBuilder.AddSingleton<IContentIO>(provider => provider.GetService<ContentIO>());
-			DependencyBuilder.AddSingleton<ContentIO>();
-			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
 			DependencyBuilder.AddScoped<AliasService>();
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
@@ -97,10 +96,10 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IAnalyticsTracker, NoOpAnalyticsTracker>();
 			DependencyBuilder.AddSingleton<ITokenEventSettings>(() => CoreConfiguration.Instance);
+			DependencyBuilder.AddSingleton(() => ContentConfiguration.Instance);
 			
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
-			DependencyBuilder.AddSingleton<ContentDatabase>();
 
 			DependencyBuilder.AddSingleton<ConfigDatabaseProvider>();
 
@@ -124,9 +123,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => p.GetService<BeamCli>());
 
 			DependencyBuilder.AddGlobalStorage<UsamService, SessionStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<CliContentService, SessionStorageLayer>();
 			DependencyBuilder.AddSingleton(() => MicroserviceConfiguration.Instance);
 			DependencyBuilder.AddSingleton<CommonAreaService>();
-			
+			DependencyBuilder.AddScoped<MicroserviceClients>();
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -161,20 +161,21 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			if (!HasDependencies())
-			{
-				_dependenciesLoadPromise = ImportDependencies();
-				_dependenciesLoadPromise.Then(_ =>
-				{
-					EditorUtility.RequestScriptReload();
-					AssetDatabase.Refresh();
-					Initialize();
-				}).Error(_ =>
-				{
-					Initialize();
-				});
-			}
-			else
+			// if (!HasDependencies())
+			// {
+			// 	_dependenciesLoadPromise = ImportDependencies();
+			// 	_dependenciesLoadPromise.Then(_ =>
+			// 	{
+			// 		Debug.Log("Beamable is requesting a script reload because the beamable editor dependencies were not detected yet.");
+			// 		EditorUtility.RequestScriptReload();
+			// 		AssetDatabase.Refresh();
+			// 		Initialize();
+			// 	}).Error(_ =>
+			// 	{
+			// 		Initialize();
+			// 	});
+			// }
+			// else
 			{
 				Initialize();
 			}
@@ -190,7 +191,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 10; // could be 50?
 
-		private static Promise _dependenciesLoadPromise = null;
+		// private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{
@@ -355,12 +356,13 @@ namespace Beamable
 					          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 #endif
 
+					IsInitialized = true;
+
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 					// Initialize toolbar
 					BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 
-					IsInitialized = true;
 				}
 				catch (Exception ex)
 				{
@@ -512,14 +514,13 @@ namespace Beamable
 		public bool IsAuthenticated => ServiceScope.GetService<PlatformRequester>().Token != null;
 		public long UserId => BeamCli.latestAccount.id;
 
+		public CliContentService CliContentService => ServiceScope.GetService<CliContentService>();
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
 		public Promise OnReady => InitializePromise;
 		public Promise<BeamEditorContext> Instance => InitializePromise?.Map(_ => this);
 
 
-		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
-		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public BeamCommands Cli => BeamCli.Command;
@@ -532,6 +533,7 @@ namespace Beamable
 		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
 		/// </summary>
 		public UserPermissions Permissions => BeamCli.Permissions;
+		public MicroserviceClients Microservices => ServiceScope.GetService<MicroserviceClients>();
 
 		public bool HasToken => Requester.Token != null;
 
@@ -568,15 +570,6 @@ namespace Beamable
 			{
 				try
 				{
-					// initialize the default dependencies before a beam context ever gets going.
-					if (ContentIO.EnsureAllDefaultContent())
-					{
-						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
-						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-					}
-					
-					
 					// fetch latest CLI data, 
 					await BeamCli.Refresh();
 					
@@ -590,7 +583,6 @@ namespace Beamable
 					
 					ApplyRequesterToken();
 					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-					PublishDefaultContent();
 				}
 				catch (Exception ex)
 				{
@@ -608,21 +600,6 @@ namespace Beamable
 			Requester.Cid = BeamCli.Cid;
 			Requester.Pid = BeamCli.Pid;
 			Requester.Token = BeamCli.latestToken;
-		}
-		
-		public void PublishDefaultContent()
-		{
-			if (!IsAuthenticated)
-				return;
-			
-			var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
-			{
-				var hasNoContent = serverManifest.References.Count == 0;
-				if (hasNoContent)
-				{
-					var _ = DoSilentContentPublish();
-				}
-			});
 		}
 
 		/// <summary>
@@ -708,28 +685,6 @@ namespace Beamable
 			}
 		}
 		
-		#region Customer & User Creation and Management
-		
-		/// <summary>
-		/// Force a publish operation, with no validation, with no UX popups. Log output will occur.
-		/// </summary>
-		/// <param name="force">Pass true to force all content to publish. Leave as false to only publish changed content.</param>
-		/// <returns>A Promise of Unit representing the completion of the publish.</returns>
-		private async Promise DoSilentContentPublish(bool force = false)
-		{
-			var contentPublisher = ServiceScope.GetService<ContentPublisher>();
-			var clearPromise = force ? contentPublisher.ClearManifest() : Promise<Unit>.Successful(PromiseBase.Unit);
-			await clearPromise;
-
-			var publishSet = await contentPublisher.CreatePublishSet();
-			await contentPublisher.Publish(publishSet, progress => { });
-
-			var contentIO = ServiceScope.GetService<ContentIO>();
-			await contentIO.FetchManifest();
-		}
-
-		#endregion
-
 		public async Promise SwitchRealm(RealmView realm)
 		{
 			await SwitchRealm(realm.Pid);
@@ -739,8 +694,7 @@ namespace Beamable
 			await BeamCli.SwitchRealms(pid);
 			
 			ApplyRequesterToken();
-			await ContentIO.FetchManifest();
-			ContentDatabase.RecalculateIndex();
+			await CliContentService.Reload();
 			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
 		}
 
@@ -757,7 +711,6 @@ namespace Beamable
 			IsStopped = true;
 			await ServiceScope.Dispose();
 		}
-
 	}
 
 	[Serializable]

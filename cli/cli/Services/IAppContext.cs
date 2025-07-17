@@ -20,13 +20,11 @@ public class AppServices : IServiceProvider
 	public object GetService(Type serviceType) => duck.GetService(serviceType);
 }
 
-public interface IAppContext : IRealmInfo
+public interface IAppContext : IRealmInfo, IRequesterInfo
 {
-	public bool IsDryRun { get; }
 	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
 	public string Pid { get; }
-	public string Host { get; }
 	public bool PreferRemoteFederation { get; }
 	public bool UsePipeOutput { get; }
 	public bool ShowRawOutput { get; }
@@ -34,7 +32,6 @@ public interface IAppContext : IRealmInfo
 	public string DotnetPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
 	public string WorkingDirectory { get; }
-	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
 	bool ShouldUseLogFile { get; }
 	bool TryGetTempLogFilePath(out string logFile);
@@ -64,11 +61,6 @@ public interface IAppContext : IRealmInfo
 	/// </summary>
 	/// <param name="bindingContext"></param>
 	Task Apply(BindingContext bindingContext);
-	
-	/// <summary>
-	/// Sets the active token that we use to make authenticated requests. Again, only at runtime. This does not affect the files inside the '.beamable' folder.
-	/// </summary>
-	void SetToken(TokenResponse response);
 
 	/// <summary>
 	/// Sets a new cid/pid/host combination ONLY at runtime. Does not actually save this to disk.
@@ -162,7 +154,7 @@ public class DefaultAppContext : IAppContext
 	private string _cid, _pid, _host;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
-	private readonly IAliasService _aliasService;
+	private IDependencyProvider _provider;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -175,8 +167,9 @@ public class DefaultAppContext : IAppContext
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
-		PreferRemoteFederationOption routeMapOption, IAliasService aliasService)
+		PreferRemoteFederationOption routeMapOption, IDependencyProvider provider)
 	{
+		_provider = provider;
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -196,7 +189,6 @@ public class DefaultAppContext : IAppContext
 		_routeMapOption = routeMapOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
-		_aliasService = aliasService;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
@@ -336,9 +328,13 @@ public class DefaultAppContext : IAppContext
 
 	public async Task Set(string cid, string pid, string host)
 	{
+		_host = host;
+
 		if (!string.IsNullOrEmpty(cid))
 		{
-			var aliasResolve = await _aliasService.Resolve(cid);
+			var service = _provider.GetService<IAliasService>();
+			service.Requester = new NoAuthHttpRequester(host);
+			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
 		}
 		else
@@ -346,14 +342,13 @@ public class DefaultAppContext : IAppContext
 			_cid = cid;
 		}
 		_pid = pid;
-		_host = host;
 		_token.Cid = _cid;
 		_token.Pid = _pid;
 	}
 
-	public void SetToken(TokenResponse response)
+	public void SetToken(TokenResponse tokenResponse)
 	{
-		_token = new CliToken(response, _cid, _pid);
+		_token = new CliToken(tokenResponse, _cid, _pid);
 	}
 
 	string IRealmInfo.CustomerID => _cid;

@@ -6,12 +6,22 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		
+
+		public static void DrawHeaderSection(EditorWindow window,
+		                                     BeamEditorContext context,
+		                                     Action drawTopBarGui,
+		                                     Action drawLowBarGui,
+		                                     Action onClickedHelp,
+		                                     Action onClickedRefresh)
+		{
+			DrawHeaderSection(window, context, drawTopBarGui, _ => drawLowBarGui(), onClickedHelp, onClickedRefresh);
+		}
+
 		public static void DrawHeaderSection(
 			EditorWindow window, 
 			BeamEditorContext context, 
 			Action drawTopBarGui,
-			Action drawLowBarGui,
+			Action<Rect> drawLowBarGui,
 			Action onClickedHelp,
 			Action onClickedRefresh
 			)
@@ -52,16 +62,12 @@ namespace Beamable.Editor.Util
 
 			{ 
 				var rect = new Rect(0, GUILayoutUtility.GetLastRect().yMax, window.position.width, 30);
-				EditorGUILayout.BeginHorizontal(new GUIStyle()
-				                                {
-					                               
-				                                }, GUILayout.ExpandWidth(true),
+				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true),
 				                                GUILayout.Height(30));
 				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
-				
-				EditorGUILayout.Space(1, true);
 
-				drawLowBarGui.Invoke();
+				EditorGUILayout.Space(1, true);
+				drawLowBarGui.Invoke(rect);
 				
 				EditorGUILayout.EndHorizontal();
 			}
@@ -84,7 +90,8 @@ namespace Beamable.Editor.Util
 		                                int xOffset=0,
 		                                int iconPadding=0,
 		                                Color backgroundColor=default,
-		                                bool drawBorder=true)
+		                                bool drawBorder=true,
+		                                Rect? forcedRect = null)
 		{
 			var isDisabled = !GUI.enabled;
 			Color startColor = GUI.color;
@@ -93,7 +100,7 @@ namespace Beamable.Editor.Util
 				GUI.color = Color.Lerp(startColor, Color.clear, .3f);
 			}
 			
-			var rect = GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle(),  GUILayout.Width(width), GUILayout.ExpandHeight(true));
+			var rect = forcedRect ?? GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle(),  GUILayout.Width(width), GUILayout.ExpandHeight(true));
 			rect = new Rect(rect.x + padding, rect.y + padding + yPadding, rect.width - padding * 2, rect.height - padding * 2 - yPadding * 2);
 
 			rect = new Rect(rect.x - xOffset, rect.y, rect.width, rect.height);
@@ -116,12 +123,11 @@ namespace Beamable.Editor.Util
 				GUI.DrawTexture(texRect, icon, ScaleMode.ScaleToFit);
 			}
 
-			{ // draw the label
+			if (!string.IsNullOrEmpty(label)) // draw the label
+			{
 				var labelRect = new Rect(rect.x, rect.yMax - 15, rect.width, 15);
-				GUI.Label(labelRect, new GUIContent(label), new GUIStyle(EditorStyles.miniLabel)
-				{
-					alignment = TextAnchor.MiddleCenter
-				});
+				GUI.Label(labelRect, new GUIContent(label),
+				          new GUIStyle(EditorStyles.miniLabel) {alignment = TextAnchor.MiddleCenter});
 			}
 
 			if (drawBorder)

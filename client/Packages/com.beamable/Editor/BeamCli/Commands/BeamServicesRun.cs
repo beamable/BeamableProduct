@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ServicesRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>(Obsolete) This option is deprecated, amd cpu arch is already being enforced by default</summary>
+        /// <summary>[DEPRECATED] Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
         public bool forceAmdCpuArch;
         /// <summary>The ids for the services you wish to deploy. Ignoring this option deploys all services</summary>
         public string[] ids;

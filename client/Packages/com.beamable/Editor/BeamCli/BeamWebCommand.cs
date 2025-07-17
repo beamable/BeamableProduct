@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Editor.Modules.EditorConfig;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -314,7 +315,7 @@ namespace Beamable.Editor.BeamCli
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
-				var versionMatches = res.version == Version;
+				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement || res.version == Version;
 
 				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 
