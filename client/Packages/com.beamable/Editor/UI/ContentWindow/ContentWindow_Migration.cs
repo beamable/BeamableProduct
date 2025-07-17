@@ -17,10 +17,10 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		public readonly string[] _legacyContentFolders = new string[] {"Assets/Beamable/Editor/content"};
 
-		public bool needsMigration => (_legacyContentGuids?.Length ?? 0) > 0;
+		public bool NeedsMigration => (_legacyContentGuids?.Length ?? 0) > 0;
 		public string[] _legacyContentGuids;
 
-		public bool isMigrating => _migrationPromise != null;
+		public bool IsMigrating => _migrationPromise != null;
 		
 		private Promise _currentOperation;
 		private SequencePromise<ContentMigrationResult> _migrationPromise;
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			BuildMigrationStyles();
 
-			if (isMigrating == false)
+			if (IsMigrating == false)
 			{
 				DrawMigration_Prepare();
 			}
@@ -139,13 +139,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 
 			var gotoNewContentManager = false;
-			if (!_migrationPromise.IsFailed)
-			{
-				GUI.enabled = isMigrationFinished;
-				gotoNewContentManager = BeamGUI.PrimaryButton(new GUIContent("Goto new Content Manager"));
-				GUI.enabled = true;
-			}
-			else
+			if (_migrationPromise.IsFailed)
 			{
 				if (BeamGUI.CancelButton("Go back"))
 				{
@@ -155,6 +149,14 @@ namespace Beamable.Editor.UI.ContentWindow
 					FindLegacyContent();
 				}
 			}
+			else
+			{
+				BeamGUI.ShowDisabled(isMigrationFinished, () =>
+				{
+					gotoNewContentManager = BeamGUI.PrimaryButton(new GUIContent("Goto new Content Manager"));
+				});
+			}
+			
 			if (gotoNewContentManager)
 			{
 				_migrationPromise = null;
@@ -195,26 +197,38 @@ namespace Beamable.Editor.UI.ContentWindow
 			var clickedMigrate = BeamGUI.PrimaryButton(new GUIContent("Migrate Content"));
 			if (clickedMigrate)
 			{
-				_migrationPromise = PromiseEditor.ExecuteOnRoutines(2, _legacyContentGuids.Select<string, Func<Promise<ContentMigrationResult>>>(x =>
+				const int numberOfWorkerCoroutines = 25;
+				
+				var _ = _contentService.TempDisableWatcher(async () =>
 				{
-					return () => MigrateContent(x);
-				}).ToList());
+					
+					_migrationPromise = PromiseEditor.ExecuteOnRoutines(numberOfWorkerCoroutines, _legacyContentGuids.Select<string, Func<Promise<ContentMigrationResult>>>(legacyContentGuid =>
+					{
+						return () => MigrateContent(legacyContentGuid);
+					}).ToList()).OnElementSuccess(_ =>
+					{
+						Repaint();
+					});
+					await _migrationPromise.Then(_ =>
+					{
+						_deletePromise = PromiseEditor.ExecuteOnRoutines<Unit>(
+							numberOfWorkerCoroutines, _migrationPromise.SuccessfulResults.Select<ContentMigrationResult, Func<Promise<Unit>>>(
+								path =>
+								{
+									return () => DeleteOldContent(path.originalAssetPath);
+								}).ToList());
+						_deletePromise.Then(_ =>
+						{
+							PostDeletionNotice();
+						});
+					});
+
+					await _migrationPromise;
+					await _deletePromise;
 					
 					
-					
-				_migrationPromise.OnElementSuccess(_ =>
-				{
-					Repaint();
 				});
-				_migrationPromise.Then(_ =>
-				{
-					_deletePromise = PromiseEditor.ExecuteOnRoutines<Unit>(
-						2, _migrationPromise.SuccessfulResults.Select<ContentMigrationResult, Func<Promise<Unit>>>(
-							path =>
-							{
-								return () => DeleteOldContent(path.originalAssetPath);
-							}).ToList());
-				});
+				
 
 			}
 		}
@@ -224,6 +238,19 @@ namespace Beamable.Editor.UI.ContentWindow
 			File.Delete(path);
 			File.Delete(path + ".meta");
 			return Promise.Success;
+		}
+
+		void PostDeletionNotice()
+		{
+			var path = Path.Combine(_legacyContentFolders[0], "content-migration-notice.txt");
+			File.WriteAllText(path, 
+			                  @$"# Beamable Content Migration Notice
+On {DateTimeOffset.Now:s}, the content was migrated from Unity Scriptable Object 
+representation to raw JSON representation. The content now lives in the .beamable/content folder
+for this project. 
+
+If you go to the new Beamable Content Manager, and no longer see the Migration 
+workflow, then you may safely delete the {_legacyContentFolders[0]} folder. ");
 		}
 		
 		async Promise<ContentMigrationResult> MigrateContent(string guid)

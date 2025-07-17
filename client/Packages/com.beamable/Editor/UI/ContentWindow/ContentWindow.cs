@@ -51,10 +51,6 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		protected override void Build()
 		{
-			// clear the selection of any active element when the window opens.
-			// GUIUtility.hotControl = 0;
-			// GUIUtility.keyboardControl = 0;
-			//
 			if(_windowStatus == ContentWindowStatus.Building && _contentService != null)
 				return;
 			
@@ -117,7 +113,6 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 			
-			
 			if (_windowStatus == ContentWindowStatus.Building)
 			{
 				DrawBlockLoading("Loading Contents...");
@@ -155,7 +150,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 		private void DrawContentData()
 		{
-			if (needsMigration)
+			if (NeedsMigration)
 			{
 				DrawNestedContent(DrawMigration);
 				return;
