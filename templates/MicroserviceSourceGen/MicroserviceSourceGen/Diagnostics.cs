@@ -2,15 +2,50 @@
 using Beamable.Common.Content;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
+using System;
 
 namespace Beamable.Microservice.SourceGen;
 
 public static class Diagnostics
 {
+	public const string Category_Debug = "BeamableSourceGenerator_Debug";
 	public const string Category_Config = "BeamableSourceGenerator_Config";
 	public const string Category_Services = "BeamableSourceGenerator_Microservices";
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
 
+	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
+	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Warning,
+		true);
+	
+	public static readonly DiagnosticDescriptor BeamExceptionDescriptor = new("BEAM_EXC_0001", "Beamable Exception Debug", "{0}", Category_Debug, DiagnosticSeverity.Error,
+		true);
+	
+	
+	public static Diagnostic GetVerbose(string message, Location location, Compilation compilation, Location fallbackLocation = null)
+	{
+		return Diagnostic.Create(BeamVerboseDescriptor, GetValidLocation(location,compilation, fallbackLocation), message);
+	}
+
+	public static Diagnostic GetException(Exception exception, Location location, Compilation compilation, Location fallbackLocation = null)
+	{
+		return Diagnostic.Create(BeamExceptionDescriptor, GetValidLocation(location,compilation, fallbackLocation),$"Exception | {exception.Message} | Stacktrace: {exception.StackTrace}");
+	}
+	
+	// TODO: Add comment that Microsoft does this to check location...
+	public static Location GetValidLocation(Location location, Compilation compilation, Location fallback = null)
+	{
+		bool isLocationNull = location == null;
+		bool isLocationNotInSource = isLocationNull || !location.IsInSource;
+		bool isLocationNotInSyntaxTree = isLocationNull || location.SourceTree == null || !compilation.ContainsSyntaxTree(location.SourceTree);
+		bool isLocationOutOfSourceTree = isLocationNull || location.SourceTree == null || location.SourceSpan.End > location.SourceTree.Length;
+		if(isLocationNull || isLocationNotInSource || isLocationNotInSyntaxTree || isLocationOutOfSourceTree)
+		{
+			return fallback == null ? Location.None : GetValidLocation(fallback, compilation);
+		}
+
+		return location;
+	}
+	
 	public static class Cfg
 	{
 		public static readonly DiagnosticDescriptor NoSourceGenConfigFound

@@ -28,28 +28,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private const string BEAM_ID_PROPERTY_NAME = "build_property.beamid";
 	private static readonly string LibraryGeneratedPath = Path.Combine("Library", "BeamableEditor", "GeneratedProjects");
 
-	private static readonly string[] ExtendedPrimitiveList = {
-		"System.Void",
-		"void",
-		"System.String",
-		"string",
-		"System.DateTime",
-		"System.Guid",
-		"System.Threading.Tasks.Task",
-		"Beamable.Common.Promise",
-	};
-
-	private static readonly string[] AssembliesToIgnore = { "Unity.Beamable.", "System.", "Beamable." };
-
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-		ImmutableArray.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
-			Diagnostics.Srv.MultipleMicroserviceClassesDetected, Diagnostics.Srv.MissingMicroserviceId,
-			Diagnostics.Srv.NonPartialMicroserviceClassDetected, Diagnostics.Srv.NoMicroserviceClassesDetected,
-			Diagnostics.Srv.CallableTypeInsideMicroserviceScope, Diagnostics.Srv.CallableMethodTypeIsNested,
-			Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested, Diagnostics.Srv.MicroserviceIdInvalidFromCsProj,
-			Diagnostics.Srv.StaticFieldFoundInMicroservice, Diagnostics.Srv.MissingSerializableAttributeOnType, 
-			Diagnostics.Srv.PropertiesFoundInSerializableTypes, Diagnostics.Srv.NullableFieldsInSerializableTypes, 
-			Diagnostics.Srv.FieldIsContentObjectSubtype, Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute);
+		ImmutableArray.Create(Diagnostics.BeamVerboseDescriptor, Diagnostics.BeamExceptionDescriptor,
+			Diagnostics.Srv.InvalidAsyncVoidCallableMethod, Diagnostics.Srv.MultipleMicroserviceClassesDetected,
+			Diagnostics.Srv.MissingMicroserviceId, Diagnostics.Srv.NonPartialMicroserviceClassDetected,
+			Diagnostics.Srv.NoMicroserviceClassesDetected, Diagnostics.Srv.CallableTypeInsideMicroserviceScope,
+			Diagnostics.Srv.CallableMethodTypeIsNested, Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested,
+			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
+			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
+			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.FieldIsContentObjectSubtype,
+			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -64,28 +52,51 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	
 	private void ValidateBeamGenerateSchemaAttr(SymbolAnalysisContext context)
 	{
-		var namedSymbol = (INamedTypeSymbol)context.Symbol;
-		var attributes = namedSymbol.GetAttributes();
-		if (attributes.Any(att => att.AttributeClass is { Name: nameof(BeamGenerateSchemaAttribute) }))
+		try
 		{
-			var classDeclaration = namedSymbol.DeclaringSyntaxReferences.FirstOrDefault(reference => reference.GetSyntax() is ClassDeclarationSyntax).GetSyntax() as ClassDeclarationSyntax;
-			var location = classDeclaration.Identifier.GetLocation();
-			ValidateNestedType(context.ReportDiagnostic, location, namedSymbol);
-			ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, namedSymbol);
-			ValidateMembersInSymbol(context.ReportDiagnostic, namedSymbol, true);
+			var namedSymbol = (INamedTypeSymbol)context.Symbol;
+			var attributes = namedSymbol.GetAttributes();
+			if (attributes.Any(att => att.AttributeClass is { Name: nameof(BeamGenerateSchemaAttribute) }))
+			{
+				var syntaxRef =
+					namedSymbol.DeclaringSyntaxReferences.FirstOrDefault(reference =>
+						reference.GetSyntax() is ClassDeclarationSyntax);
+
+				if (syntaxRef?.GetSyntax() is ClassDeclarationSyntax classDeclaration)
+				{
+					var location = Diagnostics.GetValidLocation(classDeclaration.Identifier.GetLocation(), context.Compilation);
+					ValidateNestedType(context.Compilation, context.ReportDiagnostic, location, namedSymbol);
+
+					ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, namedSymbol,
+						location);
+					ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, namedSymbol, true, location);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
 		}
 	}
-
 	
 	private void OnCompilationStart(CompilationStartAnalysisContext context)
 	{
 		var microserviceInfos = new ConcurrentBag<MicroserviceInfo>();
 		context.RegisterSymbolAction(symbolContext =>
 		{
-			MicroserviceInfo? validateMicroservice = ValidateMicroservice(symbolContext);
-			if (validateMicroservice.HasValue)
+			try
 			{
-				microserviceInfos.Add(validateMicroservice.Value);
+				MicroserviceInfo? validateMicroservice = ValidateMicroservice(symbolContext);
+				if (validateMicroservice.HasValue)
+				{
+					microserviceInfos.Add(validateMicroservice.Value);
+				}
+			}
+			catch (Exception e)
+			{
+				symbolContext.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+				throw;
 			}
 		}, SymbolKind.NamedType);
 
@@ -93,7 +104,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		var compilationReferences = context.Compilation.References.ToList();
 
 		CheckValidateCallableTypeProperty(analyzerConfigOptions, compilationReferences);
-		CacheBeamIdProperty(analyzerConfigOptions, compilationReferences);
+		CacheBeamIdProperty(analyzerConfigOptions);
 
 		context.RegisterSyntaxNodeAction(ValidateMethodReturnAndParametersType, SyntaxKind.MethodDeclaration);
 		
@@ -130,7 +141,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		});
 	}
 
-	private void CacheBeamIdProperty(AnalyzerConfigOptions analyzerConfigOptions, List<MetadataReference> compilationReferences)
+	private void CacheBeamIdProperty(AnalyzerConfigOptions analyzerConfigOptions)
 	{
 		bool hasBeamIdProperty = analyzerConfigOptions.TryGetValue(BEAM_ID_PROPERTY_NAME, out string beamId) &&
 		                         !string.IsNullOrEmpty(beamId);
@@ -200,50 +211,65 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	private static void AnalyzeCallableMethods(SyntaxNodeAnalysisContext context)
 	{
-		var method = (MethodDeclarationSyntax)context.Node;
-		IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(method);
-
-		if (methodSymbol == null || !methodSymbol.GetAttributes().Any(IsCallableAttribute))
+		try
 		{
-			return;
+			var method = (MethodDeclarationSyntax)context.Node;
+			IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(method);
+
+			if (methodSymbol == null || !methodSymbol.GetAttributes().Any(IsCallableAttribute))
+			{
+				return;
+			}
+
+			if (IsAsyncVoid(methodSymbol))
+			{
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
+					method.ReturnType.GetLocation(), methodSymbol.Name);
+				context.ReportDiagnostic(diagnostic);
+			}
 		}
-
-		if (IsAsyncVoid(methodSymbol))
+		catch (Exception e)
 		{
-			var diagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidAsyncVoidCallableMethod,
-				method.ReturnType.GetLocation(), methodSymbol.Name);
-			context.ReportDiagnostic(diagnostic);
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
 		}
 	}
 	
 	private void AnalyzeFields(SyntaxNodeAnalysisContext context)
 	{
-		var field = (FieldDeclarationSyntax)context.Node;
-		
-		
-		var classDeclaration = field.FirstAncestorOrSelf<ClassDeclarationSyntax>();
-		if (classDeclaration?.BaseList == null ||
-		    !classDeclaration.BaseList.Types.Any(item => item.ToString().Contains(nameof(Server.Microservice))))
+		try
 		{
-			return;
-		}
+			var field = (FieldDeclarationSyntax)context.Node;
+		
+			var classDeclaration = field.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+			if (classDeclaration?.BaseList == null ||
+			    !classDeclaration.BaseList.Types.Any(item => item.ToString().Contains(nameof(Server.Microservice))))
+			{
+				return;
+			}
 
-		if (!field.Modifiers.Any(SyntaxKind.StaticKeyword) ||
-		    field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword))
+			if (!field.Modifiers.Any(SyntaxKind.StaticKeyword) ||
+			    field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword))
+			{
+				return;
+			}
+		
+		
+			SyntaxToken identifier = field.Declaration.Variables.First().Identifier;
+			string fieldName = identifier.ToString();
+
+			var props = new Dictionary<string, string> { { Diagnostics.Srv.PROP_FIELD_NAME, fieldName } }
+				.ToImmutableDictionary();
+		
+			var diagnostic = Diagnostic.Create(Diagnostics.Srv.StaticFieldFoundInMicroservice,
+				identifier.GetLocation(), properties: props, fieldName);
+			context.ReportDiagnostic(diagnostic);
+		}
+		catch (Exception e)
 		{
-			return;
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
 		}
-		
-		
-		SyntaxToken identifier = field.Declaration.Variables.First().Identifier;
-		string fieldName = identifier.ToString();
-
-		var props = new Dictionary<string, string> { { Diagnostics.Srv.PROP_FIELD_NAME, fieldName } }
-			.ToImmutableDictionary();
-		
-		var diagnostic = Diagnostic.Create(Diagnostics.Srv.StaticFieldFoundInMicroservice,
-			identifier.GetLocation(), properties: props, fieldName);
-		context.ReportDiagnostic(diagnostic);
 
 	}
 
@@ -277,121 +303,236 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		if(symbol == null)
 			return false;
-
+		
 		// When handling arrays, we need to validate the elementType instead
 		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
 		{
 			return IsPrimitiveBuiltInOrBeamableType(arrayTypeSymbol.ElementType);
 		}
+
+		var primitiveSpecialTypes = new[] {
+			SpecialType.System_Byte, 
+			SpecialType.System_SByte, 
+			SpecialType.System_Int16, 
+			SpecialType.System_UInt16,
+			SpecialType.System_Int32,
+			SpecialType.System_UInt32,
+			SpecialType.System_Int64,
+			SpecialType.System_UInt64,
+			SpecialType.System_Single,
+			SpecialType.System_Double,
+			SpecialType.System_Char,
+			SpecialType.System_Boolean,
+			SpecialType.System_String,
+			SpecialType.System_DateTime,
+			SpecialType.System_Void,
+			SpecialType.System_IAsyncResult,
+		};
+
 		
-		string fullName = symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-			.Replace("global::", "");
-		
-		string typeAssembly = symbol.ContainingAssembly.Name;
-		// Validate if Type is from Built-in or Beamable Assemblies
-		if (AssembliesToIgnore.Any(assembly => typeAssembly.StartsWith(assembly)))
-		{
+		if(primitiveSpecialTypes.Contains(symbol.SpecialType))
 			return true;
+		
+		var specialHandlingTypes = new[]
+		{
+			"Beamable.Common.Content.Optional", 
+			"Beamable.Common.Content.ContentRef",
+			"Beamable.Common.Content.ContentLink",
+			"Beamable.Common.PromiseBase",
+			"System.Threading.Tasks.Task",
+			"System.Guid",
+			"System.Collections.Generic.List"
+		};
+
+		// CSharpErrorMessageFormat... add comment
+		List<string> allTypes = new List<string> { symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) };
+		var lastSymbol = symbol;
+		while (lastSymbol.BaseType != null)
+		{
+			lastSymbol = lastSymbol.BaseType;
+			allTypes.Add(lastSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
 		}
 		
-		return ExtendedPrimitiveList.Contains(fullName);
+		return specialHandlingTypes.Any(beamType => allTypes.Any(symbolType => symbolType.StartsWith(beamType)));
+
 	}
 
 	private void ValidateReturnType(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol,
 		MethodDeclarationSyntax method)
 	{
-		var methodAssembly = methodSymbol.ContainingAssembly;
-		Location returnLocation = method.ReturnType.GetLocation();
-		if (_checkAssemblyReferences)
+		try
 		{
-			ValidateTypeAssembly(context, returnLocation, methodSymbol.ReturnType, methodAssembly,
-				methodSymbol.Name);
-		}
+			var methodAssembly = methodSymbol.ContainingAssembly;
+			Location returnLocation = Diagnostics.GetValidLocation(method.ReturnType.GetLocation(), context.Compilation);
+			if (_checkAssemblyReferences)
+			{
+				ValidateTypeAssembly(context, returnLocation, methodSymbol.ReturnType, methodAssembly,
+					methodSymbol.Name);
+			}
+			ValidateNestedType(context.Compilation, context.ReportDiagnostic, returnLocation, methodSymbol.ReturnType, methodSymbol.Name);
 
-		ValidateNestedType(context.ReportDiagnostic, returnLocation, methodSymbol.ReturnType, methodSymbol.Name);
-		ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, methodSymbol.ReturnType, returnLocation);
-		ValidateMembersInSymbol(context.ReportDiagnostic, methodSymbol.ReturnType);
+			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic,
+				methodSymbol.ReturnType, returnLocation);
+			ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, methodSymbol.ReturnType,
+				fallbackLocation: returnLocation);
+		}
+		catch (Exception e)
+		{
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
+		}
 	}
 
 	private void ValidateParameters(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol)
 	{
-		var methodAssembly = methodSymbol.ContainingAssembly;
-		
-		foreach (var parameterSymbol in methodSymbol.Parameters)
+		try
 		{
-			Location parameterLocation = parameterSymbol.Locations.FirstOrDefault();
-			if (_checkAssemblyReferences)
+			var methodAssembly = methodSymbol.ContainingAssembly;
+
+			foreach (var parameterSymbol in methodSymbol.Parameters)
 			{
-				ValidateTypeAssembly(context, parameterLocation, parameterSymbol.Type,
-					methodAssembly,
+
+				Location parameterLocation = Diagnostics.GetValidLocation(parameterSymbol.Locations.FirstOrDefault(), context.Compilation);
+
+				context.ReportDiagnostic(Diagnostics.GetVerbose(
+					$"ValidateParameters | Parameter {parameterSymbol.Name} location: {parameterLocation.GetLineSpan()}",
+					parameterLocation, context.Compilation));
+				if (_checkAssemblyReferences)
+				{
+					ValidateTypeAssembly(context, parameterLocation, parameterSymbol.Type,
+						methodAssembly,
+						methodSymbol.Name);
+				}
+
+				ValidateNestedType(context.Compilation, context.ReportDiagnostic, parameterLocation, parameterSymbol.Type,
 					methodSymbol.Name);
+
+				ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic,
+					parameterSymbol.Type, parameterLocation);
+				ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type,
+					fallbackLocation: parameterLocation);
+
 			}
-
-			ValidateNestedType(context.ReportDiagnostic, parameterLocation, parameterSymbol.Type, methodSymbol.Name);
-			ValidateSerializableAttributeOnSymbol(context.ReportDiagnostic, parameterSymbol.Type, parameterLocation);
-			ValidateMembersInSymbol(context.ReportDiagnostic, parameterSymbol.Type);
 		}
-
+		catch (Exception e)
+		{
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
+		}
 	}
 
-	private void ValidateNestedType(Action<Diagnostic> reportDiagnostic, Location diagnosticLocation, ITypeSymbol typeSymbol, string methodName = null)
+	private void ValidateNestedType(Compilation compilation, Action<Diagnostic> reportDiagnostic, Location diagnosticLocation, ITypeSymbol typeSymbol, string methodName = null)
 	{
-		if(typeSymbol.ContainingType == null)
-			return;
-		var descriptor = string.IsNullOrEmpty(methodName)
-			? Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested
-			: Diagnostics.Srv.CallableMethodTypeIsNested;
-		var diagnostic = Diagnostic.Create(descriptor,
-			diagnosticLocation, typeSymbol.Name, methodName);
-		reportDiagnostic(diagnostic);
+		try
+		{
+			if(typeSymbol.ContainingType == null)
+				return;
+			var descriptor = string.IsNullOrEmpty(methodName)
+				? Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested
+				: Diagnostics.Srv.CallableMethodTypeIsNested;
+			var diagnostic = Diagnostic.Create(descriptor,
+				diagnosticLocation, typeSymbol.Name, methodName);
+			reportDiagnostic(diagnostic);
+		}
+		catch (Exception e)
+		{
+			reportDiagnostic(Diagnostics.GetException(e, null, compilation));
+			throw;
+		}
 	}
 
 
 	private void ValidateTypeAssembly(SyntaxNodeAnalysisContext context, Location location, ITypeSymbol typeSymbol, IAssemblySymbol methodAssemblySymbol, string methodName)
 	{
-		// If it is a Generic Type, we need to check inner types to see if them are in the same Assembly
-		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
+		try
 		{
-			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
+			// If it is a Generic Type, we need to check inner types to see if them are in the same Assembly
+			if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 			{
-				ValidateTypeAssembly(context, location, typeMember, methodAssemblySymbol, methodName);
+				foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
+				{
+					ValidateTypeAssembly(context, location, typeMember, methodAssemblySymbol, methodName);
+				}
+			}
+
+			if (typeSymbol.ContainingAssembly == null)
+			{
+				context.ReportDiagnostic(Diagnostics.GetVerbose($"ValidateTypeAssembly | type: {typeSymbol.Name} have a null assembly", location, context.Compilation));
+				return;
+			}
+
+			if ( methodAssemblySymbol.Identity == typeSymbol.ContainingAssembly.Identity)
+			{
+				// This means that the return type is declared inside the microservice scope
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.CallableTypeInsideMicroserviceScope,
+					location, methodName, typeSymbol.Name);
+				context.ReportDiagnostic(diagnostic);
 			}
 		}
-		var returnAssemblySymbol = typeSymbol.ContainingAssembly;
-		if (methodAssemblySymbol.Identity == returnAssemblySymbol.Identity)
+		catch (Exception e)
 		{
-			// This means that the return type is declared inside the microservice scope
-			var diagnostic = Diagnostic.Create(Diagnostics.Srv.CallableTypeInsideMicroserviceScope,
-				location, methodName, typeSymbol.Name);
-			context.ReportDiagnostic(diagnostic);
+			context.ReportDiagnostic(Diagnostics.GetException(e, null, context.Compilation));
+			throw;
 		}
 	}
 
-	private void ValidateSerializableAttributeOnSymbol(Action<Diagnostic> reportDiagnostic, ITypeSymbol typeSymbol, Location fallbackLocation = null)
+	private void ValidateSerializableAttributeOnSymbol(Compilation compilation, Action<Diagnostic> reportDiagnostic,
+		ITypeSymbol typeSymbol, Location fallbackLocation = null)
 	{
+		Location location = Diagnostics.GetValidLocation(typeSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+			$"SerializableValidate | Symbol {typeSymbol.Name} location: {location.GetLineSpan()}", location, compilation));
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+				$"SerializableValidate | {typeSymbol.Name} is a GenericType, validating each generic type", location, compilation));
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
-				ValidateSerializableAttributeOnSymbol(reportDiagnostic, typeMember, fallbackLocation);
+				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, fallbackLocation);
 			}
 		}
-		
+
+
 		// We don't need to check for Primitive, Built-in and Beamable Types
-		if (IsPrimitiveBuiltInOrBeamableType(typeSymbol))
+		if (IsPrimitiveBuiltInOrBeamableType(typeSymbol) ||
+		    typeSymbol.SpecialType is SpecialType.System_Nullable_T ||
+		    typeSymbol.NullableAnnotation is NullableAnnotation.Annotated)
 		{
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+				$"SerializableValidate | {typeSymbol.Name} is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", location, compilation));
 			return;
 		}
 
-		bool hasSerializableAttribute = typeSymbol.GetAttributes().Any(attr =>
-			attr.AttributeClass?.ToDisplayString() == typeof(SerializableAttribute).FullName);
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+			$"SerializableValidate | {typeSymbol.Name} is not a Primitive, Bult-in, or Nullable Type", location, compilation));
+
+		var attributes = string.Join(" | ", typeSymbol.GetAttributes().Select(a =>
+				$"Name: {a.AttributeClass?.Name ?? string.Empty}, " +
+				$"MetadataName: {a.AttributeClass?.MetadataName ?? string.Empty}, " +
+				$"ClassToDisplayString: {a.AttributeClass?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? string.Empty}, " +
+				$"NamespaceName: {a.AttributeClass?.ContainingNamespace.Name ?? string.Empty}, " +
+				$"NamespaceToDisplay: {a.AttributeClass?.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? string.Empty}, "+
+				$"AssemblyToDisplay: {a.AttributeClass?.ContainingAssembly?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? string.Empty}")
+			.ToList());
+
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+			$"SerializableValidate | {typeSymbol.Name} has the following attributes: {attributes}", location, compilation));
 		
-		if(hasSerializableAttribute)
+		bool isSerializable = typeSymbol is INamedTypeSymbol { IsSerializable: true };
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose($"SerializableValidate | IsTypeSerializable: {isSerializable}",  location, compilation));
+
+		if (isSerializable)
+		{
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+				$"SerializableValidate | {typeSymbol.Name} has SerializableAttribute", location, compilation));
 			return;
+		}
+
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose(
+			$"SerializableValidate | {typeSymbol.Name} hasn't SerializableAttribute", location, compilation));
 
 		// Try to get type location, if not found because it is out of scope, try to get the fallback.
 		// If none fallback is passed, use Location.None so we don't throw any Exception.
-		Location location = typeSymbol.Locations.FirstOrDefault() ?? fallbackLocation ?? Location.None; 
 		var diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeOnType,
 			location, typeSymbol.Name);
 		reportDiagnostic.Invoke(diagnostic);
@@ -400,29 +541,42 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	/// <summary>
 	/// 
 	/// </summary>
+	/// <param name="compilation"></param>
 	/// <param name="reportDiagnostic"></param>
 	/// <param name="typeSymbol"></param>
 	/// <param name="checkBeamGenAttr"></param>
-	private void ValidateMembersInSymbol(Action<Diagnostic> reportDiagnostic, ITypeSymbol typeSymbol, bool checkBeamGenAttr = false)
+	/// <param name="fallbackLocation"></param>
+	private void ValidateMembersInSymbol(Compilation compilation, Action<Diagnostic> reportDiagnostic,
+		ITypeSymbol typeSymbol, bool checkBeamGenAttr = false, Location fallbackLocation = null)
 	{
 		// Recursively checks all generic types
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} is a GenericType, validating each generic type", fallbackLocation, compilation));
+			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
-				ValidateMembersInSymbol(reportDiagnostic, typeMember, checkBeamGenAttr);
+				ValidateMembersInSymbol(compilation, reportDiagnostic, typeMember, checkBeamGenAttr, fallbackLocation);
 			}
 		}
 		
 		// We don't need to check for Primitive, Built-in and Beamable Types
-		if (IsPrimitiveBuiltInOrBeamableType(typeSymbol))
+		// add case of nullable
+		if (IsPrimitiveBuiltInOrBeamableType(typeSymbol) || 
+		    typeSymbol.SpecialType == SpecialType.System_Nullable_T ||
+		    typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
 		{
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
 			return;
 		}
+		
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is not a Primitive, Bult-in, or Nullable Type, skipping Serializable validation", fallbackLocation, compilation));
 
 		// We only need to validate Members for Classes and Structs
 		if (typeSymbol.TypeKind is not (TypeKind.Class or TypeKind.Struct))
 		{
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name}  is not a Class or Struct, we can skip member validation for it", fallbackLocation, compilation));
 			return;
 		}
 
@@ -431,7 +585,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			if (member is IPropertySymbol propertySymbol)
 			{
 				// if it is Property, we warn the customer that it will not be detected for client code gen
-				Location propertyLocation = propertySymbol.Locations.FirstOrDefault() ?? Location.None;
+				Location propertyLocation = Diagnostics.GetValidLocation(propertySymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
+				
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | Property {propertySymbol.Name} location: {propertyLocation.GetLineSpan()}", propertyLocation, compilation));
+				
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is a property", propertyLocation, compilation));
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, propertySymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
@@ -439,43 +597,72 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 			if (member is not IFieldSymbol fieldSymbol)
 			{
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is not a Field, skipping it", fallbackLocation, compilation));
 				continue;
 			}
 			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {member.Name} is a Field", fallbackLocation, compilation));
+			
 			// Validate if Field is subtype from ContentObject
-			Location fieldLocation = fieldSymbol.Locations.FirstOrDefault() ?? Location.None;
+			Location fieldLocation = Diagnostics.GetValidLocation(fieldSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} location: {fieldLocation.GetLineSpan().ToString()}", fieldLocation, compilation));
+			
 			if (fieldSymbol.Type.BaseType?.Name == nameof(ContentObject) &&
 			    fieldSymbol.Type.Name != nameof(ContentObject))
 			{
+				
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is a ContentObject Subtype", fieldLocation, compilation));
+				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.FieldIsContentObjectSubtype,  fieldLocation, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is not a ContentObject Subtype", fieldLocation, compilation));
 
 			// Validate if Field is nullable, code gen do not support it
 			if (fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated ||
-			    fieldSymbol.Type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+			    fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T)
 			{
+				
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Field {fieldSymbol.Name} is Nullable", fieldLocation, compilation));
+				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 			}
 			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} - Member {fieldSymbol.Name} is not Nullable", fieldLocation, compilation));
+			
 			//Validate if field type is also serializable
-			ValidateSerializableAttributeOnSymbol(reportDiagnostic, fieldSymbol.Type, fieldLocation);
-			
-			if(!checkBeamGenAttr)
+			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, fieldSymbol.Type, fallbackLocation);
+
+			if (!checkBeamGenAttr)
+			{
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | No need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
 				continue;
-			
+			}
+
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | Need to Check BeamGenAttribute on {typeSymbol.Name} Member {fieldSymbol} Finishing Validation", fallbackLocation, compilation));
+
+
 			// Validate if type contains attribute as well
 			ImmutableArray<AttributeData> attributes = fieldSymbol.Type.GetAttributes();
 			bool hasBeamGenerateAttr = attributes.Any(att => att.AttributeClass is
 				{ Name: nameof(BeamGenerateSchemaAttribute) });
-			bool isValidatableType = !IsPrimitiveBuiltInOrBeamableType(fieldSymbol.Type);
+			bool isPrimitiveOrBeamableType = IsPrimitiveBuiltInOrBeamableType(fieldSymbol.Type);
 			
-			// If type is From System or Beamable Namespace we can ignore its validation
-			string symbolAssembly = fieldSymbol.Type.ContainingAssembly.Name;
-			bool isBeamOrSystem = symbolAssembly.StartsWith("System.") || symbolAssembly.StartsWith("Beamable.");
+			var stringAttributes = string.Join(" | ", typeSymbol.GetAttributes().Select(a =>
+					$"{a.AttributeClass?.Name ?? string.Empty}, " +
+					$"{a.AttributeClass?.MetadataName ?? string.Empty}, " +
+					$"{a.AttributeClass?.ToDisplayString() ?? string.Empty}, " +
+					$"{a.AttributeClass?.ContainingNamespace.Name ?? string.Empty}" +
+					$"{a.AttributeClass?.ContainingNamespace.ToDisplayString() ?? string.Empty}")
+				.ToList());
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} has the following Attributes: {stringAttributes}", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} Is Beam or Primitive Type: {isPrimitiveOrBeamableType}", fallbackLocation, compilation));
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose($"ValidateMembers | {typeSymbol.Name} Member {fieldSymbol} Has BeamGenAttributes: {hasBeamGenerateAttr}", fallbackLocation, compilation));
 			
-			if(hasBeamGenerateAttr || !isValidatableType || isBeamOrSystem)
+			if(hasBeamGenerateAttr || isPrimitiveOrBeamableType)
 				continue;
 			
 			Location typeLocation = fieldSymbol.Type.Locations.FirstOrDefault() ?? fieldLocation;
