@@ -769,11 +769,22 @@ using System;
 
 namespace Unity.Beamable.Customer.Common
 {
+
+	[Serializable]
+	public enum SalmonEnum
+	{
+		None = 0,
+		One = 1,
+		Two = 2,
+	}
 	[Serializable]
 	public class AddSalmonData
 	{
 		public int a;
 		public int b;
+		public SalmonEnum c;
+		public List<string> listSubtypeField;
+		public Dictionary<string, SalmonEnum> dictSubtypeField;
 	}
     
 	[Serializable]
@@ -782,6 +793,15 @@ namespace Unity.Beamable.Customer.Common
 		public int a;
 		public int b;
 		public Optional<AddSalmonData> data;
+	}
+
+	[Serializable]
+	public class ItemReward
+	{
+		public string contentID;
+		public long instanceID = 0;
+		public long amount = 0;
+		public Dictionary<string, string> properties;
 	}
 	
 }
@@ -798,10 +818,10 @@ using Unity.Beamable.Customer.Common;
 		}
 
 		[ClientCallable]
-		public async Task<int> AddSalmonAsync(int a, int b)
+		public async Task<ItemReward[]> AddSalmonAsync(int a, int b)
 		{
 			await Task.Delay(1000);
-			return a + b;
+			return Array.Empty<ItemReward>();
 		}
 		
 		[ClientCallable]

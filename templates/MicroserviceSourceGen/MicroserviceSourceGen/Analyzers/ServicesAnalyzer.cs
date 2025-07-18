@@ -39,7 +39,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
 			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.FieldIsContentObjectSubtype,
 			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
-			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList);
+			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList,
+			Diagnostics.Srv.ReturnTypeOfCallableMethodCannotBeArray);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -229,6 +230,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					method.ReturnType.GetLocation(), methodSymbol.Name);
 				context.ReportDiagnostic(diagnostic);
 			}
+
+			if (IsReturnTypeArray(methodSymbol, out ITypeSymbol arrayType, out ITypeSymbol elementType))
+			{
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.ReturnTypeOfCallableMethodCannotBeArray,
+					method.ReturnType.GetLocation(), methodSymbol.Name, elementType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), arrayType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));
+				context.ReportDiagnostic(diagnostic);
+			}
 		}
 		catch (Exception e)
 		{
@@ -274,8 +282,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 
 	}
-
-
+	
 	private static bool IsAsyncVoid(IMethodSymbol methodSymbol)
 	{
 		if (!methodSymbol.IsAsync)
@@ -286,6 +293,27 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 		return true;
 	}
+	
+	private static bool IsReturnTypeArray(IMethodSymbol methodSymbol, out ITypeSymbol arrayElement, out ITypeSymbol elementType)
+    	{
+		    arrayElement = elementType = null;
+		    ITypeSymbol returnType = methodSymbol.ReturnType;
+		    bool isTaskOrPromise = returnType.GetAllBaseTypes().Any(baseType =>
+			    baseType.StartsWith("System.Threading.Tasks.Task") ||
+			    baseType.StartsWith("Beamable.Common.PromiseBase"));
+		    if (isTaskOrPromise && returnType is INamedTypeSymbol { IsGenericType: true } genericType)
+		    {
+			    returnType = genericType.TypeArguments[0];
+		    }
+
+		    if (returnType is IArrayTypeSymbol arrayTypeSymbol)
+		    {
+			    arrayElement = returnType;
+			    elementType = arrayTypeSymbol.ElementType;
+			    return true;
+		    }
+		    return false;
+	    }
 
 	private void ValidateMethodReturnAndParametersType(SyntaxNodeAnalysisContext context)
 	{
@@ -359,13 +387,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		{
 			var methodAssembly = methodSymbol.ContainingAssembly;
 			Location returnLocation = Diagnostics.GetValidLocation(method.ReturnType.GetLocation(), context.Compilation);
+			
 			if (_checkAssemblyReferences)
 			{
 				ValidateTypeAssembly(context, returnLocation, methodSymbol.ReturnType, methodAssembly,
 					methodSymbol.Name);
 			}
 			ValidateNestedType(context.Compilation, context.ReportDiagnostic, returnLocation, methodSymbol.ReturnType, methodSymbol.Name);
-
 			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic,
 				methodSymbol.ReturnType, returnLocation);
 			ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, methodSymbol.ReturnType,
@@ -440,15 +468,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		try
 		{
-			// If it is a Generic Type, we need to check inner types to see if them are in the same Assembly
-			if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
-			{
-				foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
-				{
-					ValidateTypeAssembly(context, location, typeMember, methodAssemblySymbol, methodName);
-				}
-			}
-
 			if (typeSymbol.ContainingAssembly == null)
 			{
 				context.ReportDiagnostic(Diagnostics.GetVerbose("ValidateTypeAssembly",$"type: {typeSymbol.Name} have a null assembly", location, context.Compilation));
@@ -484,6 +503,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			{
 				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, fallbackLocation);
 			}
+		}
+
+		if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
+		{
+			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, arrayTypeSymbol.ElementType, fallbackLocation);
+			return;
 		}
 
 
@@ -619,7 +644,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				}
 			}
 			
-			var allBaseTypes = fieldSymbol.Type.GetAllBaseTypes();
+			
+			var allBaseTypes = fieldSymbol.Type.GetAllBaseTypes(false);
 			foreach (string baseType in allBaseTypes)
 			{
 				if (baseType.StartsWith("System.Collections.Generic.Dictionary"))

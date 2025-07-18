@@ -75,6 +75,7 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg,
 		string userCode) where T : DiagnosticAnalyzer, new()
 	{
+		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
 		AddAssemblyReferences(ctx.TestState);
 
 		ctx.TestCode = userCode;

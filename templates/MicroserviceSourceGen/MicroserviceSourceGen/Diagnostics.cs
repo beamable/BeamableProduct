@@ -15,7 +15,7 @@ public static class Diagnostics
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
 
 	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
-	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Warning,
+	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Hidden,
 		true);
 	
 	public static readonly DiagnosticDescriptor BeamExceptionDescriptor = new("BEAM_EXC_0001", "Beamable Exception Debug", "{0}", Category_Debug, DiagnosticSeverity.Error,
@@ -103,6 +103,7 @@ public static class Diagnostics
 		public const string DICTIONARY_KEY_MUST_BE_STRING_ID = "BEAM_SRV_0017";
 		public const string FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0018";
 		public const string FIELD_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0019";
+		public const string RETURN_TYPE_CANNOT_BE_ARRAY_ID = "BEAM_SRV_0020";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -271,6 +272,15 @@ public static class Diagnostics
 			= new(FIELD_IS_SUBTYPE_FROM_LIST_ID,
 				$"Fields that are subtype from List are not supported in serializable types",
 				$"Replace field {{0}} to List instead of type {{1}}",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor ReturnTypeOfCallableMethodCannotBeArray
+			= new(RETURN_TYPE_CANNOT_BE_ARRAY_ID,
+				$"Callable Methods Return type cannot be any kind of Array, Task array, or Promise array, we can't serialize top level array as return types",
+				$"Replace return type of Method {{0}} to List<{{1}}> instead of {{2}}, or add the array to a serializable type and change the return type",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
