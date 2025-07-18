@@ -167,19 +167,26 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 				{
-					if (!Event.current.control)
+					if (Event.current.button == 0)
 					{
-						SelectedContentType.Clear();
-					}
+						if (!Event.current.control)
+						{
+							SelectedContentType.Clear();
+						}
 					
-					if (!SelectedContentType.Add(contentType))
+						if (!SelectedContentType.Add(contentType))
+						{
+							SelectedContentType.Remove(contentType);
+						}
+					
+						UpdateActiveFilterSearchText();
+						Event.current.Use();
+						GUI.changed = true;
+					}
+					else if (Event.current.button == 1)
 					{
-						SelectedContentType.Remove(contentType);
+						ShowTypeMenu(contentType);
 					}
-					
-					UpdateActiveFilterSearchText();
-					Event.current.Use();
-					GUI.changed = true;
 				}
 
 				if (hasChildrenNodes && isGroupExpanded)

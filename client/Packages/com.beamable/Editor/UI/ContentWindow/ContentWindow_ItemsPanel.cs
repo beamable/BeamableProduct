@@ -7,6 +7,7 @@ using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
@@ -198,17 +199,23 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				GUI.Box(rowRect, GUIContent.none, rowStyle);
 				
+
+				var isRowHover = rowRect.Contains(Event.current.mousePosition);
+				var isRowClicked = isRowHover && Event.current.rawType == EventType.MouseDown;
+				var isRowLeftClick = isRowClicked && Event.current.button == 0;
+				var isRowRightClick = isRowClicked && Event.current.button == 1;
+				
 				Rect contentRect = new Rect(rowRect);
 				
 				contentRect.xMin += BASE_PADDING;
+				var foldoutRect = new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height);
 
 				bool isGroupExpanded = _itemsExpandedStates[contentType];
 				if (hasChildrenSubtypes || hasChildrenItems)
 				{
-					_itemsExpandedStates[contentType] = EditorGUI.Foldout(
-						new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height),
-						isGroupExpanded,
-						GUIContent.none
+					_itemsExpandedStates[contentType] = EditorGUI.Foldout(foldoutRect,
+					                                                      isGroupExpanded,
+					                                                      GUIContent.none
 					);
 				}
 				
@@ -219,19 +226,36 @@ namespace Beamable.Editor.UI.ContentWindow
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
-				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
-				{
-					SettingsService.OpenProjectSettings("Project/Beamable/Content");
-				}
-
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, $"{displayName} - [{items.Count}]");
+				GUI.Label(contentRect, $"{displayName} - [{items.Count}]", new GUIStyle(EditorStyles.label)
+				{
+					alignment = TextAnchor.MiddleLeft
+				});
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
 				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
 				{
 					CreateNewItem(contentType);
+				}
+
+
+				if (hasChildrenSubtypes || hasChildrenItems)
+				{
+					EditorGUIUtility.AddCursorRect(rowRect, MouseCursor.Link);
+				}
+				
+				if (isRowLeftClick)
+				{
+					if (!foldoutRect.Contains(Event.current.mousePosition) &&
+					    !buttonCreateRect.Contains(Event.current.mousePosition))
+					{
+						_itemsExpandedStates[contentType] = !_itemsExpandedStates[contentType];
+						GUI.changed = true;
+					}
+				} else if (isRowRightClick)
+				{
+					ShowTypeMenu(contentType);
 				}
 				
 				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
@@ -247,8 +271,47 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 		}
-		
 
+		private void ShowTypeMenu(string contentType)
+		{
+			var menu = new GenericMenu();
+			menu.AddItem(new GUIContent($"Create {contentType} Content"), false, () =>
+			{
+				CreateNewItem(contentType);
+			});
+			menu.AddSeparator("");
+
+			menu.AddItem(new GUIContent("Open Settings"), false, () =>
+			{
+				SettingsService.OpenProjectSettings("Project/Beamable/Content");
+			});
+			if (_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(contentType, out var classType))
+			{
+				menu.AddItem(new GUIContent("Open Class File"), false, () =>
+				{
+					MethodInfo fromTypeMethod = typeof(MonoScript).GetMethod(
+						"FromType", 
+						BindingFlags.NonPublic | BindingFlags.Static);
+
+					if (fromTypeMethod != null)
+					{
+						MonoScript script = fromTypeMethod.Invoke(null, new object[] { classType }) as MonoScript;
+						if (script != null)
+						{
+							AssetDatabase.OpenAsset(script);
+							return;
+						}
+					}
+				});	
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Open Class File"), false);
+			}
+					
+			menu.ShowAsContext();
+		}
+		
 		private void CreateNewItem(string itemType)
 		{
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
@@ -268,6 +331,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_contentService.ValidateForInvalidFields(contentObject);
 			_contentService.SaveContent(contentObject);
 			Selection.activeObject = contentObject;
+			_itemsExpandedStates[itemType] = true;
+			GUI.changed = true;
 		}
 
 		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth, string groupName)
