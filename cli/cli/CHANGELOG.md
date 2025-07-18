@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+- `beam deploy release` requires explicit typing `yes` to deploy, unless the `--quiet | -q` flag is given. [4101](https://github.com/beamable/BeamableProduct/issues/4101)
 
 ### Fixed
 - Fixed issue in the `beam checks scan -f *` command that would cause the fixed code to break serialization of federations.
