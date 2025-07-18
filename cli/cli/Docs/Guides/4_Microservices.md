@@ -620,7 +620,7 @@ Change field 'Content' to use the base ContentObject type instead of a subtype
 
 ---
 
-## Type Used in BeamGenerateSchema is Missing Attribute
+### Type Used in BeamGenerateSchema is Missing Attribute
 
 **Explanation**:  
 When a class is marked with `[BeamGenerateSchema]`, all custom types used in its fields must also be annotated with `[BeamGenerateSchema]`.
@@ -660,3 +660,273 @@ Add the [BeamGenerateSchema] attribute to type 'MyOtherDTO'
     ```
 
 ---
+
+### Dictionary Key Must Be String on Serializable Types
+
+**Explanation**:\
+When using a `Dictionary` field in a type marked with `[BeamGenerateSchema]`, the key must be of type `string`. Other key types are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<int, string> InvalidDict;
+}
+```
+
+**Example Error Message**:
+
+```
+Change the dictionary key of field 'InvalidDict' to string instead of type 'int'
+```
+
+**Solution**:
+
+- Change the dictionary key type to `string`.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<string, string> ValidDict;
+}
+```
+
+---
+
+### Field on Serializable Type Is Subtype From Dictionary
+
+**Explanation**:\
+Types that subclass `Dictionary` are not supported as field types in `[BeamGenerateSchema]` annotated classes.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyDict : Dictionary<string, string> {}
+
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyDict customDict;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace field 'customDict' to Dictionary instead of type 'MyDict'
+```
+
+**Solution**:
+
+- Use `Dictionary<string, T>` directly instead of a subclass.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<string, string> customDict;
+}
+```
+
+---
+
+### Field on Serializable Type Is Subtype From List
+
+**Explanation**:\
+Types that subclass `List<T>` are not supported as field types in `[BeamGenerateSchema]` annotated classes.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyList : List<string> {}
+
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyList customList; 
+}
+```
+
+**Example Error Message**:
+
+```
+Replace field 'customList' to List instead of type 'MyList'
+```
+
+**Solution**:
+
+- Use `List<T>` directly instead of a subclass.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public List<string> customList;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is ContentObject Subtype
+
+**Explanation**:\
+Types used in `Callable` methods cannot inherit from `ContentObject`. Only the base `ContentObject` is supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyContent : ContentObject {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyContent input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Change type 'MyContent' to use the base ContentObject type instead of a subtype
+```
+
+**Solution**:
+
+- Use `ContentObject` instead of a derived type.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(ContentObject input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Invalid Dictionary
+
+**Explanation**:\
+Dictionaries in `[Callable]` method parameters are only valid if their keys are of type `string`.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<int, string> input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Change the dictionary key of 'input' to string instead of type 'int'
+```
+
+**Solution**:
+
+- Change dictionary key to `string`.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<string, string> input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Subtype From Dictionary
+
+**Explanation**:\
+Types used in `[Callable]` methods that subclass `Dictionary` are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyDict : Dictionary<string, string> {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyDict input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace 'input' to Dictionary instead of type 'MyDict'
+```
+
+**Solution**:
+
+- Use `Dictionary<string, T>` directly.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<string, string> input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Subtype From List
+
+**Explanation**:\
+Types used in `[Callable]` methods that subclass `List<T>` are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyList : List<string> {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyList input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace 'input' to List instead of type 'MyList'
+```
+
+**Solution**:
+
+- Use `List<T>` directly.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(List<string> input) => Task.CompletedTask;
+}
+```
+
+---
+
