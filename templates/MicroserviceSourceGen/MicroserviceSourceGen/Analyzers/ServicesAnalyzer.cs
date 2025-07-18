@@ -419,13 +419,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		string[] specialHandlingTypes = new[]
 		{
-			"Beamable.Common.Content.Optional", 
-			"Beamable.Common.Content.ContentRef",
-			"Beamable.Common.Content.ContentLink",
+			"Beamable.Common.Content.", 
 			PROMISE_BASE_CLASS_FULLNAME,
 			TASK_CLASS_FULLNAME,
 			"System.Guid",
-			LIST_CLASS_FULLNAME
+			LIST_CLASS_FULLNAME,
 		};
 
 		var allTypes = symbol.GetAllBaseTypes();
