@@ -223,7 +223,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
 				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
-				
+				EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
 				if (GUI.Button(buttonRect, btnContent, buttonStyle))
 				{
 					_activeFilters.Clear();
