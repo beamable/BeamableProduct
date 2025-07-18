@@ -13,23 +13,11 @@ public class BeamableActivityExporter : BeamableExporter<Activity>
 		_filesPath = options.ExportPath;
 	}
 
-	public override ExportResult Export(in Batch<Activity> batch) // timestamp_logger.json
+	public override ExportResult Export(in Batch<Activity> batch)
 	{
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
-		var nowTime = DateTime.UtcNow;
-
-		var currentDay = nowTime.ToString("ddMMyyyy");
-		var currentTime = $"{nowTime:HHmmss}_{nowTime:ffff}";
-		var datedPath = Path.Combine(_filesPath, currentDay);
-
-		if (!Directory.Exists(datedPath))
-		{
-			Directory.CreateDirectory(datedPath);
-		}
-
-		var fileName = $"{currentTime}.json";
-		var finalFilePath = Path.Combine(datedPath, fileName);
+		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
 
 		return ExportResult.Success;
 	}

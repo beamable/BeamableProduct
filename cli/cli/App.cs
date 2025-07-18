@@ -475,6 +475,7 @@ public class App
 		Commands.AddRootCommand<CollectorCommand>();
 		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommand<PushTelemetryCollectorCommand, PushTelemetryCollectorCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
 		Commands.AddSubCommand<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
 		

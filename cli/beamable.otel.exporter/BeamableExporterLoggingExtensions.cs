@@ -31,7 +31,7 @@ public static class BeamableExporterLoggingExtensions
 		var options = new BeamableExporterOptions();
 		configure?.Invoke(options);
 #pragma warning disable CA2000 // Dispose objects before losing scope
-		return loggerOptions.AddProcessor(new SimpleLogRecordExportProcessor(new BeamableLogRecordExporter(options)));
+		return loggerOptions.AddProcessor(new BatchLogRecordExportProcessor(new BeamableLogRecordExporter(options)));
 #pragma warning restore CA2000 // Dispose objects before losing scope
 	}
 
@@ -85,7 +85,7 @@ public static class BeamableExporterLoggingExtensions
 		{
 			var options = sp.GetRequiredService<IOptionsMonitor<BeamableExporterOptions>>().Get(name);
 
-			return new SimpleLogRecordExportProcessor(new BeamableLogRecordExporter(options));
+			return new BatchLogRecordExportProcessor(new BeamableLogRecordExporter(options));
 		});
 	}
 }
