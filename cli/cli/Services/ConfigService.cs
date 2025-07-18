@@ -333,6 +333,12 @@ public class ConfigService
 		SaveDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE, currentPaths.Distinct().ToList());
 	}
 
+	public string GetProjectRootPath()
+	{
+		var relativePath = LoadDataFile<string>(CONFIG_FILE_PROJECT_PATH_ROOT, () => ".");
+		return Path.Combine(BaseDirectory, relativePath);
+	}
+
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
@@ -364,6 +370,7 @@ public class ConfigService
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
+	public const string CONFIG_FILE_PROJECT_PATH_ROOT = "project-root-path.json";
 	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
 	public const string CONFIG_FILE_PATHS_TO_IGNORE = "project-paths-to-ignore.json";
 
@@ -396,7 +403,7 @@ public class ConfigService
 	public void GetProjectSearchPaths(out string rootPath, out List<string> searchPaths)
 	{
 		searchPaths = new List<string>();
-		rootPath = BaseDirectory;
+		rootPath = GetProjectRootPath();
 		var extraPaths = GetExtraProjectPaths();
 
 		if (string.IsNullOrEmpty(rootPath))
