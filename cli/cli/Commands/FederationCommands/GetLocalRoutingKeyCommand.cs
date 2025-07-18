@@ -13,7 +13,7 @@ public class GetLocalRoutingKeyCommandOutput
 	public string routingKey;
 }
 
-public class GetLocalRoutingKeyCommand : AtomicCommand<GetLocalRoutingKeyCommandArgs, GetLocalRoutingKeyCommandOutput>
+public class GetLocalRoutingKeyCommand : AtomicCommand<GetLocalRoutingKeyCommandArgs, GetLocalRoutingKeyCommandOutput>, ISkipManifest
 {
 	public GetLocalRoutingKeyCommand() : base("local-key", "Get the local routing key")
 	{
