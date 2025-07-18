@@ -97,10 +97,14 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawHeader()
 		{
-			BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
+			BeamGUI.ShowDisabled(NeedsMigration == false, () =>
 			{
-				Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
-			}, () => _ = _contentService.Reload());
+				BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
+				{
+					Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
+				}, () => _ = _contentService.Reload());
+			});
+			
 		}
 
 		private void DrawTopBarHeader()
@@ -219,6 +223,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawLowBarHeader(Rect rect)
 		{
+			if (NeedsMigration) return;
+			
 			if (_windowStatus is not ContentWindowStatus.Normal)
 			{
 				GUILayout.Space(40);

@@ -13,7 +13,7 @@ public class GameListCommandResults
     public OrgRealmData[] VisibleGames;
 
 }
-public class GameListCommand : AtomicCommand<GameListCommandArgs, GameListCommandResults>
+public class GameListCommand : AtomicCommand<GameListCommandArgs, GameListCommandResults>, ISkipManifest
 {
     public GameListCommand() : base("games", "Fetch the current list of games")
     {

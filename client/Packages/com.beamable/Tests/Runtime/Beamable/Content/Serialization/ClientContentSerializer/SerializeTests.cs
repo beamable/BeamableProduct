@@ -261,6 +261,26 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual(expected, json);
 		}
+		
+		[Test]
+		public void NullOptionalMapsToEmpty()
+		{
+			var c = new OptionalFedContent
+			{
+				Id = "test.nothing",
+			};
+			var expected = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+   }
+}".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
+
+			var s = new TestSerializer();
+			var json = s.Serialize(c);
+
+			Assert.AreEqual(expected, json);
+		}
 
 		[Test]
 		public void OptionalNestedWithValue()
@@ -882,7 +902,12 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		{
 			public OptionalInt maybeNumber;
 		}
-
+		
+		class OptionalFedContent : TestContentObject
+		{
+			[ContentField("external")]
+			public OptionalFederation federation;
+		}
 		class NestedOptionalContent : TestContentObject
 		{
 			public OptionalContent sub;
