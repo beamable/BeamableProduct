@@ -96,6 +96,8 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		ctx.TestCode = NormalizeLineEndings(userCode);
 		ctx.FixedCode = NormalizeLineEndings(fixedCode);
 		
+		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
+		
 		ctx.SolutionTransforms.Add((solution, projectId) =>
 		{
 			var project = solution.GetProject(projectId)!;

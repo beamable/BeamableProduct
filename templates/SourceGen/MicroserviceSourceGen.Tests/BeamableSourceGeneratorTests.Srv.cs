@@ -818,10 +818,10 @@ using Unity.Beamable.Customer.Common;
 		}
 
 		[ClientCallable]
-		public async Task<ItemReward[]> AddSalmonAsync(int a, int b)
+		public async Task<List<ItemReward>> AddSalmonAsync(int a, int b)
 		{
 			await Task.Delay(1000);
-			return Array.Empty<ItemReward>();
+			return new();
 		}
 		
 		[ClientCallable]
