@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue in `beam project generate-client` command (for Unreal's code-generation) that caused internal `AdminRoutes`'s Callables (health-check/docs every microservice has) to be seen by the UE generation.
 - `beam project ps` shows remote running storage objects [4146](https://github.com/beamable/BeamableProduct/issues/4146)
 - `beam init` no longer tries to use old PID when switching CID [4178](https://github.com/beamable/BeamableProduct/issues/4178)
+- Content serializer will not serialize `null` Optional values as default values of optional type.
 
 ## [5.0.4] - 2025-07-02
 ### Fixed
