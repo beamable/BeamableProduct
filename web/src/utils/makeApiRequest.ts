@@ -16,6 +16,8 @@ interface makeApiRequestProps<TReq> {
 export function makeApiRequest<TRes = any, TReq = any>(
   props: makeApiRequestProps<TReq>,
 ): Promise<HttpResponse<TRes>> {
+  // Abbreviate prop names to shrink bundle size (bundlers won’t minify object keys)
+  // r: requester, e: endpoint, m: method, q: query, p: payload, g: gamertag, w: withAuth
   const { r, e, m, q, p, g, w } = props;
 
   // Create the header parameters object

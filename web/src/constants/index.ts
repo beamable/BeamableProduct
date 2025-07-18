@@ -1,4 +1,3 @@
-export const objectIdPlaceholder = '{objectId}';
 export const GET = 'GET';
 export const POST = 'POST';
 export const PUT = 'PUT';

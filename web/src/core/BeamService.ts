@@ -8,33 +8,45 @@ import { LeaderboardsService } from '@/services/LeaderboardsService';
 
 /**
  * Container for all Beamable services.
- * Provides higher-level abstractions and business logic on top of the `BeamApi` clients.
+ * Provides higher-level abstractions and business logic on top of the beamable api endpoints.
  * Access each service via `beam.<serviceName>.<method>`.
  */
 export class BeamService {
   /** Attaches all services to a Beam Client instance. */
   static attachServices(beam: Beam) {
-    beam.account = new AccountService({ api: beam.api, player: beam.player });
+    beam.account = new AccountService({
+      requester: beam.requester,
+      player: beam.player,
+    });
     beam.announcements = new AnnouncementsService({
-      api: beam.api,
+      requester: beam.requester,
       player: beam.player,
     });
-    beam.auth = new AuthService({ api: beam.api, player: beam.player });
+    beam.auth = new AuthService({
+      requester: beam.requester,
+      player: beam.player,
+    });
     beam.leaderboards = new LeaderboardsService({
-      api: beam.api,
+      requester: beam.requester,
       player: beam.player,
     });
-    beam.stats = new StatsService({ api: beam.api, player: beam.player });
+    beam.stats = new StatsService({
+      requester: beam.requester,
+      player: beam.player,
+    });
   }
 
   /** Attaches all services to a Beam Server instance. */
   static attachServicesToServer(beam: BeamServer) {
-    beam.account = (userId) => new AccountService({ api: beam.api, userId });
+    beam.account = (userId) =>
+      new AccountService({ requester: beam.requester, userId });
     beam.announcements = (userId) =>
-      new AnnouncementsService({ api: beam.api, userId });
-    beam.auth = (userId) => new AuthService({ api: beam.api, userId });
+      new AnnouncementsService({ requester: beam.requester, userId });
+    beam.auth = (userId) =>
+      new AuthService({ requester: beam.requester, userId });
     beam.leaderboards = (userId) =>
-      new LeaderboardsService({ api: beam.api, userId });
-    beam.stats = (userId) => new StatsService({ api: beam.api, userId });
+      new LeaderboardsService({ requester: beam.requester, userId });
+    beam.stats = (userId) =>
+      new StatsService({ requester: beam.requester, userId });
   }
 }

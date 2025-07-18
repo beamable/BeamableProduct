@@ -1,6 +1,7 @@
 import { TokenRequestWrapper, TokenResponse } from '@/__generated__/schemas';
 import { getUserDeviceAndPlatform } from '@/utils/getUserDeviceAndPlatform';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
+import { authPostTokenBasic } from '@/__generated__/apis';
 
 export interface RefreshTokenParams {
   refreshToken: string;
@@ -29,7 +30,7 @@ export class AuthService extends ApiService {
         platform,
       },
     };
-    const { body } = await this.api.auth.postAuthToken(tokenRequest);
+    const { body } = await authPostTokenBasic(this.requester, tokenRequest);
     return body;
   }
 
@@ -46,7 +47,7 @@ export class AuthService extends ApiService {
       grant_type: 'refresh_token',
       refresh_token: params.refreshToken,
     };
-    const { body } = await this.api.auth.postAuthToken(tokenRequest);
+    const { body } = await authPostTokenBasic(this.requester, tokenRequest);
     return body;
   }
 }
