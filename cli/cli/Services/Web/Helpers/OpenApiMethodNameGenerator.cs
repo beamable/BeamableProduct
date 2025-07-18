@@ -12,7 +12,7 @@ public static class OpenApiMethodNameGenerator
 
 	private static readonly string[] SkippablePrefixes = { "api", "basic", "object", "internal" };
 
-	private static readonly char[] Separator = { '/', '-', '_' };
+	private static readonly char[] Separator = { '/' };
 
 	// ─── Public API ───
 
@@ -21,13 +21,18 @@ public static class OpenApiMethodNameGenerator
 	/// </summary>
 	public static string GenerateMethodName(string apiEndpoint, string httpMethod)
 	{
-		var isInternalApi = apiEndpoint.StartsWith("/api/internal", StringComparison.OrdinalIgnoreCase);
+		var isInternalEndpoint = apiEndpoint.StartsWith("/api/internal", StringComparison.OrdinalIgnoreCase);
+		var isBasicEndpoint = apiEndpoint.StartsWith("/basic", StringComparison.OrdinalIgnoreCase);
 
 		// 1) Split raw segments
 		var rawSegments = apiEndpoint
-			.Split(Separator, StringSplitOptions.RemoveEmptyEntries)
-			.Where(s => !SkippablePrefixes.Contains(s, StringComparer.OrdinalIgnoreCase))
+			.Split(Separator, StringSplitOptions.RemoveEmptyEntries) // Split by '/'
+			.Where(s => !SkippablePrefixes.Contains(s, StringComparer.OrdinalIgnoreCase)) // Skip skippable prefixes
+			.Select(RemoveNonAlphanumericExceptBraces)
 			.ToList();
+
+		if (isBasicEndpoint)
+			rawSegments = rawSegments.Append("basic").ToList();
 
 		// 2) Detect param vs static in original segments
 		var rawParamSegments = rawSegments.Where(IsParameter).ToList();
@@ -44,25 +49,15 @@ public static class OpenApiMethodNameGenerator
 
 		var verbUpper = httpMethod.Trim().ToUpperInvariant();
 
-		// 4) Special-case payments endpoints
-		var payIdx = staticSegments.FindIndex(s => s.Equals("payments", StringComparison.OrdinalIgnoreCase));
-		if (payIdx >= 0)
-		{
-			var after = staticSegments.Skip(payIdx + 1).ToList();
-			var name = BuildPaymentsName(after, verbUpper);
-			return name;
-		}
-
-		// 5) Prepare singular/plural forms of the resource
+		// 4) Prepare singular/plural forms of the resource
 		if (staticSegments.Count == 0)
 			return verbUpper == "GET" ? "list" : HttpVerbPrefix(verbUpper);
 
-		var firstStatic = staticSegments.First();
-		var resourceSingularize = Singularize(firstStatic);
+		var resources = staticSegments.First();
 
 		string methodName;
 
-		// 6) GET logic: list / get by id / list nested
+		// 5) GET logic: list / get by id / list nested
 		if (verbUpper == "GET")
 		{
 			var excludeWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "get" };
@@ -72,51 +67,38 @@ public static class OpenApiMethodNameGenerator
 			{
 				1 when filteredStaticSegments.Count == 1 =>
 					// GET /resources/{id}
-					"get" + Capitalize(resourceSingularize) + "By" + paramNames[0],
+					resources + HttpVerbPrefix(verbUpper) + "By" + paramNames[0],
 				1 when filteredStaticSegments.Count > 1 =>
-					// GE /resources/subresources/{id} or /resources/{id}/subresources
-					"get" + Capitalize(resourceSingularize) + ConcatCapitalize(filteredStaticSegments[1..]) +
-					"By" + paramNames[0],
-				_ when apiEndpoint.Equals("/basic/auth/token", StringComparison.OrdinalIgnoreCase) =>
-					// special-case for auth token endpoint
-					"get" + ConcatCapitalize(filteredStaticSegments),
+					// GET /resources/subresources/{id} or /resources/{id}/subresources
+					resources + HttpVerbPrefix(verbUpper) + ConcatCapitalize(filteredStaticSegments[1..]) + "By" +
+					paramNames[0],
+				// _ when apiEndpoint.Equals("/basic/auth/token", StringComparison.OrdinalIgnoreCase) =>
+				// 	// special-case for auth token endpoint
+				// 	"get" + ConcatCapitalize(filteredStaticSegments),
 				_ =>
 					// fallback: list everything e.g GET /resources | /resources/subresources
-					"get" + ConcatCapitalize(filteredStaticSegments)
+					resources + HttpVerbPrefix(verbUpper) + (filteredStaticSegments.Count > 1
+						? ConcatCapitalize(filteredStaticSegments[1..])
+						: string.Empty)
 			};
 		}
 		else
 		{
-			// 7) Non-GET: CRUD + ById for single-resource param
+			// 6) Non-GET: CRUD + ById for single-resource param
 			methodName = paramNames.Count switch
 			{
-				1 when staticSegments.Count == 1 => HttpVerbPrefix(verbUpper) + Capitalize(resourceSingularize) +
-				                                    "By" + paramNames[0],
-				1 when staticSegments.Count > 1 => HttpVerbPrefix(verbUpper) + Capitalize(resourceSingularize) +
+				1 when staticSegments.Count == 1 => resources + HttpVerbPrefix(verbUpper) + "By" + paramNames[0],
+				1 when staticSegments.Count > 1 => resources + HttpVerbPrefix(verbUpper) +
 				                                   ConcatCapitalize(staticSegments[1..]) + "By" + paramNames[0],
-				_ => HttpVerbPrefix(verbUpper) + Capitalize(resourceSingularize) + (staticSegments.Count > 1
+				_ => resources + HttpVerbPrefix(verbUpper) + (staticSegments.Count > 1
 					? ConcatCapitalize(staticSegments[1..])
 					: string.Empty)
 			};
 		}
 
-		// 8) Special-case tokens endpoints
-		if (staticSegments.Contains("tokens", StringComparer.OrdinalIgnoreCase) && staticSegments.Count >= 1)
-		{
-			if (apiEndpoint == "/api/auth/tokens/refresh-token")
-			{
-				methodName = $"{HttpVerbPrefix(verbUpper)}AuthRefreshTokenV2";
-			}
-			else
-			{
-				var kind = Capitalize(staticSegments[^1].Replace("token", "", StringComparison.OrdinalIgnoreCase));
-				methodName = $"{HttpVerbPrefix(verbUpper)}{kind}Token";
-			}
-		}
-
-		// 9) Final camel-case
+		// 7) Final camel-case
 		methodName = ToCamel(methodName);
-		return isInternalApi ? $"{methodName}Internal" : methodName;
+		return isInternalEndpoint ? $"{methodName}Internal" : methodName;
 	}
 
 	// ─── Helper Methods ───
@@ -142,47 +124,27 @@ public static class OpenApiMethodNameGenerator
 		return Capitalize(segment);
 	}
 
-	private static string BuildPaymentsName(List<string> segments, string verbUpper)
+	private static string RemoveNonAlphanumericExceptBraces(string input)
 	{
-		var provider = segments.ElementAtOrDefault(0);
-		var subject = segments.ElementAtOrDefault(1);
-		var action = segments.ElementAtOrDefault(2) ?? segments.ElementAtOrDefault(0);
+		if (string.IsNullOrEmpty(input)) return input;
 
-		string format = action switch
-		{
-			"track" => $"track{Capitalize(provider)}{Capitalize(subject)}",
-			"complete" => $"complete{Capitalize(provider)}{Capitalize(subject)}",
-			"begin" => $"begin{Capitalize(provider)}{Capitalize(subject)}",
-			"verify" => $"verify{Capitalize(provider)}{Capitalize(subject)}",
-			"cancel" => $"cancel{Capitalize(provider)}{Capitalize(subject)}",
-			"fail" => $"fail{Capitalize(provider)}{Capitalize(subject)}",
-			_ when verbUpper == "GET" && segments.Count == 1
-				=> $"getPayments{Capitalize(action)}",
-			_ => $"{HttpVerbPrefix(verbUpper)}Payment{Capitalize(provider)}{Capitalize(subject)}"
-		};
-
-		return ToCamel(format);
-	}
-
-	private static string Singularize(string word)
-	{
-		if (Regex.IsMatch(word, "ies$", RegexOptions.IgnoreCase))
-			return Regex.Replace(word, "ies$", "y", RegexOptions.IgnoreCase);
-		if (word.EndsWith("s", StringComparison.OrdinalIgnoreCase) &&
-		    !word.EndsWith("ss", StringComparison.OrdinalIgnoreCase))
-			return word[..^1];
-		return word;
+		// Upper-case any letter preceded by one or more non-alphanumeric (excluding braces)
+		var result = Regex.Replace(input, "[^A-Za-z0-9{}]+([A-Za-z0-9])",
+			m => m.Groups[1].Value.ToUpperInvariant());
+		// Remove all remaining (leading and trailing) non-alphanumeric except braces
+		result = Regex.Replace(result, "[^A-Za-z0-9{}]", string.Empty);
+		return result;
 	}
 
 	private static string ToCamel(string word)
-		=> string.IsNullOrEmpty(word) ? word : char.ToLower(word[0]) + word[1..];
+		=> string.IsNullOrEmpty(word) ? word : char.ToLowerInvariant(word[0]) + word[1..];
 
 	private static string HttpVerbPrefix(string verb)
 		=> verb switch
 		{
-			"POST" => "post",
-			"PUT" => "put",
-			"DELETE" => "delete",
-			_ => "get"
+			"POST" => "Post",
+			"PUT" => "Put",
+			"DELETE" => "Delete",
+			_ => "Get"
 		};
 }

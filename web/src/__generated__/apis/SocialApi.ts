@@ -14,216 +14,218 @@ import { POST } from '@/constants';
 import { SendFriendRequest } from '@/__generated__/schemas/SendFriendRequest';
 import { Social } from '@/__generated__/schemas/Social';
 
-export class SocialApi {
-  constructor(
-    private readonly r: HttpRequester
-  ) {
-  }
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialGetMyBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<Social>> {
+  let endpoint = "/basic/social/my";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<Social>>} A promise containing the HttpResponse of Social
-   */
-  async getSocialMy(gamertag?: string): Promise<HttpResponse<Social>> {
-    let e = "/basic/social/my";
-    
-    // Make the API request
-    return makeApiRequest<Social>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<Social>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `SendFriendRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialPostFriendsInviteBasic(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/social/friends/invite";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {SendFriendRequest} payload - The `SendFriendRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postSocialFriendsInvite(payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/social/friends/invite";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, SendFriendRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, SendFriendRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `SendFriendRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialDeleteFriendsInviteBasic(requester: HttpRequester, payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/social/friends/invite";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {SendFriendRequest} payload - The `SendFriendRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async deleteSocialFriendsInvite(payload: SendFriendRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/social/friends/invite";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, SendFriendRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, SendFriendRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `PlayerIdRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialDeleteFriendsBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/social/friends";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {PlayerIdRequest} payload - The `PlayerIdRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async deleteSocialFriends(payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/social/friends";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, PlayerIdRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, PlayerIdRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ImportFriendsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialPostFriendsImportBasic(requester: HttpRequester, payload: ImportFriendsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/social/friends/import";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {ImportFriendsRequest} payload - The `ImportFriendsRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postSocialFriendsImport(payload: ImportFriendsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/social/friends/import";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, ImportFriendsRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, ImportFriendsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `MakeFriendshipRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialPostFriendsMakeBasic(requester: HttpRequester, payload: MakeFriendshipRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/basic/social/friends/make";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {MakeFriendshipRequest} payload - The `MakeFriendshipRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async postSocialFriendsMake(payload: MakeFriendshipRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/basic/social/friends/make";
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, MakeFriendshipRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, MakeFriendshipRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param playerIds - The `playerIds` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialGetBasic(requester: HttpRequester, playerIds: string[], gamertag?: string): Promise<HttpResponse<GetSocialStatusesResponse>> {
+  let endpoint = "/basic/social/";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string[]} playerIds - The `playerIds` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<GetSocialStatusesResponse>>} A promise containing the HttpResponse of GetSocialStatusesResponse
-   */
-  async getSocial(playerIds: string[], gamertag?: string): Promise<HttpResponse<GetSocialStatusesResponse>> {
-    let e = "/basic/social/";
-    
-    // Make the API request
-    return makeApiRequest<GetSocialStatusesResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        playerIds
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<GetSocialStatusesResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      playerIds
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `PlayerIdRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialPostBlockedBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
+  let endpoint = "/basic/social/blocked";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {PlayerIdRequest} payload - The `PlayerIdRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<FriendshipStatus>>} A promise containing the HttpResponse of FriendshipStatus
-   */
-  async postSocialBlocked(payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
-    let e = "/basic/social/blocked";
-    
-    // Make the API request
-    return makeApiRequest<FriendshipStatus, PlayerIdRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<FriendshipStatus, PlayerIdRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `PlayerIdRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function socialDeleteBlockedBasic(requester: HttpRequester, payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
+  let endpoint = "/basic/social/blocked";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {PlayerIdRequest} payload - The `PlayerIdRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<FriendshipStatus>>} A promise containing the HttpResponse of FriendshipStatus
-   */
-  async deleteSocialBlocked(payload: PlayerIdRequest, gamertag?: string): Promise<HttpResponse<FriendshipStatus>> {
-    let e = "/basic/social/blocked";
-    
-    // Make the API request
-    return makeApiRequest<FriendshipStatus, PlayerIdRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<FriendshipStatus, PlayerIdRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
 }
