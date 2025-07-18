@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using System;
+using System.Collections.Generic;
 
 namespace Beamable.Microservice.SourceGen;
 
@@ -99,6 +100,9 @@ public static class Diagnostics
 		public const string NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0014";
 		public const string FIELD_IS_CONTENT_OBJECT_SUBTYPE_ID = "BEAM_SRV_0015";
 		public const string TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID = "BEAM_SRV_0016";
+		public const string DICTIONARY_KEY_MUST_BE_STRING_ID = "BEAM_SRV_0017";
+		public const string FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0018";
+		public const string FIELD_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0019";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -240,6 +244,33 @@ public static class Diagnostics
 			= new(TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID,
 				$"Types used in fields of [BeamGenerateSchema] classes must also be marked with [BeamGenerateSchema]",
 				$"Add the [BeamGenerateSchema] attribute to type '{{0}}'",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor DictionaryKeyMustBeStringOnSerializableTypes
+			= new(DICTIONARY_KEY_MUST_BE_STRING_ID,
+				$"Dictionary fields in serializable types are only allowed if the key is string",
+				$"Change the dictionary key of field {{0}} to string intead of type {{1}}",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromDictionary
+			= new(FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID,
+				$"Fields that are subtype from Dictionary are not supported in serializable types",
+				$"Replace field {{0}} to Dictionary instead of type {{1}}",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromList
+			= new(FIELD_IS_SUBTYPE_FROM_LIST_ID,
+				$"Fields that are subtype from List are not supported in serializable types",
+				$"Replace field {{0}} to List instead of type {{1}}",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",

@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Microservice.SourceGen.Utils;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -37,7 +38,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
 			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.FieldIsContentObjectSubtype,
-			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute);
+			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
+			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -344,14 +346,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			"System.Collections.Generic.List"
 		};
 
-		// CSharpErrorMessageFormat... add comment
-		List<string> allTypes = new List<string> { symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) };
-		var lastSymbol = symbol;
-		while (lastSymbol.BaseType != null)
-		{
-			lastSymbol = lastSymbol.BaseType;
-			allTypes.Add(lastSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
-		}
+		var allTypes = symbol.GetAllBaseTypes();
 		
 		return specialHandlingTypes.Any(beamType => allTypes.Any(symbolType => symbolType.StartsWith(beamType)));
 
@@ -551,7 +546,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		// Recursively checks all generic types
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
 		{
-			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} is a GenericType, validating each generic type", fallbackLocation, compilation));
 			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
@@ -587,8 +581,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				Location propertyLocation = Diagnostics.GetValidLocation(propertySymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 				
 				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"Property {propertySymbol.Name} location: {propertyLocation.GetLineSpan()}", propertyLocation, compilation));
-				
 				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} is a property", propertyLocation, compilation));
+				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, propertySymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
@@ -606,11 +600,44 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} type is not a Class or Struct, we can skip member validation for it", fallbackLocation, compilation));
 				continue;
 			}
+
+			Location fieldLocation = Diagnostics.GetValidLocation(fieldSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
+			
+			if (fieldSymbol.Type is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
+			{
+				string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+				if (typeName.StartsWith("System.Collections.Generic.Dictionary"))
+				{
+					var keyArgument = genericTypeSymbol.TypeArguments[0];
+					if (keyArgument.SpecialType != SpecialType.System_String)
+					{
+						var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+						reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+					}
+					ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], checkBeamGenAttr, fallbackLocation);
+					continue;
+				}
+			}
+			
+			var allBaseTypes = fieldSymbol.Type.GetAllBaseTypes();
+			foreach (string baseType in allBaseTypes)
+			{
+				if (baseType.StartsWith("System.Collections.Generic.Dictionary"))
+				{
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+				}
+				else if (baseType.StartsWith("System.Collections.Generic.List"))
+				{
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+				}
+			}
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {member.Name} is a Field", fallbackLocation, compilation));
 			
 			// Validate if Field is subtype from ContentObject
-			Location fieldLocation = Diagnostics.GetValidLocation(fieldSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
+			
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers",$"{typeSymbol.Name} - Field {fieldSymbol.Name} location: {fieldLocation.GetLineSpan().ToString()}", fieldLocation, compilation));
 			
@@ -626,15 +653,21 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers",$"{typeSymbol.Name} - Field {fieldSymbol.Name} is not a ContentObject Subtype", fieldLocation, compilation));
 
+			if (IsPrimitiveBuiltInOrBeamableType(fieldSymbol.Type))
+			{
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Field Nullable: {fieldSymbol.Name} is Primitive", fieldLocation, compilation));
+				continue;
+			}
+			
 			// Validate if Field is nullable, code gen do not support it
 			if (fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated ||
 			    fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T)
 			{
-				
-				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Field {fieldSymbol.Name} is Nullable", fieldLocation, compilation));
+				reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Field Nullable: {fieldSymbol.Name} is Nullable", fieldLocation, compilation));
 				
 				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
+				continue;
 			}
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} - Member {fieldSymbol.Name} is not Nullable", fieldLocation, compilation));
@@ -662,8 +695,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					$"{a.AttributeClass?.MetadataName ?? string.Empty}, " +
 					$"{a.AttributeClass?.ToDisplayString() ?? string.Empty}, " +
 					$"{a.AttributeClass?.ContainingNamespace.Name ?? string.Empty}" +
-					$"{a.AttributeClass?.ContainingNamespace.ToDisplayString() ?? string.Empty}")
-				.ToList());
+					$"{a.AttributeClass?.ContainingNamespace.ToDisplayString() ?? string.Empty}").ToList());
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} has the following Attributes: {stringAttributes}", fallbackLocation, compilation));
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} Is Beam or Primitive Type: {isPrimitiveOrBeamableType}", fallbackLocation, compilation));
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose("ValidateMembers", $"{typeSymbol.Name} Member {fieldSymbol} Has BeamGenAttributes: {hasBeamGenerateAttr}", fallbackLocation, compilation));
