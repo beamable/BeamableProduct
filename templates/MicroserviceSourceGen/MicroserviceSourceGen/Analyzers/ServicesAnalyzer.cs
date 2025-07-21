@@ -819,6 +819,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	private static void ValidateContentObjectType(Action<Diagnostic> reportDiagnostic, ITypeSymbol symbol, Location location, string analyseReference)
 	{
+		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
+		{
+			ValidateContentObjectType(reportDiagnostic, arrayTypeSymbol.ElementType, location, analyseReference);
+			return;
+		}
+		
 		var allTypesFromGeneric = FindAllFromType(symbol, typeof(ContentObject).FullName);
 		
 		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
