@@ -689,17 +689,17 @@ public class DTO_BeamGenSchemaAttribute
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.FieldIsContentObjectSubtype)
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(0)
 				.WithArguments("otherContentObject1"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.FieldIsContentObjectSubtype)
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(1)
 				.WithArguments("otherContentObject2"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.FieldIsContentObjectSubtype)
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(2)
 				.WithArguments("otherContentObject3"));
 		

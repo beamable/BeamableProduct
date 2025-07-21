@@ -41,11 +41,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.CallableMethodTypeIsNested, Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested,
 			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
-			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.FieldIsContentObjectSubtype,
+			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.InvalidContentObject,
 			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
-			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList,
-			Diagnostics.Srv.CallableMethodDeclarationTypeIsContentObjectSubtype, Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary,
-			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList);
+			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, 
+			Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, 
+			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -435,10 +435,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private static void ValidateReturnType(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol, MethodDeclarationSyntax method)
 	{
 		ITypeSymbol methodSymbolReturnType = methodSymbol.ReturnType;
-		bool isContentObjectSubtype = IsTypeContentObjectSubtype(methodSymbolReturnType);
 		Location returnLocation = Diagnostics.GetValidLocation(method.ReturnType.GetLocation(), context.Compilation);
 		context.ReportDiagnostic(Diagnostics.GetVerbose(nameof(ValidateReturnType),
-			$"Method Name {methodSymbol.Name} | Return Type {methodSymbolReturnType.Name}, isContentObjectSubtype {isContentObjectSubtype}, location: {returnLocation.GetLineSpan()}", 
+			$"Method Name {methodSymbol.Name} | Return Type {methodSymbolReturnType.Name}, location: {returnLocation.GetLineSpan()}", 
 			returnLocation, 
 			context.Compilation));
 		
@@ -451,13 +450,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		ValidateNestedType(context.Compilation, context.ReportDiagnostic, returnLocation, methodSymbolReturnType, methodSymbol.Name);
 		ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, methodSymbolReturnType, returnLocation);
 		ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, methodSymbolReturnType, fallbackLocation: returnLocation);
-
-		
-		if (isContentObjectSubtype)
-		{
-			var diagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsContentObjectSubtype, returnLocation, methodSymbolReturnType.Name);
-			context.ReportDiagnostic(diagnostic);
-		}
+		ValidateContentObjectType(context.ReportDiagnostic, methodSymbolReturnType, returnLocation, $"{methodSymbol.Name} return");
 		
 	}
 
@@ -465,11 +458,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		foreach (var parameterSymbol in methodSymbol.Parameters)
 		{
-			bool isContentObjectSubtype = IsTypeContentObjectSubtype(parameterSymbol.Type);
 			Location parameterLocation = Diagnostics.GetValidLocation(parameterSymbol.Locations.FirstOrDefault(), context.Compilation);
 
 			context.ReportDiagnostic(Diagnostics.GetVerbose(nameof(ValidateParameters),
-				$"Method Name {methodSymbol.Name} | Parameter {parameterSymbol.Name}, isContentObjectSubtype {isContentObjectSubtype}, Location: {parameterLocation.GetLineSpan()}", 
+				$"Method Name {methodSymbol.Name} | Parameter {parameterSymbol.Name}, Location: {parameterLocation.GetLineSpan()}", 
 				parameterLocation, 
 				context.Compilation));
 			
@@ -482,12 +474,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			ValidateNestedType(context.Compilation, context.ReportDiagnostic, parameterLocation, parameterSymbol.Type, methodSymbol.Name);
 			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, parameterLocation);
 			ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, fallbackLocation: parameterLocation);
-
-			if (isContentObjectSubtype)
-			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsContentObjectSubtype, parameterLocation, parameterSymbol.Type.Name);
-				context.ReportDiagnostic(diagnostic);
-			}
+			ValidateContentObjectType(context.ReportDiagnostic, parameterSymbol.Type, parameterLocation, $"parameter {parameterSymbol.Name}");
 			
 		}
 	}
@@ -679,6 +666,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		foreach (ISymbol member in typeSymbol.GetMembers())
 		{
+			
+			// If the member is a backing field we can ignore it
+			if(member.IsImplicitlyDeclared)
+				continue;
+			
 			if (member is IPropertySymbol propertySymbol)
 			{
 				// if it is Property, we warn the customer that it will not be detected for client code gen
@@ -760,23 +752,18 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 				}
 			}
+
 			
-			
-			bool isContentObjectSubtype = IsTypeContentObjectSubtype(fieldSymbol.Type);
 			bool isKnownType = IsKnownType(fieldSymbol.Type);
 			bool isNullable = fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated || fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateMembersInSymbol),
-				$"{typeSymbol.Name} - Field {fieldSymbol.Name} isContentObjectSubtype {isContentObjectSubtype}, isKnownType {isKnownType}, isNullable {isNullable}, needToCheckBeamGen {checkBeamGenAttr}, location {fieldLocation.GetLineSpan().ToString()}", 
+				$"{typeSymbol.Name} - Field {fieldSymbol.Name}, isKnownType {isKnownType}, isNullable {isNullable}, needToCheckBeamGen {checkBeamGenAttr}, location {fieldLocation.GetLineSpan().ToString()}", 
 				fieldLocation, 
 				compilation));
 			
 			// Validate if Field is subtype from ContentObject
-			if (isContentObjectSubtype)
-			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.FieldIsContentObjectSubtype,  fieldLocation, fieldSymbol.Name);
-				reportDiagnostic.Invoke(diagnostic);
-			}
+			ValidateContentObjectType(reportDiagnostic, fieldSymbol.Type, fieldLocation, $"field {fieldSymbol.Name}");
 			
 			// Validate if Field is nullable, code gen do not support it
 			if (isNullable)
@@ -830,30 +817,38 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private static bool IsTypeContentObjectSubtype(ITypeSymbol symbol)
+	private static void ValidateContentObjectType(Action<Diagnostic> reportDiagnostic, ITypeSymbol symbol, Location location, string analyseReference)
 	{
-		var allTypesFromGeneric = GetAllTypesFromGeneric(symbol);
-
-		return allTypesFromGeneric.Any(typeSymbol =>
+		var allTypesFromGeneric = FindAllFromType(symbol, typeof(ContentObject).FullName);
+		
+		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
 		{
-			var allBaseTypes = typeSymbol.GetAllBaseTypes(false);
-			return allBaseTypes.Any(baseType => baseType == typeof(ContentObject).FullName);
-		});
+			if(parent.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith("Beamable.Common.Content.ContentRef"))
+				continue;
+			
+			var diagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidContentObject, location, analyseReference, typeSymbol.Name);
+			reportDiagnostic.Invoke(diagnostic);
+		}
 	}
 
-	private static List<ITypeSymbol> GetAllTypesFromGeneric(ITypeSymbol symbol, HashSet<string> processedTypes = null)
+	private static List<(ITypeSymbol symbol, ITypeSymbol parent)> FindAllFromType(ITypeSymbol symbol, string typeString, ITypeSymbol parent = null, HashSet<string> processedTypes = null)
 	{
-		List<ITypeSymbol> allTypes = new List<ITypeSymbol>();
+		List<(ITypeSymbol symbol, ITypeSymbol parent)> allTypes = new();
 		processedTypes ??= new HashSet<string>();
-		processedTypes.Add(symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
-		allTypes.Add(symbol);
+		string displayString = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+		processedTypes.Add(displayString);
+		if (typeString == displayString)
+		{
+			allTypes.Add(new ValueTuple<ITypeSymbol, ITypeSymbol>(symbol, parent));
+		}
+
 		if (symbol is INamedTypeSymbol { IsGenericType: true } genericType)
 		{
 			foreach (ITypeSymbol genericTypeTypeArgument in genericType.TypeArguments)
 			{
 				if(processedTypes.Contains(genericTypeTypeArgument.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
 					continue;
-				allTypes.AddRange(GetAllTypesFromGeneric(genericTypeTypeArgument, processedTypes));
+				allTypes.AddRange(FindAllFromType(genericTypeTypeArgument, typeString, symbol, processedTypes));
 			}
 		}
 		return allTypes;

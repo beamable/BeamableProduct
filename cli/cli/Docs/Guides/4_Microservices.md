@@ -586,38 +586,44 @@ Change field 'Score' to use Optional<T> instead of a nullable type
 
 ---
 
-### Field is ContentObject Subtype
+### Invalid ContentObject Used
 
-**Explanation**:  
-Fields of types that derive from `ContentObject` are not supported in types used in Microservice method signatures or marked with `[BeamGenerateSchema]`. Only the base `ContentObject` type is allowed.
+**Explanation**:\
+Using `ContentObject` or its subtypes directly in serializable fields or parameters is discouraged, as it may lead to large data payloads. Instead, prefer using `ContentRef<T>` to reference content objects efficiently.
 
 **Example Code Triggering the Error**:
+
 ```csharp
-[Serializable]
-public class MyDto
+[BeamGenerateSchema]
+public class MyDTO
 {
-    public MyCustomContent Content;
+    public MyItem item; 
 }
 
-public class MyCustomContent : ContentObject {}
+public class MyItem : ContentObject {}
 ```
 
 **Example Error Message**:
+
 ```
-Change field 'Content' to use the base ContentObject type instead of a subtype
+Change 'item' to use ContentRef<MyItem> instead of MyItem
 ```
 
 **Solution**:
-- Use the base `ContentObject` type.
-  **Example of Solved Code**:
-    ```csharp
-    [Serializable]
-    public class MyDto
-    {
-        public ContentObject Content;
-    }
-    ```
 
+- Replace the direct `ContentObject` usage with `ContentRef<T>`.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public ContentRef<MyItem> item;
+}
+
+public class MyItem : ContentObject {}
+```
 ---
 
 ### Type Used in BeamGenerateSchema is Missing Attribute
