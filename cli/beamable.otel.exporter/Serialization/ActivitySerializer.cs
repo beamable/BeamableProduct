@@ -37,7 +37,7 @@ public class SerializableActivityLink
 
 public static class ActivitySerializer
 {
-	public static Activity DeserializeActivity(SerializableActivity activityData, ActivitySource source)
+	public static Activity DeserializeActivity(SerializableActivity activityData)
 	{
 		var context = new ActivityContext(
 			ActivityTraceId.CreateFromString(activityData.TraceId),

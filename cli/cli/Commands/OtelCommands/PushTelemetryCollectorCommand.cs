@@ -61,8 +61,7 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 		var logRecords = allLogs.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
 		var logsBatch = new Batch<LogRecord>(logRecords, logRecords.Length);
 
-		var source = new ActivitySource("DummySource"); // This source exists only to recreate the activities that were saved in file
-		var activities = allActivities.Select((dto) => ActivitySerializer.DeserializeActivity(dto, source)).ToArray();
+		var activities = allActivities.Select(ActivitySerializer.DeserializeActivity).ToArray();
 		var tracesBatch = new Batch<Activity>(activities, activities.Length);
 
 

@@ -38,6 +38,7 @@ public static class LogRecordSerializer
 
 		foreach (var con in constructors)
 		{
+			//TODO change this for an assertion to make sure the constructor that we got is the right one
 			if (con.GetParameters().Length == 9) //This is to make sure we get the correct constructor
 			{
 				_logRecordCtor = con;
