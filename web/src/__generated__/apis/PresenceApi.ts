@@ -1,9 +1,14 @@
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { OnlineStatusQuery } from '@/__generated__/schemas/OnlineStatusQuery';
-import { PlayersStatusResponse } from '@/__generated__/schemas/PlayersStatusResponse';
 import { POST } from '@/constants';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { OnlineStatusQuery } from '@/__generated__/schemas/OnlineStatusQuery';
+import type { PlayersStatusResponse } from '@/__generated__/schemas/PlayersStatusResponse';
 
 /**
  * @remarks

@@ -1,13 +1,18 @@
-import { ApiPlayersPresencePutPlayerPresenceResponse } from '@/__generated__/schemas/ApiPlayersPresencePutPlayerPresenceResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { OnlineStatus } from '@/__generated__/schemas/OnlineStatus';
 import { playerIdPlaceholder } from '@/__generated__/apis/constants';
 import { PUT } from '@/constants';
-import { SetPresenceStatusRequest } from '@/__generated__/schemas/SetPresenceStatusRequest';
+import type { ApiPlayersPresencePutPlayerPresenceResponse } from '@/__generated__/schemas/ApiPlayersPresencePutPlayerPresenceResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { OnlineStatus } from '@/__generated__/schemas/OnlineStatus';
+import type { SetPresenceStatusRequest } from '@/__generated__/schemas/SetPresenceStatusRequest';
 
 /**
  * @remarks

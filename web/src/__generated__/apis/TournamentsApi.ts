@@ -1,29 +1,34 @@
-import { AdminGetPlayerStatusResponse } from '@/__generated__/schemas/AdminGetPlayerStatusResponse';
-import { AdminPlayerStatus } from '@/__generated__/schemas/AdminPlayerStatus';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { GetChampionsResponse } from '@/__generated__/schemas/GetChampionsResponse';
-import { GetGroupsResponse } from '@/__generated__/schemas/GetGroupsResponse';
-import { GetGroupStatusResponse } from '@/__generated__/schemas/GetGroupStatusResponse';
-import { GetPlayerStatusResponse } from '@/__generated__/schemas/GetPlayerStatusResponse';
-import { GetStandingsResponse } from '@/__generated__/schemas/GetStandingsResponse';
-import { GetStatusForGroupsRequest } from '@/__generated__/schemas/GetStatusForGroupsRequest';
-import { GetStatusForGroupsResponse } from '@/__generated__/schemas/GetStatusForGroupsResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { JoinRequest } from '@/__generated__/schemas/JoinRequest';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
-import { PlayerStatus } from '@/__generated__/schemas/PlayerStatus';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { RewardsRequest } from '@/__generated__/schemas/RewardsRequest';
-import { RewardsResponse } from '@/__generated__/schemas/RewardsResponse';
-import { ScoreRequest } from '@/__generated__/schemas/ScoreRequest';
-import { TournamentClientView } from '@/__generated__/schemas/TournamentClientView';
-import { TournamentQueryResponse } from '@/__generated__/schemas/TournamentQueryResponse';
-import { UpdatePlayerStatusRequest } from '@/__generated__/schemas/UpdatePlayerStatusRequest';
+import type { AdminGetPlayerStatusResponse } from '@/__generated__/schemas/AdminGetPlayerStatusResponse';
+import type { AdminPlayerStatus } from '@/__generated__/schemas/AdminPlayerStatus';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetChampionsResponse } from '@/__generated__/schemas/GetChampionsResponse';
+import type { GetGroupsResponse } from '@/__generated__/schemas/GetGroupsResponse';
+import type { GetGroupStatusResponse } from '@/__generated__/schemas/GetGroupStatusResponse';
+import type { GetPlayerStatusResponse } from '@/__generated__/schemas/GetPlayerStatusResponse';
+import type { GetStandingsResponse } from '@/__generated__/schemas/GetStandingsResponse';
+import type { GetStatusForGroupsRequest } from '@/__generated__/schemas/GetStatusForGroupsRequest';
+import type { GetStatusForGroupsResponse } from '@/__generated__/schemas/GetStatusForGroupsResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { JoinRequest } from '@/__generated__/schemas/JoinRequest';
+import type { PlayerStatus } from '@/__generated__/schemas/PlayerStatus';
+import type { RewardsRequest } from '@/__generated__/schemas/RewardsRequest';
+import type { RewardsResponse } from '@/__generated__/schemas/RewardsResponse';
+import type { ScoreRequest } from '@/__generated__/schemas/ScoreRequest';
+import type { TournamentClientView } from '@/__generated__/schemas/TournamentClientView';
+import type { TournamentQueryResponse } from '@/__generated__/schemas/TournamentQueryResponse';
+import type { UpdatePlayerStatusRequest } from '@/__generated__/schemas/UpdatePlayerStatusRequest';
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
