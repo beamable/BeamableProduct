@@ -16,7 +16,7 @@ public class BeamableLogRecordExporter : BeamableExporter<LogRecord>
 		_filesPath = options.ExportPath;
 	}
 
-	public override ExportResult Export(in Batch<LogRecord> batch) //timestamp_day/timestamp_hour_min_file.json
+	public override ExportResult Export(in Batch<LogRecord> batch)
 	{
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
-using System.Diagnostics;
+using System.Reflection;
 
 namespace beamable.otel.exporter.Serialization;
 
@@ -29,6 +29,25 @@ public class ExceptionInfo
 
 public static class LogRecordSerializer
 {
+	private static readonly ConstructorInfo? _logRecordCtor;
+
+	static LogRecordSerializer()
+	{
+		var constructors = typeof(LogRecord)
+			.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
+
+		foreach (var con in constructors)
+		{
+			if (con.GetParameters().Length == 9) //This is to make sure we get the correct constructor
+			{
+				_logRecordCtor = con;
+			}
+		}
+
+		if (_logRecordCtor == null)
+			throw new InvalidOperationException("LogRecord constructor not found");
+	}
+
 	public static SerializableLogRecord SerializeLogRecord(LogRecord record)
 	{
 		return new SerializableLogRecord
@@ -51,36 +70,37 @@ public static class LogRecordSerializer
 		};
 	}
 
-	// public static LogRecord DeserializeLogRecord(SerializableLogRecord serializedLog)
-	// {
-	// 	var timestamp = DateTimeOffset.Parse(serializedLog.Timestamp);
-	// 	var traceId = ActivityTraceId.CreateFromString(serializedLog.TraceId.AsSpan());
-	// 	var spanId = ActivitySpanId.CreateFromString(serializedLog.SpanId.AsSpan());
-	// 	var traceFlags = (ActivityTraceFlags)Enum.Parse(typeof(ActivityTraceFlags), serializedLog.TraceFlags);
-	//
-	// 	var attributes = serializedLog.Attributes?.Select(kv => new KeyValuePair<string, object>(kv.Key, kv.Value)).ToList()
-	// 	                 ?? new List<KeyValuePair<string, object>>();
-	//
-	// 	Exception exception = null;
-	// 	if (serializedLog.Exception != null)
-	// 	{
-	// 		exception = new Exception(serializedLog.Exception.Message); // Simple wrapping
-	// 	}
-	//
-	// 	return new LogRecord(
-	// 		timestamp: timestamp,
-	// 		categoryName: serializedLog.CategoryName,
-	// 		logLevel: serializedLog.LogLevel,
-	// 		eventId: default,
-	// 		state: null,
-	// 		stateValues: null,
-	// 		exception: exception,
-	// 		traceId: traceId,
-	// 		spanId: spanId,
-	// 		traceFlags: traceFlags,
-	// 		body: serializedLog.Body,
-	// 		attributes: attributes,
-	// 		scopeProvider: null
-	// 	);
-	// }
+	public static LogRecord DeserializeLogRecord(SerializableLogRecord serializedLog)
+	{
+		var timestamp = DateTimeOffset.Parse(serializedLog.Timestamp).UtcDateTime;
+		var category = serializedLog.CategoryName;
+		var logLevel = serializedLog.LogLevel;
+		var eventId = null as object;
+		var state = null as object;
+		var body = serializedLog.Body;
+
+		var attributes = serializedLog.Attributes?.Select(kv => new KeyValuePair<string, object>(kv.Key, kv.Value)).ToList()
+		                 ?? new List<KeyValuePair<string, object>>();
+
+		Exception exception = null;
+		if (serializedLog.Exception != null)
+		{
+			exception = new Exception(serializedLog.Exception.Message);
+		}
+
+		var fields = new object[]
+		{
+			null,
+			timestamp,
+			category,
+			logLevel,
+			eventId,
+			body,
+			state,
+			exception,
+			attributes
+		};
+
+		return (LogRecord)_logRecordCtor.Invoke(fields);
+	}
 }

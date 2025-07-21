@@ -28,4 +28,10 @@ public static class FolderManagementHelper
 
 		return finalFilePath;
 	}
+
+	public static List<string> GetAllFiles(string path)
+	{
+		var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+		return allFiles.ToList();
+	}
 }
