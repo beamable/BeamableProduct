@@ -681,7 +681,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					propertyLocation, 
 					compilation));
 				
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, propertySymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.PropertiesFoundInSerializableTypes, propertyLocation, typeSymbol.Name, propertySymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
 			}
@@ -723,7 +723,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					var keyArgument = genericTypeSymbol.TypeArguments[0];
 					if (keyArgument.SpecialType != SpecialType.System_String)
 					{
-						var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+						var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
 						reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 					}
 					ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], checkBeamGenAttr, fallbackLocation, processedTypes);
@@ -743,12 +743,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			{
 				if (baseType.StartsWith(DICTIONARY_CLASS_FULLNAME))
 				{
-					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
 					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 				}
 				else if (baseType.StartsWith(LIST_CLASS_FULLNAME))
 				{
-					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, fieldLocation, fieldSymbol.Name, fieldSymbol.Type.Name);
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
 					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 				}
 			}
@@ -763,12 +763,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				compilation));
 			
 			// Validate if Field is subtype from ContentObject
-			ValidateContentObjectType(reportDiagnostic, fieldSymbol.Type, fieldLocation, $"field {fieldSymbol.Name}");
+			ValidateContentObjectType(reportDiagnostic, fieldSymbol.Type, fieldLocation, $"field {fieldSymbol.Name} on {typeSymbol.Name}");
 			
 			// Validate if Field is nullable, code gen do not support it
 			if (isNullable)
 			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, fieldSymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, typeSymbol.Name, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
 			}

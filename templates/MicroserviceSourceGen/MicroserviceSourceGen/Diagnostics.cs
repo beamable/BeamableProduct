@@ -88,7 +88,7 @@ public static class Diagnostics
 		public const string MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O002";
 		public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";
 		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
-		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
+		// public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005"; This isn't being used anymore, but we kept it here to keep the Dagnostics IDs order.
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
 		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
 		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
@@ -132,7 +132,7 @@ public static class Diagnostics
 				$"Non-Partial {nameof(Server.Microservice)} classes detected",
 				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
 				Category_Services,
-				DiagnosticSeverity.Error,
+				DiagnosticSeverity.Info,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#non-partial-microservice-class-detected",
 				isEnabledByDefault: true);
 		
@@ -145,13 +145,7 @@ public static class Diagnostics
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#microservice-class-missing-microservice-id",
 				isEnabledByDefault: true);
 		
-		public static readonly DiagnosticDescriptor InvalidMicroserviceId
-			= new(INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID,
-				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
-				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
-				Category_Services,
-				DiagnosticSeverity.Error,
-				true);
+		
 		
 		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod
 			= new(INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID,
@@ -219,16 +213,16 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor PropertiesFoundInSerializableTypes
 			= new(PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID,
 				$"Properties in serializable types are ignored by the client code generator",
-				$"Properties in serializable types are ignored by the client code generator. Consider changing property '{{0}}' to a field to include it in client-generated code.",
+				$"Properties in serializable types are ignored by the client code generator. On {{0}} consider changing property '{{1}}' to a field to include it in client-generated code.",
 				Category_Services,
-				DiagnosticSeverity.Warning,
+				DiagnosticSeverity.Info,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#property-found-in-serializable-type",
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor NullableFieldsInSerializableTypes
 			= new(NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID,
 				$"Nullable fields are not supported in serializable types",
-				$"Nullable fields are not supported in serializable types. Change field '{{0}}' to use {nameof(Optional)}<T> instead of a nullable type.",
+				$"Nullable fields are not supported in serializable types. On {{0}} change field '{{1}}' to use {nameof(Optional)}<T> instead of a nullable type.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#nullable-field-in-serializable-type",
@@ -239,7 +233,7 @@ public static class Diagnostics
 				$"{nameof(ContentObject)} type or its subtypes are not recommended to use as it can use a lot of data, use ContentRef<T> instead",
 				$"{nameof(ContentObject)} type or its subtypes are not recommended to use as it can use a lot of data, use ContentRef<T> instead. Change {{0}} to use ContentRef<{{1}}> instead of {{1}}.",
 				Category_Services,
-				DiagnosticSeverity.Error,
+				DiagnosticSeverity.Warning,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-contentobject-used",
 				isEnabledByDefault: true);
 		
@@ -255,7 +249,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor DictionaryKeyMustBeStringOnSerializableTypes
 			= new(FIELD_DICTIONARY_IS_INVALID,
 				$"Dictionary fields in serializable types are only allowed if the key is string",
-				$"Dictionary fields in serializable types are only allowed if the key is string. Change the dictionary key of field {{0}} to string instead of type {{1}}.",
+				$"Dictionary fields in serializable types are only allowed if the key is string. On {{0}} change the dictionary key of field {{1}} to string instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#dictionary-key-must-be-string-on-serializable-types",
@@ -264,7 +258,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromDictionary
 			= new(FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID,
 				$"Fields that are subtype from Dictionary are not supported in serializable types",
-				$"Fields that are subtype from Dictionary are not supported in serializable types. Replace field {{0}} to Dictionary instead of type {{1}}.",
+				$"Fields that are subtype from Dictionary are not supported in serializable types. On {{0}} replace field {{1}} to Dictionary instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#field-on-serializable-type-is-subtype-from-dictionary",
@@ -273,7 +267,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromList
 			= new(FIELD_IS_SUBTYPE_FROM_LIST_ID,
 				$"Fields that are subtype from List are not supported in serializable types",
-				$"Fields that are subtype from List are not supported in serializable types. Replace field {{0}} to List instead of type {{1}}.",
+				$"Fields that are subtype from List are not supported in serializable types. On {{0}} replace field {{1}} to List instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#field-on-serializable-type-is-subtype-from-list",
