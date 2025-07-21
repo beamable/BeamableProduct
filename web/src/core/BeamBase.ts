@@ -10,8 +10,8 @@ import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 export abstract class BeamBase {
   public readonly requester: HttpRequester;
 
-  protected cid: string;
-  protected pid: string;
+  public cid: string;
+  public pid: string;
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
 

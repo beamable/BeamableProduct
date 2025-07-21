@@ -1,5 +1,7 @@
+export * from '@/core/BeamBase';
 export * from '@/core/Beam';
 export * from '@/core/BeamServer';
+export * from '@/core/BeamMicroServiceClient';
 export * from '@/configs/BeamConfig';
 export * from '@/configs/BeamServerConfig';
 export * from '@/network/http/types/HttpMethod';

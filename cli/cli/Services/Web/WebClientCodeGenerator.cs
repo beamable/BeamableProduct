@@ -1,0 +1,223 @@
+﻿using Beamable.Server;
+using cli.Services.Web.CodeGen;
+using cli.Services.Web.Helpers;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
+using ServiceConstants = Beamable.Common.Constants.Features.Services;
+
+namespace cli.Services.Web;
+
+public class WebClientCodeGenerator
+{
+	private static string _langType;
+	private readonly TsFile _clientFile;
+	private List<string> _modules = new();
+	private static readonly HashSet<TsTypeAlias> ClientTypes = new();
+	private static readonly List<(TsTypeAlias, List<string>)> ModuleTypes = new(); // (typeAlias, deps)
+
+	private static readonly List<string> CallableMethodsToGenerate = new()
+	{
+		nameof(CallableAttribute),
+		nameof(ServerCallableAttribute),
+		nameof(ClientCallableAttribute),
+		nameof(AdminOnlyCallableAttribute)
+	};
+
+	public WebClientCodeGenerator(OpenApiDocument document, string langType)
+	{
+		_langType = langType;
+		var serviceName = document.Info.Title;
+		var serviceClientClassName = $"{serviceName}Client";
+		var tsClass = new TsClass(serviceClientClassName);
+
+		var tsConstructor = new TsConstructor();
+		var tsBeamConstructorParams = new TsConstructorParameter("beam", TsType.Of("BeamBase"), !IsTypeScript);
+
+		var tsGetServiceNameMethod = new TsMethod("get serviceName", !IsTypeScript)
+			.SetReturnType(TsType.String)
+			.AddBody(new TsReturnStatement(new TsLiteralExpression(serviceName)));
+
+		tsConstructor.AddParameter(tsBeamConstructorParams);
+		tsConstructor.AddBody(
+			new TsExpressionStatement(new TsInvokeExpression(new TsIdentifier("super"), new TsIdentifier("beam"))));
+
+		tsClass.SetConstructor(tsConstructor);
+		tsClass.SetExtends(new TsIdentifier("BeamMicroServiceClient"));
+		tsClass.AddModifier(TsModifier.Export);
+		tsClass.AddMethod(tsGetServiceNameMethod);
+
+		AddMethodsToClass(tsClass, document);
+
+		_clientFile = new TsFile(serviceClientClassName);
+		_clientFile.AddDeclaration(tsClass);
+
+		var tsBeamSdkImport = new TsImport("beamable-sdk");
+		tsBeamSdkImport.AddNamedImport("BeamMicroServiceClient");
+		_clientFile.AddImport(tsBeamSdkImport);
+
+		if (!IsTypeScript)
+			return;
+
+		tsBeamSdkImport.AddNamedImport("type BeamBase");
+
+		var tsClientTypesImport = new TsImport("./types", defaultImport: "* as Types", typeImportOnly: true);
+		_clientFile.AddImport(tsClientTypesImport);
+	}
+
+	private void AddMethodsToClass(TsClass tsClass, OpenApiDocument document)
+	{
+		foreach ((string path, OpenApiPathItem item) in document.Paths)
+		{
+			if (item.Extensions.TryGetValue(ServiceConstants.METHOD_SKIP_CLIENT_GENERATION_KEY, out var isHidden) &&
+			    isHidden is OpenApiBoolean { Value: true })
+				continue;
+
+			var methodName = path.Replace("/", string.Empty);
+			foreach ((OperationType _, OpenApiOperation operation) in item.Operations)
+			{
+				// does the extension exist?
+				if (!operation.Extensions.TryGetValue(ServiceConstants.OPERATION_CALLABLE_METHOD_TYPE_KEY,
+					    out var ext))
+					continue;
+
+				// is it the right type?
+				if (ext is not OpenApiString apiString)
+					continue;
+
+				// is it in our “to generate” list?
+				if (!CallableMethodsToGenerate.Contains(apiString.Value))
+					continue;
+
+				// is there a success response?
+				if (!operation.Responses.TryGetValue("200", out var response))
+					continue;
+
+				TsType responseType = TsType.Void;
+				if (response.Content.TryGetValue("application/json", out var responseMediaType))
+				{
+					var responseSchema = responseMediaType.Schema;
+					responseType = OpenApiTsTypeMapper.Map(responseSchema, ref _modules);
+					HandleSchema(responseSchema, responseType);
+				}
+
+				TsType requestType = null;
+				if (operation.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ??
+				    false)
+				{
+					var requestSchema = requestMediaType.Schema;
+					requestType = OpenApiTsTypeMapper.Map(requestSchema, ref _modules);
+					HandleSchema(requestSchema, requestType);
+				}
+
+				AddCallableMethod(tsClass, methodName, requestType, responseType, _modules);
+			}
+		}
+	}
+
+	private void AddCallableMethod(TsClass tsClass, string methodName, TsType requestType, TsType returnType,
+		List<string> modules)
+	{
+		var tsMethod = new TsMethod(StringHelper.ToCamelCaseIdentifier(methodName), !IsTypeScript);
+		tsMethod.AddModifier(TsModifier.Async);
+
+		if (requestType != null)
+		{
+			var requestTypeRender = requestType.Render();
+			requestType = modules.Exists(m => requestTypeRender == m)
+				? TsType.Of($"Types.{requestTypeRender}")
+				: requestType;
+			tsMethod.AddParameter(new TsFunctionParameter("params", requestType, !IsTypeScript));
+		}
+
+		var returnTypeRender = returnType.Render();
+		TsType returnTypePromise = modules.Exists(m => returnTypeRender == m)
+			? TsType.Generic("Promise", TsType.Of($"Types.{returnTypeRender}"))
+			: TsType.Generic("Promise", returnType);
+
+		tsMethod.SetReturnType(returnTypePromise);
+
+		var tsRequestObjectLiteral = new TsObjectLiteralExpression();
+		tsRequestObjectLiteral.AddMember(new TsIdentifier("endpoint"), new TsLiteralExpression(methodName));
+
+		if (requestType != null)
+			tsRequestObjectLiteral.AddMember(new TsIdentifier("payload"), new TsIdentifier("params"));
+
+		tsRequestObjectLiteral.AddMember(new TsIdentifier("withAuth"), new TsLiteralExpression(true));
+
+		var tsRequestInvocation =
+			new TsInvokeExpression(new TsMemberAccessExpression(new TsIdentifier("this"), "request"),
+				tsRequestObjectLiteral);
+		var tsReturnStatement = new TsReturnStatement(tsRequestInvocation);
+		tsMethod.AddBody(tsReturnStatement);
+		tsClass.AddMethod(tsMethod);
+	}
+
+	private void HandleSchema(OpenApiSchema schema, TsType type)
+	{
+		if (schema.Type == "array")
+			schema = schema.Items;
+
+		var schemaProps = schema.Properties;
+		if (schemaProps == null || schema.IsPrimitive())
+			return;
+
+		var modules = new List<string>();
+		var objectPropTypes = new List<(string name, TsType type, TsType.PropType propType)>();
+		foreach ((string propName, OpenApiSchema propSchema) in schemaProps)
+		{
+			var isRequired = schema.Required?.Contains(propName) ?? false;
+			var propType = OpenApiTsTypeMapper.Map(propSchema, ref modules);
+			objectPropTypes.Add((propName, propType,
+				isRequired ? TsType.PropType.Required : TsType.PropType.Optional));
+
+			var propSchemaProps = propSchema.Properties;
+			if (propSchemaProps == null || schema.IsPrimitive())
+				continue;
+
+			// skip DateTime schema since we map it to string
+			if (propSchema.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME,
+				    out var beamableTypeName) && beamableTypeName is OpenApiString { Value: "DateTime" })
+				continue;
+
+			HandleSchema(propSchema, propType);
+		}
+
+		var typeRender = type.Render();
+		if (typeRender.EndsWith("[]"))
+			typeRender = typeRender.Substring(0, typeRender.Length - 2);
+
+		ModuleTypes.Add(
+			(new TsTypeAlias(typeRender)
+				.AddModifier(TsModifier.Export)
+				.SetType(TsType.Object(objectPropTypes.ToArray())), modules));
+	}
+
+	public string GenerateClientCode(string clientsOutputDirectory)
+	{
+		var extension = IsTypeScript ? ".ts" : ".js";
+		Directory.CreateDirectory(clientsOutputDirectory);
+		var clientFilePath = Path.Combine(clientsOutputDirectory, $"{_clientFile.FileName}{extension}");
+		File.WriteAllText(clientFilePath, _clientFile.Render());
+		return clientFilePath;
+	}
+
+	public static void ProcessClientTypes()
+	{
+		foreach (var (moduleType, _) in ModuleTypes)
+			ClientTypes.Add(moduleType);
+	}
+
+	public static string GenerateClientTypes(string typesOutputDirectory)
+	{
+		var tsClientTypeFile = new TsFile("index");
+		foreach (var clientType in ClientTypes)
+			tsClientTypeFile.AddDeclaration(clientType);
+
+		Directory.CreateDirectory(typesOutputDirectory);
+		var clientTypeFilePath = Path.Combine(typesOutputDirectory, $"{tsClientTypeFile.FileName}.ts");
+		File.WriteAllText(clientTypeFilePath, tsClientTypeFile.Render());
+		return clientTypeFilePath;
+	}
+
+	public static bool IsTypeScript => _langType.Equals("typescript", StringComparison.InvariantCultureIgnoreCase);
+}
