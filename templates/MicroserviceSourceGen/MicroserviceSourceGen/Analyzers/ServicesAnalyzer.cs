@@ -823,7 +823,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
 		{
-			if(parent.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith("Beamable.Common.Content.ContentRef"))
+			if(parent != null && parent.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith("Beamable.Common.Content.ContentRef"))
 				continue;
 			
 			var diagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidContentObject, location, analyseReference, typeSymbol.Name);
@@ -837,7 +837,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		processedTypes ??= new HashSet<string>();
 		string displayString = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
 		processedTypes.Add(displayString);
-		if (typeString == displayString)
+		if (symbol.GetAllBaseTypes().Any(baseType => baseType.StartsWith(typeString)))
 		{
 			allTypes.Add(new ValueTuple<ITypeSymbol, ITypeSymbol>(symbol, parent));
 		}
@@ -851,6 +851,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				allTypes.AddRange(FindAllFromType(genericTypeTypeArgument, typeString, symbol, processedTypes));
 			}
 		}
+		
 		return allTypes;
 	}
 

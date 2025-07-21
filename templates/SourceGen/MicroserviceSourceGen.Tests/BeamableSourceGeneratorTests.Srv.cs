@@ -691,17 +691,17 @@ public class DTO_BeamGenSchemaAttribute
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(0)
-				.WithArguments("otherContentObject1"));
+				.WithArguments("field otherContentObject1", "OtherContentObject"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(1)
-				.WithArguments("otherContentObject2"));
+				.WithArguments("field otherContentObject2", "OtherContentObject"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(2)
-				.WithArguments("otherContentObject3"));
+				.WithArguments("field otherContentObject3", "OtherContentObject"));
 		
 		PrepareForRun(ctx, cfg, UserCode);
 		
@@ -815,6 +815,13 @@ using Unity.Beamable.Customer.Common;
 		public int AddSalmon(int a, int b)
 		{
 			return a + b;
+		}
+
+		[ClientCallable]
+		public async Task<List<ItemReward>> AddSalmonAsync(Dictionary<string,int> a, ContentRef<ContentObject> b)
+		{
+			await Task.Delay(1000);
+			return new();
 		}
 
 		[ClientCallable]
