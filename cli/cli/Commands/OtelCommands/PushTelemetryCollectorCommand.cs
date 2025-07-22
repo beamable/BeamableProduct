@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using System.Diagnostics;
 
 namespace cli.OtelCommands;
@@ -36,11 +37,18 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			throw new CliException("Couldn't resolve telemetry traces path");
 		}
 
+		if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelMetricsDirectoryPath))
+		{
+			throw new CliException("Couldn't resolve telemetry metrics path");
+		}
+
 		var allLogsFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelLogsDirectoryPath);
 		var allTracesFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelTracesDirectoryPath);
+		var allMetricsFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelMetricsDirectoryPath);
 
 		List<SerializableLogRecord> allLogs = new List<SerializableLogRecord>();
 		List<SerializableActivity> allActivities = new List<SerializableActivity>();
+		List<SerializableMetric> allMetrics = new List<SerializableMetric>();
 
 		foreach (string file in allLogsFiles)
 		{
@@ -58,11 +66,22 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			allActivities.AddRange(activitiesFromFile);
 		}
 
+		foreach (string file in allMetricsFiles)
+		{
+			var content = File.ReadAllText(file);
+			var metricsFromFile = JsonConvert.DeserializeObject<List<SerializableMetric>>(content);
+
+			allMetrics.AddRange(metricsFromFile);
+		}
+
 		var logRecords = allLogs.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
 		var logsBatch = new Batch<LogRecord>(logRecords, logRecords.Length);
 
 		var activities = allActivities.Select(ActivitySerializer.DeserializeActivity).ToArray();
 		var tracesBatch = new Batch<Activity>(activities, activities.Length);
+
+		var metrics = allMetrics.Select(MetricsSerializer.DeserializeMetric).ToArray();
+		var metricsBatch = new Batch<Metric>(metrics, metrics.Length);
 
 
 		{ // Sending deserialized telemetry data through Otlp exporter
@@ -73,7 +92,7 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			};
 
 			BaseExporter<LogRecord> otlpLogExporter = new OtlpLogExporter(
-				logExporterOptions);
+                                    				logExporterOptions);
 
 			var logSuccess = otlpLogExporter.Export(logsBatch);
 
@@ -102,6 +121,31 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			var traceSuccess = otlpActivityExporter.Export(tracesBatch);
 
 			if (traceSuccess == ExportResult.Success)
+			{
+				//Delete all traces files
+				foreach (var file in allTracesFiles)
+				{
+					File.Delete(file);
+				}
+			}
+			else
+			{
+				throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data.");
+			}
+
+
+			var metricExporterOptions = new OtlpExporterOptions
+			{
+				Endpoint = new Uri($"http://127.0.0.1:4355/v1/metrics"), //TODO get this in a nicer way
+				Protocol = OtlpExportProtocol.HttpProtobuf,
+			};
+
+			BaseExporter<Metric> otlpMetricExporter = new OtlpMetricExporter(
+				metricExporterOptions);
+
+			var metricSuccess = otlpMetricExporter.Export(metricsBatch);
+
+			if (metricSuccess == ExportResult.Success)
 			{
 				//Delete all traces files
 				foreach (var file in allTracesFiles)
