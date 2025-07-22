@@ -139,19 +139,20 @@ public class ServiceDocGenerator
 
 		// We add to the list of schemas all complex types in method signatures and all extra schemas that were given to us (usually, this is any type that has BeamGenerateSchemaAttribute -- but we can pass
 		// in any serializable type here that follows microservice serialization rules).
-		var allTypes = SchemaGenerator.FindAllTypesForOAPI(methods).ToList();
-		allTypes.AddRange(extraSchemas.Select(ex => new SchemaGenerator.OAPIType(null, ex)));
-		foreach (var oapiType in allTypes)
+		var allTypesFromRoutes = SchemaGenerator.FindAllTypesForOAPI(methods).ToList();
+		allTypesFromRoutes.AddRange(extraSchemas.Select(ex => new SchemaGenerator.OAPIType(null, ex)));
+		foreach (var oapiType in allTypesFromRoutes)
 		{
-			var type = oapiType.Type;
 			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
+			// If all usages of this type (within a sub-graph of types starting from a ServiceMethod) is set to NOT generate the client code, we won't.
+			// Otherwise, even if just a single usage of the type wants the client code to be generated, we do generate it.
+			// That's what this thing does.
+			var type = oapiType.Type;
 			var key = SchemaGenerator.GetQualifiedReferenceName(type);
 			if (doc.Components.Schemas.TryGetValue(key, out var existingSchema))
 			{
-				if (oapiType.ShouldNotGenerateClientCode())
-				{
-					existingSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(oapiType.ShouldNotGenerateClientCode()));
-				}
+				var shouldGenerate = !oapiType.ShouldNotGenerateClientCode();
+				if (shouldGenerate) existingSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(false));
 
 				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}, WillGenClient={oapiType.ShouldNotGenerateClientCode()}");
 			}

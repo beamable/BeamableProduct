@@ -226,7 +226,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 			makeAssignmentSb.Append($"Serializable->{unrealPropertyDeclaration.PropertyName} = {unrealPropertyDeclaration.PropertyName};\n\t");
 
 			breakSb.Append($", {unrealPropertyDeclaration.PropertyUnrealType}& {unrealPropertyDeclaration.PropertyName}");
-			breakAssignmentSb.Append($"{unrealPropertyDeclaration.PropertyName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
+			breakAssignmentSb.Append($"\t{unrealPropertyDeclaration.PropertyName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
 		}
 
 		_makeParams = makeSb.ToString();
@@ -379,6 +379,7 @@ public:
 #include ""₢{nameof(includeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
 
 #include ""CoreMinimal.h""
+#include ""BeamCoreSettings.h""
 
 
 FString U₢{nameof(NamespacedTypeName)}₢Library::₢{nameof(NamespacedTypeName)}₢ToJsonString(const U₢{nameof(NamespacedTypeName)}₢* Serializable, const bool Pretty)
@@ -415,6 +416,9 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 
 	public const string BREAK_UTILITY_DEFINITION = $@"void U₢{nameof(NamespacedTypeName)}₢Library::Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢)
 {{
-	₢{nameof(_breakAssignments)}₢	
+	if(GetDefault<UBeamCoreSettings>()->BreakGuard(Serializable))
+	{{
+	₢{nameof(_breakAssignments)}₢}}
+		
 }}";
 }
