@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
 		
-		private string _oldItemSelected;
+		private List<string> _oldItemsSelected;
 		
 		private static List<string> AllStatus => StatusMapToString.Values.ToList();
 
@@ -201,18 +201,27 @@ namespace Beamable.Editor.UI.ContentWindow
 			_windowStatus = windowStatus;
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				if (!string.IsNullOrEmpty(_oldItemSelected))
+				var selection = new List<Object> { };
+				if (_oldItemsSelected != null)
 				{
-					SetEntryIdAsSelected(_oldItemSelected);
+					foreach (var id in _oldItemsSelected)
+					{
+						if (_contentService.ContentScriptableCache.TryGetValue(id, out var value))
+						{
+							selection.Add(value);
+						}
+					}
+					Selection.objects = selection.ToArray();
 				}
 
-				_oldItemSelected = string.Empty;
+				_oldItemsSelected = new List<string>();
 			}
 			else
 			{
-				if (!string.IsNullOrEmpty(SelectedItemId))
+				var items = MultiSelectItemIds;
+				if (items?.Count > 0)
 				{
-					_oldItemSelected = SelectedItemId;
+					_oldItemsSelected = items.ToList();
 					Selection.activeObject = null;
 				}
 			}
