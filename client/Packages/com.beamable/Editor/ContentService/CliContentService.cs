@@ -98,6 +98,14 @@ namespace Beamable.Editor.ContentService
 			saveCommand.Run();
 		}
 
+		public void TempDisableWatcher(Action withoutWatcher)
+		{
+			var _ = TempDisableWatcher(() =>
+			{
+				withoutWatcher?.Invoke();
+				return Promise.Success;
+			});
+		}
 		public async Promise TempDisableWatcher(Func<Promise> withoutWatcher)
 		{
 			try

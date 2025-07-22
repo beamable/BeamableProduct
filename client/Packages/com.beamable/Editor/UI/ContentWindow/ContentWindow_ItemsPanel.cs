@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.UI.ContentWindow
 {
@@ -31,17 +32,22 @@ namespace Beamable.Editor.UI.ContentWindow
 		private readonly Dictionary<(string filterKey, ContentSortOptionType sortOption), List<LocalContentManifestEntry>> _sortedCache = new();
 
 		private Vector2 _itemsPanelScrollPos;
-		private string SelectedItemId
+
+		private List<string> MultiSelectItemIds
 		{
 			get
 			{
-				if (Selection.activeObject && Selection.activeObject is ContentObject contentObject)
+				// TODO: cache this once per frame; could be a lot of allocation :(
+				var ids = new List<string>();
+				foreach (var obj in Selection.objects)
 				{
-					return contentObject.Id;
+					if (obj && obj is ContentObject content)
+					{
+						ids.Add(content.Id);
+					}
 				}
 
-				return string.Empty;
-
+				return ids;
 			}
 		}
 
@@ -122,7 +128,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			GUILayout.EndVertical();
 			
-			if (!string.IsNullOrEmpty(SelectedItemId) && Event.current.type == EventType.KeyDown &&
+			if (MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
 			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
 			{
 				
@@ -131,15 +137,35 @@ namespace Beamable.Editor.UI.ContentWindow
 					return;
 				}
 
-				if (_contentService.EntriesCache.TryGetValue(SelectedItemId, out var entry) &&
-				    entry.StatusEnum is not ContentStatus.Deleted)
+				var toBeDeleted = new List<LocalContentManifestEntry>();
+				foreach (var id in MultiSelectItemIds)
 				{
+					if (_contentService.EntriesCache.TryGetValue(id, out var contentEntry) &&
+					    contentEntry.StatusEnum is not ContentStatus.Deleted)
+					{
+						toBeDeleted.Add(contentEntry);
+					}
+				}
+				
+				if (toBeDeleted.Count > 0)
+				{
+					var message = toBeDeleted.Count == 1
+						? "Are you sure you want to delete this content?"
+						: $"Are you sure you want to delete these {toBeDeleted.Count} contents?";
+					
 					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
-					                                                "Are you sure you want to delete this content?",
+					                                                message,
 					                                                "Delete", "Cancel");
 					if (shouldDelete)
 					{
-						_contentService.DeleteContent(entry.FullId);
+						_contentService.TempDisableWatcher(() =>
+						{
+							foreach (var id in toBeDeleted)
+							{
+								_contentService.DeleteContent(id.FullId);
+							}
+						});
+						
 						Selection.activeObject = null;
 						Event.current.Use();
 						Repaint();
@@ -356,8 +382,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
 		}
 
+		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();
+		
 		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth, string groupName)
 		{
+			_frameRenderedItems.AddRange(items);
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
 			if (items.Count <= maxVisibleItems)
 			{
@@ -456,10 +485,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
+		public SerializableDictionaryStringToInt _itemContentIdToRowRect = new SerializableDictionaryStringToInt();
+		
 		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
 		{
-			GUIStyle style = SelectedItemId == entry.FullId ? _rowSelectedItemStyle :
-				index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
+			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId) 
+				? _rowSelectedItemStyle 
+				: index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
 
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
@@ -495,22 +527,114 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
 			}
+
+			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
 			
+			// TODO: add up/down key support
 			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
-				if (Event.current.button == 1)
+				var isShiftClick = Event.current.shift;
+				var isLeftClick = Event.current.button == 0;
+				var isRightClick = Event.current.button == 1;
+				
+				var isAddClick = (Event.current.control || Event.current.alt  ||
+				                    Event.current.command);
+				var isRepeatClick = MultiSelectItemIds.Contains(entry.FullId);
+
+
+				var shouldShowMenu = false;
+				if (!isShiftClick)
 				{
-					ShowItemOptionsMenu(entry);
+					// either adding, setting, or removing selection.
+					switch (isAddClick, isRepeatClick)
+					{
+						case (true, false):
+							AddEntryIdAsSelected(entry.FullId);
+							shouldShowMenu = isRightClick;
+							break;
+						case (false, false):
+							ClearSelection();
+							SetEntryIdAsSelected(entry.FullId);
+							shouldShowMenu = isRightClick;
+							break;
+						case (true, true):
+							if (isRightClick)
+							{
+								shouldShowMenu = true;
+							}
+							else
+							{
+								RemoveEntryIdAsSelected(entry.FullId);
+							}
+							break;
+						case (false, true):
+							if (isRightClick)
+							{
+								shouldShowMenu = true;
+							}
+							else
+							{
+								ClearSelection();
+							}
+							break;
+					}
+				}
+				else if (isShiftClick && isLeftClick)
+				{
+					if (Selection.objects.Length == 0)
+					{
+						// there is no selection yet, so handle this as the first click.
+						ClearSelection();
+						SetEntryIdAsSelected(entry.FullId);
+					}
+					else
+					{
+						var first = Selection.objects.OfType<ContentObject>().FirstOrDefault();
+						if (first == null)
+						{
+							// there is no CONTENT selection yet, so handle this as the first click.
+							ClearSelection();
+							SetEntryIdAsSelected(entry.FullId);
+						}
+						else
+						{
+							var firstId = first.Id;
+							var entryId = entry.FullId;
+							AddDelayedAction(() => {
+								var from = _frameRenderedItems.FindIndex(c => c.FullId == firstId);
+								var to = _frameRenderedItems.FindIndex(c => c.FullId == entryId);
+								
+								if (from == -1 || to == -1)
+								{
+									Debug.LogError($"Beam Content Manager cannot find index map between ids=[{firstId}:{entryId}] as index=[{from}:{to}] ");
+								}
+								else
+								{
+									var min = Math.Min(from, to);
+									var max = Math.Max(from, to);
+									for (var i = min; i <= max; i++)
+									{
+										AddEntryIdAsSelected(_frameRenderedItems[i].FullId);
+									}
+								}
+							});
+						}
+					}
+				}
+
+				if (shouldShowMenu)
+				{
+					// AddDelayedAction(() =>
+					var evt = Event.current;
+					var mousePosition = evt.mousePosition;
+					Event.current.Use();
+					Repaint();
+					ShowItemOptionsMenu(mousePosition);
 					return;
+
 				}
-				if (SelectedItemId == entry.FullId)
-				{
-					Selection.activeObject = null;
-				}
-				else
-				{
-					SetEntryIdAsSelected(entry.FullId);
-				}
+
+				
 				Event.current.Use();
 				Repaint();
 			}
@@ -524,77 +648,156 @@ namespace Beamable.Editor.UI.ContentWindow
 			Repaint();
 		}
 
-		private void ShowItemOptionsMenu(LocalContentManifestEntry entry)
+		private void ShowItemOptionsMenu(Vector2 menuPosition)
 		{
 			GenericMenu menu = new GenericMenu();
-			
-			
-			
-			if (entry.StatusEnum is ContentStatus.Deleted)
+
+			var selection = Selection.objects;
+			var entries = new List<LocalContentManifestEntry>();
+			foreach (var selected in selection)
 			{
-				menu.AddDisabledItem(new GUIContent("Duplicate Item"));
-				menu.AddDisabledItem(new GUIContent("Rename Item"));
-				menu.AddDisabledItem(new GUIContent("Delete Item"));
-			}
-			else
-			{
-				menu.AddItem(new  GUIContent("Open File Item"), false, () =>
+				if (selected is ContentObject content)
 				{
-					InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1);
-				});
-				menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
-				{
-					if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+					if (_contentService.EntriesCache.TryGetValue(content.Id, out var entry))
 					{
-						var duplicatedObject = Instantiate(contentObject);
-						string baseName = $"{contentObject.ContentName}_Copy";
-						int itemsWithBaseNameCount =  _contentService.GetContentsFromType(contentObject.GetType()).Count(item => item.Name.StartsWith(baseName));
-						duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-						duplicatedObject.ContentStatus = ContentStatus.Created;
-						_contentService.SaveContent(duplicatedObject);
-						Selection.activeObject = duplicatedObject;
+						entries.Add(entry);
 					}
-				
-				});
-				
-				menu.AddItem(new GUIContent("Rename Item"), false, () =>
-				{
-					_editItemId = entry.FullId;
-					_editLabels = new[] {entry.Name};
-					_needToFocusLabel = true;
-				});
+				}
+			}
 
-
-				menu.AddItem(new GUIContent("Delete Item"), false, () =>
+			if (entries.Count == 1)
+			{
+				var entry = entries[0];
+				if (entry.StatusEnum is ContentStatus.Deleted)
 				{
-					if (EditorUtility.DisplayDialog("Delete Content",
-					                                "Are you sure you want to delete this content?", "Delete", "Cancel"))
+					menu.AddDisabledItem(new GUIContent("Duplicate Item"));
+					menu.AddDisabledItem(new GUIContent("Rename Item"));
+					menu.AddDisabledItem(new GUIContent("Delete Item"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Open File Item"), false,
+					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
+					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 					{
-						_contentService.DeleteContent(entry.FullId);
+						if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+						{
+							var duplicatedObject = Instantiate(contentObject);
+							string baseName = $"{contentObject.ContentName}_Copy";
+							int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
+							                                            .Count(item => item.Name.StartsWith(baseName));
+							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+							duplicatedObject.ContentStatus = ContentStatus.Created;
+							_contentService.SaveContent(duplicatedObject);
+							Selection.activeObject = duplicatedObject;
+						}
+
+					});
+
+					menu.AddItem(new GUIContent("Rename Item"), false, () =>
+					{
+						_editItemId = entry.FullId;
+						_editLabels = new[] {entry.Name};
+						_needToFocusLabel = true;
+					});
+
+
+					menu.AddItem(new GUIContent("Delete Item"), false, () =>
+					{
+						if (EditorUtility.DisplayDialog("Delete Content",
+						                                "Are you sure you want to delete this content?", "Delete",
+						                                "Cancel"))
+						{
+							_contentService.DeleteContent(entry.FullId);
+						}
+
+					});
+				}
+
+				if (entry.StatusEnum is not ContentStatus.UpToDate)
+				{
+					menu.AddItem(new GUIContent("Revert Item"), false,
+					             () =>
+					             {
+						             _ = _contentService.SyncContentsWithProgress(
+							             true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
+					             });
+				}
+				else
+				{
+					menu.AddDisabledItem(new GUIContent("Revert Item"));
+				}
+
+				menu.AddSeparator("");
+				menu.AddItem(new GUIContent("Copy content ID to clipboard"), false,
+				             () => { GUIUtility.systemCopyBuffer = entry.FullId; });
+			}
+			else if (entries.Count > 1)
+			{
+				var allDeleted = entries.All(e => e.StatusEnum == ContentStatus.Deleted);
+				var allUpToDate = entries.All(e => e.StatusEnum == ContentStatus.UpToDate);
+				if (allDeleted)
+				{
+					menu.AddDisabledItem(new GUIContent("Delete Items"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Delete Existing Items"), false, () =>
+					{
+						if (EditorUtility.DisplayDialog("Delete Content",
+						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
+						                                "Cancel"))
+						{
+							_contentService.TempDisableWatcher(() =>
+							{
+								foreach (var entry in entries)
+								{
+									_contentService.DeleteContent(entry.FullId);
+								}
+							});
+						}
+					});
+				}
+
+				menu.AddItem(new GUIContent("Duplicate Items"), false, () =>
+				{
+					ClearSelection();
+
+					// TODO: it would be better to pre-calculate all of the file names for the new content
+					//       and then temporarily disable the content watcher.
+					foreach (var entry in entries)
+					{
+						if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+						{
+							var duplicatedObject = Instantiate(contentObject);
+							string baseName = $"{contentObject.ContentName}_Copy";
+							int itemsWithBaseNameCount = _contentService
+							                             .GetContentsFromType(contentObject.GetType())
+							                             .Count(item => item.Name.StartsWith(baseName));
+							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+							duplicatedObject.ContentStatus = ContentStatus.Created;
+							_contentService.SaveContent(duplicatedObject);
+						}
 					}
 
 				});
-			}
 
-			if (entry.StatusEnum is not ContentStatus.UpToDate)
-			{
-				menu.AddItem(new GUIContent("Revert Item"), false, () =>
+				if (allUpToDate)
 				{
-					_ = _contentService.SyncContentsWithProgress(true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
-				});
+					menu.AddDisabledItem(new GUIContent("Revert Items"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Revert changed Items"), false, () =>
+					{
+						_ = _contentService.SyncContentsWithProgress(
+							true, true, true, true, string.Join(",",entries.Select(e => e.FullId)), ContentFilterType.ExactIds);
+					});
+				}
+				
 			}
-			else
-			{
-				menu.AddDisabledItem(new GUIContent("Revert Item"));
-			}
-			
-			menu.AddSeparator("");
-			menu.AddItem(new GUIContent("Copy content ID to clipboard"), false, () =>
-			{
-				GUIUtility.systemCopyBuffer = entry.FullId;
-			});
 
-			menu.ShowAsContext();
+			menu.DropDown(new Rect(menuPosition, Vector2.zero));
 		}
 
 		private string[] DrawTableRow(string[] labels,
@@ -697,6 +900,54 @@ namespace Beamable.Editor.UI.ContentWindow
 				Selection.activeObject = value;
 			}
 		}
+
+		private void ClearSelection()
+		{
+			Selection.activeObject = null;
+			Selection.objects = new Object[] { };
+		}
+		private void AddEntryIdAsSelected(string entryId)
+		{
+			var selection = Selection.objects;
+			foreach (var existing in selection)
+			{
+				if (existing is ContentObject content && content.Id == entryId)
+				{
+					// the item already exists in the selection.
+					return; 
+				}
+			}
+			
+			var newSelection = selection.ToList();
+			
+			if (_contentService.ContentScriptableCache.TryGetValue(entryId, out ContentObject value))
+			{
+				newSelection.Add(value);
+			}
+
+			Selection.objects = newSelection.ToArray();
+		}
+		
+		private void RemoveEntryIdAsSelected(string entryId)
+		{
+			var selection = Selection.objects;
+			var found = false;
+			var newSelection = selection.ToList();
+			foreach (var existing in selection)
+			{
+				if (existing is ContentObject content && content.Id == entryId)
+				{
+					found = true;
+					newSelection.Remove(existing);
+				}
+			}
+
+			// the item does not exist in the selection
+			if (!found) return; 
+
+			Selection.objects = newSelection.ToArray();
+		}
+		
 
 		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "", bool shouldSort = false)
 		{
