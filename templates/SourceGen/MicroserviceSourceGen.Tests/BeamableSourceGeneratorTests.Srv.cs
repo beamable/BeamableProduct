@@ -546,17 +546,17 @@ public class DTO_BeamGenSchemaAttribute
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
 				.WithLocation(0)
-				.WithArguments("Prop1"));
+				.WithArguments("DTO_AsyncTest", "Prop1"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
 				.WithLocation(1)
-				.WithArguments("Prop2"));
+				.WithArguments("DTO_Test", "Prop2"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
 				.WithLocation(2)
-				.WithArguments("Prop3"));
+				.WithArguments("DTO_BeamGenSchemaAttribute", "Prop3"));
 		
 		PrepareForRun(ctx, cfg, UserCode);
 		
@@ -616,17 +616,17 @@ public class DTO_BeamGenSchemaAttribute
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
 				.WithLocation(0)
-				.WithArguments("nullableInt"));
+				.WithArguments("DTO_AsyncTest", "nullableInt"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
 				.WithLocation(1)
-				.WithArguments("nullableBool"));
+				.WithArguments("DTO_Test", "nullableBool"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
 				.WithLocation(2)
-				.WithArguments("nullableLong"));
+				.WithArguments("DTO_BeamGenSchemaAttribute", "nullableLong"));
 		
 		PrepareForRun(ctx, cfg, UserCode);
 		
@@ -691,17 +691,17 @@ public class DTO_BeamGenSchemaAttribute
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(0)
-				.WithArguments("field otherContentObject1", "OtherContentObject"));
+				.WithArguments("field otherContentObject1 on DTO_AsyncTest", "OtherContentObject"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(1)
-				.WithArguments("field otherContentObject2", "OtherContentObject"));
+				.WithArguments("field otherContentObject2 on DTO_Test", "OtherContentObject"));
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
 				.WithLocation(2)
-				.WithArguments("field otherContentObject3", "OtherContentObject"));
+				.WithArguments("field otherContentObject3 on DTO_BeamGenSchemaAttribute", "OtherContentObject"));
 		
 		PrepareForRun(ctx, cfg, UserCode);
 		
