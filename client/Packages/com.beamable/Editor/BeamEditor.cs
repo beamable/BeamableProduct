@@ -358,8 +358,18 @@ namespace Beamable
 			InitDefaultContext().Error(Debug.LogError);
 		}
 
+		public const string BEAM_DEPENDENCIES_SESSION_KEY = "beam_dependencies_check";
 		public static bool HasDependencies()
 		{
+			var ranCheckBefore = SessionState.GetBool(BEAM_DEPENDENCIES_SESSION_KEY, false);
+
+			// the has-dependencies can spiral into an infinite death loop. 
+			//  this will make sure the dependency check only happens once per session.
+			//  the dependency check is being removed entirely in the next major verison (3+)
+			if (ranCheckBefore) 
+				return true;
+			
+			SessionState.SetBool(BEAM_DEPENDENCIES_SESSION_KEY, true);
 			var hasAddressables = AddressableAssetSettingsDefaultObject.GetSettings(false) != null;
 			var hasTextmeshPro = TextMeshProImporter.EssentialsLoaded;
 
