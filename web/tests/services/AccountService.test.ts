@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AccountService } from '@/services/AccountService';
-import type { BeamApi } from '@/core/BeamApi';
+import * as apis from '@/__generated__/apis';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { AccountPlayerView } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 
 describe('AccountService', () => {
   describe('current', () => {
-    it('calls getAccountsMe on the accounts API and returns the account player view', async () => {
+    it('calls accountsGetMeBasic on the accounts API and returns the account player view', async () => {
       const mockBody: AccountPlayerView = {
         deviceIds: ['device1'],
         id: 'player-id',
@@ -16,20 +17,21 @@ describe('AccountService', () => {
         external: [],
         language: 'en',
       };
-      const mockBeamApi = {
-        accounts: {
-          getAccountsMe: vi.fn().mockResolvedValue({ body: mockBody }),
-        },
-      } as unknown as BeamApi;
-
+      vi.spyOn(apis, 'accountsGetMeBasic').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+      const mockRequester = {} as HttpRequester;
       const playerService = new PlayerService();
       const accountService = new AccountService({
-        api: mockBeamApi,
+        requester: mockRequester,
         player: playerService,
       });
       const result = await accountService.current();
 
-      expect(mockBeamApi.accounts.getAccountsMe).toHaveBeenCalledWith(
+      expect(apis.accountsGetMeBasic).toHaveBeenCalledWith(
+        mockRequester,
         undefined,
       );
       expect(result).toEqual(mockBody);

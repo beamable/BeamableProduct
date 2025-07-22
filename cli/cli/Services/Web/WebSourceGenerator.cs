@@ -56,6 +56,12 @@ public class WebSourceGenerator : SwaggerService.ISourceGenerator
 			FileName = $"apis/{API_BARREL_FILE.FileName}.ts", Content = API_BARREL_FILE.Render()
 		});
 
+		// Generate the api constants file (constants.ts)
+		resources.Add(new GeneratedFileDescriptor
+		{
+			FileName = $"apis/{API_CONSTANT_FILE.FileName}.ts", Content = API_CONSTANT_FILE.Render()
+		});
+
 		return resources;
 	}
 }

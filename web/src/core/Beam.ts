@@ -2,7 +2,6 @@ import { BeamConfig } from '@/configs/BeamConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { BeamApi } from '@/core/BeamApi';
 import { BeamService } from '@/core/BeamService';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
@@ -23,8 +22,6 @@ import { LeaderboardsService } from '@/services/LeaderboardsService';
 
 /** The main class for interacting with the Beam Client SDK. */
 export class Beam extends BeamBase {
-  public readonly api: BeamApi;
-
   /**
    * A namespace of player-related services.
    * Use `beam.player.<method>` to access player-specific operations.
@@ -54,7 +51,6 @@ export class Beam extends BeamBase {
     this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
     this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.gameEngineVersion);
     this.ws = new BeamWebSocket();
-    this.api = new BeamApi(this.requester);
     this.player = new PlayerService();
     BeamService.attachServices(this);
     this.refreshable = {
@@ -63,7 +59,7 @@ export class Beam extends BeamBase {
   }
 
   /** Initializes the Beam SDK instance. Later calls return the same initialization promise. */
-  async ready(): Promise<void> {
+  ready(): Promise<void> {
     if (!this.readyPromise) this.readyPromise = this.init();
     return this.readyPromise;
   }
@@ -165,45 +161,42 @@ export class Beam extends BeamBase {
   }
 
   private async init(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const savedConfig = await readConfig();
-        // If the saved config cid does not match the current one, clear the token storage
-        if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
-        // If the cid or pid has changed, save the new configuration
-        if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
-          await saveConfig({ cid: this.cid, pid: this.pid });
+    try {
+      const savedConfig = await readConfig();
+      // If the saved config cid does not match the current one, clear the token storage
+      if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
+      // If the cid or pid has changed, save the new configuration
+      if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
+        await saveConfig({ cid: this.cid, pid: this.pid });
 
-        let tokenResponse: TokenResponse | undefined;
-        const accessToken = await this.tokenStorage.getAccessToken();
-        if (!accessToken) {
-          // If no access token exists, sign in as a guest
-          tokenResponse = await this.auth.signInAsGuest();
-        } else if (this.tokenStorage.isExpired) {
-          // If the access token is expired, try to refresh it using the refresh token
-          // If no refresh token exists, sign in as a guest
-          const refreshToken = await this.tokenStorage.getRefreshToken();
-          tokenResponse = refreshToken
-            ? await this.auth.refreshAuthToken({ refreshToken })
-            : await this.auth.signInAsGuest();
-        }
-
-        if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
-
-        const [account] = await Promise.all([
-          this.account.current(),
-          this.setupRealtimeConnection(),
-        ]);
-
-        this.player.account = account;
-        this.isReadyPromise = true;
-        resolve();
-      } catch (error) {
-        this.isReadyPromise = false;
-        this.readyPromise = undefined;
-        reject(error);
+      let tokenResponse: TokenResponse | undefined;
+      const accessToken = await this.tokenStorage.getAccessToken();
+      if (!accessToken) {
+        // If no access token exists, sign in as a guest
+        tokenResponse = await this.auth.signInAsGuest();
+      } else if (this.tokenStorage.isExpired) {
+        // If the access token is expired, try to refresh it using the refresh token
+        // If no refresh token exists, sign in as a guest
+        const refreshToken = await this.tokenStorage.getRefreshToken();
+        tokenResponse = refreshToken
+          ? await this.auth.refreshAuthToken({ refreshToken })
+          : await this.auth.signInAsGuest();
       }
-    });
+
+      if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
+
+      const [account] = await Promise.all([
+        this.account.current(),
+        this.setupRealtimeConnection(),
+      ]);
+
+      this.player.account = account;
+      this.isReadyPromise = true;
+    } catch (error) {
+      this.isReadyPromise = false;
+      this.readyPromise = undefined;
+      throw error;
+    }
   }
 
   protected createBeamRequester(config: BeamConfig): BeamRequester {
@@ -220,7 +213,7 @@ export class Beam extends BeamBase {
     if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
 
     await this.ws.connect({
-      api: this.api,
+      requester: this.requester,
       cid: this.cid,
       pid: this.pid,
       refreshToken,
@@ -248,14 +241,14 @@ export class Beam extends BeamBase {
 }
 
 export interface Beam {
-  /** High-level account helper built on top of `beam.api.accounts.*` endpoints. */
+  /** High-level account helper built on top of accounts api endpoints. */
   account: AccountService;
-  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints. */
+  /** High-level announcement helper built on top of announcements api endpoints. */
   announcements: AnnouncementsService;
-  /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
+  /** High-level auth helper built on top of auth api endpoints. */
   auth: AuthService;
-  /** High-level leaderboards helper built on top of `beam.api.leaderboards.*` endpoints. */
+  /** High-level leaderboards helper built on top of leaderboards api endpoints. */
   leaderboards: LeaderboardsService;
-  /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
+  /** High-level stats helper built on top of stats api endpoints. */
   stats: StatsService;
 }

@@ -4,10 +4,14 @@ import {
   promiseWithResolvers,
   PromiseWithResolversPolyfill,
 } from '@/utils/promiseWithResolvers';
-import { BeamApi } from '@/core/BeamApi';
+import {
+  authPostTokensRefreshToken,
+  realmsGetClientDefaultsBasic,
+} from '@/__generated__/apis';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 
 interface BeamWebSocketConnect {
-  api: BeamApi;
+  requester: HttpRequester;
   cid: string;
   pid: string;
   refreshToken: string;
@@ -15,7 +19,7 @@ interface BeamWebSocketConnect {
 
 export class BeamWebSocket {
   private socket?: WebSocket;
-  private api?: BeamApi;
+  private requester?: HttpRequester;
   private url?: string;
   private cid?: string;
   private pid?: string;
@@ -95,13 +99,13 @@ export class BeamWebSocket {
   }
 
   private async setWebSocketUrl(): Promise<void> {
-    if (!this.api) {
-      throw new BeamWebSocketError('API instance is not set');
-    }
+    if (!this.requester) throw new BeamWebSocketError('No requester provided');
 
     if (this.url) return; // URL already set
 
-    const realmConfigResponse = await this.api.realms.getRealmsClientDefaults();
+    const realmConfigResponse = await realmsGetClientDefaultsBasic(
+      this.requester,
+    );
     const realmConfig = realmConfigResponse.body;
     if (realmConfig.websocketConfig.provider === 'pubnub') {
       // Web SDK does not support pubnub
@@ -117,17 +121,20 @@ export class BeamWebSocket {
   }
 
   private async getAccessToken(): Promise<string | null> {
-    if (!this.api) return null;
+    if (!this.requester) return null;
 
     try {
       // Fetch the access token for the new connection
-      const accessTokenResponse = await this.api.auth.postAuthRefreshTokenV2({
-        customerId: this.cid,
-        realmId: this.pid,
-        refreshToken: this.refreshToken,
-      });
+      const accessTokenResponse = await authPostTokensRefreshToken(
+        this.requester,
+        {
+          customerId: this.cid,
+          realmId: this.pid,
+          refreshToken: this.refreshToken,
+        },
+      );
       return accessTokenResponse.body.accessToken ?? null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -143,7 +150,7 @@ export class BeamWebSocket {
    * @returns {Promise<void>}
    */
   async connect(param: BeamWebSocketConnect): Promise<void> {
-    this.api = param.api;
+    this.requester = param.requester;
     this.cid = param.cid;
     this.pid = param.pid;
     this.refreshToken = param.refreshToken;

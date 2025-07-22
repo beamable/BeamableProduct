@@ -67,5 +67,5 @@ public static class StringHelper
 	/// </returns>
 	/// </summary>
 	public static string Capitalize(string word)
-		=> string.IsNullOrEmpty(word) ? word : char.ToUpper(word[0]) + word[1..];
+		=> string.IsNullOrEmpty(word) ? word : char.ToUpperInvariant(word[0]) + word[1..];
 }
