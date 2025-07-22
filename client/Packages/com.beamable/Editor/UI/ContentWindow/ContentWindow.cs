@@ -26,9 +26,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		private SearchData _contentSearchData;
 		private ContentTypeReflectionCache _contentTypeReflectionCache;
 		private CliContentService _contentService;
+		private BeamCli.BeamCli _cli;
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
+		public EditorGUISplitView mainSplitter;
 
 		static ContentWindow()
 		{
@@ -120,6 +122,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		protected override void DrawGUI()
 		{
+			_cli = ActiveContext.BeamCli;
 			ClearRenderedItems();
 			
 			if (_contentService == null)
@@ -148,20 +151,19 @@ namespace Beamable.Editor.UI.ContentWindow
 					DrawContentData();
 					break;
 				case ContentWindowStatus.Publish:
-					DrawPublishPanel();
+					DrawNestedContent(DrawPublishPanel);
 					break;
 				case ContentWindowStatus.Revert:
-					DrawRevertPanel();
+					DrawNestedContent(DrawRevertPanel);
 					break;
 				case ContentWindowStatus.Validate:
-					DrawValidatePanel();
+					DrawNestedContent(DrawValidatePanel);
 					break;
 			}
 			
 			RunDelayedActions();
 		}
 
-		public EditorGUISplitView mainSplitter;
 			
 		private void DrawContentData()
 		{

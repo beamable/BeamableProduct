@@ -145,7 +145,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ShowSyncMenu();
 				}
 
-				if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
+				var hasPrivs = _cli.Permissions.CanPushContent;
+				if (!hasPrivs)
+				{
+					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
+				}
+				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
 				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
 				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                                                    tooltip: publishTooltip)))
