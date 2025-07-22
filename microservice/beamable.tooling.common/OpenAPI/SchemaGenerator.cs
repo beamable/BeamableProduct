@@ -231,10 +231,12 @@ public class SchemaGenerator
 			// handle arrays
 			case Type x when x.IsArray:
 				var elemType = x.GetElementType();
-				return new OpenApiSchema { Type = "array", Items = Convert(elemType, depth - 1) };
+				OpenApiSchema arrayOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				return new OpenApiSchema { Type = "array", Items = arrayOpenApiSchema };
 			case Type x when x.IsAssignableTo(typeof(IList)) && x.IsGenericType:
 				elemType = x.GetGenericArguments()[0];
-				return new OpenApiSchema { Type = "array", Items = Convert(elemType, depth - 1) };
+				OpenApiSchema listOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				return new OpenApiSchema { Type = "array", Items = listOpenApiSchema };
 
 			// handle maps
 			case Type x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Dictionary<,>) && x.GetGenericArguments()[0] == typeof(string):
