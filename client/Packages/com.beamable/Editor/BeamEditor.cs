@@ -383,6 +383,7 @@ namespace Beamable
 			return hasAddressables && hasTextmeshPro;
 		}
 
+		[Obsolete]
 		public static async Promise ImportDependencies()
 		{
 			AddressableAssetSettingsDefaultObject.GetSettings(false);

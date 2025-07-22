@@ -59,7 +59,7 @@ namespace Beamable.Common
 
 		public static class Files
 		{
-			public const string COMMON_USS_FILE = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Common.uss";
+			
 		}
 		public static class URLs
 		{
