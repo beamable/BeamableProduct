@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Beam } from '@/core/Beam';
 import * as BeamUtils from '@/core/BeamUtils';
 import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
-import { RealmsApi } from '@/__generated__/apis/RealmsApi';
 
 describe('Beam', () => {
   describe('ready', () => {
@@ -48,15 +47,6 @@ describe('Beam', () => {
       });
       // Use mock WebSocket for realtime connection
       (beam as any).ws = new MockBeamWebSocket();
-      // Stub realms client defaults for setupRealtimeConnection
-      vi.spyOn(
-        RealmsApi.prototype,
-        'getRealmsClientDefaults',
-      ).mockResolvedValue({
-        body: {
-          websocketConfig: { provider: 'beamable', uri: 'wss://test.com' },
-        },
-      } as any);
       // Default refresh token for setupRealtimeConnection
       storage.getRefreshToken.mockResolvedValue('refresh-token');
       saveTokenSpy = vi.spyOn(BeamUtils, 'saveToken').mockResolvedValue();
