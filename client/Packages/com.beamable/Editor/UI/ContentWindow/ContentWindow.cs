@@ -79,12 +79,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			BuildContentTypeHierarchy();
 
-			BuildHeaderStyles();
-			
-			BuildContentStyles();
-			
-			BuildItemsPanelStyles();
-
 			ClearCaches();
 			
 			Repaint();
@@ -122,6 +116,13 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		protected override void DrawGUI()
 		{
+			BuildHeaderStyles();
+			
+			BuildContentStyles();
+			
+			BuildItemsPanelStyles();
+			
+			
 			_cli = ActiveContext.BeamCli;
 			ClearRenderedItems();
 			
