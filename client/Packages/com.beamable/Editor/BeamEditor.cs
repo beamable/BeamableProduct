@@ -361,6 +361,10 @@ namespace Beamable
 		public const string BEAM_DEPENDENCIES_SESSION_KEY = "beam_dependencies_check";
 		public static bool HasDependencies()
 		{
+			#if BEAM_DISABLE_DEPENDENCIES_CHECK
+			return true;
+			#endif
+			
 			var ranCheckBefore = SessionState.GetBool(BEAM_DEPENDENCIES_SESSION_KEY, false);
 
 			// the has-dependencies can spiral into an infinite death loop. 
