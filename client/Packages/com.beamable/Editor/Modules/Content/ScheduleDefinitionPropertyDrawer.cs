@@ -392,21 +392,7 @@ namespace Beamable.Editor.Content
 					currentValues.Add(fieldProp.GetArrayElementAtIndex(j).stringValue);
 				}
 
-				string partValue;
-				if (currentValues.Count > 3)
-				{
-					string endPart = currentValues[^1].Contains("/") ? $"{currentValues[^2]}{currentValues[^1]}" : $"{currentValues[^1]}";
-					partValue = $"{currentValues[0]}-{endPart}";
-				}
-				else
-				{
-					partValue = string.Join("-", currentValues);
-				}
-
-				if (string.IsNullOrWhiteSpace(partValue))
-				{
-					partValue = "*";
-				}
+				string partValue = ExpressionDescriptor.ConvertToCronString(currentValues.ToArray());
 				cronTypeParts[i] = GetFieldType(partValue);
 				cronParts[i] = partValue;
 			}

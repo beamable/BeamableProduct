@@ -699,67 +699,67 @@ namespace Beamable.CronExpression
 		/// <returns>The cron expression<returns>
 		public static string ScheduleDefinitionToCron(ScheduleDefinition scheduleDefinition)
 		{
-			string Convert(IReadOnlyList<string> part)
-			{
-				if (part.Contains("*") && part.Count == 1)
-					return "*";
-
-				var outputParts = new List<string>();
-				var currentRange = new List<int>();
-				int? lastNumber = null;
-
-				void AddCurrentRangeToOutput(string partValue = null)
-				{
-					if (currentRange.Count == 0)
-						return;
-
-					currentRange.Sort();
-					int start = currentRange[0];
-					int end = currentRange[^1];
-
-					string result = (start == end) ? $"{start}" : $"{start}-{end}";
-					if (partValue != null)
-					{
-						result += partValue;
-					}
-
-					outputParts.Add(result);
-					currentRange.Clear();
-					lastNumber = null;
-				}
-
-				foreach (var item in part)
-				{
-					if (item.StartsWith("/"))
-					{
-						AddCurrentRangeToOutput(item);
-					}
-					else if (int.TryParse(item, out int num))
-					{
-						if (lastNumber.HasValue && num != lastNumber.Value + 1)
-						{
-							AddCurrentRangeToOutput();
-						}
-
-						currentRange.Add(num);
-						lastNumber = num;
-					}
-				}
-
-				AddCurrentRangeToOutput();
-				return string.Join(",", outputParts);
-			}
-
-			var second = Convert(scheduleDefinition.second);
-			var minute = Convert(scheduleDefinition.minute);
-			var hour = Convert(scheduleDefinition.hour);
-			var dayOfMonth = Convert(scheduleDefinition.dayOfMonth);
-			var month = Convert(scheduleDefinition.month);
-			var dayOfWeek = Convert(scheduleDefinition.dayOfWeek);
-			var year = Convert(scheduleDefinition.year);
+			var second = ConvertToCronString(scheduleDefinition.second);
+			var minute = ConvertToCronString(scheduleDefinition.minute);
+			var hour = ConvertToCronString(scheduleDefinition.hour);
+			var dayOfMonth = ConvertToCronString(scheduleDefinition.dayOfMonth);
+			var month = ConvertToCronString(scheduleDefinition.month);
+			var dayOfWeek = ConvertToCronString(scheduleDefinition.dayOfWeek);
+			var year = ConvertToCronString(scheduleDefinition.year);
 
 			var expression = $"{second} {minute} {hour} {dayOfMonth} {month} {dayOfWeek} {year}";
 			return expression;
+		}
+
+		public static string ConvertToCronString(IReadOnlyList<string> part)
+		{
+			if (part.Contains("*") && part.Count == 1)
+				return "*";
+
+			var outputParts = new List<string>();
+			var currentRange = new List<int>();
+			int? lastNumber = null;
+
+			void AddCurrentRangeToOutput(string partValue = null)
+			{
+				if (currentRange.Count == 0)
+					return;
+
+				currentRange.Sort();
+				int start = currentRange[0];
+				int end = currentRange[^1];
+
+				string result = (start == end) ? $"{start}" : $"{start}-{end}";
+				if (partValue != null)
+				{
+					result += partValue;
+				}
+
+				outputParts.Add(result);
+				currentRange.Clear();
+				lastNumber = null;
+			}
+
+			foreach (var item in part)
+			{
+				if (item.StartsWith("/"))
+				{
+					AddCurrentRangeToOutput(item);
+				}
+				else if (int.TryParse(item, out int num))
+				{
+					if (lastNumber.HasValue && num != lastNumber.Value + 1)
+					{
+						AddCurrentRangeToOutput();
+					}
+
+					currentRange.Add(num);
+					lastNumber = num;
+				}
+			}
+
+			AddCurrentRangeToOutput();
+			return string.Join(",", outputParts);
 		}
 
 		/// <summary>
