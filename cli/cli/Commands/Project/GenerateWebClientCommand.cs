@@ -17,7 +17,7 @@ public class GenerateWebClientCommand :
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>(OutputDirAliases, "The directory where the generated code will be written."),
+		AddOption(new Option<string>(OutputDirAliases, "The directory where the generated code will be written"),
 			(arg, i) => arg.outputDirectory = i);
 
 		AddOption(
