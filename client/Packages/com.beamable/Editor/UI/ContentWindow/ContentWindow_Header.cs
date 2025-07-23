@@ -268,6 +268,36 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
 			EditorGUILayout.Space(1, true);
 			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]}"); // ▼
+
+
+			if (_contentService?.availableManifestIds?.Count > 1)
+			{
+				var manifestId = _contentService.manifestIdOverride;
+				if (string.IsNullOrEmpty(manifestId))
+				{
+					manifestId =  "global";
+				}
+
+				if (BeamGUI.LayoutDropDownButton(new GUIContent(manifestId), tooltip: "Content Namespace"))
+				{
+					var menu = new GenericMenu();
+
+					for (var i = 0; i < _contentService.availableManifestIds.Count; i++)
+					{
+						var id = _contentService.availableManifestIds[i];
+						var enabled = id == manifestId;
+						menu.AddItem(new GUIContent(id), enabled, () =>
+						{
+							_contentService.SetManifestId(id);
+							GUI.changed = true;
+						});
+					}
+					menu.ShowAsContext();
+				}
+			}
+			
+
+			EditorGUILayout.Space(6, false);
 			
 			if (BeamGUI.LayoutDropDownButton(dropdownContent))
 			{
