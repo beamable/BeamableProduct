@@ -171,6 +171,7 @@ namespace Beamable
 			}
 			else
 			{
+				Debug.Log("beam tmp - no tmp required, because dependencies were found.");
 				Initialize();
 			}
 			

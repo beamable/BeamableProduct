@@ -12,26 +12,44 @@ namespace Beamable.Editor
 
 		public static Promise<Unit> ImportEssentials()
 		{
+			Debug.Log("Beam tmp - starting tmp import essentials");
+			if (EssentialsLoaded) return PromiseBase.SuccessfulUnit;
+			
+			Debug.Log("Beam tmp - no essentials found");
+
 			var promise = new Promise<Unit>();
 			void ImportCallback(string packageName)
 			{
+				Debug.Log($"Beam tmp - import package callback for {packageName}. ");
 				if (packageName == "TMP Essential Resources")
 				{
-#if UNITY_2018_3_OR_NEWER
-               SettingsService.NotifySettingsProviderChanged();
-#endif
+					Debug.Log($"Beam tmp - found tmp import ");
 					AssetDatabase.importPackageCompleted -= ImportCallback;
+					Debug.Log($"Beam tmp - removed cb ");
+
+					SettingsService.NotifySettingsProviderChanged();
+					Debug.Log($"Beam tmp - notified settings ");
+
 					promise.CompleteSuccess(new Unit());
+					Debug.Log($"Beam tmp - completed promise ");
+
 				}
 			}
 
 			string tmpPath = GetTmpEssentialsResourcesPath();
+
 			AssetDatabase.importPackageCompleted += ImportCallback;
 
 			// var tmpPath = packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage";
 			if (File.Exists(tmpPath))
 			{
+				Debug.Log($"Beam tmp - loading tmp package from {tmpPath}. ");
 				AssetDatabase.ImportPackage(tmpPath, false);
+			}
+			else
+			{
+				Debug.Log($"Beam tmp - no tmp found ");
+				promise.CompleteSuccess(new Unit());
 			}
 			return promise;
 		}
