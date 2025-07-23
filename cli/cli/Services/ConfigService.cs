@@ -336,7 +336,8 @@ public class ConfigService
 	public string GetProjectRootPath()
 	{
 		var relativePath = LoadDataFile<string>(CONFIG_FILE_PROJECT_PATH_ROOT, () => ".");
-		return Path.Combine(BaseDirectory, relativePath);
+		var fullPath = Path.Combine(BaseDirectory, relativePath);
+		return new DirectoryInfo(fullPath).FullName;
 	}
 
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
