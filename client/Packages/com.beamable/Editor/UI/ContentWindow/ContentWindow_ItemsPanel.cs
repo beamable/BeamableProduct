@@ -66,13 +66,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void BuildItemsPanelStyles()
 		{
-			_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
+			if (_itemPanelHeaderRowStyle == null || _itemPanelHeaderRowStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.28f, 0.28f, 0.28f)) },
-				fontStyle = FontStyle.Bold,
-				alignment = TextAnchor.MiddleLeft,
-				fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
-			};
+				_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.28f, 0.28f, 0.28f))},
+					fontStyle = FontStyle.Bold,
+					alignment = TextAnchor.MiddleLeft,
+					fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
+				};
+			}
 
 			_itemPanelHeaderFieldStyle = new GUIStyle(EditorStyles.miniBoldLabel)
 			{
@@ -88,31 +91,40 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			
 			float itemRowHeight = EditorGUIUtility.singleLineHeight * 1.1f;
-			
-			_rowEvenItemStyle = new GUIStyle(EditorStyles.label)
+
+			if (_rowEvenItemStyle == null || _rowEvenItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.2f, 0.2f, 0.2f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
-			
-			_rowOddItemStyle = new GUIStyle(EditorStyles.label)
+				_rowEvenItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.2f, 0.2f, 0.2f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
+
+			if (_rowOddItemStyle == null || _rowOddItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.22f, 0.22f, 0.22f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
-			
-			
-			_rowSelectedItemStyle = new GUIStyle(EditorStyles.label)
+				_rowOddItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.22f, 0.22f, 0.22f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
+
+
+			if (_rowSelectedItemStyle == null || _rowSelectedItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.21f, 0.32f, 0.49f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
+				_rowSelectedItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.21f, 0.32f, 0.49f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
 		}
 		
 		
@@ -691,7 +703,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
 					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 					{
-						if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
 						{
 							var duplicatedObject = Instantiate(contentObject);
 							string baseName = $"{contentObject.ContentName}_Copy";
@@ -778,7 +790,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					//       and then temporarily disable the content watcher.
 					foreach (var entry in entries)
 					{
-						if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
 						{
 							var duplicatedObject = Instantiate(contentObject);
 							string baseName = $"{contentObject.ContentName}_Copy";
@@ -877,7 +889,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (Selection.activeObject is ContentObject contentObject)
 			{
-				if(!_contentService.ContentScriptableCache.ContainsKey(contentObject.Id))
+				if(!_contentService.TryGetContentObject(contentObject.Id, out _))
 				{
 					Selection.activeObject = null;
 				}
@@ -906,7 +918,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void SetEntryIdAsSelected(string entryId)
 		{
-			if(_contentService.ContentScriptableCache.TryGetValue(entryId, out ContentObject value))
+			if(_contentService.TryGetContentObject(entryId, out ContentObject value))
 			{
 				Selection.activeObject = value;
 			}
@@ -931,7 +943,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			var newSelection = selection.ToList();
 			
-			if (_contentService.ContentScriptableCache.TryGetValue(entryId, out ContentObject value))
+			if (_contentService.TryGetContentObject(entryId, out ContentObject value))
 			{
 				newSelection.Add(value);
 			}

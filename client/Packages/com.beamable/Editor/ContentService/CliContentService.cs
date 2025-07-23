@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.ContentService
 {
@@ -49,7 +50,8 @@ namespace Beamable.Editor.ContentService
 		public List<string> availableManifestIds;
 
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
-		public Dictionary<string, ContentObject> ContentScriptableCache { get; }
+
+		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 		public int ManifestChangedCount { get; private set; }
@@ -79,7 +81,7 @@ namespace Beamable.Editor.ContentService
 			_beamContext = beamContext;
 			_provider = provider;
 			EntriesCache = new();
-			ContentScriptableCache = new();
+			_contentScriptableCache = new();
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
@@ -639,7 +641,7 @@ namespace Beamable.Editor.ContentService
 			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
 				_invalidContents.Remove(entry.FullId);
-				ContentScriptableCache.Remove(entry.FullId);
+				_contentScriptableCache.Remove(entry.FullId);
 				return;
 			}
 			
@@ -651,19 +653,28 @@ namespace Beamable.Editor.ContentService
 				deletedObject.SetContentName(entry.Name);
 				deletedObject.ContentStatus = ContentStatus.Deleted;
 				deletedObject.IsInConflict = entry.IsInConflict;
-				ContentScriptableCache[entry.FullId] = deletedObject;
+				_contentScriptableCache[entry.FullId] = deletedObject;
+				Object.DontDestroyOnLoad(deletedObject);
 				_invalidContents.Remove(entry.FullId);
 				return;
 			}
 			
-			string fileContent = File.ReadAllText(entry.JsonFilePath);
-
-			if(!ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+			
+			if(!_contentScriptableCache.TryGetValue(entry.FullId, out var contentObject) || contentObject == null)
 			{
 				contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
-				ContentScriptableCache[entry.FullId] = contentObject;
+				_contentScriptableCache[entry.FullId] = contentObject;
 			}
-			                                      
+			
+			contentObject = LoadContentObject(entry, contentObject);
+
+			Object.DontDestroyOnLoad(contentObject);
+			ValidateForInvalidFields(contentObject);
+		}
+
+		private ContentObject LoadContentObject(LocalContentManifestEntry entry, ContentObject contentObject)
+		{
+			string fileContent = File.ReadAllText(entry.JsonFilePath);
 			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
 			if (contentObject)
 			{
@@ -675,8 +686,8 @@ namespace Beamable.Editor.ContentService
 					SaveContent(contentObject);
 				};
 			}
-			
-			ValidateForInvalidFields(contentObject);
+
+			return contentObject;
 		}
 
 		private void RemoveContentFromCache(LocalContentManifestEntry entry)
@@ -742,6 +753,27 @@ namespace Beamable.Editor.ContentService
 		{
 			manifestIdOverride = id;
 			var _ = Reload();
+		}
+
+		public bool TryGetContentObject(string entryId, out ContentObject content)
+		{
+			content = null;
+			if (_contentScriptableCache.TryGetValue(entryId, out content) && content != null)
+				return true;
+			
+			// if we don't have on cache or content is null because Unity decided to kill it
+			// we try to load it
+			if (!EntriesCache.TryGetValue(entryId, out var entryData) || !File.Exists(entryData.JsonFilePath) ||
+			    !_contentTypeReflectionCache.TryGetType(entryData.TypeName, out var type))
+			{
+				return false;
+			}
+
+			
+			content = ScriptableObject.CreateInstance(type) as ContentObject;
+			content = LoadContentObject(entryData, content);
+			_contentScriptableCache[entryId] = content;
+			return true;
 		}
 	}
 }
