@@ -695,7 +695,9 @@ namespace Beamable
 			await BeamCli.SwitchRealms(pid);
 			
 			ApplyRequesterToken();
+
 			await CliContentService.Reload();
+			
 			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
 		}
 
