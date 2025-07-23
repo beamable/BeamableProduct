@@ -118,6 +118,13 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void DrawContentItemPanel()
 		{
+			
+			if (_contentService.isReloading)
+			{
+				BeamGUI.LoadingSpinnerWithState("Fetching Content...");
+				return;
+			}
+			
 			GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true));
 			{
 				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
@@ -535,7 +542,6 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
 			
-			// TODO: add up/down key support
 			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
 				var isShiftClick = Event.current.shift;

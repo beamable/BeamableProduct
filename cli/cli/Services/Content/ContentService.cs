@@ -125,6 +125,29 @@ public class ContentService
 		return path;
 	}
 
+	public string GetContentRealmFolder()
+	{
+		var realmContentFolder = Path.Combine(RootContentPath, _requester.Pid);
+		return realmContentFolder;
+	}
+	
+	public List<string> GetCurrentLocalContentManifests()
+	{
+		var manifests = new List<string>();
+		var realmContentFolder = GetContentRealmFolder();
+		if (!Directory.Exists(realmContentFolder))
+		{
+			return manifests;
+		}
+
+		var manifestDirectoryPaths = Directory.GetDirectories(realmContentFolder);
+		foreach (var folderName in manifestDirectoryPaths)
+		{
+			manifests.Add(Path.GetFileName(folderName));
+		}
+		return manifests;
+	}
+	
 	public async Task ReplaceLocalContent(string contentDirectory, string sourcePath, string destinationPath)
 	{
 		Debug.Assert(Directory.Exists(contentDirectory), "If you see this, please make sure that your content directory is created.");

@@ -64,16 +64,17 @@ namespace Beamable.Editor.Util
 			public Vector2 startSize;
 		}
 
-		public static bool LayoutDropDownButton(GUIContent current)
+		public static bool LayoutDropDownButton(GUIContent current, string tooltip=null)
 		{
-			return LayoutDropDownButton(current, out _, out _);
+			return LayoutDropDownButton(current, out _, out _, tooltip: tooltip);
 		}
 		public static bool LayoutDropDownButton(GUIContent current, 
 		                                  out Rect contentBounds,
 		                                  out Rect paddedRect,
 		                                  int yPadding=5,
 		                                  int yShift=1,
-		                                  Color backdropColor=default)
+		                                  Color backdropColor=default,
+		                                  string tooltip=null)
 		{
 			if (backdropColor == default)
 			{
@@ -106,6 +107,8 @@ namespace Beamable.Editor.Util
 				EditorGUIUtility.AddCursorRect(paddedRect, MouseCursor.Link);
 			}
 			
+			// GUIUtility.too
+			GUI.Label(contentRect, new GUIContent(null, null, tooltip), GUIStyle.none);
 
 			{ // draw hover color
 				EditorGUI.DrawRect(paddedRect, backdropColor);
