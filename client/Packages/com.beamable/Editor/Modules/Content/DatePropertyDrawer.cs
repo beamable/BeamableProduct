@@ -15,7 +15,7 @@ namespace Beamable.Editor.Content
 	public class DatePropertyDrawer : PropertyDrawer
 	{
 		private const string TextFieldPref = "DateDrawer_useTextField";
-		private const float SingleLineWidth = 590f;
+		public const float SingleLineWidth = 590f;
 		private const float CalendarButtonWidth = 24f;
 		private const float SpaceWidth = 2f;
 
