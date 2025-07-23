@@ -86,13 +86,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void BuildHeaderStyles()
 		{
 			_lowBarTextStyle = new GUIStyle(EditorStyles.boldLabel) {alignment = TextAnchor.MiddleLeft};
-			
-			_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
+
+			if (_lowBarDropdownStyle == null || _lowBarDropdownStyle.normal.background == null)
 			{
-				normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
-				alignment = TextAnchor.MiddleRight,
-				margin = new RectOffset(0, 15, 5, 0),
-			};
+				_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
+					alignment = TextAnchor.MiddleRight,
+					margin = new RectOffset(0, 15, 5, 0),
+				};
+			}
 		}
 
 		private void DrawHeader()
@@ -211,7 +214,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					foreach (var id in _oldItemsSelected)
 					{
-						if (_contentService.ContentScriptableCache.TryGetValue(id, out var value))
+						if (_contentService.TryGetContentObject(id, out var value))
 						{
 							selection.Add(value);
 						}

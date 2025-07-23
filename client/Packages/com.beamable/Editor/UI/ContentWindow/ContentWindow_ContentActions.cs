@@ -103,8 +103,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				bool hasError = false;
 				List<string> errorList = new List<string>();
 				string entryId = entry.FullId;
-				if (_contentService.ContentScriptableCache.TryGetValue(entryId,
-				                                                       out var cachedContentObj))
+				if (_contentService.TryGetContentObject(entryId, out var cachedContentObj))
 				{
 					hasError = cachedContentObj.HasValidationErrors(_contentService.GetValidationContext(),
 					                                                out errorList);
