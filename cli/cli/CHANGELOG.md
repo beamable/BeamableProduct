@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
 - Improved diagnostic information for failures in `beam project generate-client --logs v` and better error messaging  
 - `beam org games` command will fetch list of available games
+- `beam content` commands for handling multiple content manifest ids
 
 ### Changed
 - `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
