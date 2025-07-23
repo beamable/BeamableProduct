@@ -383,6 +383,7 @@ namespace Beamable
 			return hasAddressables && hasTextmeshPro;
 		}
 
+		[Obsolete]
 		public static async Promise ImportDependencies()
 		{
 			AddressableAssetSettingsDefaultObject.GetSettings(false);
@@ -694,7 +695,9 @@ namespace Beamable
 			await BeamCli.SwitchRealms(pid);
 			
 			ApplyRequesterToken();
+
 			await CliContentService.Reload();
+			
 			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
 		}
 

@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
 		
-		private string _oldItemSelected;
+		private List<string> _oldItemsSelected;
 		
 		private static List<string> AllStatus => StatusMapToString.Values.ToList();
 
@@ -145,7 +145,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ShowSyncMenu();
 				}
 
-				if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
+				var hasPrivs = _cli.Permissions.CanPushContent;
+				if (!hasPrivs)
+				{
+					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
+				}
+				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
 				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
 				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                                                    tooltip: publishTooltip)))
@@ -201,18 +206,27 @@ namespace Beamable.Editor.UI.ContentWindow
 			_windowStatus = windowStatus;
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				if (!string.IsNullOrEmpty(_oldItemSelected))
+				var selection = new List<Object> { };
+				if (_oldItemsSelected != null)
 				{
-					SetEntryIdAsSelected(_oldItemSelected);
+					foreach (var id in _oldItemsSelected)
+					{
+						if (_contentService.ContentScriptableCache.TryGetValue(id, out var value))
+						{
+							selection.Add(value);
+						}
+					}
+					Selection.objects = selection.ToArray();
 				}
 
-				_oldItemSelected = string.Empty;
+				_oldItemsSelected = new List<string>();
 			}
 			else
 			{
-				if (!string.IsNullOrEmpty(SelectedItemId))
+				var items = MultiSelectItemIds;
+				if (items?.Count > 0)
 				{
-					_oldItemSelected = SelectedItemId;
+					_oldItemsSelected = items.ToList();
 					Selection.activeObject = null;
 				}
 			}
@@ -254,6 +268,36 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
 			EditorGUILayout.Space(1, true);
 			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]}"); // ▼
+
+
+			if (_contentService?.availableManifestIds?.Count > 1)
+			{
+				var manifestId = _contentService.manifestIdOverride;
+				if (string.IsNullOrEmpty(manifestId))
+				{
+					manifestId =  "global";
+				}
+
+				if (BeamGUI.LayoutDropDownButton(new GUIContent(manifestId), tooltip: "Content Namespace"))
+				{
+					var menu = new GenericMenu();
+
+					for (var i = 0; i < _contentService.availableManifestIds.Count; i++)
+					{
+						var id = _contentService.availableManifestIds[i];
+						var enabled = id == manifestId;
+						menu.AddItem(new GUIContent(id), enabled, () =>
+						{
+							_contentService.SetManifestId(id);
+							GUI.changed = true;
+						});
+					}
+					menu.ShowAsContext();
+				}
+			}
+			
+
+			EditorGUILayout.Space(6, false);
 			
 			if (BeamGUI.LayoutDropDownButton(dropdownContent))
 			{

@@ -658,7 +658,10 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSyncCommand, ContentSyncCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentResolveConflictCommand, ContentResolveConflictCommandArgs, ContentCommand>();
-
+		Commands.AddSubCommandWithHandler<ContentListManifestsCommand, ContentListManifestsCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentCreateLocalManifestCommand, ContentCreateLocalManifestCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentArchiveManifestCommand, ContentArchiveManifestCommandArgs, ContentCommand>();
+		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();

@@ -7,6 +7,7 @@ using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Util;
 using Beamable.Editor.ContentService;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Editor.ThirdParty.Splitter;
 using UnityEditor;
@@ -25,9 +26,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		private SearchData _contentSearchData;
 		private ContentTypeReflectionCache _contentTypeReflectionCache;
 		private CliContentService _contentService;
+		private BeamCli.BeamCli _cli;
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
+		public EditorGUISplitView mainSplitter;
 
 		static ContentWindow()
 		{
@@ -105,8 +108,23 @@ namespace Beamable.Editor.UI.ContentWindow
 			_sortedCache.Clear();
 		}
 
+		void ClearRenderedItems()
+		{
+			if (_frameRenderedItems == null)
+			{
+				_frameRenderedItems = new List<LocalContentManifestEntry>();
+			}
+			else
+			{
+				_frameRenderedItems.Clear();
+			}
+		}
+		
 		protected override void DrawGUI()
 		{
+			_cli = ActiveContext.BeamCli;
+			ClearRenderedItems();
+			
 			if (_contentService == null)
 			{
 				DrawBlockLoading("Loading Content...");
@@ -133,20 +151,19 @@ namespace Beamable.Editor.UI.ContentWindow
 					DrawContentData();
 					break;
 				case ContentWindowStatus.Publish:
-					DrawPublishPanel();
+					DrawNestedContent(DrawPublishPanel);
 					break;
 				case ContentWindowStatus.Revert:
-					DrawRevertPanel();
+					DrawNestedContent(DrawRevertPanel);
 					break;
 				case ContentWindowStatus.Validate:
-					DrawValidatePanel();
+					DrawNestedContent(DrawValidatePanel);
 					break;
 			}
 			
 			RunDelayedActions();
 		}
 
-		public EditorGUISplitView mainSplitter;
 			
 		private void DrawContentData()
 		{
@@ -155,6 +172,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawNestedContent(DrawMigration);
 				return;
 			}
+
+			
 			
 			EditorGUILayout.BeginVertical();
 			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
@@ -235,6 +254,48 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			EditorGUILayout.EndVertical();
+			
+			
+			
+			{ // handle arrow-key support for selection
+				var e = Event.current;
+				var isDown = e.type == EventType.KeyDown && e.keyCode == KeyCode.DownArrow;
+				var isUp = e.type == EventType.KeyDown && e.keyCode == KeyCode.UpArrow;
+
+				var selection = MultiSelectItemIds;
+				if (selection.Count > 0)
+				{
+					var currentIndex = _frameRenderedItems.FindIndex(c => c.FullId == selection.Last());
+					if (e.shift)
+					{
+						if (currentIndex >= 0 && isUp)
+						{
+							AddEntryIdAsSelected(_frameRenderedItems[currentIndex - 1].FullId);
+							e.Use();
+							GUI.changed = true;
+						} else if (currentIndex < _frameRenderedItems.Count - 1 && isDown)
+						{
+							AddEntryIdAsSelected(_frameRenderedItems[currentIndex + 1].FullId);
+							e.Use();
+							GUI.changed = true;
+						}
+					}
+					else
+					{
+						if (currentIndex >= 0 && isUp)
+						{
+							SetEntryIdAsSelected(_frameRenderedItems[currentIndex - 1].FullId);
+							e.Use();
+							GUI.changed = true;
+						} else if (currentIndex < _frameRenderedItems.Count - 1 && isDown)
+						{
+							SetEntryIdAsSelected(_frameRenderedItems[currentIndex + 1].FullId);
+							e.Use();
+							GUI.changed = true;
+						}
+					}
+				}
+			}
 		}
 		
 		private List<LocalContentManifestEntry> GetCachedManifestEntries()

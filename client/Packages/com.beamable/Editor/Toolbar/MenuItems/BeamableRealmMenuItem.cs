@@ -57,7 +57,10 @@ namespace Beamable.Editor.ToolbarExtender
 				}
 				menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
 				{
-					var _ = editor.SwitchRealm(proj);
+					var _ = editor.SwitchRealm(proj).Then(_ =>
+					{
+						GUI.changed = true;
+					});
 				});
 			}
 
