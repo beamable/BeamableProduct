@@ -27,6 +27,8 @@ namespace Beamable.Editor.ContentService
 		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published";
 		private const string ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE = "Error when publishing content {0}. Discarding publishes changes. Error message: {1}";
 
+		public string manifestIdOverride;
+		
 		private StorageHandle<CliContentService> _handle;
 		private readonly BeamCommands _cli;
 		private ContentPsWrapper _contentWatcher;
@@ -41,12 +43,15 @@ namespace Beamable.Editor.ContentService
 		private List<string> _tagsCache = new();
 		private int syncedContents;
 		private int publishedContents;
+		
+		[NonSerialized]
+		public bool isReloading;
+		public List<string> availableManifestIds;
 
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 		public Dictionary<string, ContentObject> ContentScriptableCache { get; }
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
-		
 		public int ManifestChangedCount { get; private set; }
 
 		public bool HasConflictedContent => _conflictedContentCache.Count > 0;
@@ -92,12 +97,21 @@ namespace Beamable.Editor.ContentService
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
+				manifestIds = GetSelectedManifestIdsCliOption(),
 				contentIds = new[] {contentId},
 				contentProperties = new[] {contentPropertiesJson}
 			});
 			saveCommand.Run();
 		}
 
+		public void TempDisableWatcher(Action withoutWatcher)
+		{
+			var _ = TempDisableWatcher(() =>
+			{
+				withoutWatcher?.Invoke();
+				return Promise.Success;
+			});
+		}
 		public async Promise TempDisableWatcher(Func<Promise> withoutWatcher)
 		{
 			try
@@ -135,12 +149,14 @@ namespace Beamable.Editor.ContentService
 				}
 				var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
 					syncModified = syncModified,
 					syncConflicts = syncConflicted,
 					syncCreated = syncCreated,
 					syncDeleted = syncDeleted,
 					filter = filter,
 					filterType = filterType,
+					
 				});
 
 				contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
@@ -165,6 +181,7 @@ namespace Beamable.Editor.ContentService
 		{
 			var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 			{
+				manifestIds = GetSelectedManifestIdsCliOption(),
 				syncModified = syncModified,
 				syncConflicts = syncConflicted,
 				syncCreated = syncCreated,
@@ -189,6 +206,7 @@ namespace Beamable.Editor.ContentService
 
 			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
 			{
+				manifestIds = GetSelectedManifestIdsCliOption(),
 				filterType = ContentFilterType.ExactIds,
 				filter = contentId,
 				tag = string.Join(",", tags)
@@ -268,6 +286,7 @@ namespace Beamable.Editor.ContentService
 		{
 			var resolveCommand = _cli.ContentResolve(new ContentResolveArgs()
 			{
+				manifestIds = GetSelectedManifestIdsCliOption(),
 				filter = contentId,
 				filterType = ContentFilterType.ExactIds,
 				use = useLocal ? "local" : "realm"
@@ -291,7 +310,10 @@ namespace Beamable.Editor.ContentService
 			
 			try
 			{
-				var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
+				var publishCommand = _cli.ContentPublish(new ContentPublishArgs
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+				});
 				publishCommand.OnProgressStreamContentProgressUpdateData(report =>
 				{
 					HandleProgressUpdate(report.data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
@@ -313,87 +335,107 @@ namespace Beamable.Editor.ContentService
 
 		public async Task PublishContents()
 		{
-			var publishCommand = _cli.ContentPublish(new ContentPublishArgs());
+			var publishCommand = _cli.ContentPublish(new ContentPublishArgs
+			{
+				manifestIds = GetSelectedManifestIdsCliOption(),
+			});
 			await publishCommand.Run();
 		}
 
 		public async Promise Reload()
 		{
-			ClearCaches();
-			if (_contentWatcher != null)
+			isReloading = true;
+			try
 			{
-				_contentWatcher.Cancel();
-				_contentWatcher = null;
-			}
-
-			TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
-
-			_contentWatcher = _cli.ContentPs(new ContentPsArgs() {watch = true});
-
-			void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
-			{
-				string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
-				string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
-
-				bool ValidateManifest(LocalContentManifest item) => item.OwnerCid == currentCid && item.OwnerPid == currentPid;
-
-				var reportData = report.data;
-				var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
-				var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
-
-				bool hasChangeManifest = changesManifest != null && changesManifest.Entries.Length > 0;
-				bool hasRemoveManifest = removeManifest != null && removeManifest.Entries.Length > 0;
-
-				if (hasChangeManifest)
+				ClearCaches();
+				if (_contentWatcher != null)
 				{
-					foreach (var entry in changesManifest.Entries)
-					{
-						if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
-						{
-							RemoveContentFromCache(oldEntry);
-						}
-						
-						AddContentToCache(entry);
-					}
+					_contentWatcher.Cancel();
+					_contentWatcher = null;
 				}
 
-				if (hasRemoveManifest)
-				{
-					foreach (var entry in removeManifest.Entries)
-					{
-						if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
-						{
-							RemoveContentFromCache(oldEntry);
-						}
+				TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
 
-						if (oldEntry.StatusEnum is not ContentStatus.Created)
+
+				_contentWatcher = _cli.ContentPs(new ContentPsArgs()
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+					watch = true
+				});
+
+				void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
+				{
+					string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
+					string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
+
+					bool ValidateManifest(LocalContentManifest item) =>
+						item.OwnerCid == currentCid && item.OwnerPid == currentPid;
+
+					var reportData = report.data;
+					var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
+					var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
+
+					bool hasChangeManifest = changesManifest != null && changesManifest.Entries.Length > 0;
+					bool hasRemoveManifest = removeManifest != null && removeManifest.Entries.Length > 0;
+
+					if (hasChangeManifest)
+					{
+						foreach (var entry in changesManifest.Entries)
 						{
+							if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+							{
+								RemoveContentFromCache(oldEntry);
+							}
+
 							AddContentToCache(entry);
 						}
-
-						ValidationContext.AllContent.Remove(entry.FullId);
 					}
+
+					if (hasRemoveManifest)
+					{
+						foreach (var entry in removeManifest.Entries)
+						{
+							if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
+							{
+								RemoveContentFromCache(oldEntry);
+							}
+
+							if (oldEntry.StatusEnum is not ContentStatus.Created)
+							{
+								AddContentToCache(entry);
+							}
+
+							ValidationContext.AllContent.Remove(entry.FullId);
+						}
+					}
+
+					if (hasRemoveManifest || hasChangeManifest)
+					{
+						ManifestChangedCount++;
+					}
+
+					if (!manifestIsFetchedTaskCompletion.Task.IsCompleted)
+					{
+						manifestIsFetchedTaskCompletion.SetResult(true);
+					}
+
+					ValidationContext.Initialized = true;
+					ComputeTags();
 				}
 
-				if (hasRemoveManifest || hasChangeManifest)
-				{
-					ManifestChangedCount++;
-				}
+				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
+				_ = _contentWatcher.Command.Run();
 
-				if (!manifestIsFetchedTaskCompletion.Task.IsCompleted)
-				{
-					manifestIsFetchedTaskCompletion.SetResult(true);
-				}
+				var availableManifestIdsPromise = GetManifestsIds();
 
-				ValidationContext.Initialized = true;
-				ComputeTags();
+				await manifestIsFetchedTaskCompletion.Task;
+				availableManifestIds = await availableManifestIdsPromise;
+				ManifestChangedCount++;
 			}
-
-			_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
-			_ = _contentWatcher.Command.Run();
-
-			await manifestIsFetchedTaskCompletion.Task;
-			ManifestChangedCount++;
+			finally
+			{
+				isReloading = false;
+			}
 		}
 
 		private void ClearCaches()
@@ -502,6 +544,16 @@ namespace Beamable.Editor.ContentService
 			{
 				_invalidContents.Remove(itemId);
 			}
+		}
+
+		public string[] GetSelectedManifestIdsCliOption()
+		{
+			if (string.IsNullOrEmpty(manifestIdOverride))
+			{
+				return null;
+			}
+			// perhaps if the manifestIdOverride was "global", we don't need to specify it, because that is the default anyway.
+			return new string[] {manifestIdOverride};
 		}
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
@@ -639,6 +691,36 @@ namespace Beamable.Editor.ContentService
 			}
 
 			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+		}
+
+		public Promise<List<string>> GetManifestsIds()
+		{
+			var promise = new Promise<List<string>>();
+			_cli.ContentListManifests().OnStreamContentListManifestsCommandResults(dp =>
+			{
+				var manifestIds = new HashSet<string>();
+				foreach (var id in dp.data.localManifests)
+				{
+					manifestIds.Add(id);
+				}
+
+				foreach (var id in dp.data.remoteManifests)
+				{
+					manifestIds.Add(id);
+				}
+
+				promise.CompleteSuccess(manifestIds.ToList());
+			}).OnError(dp =>
+			{
+				promise.CompleteError(new Exception(dp.data.message));
+			}).Run();
+			return promise;
+		}
+
+		public void SetManifestId(string id)
+		{
+			manifestIdOverride = id;
+			var _ = Reload();
 		}
 	}
 }

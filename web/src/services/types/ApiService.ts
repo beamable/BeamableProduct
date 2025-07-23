@@ -1,19 +1,19 @@
-import { BeamApi } from '@/core/BeamApi';
 import { PlayerService } from '@/services/PlayerService';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 
 export interface ApiServiceProps {
-  api: BeamApi;
+  requester: HttpRequester;
   player?: PlayerService;
   userId?: string;
 }
 
 export abstract class ApiService {
-  protected readonly api: BeamApi;
+  protected readonly requester: HttpRequester;
   protected readonly player?: PlayerService;
   protected readonly userId: string;
 
   protected constructor(props: ApiServiceProps) {
-    this.api = props.api;
+    this.requester = props.requester;
     this.player = props.player;
     this.userId = props.userId ?? '';
   }

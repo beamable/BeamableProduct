@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
-		public readonly string[] _legacyContentFolders = new string[] {"Assets/Beamable/Editor/content"};
+		public const string _legacyContentFolder = "Assets/Beamable/Editor/content";
 
 		public bool NeedsMigration => (_legacyContentGuids?.Length ?? 0) > 0;
 		public string[] _legacyContentGuids;
@@ -34,7 +34,14 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			var sw = new Stopwatch();
 			sw.Start();
-			_legacyContentGuids = BeamableAssetDatabase.FindAssets<ContentObject>(_legacyContentFolders);
+			if (Directory.Exists(_legacyContentFolder))
+			{
+				_legacyContentGuids = BeamableAssetDatabase.FindAssets<ContentObject>(new string[]{_legacyContentFolder});
+			}
+			else
+			{
+				_legacyContentGuids = Array.Empty<string>();
+			}
 			sw.Stop();
 			// Debug.Log($"Content migration detection took {sw.Elapsed.TotalMilliseconds}ms");
 		}
@@ -242,7 +249,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		void PostDeletionNotice()
 		{
-			var path = Path.Combine(_legacyContentFolders[0], "content-migration-notice.txt");
+			var path = Path.Combine(_legacyContentFolder, "content-migration-notice.txt");
 			File.WriteAllText(path, 
 			                  @$"# Beamable Content Migration Notice
 On {DateTimeOffset.Now:s}, the content was migrated from Unity Scriptable Object 
@@ -250,7 +257,7 @@ representation to raw JSON representation. The content now lives in the .beamabl
 for this project. 
 
 If you go to the new Beamable Content Manager, and no longer see the Migration 
-workflow, then you may safely delete the {_legacyContentFolders[0]} folder. ");
+workflow, then you may safely delete the {_legacyContentFolder} folder. ");
 		}
 		
 		async Promise<ContentMigrationResult> MigrateContent(string guid)
