@@ -51,6 +51,9 @@ namespace Beamable.Editor.Content
 		
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
+
+			var isEventContent = property.serializedObject.targetObject is EventContent;
+			
 			string propertyPath = property.propertyPath;
 			if (TryGetPropertyValue(_propPathRawCronFormat, propertyPath,out string rawCronExpression) || string.IsNullOrEmpty(rawCronExpression))
 			{
@@ -66,6 +69,24 @@ namespace Beamable.Editor.Content
 				EditorGUI.indentLevel++;
 
 				float yOffset = BeamGUI.StandardVerticalSpacing;
+				
+				if (isEventContent)
+				{
+					Rect infoRect = new Rect(
+						position.x,
+						position.y + yOffset,
+						position.width,
+						EditorGUIUtility.singleLineHeight * 2
+					);
+    
+					EditorGUI.HelpBox(
+						infoRect, 
+						"Event content cron schedule definitions uses the same second, minutes, and hours from Event Start Date. Therefore you cannot changes those cron fields.",
+						MessageType.Info
+					);
+    
+					yOffset += infoRect.height + EditorGUIUtility.standardVerticalSpacing;
+				}
 
 				Rect cronLabelRect = new Rect(position.x, position.y + yOffset, position.width,
 				                              EditorGUIUtility.singleLineHeight);
@@ -109,6 +130,9 @@ namespace Beamable.Editor.Content
 
 					for (int fieldIndex = 0; fieldIndex < FieldNames.Length; fieldIndex++)
 					{
+						// Event Schedule Definitions seconds, minutes, and hours are automatically set by the Event
+						if(isEventContent && fieldIndex < 3)
+							continue;
 						yOffset = DrawField(position, yOffset, fieldIndex, propertyPath);
 					}
 					
@@ -400,10 +424,17 @@ namespace Beamable.Editor.Content
 			{
 				return EditorGUIUtility.singleLineHeight;
 			}
+			
+			var isEventContent = property.serializedObject.targetObject is EventContent;
 
 			string propertyPropertyPath = property.propertyPath;
 			
 			float height = BeamGUI.StandardVerticalSpacing * 5;
+
+			if (isEventContent)
+			{
+				height += EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing;
+			}
 			
 			height += CalculateHumanCronExpressionHeight(propertyPropertyPath);
 
@@ -418,6 +449,9 @@ namespace Beamable.Editor.Content
 			{
 				for (int i = 0; i < FieldNames.Length; i++)
 				{
+					if(isEventContent && i < 3)
+						continue;
+					
 					height += BeamGUI.StandardVerticalSpacing;
 
 
