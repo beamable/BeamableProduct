@@ -426,10 +426,55 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
 				_ = _contentWatcher.Command.Run();
 
-				var availableManifestIdsPromise = GetManifestsIds();
+				bool addedAnyDefault = false;
+				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
+				{
+					
+					var manifestIds = new HashSet<string>();
+					foreach (var id in dp.data.localManifests)
+					{
+						manifestIds.Add(id);
+					}
 
+					foreach (var id in dp.data.remoteManifests)
+					{
+						manifestIds.Add(id);
+					}
+					
+					if (dp.data.remoteManifests.Count == 0)
+					{
+						// If no remote manifest on remote, it means that it is the first time that the customer is using this realm
+						// If so, we need to create the default contents
+						string[] guids = BeamableAssetDatabase.FindAssets<ContentObject>(new[] {Constants.Directories.DEFAULT_DATA_DIR});
+						foreach (string guid in guids)
+						{
+							string path = AssetDatabase.GUIDToAssetPath(guid);
+							ContentObject obj = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
+
+							if (obj == null)
+								continue;
+
+							string fileName = Path.GetFileNameWithoutExtension(path);
+							obj.SetContentName(fileName);
+							SaveContent(obj);
+							addedAnyDefault = true;
+						}
+					}
+
+					availableManifestIds = manifestIds.ToList();
+				}).OnError(dp =>
+				{
+					Debug.LogError(dp.data.message);
+				}).Run();
+				
 				await manifestIsFetchedTaskCompletion.Task;
-				availableManifestIds = await availableManifestIdsPromise;
+				await getAvailableManifestsPromise;
+
+				if (addedAnyDefault)
+				{
+					await PublishContents();
+				}
+
 				ManifestChangedCount++;
 			}
 			finally
@@ -691,30 +736,6 @@ namespace Beamable.Editor.ContentService
 			}
 
 			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
-		}
-
-		public Promise<List<string>> GetManifestsIds()
-		{
-			var promise = new Promise<List<string>>();
-			_cli.ContentListManifests().OnStreamContentListManifestsCommandResults(dp =>
-			{
-				var manifestIds = new HashSet<string>();
-				foreach (var id in dp.data.localManifests)
-				{
-					manifestIds.Add(id);
-				}
-
-				foreach (var id in dp.data.remoteManifests)
-				{
-					manifestIds.Add(id);
-				}
-
-				promise.CompleteSuccess(manifestIds.ToList());
-			}).OnError(dp =>
-			{
-				promise.CompleteError(new Exception(dp.data.message));
-			}).Run();
-			return promise;
 		}
 
 		public void SetManifestId(string id)

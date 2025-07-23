@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ContentNewManifestArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>the manifest id to create locally</summary>
+        /// <summary>The manifest id to create locally</summary>
         public string manifestId;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public System.Collections.Generic.List<string> localManifests;
         public System.Collections.Generic.List<string> remoteManifests;
+        public System.Collections.Generic.List<string> archivedManifests;
     }
 }
