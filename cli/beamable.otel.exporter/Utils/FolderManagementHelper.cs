@@ -31,7 +31,7 @@ public static class FolderManagementHelper
 
 	public static List<string> GetAllFiles(string path)
 	{
-		var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+		var allFiles = Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
 		return allFiles.ToList();
 	}
 }

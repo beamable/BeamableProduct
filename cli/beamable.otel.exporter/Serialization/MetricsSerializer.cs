@@ -1,5 +1,7 @@
 using OpenTelemetry.Metrics;
+using System.Diagnostics.Metrics;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace beamable.otel.exporter.Serialization;
 
@@ -12,6 +14,7 @@ public class SerializableMetric
 	public string MeterName { get; set; }
 	public string MeterVersion { get; set; }
 	public string AggregationType { get; set; } = default!;
+	public string Temporality { get; set; }
 
 	public List<SerializableMetricPoint> Points { get; set; } = new();
 }
@@ -19,7 +22,7 @@ public class SerializableMetric
 [Serializable]
 public class SerializableMetricPoint
 {
-	public DateTime StartTimeUtc { get; set; }
+	public DateTime StartTimeUtc { get; set; } //TODO need to push this back to be a DateTimeOffset
 	public DateTime EndTimeUtc { get; set; }
 
 	public MetricType MetricType { get; set; }
@@ -33,23 +36,46 @@ public class SerializableMetricPoint
 public static class MetricsSerializer
 {
 	private static readonly ConstructorInfo? _metricCtor;
+	private static readonly ConstructorInfo? _identityCtor;
+	private static readonly ConstructorInfo? _aggStoreCtor;
 
 	static MetricsSerializer()
 	{
-		var constructors = typeof(Metric)
-			.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
+		Type? identityType = Type.GetType("OpenTelemetry.Metrics.MetricStreamIdentity, OpenTelemetry");
+		_identityCtor = identityType?.GetConstructor(new[] { typeof(Instrument), typeof(MetricStreamConfiguration) });
 
-		foreach (var con in constructors)
+		if (_identityCtor == null)
 		{
-			//TODO change this for an assertion to make sure the constructor that we got is the right one
-			if (con.GetParameters().Length == 5) //This is to make sure we get the correct constructor
-			{
-				_metricCtor = con;
-			}
+			throw new InvalidOperationException("Constructor of type=[MetricStreamIdentity] not found");
 		}
 
+		Type? metricType = Type.GetType("OpenTelemetry.Metrics.Metric, OpenTelemetry");
+
+		_metricCtor = metricType
+			?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+			.FirstOrDefault(c =>
+			{
+				var parameters = c.GetParameters();
+				return parameters.Length == 5 &&
+				       parameters[0].ParameterType.FullName == "OpenTelemetry.Metrics.MetricStreamIdentity" &&
+				       parameters[1].ParameterType == typeof(AggregationTemporality) &&
+				       parameters[2].ParameterType == typeof(int);
+			});
+
 		if (_metricCtor == null)
+		{
 			throw new InvalidOperationException("Constructor of type=[Metric] not found");
+		}
+
+		var asm = typeof(Metric).Assembly;
+		var aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore");
+		_aggStoreCtor = aggregatorStoreType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+			.FirstOrDefault(c => c.GetParameters().Length >= 4);
+
+		if (_aggStoreCtor == null)
+		{
+			throw new InvalidOperationException("Constructor of type=[AggregatorStore] not found");
+		}
 	}
 
 	public static SerializableMetric SerializeMetric(Metric metric)
@@ -60,7 +86,8 @@ public static class MetricsSerializer
 			Description = metric.Description,
 			Unit = metric.Unit,
 			MeterName = metric.MeterName,
-			MeterVersion = metric.MeterVersion
+			MeterVersion = metric.MeterVersion,
+			Temporality = metric.Temporality.ToString()
 		};
 
 		var points = metric.GetMetricPoints();
@@ -118,15 +145,18 @@ public static class MetricsSerializer
 		var description = serializedMetric.Description;
 		var unit = serializedMetric.Unit;
 		var aggregationType = ParseAggregationType(serializedMetric.AggregationType);
+		var temporalityType = ParseTemporalityType(serializedMetric.Temporality);
 
+		var meter = new Meter(metricName, serializedMetric.MeterVersion);
+		var counter = meter.CreateCounter<long>(metricName, unit, description);
+		object identity = _identityCtor?.Invoke(new object[] { counter, null });
 
-		Span<MetricPoint> pointsSpan = new MetricPoint[serializedMetric.Points.Count];
+		List<MetricPoint> metricsPoints = new List<MetricPoint>();
 		Type mpType = typeof(MetricPoint);
 
 		for (int i = 0; i < serializedMetric.Points.Count; i++)
 		{
-			ref MetricPoint point = ref pointsSpan[i];
-			point = new MetricPoint();
+			var point = new MetricPoint();
 
 			var aggField = mpType.GetField("aggType", BindingFlags.NonPublic | BindingFlags.Instance);
 			aggField?.SetValueDirect(__makeref(point), aggregationType);
@@ -137,7 +167,8 @@ public static class MetricsSerializer
 			var endTimeField = mpType.GetField("endTime", BindingFlags.NonPublic | BindingFlags.Instance);
 			endTimeField?.SetValueDirect(__makeref(point), serializedMetric.Points[i].EndTimeUtc);
 
-			FieldInfo? runningValueField = typeof(MetricPoint).GetField("runningValue", BindingFlags.NonPublic | BindingFlags.Instance);
+			var runningValueField = mpType.GetField("runningValue", BindingFlags.NonPublic | BindingFlags.Instance);
+
 			if (runningValueField == null)
 			{
 				throw new Exception("Cannot find runningValue field");
@@ -155,7 +186,7 @@ public static class MetricsSerializer
 			var metricType = serializedMetric.Points[i].MetricType;
 			if (metricType == MetricType.DoubleGauge || metricType == MetricType.DoubleSum || metricType == MetricType.Histogram)
 			{
-				FieldInfo sumDoubleField = valueStorageType.GetField("AsDouble", BindingFlags.NonPublic | BindingFlags.Instance);
+				FieldInfo sumDoubleField = valueStorageType.GetField("AsDouble", BindingFlags.Public | BindingFlags.Instance);
 
 				if (sumDoubleField == null)
 				{
@@ -166,7 +197,7 @@ public static class MetricsSerializer
 			}
 			else if (metricType == MetricType.LongGauge || metricType == MetricType.LongSum)
 			{
-				FieldInfo sumLongField = valueStorageType.GetField("AsLong", BindingFlags.NonPublic | BindingFlags.Instance);
+				FieldInfo sumLongField = valueStorageType.GetField("AsLong", BindingFlags.Public | BindingFlags.Instance);
 
 				if (sumLongField == null)
 				{
@@ -175,18 +206,21 @@ public static class MetricsSerializer
 
 				sumLongField.SetValue(runningValueInstance, serializedMetric.Points[i].LongValue);
 			}
+
+			runningValueField.SetValue(point, runningValueInstance);
+
+			metricsPoints.Add(point);
 		}
 
-		var fields = new object[]
-		{
-			metricName,
-			description,
-			unit,
-			aggregationType,
-			null //pointsSpan
+		var fields = new object[] {
+			identity,
+			temporalityType,
+			2000, //TODO not sure what this number means, using random one for now
+			null,
+			null
 		};
 
-		var metric = (Metric)_metricCtor.Invoke(fields);
+		var metric = (Metric)_metricCtor?.Invoke(fields)!;
 
 		var meterNameProp = metric.GetType().GetProperty("MeterName", BindingFlags.NonPublic | BindingFlags.Instance);
 		if (meterNameProp != null && meterNameProp.CanWrite)
@@ -199,6 +233,39 @@ public static class MetricsSerializer
 		{
 			meterVersionProp.SetValue(metric, serializedMetric.MeterVersion);
 		}
+
+		var aggregatorStore = _aggStoreCtor?.Invoke(new object[] {
+			identity,
+			aggregationType,
+			temporalityType,
+			2000,
+			null,
+			null
+		});
+
+		if (aggregatorStore == null)
+		{
+			throw new Exception("Could not create a new AggregatorStore");
+		}
+
+		var aggregatorStoreType = aggregatorStore?.GetType();
+		var metricPointsField = aggregatorStoreType?.GetField("metricPoints", BindingFlags.NonPublic | BindingFlags.Instance);
+
+		if (metricPointsField == null)
+		{
+			throw new Exception("Could not get field [metricPoints] from the AggregatorStore");
+		}
+
+		var metricPointsArray = (Array)metricPointsField.GetValue(aggregatorStore);
+
+		for (int i = 0; i < metricsPoints.Count; i++)
+		{
+			var point = metricsPoints[i];
+
+			metricPointsArray.SetValue(point, i);
+		}
+
+		metricPointsField.SetValue(aggregatorStore, metricPointsArray);
 
 		return metric;
 	}
@@ -215,6 +282,20 @@ public static class MetricsSerializer
 		}
 
 		return Enum.Parse(aggregationTypeEnum, serializedAggType);
+	}
+
+	private static object ParseTemporalityType(string serializedTemporalityType)
+	{
+		Assembly otelAssembly = typeof(MetricPoint).Assembly;
+
+		Type? temporalityEnum = otelAssembly.GetType("OpenTelemetry.Metrics.AggregationTemporality");
+
+		if (temporalityEnum == null)
+		{
+			throw new InvalidOperationException("AggregationTemporality enum not found.");
+		}
+
+		return Enum.Parse(temporalityEnum, serializedTemporalityType);
 	}
 
 }
