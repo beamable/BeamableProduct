@@ -5,6 +5,97 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [5.1.0] - 2025-07-23
+### Added
+- Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
+  - `developer-user-manager ps` command that watches your developer users files to check if there's any user created/removed/updated.
+  - `developer-user-manager create-user-batch` command that create multiple developer users in a batch, it can received a list of templates to copy from.
+  - `developer-user-manager create-user` command that can create one developer user.
+  - `developer-user-manager remove-user` command that remove the user from the local files (it will not remove from the portal).
+  - `developer-user-manager save-user` command that can save a new developer user in the local files.
+  - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
+- Improved diagnostic information for failures in `beam project generate-client --logs v` and better error messaging
+- `beam org games` command will fetch list of available games
+- `beam content` commands for handling multiple content manifest ids
+
+### Changed
+- `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+- `beam deploy release` requires explicit typing `yes` to deploy, unless the `--quiet | -q` flag is given. [4101](https://github.com/beamable/BeamableProduct/issues/4101)
+
+### Fixed
+- Fixed issue in the `beam checks scan -f *` command that would cause the fixed code to break serialization of federations.
+- Fixed issue in `beam project generate-client` command (for Unreal's code-generation) that caused internal `AdminRoutes`'s Callables (health-check/docs every microservice has) to be seen by the UE generation.
+- `beam project ps` shows remote running storage objects [4146](https://github.com/beamable/BeamableProduct/issues/4146)
+- `beam init` no longer tries to use old PID when switching CID [4178](https://github.com/beamable/BeamableProduct/issues/4178)
+- Content serializer will not serialize `null` Optional values as default values of optional type.
+
+## [5.0.4] - 2025-07-02
+### Fixed
+- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set per-realm as an Admin.
+- Beamable content downloads ignore SSL when networking with the known Beamable CDN
+
+## [5.0.3] - 2025-06-24
+### Fixed
+- Fixed issue with `content publish` when a content has a `link` field (this would cause the publish to fail).
+
+## [5.0.2] - 2025-06-23
+### Fixed
+- Fixed issue with the `content replace-local` command that wasn't replacing the manifest id reference after copy the content from a realm to another.
+
+## [5.0.1] - 2025-06-18
+### Fixed
+- Fixed issue with the `project logs` command that could cause the command to fail to exit cleanly when the service process was killed.
+- Fixed issue a performance issue with the `content ps`, the watcher wasn't recognizing actions for batch execution.
+- `Promise.Recover` no longer hangs forever when callback throws an exception
+- CLI no longer throws internal argument exceptions on large log messages
+- Fix `unreal init`, it wasn't triggering the re-generate uproject when called by the `beam_init_game_maker.sh`.
+- `init` and `login` commands won't attempt to retry new passwords with `--quiet` flag
+- `login` and `me` commands emit data and error streams
+
+### Added
+- Added a new command `content tag set`, which can be used to replace tags in the contents.
+- Added `DefaultToInstanced`, `EditInlineNew` tags for Unreal serializable types. That helps to use those types as serializables in the content window.
+- `me` command includes realm role permissions
+
+
+## [5.0.0] - 2025-06-06
+### Added
+- New Code Analyzer to return compile time error for async void Callable methods.
+- New Code Fixer to fix async void Callable methods on IDE.
+- New Code Analyzer to validate Federations.
+- New Code Fixer to Implement possible fixes for Federations.
+- New Code Fixer to Solve Microservice classes missing Attribute or Partial keyword.
+- New Code Analyzer to Check if Microservice Callable Methods return are inside Microservice Scope (Needs to be enabled by adding `<BeamValidateCallableTypesExistInSharedLibraries>true</BeamValidateCallableTypesExistInSharedLibraries>` to MS C# project)
+- New Code Analyzer and Fixer for Microservice ID non matches the `<BeamId>` csproj property.
+- New Code Analyzer and Fixer for non-readonly static fields on Microservice classes.
+- Added support for Int32 and FString on Enum deserialization in Unreal code generation.
+- Enums in the Unreal code gen is now EBeam[ENUM_NAME] instead of E[ENUM_NAME]. We decided to update our enums to avoid potential conflicts with external code enums.
+- New Microservice Client Code Generator for Unity that used OAPI for the generation.
+- `MicroserviceBootstrapper` creates OAPI document after building the Microservice
+- Added support for generating `FDateTime` instead of `FString` in Unreal code generation.
+- Added `beam config --set [--no-overrides]` command to enable local overrides to config variables like `PID`.
+  The intended usage of this command is to allow a user to select their current realm WITHOUT changing the `configuration-defaults.json` file which is committed to version control.
+- Added `beam org realms` command that prints out a list of all available realms for the requesting user.
+- New `beam content` command pallet for SAMS and Engine-integration usage.
+- CLI can emit open telemetry data when `BEAM_TELEMETRY` environment variable is enabled.
+
+### Changed
+- Logging uses `ZLogger` instead of `Serilog`
+- Revise the categorization of all generated Blueprint nodes to enhance discoverability in Unreal Engine.
+- `OptionalString` overrides `.ToString()` for easier print debugging.
+- `beam me` command now also gives you back your active token information, but no longer gives you the `deviceIds` for a user
+- `beam init -q --cid my-game --username my@email.com --password my_password` now honors the quiet flag correctly. It'll auto-select the realm as the oldest development realm.
+- `IAccessToken`, the interface representing a Beamable access/refresh token pair, now exposes the `IssuedAt`/`ExpiresIn` data in addition to the `ExpiresAt` date.
+- `beam checks scan` includes fixes for CLI 5 upgrade
+- `beam org new` no longer creates an organization directly on the CLI. Instead it opens the browser to the Beamable portal registrations page
+- `beam project generate-client` is no longer the default post-build action. Use `beam project generate-client-oapi` instead
+
+### Fixed
+- Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
+- Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
+
+
 ## [4.3.2] - 2025-07-23
 ### Changed
 - `beam deploy release` waits for logs to be flushed from docker buildkit, and prints additional diagnostic logs on failure to parse imageId. 

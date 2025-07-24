@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2025-07-23
+### Fixed
+- Non `async` Callables can return `Task` types [4156](https://github.com/beamable/BeamableProduct/issues/4156)
+
+## [5.0.3] - 2025-06-24
+no changes
+
+## [5.0.2] - 2025-06-23
+no changes
+
+## [5.0.1] - 2025-06-18
+no changes
+
+## [5.0.0] - 2025-06-06
+
+### Fixed
+- Callable methods can have `void` signatures
+- Scheduler can invoke callable methods that return `Promise` with more than 1 argument
+
+### Added
+- Beam scheduler jobs have a new `SuspendedAt` property
+- `BeamScheduler.GetSuspendedJobs()` returns recently suspended jobs
+- Beam scheduler jobs can be unique
+- Add the ability to use remote storage in local microservices. Can be done by calling `MicroserviceBootstrapper.ForceUseRemoteDependencies<TMicroservice>()` in the `Program.cs` right after the call for `await MicroserviceBootstrapper.Prepare<TMicroservice>()`.
+- Callable methods' `Context` field have access to `AccountId`, `GamePid`, and `BeamContext` properties.
+- Microservices can emit open telemetry data when standard OTLP environment variables are enabled
+
+### Changed
+- `BeamScheduler.GetJobs` is obsolete and `GetAllJobs` should be used instead
+- `BeamScheduler.GetJobActivity` is obsolete and `GetAllJobActivity` should be used instead
+- Microservice logging uses `Zlogger` instead of `Serilog`
+
+
 ## [4.3.0] - 2025-05-08
 
 ### Added
