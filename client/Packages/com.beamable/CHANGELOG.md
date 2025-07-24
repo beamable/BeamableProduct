@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - TMP import infinite callback.
 
+### Changed
+- Upgrade CLI to 4.3.2
+
 ## [2.4.2] - 2025-07-23
 ### Added
 - `BEAM_DISABLE_DEPENDENCIES_CHECK` scripting symbol will disable TMP and Addressable dependency check.
