@@ -1,12 +1,17 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { NotificationRequest } from '@/__generated__/schemas/NotificationRequest';
 import { POST } from '@/constants';
-import { ServerEvent } from '@/__generated__/schemas/ServerEvent';
-import { SubscriberDetailsResponse } from '@/__generated__/schemas/SubscriberDetailsResponse';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { NotificationRequest } from '@/__generated__/schemas/NotificationRequest';
+import type { ServerEvent } from '@/__generated__/schemas/ServerEvent';
+import type { SubscriberDetailsResponse } from '@/__generated__/schemas/SubscriberDetailsResponse';
 
 /**
  * @remarks

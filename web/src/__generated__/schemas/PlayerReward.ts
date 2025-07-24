@@ -1,7 +1,12 @@
-import { CurrencyChangeReward } from './CurrencyChangeReward';
-import { ItemCreateRequest } from './ItemCreateRequest';
-import { NewItemReward } from './NewItemReward';
-import { WebhookReward } from './WebhookReward';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CurrencyChangeReward } from './CurrencyChangeReward';
+import type { ItemCreateRequest } from './ItemCreateRequest';
+import type { NewItemReward } from './NewItemReward';
+import type { WebhookReward } from './WebhookReward';
 
 export type PlayerReward = { 
   addCurrencyMap: Record<string, string>; 

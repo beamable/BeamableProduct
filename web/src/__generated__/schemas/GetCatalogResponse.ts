@@ -1,4 +1,9 @@
-import { Catalog } from './Catalog';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { Catalog } from './Catalog';
 
 export type GetCatalogResponse = { 
   catalog?: Catalog; 

@@ -1,16 +1,21 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { endpointEncoder } from '@/utils/endpointEncoder';
-import { EventClaimRequest } from '@/__generated__/schemas/EventClaimRequest';
-import { EventClaimResponse } from '@/__generated__/schemas/EventClaimResponse';
-import { EventPlayerView } from '@/__generated__/schemas/EventPlayerView';
-import { EventScoreRequest } from '@/__generated__/schemas/EventScoreRequest';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { EventClaimRequest } from '@/__generated__/schemas/EventClaimRequest';
+import type { EventClaimResponse } from '@/__generated__/schemas/EventClaimResponse';
+import type { EventPlayerView } from '@/__generated__/schemas/EventPlayerView';
+import type { EventScoreRequest } from '@/__generated__/schemas/EventScoreRequest';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
 
 /**
  * @remarks

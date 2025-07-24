@@ -1,5 +1,10 @@
-import { AuthBasicContextInfo } from './AuthBasicContextInfo';
-import { ChallengeSolution } from './ChallengeSolution';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { AuthBasicContextInfo } from './AuthBasicContextInfo';
+import type { ChallengeSolution } from './ChallengeSolution';
 
 export type TokenRequestWrapper = { 
   grant_type: string; 

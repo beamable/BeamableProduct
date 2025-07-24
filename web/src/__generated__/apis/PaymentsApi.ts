@@ -1,29 +1,34 @@
-import { BeginPurchaseRequest } from '@/__generated__/schemas/BeginPurchaseRequest';
-import { BeginPurchaseResponse } from '@/__generated__/schemas/BeginPurchaseResponse';
-import { CancelPurchaseRequest } from '@/__generated__/schemas/CancelPurchaseRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CompletePurchaseRequest } from '@/__generated__/schemas/CompletePurchaseRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { endpointEncoder } from '@/utils/endpointEncoder';
-import { FacebookPaymentUpdateRequest } from '@/__generated__/schemas/FacebookPaymentUpdateRequest';
-import { FacebookPaymentUpdateResponse } from '@/__generated__/schemas/FacebookPaymentUpdateResponse';
-import { FailPurchaseRequest } from '@/__generated__/schemas/FailPurchaseRequest';
 import { GET } from '@/constants';
-import { GetProductResponse } from '@/__generated__/schemas/GetProductResponse';
-import { GetProductsResponse } from '@/__generated__/schemas/GetProductsResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListAuditResponse } from '@/__generated__/schemas/ListAuditResponse';
-import { LocalizedPriceMap } from '@/__generated__/schemas/LocalizedPriceMap';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
-import { PaymentResultResponse } from '@/__generated__/schemas/PaymentResultResponse';
 import { POST } from '@/constants';
-import { SteamAuthRequest } from '@/__generated__/schemas/SteamAuthRequest';
-import { SteamOrderInfoResponse } from '@/__generated__/schemas/SteamOrderInfoResponse';
-import { SubscriptionVerificationResponse } from '@/__generated__/schemas/SubscriptionVerificationResponse';
-import { TrackPurchaseRequest } from '@/__generated__/schemas/TrackPurchaseRequest';
-import { VerifyPurchaseRequest } from '@/__generated__/schemas/VerifyPurchaseRequest';
+import type { BeginPurchaseRequest } from '@/__generated__/schemas/BeginPurchaseRequest';
+import type { BeginPurchaseResponse } from '@/__generated__/schemas/BeginPurchaseResponse';
+import type { CancelPurchaseRequest } from '@/__generated__/schemas/CancelPurchaseRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CompletePurchaseRequest } from '@/__generated__/schemas/CompletePurchaseRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { FacebookPaymentUpdateRequest } from '@/__generated__/schemas/FacebookPaymentUpdateRequest';
+import type { FacebookPaymentUpdateResponse } from '@/__generated__/schemas/FacebookPaymentUpdateResponse';
+import type { FailPurchaseRequest } from '@/__generated__/schemas/FailPurchaseRequest';
+import type { GetProductResponse } from '@/__generated__/schemas/GetProductResponse';
+import type { GetProductsResponse } from '@/__generated__/schemas/GetProductsResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListAuditResponse } from '@/__generated__/schemas/ListAuditResponse';
+import type { LocalizedPriceMap } from '@/__generated__/schemas/LocalizedPriceMap';
+import type { PaymentResultResponse } from '@/__generated__/schemas/PaymentResultResponse';
+import type { SteamAuthRequest } from '@/__generated__/schemas/SteamAuthRequest';
+import type { SteamOrderInfoResponse } from '@/__generated__/schemas/SteamOrderInfoResponse';
+import type { SubscriptionVerificationResponse } from '@/__generated__/schemas/SubscriptionVerificationResponse';
+import type { TrackPurchaseRequest } from '@/__generated__/schemas/TrackPurchaseRequest';
+import type { VerifyPurchaseRequest } from '@/__generated__/schemas/VerifyPurchaseRequest';
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.

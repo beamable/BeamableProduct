@@ -1,5 +1,10 @@
-import { ClientDataEntry } from './ClientDataEntry';
-import { PlayerOfferView } from './PlayerOfferView';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { ClientDataEntry } from './ClientDataEntry';
+import type { PlayerOfferView } from './PlayerOfferView';
 
 export type PlayerListingView = { 
   active: boolean; 

@@ -1,9 +1,14 @@
-import { CronTrigger } from './CronTrigger';
-import { ExactTrigger } from './ExactTrigger';
-import { HttpCall } from './HttpCall';
-import { JobRetryPolicy } from './JobRetryPolicy';
-import { PublishMessage } from './PublishMessage';
-import { ServiceCall } from './ServiceCall';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CronTrigger } from './CronTrigger';
+import type { ExactTrigger } from './ExactTrigger';
+import type { HttpCall } from './HttpCall';
+import type { JobRetryPolicy } from './JobRetryPolicy';
+import type { PublishMessage } from './PublishMessage';
+import type { ServiceCall } from './ServiceCall';
 
 export type JobDefinitionSaveRequest = { 
   id?: string | null; 

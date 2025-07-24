@@ -1,27 +1,32 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { LeaderboardAddRequest } from '@/__generated__/schemas/LeaderboardAddRequest';
-import { LeaderboardAssignmentInfo } from '@/__generated__/schemas/LeaderboardAssignmentInfo';
-import { LeaderboardCreateRequest } from '@/__generated__/schemas/LeaderboardCreateRequest';
-import { LeaderboardDetails } from '@/__generated__/schemas/LeaderboardDetails';
-import { LeaderboardListResponse } from '@/__generated__/schemas/LeaderboardListResponse';
-import { LeaderboardMembershipResponse } from '@/__generated__/schemas/LeaderboardMembershipResponse';
-import { LeaderboardPartitionInfo } from '@/__generated__/schemas/LeaderboardPartitionInfo';
-import { LeaderboardRemoveCacheEntryRequest } from '@/__generated__/schemas/LeaderboardRemoveCacheEntryRequest';
-import { LeaderboardRemoveEntryRequest } from '@/__generated__/schemas/LeaderboardRemoveEntryRequest';
-import { LeaderboardSwapRequest } from '@/__generated__/schemas/LeaderboardSwapRequest';
-import { LeaderboardUidResponse } from '@/__generated__/schemas/LeaderboardUidResponse';
-import { LeaderBoardViewResponse } from '@/__generated__/schemas/LeaderBoardViewResponse';
-import { ListLeaderBoardViewResponse } from '@/__generated__/schemas/ListLeaderBoardViewResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { MatchMakingMatchesPvpResponse } from '@/__generated__/schemas/MatchMakingMatchesPvpResponse';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { LeaderboardAddRequest } from '@/__generated__/schemas/LeaderboardAddRequest';
+import type { LeaderboardAssignmentInfo } from '@/__generated__/schemas/LeaderboardAssignmentInfo';
+import type { LeaderboardCreateRequest } from '@/__generated__/schemas/LeaderboardCreateRequest';
+import type { LeaderboardDetails } from '@/__generated__/schemas/LeaderboardDetails';
+import type { LeaderboardListResponse } from '@/__generated__/schemas/LeaderboardListResponse';
+import type { LeaderboardMembershipResponse } from '@/__generated__/schemas/LeaderboardMembershipResponse';
+import type { LeaderboardPartitionInfo } from '@/__generated__/schemas/LeaderboardPartitionInfo';
+import type { LeaderboardRemoveCacheEntryRequest } from '@/__generated__/schemas/LeaderboardRemoveCacheEntryRequest';
+import type { LeaderboardRemoveEntryRequest } from '@/__generated__/schemas/LeaderboardRemoveEntryRequest';
+import type { LeaderboardSwapRequest } from '@/__generated__/schemas/LeaderboardSwapRequest';
+import type { LeaderboardUidResponse } from '@/__generated__/schemas/LeaderboardUidResponse';
+import type { LeaderBoardViewResponse } from '@/__generated__/schemas/LeaderBoardViewResponse';
+import type { ListLeaderBoardViewResponse } from '@/__generated__/schemas/ListLeaderBoardViewResponse';
+import type { MatchMakingMatchesPvpResponse } from '@/__generated__/schemas/MatchMakingMatchesPvpResponse';
 
 /**
  * @remarks

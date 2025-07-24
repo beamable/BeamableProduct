@@ -1,4 +1,9 @@
-import { FacebookUpdatedEntry } from './FacebookUpdatedEntry';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { FacebookUpdatedEntry } from './FacebookUpdatedEntry';
 
 export type FacebookPaymentUpdateRequest = { 
   entry: FacebookUpdatedEntry[]; 

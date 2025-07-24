@@ -1,8 +1,13 @@
-import { CurrencyChange } from './CurrencyChange';
-import { EntitlementGenerator } from './EntitlementGenerator';
-import { ItemCreateRequest } from './ItemCreateRequest';
-import { PaymentDetailsEntryViewModel } from './PaymentDetailsEntryViewModel';
-import { PaymentHistoryEntryViewModel } from './PaymentHistoryEntryViewModel';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CurrencyChange } from './CurrencyChange';
+import type { EntitlementGenerator } from './EntitlementGenerator';
+import type { ItemCreateRequest } from './ItemCreateRequest';
+import type { PaymentDetailsEntryViewModel } from './PaymentDetailsEntryViewModel';
+import type { PaymentHistoryEntryViewModel } from './PaymentHistoryEntryViewModel';
 
 export type PaymentAuditEntryViewModel = { 
   details: PaymentDetailsEntryViewModel; 

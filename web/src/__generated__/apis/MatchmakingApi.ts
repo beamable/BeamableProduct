@@ -1,17 +1,22 @@
-import { ApiMatchmakingTicketsDeleteTicketResponse } from '@/__generated__/schemas/ApiMatchmakingTicketsDeleteTicketResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { idPlaceholder } from '@/__generated__/apis/constants';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { Match } from '@/__generated__/schemas/Match';
 import { POST } from '@/constants';
-import { Ticket } from '@/__generated__/schemas/Ticket';
-import { TicketQueryResponse } from '@/__generated__/schemas/TicketQueryResponse';
-import { TicketReservationRequest } from '@/__generated__/schemas/TicketReservationRequest';
-import { TicketReservationResponse } from '@/__generated__/schemas/TicketReservationResponse';
+import type { ApiMatchmakingTicketsDeleteTicketResponse } from '@/__generated__/schemas/ApiMatchmakingTicketsDeleteTicketResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { Match } from '@/__generated__/schemas/Match';
+import type { Ticket } from '@/__generated__/schemas/Ticket';
+import type { TicketQueryResponse } from '@/__generated__/schemas/TicketQueryResponse';
+import type { TicketReservationRequest } from '@/__generated__/schemas/TicketReservationRequest';
+import type { TicketReservationResponse } from '@/__generated__/schemas/TicketReservationResponse';
 
 /**
  * @remarks

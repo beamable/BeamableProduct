@@ -1,22 +1,27 @@
-import { ApiPartiesInviteDeletePartyResponse } from '@/__generated__/schemas/ApiPartiesInviteDeletePartyResponse';
-import { ApiPartiesInvitePostPartyResponse } from '@/__generated__/schemas/ApiPartiesInvitePostPartyResponse';
-import { ApiPartiesMembersDeletePartyResponse } from '@/__generated__/schemas/ApiPartiesMembersDeletePartyResponse';
-import { CancelInviteToParty } from '@/__generated__/schemas/CancelInviteToParty';
-import { CreateParty } from '@/__generated__/schemas/CreateParty';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { idPlaceholder } from '@/__generated__/apis/constants';
-import { InviteToParty } from '@/__generated__/schemas/InviteToParty';
-import { LeaveParty } from '@/__generated__/schemas/LeaveParty';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { Party } from '@/__generated__/schemas/Party';
 import { POST } from '@/constants';
-import { PromoteNewLeader } from '@/__generated__/schemas/PromoteNewLeader';
 import { PUT } from '@/constants';
-import { UpdateParty } from '@/__generated__/schemas/UpdateParty';
+import type { ApiPartiesInviteDeletePartyResponse } from '@/__generated__/schemas/ApiPartiesInviteDeletePartyResponse';
+import type { ApiPartiesInvitePostPartyResponse } from '@/__generated__/schemas/ApiPartiesInvitePostPartyResponse';
+import type { ApiPartiesMembersDeletePartyResponse } from '@/__generated__/schemas/ApiPartiesMembersDeletePartyResponse';
+import type { CancelInviteToParty } from '@/__generated__/schemas/CancelInviteToParty';
+import type { CreateParty } from '@/__generated__/schemas/CreateParty';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { InviteToParty } from '@/__generated__/schemas/InviteToParty';
+import type { LeaveParty } from '@/__generated__/schemas/LeaveParty';
+import type { Party } from '@/__generated__/schemas/Party';
+import type { PromoteNewLeader } from '@/__generated__/schemas/PromoteNewLeader';
+import type { UpdateParty } from '@/__generated__/schemas/UpdateParty';
 
 /**
  * @remarks

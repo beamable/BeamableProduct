@@ -512,6 +512,10 @@ public class App
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
+
+		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
+
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();

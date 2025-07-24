@@ -1,7 +1,12 @@
-import { AnnouncementAttachment } from './AnnouncementAttachment';
-import { LocalizationRef } from './LocalizationRef';
-import { PlayerReward } from './PlayerReward';
-import { PlayerStatRequirement } from './PlayerStatRequirement';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { AnnouncementAttachment } from './AnnouncementAttachment';
+import type { LocalizationRef } from './LocalizationRef';
+import type { PlayerReward } from './PlayerReward';
+import type { PlayerStatRequirement } from './PlayerStatRequirement';
 
 export type AnnouncementDto = { 
   body: LocalizationRef; 

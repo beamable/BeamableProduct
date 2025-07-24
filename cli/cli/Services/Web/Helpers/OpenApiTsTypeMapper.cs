@@ -49,6 +49,15 @@ public static class OpenApiTsTypeMapper
 			// Maps any schema with a reference ID to the corresponding TypeScript type by name
 			case var (_, _, referenceId) when !string.IsNullOrEmpty(referenceId):
 			{
+				if (referenceId.Contains('.'))
+					referenceId = referenceId.Split('.').Last();
+
+				if (referenceId == "DateTime")
+				{
+					var dateTimeReturnType = TsType.String;
+					return isNullable ? TsType.Union(dateTimeReturnType, TsType.Null) : dateTimeReturnType;
+				}
+
 				modules.Add(referenceId);
 				var returnType = TsType.Of(referenceId);
 				return isNullable ? TsType.Union(returnType, TsType.Null) : returnType;
@@ -73,7 +82,13 @@ public static class OpenApiTsTypeMapper
 
 			// Throws for object schemas without reference or additionalProperties since they cannot be mapped
 			case ("object", _, _) when schema is { Reference: null, AdditionalPropertiesAllowed: false }:
-				throw new Exception("Cannot build a reference to a schema that is just an object...");
+			{
+				var title = schema.Title;
+				var returnType = TsType.Of(title);
+				modules.Add(title);
+				// Console.WriteLine("Cannot build a reference to a schema ({0}) that is just an object...", title);
+				return isNullable ? TsType.Union(returnType, TsType.Null) : returnType;
+			}
 
 			// Maps boolean schema to TypeScript boolean
 			case ("boolean", _, _):

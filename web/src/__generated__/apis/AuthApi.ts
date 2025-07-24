@@ -1,21 +1,26 @@
-import { AuthResponse } from '@/__generated__/schemas/AuthResponse';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { GET } from '@/constants';
-import { GuestAuthRequest } from '@/__generated__/schemas/GuestAuthRequest';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListTokenResponse } from '@/__generated__/schemas/ListTokenResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { PasswordAuthRequest } from '@/__generated__/schemas/PasswordAuthRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { RefreshTokenAuthRequest } from '@/__generated__/schemas/RefreshTokenAuthRequest';
-import { RevokeTokenRequest } from '@/__generated__/schemas/RevokeTokenRequest';
-import { ServerTokenAuthRequest } from '@/__generated__/schemas/ServerTokenAuthRequest';
-import { ServerTokenResponse } from '@/__generated__/schemas/ServerTokenResponse';
-import { Token } from '@/__generated__/schemas/Token';
-import { TokenRequestWrapper } from '@/__generated__/schemas/TokenRequestWrapper';
-import { TokenResponse } from '@/__generated__/schemas/TokenResponse';
+import type { AuthResponse } from '@/__generated__/schemas/AuthResponse';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { GuestAuthRequest } from '@/__generated__/schemas/GuestAuthRequest';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListTokenResponse } from '@/__generated__/schemas/ListTokenResponse';
+import type { PasswordAuthRequest } from '@/__generated__/schemas/PasswordAuthRequest';
+import type { RefreshTokenAuthRequest } from '@/__generated__/schemas/RefreshTokenAuthRequest';
+import type { RevokeTokenRequest } from '@/__generated__/schemas/RevokeTokenRequest';
+import type { ServerTokenAuthRequest } from '@/__generated__/schemas/ServerTokenAuthRequest';
+import type { ServerTokenResponse } from '@/__generated__/schemas/ServerTokenResponse';
+import type { Token } from '@/__generated__/schemas/Token';
+import type { TokenRequestWrapper } from '@/__generated__/schemas/TokenRequestWrapper';
+import type { TokenResponse } from '@/__generated__/schemas/TokenResponse';
 
 /**
  * @remarks

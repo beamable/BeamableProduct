@@ -1,5 +1,10 @@
-import { Cohort } from './Cohort';
-import { CustomCohortRule } from './CustomCohortRule';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { Cohort } from './Cohort';
+import type { CustomCohortRule } from './CustomCohortRule';
 
 export type Trial = { 
   active: boolean; 

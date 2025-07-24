@@ -1,24 +1,29 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CreateDonationRequest } from '@/__generated__/schemas/CreateDonationRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DisbandRequest } from '@/__generated__/schemas/DisbandRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { Group } from '@/__generated__/schemas/Group';
-import { GroupApplication } from '@/__generated__/schemas/GroupApplication';
-import { GroupInvite } from '@/__generated__/schemas/GroupInvite';
-import { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembershipResponse';
-import { GroupUpdate } from '@/__generated__/schemas/GroupUpdate';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { KickRequest } from '@/__generated__/schemas/KickRequest';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { MakeDonationRequest } from '@/__generated__/schemas/MakeDonationRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { RoleChangeRequest } from '@/__generated__/schemas/RoleChangeRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CreateDonationRequest } from '@/__generated__/schemas/CreateDonationRequest';
+import type { DisbandRequest } from '@/__generated__/schemas/DisbandRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { Group } from '@/__generated__/schemas/Group';
+import type { GroupApplication } from '@/__generated__/schemas/GroupApplication';
+import type { GroupInvite } from '@/__generated__/schemas/GroupInvite';
+import type { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembershipResponse';
+import type { GroupUpdate } from '@/__generated__/schemas/GroupUpdate';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { KickRequest } from '@/__generated__/schemas/KickRequest';
+import type { MakeDonationRequest } from '@/__generated__/schemas/MakeDonationRequest';
+import type { RoleChangeRequest } from '@/__generated__/schemas/RoleChangeRequest';
 
 /**
  * @remarks

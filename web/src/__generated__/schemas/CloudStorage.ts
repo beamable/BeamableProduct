@@ -1,4 +1,9 @@
-import { CloudDataStatus } from './CloudDataStatus';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CloudDataStatus } from './CloudDataStatus';
 
 export type CloudStorage = { 
   ejected: boolean; 

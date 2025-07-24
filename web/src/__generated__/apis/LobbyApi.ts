@@ -1,23 +1,28 @@
-import { Acknowledge } from '@/__generated__/schemas/Acknowledge';
-import { AddTags } from '@/__generated__/schemas/AddTags';
-import { ApiLobbiesServerPostLobbyResponse } from '@/__generated__/schemas/ApiLobbiesServerPostLobbyResponse';
-import { CreateFederatedGameServer } from '@/__generated__/schemas/CreateFederatedGameServer';
-import { CreateLobby } from '@/__generated__/schemas/CreateLobby';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { idPlaceholder } from '@/__generated__/apis/constants';
-import { JoinLobby } from '@/__generated__/schemas/JoinLobby';
-import { Lobby } from '@/__generated__/schemas/Lobby';
-import { LobbyQueryResponse } from '@/__generated__/schemas/LobbyQueryResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { RemoveFromLobby } from '@/__generated__/schemas/RemoveFromLobby';
-import { RemoveTags } from '@/__generated__/schemas/RemoveTags';
-import { UpdateLobby } from '@/__generated__/schemas/UpdateLobby';
+import type { Acknowledge } from '@/__generated__/schemas/Acknowledge';
+import type { AddTags } from '@/__generated__/schemas/AddTags';
+import type { ApiLobbiesServerPostLobbyResponse } from '@/__generated__/schemas/ApiLobbiesServerPostLobbyResponse';
+import type { CreateFederatedGameServer } from '@/__generated__/schemas/CreateFederatedGameServer';
+import type { CreateLobby } from '@/__generated__/schemas/CreateLobby';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { JoinLobby } from '@/__generated__/schemas/JoinLobby';
+import type { Lobby } from '@/__generated__/schemas/Lobby';
+import type { LobbyQueryResponse } from '@/__generated__/schemas/LobbyQueryResponse';
+import type { RemoveFromLobby } from '@/__generated__/schemas/RemoveFromLobby';
+import type { RemoveTags } from '@/__generated__/schemas/RemoveTags';
+import type { UpdateLobby } from '@/__generated__/schemas/UpdateLobby';
 
 /**
  * @remarks

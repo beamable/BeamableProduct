@@ -1,6 +1,11 @@
-import { AttachmentRequest } from './AttachmentRequest';
-import { MailRewards } from './MailRewards';
-import { PlayerReward } from './PlayerReward';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { AttachmentRequest } from './AttachmentRequest';
+import type { MailRewards } from './MailRewards';
+import type { PlayerReward } from './PlayerReward';
 
 export type SendMailObjectRequest = { 
   category: string; 

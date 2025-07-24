@@ -1,5 +1,10 @@
-import { DatabaseMeasurement } from './DatabaseMeasurement';
-import { Link } from './Link';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { DatabaseMeasurement } from './DatabaseMeasurement';
+import type { Link } from './Link';
 
 export type DatabaseMeasurements = { 
   databaseName: string; 

@@ -1,14 +1,19 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { OnlineStatusResponses } from '@/__generated__/schemas/OnlineStatusResponses';
 import { POST } from '@/constants';
-import { SessionClientHistoryResponse } from '@/__generated__/schemas/SessionClientHistoryResponse';
-import { SessionHeartbeat } from '@/__generated__/schemas/SessionHeartbeat';
-import { SessionHistoryResponse } from '@/__generated__/schemas/SessionHistoryResponse';
-import { StartSessionRequest } from '@/__generated__/schemas/StartSessionRequest';
-import { StartSessionResponse } from '@/__generated__/schemas/StartSessionResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { OnlineStatusResponses } from '@/__generated__/schemas/OnlineStatusResponses';
+import type { SessionClientHistoryResponse } from '@/__generated__/schemas/SessionClientHistoryResponse';
+import type { SessionHeartbeat } from '@/__generated__/schemas/SessionHeartbeat';
+import type { SessionHistoryResponse } from '@/__generated__/schemas/SessionHistoryResponse';
+import type { StartSessionRequest } from '@/__generated__/schemas/StartSessionRequest';
+import type { StartSessionResponse } from '@/__generated__/schemas/StartSessionResponse';
 
 /**
  * @remarks

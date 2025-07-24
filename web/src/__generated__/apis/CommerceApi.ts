@@ -1,27 +1,32 @@
-import { ActiveListingResponse } from '@/__generated__/schemas/ActiveListingResponse';
-import { ClearStatusRequest } from '@/__generated__/schemas/ClearStatusRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CooldownModifierRequest } from '@/__generated__/schemas/CooldownModifierRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { GetActiveOffersResponse } from '@/__generated__/schemas/GetActiveOffersResponse';
-import { GetCatalogResponse } from '@/__generated__/schemas/GetCatalogResponse';
-import { GetSKUsResponse } from '@/__generated__/schemas/GetSKUsResponse';
-import { GetTotalCouponResponse } from '@/__generated__/schemas/GetTotalCouponResponse';
-import { GiveCouponReq } from '@/__generated__/schemas/GiveCouponReq';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
-import { PurchaseRequest } from '@/__generated__/schemas/PurchaseRequest';
 import { PUT } from '@/constants';
-import { ReportPurchaseRequest } from '@/__generated__/schemas/ReportPurchaseRequest';
-import { ResultResponse } from '@/__generated__/schemas/ResultResponse';
-import { SaveCatalogRequest } from '@/__generated__/schemas/SaveCatalogRequest';
-import { SaveSKUsRequest } from '@/__generated__/schemas/SaveSKUsRequest';
-import { StatSubscriptionNotification } from '@/__generated__/schemas/StatSubscriptionNotification';
+import type { ActiveListingResponse } from '@/__generated__/schemas/ActiveListingResponse';
+import type { ClearStatusRequest } from '@/__generated__/schemas/ClearStatusRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CooldownModifierRequest } from '@/__generated__/schemas/CooldownModifierRequest';
+import type { GetActiveOffersResponse } from '@/__generated__/schemas/GetActiveOffersResponse';
+import type { GetCatalogResponse } from '@/__generated__/schemas/GetCatalogResponse';
+import type { GetSKUsResponse } from '@/__generated__/schemas/GetSKUsResponse';
+import type { GetTotalCouponResponse } from '@/__generated__/schemas/GetTotalCouponResponse';
+import type { GiveCouponReq } from '@/__generated__/schemas/GiveCouponReq';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { PurchaseRequest } from '@/__generated__/schemas/PurchaseRequest';
+import type { ReportPurchaseRequest } from '@/__generated__/schemas/ReportPurchaseRequest';
+import type { ResultResponse } from '@/__generated__/schemas/ResultResponse';
+import type { SaveCatalogRequest } from '@/__generated__/schemas/SaveCatalogRequest';
+import type { SaveSKUsRequest } from '@/__generated__/schemas/SaveSKUsRequest';
+import type { StatSubscriptionNotification } from '@/__generated__/schemas/StatSubscriptionNotification';
 
 /**
  * @remarks

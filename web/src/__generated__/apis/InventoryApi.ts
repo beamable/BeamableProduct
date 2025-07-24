@@ -1,22 +1,27 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CurrencyContentResponse } from '@/__generated__/schemas/CurrencyContentResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
-import { EndTransactionRequest } from '@/__generated__/schemas/EndTransactionRequest';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { InventoryQueryRequest } from '@/__generated__/schemas/InventoryQueryRequest';
-import { InventoryUpdateRequest } from '@/__generated__/schemas/InventoryUpdateRequest';
-import { InventoryView } from '@/__generated__/schemas/InventoryView';
-import { ItemContentResponse } from '@/__generated__/schemas/ItemContentResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { MultipliersGetResponse } from '@/__generated__/schemas/MultipliersGetResponse';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
-import { PreviewVipBonusResponse } from '@/__generated__/schemas/PreviewVipBonusResponse';
 import { PUT } from '@/constants';
-import { TransferRequest } from '@/__generated__/schemas/TransferRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CurrencyContentResponse } from '@/__generated__/schemas/CurrencyContentResponse';
+import type { EndTransactionRequest } from '@/__generated__/schemas/EndTransactionRequest';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { InventoryQueryRequest } from '@/__generated__/schemas/InventoryQueryRequest';
+import type { InventoryUpdateRequest } from '@/__generated__/schemas/InventoryUpdateRequest';
+import type { InventoryView } from '@/__generated__/schemas/InventoryView';
+import type { ItemContentResponse } from '@/__generated__/schemas/ItemContentResponse';
+import type { MultipliersGetResponse } from '@/__generated__/schemas/MultipliersGetResponse';
+import type { PreviewVipBonusResponse } from '@/__generated__/schemas/PreviewVipBonusResponse';
+import type { TransferRequest } from '@/__generated__/schemas/TransferRequest';
 
 /**
  * @remarks

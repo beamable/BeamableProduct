@@ -86,7 +86,7 @@ public class TsDeclarationsTests
 		                        "\n" +
 		                        "class X {\n" +
 		                        "}\n";
-		var file = new TsFile("file.ts")
+		var file = new TsFile("file.ts", false)
 			.AddImport(new TsImport("m"))
 			.AddDeclaration(new TsClass("X"));
 		var writer = new TsCodeWriter();
@@ -99,7 +99,7 @@ public class TsDeclarationsTests
 	public void File_WithExport_WritesFileContents()
 	{
 		const string expected = "export { X } from 'm';\n";
-		var file = new TsFile("file.ts")
+		var file = new TsFile("file.ts", false)
 			.AddExport(new TsExport("m").AddNamedExport("X"));
 		var writer = new TsCodeWriter();
 		file.Write(writer);

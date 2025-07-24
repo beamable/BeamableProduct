@@ -1,9 +1,14 @@
-import { ClientPermission } from './ClientPermission';
-import { Event } from './Event';
-import { EventPhaseRuntime } from './EventPhaseRuntime';
-import { EventPhaseTime } from './EventPhaseTime';
-import { InFlightMessage } from './InFlightMessage';
-import { EventState } from './enums/EventState';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { ClientPermission } from './ClientPermission';
+import type { Event } from './Event';
+import type { EventPhaseRuntime } from './EventPhaseRuntime';
+import type { EventPhaseTime } from './EventPhaseTime';
+import type { InFlightMessage } from './InFlightMessage';
+import type { EventState } from './enums/EventState';
 
 export type EventObjectData = { 
   content: Event; 

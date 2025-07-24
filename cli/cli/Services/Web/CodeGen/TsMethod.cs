@@ -52,10 +52,11 @@ public class TsMethod : TsNode
 	/// Creates a new method.
 	/// </summary>
 	/// <param name="name">The name of the method.</param>
-	public TsMethod(string name)
+	public TsMethod(string name, bool emitJavaScript = false)
 	{
 		Name = name;
 		Identifier = new TsIdentifier(name);
+		EmitJavaScript = emitJavaScript;
 	}
 
 	/// <summary>
@@ -160,7 +161,7 @@ public class TsMethod : TsNode
 
 		writer.Write(Name);
 
-		if (TypeParameters.Count > 0)
+		if (TypeParameters.Count > 0 && !EmitJavaScript)
 		{
 			writer.Write("<");
 			for (int i = 0; i < TypeParameters.Count; i++)
@@ -183,8 +184,12 @@ public class TsMethod : TsNode
 		}
 
 		writer.Write(")");
-		writer.Write(": ");
-		ReturnType.Write(writer);
+
+		if (!EmitJavaScript)
+		{
+			writer.Write(": ");
+			ReturnType.Write(writer);
+		}
 
 		if (Modifiers.HasFlag(TsModifier.Abstract))
 		{

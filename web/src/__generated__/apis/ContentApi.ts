@@ -1,34 +1,39 @@
-import { ArchiveOrUnarchiveManifestsRequest } from '@/__generated__/schemas/ArchiveOrUnarchiveManifestsRequest';
-import { ClientManifestJsonResponse } from '@/__generated__/schemas/ClientManifestJsonResponse';
-import { ClientManifestResponse } from '@/__generated__/schemas/ClientManifestResponse';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { ContentBasicGetManifestsResponse } from '@/__generated__/schemas/ContentBasicGetManifestsResponse';
-import { ContentBasicManifest } from '@/__generated__/schemas/ContentBasicManifest';
-import { ContentBasicManifestChecksum } from '@/__generated__/schemas/ContentBasicManifestChecksum';
-import { ContentBasicManifestChecksums } from '@/__generated__/schemas/ContentBasicManifestChecksums';
-import { ContentOrText } from '@/__generated__/schemas/ContentOrText';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { GET } from '@/constants';
-import { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
-import { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
-import { PullAllManifestsRequest } from '@/__generated__/schemas/PullAllManifestsRequest';
-import { PullManifestRequest } from '@/__generated__/schemas/PullManifestRequest';
 import { PUT } from '@/constants';
-import { PutLocalizationsRequest } from '@/__generated__/schemas/PutLocalizationsRequest';
-import { RepeatManifestRequest } from '@/__generated__/schemas/RepeatManifestRequest';
-import { SaveBinaryRequest } from '@/__generated__/schemas/SaveBinaryRequest';
-import { SaveBinaryResponse } from '@/__generated__/schemas/SaveBinaryResponse';
-import { SaveContentRequest } from '@/__generated__/schemas/SaveContentRequest';
-import { SaveContentResponse } from '@/__generated__/schemas/SaveContentResponse';
-import { SaveManifestRequest } from '@/__generated__/schemas/SaveManifestRequest';
-import { SaveTextRequest } from '@/__generated__/schemas/SaveTextRequest';
-import { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
+import type { ArchiveOrUnarchiveManifestsRequest } from '@/__generated__/schemas/ArchiveOrUnarchiveManifestsRequest';
+import type { ClientManifestJsonResponse } from '@/__generated__/schemas/ClientManifestJsonResponse';
+import type { ClientManifestResponse } from '@/__generated__/schemas/ClientManifestResponse';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { ContentBasicGetManifestsResponse } from '@/__generated__/schemas/ContentBasicGetManifestsResponse';
+import type { ContentBasicManifest } from '@/__generated__/schemas/ContentBasicManifest';
+import type { ContentBasicManifestChecksum } from '@/__generated__/schemas/ContentBasicManifestChecksum';
+import type { ContentBasicManifestChecksums } from '@/__generated__/schemas/ContentBasicManifestChecksums';
+import type { ContentOrText } from '@/__generated__/schemas/ContentOrText';
+import type { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
+import type { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { PullAllManifestsRequest } from '@/__generated__/schemas/PullAllManifestsRequest';
+import type { PullManifestRequest } from '@/__generated__/schemas/PullManifestRequest';
+import type { PutLocalizationsRequest } from '@/__generated__/schemas/PutLocalizationsRequest';
+import type { RepeatManifestRequest } from '@/__generated__/schemas/RepeatManifestRequest';
+import type { SaveBinaryRequest } from '@/__generated__/schemas/SaveBinaryRequest';
+import type { SaveBinaryResponse } from '@/__generated__/schemas/SaveBinaryResponse';
+import type { SaveContentRequest } from '@/__generated__/schemas/SaveContentRequest';
+import type { SaveContentResponse } from '@/__generated__/schemas/SaveContentResponse';
+import type { SaveManifestRequest } from '@/__generated__/schemas/SaveManifestRequest';
+import type { SaveTextRequest } from '@/__generated__/schemas/SaveTextRequest';
+import type { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
 
 /**
  * @remarks
