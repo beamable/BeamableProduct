@@ -95,6 +95,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
 
+## [4.3.3] - 2025-07-23
+### Fixed
+- `beam deploy release` Task completion error.
 
 ## [4.3.2] - 2025-07-23
 ### Changed

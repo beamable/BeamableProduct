@@ -565,7 +565,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 						PostMessage(msg);
 					}
 					
-					cts.SetResult();
+					cts.TrySetResult();
 				}
 			}));
 		
