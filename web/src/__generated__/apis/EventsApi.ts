@@ -1,21 +1,26 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
-import { EventApplyRequest } from '@/__generated__/schemas/EventApplyRequest';
-import { EventContentResponse } from '@/__generated__/schemas/EventContentResponse';
-import { EventObjectData } from '@/__generated__/schemas/EventObjectData';
-import { EventPhaseEndRequest } from '@/__generated__/schemas/EventPhaseEndRequest';
-import { EventQueryResponse } from '@/__generated__/schemas/EventQueryResponse';
-import { EventsInDateRangeResponse } from '@/__generated__/schemas/EventsInDateRangeResponse';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
-import { PingRsp } from '@/__generated__/schemas/PingRsp';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { SetContentRequest } from '@/__generated__/schemas/SetContentRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { EventApplyRequest } from '@/__generated__/schemas/EventApplyRequest';
+import type { EventContentResponse } from '@/__generated__/schemas/EventContentResponse';
+import type { EventObjectData } from '@/__generated__/schemas/EventObjectData';
+import type { EventPhaseEndRequest } from '@/__generated__/schemas/EventPhaseEndRequest';
+import type { EventQueryResponse } from '@/__generated__/schemas/EventQueryResponse';
+import type { EventsInDateRangeResponse } from '@/__generated__/schemas/EventsInDateRangeResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { PingRsp } from '@/__generated__/schemas/PingRsp';
+import type { SetContentRequest } from '@/__generated__/schemas/SetContentRequest';
 
 /**
  * @remarks

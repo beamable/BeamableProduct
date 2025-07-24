@@ -1,4 +1,9 @@
-import { RouteVariable } from './RouteVariable';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { RouteVariable } from './RouteVariable';
 
 export type RouteVariables = { 
   variables: RouteVariable[]; 

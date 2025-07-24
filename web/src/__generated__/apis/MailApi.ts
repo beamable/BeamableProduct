@@ -1,24 +1,29 @@
-import { AcceptMultipleAttachments } from '@/__generated__/schemas/AcceptMultipleAttachments';
-import { BulkSendMailRequest } from '@/__generated__/schemas/BulkSendMailRequest';
-import { BulkUpdateMailObjectRequest } from '@/__generated__/schemas/BulkUpdateMailObjectRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListMailCategoriesResponse } from '@/__generated__/schemas/ListMailCategoriesResponse';
-import { MailQueryResponse } from '@/__generated__/schemas/MailQueryResponse';
-import { MailResponse } from '@/__generated__/schemas/MailResponse';
-import { MailSearchRequest } from '@/__generated__/schemas/MailSearchRequest';
-import { MailSearchResponse } from '@/__generated__/schemas/MailSearchResponse';
-import { MailSuccessResponse } from '@/__generated__/schemas/MailSuccessResponse';
-import { MailTemplate } from '@/__generated__/schemas/MailTemplate';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { SendMailObjectRequest } from '@/__generated__/schemas/SendMailObjectRequest';
-import { SendMailResponse } from '@/__generated__/schemas/SendMailResponse';
-import { UpdateMailRequest } from '@/__generated__/schemas/UpdateMailRequest';
+import type { AcceptMultipleAttachments } from '@/__generated__/schemas/AcceptMultipleAttachments';
+import type { BulkSendMailRequest } from '@/__generated__/schemas/BulkSendMailRequest';
+import type { BulkUpdateMailObjectRequest } from '@/__generated__/schemas/BulkUpdateMailObjectRequest';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListMailCategoriesResponse } from '@/__generated__/schemas/ListMailCategoriesResponse';
+import type { MailQueryResponse } from '@/__generated__/schemas/MailQueryResponse';
+import type { MailResponse } from '@/__generated__/schemas/MailResponse';
+import type { MailSearchRequest } from '@/__generated__/schemas/MailSearchRequest';
+import type { MailSearchResponse } from '@/__generated__/schemas/MailSearchResponse';
+import type { MailSuccessResponse } from '@/__generated__/schemas/MailSuccessResponse';
+import type { MailTemplate } from '@/__generated__/schemas/MailTemplate';
+import type { SendMailObjectRequest } from '@/__generated__/schemas/SendMailObjectRequest';
+import type { SendMailResponse } from '@/__generated__/schemas/SendMailResponse';
+import type { UpdateMailRequest } from '@/__generated__/schemas/UpdateMailRequest';
 
 /**
  * @remarks

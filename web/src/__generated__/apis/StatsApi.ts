@@ -1,26 +1,31 @@
-import { BatchReadStatsResponse } from '@/__generated__/schemas/BatchReadStatsResponse';
-import { BatchSetStatsRequest } from '@/__generated__/schemas/BatchSetStatsRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
-import { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
-import { StatRequest } from '@/__generated__/schemas/StatRequest';
-import { StatsResponse } from '@/__generated__/schemas/StatsResponse';
-import { StatsSearchRequest } from '@/__generated__/schemas/StatsSearchRequest';
-import { StatsSearchResponse } from '@/__generated__/schemas/StatsSearchResponse';
-import { StatsSubscribeRequest } from '@/__generated__/schemas/StatsSubscribeRequest';
-import { StatsUnsubscribeRequest } from '@/__generated__/schemas/StatsUnsubscribeRequest';
-import { StatUpdateRequest } from '@/__generated__/schemas/StatUpdateRequest';
-import { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatUpdateRequestStringListFormat';
+import type { BatchReadStatsResponse } from '@/__generated__/schemas/BatchReadStatsResponse';
+import type { BatchSetStatsRequest } from '@/__generated__/schemas/BatchSetStatsRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
+import type { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
+import type { StatRequest } from '@/__generated__/schemas/StatRequest';
+import type { StatsResponse } from '@/__generated__/schemas/StatsResponse';
+import type { StatsSearchRequest } from '@/__generated__/schemas/StatsSearchRequest';
+import type { StatsSearchResponse } from '@/__generated__/schemas/StatsSearchResponse';
+import type { StatsSubscribeRequest } from '@/__generated__/schemas/StatsSubscribeRequest';
+import type { StatsUnsubscribeRequest } from '@/__generated__/schemas/StatsUnsubscribeRequest';
+import type { StatUpdateRequest } from '@/__generated__/schemas/StatUpdateRequest';
+import type { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatUpdateRequestStringListFormat';
 
 /**
  * @remarks

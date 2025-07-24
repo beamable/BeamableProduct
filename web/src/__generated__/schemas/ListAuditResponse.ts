@@ -1,4 +1,9 @@
-import { PaymentAuditEntryViewModel } from './PaymentAuditEntryViewModel';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { PaymentAuditEntryViewModel } from './PaymentAuditEntryViewModel';
 
 export type ListAuditResponse = { 
   audits: PaymentAuditEntryViewModel[]; 

@@ -1,18 +1,23 @@
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
-import { FriendshipStatus } from '@/__generated__/schemas/FriendshipStatus';
 import { GET } from '@/constants';
-import { GetSocialStatusesResponse } from '@/__generated__/schemas/GetSocialStatusesResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ImportFriendsRequest } from '@/__generated__/schemas/ImportFriendsRequest';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { MakeFriendshipRequest } from '@/__generated__/schemas/MakeFriendshipRequest';
-import { PlayerIdRequest } from '@/__generated__/schemas/PlayerIdRequest';
 import { POST } from '@/constants';
-import { SendFriendRequest } from '@/__generated__/schemas/SendFriendRequest';
-import { Social } from '@/__generated__/schemas/Social';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { FriendshipStatus } from '@/__generated__/schemas/FriendshipStatus';
+import type { GetSocialStatusesResponse } from '@/__generated__/schemas/GetSocialStatusesResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ImportFriendsRequest } from '@/__generated__/schemas/ImportFriendsRequest';
+import type { MakeFriendshipRequest } from '@/__generated__/schemas/MakeFriendshipRequest';
+import type { PlayerIdRequest } from '@/__generated__/schemas/PlayerIdRequest';
+import type { SendFriendRequest } from '@/__generated__/schemas/SendFriendRequest';
+import type { Social } from '@/__generated__/schemas/Social';
 
 /**
  * @remarks
