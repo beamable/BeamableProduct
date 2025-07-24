@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Microservice.SourceGen.Analyzers;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using System;
@@ -106,6 +107,7 @@ public static class Diagnostics
 		public const string CALLABLE_METHOD_DECLARATION_IS_INVALID_DICTIONARY = "BEAM_SRV_0020";
 		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0021";
 		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0022";
+		public const string INVALID_GENERIC_TYPE_ID = "BEAM_SRV_0023";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -298,6 +300,15 @@ public static class Diagnostics
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-declaration-type-is-subtype-from-list",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor InvalidGenericTypeOnMicroservice
+			= new(INVALID_GENERIC_TYPE_ID,
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported",
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. The only generic types allowed are: {string.Join(", ", ServicesAnalyzer.AllowedGenericTypes)}. Please change {{0}} to a non-generic type.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#todo",
 				isEnabledByDefault: true);
 	}
 
