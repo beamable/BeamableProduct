@@ -50,7 +50,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.CallableMethodTypeIsNested, Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested,
 			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
-			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.InvalidContentObject,
+			Diagnostics.Srv.NullableTypeFoundInMicroservice, Diagnostics.Srv.InvalidContentObject,
 			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
 			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, 
 			Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, 
@@ -450,8 +450,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			returnLocation, 
 			context.Compilation));
 		
+		bool isNullable = methodSymbolReturnType.NullableAnnotation == NullableAnnotation.Annotated || methodSymbolReturnType.SpecialType == SpecialType.System_Nullable_T;
+		if (isNullable)
+		{
+			var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, returnLocation, $"{methodSymbol.Name} return", methodSymbolReturnType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));
+			context.ReportDiagnostic(diagnostic);
+			return;
+		}
+		
 		if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, true, 
-			    methodSymbol.Name, methodSymbolReturnType, returnLocation))
+			    methodSymbol.Name, methodSymbol.Name, methodSymbolReturnType, returnLocation))
 		{
 			return;
 		}
@@ -474,8 +482,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				parameterLocation, 
 				context.Compilation));
 			
+			bool isNullable = parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated || parameterSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
+			if (isNullable)
+			{
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, parameterLocation, $"parameter {parameterSymbol.Name} in {methodSymbol.Name}", parameterSymbol.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));
+				context.ReportDiagnostic(diagnostic);
+				continue;
+			}
+			
 			if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, false, 
-				    parameterSymbol.Name, parameterSymbol.Type, parameterLocation))
+				    parameterSymbol.Name, methodSymbol.Name, parameterSymbol.Type, parameterLocation))
 			{
 				continue;
 			}
@@ -747,6 +763,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			if(hasDictOrListBaseType)
 				continue;
 			
+			bool isNullable = fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated || fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
+			
 			if (fieldSymbol.Type is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
 			{
 				string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
@@ -757,9 +775,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					compilation));
 				
 				
-				if(!AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
+				if(!isNullable && !AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
 				{
-					var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, fieldLocation, $"field {fieldSymbol.Name}");
+					var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, fieldLocation, $"field {fieldSymbol.Name}", typeSymbol.Name);
 					reportDiagnostic.Invoke(genericTypeFoundDiagnostic);
 					continue;
 				}
@@ -779,7 +797,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 			
 			bool isKnownType = IsKnownType(fieldSymbol.Type);
-			bool isNullable = fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated || fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateMembersInSymbol),
 				$"{typeSymbol.Name} - Field {fieldSymbol.Name}, isKnownType {isKnownType}, isNullable {isNullable}, needToCheckBeamGen {checkBeamGenAttr}, location {fieldLocation.GetLineSpan().ToString()}", 
@@ -792,7 +809,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			// Validate if Field is nullable, code gen do not support it
 			if (isNullable)
 			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, typeSymbol.Name, fieldSymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, fieldLocation, typeSymbol.Name, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
 			}
@@ -892,7 +909,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		       typeSymbol.NullableAnnotation is NullableAnnotation.Annotated;
 	}
 	
-	private static bool ValidateListAndDictionaryDeclarationTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, string reference,
+	private static bool ValidateListAndDictionaryDeclarationTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, string reference, string methodName,
 		ITypeSymbol typeSymbol, Location location, HashSet<string> processedTypes = null)
 	{
 		
@@ -933,7 +950,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			if(!AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
 			{
-				var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, location, messageParam);
+				var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, location, messageParam, methodName);
 				reportDiagnostic.Invoke(genericTypeFoundDiagnostic);
 				return true;
 			}
@@ -952,7 +969,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 		}
 
-		return true;
+		return false;
 	}
 	
 	/// <summary>
