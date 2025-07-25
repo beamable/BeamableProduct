@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Common.CronExpression;
 using Beamable.CronExpression;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -121,7 +122,7 @@ namespace Beamable.Editor.Tests.Content
 				dayOfWeek = dayOfWeek,
 				year = year
 			};
-			var output = ExpressionDescriptor.ScheduleDefinitionToCron(scheduleDefinition);
+			var output = ExpressionParser.ScheduleDefinitionToCron(scheduleDefinition);
 			Assert.IsTrue(output.Equals(expectedResult), $"Output is \"{output}\" but should be \"{expectedResult}\"");
 		}
 
