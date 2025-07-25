@@ -851,14 +851,11 @@ namespace Beamable.Server
         private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
         {
 	        var generator = new ServiceDocGenerator();
-		        
-	        var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out List<Type> _);
-		        
 	        var doc = generator.Generate(microserviceType, attribute, new AdminRoutes
 	        {
 		        MicroserviceAttribute = attribute,
 		        MicroserviceType = microserviceType
-	        }, false, extraSchemas.Select(t => t.type).ToArray());
+	        });
 				
 	        var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		       
