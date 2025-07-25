@@ -1,10 +1,8 @@
 ﻿using Beamable.Common.Content;
-using Modules.Content;
+using Beamable.Modules.Content;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 using static Beamable.Common.Constants.Features.ContentManager;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
@@ -105,7 +103,6 @@ namespace Beamable.Content
 	            
 	            ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
             }
-            
 #endif
 
 			if (!EnableMultipleContentNamespaces)

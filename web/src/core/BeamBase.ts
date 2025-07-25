@@ -1,5 +1,4 @@
 import { BeamRequester } from '@/network/http/BeamRequester';
-import { BeamApi } from '@/core/BeamApi';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 import { HEADERS } from '@/constants';
@@ -9,17 +8,13 @@ import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 
 /** The base class for Beam SDK client and server instances. */
 export abstract class BeamBase {
-  /**
-   * A namespace of generated API service clients.
-   * Use `beam.api.<serviceName>` to access specific clients.
-   */
-  public abstract readonly api: BeamApi;
+  readonly requester: HttpRequester;
 
-  protected cid: string;
-  protected pid: string;
+  cid: string;
+  pid: string;
+
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
-  protected readonly requester: HttpRequester;
 
   protected constructor(config: BeamBaseConfig) {
     this.cid = config.cid;

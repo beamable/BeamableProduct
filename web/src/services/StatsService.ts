@@ -1,4 +1,10 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
+import {
+  statsGetByObjectId,
+  statsGetClientByObjectId,
+  statsPostByObjectId,
+  statsPostClientByObjectId,
+} from '@/__generated__/apis';
 
 export interface GetStatsParams {
   /**
@@ -71,12 +77,14 @@ export class StatsService extends ApiService {
     const stats = keys.length > 0 ? keys.join(',') : undefined;
     const { body } =
       domainType === 'client'
-        ? await this.api.stats.getStatClientByObjectId(
+        ? await statsGetClientByObjectId(
+            this.requester,
             objectId,
             stats,
             this.accountId,
           )
-        : await this.api.stats.getStatByObjectId(
+        : await statsGetByObjectId(
+            this.requester,
             objectId,
             stats,
             this.accountId,
@@ -129,12 +137,14 @@ export class StatsService extends ApiService {
     });
 
     domainType === 'client'
-      ? await this.api.stats.postStatClientByObjectId(
+      ? await statsPostClientByObjectId(
+          this.requester,
           objectId,
           { set: { ...stats }, emitAnalytics },
           this.accountId,
         )
-      : await this.api.stats.postStatByObjectId(
+      : await statsPostByObjectId(
+          this.requester,
           objectId,
           { set: { ...stats } },
           this.accountId,

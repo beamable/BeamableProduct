@@ -5,6 +5,8 @@ namespace cli.Services.Web.CodeGen;
 /// </summary>
 public class TsFile : TsNode
 {
+	private readonly bool _includeAutoGenComment;
+
 	/// <summary>
 	/// The name of the TypeScript file.
 	/// </summary>
@@ -29,7 +31,11 @@ public class TsFile : TsNode
 	/// Creates a typescript file.
 	/// </summary>
 	/// <param name="fileName">The name of the TypeScript file.</param>
-	public TsFile(string fileName) => FileName = fileName;
+	public TsFile(string fileName, bool includeAutoGenComment = true)
+	{
+		FileName = fileName;
+		_includeAutoGenComment = includeAutoGenComment;
+	}
 
 	/// <summary>
 	/// Adds an import module to the file.
@@ -66,6 +72,16 @@ public class TsFile : TsNode
 
 	public override void Write(TsCodeWriter writer)
 	{
+		if (_includeAutoGenComment)
+		{
+			var autoGenComment = new TsComment(
+				"⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.\nAll manual edits will be lost when this file is regenerated.",
+				TsCommentStyle.Doc);
+
+			autoGenComment.Write(writer);
+			writer.WriteLine();
+		}
+
 		foreach (TsImport imp in Imports)
 			imp.Write(writer);
 

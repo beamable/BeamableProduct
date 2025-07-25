@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
 		
-		private string _oldItemSelected;
+		private List<string> _oldItemsSelected;
 		
 		private static List<string> AllStatus => StatusMapToString.Values.ToList();
 
@@ -65,7 +65,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentSortOptionType.IdDescending, "ID (Z-A)"},
 			{ContentSortOptionType.TypeAscending, "Type (A-Z)"},
 			{ContentSortOptionType.TypeDescending, "Type (Z-A)"},
-			{ContentSortOptionType.Status, "Status"}
+			{ContentSortOptionType.Status, "Status"},
+			{ContentSortOptionType.ValidStatus, "Validation Status"}
 		};
 		
 		
@@ -85,21 +86,28 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void BuildHeaderStyles()
 		{
 			_lowBarTextStyle = new GUIStyle(EditorStyles.boldLabel) {alignment = TextAnchor.MiddleLeft};
-			
-			_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
+
+			if (_lowBarDropdownStyle == null || _lowBarDropdownStyle.normal.background == null)
 			{
-				normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
-				alignment = TextAnchor.MiddleRight,
-				margin = new RectOffset(0, 15, 5, 0),
-			};
+				_lowBarDropdownStyle = new GUIStyle(EditorStyles.toolbarDropDown)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.35f, 0.35f, 0.35f))},
+					alignment = TextAnchor.MiddleRight,
+					margin = new RectOffset(0, 15, 5, 0),
+				};
+			}
 		}
 
 		private void DrawHeader()
 		{
-			BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
+			BeamGUI.ShowDisabled(NeedsMigration == false, () =>
 			{
-				Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
-			}, () => _ = _contentService.Reload());
+				BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
+				{
+					Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
+				}, () => _ = _contentService.Reload());
+			});
+			
 		}
 
 		private void DrawTopBarHeader()
@@ -112,6 +120,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				string publishTooltip = "Publish Content to Current Realm";
 				string syncTooltip = "Sync contents with Current Realm";
+				string validateTooltip = "Validate Local Changes";
 				if (hasConflictedOrInvalid)
 				{
 					publishTooltip = "There is Conflicted or Invalid Content, unable to Publish.";
@@ -120,9 +129,16 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					publishTooltip = "There is not any modified items to publish. You are up-to-date.";
 					syncTooltip = "There is not any modified items to sync. You are up-to-date.";
+					validateTooltip = "There is not any modified items to validate.";
 				}
 
-
+				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
+				                         () => BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
+				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                                                    tooltip: validateTooltip)))
+				{
+					ChangeToValidateMode();
+				}
 
 				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
 				                         () => BeamGUI.HeaderButton("Sync", BeamGUI.iconSync,
@@ -132,7 +148,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ShowSyncMenu();
 				}
 
-				if (BeamGUI.ShowDisabled(hasContentToPublish && !hasConflictedOrInvalid,
+				var hasPrivs = _cli.Permissions.CanPushContent;
+				if (!hasPrivs)
+				{
+					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
+				}
+				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
 				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
 				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                                                    tooltip: publishTooltip)))
@@ -163,29 +184,52 @@ namespace Beamable.Editor.UI.ContentWindow
 				_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
 			});
 		}
+		
+		private void ChangeToValidateMode()
+		{
+			AddDelayedAction(() =>
+			{
+				ChangeWindowStatus(ContentWindowStatus.Validate);
+				_statusToDraw = ContentStatus.Invalid;
+			});
+		}
+		
+		private void ChangeToRevertAll()
+		{
+			ChangeWindowStatus(ContentWindowStatus.Revert);
+			_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
+			_revertAction = RevertAllContents;
+		}
 
 		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)
 		{
 			if(_windowStatus == windowStatus)
 				return;
+			
 			_windowStatus = windowStatus;
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
-				if (!string.IsNullOrEmpty(_oldItemSelected))
+				var selection = new List<Object> { };
+				if (_oldItemsSelected != null)
 				{
-					if (_contentService.CachedManifest.TryGetValue(_oldItemSelected, out var entry))
+					foreach (var id in _oldItemsSelected)
 					{
-						_ = LoadItemScriptable(entry);
+						if (_contentService.TryGetContentObject(id, out var value))
+						{
+							selection.Add(value);
+						}
 					}
+					Selection.objects = selection.ToArray();
 				}
 
-				_oldItemSelected = string.Empty;
+				_oldItemsSelected = new List<string>();
 			}
 			else
 			{
-				if (!string.IsNullOrEmpty(SelectedItemId))
+				var items = MultiSelectItemIds;
+				if (items?.Count > 0)
 				{
-					_oldItemSelected = SelectedItemId;
+					_oldItemsSelected = items.ToList();
 					Selection.activeObject = null;
 				}
 			}
@@ -194,8 +238,10 @@ namespace Beamable.Editor.UI.ContentWindow
 				Repaint();
 		}
 
-		private void DrawLowBarHeader()
+		private void DrawLowBarHeader(Rect rect)
 		{
+			if (NeedsMigration) return;
+			
 			if (_windowStatus is not ContentWindowStatus.Normal)
 			{
 				GUILayout.Space(40);
@@ -212,30 +258,51 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			var itemsCounts = new GUIContent($"{filteredItemsCount}/{totalItems}");
 			var itemsCountsSize = lowBarTextStyle.CalcSize(itemsCounts);
-			var itemsFilterLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.Width(itemsCountsSize.x), GUILayout.ExpandHeight(true));
-			var contentTreeLabelRect =
-				GUILayoutUtility.GetRect(GUIContent.none, lowBarTextStyle, GUILayout.MinWidth(350), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-			
-			
+
+			var itemsFilterLabelRect = new Rect(rect.x + 4, rect.y, itemsCountsSize.x, rect.height);
+			var contentTreeLabelRect = new Rect(itemsFilterLabelRect.xMax + 2, rect.y, 350, rect.height);
+
 			string contentTreeLabelValue = "All Content";
 			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
 				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
-
-
+			
 			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", lowBarTextStyle);
 			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
-
 			EditorGUILayout.Space(1, true);
-			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]} ▼");
-			GUIStyle lowBarDropdownStyle = _lowBarDropdownStyle ?? EditorStyles.toolbarDropDown;
-			Vector2 itemWidth = lowBarDropdownStyle.CalcSize(dropdownContent);
-			if (EditorGUILayout.DropdownButton(
-				    dropdownContent,
-				    FocusType.Passive,
-				    lowBarDropdownStyle,
-				    GUILayout.Width(itemWidth.x)))
+			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]}"); // ▼
+
+
+			if (_contentService?.availableManifestIds?.Count > 1)
+			{
+				var manifestId = _contentService.manifestIdOverride;
+				if (string.IsNullOrEmpty(manifestId))
+				{
+					manifestId =  "global";
+				}
+
+				if (BeamGUI.LayoutDropDownButton(new GUIContent(manifestId), tooltip: "Content Namespace"))
+				{
+					var menu = new GenericMenu();
+
+					for (var i = 0; i < _contentService.availableManifestIds.Count; i++)
+					{
+						var id = _contentService.availableManifestIds[i];
+						var enabled = id == manifestId;
+						menu.AddItem(new GUIContent(id), enabled, () =>
+						{
+							_contentService.SetManifestId(id);
+							GUI.changed = true;
+						});
+					}
+					menu.ShowAsContext();
+				}
+			}
+			
+
+			EditorGUILayout.Space(6, false);
+			
+			if (BeamGUI.LayoutDropDownButton(dropdownContent))
 			{
 				GenericMenu menu = new GenericMenu();
 				foreach ((ContentSortOptionType type, string stringValue) in SortTypeNameMap)
@@ -249,6 +316,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				menu.ShowAsContext();
 			}
 
+			EditorGUILayout.Space(4, false);
+
 		}
 		
 		private void ShowSyncMenu()
@@ -261,12 +330,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GenericMenu menu = new GenericMenu();
 			if (hasModified || hasNewItems || hasConflictedItems || hasDeleted)
 			{
-				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM), false, () =>
-				{
-					ChangeWindowStatus(ContentWindowStatus.Revert);
-					_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
-					_revertAction = RevertAllContents;
-				});
+				menu.AddItem(new GUIContent(REVERT_ALL_MENU_ITEM), false, ChangeToRevertAll);
 			}
 			else
 			{

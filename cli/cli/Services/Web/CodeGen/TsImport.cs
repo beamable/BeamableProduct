@@ -5,6 +5,8 @@ namespace cli.Services.Web.CodeGen;
 /// </summary>
 public class TsImport : TsNode
 {
+	public bool TypeImportOnly { get; private set; }
+
 	/// <summary>
 	/// The default import identifier.
 	/// </summary>
@@ -40,11 +42,13 @@ public class TsImport : TsNode
 	/// </summary>
 	/// <param name="module">The module to import from.</param>
 	/// <param name="defaultImport">The default import to use if no named imports are specified.</param>
-	public TsImport(string module, string defaultImport = null)
+	/// <param name="typeImportOnly">Whether this import is a type-only import.</param>
+	public TsImport(string module, string defaultImport = null, bool typeImportOnly = false)
 	{
 		Module = module;
 		DefaultImport = defaultImport;
 		DefaultImportIdentifier = new TsIdentifier(defaultImport);
+		TypeImportOnly = typeImportOnly;
 	}
 
 	/// <summary>
@@ -61,6 +65,8 @@ public class TsImport : TsNode
 
 	public override void Write(TsCodeWriter writer)
 	{
+		ValidateTypeOnlyImport();
+
 		if (IsSideEffectOnly)
 		{
 			writer.WriteLine($"import '{Module}';");
@@ -75,7 +81,18 @@ public class TsImport : TsNode
 			if (NamedImports.Count > 0)
 				parts.Add($"{{ {string.Join(", ", NamedImports)} }}");
 
-			writer.WriteLine($"import {string.Join(", ", parts)} from '{Module}';");
+			var type = TypeImportOnly ? "type " : string.Empty;
+			writer.WriteLine($"import {type}{string.Join(", ", parts)} from '{Module}';");
 		}
+	}
+
+	private void ValidateTypeOnlyImport()
+	{
+		if (!TypeImportOnly)
+			return;
+
+		if (DefaultImport != null && NamedImports.Count > 0)
+			throw new InvalidOperationException(
+				"Type-only imports cannot have both a default import and named imports.");
 	}
 }

@@ -1,5 +1,19 @@
 # beamable-sdk
 
+## 0.3.2
+
+### Patch Changes
+
+- Web client generation for Beamable C# Microservices
+
+## 0.3.1
+
+### Patch Changes
+
+- Switch from Api classes to functions
+- Access to SDK APIs via `beamable-sdk/api`
+- Removed `BeamApi` class
+
 ## 0.3.0
 
 ### Minor Changes
