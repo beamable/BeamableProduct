@@ -663,7 +663,7 @@ public static class ProjectContextUtil
 		}
 
 		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
-		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		string openApiPath = protocol.ExpectedOpenApiDocPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
 		if (File.Exists(openApiPath))
 		{
 			var openApiStringReader = new OpenApiStringReader();
