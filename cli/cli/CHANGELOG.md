@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.1.0] - 2025-07-23
 ### Added
-- Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
+  - Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
+  - Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
   - `developer-user-manager ps` command that watches your developer users files to check if there's any user created/removed/updated.
   - `developer-user-manager create-user-batch` command that create multiple developer users in a batch, it can received a list of templates to copy from.
   - `developer-user-manager create-user` command that can create one developer user.

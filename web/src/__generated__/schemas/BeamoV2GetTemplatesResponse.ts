@@ -1,4 +1,9 @@
-import { BeamoV2ServiceTemplateView } from './BeamoV2ServiceTemplateView';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { BeamoV2ServiceTemplateView } from './BeamoV2ServiceTemplateView';
 
 export type BeamoV2GetTemplatesResponse = { 
   templates?: BeamoV2ServiceTemplateView[]; 

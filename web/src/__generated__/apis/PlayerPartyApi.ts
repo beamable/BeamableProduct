@@ -1,13 +1,18 @@
-import { ApiPlayersPartiesDeletePlayerPartyResponse } from '@/__generated__/schemas/ApiPlayersPartiesDeletePlayerPartyResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { Party } from '@/__generated__/schemas/Party';
-import { PartyInvitesForPlayerResponse } from '@/__generated__/schemas/PartyInvitesForPlayerResponse';
 import { playerIdPlaceholder } from '@/__generated__/apis/constants';
+import type { ApiPlayersPartiesDeletePlayerPartyResponse } from '@/__generated__/schemas/ApiPlayersPartiesDeletePlayerPartyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { Party } from '@/__generated__/schemas/Party';
+import type { PartyInvitesForPlayerResponse } from '@/__generated__/schemas/PartyInvitesForPlayerResponse';
 
 /**
  * @remarks

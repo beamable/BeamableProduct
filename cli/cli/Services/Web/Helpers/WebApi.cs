@@ -78,10 +78,11 @@ public static class WebApi
 		{
 			var tsFile = new TsFile(apiName);
 			var tsImportHttpRequester =
-				new TsImport($"@/network/http/types/{httpRequester.Identifier}").AddNamedImport(
+				new TsImport($"@/network/http/types/{httpRequester.Identifier}", typeImportOnly: true).AddNamedImport(
 					httpRequester.Identifier);
 			var tsImportHttpResponse =
-				new TsImport($"@/network/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
+				new TsImport($"@/network/http/types/{httpResponse.Identifier}", typeImportOnly: true).AddNamedImport(
+					httpResponse.Identifier);
 			var tsImportMakeApiRequest =
 				new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest");
 
@@ -89,7 +90,12 @@ public static class WebApi
 			tsImports.TryAdd("httpResponse", tsImportHttpResponse);
 			tsImports.TryAdd("makeApiRequest", tsImportMakeApiRequest);
 
-			foreach (var kvp in tsImports.OrderBy(kvp => kvp.Key))
+			// Order by: type-imports last (true → 1), non-type first (false → 0), then alphabetically
+			var orderedTsImports = tsImports
+				.OrderBy(kvp => kvp.Value.TypeImportOnly ? 1 : 0)
+				.ThenBy(kvp => kvp.Key);
+
+			foreach (var kvp in orderedTsImports)
 				tsFile.AddImport(kvp.Value);
 
 			foreach (var tsFunction in tsFunctions)
@@ -232,7 +238,7 @@ public static class WebApi
 	private static void AddResponseTypeImport(Dictionary<string, TsImport> tsImports, string responseType)
 	{
 		tsImports.TryAdd(responseType,
-			new TsImport($"@/__generated__/schemas/{responseType}").AddNamedImport(responseType));
+			new TsImport($"@/__generated__/schemas/{responseType}", typeImportOnly: true).AddNamedImport(responseType));
 	}
 
 	private static (bool requiresAuth, string requiresAuthRemarks) DetermineAuth(
@@ -434,8 +440,8 @@ public static class WebApi
 		{
 			tsImports.TryAdd(mod,
 				enums.Any(e => e.Name == mod)
-					? new TsImport($"@/__generated__/schemas/enums/{mod}").AddNamedImport(mod)
-					: new TsImport($"@/__generated__/schemas/{mod}").AddNamedImport(mod));
+					? new TsImport($"@/__generated__/schemas/enums/{mod}", typeImportOnly: true).AddNamedImport(mod)
+					: new TsImport($"@/__generated__/schemas/{mod}", typeImportOnly: true).AddNamedImport(mod));
 		}
 	}
 }

@@ -1,12 +1,17 @@
-import { ApiPlayersLobbiesDeletePlayerLobbyResponse } from '@/__generated__/schemas/ApiPlayersLobbiesDeletePlayerLobbyResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { Lobby } from '@/__generated__/schemas/Lobby';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { playerIdPlaceholder } from '@/__generated__/apis/constants';
+import type { ApiPlayersLobbiesDeletePlayerLobbyResponse } from '@/__generated__/schemas/ApiPlayersLobbiesDeletePlayerLobbyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { Lobby } from '@/__generated__/schemas/Lobby';
 
 /**
  * @remarks

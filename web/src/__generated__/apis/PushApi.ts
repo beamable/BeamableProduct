@@ -1,10 +1,15 @@
-import { EmptyRsp } from '@/__generated__/schemas/EmptyRsp';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
-import { RegisterReq } from '@/__generated__/schemas/RegisterReq';
-import { SendReq } from '@/__generated__/schemas/SendReq';
+import type { EmptyRsp } from '@/__generated__/schemas/EmptyRsp';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { RegisterReq } from '@/__generated__/schemas/RegisterReq';
+import type { SendReq } from '@/__generated__/schemas/SendReq';
 
 /**
  * @remarks
