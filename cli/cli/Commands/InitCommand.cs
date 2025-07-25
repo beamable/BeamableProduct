@@ -288,9 +288,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)
 	{
+		var didCidChange = cid != _ctx.Cid;
+		var ignoreExistingPid = args.ignoreExistingPid;
+		if (didCidChange)
+		{
+			// if the given CID is different than the CID stored on disk, 
+			//  then it is unlikely that the PID on disk should be re-used. 
+			ignoreExistingPid = true;
+		}
+		
 		// [Tech_debt] This is quite hard to read, lots of duplication calls, could use some refactor, also it does way more stuff
 		//  then just returning the pid and auth
-		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid) && !args.ignoreExistingPid)
+		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid) && !ignoreExistingPid)
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);

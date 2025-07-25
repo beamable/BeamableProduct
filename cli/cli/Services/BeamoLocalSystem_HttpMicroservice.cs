@@ -240,6 +240,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
+	public string ExpectedOpenApiDocPath;
 	public OpenApiDocument OpenApiDoc;
 
 	public int InstanceCount = 1;

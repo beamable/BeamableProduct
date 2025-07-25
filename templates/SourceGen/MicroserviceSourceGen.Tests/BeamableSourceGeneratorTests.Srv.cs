@@ -241,6 +241,7 @@ public partial class SomeUserMicroservice : Microservice
 using Beamable.Server;
 using Beamable.Common;
 using System.Threading.Tasks;
+using System;
 
 namespace TestNamespace;
 
@@ -251,11 +252,13 @@ public partial class MyMicroservice : Microservice
 {
 
 	[Beamable.BeamGenerateSchema]
+	[Serializable]
 	public class {|#0:DTO_Attribute|}
 	{
 		public int x;
 	}
 
+	[Serializable]
 	public class DTO_Nested
 	{
 		public int x;
@@ -275,6 +278,7 @@ public partial class MyMicroservice : Microservice
 	}
 }
 
+[Serializable]
 public class DTO_MicroserviceScope 
 {
     public int x;
@@ -327,26 +331,23 @@ build_property.BeamValidateCallableTypesExistInSharedLibraries = true
 using Beamable.Server;
 using Beamable.Common;
 using System.Threading.Tasks;
+using System;
 
 namespace TestNamespace;
 
 [Microservice(""MyMicroservice"")]
 public partial class MyMicroservice : Microservice 
 {
-
+	[Serializable]
 	public class DTO_Nested
 	{
 		public int x;
 	}
 
-	
 	public DTO_Nested CallService_Nested() 
 	{
 		return new DTO_Nested{ x = 1 };
 	}
-
-
-	
 }
 ";
 		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
@@ -374,12 +375,9 @@ using System.Threading.Tasks;
 
 namespace TestNamespace;
 
-
-
 [Microservice(""MyMicroservice"")]
 public partial class MyMicroservice : Microservice 
 {
-
 	static string {|#0:TestField|} = ""Hello"";
 }
 ";
@@ -393,6 +391,532 @@ public partial class MyMicroservice : Microservice
 			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
 				.WithLocation(0)
 				.WithArguments("TestField"));
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_MissingSerializableOnType()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	[ClientCallable]
+	public async Task<DTO_AsyncTest> CallServiceAsync() 
+	{
+		return new DTO_AsyncTest{ x = 1 };
+	}
+
+	[ClientCallable]
+	public DTO_Test CallService() 
+	{
+		return new DTO_Test{ x = 1 };
+	}
+
+	[ClientCallable]
+	public NonSerializableEnum CallServiceEnum() 
+	{
+		return NonSerializableEnum.None;
+	}
+}
+
+public struct {|#0:DTO_AsyncTest|}
+{
+    public int x;
+}
+
+public class {|#1:DTO_Test|}
+{
+    public int x;
+	public OtherNonSerializableEnum y;
+}
+
+[Beamable.BeamGenerateSchema]
+public class {|#2:DTO_BeamGenSchemaAttribute|}
+{
+	public int x;
+}
+
+public enum {|#3:NonSerializableEnum|} {
+	None = 0,
+}
+
+public enum {|#4:OtherNonSerializableEnum|} {
+	None = 0,
+}
+
+
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(0)
+				.WithArguments("DTO_AsyncTest"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(1)
+				.WithArguments("DTO_Test"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(2)
+				.WithArguments("DTO_BeamGenSchemaAttribute"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(3)
+				.WithArguments("NonSerializableEnum"));
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(4)
+				.WithArguments("OtherNonSerializableEnum"));
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_PropertiesFoundInSerializableTypes()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	[ClientCallable]
+	public async Task<DTO_AsyncTest> CallServiceAsync() 
+	{
+		return new DTO_AsyncTest{ x = 1 };
+	}
+
+	[ClientCallable]
+	public async Task<DTO_Test> CallService() 
+	{
+		return new DTO_Test{ x = 1 };
+	}
+}
+
+[Serializable]
+public class DTO_AsyncTest
+{
+    public int x;
+	public System.Int32 c;
+	public int {|#0:Prop1|} {get; set;}
+}
+
+[Serializable]
+public class DTO_Test
+{
+    public int x;
+	public int {|#1:Prop2|} {get; set;}
+}
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class DTO_BeamGenSchemaAttribute
+{
+	public int x;
+	public int {|#2:Prop3|} {get; set;}
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
+				.WithLocation(0)
+				.WithArguments("DTO_AsyncTest", "Prop1"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
+				.WithLocation(1)
+				.WithArguments("DTO_Test", "Prop2"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.PropertiesFoundInSerializableTypes)
+				.WithLocation(2)
+				.WithArguments("DTO_BeamGenSchemaAttribute", "Prop3"));
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_NullableFieldInSerializableTypes()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	[ClientCallable]
+	public async Task<DTO_AsyncTest> CallServiceAsync() 
+	{
+		return new DTO_AsyncTest{ nullableInt = 1 };
+	}
+
+	[ClientCallable]
+	public async Task<DTO_Test> CallService() 
+	{
+		return new DTO_Test{ nullableBool = true };
+	}
+}
+
+[Serializable]
+public class DTO_AsyncTest
+{
+    public int? {|#0:nullableInt|};
+}
+
+[Serializable]
+public class DTO_Test
+{
+    public bool? {|#1:nullableBool|};
+}
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class DTO_BeamGenSchemaAttribute
+{
+	public long? {|#2:nullableLong|};
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+				.WithLocation(0)
+				.WithArguments("DTO_AsyncTest", "nullableInt"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+				.WithLocation(1)
+				.WithArguments("DTO_Test", "nullableBool"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+				.WithLocation(2)
+				.WithArguments("DTO_BeamGenSchemaAttribute", "nullableLong"));
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_FieldInSerializableTypeIsContentObjectSubtype()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+using System;
+using Beamable.Common.Content;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	[ClientCallable]
+	public async Task<DTO_AsyncTest> CallServiceAsync() 
+	{
+		return new DTO_AsyncTest();
+	}
+
+	[ClientCallable]
+	public async Task<DTO_Test> CallService() 
+	{
+		return new DTO_Test();
+	}
+}
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class OtherContentObject : ContentObject {}
+
+[Serializable]
+public class DTO_AsyncTest
+{
+    public OtherContentObject {|#0:otherContentObject1|};
+}
+
+[Serializable]
+public class DTO_Test
+{
+    public OtherContentObject {|#1:otherContentObject2|};
+}
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class DTO_BeamGenSchemaAttribute
+{
+	public OtherContentObject {|#2:otherContentObject3|};
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
+				.WithLocation(0)
+				.WithArguments("field otherContentObject1 on DTO_AsyncTest", "OtherContentObject"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
+				.WithLocation(1)
+				.WithArguments("field otherContentObject2 on DTO_Test", "OtherContentObject"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidContentObject)
+				.WithLocation(2)
+				.WithArguments("field otherContentObject3 on DTO_BeamGenSchemaAttribute", "OtherContentObject"));
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_FieldInBeamSchemaIsMissingAttribute()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using System.Threading.Tasks;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice 
+{
+	
+}
+
+
+[Serializable]
+public class {|#0:DTO_NonBeamGenSchemaAttribute|}
+{
+	public int x;
+}
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class DTO_BeamGenSchemaAttribute
+{
+	public DTO_NonBeamGenSchemaAttribute otherNonBeamGenObj;
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute)
+				.WithLocation(0)
+				.WithArguments("DTO_NonBeamGenSchemaAttribute"));
+		
+		PrepareForRun(ctx, cfg, UserCode);
+		
+		await ctx.RunAsync();
+	}
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_FullImplementationExample_Success()
+	{
+		const string UserCode = @"
+using Beamable.Common.Content;
+using Beamable.Common;
+using Beamable.Server;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
+using System;
+
+namespace Unity.Beamable.Customer.Common
+{
+
+	[Serializable]
+	public enum SalmonEnum
+	{
+		None = 0,
+		One = 1,
+		Two = 2,
+	}
+	[Serializable]
+	public class AddSalmonData
+	{
+		public int a;
+		public int b;
+		public SalmonEnum c;
+		public List<string> listSubtypeField;
+		public Dictionary<string, SalmonEnum> dictSubtypeField;
+	}
+    
+	[Serializable]
+	public struct TempStructOptional
+	{
+		public int a;
+		public int b;
+		public Optional<AddSalmonData> data;
+	}
+
+	[Serializable]
+	public class ItemReward
+	{
+		public string contentID;
+		public long instanceID = 0;
+		public long amount = 0;
+		public Dictionary<string, string> properties;
+	}
+	
+}
+
+namespace TestNamespace {
+using Unity.Beamable.Customer.Common;
+	[Microservice(""MyMicroservice"")]
+	public partial class MyMicroservice : Microservice 
+	{
+		[ServerCallable]
+		public int AddSalmon(int a, int b)
+		{
+			return a + b;
+		}
+
+		[ClientCallable]
+		public async Task<List<ItemReward>> AddSalmonAsync(Dictionary<string,int> a, ContentRef<ContentObject> b)
+		{
+			await Task.Delay(1000);
+			return new();
+		}
+
+		[ClientCallable]
+		public async Task<List<ItemReward>> AddSalmonAsync(int a, int b)
+		{
+			await Task.Delay(1000);
+			return new();
+		}
+		
+		[ClientCallable]
+		public int AddSalmonLongInt(long a, int b)
+		{
+			return (int)a + b;
+		}
+
+		[ClientCallable]
+		public int AddSalmonData(AddSalmonData data)
+		{
+			return data.a + data.b;
+		}
+		
+		[Callable, SwaggerCategory("""")]
+		public int AddSalmonOptional(int a, int b, DateTime t, Guid? guid = null, int? c = null, DateTime? d = null, AddSalmonData? g = null, string? h = null)
+		{
+			return a + b + ( c ?? 0);
+		}
+		
+		[ClientCallable]
+		public int AddSalmonOptionalStruct(OptionalInt a, Optional<TempStructOptional> b, TempStructOptional c = default)
+		{
+			return a + b.Value.a + c.a + c.b;
+		}
+
+		[ClientCallable]
+		public int AddSalmonList(List<int> item)
+		{
+			return item.Sum(item => item);
+		}
+
+		[ClientCallable]
+		public int TestSalmonByte(byte[] bytes)
+		{
+			return bytes.Length;
+		}
+
+		[ClientCallable]
+		public float AddSalmonFloat(float a, float b)
+		{
+			return a + b;
+		}
+
+		[ClientCallable]
+		public double AddSalmonDouble(double a, double b)
+		{
+			return a + b;
+		}
+
+		[ClientCallable]
+		public string TestSalmonDate(DateTime date)
+		{
+			return date.ToString(CultureInfo.InvariantCulture);
+		}
+
+		[ClientCallable]
+		public string TestSalmonGuid(Guid guid)
+		{
+			return guid.ToString();
+		}
+
+		[ClientCallable]
+		public string TestSalmonString(string stringValue)
+		{
+			return stringValue;
+		}
+
+		[ClientCallable]
+		public string TestSalmonBool(bool booleanValue)
+		{
+			return booleanValue.ToString();
+		}
+		
+		[ClientCallable(flags: CallableFlags.SkipGenerateClientFiles)]
+		public void TestSalmonSkipGenerate()
+		{
+			Console.WriteLine(""TestSalmonSkipGenerate"");
+		}
+	}
+}
+
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, cfg, UserCode);
 		
 		await ctx.RunAsync();
 	}

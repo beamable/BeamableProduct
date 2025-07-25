@@ -544,6 +544,7 @@ namespace Beamable.Server.Generator
 		{
 			return (schema.Type, schema.Format) switch
 			{
+				("integer", "int16") => typeof(short).GetTypeString(),
 				("integer", "int32") => typeof(int).GetTypeString(),
 				("integer", "int64") => typeof(long).GetTypeString(),
 				("integer", _) => typeof(int).GetTypeString(),

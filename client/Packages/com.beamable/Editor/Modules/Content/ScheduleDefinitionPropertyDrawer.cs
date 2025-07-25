@@ -253,14 +253,18 @@ namespace Beamable.Editor.Content
 			
 			var startRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var startLabel = new GUIContent("Start: ");
-			float startLabelSize = EditorStyles.label.CalcSize(startLabel).x;
+			GUIStyle labelStyle = new GUIStyle(EditorStyles.label)
+			{
+				alignment = TextAnchor.MiddleLeft
+			};
+			float startLabelSize = labelStyle.CalcSize(startLabel).x;
 			EditorGUI.LabelField(startRectController.ReserveWidth(startLabelSize), startLabel);
 			start = EditorGUI.IntField(startRectController.ReserveWidth(startRectController.rect.width - 2f), start);
 			
 			var endRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var endLabel = new GUIContent("End: ");
-			float endLabelSize = EditorStyles.label.CalcSize(endLabel).x;
-			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), endLabel);
+			float endLabelSize = labelStyle.CalcSize(endLabel).x;
+			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), "End:");
 			end = EditorGUI.IntField(endRectController.ReserveWidth(endRectController.rect.width - 2f), end);
 
 			UpdateCronPartValue($"{start}-{end}", i, propertyPath);
@@ -321,19 +325,23 @@ namespace Beamable.Editor.Content
 			
 			var startRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var startLabel = new GUIContent("Start: ");
-			float startLabelSize = EditorStyles.label.CalcSize(startLabel).x;
+			GUIStyle labelStyle = new GUIStyle(EditorStyles.label)
+			{
+				alignment = TextAnchor.MiddleLeft
+			};
+			float startLabelSize = labelStyle.CalcSize(startLabel).x;
 			EditorGUI.LabelField(startRectController.ReserveWidth(startLabelSize), startLabel);
 			nthStart = EditorGUI.IntField(startRectController.ReserveWidth(startRectController.rect.width - 2f), nthStart);
 			
 			var endRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var endLabel = new GUIContent("End: ");
-			float endLabelSize = EditorStyles.label.CalcSize(endLabel).x;
+			float endLabelSize = labelStyle.CalcSize(endLabel).x;
 			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), "End:");
 			nthEnd = EditorGUI.IntField(endRectController.ReserveWidth(endRectController.rect.width - 2f), nthEnd);
 			
 			var stepRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var stepLabel = new GUIContent("Step: ");
-			float stepLabelSize = EditorStyles.label.CalcSize(stepLabel).x;
+			float stepLabelSize = labelStyle.CalcSize(stepLabel).x;
 			EditorGUI.LabelField(stepRectController.ReserveWidth(stepLabelSize), "Step:");
 			step = EditorGUI.IntField(stepRectController.ReserveWidth(stepRectController.rect.width - 2f), step);
 

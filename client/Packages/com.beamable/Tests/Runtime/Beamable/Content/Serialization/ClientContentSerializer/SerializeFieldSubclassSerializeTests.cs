@@ -102,15 +102,6 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          ""shop""
             ]
       },
-""external"": {
-	""data"": {
-		""HasValue"": false,
-		""Value"": {
-			""namespace"": null,
-			""service"": null
-		}
-	}
-},
  ""icon"": {
          ""data"": null
       },

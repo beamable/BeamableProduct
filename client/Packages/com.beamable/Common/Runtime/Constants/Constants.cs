@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@5.1.0-PREVIEW.RC1
-// https://www.nuget.org/packages/Beamable.Common/5.1.0-PREVIEW.RC1
+// this file was copied from nuget package Beamable.Common@5.1.0
+// https://www.nuget.org/packages/Beamable.Common/5.1.0
 
 ﻿namespace Beamable.Common
 {
@@ -52,6 +52,7 @@
 
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";
 			public const string DEFAULT_DATA_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultContent";
+
 			/// <summary>
 			/// Path for dlls compiled from SAMS common code. Relative to Assets directory. 
 			/// </summary>

@@ -748,7 +748,7 @@ public partial class DeployUtil
 		}
 			
 		var planJson = JsonSerializable.ToJson(plan);
-		var planPath = Path.Combine(logDir,$"plan-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}.plan.json");
+		var planPath = Path.Combine(logDir,$"plan-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}.plan.json").LocalizeSlashes();
 		Log.Verbose($"Saving plan: {planPath}");
 		await File.WriteAllTextAsync(planPath, planJson);
 

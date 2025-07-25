@@ -62,19 +62,11 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 			var microservices = LoadDotnetMicroserviceTypesFromAssembly(assembly);
 			foreach (var (microservice, attribute) in microservices)
 			{
-				var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(assembly.GetExportedTypes(), out var missingAttributes);
-				if (missingAttributes.Count > 0)
-				{
-					var typesWithErr = string.Join(",", missingAttributes.Select(t => t.Name));
-					throw new CliException($"Types [{typesWithErr}] in microservice {microservice.Name} should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
-						2, true);
-				}
-				
 				var doc = generator.Generate(microservice.Type, attribute, new AdminRoutes
 				{
 					MicroserviceAttribute = attribute,
 					MicroserviceType = microservice.Type
-				}, false, extraSchemas.Select(t => t.type).ToArray());
+				});
 				
 				var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 				Log.Information(outputString);

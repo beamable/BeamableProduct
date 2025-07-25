@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Able to use the new Client Code Generator from CLI that uses OpenAPI instead of the old one that uses Reflection
 - `Core.Platform.Api` namespace moved into `Beamable.Api` namespace
 - `Core.Platform` namespace moved into `Beamable` namespace
+- Introduced a new content editor window to support the `CLI Content` feature, improving content management workflows.
+- Updated `Schedule Definition` Property Drawers to use `cron` expression values for better usability and flexibility in scheduling.
 
 ### Fixed
 - `Beam.SwitchToPid` resets content instance [3547](https://github.com/beamable/BeamableProduct/issues/3547)

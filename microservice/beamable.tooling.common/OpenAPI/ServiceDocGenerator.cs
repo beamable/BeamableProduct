@@ -31,7 +31,7 @@ public class ServiceDocGenerator
 	private const string V2_COMPONENT_FEDERATION_CLASS_NAME = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
 	private const string SCHEMA_IS_OPTIONAL_KEY = Constants.Features.Services.SCHEMA_IS_OPTIONAL_KEY;
 	private const string SCHEMA_OPTIONAL_TYPE_KEY = Constants.Features.Services.SCHEMA_OPTIONAL_TYPE_NAME_KEY;
-	
+
 
 	private static OpenApiSecurityScheme _userSecurityScheme = new OpenApiSecurityScheme
 	{
@@ -59,8 +59,7 @@ public class ServiceDocGenerator
 	public OpenApiDocument Generate<TMicroservice>(AdminRoutes adminRoutes) where TMicroservice : Microservice
 	{
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
-		var extraSchemas = LoadDotnetDeclaredSchemasFromTypes(typeof(TMicroservice).Assembly.GetExportedTypes(), out _).Select(t => t.type).ToArray();
-		return Generate(typeof(TMicroservice), attr, adminRoutes, false, extraSchemas);
+		return Generate(typeof(TMicroservice), attr, adminRoutes);
 	}
 
 	/// <summary>
@@ -69,12 +68,18 @@ public class ServiceDocGenerator
 	/// <param name="microserviceType">The type of the microservice to generate documentation for.</param>
 	/// <param name="attribute">The MicroserviceAttribute associated with the microservice.</param>
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
-	/// <param name="forClientCodeGeneration">Should be true if you want the OAPI-spec that will be used for client code generating (does not generate the doc for any endpoints coming from federation and respect <see cref="CallableFlags.SkipGenerateClientFiles"/>).</param>
-	/// <param name="extraSchemas">List of types to add to the schema list of the OAPI doc.</param>
 	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes, bool forClientCodeGeneration = false, Type[] extraSchemas = null)
+	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes)
 	{
-		extraSchemas ??= Array.Empty<Type>();
+		var extraSchemas = LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out var missingAttributes)
+			.Select(t => t.type)
+			.ToArray();
+		if (missingAttributes.Count > 0)
+		{
+			var typesWithErr = string.Join(",", missingAttributes.Select(t => t.Name));
+			throw new Exception(
+				$"Types [{typesWithErr}] in microservice {attribute.MicroserviceName} should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.");
+		}
 
 		if (!microserviceType.IsAssignableTo(typeof(Microservice)))
 		{
@@ -83,25 +88,6 @@ public class ServiceDocGenerator
 
 		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, adminRoutes, _ => null);
 		var methods = coll.Methods.ToList();
-		for (var i = methods.Count - 1; i >= 0; i--)
-		{
-			// IF the caller is asking for the Client-Code-Gen spec, we skip out the federated and hidden methods.
-			
-			if (forClientCodeGeneration)
-			{
-				var method = methods[i];
-				var isFederatedMethod = method.IsFederatedCallbackMethod;
-				if (!isFederatedMethod)
-				{
-					continue;
-				}
-
-				Log.Debug("Removing federated callback {MethodName} that made through the check",
-					method.Method.Name);
-				methods.RemoveAt(i);
-			}
-		}
-		
 		var doc = new OpenApiDocument
 		{
 			Info = new OpenApiInfo { Title = attribute.MicroserviceName, Version = "0.0.0" },
@@ -120,7 +106,7 @@ public class ServiceDocGenerator
 		foreach (Type it in interfaces)
 		{
 			// Skip non-generic types while we look for IFederation-derived implementations
-			if (!it.IsGenericType) 
+			if (!it.IsGenericType)
 				continue;
 
 			// Make sure we found an IFederation interface
@@ -130,7 +116,7 @@ public class ServiceDocGenerator
 			// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
 			var typeName = it.GetGenericTypeDefinition().Name;
 			typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
-			
+
 			// Get the IFederationId 
 			var federatedType = it.GetGenericArguments()[0];
 			if (Activator.CreateInstance(federatedType) is IFederationId identity)
@@ -145,45 +131,60 @@ public class ServiceDocGenerator
 				});
 			}
 		}
-		
-		
-		
+
+
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY, apiComponents);
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY, v2ApiComponents);
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_CLASS_TYPE_KEY, new OpenApiString(microserviceType.ToString()));
 
 		// We add to the list of schemas all complex types in method signatures and all extra schemas that were given to us (usually, this is any type that has BeamGenerateSchemaAttribute -- but we can pass
 		// in any serializable type here that follows microservice serialization rules).
-		var allTypes = SchemaGenerator.FindAllComplexTypes(methods).ToList();
-		foreach (var type in allTypes.Concat(extraSchemas))
+		var allTypesFromRoutes = SchemaGenerator.FindAllTypesForOAPI(methods).ToList();
+		allTypesFromRoutes.AddRange(extraSchemas.Select(ex => new SchemaGenerator.OAPIType(null, ex)));
+		foreach (var oapiType in allTypesFromRoutes)
 		{
-			var schema = SchemaGenerator.Convert(type);
-			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}" );
-			
 			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
+			// If all usages of this type (within a sub-graph of types starting from a ServiceMethod) is set to NOT generate the client code, we won't.
+			// Otherwise, even if just a single usage of the type wants the client code to be generated, we do generate it.
+			// That's what this thing does.
+			var type = oapiType.Type;
 			var key = SchemaGenerator.GetQualifiedReferenceName(type);
-			if(!doc.Components.Schemas.ContainsKey(key))
-				doc.Components.Schemas.Add(key, schema);
+			if (doc.Components.Schemas.TryGetValue(key, out var existingSchema))
+			{
+				var shouldGenerate = !oapiType.ShouldNotGenerateClientCode();
+				if (shouldGenerate) existingSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(false));
+
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}, WillGenClient={oapiType.ShouldNotGenerateClientCode()}");
+			}
 			else
-				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}");
+			{
+				// Convert the type into a schema, then set this schema's client-code generation extension based on whether the OAPI type so our code-gen pipelines can decide whether to output it. 
+				var schema = SchemaGenerator.Convert(type);
+				schema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(oapiType.ShouldNotGenerateClientCode()));
+
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}, WillGenClient={oapiType.ShouldNotGenerateClientCode()}");
+				doc.Components.Schemas.Add(key, schema);
+			}
 		}
-		var hiddenMethods = new List<string>();
+
+		var methodsSkippedForClientCodeGen = new List<string>();
 		foreach (var method in methods)
 		{
 			var callableAttrs = method.Method.GetCustomAttributes(typeof(CallableAttribute), true);
-			
+
 			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
-			
+
 			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, 0);
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
 				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetGenericSanitizedFullName()));
 			}
+
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
 			if (!IsEmptyResponseType(returnType))
 			{
@@ -197,8 +198,12 @@ public class ServiceDocGenerator
 				Required = new SortedSet<string>(),
 				Type = "object",
 				// Title = requestSchemaName,
-				AdditionalPropertiesAllowed = false
+				AdditionalPropertiesAllowed = false,
 			};
+			
+			// This schema should be excluded from client-code generation if its from a federation.
+			requestSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(method.IsFederatedCallbackMethod));
+			
 			for (var i = 0; i < method.ParameterInfos.Count; i++)
 			{
 				Type parameterType = method.ParameterInfos[i].ParameterType;
@@ -214,16 +219,16 @@ public class ServiceDocGenerator
 				bool isOptional = parameterType.IsAssignableTo(typeof(Optional));
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
-				
+
 				if (parameterSchema.Reference != null && !doc.Components.Schemas.ContainsKey(parameterSchema.Reference.Id))
 				{
-					requestSchema.Properties[parameterName]=  SchemaGenerator.Convert(parameterType, 1, true);
+					requestSchema.Properties[parameterName] = SchemaGenerator.Convert(parameterType, 1, true);
 				}
 				else
 				{
 					requestSchema.Properties[parameterName] = parameterSchema;
 				}
-				
+
 				if (!isOptional)
 				{
 					requestSchema.Required.Add(parameterName);
@@ -233,7 +238,7 @@ public class ServiceDocGenerator
 					var optionalTypeValue = new OpenApiString(parameterType.IsGenericType
 						? parameterType.GetGenericTypeDefinition().FullName.Replace("`1", "<{0}>")
 						: parameterType.FullName);
-					
+
 					parameterSchema.Extensions.Add(SCHEMA_OPTIONAL_TYPE_KEY, optionalTypeValue);
 				}
 			}
@@ -242,10 +247,7 @@ public class ServiceDocGenerator
 
 			var operation = new OpenApiOperation
 			{
-				Responses = new OpenApiResponses { ["200"] = response },
-				Description = comments.Remarks,
-				Summary = comments.Summary,
-				Tags = openApiTags,
+				Responses = new OpenApiResponses { ["200"] = response }, Description = comments.Remarks, Summary = comments.Summary, Tags = openApiTags,
 			};
 			if (callableAttrs.Length > 0 && method.Tag != "Admin")
 			{
@@ -260,47 +262,35 @@ public class ServiceDocGenerator
 				{
 					Content = new Dictionary<string, OpenApiMediaType>
 					{
-						[JSON_CONTENT_TYPE] = new()
-						{
-							Schema = new OpenApiSchema
-							{
-								Type = "object",
-								Reference = new OpenApiReference
-								{
-									Type = ReferenceType.Schema, Id = requestSchemaName
-								}
-							}
-						}
+						[JSON_CONTENT_TYPE] = new() { Schema = new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = requestSchemaName } } }
 					}
 				};
 			}
 
 
-			var pathItem = new OpenApiPathItem
-			{
-				Operations = new Dictionary<OperationType, OpenApiOperation> { [OperationType.Post] = operation }
-			};
+			var pathItem = new OpenApiPathItem { Operations = new Dictionary<OperationType, OpenApiOperation> { [OperationType.Post] = operation } };
 			var securityReq = new OpenApiSecurityRequirement { [_scopeSecuritySchemeReference] = new List<string>() };
 			operation.Security.Add(securityReq);
 			if (method.RequireAuthenticatedUser)
 			{
 				securityReq[_userSecuritySchemeReference] = new List<string>();
 			}
-			
 
-			var isHidden = callableAttrs.Length > 0 && ((CallableAttribute)callableAttrs[0]).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
-			if (isHidden)
+
+			var shouldSkipClientCodeGeneration = callableAttrs.Length > 0 && ((CallableAttribute)callableAttrs[0]).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
+			shouldSkipClientCodeGeneration |= method.IsFederatedCallbackMethod; 
+			if (shouldSkipClientCodeGeneration)
 			{
-				hiddenMethods.Add(method.Path);
+				methodsSkippedForClientCodeGen.Add(method.Path);
 			}
-			
-			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(isHidden));
+
+			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(shouldSkipClientCodeGeneration));
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
-		
-		var hiddenMethodsOapiArray = new OpenApiArray();
-		hiddenMethodsOapiArray.AddRange(hiddenMethods.Select(item => new OpenApiString(item)));
-		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, hiddenMethodsOapiArray);
+
+		var skippedForClientCodeGenArray = new OpenApiArray();
+		skippedForClientCodeGenArray.AddRange(methodsSkippedForClientCodeGen.Select(item => new OpenApiString(item)));
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, skippedForClientCodeGenArray);
 
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		doc = new OpenApiStringReader().Read(outputString, out var diag);
@@ -388,14 +378,16 @@ public class ServiceDocGenerator
 			output.Add((type, attribute));
 		}
 
-		var pulledInTypes = SchemaGenerator.FindAllComplexTypes(output.Select(t => t.Item1)).ToList();
+		var pulledInTypes = SchemaGenerator.FindAllTypesForOAPI(output.Select(t => new SchemaGenerator.OAPIType(null, t.Item1)))
+			.Select(et => et.Type)
+			.ToList();
 		var pulledInTypesFiltered = pulledInTypes.GroupBy(t => t.GetCustomAttribute<BeamGenerateSchemaAttribute>() != null).ToDictionary(g => g.Key, g => g.ToArray());
-		missingAttributes = pulledInTypesFiltered.TryGetValue(false, out var pulledInTypesMissingAttributes) ? pulledInTypesMissingAttributes.ToList() : new ();
+		missingAttributes = pulledInTypesFiltered.TryGetValue(false, out var pulledInTypesMissingAttributes) ? pulledInTypesMissingAttributes.ToList() : new();
 
 		// Add the ones that do have the output
-		if(pulledInTypesFiltered.TryGetValue(true, out var pulledInTypesWithAttributes))
+		if (pulledInTypesFiltered.TryGetValue(true, out var pulledInTypesWithAttributes))
 			output = pulledInTypesWithAttributes.Select(t => (t, t.GetCustomAttribute<BeamGenerateSchemaAttribute>())).ToList();
-		
+
 		return output;
 	}
 }

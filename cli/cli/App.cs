@@ -787,6 +787,8 @@ public class App
 	class ZLoggerBufferedProcessor : IAsyncLogProcessor
 	{
 		public List<IZLoggerEntry> logs = new List<IZLoggerEntry>();
+		public List<IZLoggerEntry> logsGotWhileDisabled = new List<IZLoggerEntry>();
+		public bool isDisabled;
 		public ValueTask DisposeAsync()
 		{
 			return ValueTask.CompletedTask;
@@ -794,6 +796,11 @@ public class App
 
 		public void Post(IZLoggerEntry log)
 		{
+			if (isDisabled)
+			{
+				logsGotWhileDisabled.Add(log);
+				return; 
+			}
 			logs.Add(log);
 		}
 	}
@@ -997,11 +1004,19 @@ public class App
 			// update log information before dependency injection is sealed.
 			{
 				_setLogger(provider);
-				foreach (var log in CommandProvider.GetService<ZLoggerBufferedProcessor>().logs)
+				var proc = CommandProvider.GetService<ZLoggerBufferedProcessor>();
+				proc.isDisabled = true;
+				foreach (var log in proc.logs)
 				{
 					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
 				}
-				
+
+				proc.isDisabled = false;
+				foreach (var log in proc.logsGotWhileDisabled)
+				{
+					BeamableZLoggerProvider.LogContext.Value.LogWarning("The following log was received while the internal logger was switching.");
+					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
+				}
 			}
 			
 			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
