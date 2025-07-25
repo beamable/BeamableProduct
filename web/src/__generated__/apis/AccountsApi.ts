@@ -1,39 +1,44 @@
-import { Account } from '@/__generated__/schemas/Account';
-import { AccountAvailableResponse } from '@/__generated__/schemas/AccountAvailableResponse';
-import { AccountPersonallyIdentifiableInformationResponse } from '@/__generated__/schemas/AccountPersonallyIdentifiableInformationResponse';
-import { AccountPlayerView } from '@/__generated__/schemas/AccountPlayerView';
-import { AccountPortalView } from '@/__generated__/schemas/AccountPortalView';
-import { AccountRegistration } from '@/__generated__/schemas/AccountRegistration';
-import { AccountRolesReport } from '@/__generated__/schemas/AccountRolesReport';
-import { AccountSearchResponse } from '@/__generated__/schemas/AccountSearchResponse';
-import { AccountUpdate } from '@/__generated__/schemas/AccountUpdate';
-import { AttachExternalIdentityApiRequest } from '@/__generated__/schemas/AttachExternalIdentityApiRequest';
-import { AttachExternalIdentityApiResponse } from '@/__generated__/schemas/AttachExternalIdentityApiResponse';
-import { AvailableRolesResponse } from '@/__generated__/schemas/AvailableRolesResponse';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CreateElevatedAccountRequest } from '@/__generated__/schemas/CreateElevatedAccountRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DeleteDevicesRequest } from '@/__generated__/schemas/DeleteDevicesRequest';
-import { DeleteExternalIdentityApiRequest } from '@/__generated__/schemas/DeleteExternalIdentityApiRequest';
-import { DeleteRole } from '@/__generated__/schemas/DeleteRole';
-import { DeleteThirdPartyAssociation } from '@/__generated__/schemas/DeleteThirdPartyAssociation';
-import { EmailUpdateConfirmation } from '@/__generated__/schemas/EmailUpdateConfirmation';
-import { EmailUpdateRequest } from '@/__generated__/schemas/EmailUpdateRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { GetAdminsResponse } from '@/__generated__/schemas/GetAdminsResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
-import { PasswordUpdateConfirmation } from '@/__generated__/schemas/PasswordUpdateConfirmation';
-import { PasswordUpdateRequest } from '@/__generated__/schemas/PasswordUpdateRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { ThirdPartyAvailableRequest } from '@/__generated__/schemas/ThirdPartyAvailableRequest';
-import { TransferThirdPartyAssociation } from '@/__generated__/schemas/TransferThirdPartyAssociation';
-import { UpdateRole } from '@/__generated__/schemas/UpdateRole';
+import type { Account } from '@/__generated__/schemas/Account';
+import type { AccountAvailableResponse } from '@/__generated__/schemas/AccountAvailableResponse';
+import type { AccountPersonallyIdentifiableInformationResponse } from '@/__generated__/schemas/AccountPersonallyIdentifiableInformationResponse';
+import type { AccountPlayerView } from '@/__generated__/schemas/AccountPlayerView';
+import type { AccountPortalView } from '@/__generated__/schemas/AccountPortalView';
+import type { AccountRegistration } from '@/__generated__/schemas/AccountRegistration';
+import type { AccountRolesReport } from '@/__generated__/schemas/AccountRolesReport';
+import type { AccountSearchResponse } from '@/__generated__/schemas/AccountSearchResponse';
+import type { AccountUpdate } from '@/__generated__/schemas/AccountUpdate';
+import type { AttachExternalIdentityApiRequest } from '@/__generated__/schemas/AttachExternalIdentityApiRequest';
+import type { AttachExternalIdentityApiResponse } from '@/__generated__/schemas/AttachExternalIdentityApiResponse';
+import type { AvailableRolesResponse } from '@/__generated__/schemas/AvailableRolesResponse';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CreateElevatedAccountRequest } from '@/__generated__/schemas/CreateElevatedAccountRequest';
+import type { DeleteDevicesRequest } from '@/__generated__/schemas/DeleteDevicesRequest';
+import type { DeleteExternalIdentityApiRequest } from '@/__generated__/schemas/DeleteExternalIdentityApiRequest';
+import type { DeleteRole } from '@/__generated__/schemas/DeleteRole';
+import type { DeleteThirdPartyAssociation } from '@/__generated__/schemas/DeleteThirdPartyAssociation';
+import type { EmailUpdateConfirmation } from '@/__generated__/schemas/EmailUpdateConfirmation';
+import type { EmailUpdateRequest } from '@/__generated__/schemas/EmailUpdateRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetAdminsResponse } from '@/__generated__/schemas/GetAdminsResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { PasswordUpdateConfirmation } from '@/__generated__/schemas/PasswordUpdateConfirmation';
+import type { PasswordUpdateRequest } from '@/__generated__/schemas/PasswordUpdateRequest';
+import type { ThirdPartyAvailableRequest } from '@/__generated__/schemas/ThirdPartyAvailableRequest';
+import type { TransferThirdPartyAssociation } from '@/__generated__/schemas/TransferThirdPartyAssociation';
+import type { UpdateRole } from '@/__generated__/schemas/UpdateRole';
 
 /**
  * @remarks

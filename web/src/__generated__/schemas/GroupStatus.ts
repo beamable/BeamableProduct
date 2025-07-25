@@ -1,4 +1,9 @@
-import { CompletedStatus } from './CompletedStatus';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CompletedStatus } from './CompletedStatus';
 
 export type GroupStatus = { 
   contentId: string; 

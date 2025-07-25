@@ -1,19 +1,24 @@
-import { AvailabilityResponse } from '@/__generated__/schemas/AvailabilityResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { GroupCreate } from '@/__generated__/schemas/GroupCreate';
-import { GroupCreateResponse } from '@/__generated__/schemas/GroupCreateResponse';
-import { GroupMembershipRequest } from '@/__generated__/schemas/GroupMembershipRequest';
-import { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembershipResponse';
-import { GroupSearchResponse } from '@/__generated__/schemas/GroupSearchResponse';
-import { GroupType } from '@/__generated__/schemas/enums/GroupType';
-import { GroupUser } from '@/__generated__/schemas/GroupUser';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
+import type { AvailabilityResponse } from '@/__generated__/schemas/AvailabilityResponse';
+import type { GroupCreate } from '@/__generated__/schemas/GroupCreate';
+import type { GroupCreateResponse } from '@/__generated__/schemas/GroupCreateResponse';
+import type { GroupMembershipRequest } from '@/__generated__/schemas/GroupMembershipRequest';
+import type { GroupMembershipResponse } from '@/__generated__/schemas/GroupMembershipResponse';
+import type { GroupSearchResponse } from '@/__generated__/schemas/GroupSearchResponse';
+import type { GroupType } from '@/__generated__/schemas/enums/GroupType';
+import type { GroupUser } from '@/__generated__/schemas/GroupUser';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
 
 /**
  * @remarks

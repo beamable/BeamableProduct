@@ -1,22 +1,27 @@
-import { CreateTrialRestRequest } from '@/__generated__/schemas/CreateTrialRestRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DeleteTrialDataRequest } from '@/__generated__/schemas/DeleteTrialDataRequest';
-import { DeleteTrialRequest } from '@/__generated__/schemas/DeleteTrialRequest';
 import { GET } from '@/constants';
-import { GetPlayerTrialsResponse } from '@/__generated__/schemas/GetPlayerTrialsResponse';
-import { GetS3DataResponse } from '@/__generated__/schemas/GetS3DataResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListTrialsResponse } from '@/__generated__/schemas/ListTrialsResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { PauseTrialRequest } from '@/__generated__/schemas/PauseTrialRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { SaveGameDataResponse } from '@/__generated__/schemas/SaveGameDataResponse';
-import { ScheduleTrialRequest } from '@/__generated__/schemas/ScheduleTrialRequest';
-import { StartTrialRequest } from '@/__generated__/schemas/StartTrialRequest';
-import { TrialSuccessResponse } from '@/__generated__/schemas/TrialSuccessResponse';
-import { UploadTrialDataRequest } from '@/__generated__/schemas/UploadTrialDataRequest';
+import type { CreateTrialRestRequest } from '@/__generated__/schemas/CreateTrialRestRequest';
+import type { DeleteTrialDataRequest } from '@/__generated__/schemas/DeleteTrialDataRequest';
+import type { DeleteTrialRequest } from '@/__generated__/schemas/DeleteTrialRequest';
+import type { GetPlayerTrialsResponse } from '@/__generated__/schemas/GetPlayerTrialsResponse';
+import type { GetS3DataResponse } from '@/__generated__/schemas/GetS3DataResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListTrialsResponse } from '@/__generated__/schemas/ListTrialsResponse';
+import type { PauseTrialRequest } from '@/__generated__/schemas/PauseTrialRequest';
+import type { SaveGameDataResponse } from '@/__generated__/schemas/SaveGameDataResponse';
+import type { ScheduleTrialRequest } from '@/__generated__/schemas/ScheduleTrialRequest';
+import type { StartTrialRequest } from '@/__generated__/schemas/StartTrialRequest';
+import type { TrialSuccessResponse } from '@/__generated__/schemas/TrialSuccessResponse';
+import type { UploadTrialDataRequest } from '@/__generated__/schemas/UploadTrialDataRequest';
 
 /**
  * @remarks

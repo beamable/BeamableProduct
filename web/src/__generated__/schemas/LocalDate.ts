@@ -1,5 +1,10 @@
-import { Era } from './Era';
-import { IsoChronology } from './IsoChronology';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { Era } from './Era';
+import type { IsoChronology } from './IsoChronology';
 
 export type LocalDate = { 
   chronology: IsoChronology; 

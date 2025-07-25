@@ -1,18 +1,23 @@
-import { CloudsavingBasicManifest } from '@/__generated__/schemas/CloudsavingBasicManifest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { ObjectRequests } from '@/__generated__/schemas/ObjectRequests';
-import { PlayerBasicCloudDataRequest } from '@/__generated__/schemas/PlayerBasicCloudDataRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { ReplaceObjectsRequest } from '@/__generated__/schemas/ReplaceObjectsRequest';
-import { UploadRequests } from '@/__generated__/schemas/UploadRequests';
-import { UploadRequestsFromPortal } from '@/__generated__/schemas/UploadRequestsFromPortal';
-import { URLSResponse } from '@/__generated__/schemas/URLSResponse';
+import type { CloudsavingBasicManifest } from '@/__generated__/schemas/CloudsavingBasicManifest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ObjectRequests } from '@/__generated__/schemas/ObjectRequests';
+import type { PlayerBasicCloudDataRequest } from '@/__generated__/schemas/PlayerBasicCloudDataRequest';
+import type { ReplaceObjectsRequest } from '@/__generated__/schemas/ReplaceObjectsRequest';
+import type { UploadRequests } from '@/__generated__/schemas/UploadRequests';
+import type { UploadRequestsFromPortal } from '@/__generated__/schemas/UploadRequestsFromPortal';
+import type { URLSResponse } from '@/__generated__/schemas/URLSResponse';
 
 /**
  * @remarks

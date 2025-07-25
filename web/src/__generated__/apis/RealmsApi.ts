@@ -1,41 +1,46 @@
-import { AliasAvailableResponse } from '@/__generated__/schemas/AliasAvailableResponse';
-import { ArchiveProjectRequest } from '@/__generated__/schemas/ArchiveProjectRequest';
-import { BatchDeleteInFlightRequest } from '@/__generated__/schemas/BatchDeleteInFlightRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
-import { CreateLaunchMessageRequest } from '@/__generated__/schemas/CreateLaunchMessageRequest';
-import { CreatePlanRequest } from '@/__generated__/schemas/CreatePlanRequest';
-import { CreateProjectRequest } from '@/__generated__/schemas/CreateProjectRequest';
-import { CustomerResponse } from '@/__generated__/schemas/CustomerResponse';
-import { CustomersResponse } from '@/__generated__/schemas/CustomersResponse';
-import { CustomerViewResponse } from '@/__generated__/schemas/CustomerViewResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { GET } from '@/constants';
-import { GetGameResponse } from '@/__generated__/schemas/GetGameResponse';
-import { HtmlResponse } from '@/__generated__/schemas/HtmlResponse';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { InFlightFailureResponse } from '@/__generated__/schemas/InFlightFailureResponse';
-import { LaunchMessageListResponse } from '@/__generated__/schemas/LaunchMessageListResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { NewCustomerRequest } from '@/__generated__/schemas/NewCustomerRequest';
-import { NewCustomerResponse } from '@/__generated__/schemas/NewCustomerResponse';
-import { NewGameRequest } from '@/__generated__/schemas/NewGameRequest';
 import { POST } from '@/constants';
-import { ProjectView } from '@/__generated__/schemas/ProjectView';
-import { PromoteRealmRequest } from '@/__generated__/schemas/PromoteRealmRequest';
-import { PromoteRealmResponse } from '@/__generated__/schemas/PromoteRealmResponse';
-import { PromoteRealmResponseOld } from '@/__generated__/schemas/PromoteRealmResponseOld';
 import { PUT } from '@/constants';
-import { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
-import { RealmConfigResponse } from '@/__generated__/schemas/RealmConfigResponse';
-import { RealmConfigSaveRequest } from '@/__generated__/schemas/RealmConfigSaveRequest';
-import { RealmConfiguration } from '@/__generated__/schemas/RealmConfiguration';
-import { RemoveLaunchMessageRequest } from '@/__generated__/schemas/RemoveLaunchMessageRequest';
-import { RenameProjectRequest } from '@/__generated__/schemas/RenameProjectRequest';
-import { ServicePlansResponse } from '@/__generated__/schemas/ServicePlansResponse';
-import { UnarchiveProjectRequest } from '@/__generated__/schemas/UnarchiveProjectRequest';
-import { UpdateGameHierarchyRequest } from '@/__generated__/schemas/UpdateGameHierarchyRequest';
+import type { AliasAvailableResponse } from '@/__generated__/schemas/AliasAvailableResponse';
+import type { ArchiveProjectRequest } from '@/__generated__/schemas/ArchiveProjectRequest';
+import type { BatchDeleteInFlightRequest } from '@/__generated__/schemas/BatchDeleteInFlightRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CreateLaunchMessageRequest } from '@/__generated__/schemas/CreateLaunchMessageRequest';
+import type { CreatePlanRequest } from '@/__generated__/schemas/CreatePlanRequest';
+import type { CreateProjectRequest } from '@/__generated__/schemas/CreateProjectRequest';
+import type { CustomerResponse } from '@/__generated__/schemas/CustomerResponse';
+import type { CustomersResponse } from '@/__generated__/schemas/CustomersResponse';
+import type { CustomerViewResponse } from '@/__generated__/schemas/CustomerViewResponse';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetGameResponse } from '@/__generated__/schemas/GetGameResponse';
+import type { HtmlResponse } from '@/__generated__/schemas/HtmlResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { InFlightFailureResponse } from '@/__generated__/schemas/InFlightFailureResponse';
+import type { LaunchMessageListResponse } from '@/__generated__/schemas/LaunchMessageListResponse';
+import type { NewCustomerRequest } from '@/__generated__/schemas/NewCustomerRequest';
+import type { NewCustomerResponse } from '@/__generated__/schemas/NewCustomerResponse';
+import type { NewGameRequest } from '@/__generated__/schemas/NewGameRequest';
+import type { ProjectView } from '@/__generated__/schemas/ProjectView';
+import type { PromoteRealmRequest } from '@/__generated__/schemas/PromoteRealmRequest';
+import type { PromoteRealmResponse } from '@/__generated__/schemas/PromoteRealmResponse';
+import type { PromoteRealmResponseOld } from '@/__generated__/schemas/PromoteRealmResponseOld';
+import type { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
+import type { RealmConfigResponse } from '@/__generated__/schemas/RealmConfigResponse';
+import type { RealmConfigSaveRequest } from '@/__generated__/schemas/RealmConfigSaveRequest';
+import type { RealmConfiguration } from '@/__generated__/schemas/RealmConfiguration';
+import type { RemoveLaunchMessageRequest } from '@/__generated__/schemas/RemoveLaunchMessageRequest';
+import type { RenameProjectRequest } from '@/__generated__/schemas/RenameProjectRequest';
+import type { ServicePlansResponse } from '@/__generated__/schemas/ServicePlansResponse';
+import type { UnarchiveProjectRequest } from '@/__generated__/schemas/UnarchiveProjectRequest';
+import type { UpdateGameHierarchyRequest } from '@/__generated__/schemas/UpdateGameHierarchyRequest';
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.

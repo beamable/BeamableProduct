@@ -1,22 +1,27 @@
-import { AnnouncementContentResponse } from '@/__generated__/schemas/AnnouncementContentResponse';
-import { AnnouncementDto } from '@/__generated__/schemas/AnnouncementDto';
-import { AnnouncementQueryResponse } from '@/__generated__/schemas/AnnouncementQueryResponse';
-import { AnnouncementRawResponse } from '@/__generated__/schemas/AnnouncementRawResponse';
-import { AnnouncementRequest } from '@/__generated__/schemas/AnnouncementRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnouncementRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
-import { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
+import type { AnnouncementContentResponse } from '@/__generated__/schemas/AnnouncementContentResponse';
+import type { AnnouncementDto } from '@/__generated__/schemas/AnnouncementDto';
+import type { AnnouncementQueryResponse } from '@/__generated__/schemas/AnnouncementQueryResponse';
+import type { AnnouncementRawResponse } from '@/__generated__/schemas/AnnouncementRawResponse';
+import type { AnnouncementRequest } from '@/__generated__/schemas/AnnouncementRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnouncementRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
+import type { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 
 /**
  * @remarks

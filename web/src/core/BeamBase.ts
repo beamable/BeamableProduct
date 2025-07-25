@@ -8,10 +8,11 @@ import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 
 /** The base class for Beam SDK client and server instances. */
 export abstract class BeamBase {
-  public readonly requester: HttpRequester;
+  readonly requester: HttpRequester;
 
-  protected cid: string;
-  protected pid: string;
+  cid: string;
+  pid: string;
+
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
 

@@ -3,6 +3,7 @@ import { HttpMethod } from '@/network/http/types/HttpMethod';
 import { makeQueryString } from '@/utils/makeQueryString';
 import { HttpRequest } from '@/network/http/types/HttpRequest';
 import { HttpResponse } from '@/network/http/types/HttpResponse';
+import { HEADERS } from '@/constants';
 
 interface makeApiRequestProps<TReq> {
   r: HttpRequester; // The HTTP requester instance to use for making the API request
@@ -13,6 +14,12 @@ interface makeApiRequestProps<TReq> {
   g?: string; // Optional gamertag to include in the request headers
   w?: boolean; // Optional flag to indicate whether to include authentication in the request
 }
+
+/**
+ * Helper function used by generated Beamable API functions to make API requests.
+ * @template TRes - The expected type of the response body.
+ * @template TReq - The expected type of the request body.
+ */
 export function makeApiRequest<TRes = any, TReq = any>(
   props: makeApiRequestProps<TReq>,
 ): Promise<HttpResponse<TRes>> {
@@ -23,7 +30,7 @@ export function makeApiRequest<TRes = any, TReq = any>(
   // Create the header parameters object
   const headers: Record<string, string> = {};
   if (g != undefined) {
-    headers['X-BEAM-GAMERTAG'] = g;
+    headers[HEADERS.GAMERTAG] = g;
   }
 
   // Create the query string from the query parameters

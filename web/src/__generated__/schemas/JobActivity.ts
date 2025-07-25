@@ -1,4 +1,9 @@
-import { JobState } from './enums/JobState';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { JobState } from './enums/JobState';
 
 export type JobActivity = { 
   executionId?: string | null; 

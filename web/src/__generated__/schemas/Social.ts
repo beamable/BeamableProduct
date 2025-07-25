@@ -1,6 +1,11 @@
-import { Friend } from './Friend';
-import { Invite } from './Invite';
-import { Player } from './Player';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { Friend } from './Friend';
+import type { Invite } from './Invite';
+import type { Player } from './Player';
 
 export type Social = { 
   blocked: Player[]; 
