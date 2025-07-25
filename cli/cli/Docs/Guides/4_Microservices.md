@@ -432,3 +432,507 @@ Microservice ID: `MyMicroservice` is invalid, it needs to be the same as <BeamId
     </Project>
     ```
 ---
+
+### Static Field in Microservice
+
+**Explanation**:  
+Non-readonly static fields in Microservices are discouraged because they do not behave reliably in horizontally scaled environments. Their state is not shared across instances.
+
+**Example Code Triggering the Warning**:
+```csharp
+public partial class MyMicroservice : Microservice
+{
+    public static string ContentId = "coins.gems";
+}
+```
+
+**Example Warning Message**:
+```
+Consider making 'ContentId' a readonly field. Otherwise the value may be inconsistent in production environments.
+```
+
+**Solutions**:
+- Make the static field `readonly` if it's intended to be constant after initialization.
+  **Example of Solved Code**:
+    ```csharp
+    public partial class MyMicroservice : Microservice
+    {
+        public static readonly string ContentId = "coins.gems";
+    }
+    ```
+- Or convert it to a non-static field if it should be instance-bound.
+
+---
+
+### Missing Serializable Attribute on Type
+
+**Explanation**:  
+All types used in Microservice method signatures or marked with `[BeamGenerateSchema]` must be annotated with `[Serializable]` to ensure correct serialization and code generation.
+
+**Examples Code Triggering the Error**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDto
+{
+    public int x;
+}
+public class MyOtherDto
+{
+    public int x;
+}
+[Microservice("OtherBeamId")]
+public partial class MyMicroservice : Microservice 
+{
+    [ClientCallable]
+    public void CallService(MyOtherDto data) {}
+}
+```
+
+**Example Error Messages**:
+```
+Add the [Serializable] attribute to type 'MyDto'
+```
+```
+Add the [Serializable] attribute to type 'MyOtherDto'
+```
+
+**Solution**:
+- Add the `[Serializable]` attribute.
+  **Example of Solved Code**:
+    ```csharp
+    [Serializable]
+    [BeamGenerateSchema]
+    public class MyDto
+    {
+        public int x;
+    }
+    [Serializable]
+    public class MyOtherDto
+    {
+        public int x;
+    }
+    [Microservice("OtherBeamId")]
+    public partial class MyMicroservice : Microservice
+    {
+        [ClientCallable]
+        public void CallService(MyOtherDto data) {}
+    }
+    ```
+
+---
+
+### Property Found in Serializable Type
+
+**Explanation**:  
+Properties in types used in Microservice method signatures or marked with `[BeamGenerateSchema]` are ignored by the client code generator. Fields should be used instead.
+
+**Example Code Triggering the Warning**:
+```csharp
+[Serializable]
+public class MyDto
+{
+    public int X { get; set; }
+}
+```
+
+**Example Warning Message**:
+```
+Consider changing property 'X' to a field to include it in client-generated code
+```
+
+**Solution**:
+- Use fields instead of properties.
+  **Example of Solved Code**:
+    ```csharp
+    [Serializable]
+    public class MyDto
+    {
+        public int X;
+    }
+    ```
+
+---
+
+### Nullable Field in Serializable Type
+
+**Explanation**:  
+Fields with nullable types (e.g., `int?`, `string?`) are not supported in types used in Microservice method signatures or marked with `[BeamGenerateSchema]`. Use `Optional<T>` instead to ensure predictable behavior.
+
+**Example Code Triggering the Error**:
+```csharp
+[Serializable]
+public class MyDto
+{
+    public int? Score;
+}
+```
+
+**Example Error Message**:
+```
+Change field 'Score' to use Optional<T> instead of a nullable type
+```
+
+**Solution**:
+- Use `Optional<T>` instead of nullable types.
+  **Example of Solved Code**:
+    ```csharp
+    [Serializable]
+    public class MyDto
+    {
+        public Optional<int> Score;
+    }
+    ```
+
+---
+
+### Invalid ContentObject Used
+
+**Explanation**:\
+Using `ContentObject` or its subtypes directly in serializable fields or parameters is discouraged, as it may lead to large data payloads. Instead, prefer using `ContentRef<T>` to reference content objects efficiently.
+
+**Example Code Triggering the Error**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyItem item; 
+}
+
+public class MyItem : ContentObject {}
+```
+
+**Example Error Message**:
+
+```
+Change 'item' to use ContentRef<MyItem> instead of MyItem
+```
+
+**Solution**:
+
+- Replace the direct `ContentObject` usage with `ContentRef<T>`.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public ContentRef<MyItem> item;
+}
+
+public class MyItem : ContentObject {}
+```
+---
+
+### Type Used in BeamGenerateSchema is Missing Attribute
+
+**Explanation**:  
+When a class is marked with `[BeamGenerateSchema]`, all custom types used in its fields must also be annotated with `[BeamGenerateSchema]`.
+
+**Example Code Triggering the Error**:
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyOtherDTO otherDTO;
+}
+public class MyOtherDTO
+{
+    public int Value;
+}
+```
+
+**Example Error Message**:
+```
+Add the [BeamGenerateSchema] attribute to type 'MyOtherDTO'
+```
+
+**Solution**:
+- Add `[BeamGenerateSchema]` to all nested field types.
+  **Example of Solved Code**:
+    ```csharp
+    [BeamGenerateSchema]
+    public class MyDTO
+    {
+        public MyOtherDTO otherDTO;
+    }
+    [BeamGenerateSchema]
+    public class MyOtherDTO
+    {
+        public int Value;
+    }
+    ```
+
+---
+
+### Dictionary Key Must Be String on Serializable Types
+
+**Explanation**:\
+When using a `Dictionary` field in a type marked with `[BeamGenerateSchema]`, the key must be of type `string`. Other key types are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<int, string> InvalidDict;
+}
+```
+
+**Example Error Message**:
+
+```
+Change the dictionary key of field 'InvalidDict' to string instead of type 'int'
+```
+
+**Solution**:
+
+- Change the dictionary key type to `string`.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<string, string> ValidDict;
+}
+```
+
+---
+
+### Field on Serializable Type Is Subtype From Dictionary
+
+**Explanation**:\
+Types that subclass `Dictionary` are not supported as field types in `[BeamGenerateSchema]` annotated classes.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyDict : Dictionary<string, string> {}
+
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyDict customDict;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace field 'customDict' to Dictionary instead of type 'MyDict'
+```
+
+**Solution**:
+
+- Use `Dictionary<string, T>` directly instead of a subclass.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public Dictionary<string, string> customDict;
+}
+```
+
+---
+
+### Field on Serializable Type Is Subtype From List
+
+**Explanation**:\
+Types that subclass `List<T>` are not supported as field types in `[BeamGenerateSchema]` annotated classes.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyList : List<string> {}
+
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public MyList customList; 
+}
+```
+
+**Example Error Message**:
+
+```
+Replace field 'customList' to List instead of type 'MyList'
+```
+
+**Solution**:
+
+- Use `List<T>` directly instead of a subclass.
+
+**Example of Solved Code**:
+
+```csharp
+[BeamGenerateSchema]
+public class MyDTO
+{
+    public List<string> customList;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is ContentObject Subtype
+
+**Explanation**:\
+Types used in `Callable` methods cannot inherit from `ContentObject`. Only the base `ContentObject` is supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyContent : ContentObject {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyContent input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Change type 'MyContent' to use the base ContentObject type instead of a subtype
+```
+
+**Solution**:
+
+- Use `ContentObject` instead of a derived type.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(ContentObject input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Invalid Dictionary
+
+**Explanation**:\
+Dictionaries in `[Callable]` method parameters are only valid if their keys are of type `string`.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<int, string> input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Change the dictionary key of 'input' to string instead of type 'int'
+```
+
+**Solution**:
+
+- Change dictionary key to `string`.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<string, string> input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Subtype From Dictionary
+
+**Explanation**:\
+Types used in `[Callable]` methods that subclass `Dictionary` are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyDict : Dictionary<string, string> {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyDict input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace 'input' to Dictionary instead of type 'MyDict'
+```
+
+**Solution**:
+
+- Use `Dictionary<string, T>` directly.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(Dictionary<string, string> input) => Task.CompletedTask;
+}
+```
+
+---
+
+### Callable Method Declaration Type Is Subtype From List
+
+**Explanation**:\
+Types used in `[Callable]` methods that subclass `List<T>` are not supported.
+
+**Example Code Triggering the Error**:
+
+```csharp
+public class MyList : List<string> {}
+
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(MyList input) => Task.CompletedTask;
+}
+```
+
+**Example Error Message**:
+
+```
+Replace 'input' to List instead of type 'MyList'
+```
+
+**Solution**:
+
+- Use `List<T>` directly.
+
+**Example of Solved Code**:
+
+```csharp
+public class MyMicroservice : Microservice
+{
+    [Callable]
+    public Task DoSomething(List<string> input) => Task.CompletedTask;
+}
+```
+
+---
+
