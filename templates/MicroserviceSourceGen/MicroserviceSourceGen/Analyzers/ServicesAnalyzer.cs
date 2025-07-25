@@ -433,6 +433,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			TASK_CLASS_FULLNAME,
 			"System.Guid",
 			LIST_CLASS_FULLNAME,
+			DICTIONARY_CLASS_FULLNAME,
 		};
 
 		var allTypes = symbol.GetAllBaseTypes();
@@ -860,12 +861,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	private static void ValidateContentObjectType(Action<Diagnostic> reportDiagnostic, ITypeSymbol symbol, Location location, string analyseReference)
 	{
-		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
-		{
-			ValidateContentObjectType(reportDiagnostic, arrayTypeSymbol.ElementType, location, analyseReference);
-			return;
-		}
-		
 		var allTypesFromGeneric = FindAllFromType(symbol, typeof(ContentObject).FullName);
 		
 		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
@@ -897,6 +892,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					continue;
 				allTypes.AddRange(FindAllFromType(genericTypeTypeArgument, typeString, symbol, processedTypes));
 			}
+		}
+		
+		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
+		{
+			if(processedTypes.Contains(arrayTypeSymbol.ElementType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+				return allTypes;
+			allTypes.AddRange(FindAllFromType(arrayTypeSymbol.ElementType, typeString, symbol, processedTypes));
 		}
 		
 		return allTypes;
