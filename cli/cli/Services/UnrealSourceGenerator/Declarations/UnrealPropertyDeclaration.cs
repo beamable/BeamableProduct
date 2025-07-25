@@ -87,7 +87,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
-	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
+	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢);";
 
 
 	public const string UNREAL_JSON_FIELD_SERIALIZE =
@@ -100,7 +100,7 @@ public struct UnrealPropertyDeclaration
 		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), UBeamJsonUtils::EnumToSerializationName(₢{nameof(PropertyName)}₢));";
 
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
+		$@"UBeamJsonUtils::DeserializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢);";
 
 	public const string U_STRUCT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
@@ -118,31 +118,31 @@ public struct UnrealPropertyDeclaration
 		$@"UBeamJsonUtils::SerializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string ARRAY_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetArrayField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(Bag->GetArrayField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string MAP_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string MAP_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetObjectField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string MAP_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string MAP_SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(Bag->GetObjectField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(Bag->TryGetField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string OPTIONAL_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeOptional<₢{nameof(NonOptionalTypeName)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
