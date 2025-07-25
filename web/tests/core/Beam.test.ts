@@ -50,7 +50,7 @@ describe('Beam', () => {
       // Default refresh token for setupRealtimeConnection
       storage.getRefreshToken.mockResolvedValue('refresh-token');
       saveTokenSpy = vi.spyOn(BeamUtils, 'saveToken').mockResolvedValue();
-      vi.spyOn(beam.auth, 'signInAsGuest').mockResolvedValue(
+      vi.spyOn(beam.auth, 'loginAsGuest').mockResolvedValue(
         dummyTokenResponse as any,
       );
       vi.spyOn(beam.auth, 'refreshAuthToken').mockResolvedValue(
@@ -64,14 +64,14 @@ describe('Beam', () => {
 
     it('signs in as guest when no access token exists', async () => {
       storage.getAccessToken.mockResolvedValue(null);
-      beam.auth.signInAsGuest = vi
+      beam.auth.loginAsGuest = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
       beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
-      expect(beam.auth.signInAsGuest).toHaveBeenCalled();
+      expect(beam.auth.loginAsGuest).toHaveBeenCalled();
       expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
       expect(beam.player.account).toEqual(dummyPlayer);
     });
@@ -98,14 +98,14 @@ describe('Beam', () => {
       storage.getAccessToken.mockResolvedValue('access');
       storage.isExpired = true;
       storage.getRefreshToken.mockResolvedValueOnce(null);
-      beam.auth.signInAsGuest = vi
+      beam.auth.loginAsGuest = vi
         .fn()
         .mockResolvedValue(dummyTokenResponse as any);
       beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
 
       await beam.ready();
 
-      expect(beam.auth.signInAsGuest).toHaveBeenCalled();
+      expect(beam.auth.loginAsGuest).toHaveBeenCalled();
       expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
       expect(beam.player.account).toEqual(dummyPlayer);
     });
@@ -115,7 +115,7 @@ describe('Beam', () => {
       storage.isExpired = false;
       beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
       await beam.ready();
-      expect(beam.auth.signInAsGuest).not.toHaveBeenCalled();
+      expect(beam.auth.loginAsGuest).not.toHaveBeenCalled();
       expect(saveTokenSpy).not.toHaveBeenCalled();
       expect(beam.player.account).toEqual(dummyPlayer);
     });

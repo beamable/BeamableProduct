@@ -7,7 +7,7 @@ import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
 import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
 import { saveToken } from '@/core/BeamUtils';
-import { TokenResponse } from '@/__generated__/schemas';
+import type { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
 import { BeamError, BeamWebSocketError } from '@/constants/Errors';
@@ -172,15 +172,15 @@ export class Beam extends BeamBase {
       let tokenResponse: TokenResponse | undefined;
       const accessToken = await this.tokenStorage.getAccessToken();
       if (!accessToken) {
-        // If no access token exists, sign in as a guest
-        tokenResponse = await this.auth.signInAsGuest();
+        // If no access token exists, login as a guest
+        tokenResponse = await this.auth.loginAsGuest();
       } else if (this.tokenStorage.isExpired) {
         // If the access token is expired, try to refresh it using the refresh token
         // If no refresh token exists, sign in as a guest
         const refreshToken = await this.tokenStorage.getRefreshToken();
         tokenResponse = refreshToken
           ? await this.auth.refreshAuthToken({ refreshToken })
-          : await this.auth.signInAsGuest();
+          : await this.auth.loginAsGuest();
       }
 
       if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);

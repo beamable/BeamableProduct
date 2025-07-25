@@ -8,9 +8,11 @@ import {
   type SetLeaderboardScoreParams,
 } from '@/services/LeaderboardsService';
 import { PlayerService } from '@/services/PlayerService';
-import type { LeaderBoardViewResponse } from '@/__generated__/schemas/LeaderBoardViewResponse';
-import type { LeaderBoardView } from '@/__generated__/schemas';
-import type { LeaderboardAssignmentInfo } from '@/__generated__/schemas';
+import type {
+  LeaderboardAssignmentInfo,
+  LeaderBoardView,
+  LeaderBoardViewResponse,
+} from '@/__generated__/schemas';
 
 describe('LeaderboardsService', () => {
   describe('get', () => {

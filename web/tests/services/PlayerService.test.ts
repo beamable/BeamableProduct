@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerService } from '@/services/PlayerService';
-import { AccountPlayerView, AnnouncementView } from '@/__generated__/schemas';
+import type {
+  AccountPlayerView,
+  AnnouncementView,
+} from '@/__generated__/schemas';
 
 describe('PlayerService', () => {
   it('initializes account with default values', () => {

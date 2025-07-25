@@ -1,6 +1,6 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import { BeamError } from '@/constants/Errors';
-import {
+import type {
   LeaderboardAssignmentInfo,
   LeaderBoardView,
 } from '@/__generated__/schemas';

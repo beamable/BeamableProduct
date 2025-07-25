@@ -31,7 +31,7 @@ describe('AuthService', () => {
       });
       const mockRequester = {} as HttpRequester;
       const authService = new AuthService({ requester: mockRequester });
-      const result = await authService.signInAsGuest();
+      const result = await authService.loginAsGuest();
 
       expect(apis.authPostTokenBasic).toHaveBeenCalledWith(
         mockRequester,

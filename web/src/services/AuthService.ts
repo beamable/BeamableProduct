@@ -1,4 +1,7 @@
-import { TokenRequestWrapper, TokenResponse } from '@/__generated__/schemas';
+import type {
+  TokenRequestWrapper,
+  TokenResponse,
+} from '@/__generated__/schemas';
 import { getUserDeviceAndPlatform } from '@/utils/getUserDeviceAndPlatform';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import { authPostTokenBasic } from '@/__generated__/apis';
@@ -17,11 +20,11 @@ export class AuthService extends ApiService {
    * Authenticates a guest user.
    * @example
    * ```ts
-   * const tokenResponse = await beam.auth.signInAsGuest();
+   * const tokenResponse = await beam.auth.loginAsGuest();
    * ```
    * @throws {BeamError} If the authentication fails.
    */
-  async signInAsGuest(): Promise<TokenResponse> {
+  async loginAsGuest(): Promise<TokenResponse> {
     const { deviceType, platform } = getUserDeviceAndPlatform();
     const tokenRequest: TokenRequestWrapper = {
       grant_type: 'guest',

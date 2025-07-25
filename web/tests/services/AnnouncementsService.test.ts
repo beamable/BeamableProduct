@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
-import {
+import type {
   AnnouncementQueryResponse,
   AnnouncementView,
 } from '@/__generated__/schemas';
