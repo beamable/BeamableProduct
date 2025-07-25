@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+using Beamable.Common.CronExpression;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,26 +12,6 @@ using static Beamable.Common.Constants.Features.Cron;
 
 namespace Beamable.CronExpression
 {
-
-	public struct ErrorData
-	{
-		public bool IsError { get; private set; }
-		public string ErrorMessage
-		{
-			get => _errorMessage;
-			set
-			{
-				IsError = !string.IsNullOrWhiteSpace(value);
-				_errorMessage = value;
-			}
-		}
-		private string _errorMessage;
-
-		public ErrorData(string errorMessage) : this()
-		{
-			ErrorMessage = errorMessage;
-		}
-	}
 	/// <summary>
 	///     Converts a Cron Expression into a human readable string
 	/// </summary>
@@ -688,78 +669,8 @@ namespace Beamable.CronExpression
 		/// <returns>The cron expression description</returns>
 		public static string GetDescription(ScheduleDefinition scheduleDefinition, Options options, out ErrorData errorData)
 		{
-			var expression = ScheduleDefinitionToCron(scheduleDefinition);
+			var expression = ExpressionParser.ScheduleDefinitionToCron(scheduleDefinition);
 			return GetDescription(expression, options, out errorData);
-		}
-
-		/// <summary>
-		///     Converts schedule definition into cron expression
-		/// </summary>
-		/// <param name="scheduleDefinition">Schedule definition</param>
-		/// <returns>The cron expression<returns>
-		public static string ScheduleDefinitionToCron(ScheduleDefinition scheduleDefinition)
-		{
-			var second = ConvertToCronString(scheduleDefinition.second);
-			var minute = ConvertToCronString(scheduleDefinition.minute);
-			var hour = ConvertToCronString(scheduleDefinition.hour);
-			var dayOfMonth = ConvertToCronString(scheduleDefinition.dayOfMonth);
-			var month = ConvertToCronString(scheduleDefinition.month);
-			var dayOfWeek = ConvertToCronString(scheduleDefinition.dayOfWeek);
-			var year = ConvertToCronString(scheduleDefinition.year);
-
-			var expression = $"{second} {minute} {hour} {dayOfMonth} {month} {dayOfWeek} {year}";
-			return expression;
-		}
-
-		public static string ConvertToCronString(IReadOnlyList<string> part)
-		{
-			if (part.Contains("*") && part.Count == 1)
-				return "*";
-
-			var outputParts = new List<string>();
-			var currentRange = new List<int>();
-			int? lastNumber = null;
-
-			void AddCurrentRangeToOutput(string partValue = null)
-			{
-				if (currentRange.Count == 0)
-					return;
-
-				currentRange.Sort();
-				int start = currentRange[0];
-				int end = currentRange[^1];
-
-				string result = (start == end) ? $"{start}" : $"{start}-{end}";
-				if (partValue != null)
-				{
-					result += partValue;
-				}
-
-				outputParts.Add(result);
-				currentRange.Clear();
-				lastNumber = null;
-			}
-
-			foreach (var item in part)
-			{
-				if (item.StartsWith("/"))
-				{
-					AddCurrentRangeToOutput(item);
-				}
-				else if (int.TryParse(item, out int num))
-				{
-					if (lastNumber.HasValue && num != lastNumber.Value + 1)
-					{
-						AddCurrentRangeToOutput();
-					}
-
-					currentRange.Add(num);
-					lastNumber = num;
-				}
-			}
-
-			AddCurrentRangeToOutput();
-			return string.Join(",", outputParts);
 		}
 
 		/// <summary>
@@ -810,12 +721,20 @@ namespace Beamable.CronExpression
 				string end = ValidateStep(range[1], out string finalStep);
 				
 				var from = int.Parse(start);
-				
 				var to = int.Parse(end);
-
-				for (int i = from; i <= to; i++)
+				if (from <= to)
 				{
-					finalList.Add($"{i}");
+					for (int i = from; i <= to; i++)
+					{
+						finalList.Add($"{i}");
+					}
+				}
+				else
+				{
+					for (int i = from; i >= to; i--)
+					{
+						finalList.Add($"{i}");
+					}
 				}
 
 				if (!string.IsNullOrEmpty(finalStep))
