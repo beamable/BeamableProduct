@@ -33,6 +33,15 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private const string PROMISE_BASE_CLASS_FULLNAME = "Beamable.Common.PromiseBase";
 	private static readonly string LibraryGeneratedPath = Path.Combine("Library", "BeamableEditor", "GeneratedProjects");
 
+	public static readonly List<string> AllowedGenericTypes = new()
+	{
+		DICTIONARY_CLASS_FULLNAME,
+		LIST_CLASS_FULLNAME,
+		TASK_CLASS_FULLNAME,
+		PROMISE_BASE_CLASS_FULLNAME,
+		"Beamable.Common.Content.ContentRef"
+	};
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
 		ImmutableArray.Create(Diagnostics.BeamVerboseDescriptor, Diagnostics.BeamExceptionDescriptor,
 			Diagnostics.Srv.InvalidAsyncVoidCallableMethod, Diagnostics.Srv.MultipleMicroserviceClassesDetected,
@@ -41,11 +50,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.CallableMethodTypeIsNested, Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested,
 			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
-			Diagnostics.Srv.NullableFieldsInSerializableTypes, Diagnostics.Srv.InvalidContentObject,
+			Diagnostics.Srv.NullableTypeFoundInMicroservice, Diagnostics.Srv.InvalidContentObject,
 			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
 			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, 
 			Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, 
-			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList);
+			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList, Diagnostics.Srv.InvalidGenericTypeOnMicroservice);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -424,6 +433,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			TASK_CLASS_FULLNAME,
 			"System.Guid",
 			LIST_CLASS_FULLNAME,
+			DICTIONARY_CLASS_FULLNAME,
 		};
 
 		var allTypes = symbol.GetAllBaseTypes();
@@ -441,8 +451,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			returnLocation, 
 			context.Compilation));
 		
+		bool isNullable = methodSymbolReturnType.NullableAnnotation == NullableAnnotation.Annotated || methodSymbolReturnType.SpecialType == SpecialType.System_Nullable_T;
+		if (isNullable)
+		{
+			var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, returnLocation, $"{methodSymbol.Name} return", methodSymbolReturnType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));
+			context.ReportDiagnostic(diagnostic);
+			return;
+		}
+		
 		if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, true, 
-			    methodSymbol.Name, methodSymbolReturnType, returnLocation))
+			    methodSymbol.Name, methodSymbol.Name, methodSymbolReturnType, returnLocation))
 		{
 			return;
 		}
@@ -465,8 +483,16 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				parameterLocation, 
 				context.Compilation));
 			
+			bool isNullable = parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated || parameterSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
+			if (isNullable)
+			{
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, parameterLocation, $"parameter {parameterSymbol.Name} in {methodSymbol.Name}", parameterSymbol.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));
+				context.ReportDiagnostic(diagnostic);
+				continue;
+			}
+			
 			if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, false, 
-				    parameterSymbol.Name, parameterSymbol.Type, parameterLocation))
+				    parameterSymbol.Name, methodSymbol.Name, parameterSymbol.Type, parameterLocation))
 			{
 				continue;
 			}
@@ -624,7 +650,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private static void ValidateMembersInSymbol(Compilation compilation, Action<Diagnostic> reportDiagnostic,
 		ITypeSymbol typeSymbol, bool checkBeamGenAttr = false, Location fallbackLocation = null, HashSet<string> processedTypes = null)
 	{
-
 		processedTypes ??= new HashSet<string>();
 		processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
 		
@@ -709,6 +734,38 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 			Location fieldLocation = Diagnostics.GetValidLocation(fieldSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 			
+			var allBaseTypes = fieldSymbol.Type.GetAllBaseTypes(false);
+			string allBaseTypesString = string.Join(", ", allBaseTypes);
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateMembersInSymbol), 
+				$"{typeSymbol.Name} - Field {fieldSymbol.Name} base types: {allBaseTypesString}", 
+				fallbackLocation, 
+				compilation));
+			bool hasDictOrListBaseType = false;
+			foreach (string baseType in allBaseTypes)
+			{
+				if (baseType.StartsWith(DICTIONARY_CLASS_FULLNAME))
+				{
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
+					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+					hasDictOrListBaseType = true;
+					break;
+				}
+
+				if (baseType.StartsWith(LIST_CLASS_FULLNAME))
+				{
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
+					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+					hasDictOrListBaseType = true;
+					break;
+				}
+			}
+			
+			if(hasDictOrListBaseType)
+				continue;
+			
+			bool isNullable = fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated || fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
+			
 			if (fieldSymbol.Type is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
 			{
 				string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
@@ -717,6 +774,14 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					$"{typeSymbol.Name} - Field {fieldSymbol.Name} type is {typeName}", 
 					fallbackLocation, 
 					compilation));
+				
+				
+				if(!isNullable && !AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
+				{
+					var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, fieldLocation, $"field {fieldSymbol.Name}", typeSymbol.Name);
+					reportDiagnostic.Invoke(genericTypeFoundDiagnostic);
+					continue;
+				}
 				
 				if (typeName.StartsWith(DICTIONARY_CLASS_FULLNAME))
 				{
@@ -730,32 +795,9 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					continue;
 				}
 			}
-			
-			var allBaseTypes = fieldSymbol.Type.GetAllBaseTypes(false);
-			string allBaseTypesString = string.Join(", ", allBaseTypes);
-			
-			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateMembersInSymbol), 
-            					$"{typeSymbol.Name} - Field {fieldSymbol.Name} base types: {allBaseTypesString}", 
-            					fallbackLocation, 
-            					compilation));
-			
-			foreach (string baseType in allBaseTypes)
-			{
-				if (baseType.StartsWith(DICTIONARY_CLASS_FULLNAME))
-				{
-					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
-					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
-				}
-				else if (baseType.StartsWith(LIST_CLASS_FULLNAME))
-				{
-					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
-					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
-				}
-			}
 
 			
 			bool isKnownType = IsKnownType(fieldSymbol.Type);
-			bool isNullable = fieldSymbol.NullableAnnotation == NullableAnnotation.Annotated || fieldSymbol.Type.SpecialType == SpecialType.System_Nullable_T;
 			
 			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateMembersInSymbol),
 				$"{typeSymbol.Name} - Field {fieldSymbol.Name}, isKnownType {isKnownType}, isNullable {isNullable}, needToCheckBeamGen {checkBeamGenAttr}, location {fieldLocation.GetLineSpan().ToString()}", 
@@ -768,7 +810,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			// Validate if Field is nullable, code gen do not support it
 			if (isNullable)
 			{
-				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableFieldsInSerializableTypes, fieldLocation, typeSymbol.Name, fieldSymbol.Name);
+				var diagnostic = Diagnostic.Create(Diagnostics.Srv.NullableTypeFoundInMicroservice, fieldLocation, typeSymbol.Name, fieldSymbol.Name);
 				reportDiagnostic.Invoke(diagnostic);
 				continue;
 			}
@@ -819,12 +861,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	private static void ValidateContentObjectType(Action<Diagnostic> reportDiagnostic, ITypeSymbol symbol, Location location, string analyseReference)
 	{
-		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
-		{
-			ValidateContentObjectType(reportDiagnostic, arrayTypeSymbol.ElementType, location, analyseReference);
-			return;
-		}
-		
 		var allTypesFromGeneric = FindAllFromType(symbol, typeof(ContentObject).FullName);
 		
 		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
@@ -858,6 +894,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 		}
 		
+		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
+		{
+			if(processedTypes.Contains(arrayTypeSymbol.ElementType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+				return allTypes;
+			allTypes.AddRange(FindAllFromType(arrayTypeSymbol.ElementType, typeString, symbol, processedTypes));
+		}
+		
 		return allTypes;
 	}
 
@@ -868,7 +911,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		       typeSymbol.NullableAnnotation is NullableAnnotation.Annotated;
 	}
 	
-	private static bool ValidateListAndDictionaryDeclarationTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, string reference,
+	private static bool ValidateListAndDictionaryDeclarationTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, string reference, string methodName,
 		ITypeSymbol typeSymbol, Location location, HashSet<string> processedTypes = null)
 	{
 		
@@ -876,31 +919,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
 		
 		string messageParam = isReturnType ? $"{reference} return" : $"parameter {reference}";
-		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
-		{
-			string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-			if (typeName.StartsWith(DICTIONARY_CLASS_FULLNAME))
-			{
-				var keyArgument = genericTypeSymbol.TypeArguments[0];
-				if (keyArgument.SpecialType != SpecialType.System_String)
-				{
-					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, 
-						location, messageParam, typeSymbol.Name);
-					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
-				}
-				ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], false, location);
-				return true;
-			}
-			foreach (ITypeSymbol typeMember in genericTypeSymbol.TypeArguments)
-			{
-				// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
-				if (processedTypes.Contains(typeMember.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-				{
-					continue;
-				}
-				ValidateListAndDictionaryDeclarationTypes(compilation, reportDiagnostic, isReturnType, reference, typeMember, location, processedTypes);
-			}
-		}
 		
 		var allBaseTypes = typeSymbol.GetAllBaseTypes(false);
 		string allBaseTypesString = string.Join(", ", allBaseTypes);
@@ -916,11 +934,40 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			{
 				var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, location, messageParam, typeSymbol.Name);
 				reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+				return true;
 			}
-			else if (baseType.StartsWith(LIST_CLASS_FULLNAME))
+
+			if (baseType.StartsWith(LIST_CLASS_FULLNAME))
 			{
 				var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList, location, messageParam, typeSymbol.Name);
 				reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+				return true;
+			}
+		}
+		
+		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
+		{
+			string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+			
+			
+			if(!AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
+			{
+				var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, location, messageParam, methodName);
+				reportDiagnostic.Invoke(genericTypeFoundDiagnostic);
+				return true;
+			}
+			
+			if (typeName.StartsWith(DICTIONARY_CLASS_FULLNAME))
+			{
+				var keyArgument = genericTypeSymbol.TypeArguments[0];
+				if (keyArgument.SpecialType != SpecialType.System_String)
+				{
+					var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, 
+						location, messageParam, typeSymbol.Name);
+					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
+				}
+				ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], false, location);
+				return true;
 			}
 		}
 

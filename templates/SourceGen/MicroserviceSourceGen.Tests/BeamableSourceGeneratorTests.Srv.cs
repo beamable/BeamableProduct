@@ -614,17 +614,17 @@ public class DTO_BeamGenSchemaAttribute
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
 				.WithLocation(0)
 				.WithArguments("DTO_AsyncTest", "nullableInt"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
 				.WithLocation(1)
 				.WithArguments("DTO_Test", "nullableBool"));
 		
 		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.NullableFieldsInSerializableTypes)
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute", "nullableLong"));
 		
@@ -792,7 +792,7 @@ namespace Unity.Beamable.Customer.Common
 	{
 		public int a;
 		public int b;
-		public Optional<AddSalmonData> data;
+		public Optional<AddSalmonData> {|#0:data|};
 	}
 
 	[Serializable]
@@ -843,14 +843,14 @@ using Unity.Beamable.Customer.Common;
 			return data.a + data.b;
 		}
 		
-		[Callable, SwaggerCategory("""")]
-		public int AddSalmonOptional(int a, int b, DateTime t, Guid? guid = null, int? c = null, DateTime? d = null, AddSalmonData? g = null, string? h = null)
+		[Callable]
+		public int AddSalmonOptional(int a, int b, DateTime t, Guid? {|#1:guid|} = null, int? {|#2:c|} = null, DateTime? {|#3:d|} = null, AddSalmonData? {|#4:g|} = null, string? {|#5:h|} = null)
 		{
 			return a + b + ( c ?? 0);
 		}
 		
 		[ClientCallable]
-		public int AddSalmonOptionalStruct(OptionalInt a, Optional<TempStructOptional> b, TempStructOptional c = default)
+		public int AddSalmonOptionalStruct(OptionalInt a, Optional<TempStructOptional> {|#6:b|}, TempStructOptional c = default)
 		{
 			return a + b.Value.a + c.a + c.b;
 		}
@@ -917,6 +917,41 @@ using Unity.Beamable.Customer.Common;
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		PrepareForRun(ctx, cfg, UserCode);
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
+				.WithLocation(0)
+				.WithArguments("field data", "TempStructOptional"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
+				.WithLocation(1)
+				.WithArguments("parameter guid in AddSalmonOptional", "Guid?"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
+				.WithLocation(2)
+				.WithArguments("parameter c in AddSalmonOptional", "int?"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
+				.WithLocation(3)
+				.WithArguments("parameter d in AddSalmonOptional", "DateTime?"));
+		
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
+				.WithLocation(4)
+				.WithArguments("parameter g in AddSalmonOptional", "AddSalmonData?"));
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.NullableTypeFoundInMicroservice)
+				.WithLocation(5)
+				.WithArguments("parameter h in AddSalmonOptional", "string?"));
+
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
+				.WithLocation(6)
+				.WithArguments("parameter b", "AddSalmonOptionalStruct"));
 		
 		await ctx.RunAsync();
 	}
