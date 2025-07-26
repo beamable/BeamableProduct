@@ -136,7 +136,7 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 
 			var metricExporterOptions = new OtlpExporterOptions
 			{
-				Endpoint = new Uri($"http://127.0.0.1:4355/v1/metrics"), //TODO get this in a nicer way
+				Endpoint = new Uri($"http://127.0.0.1:4355/v1/metrics"), //TODO use the correct values here
 				Protocol = OtlpExportProtocol.HttpProtobuf,
 			};
 
@@ -144,19 +144,21 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 				metricExporterOptions);
 
 			var metricSuccess = otlpMetricExporter.Export(metricsBatch);
+			otlpMetricExporter.ForceFlush();;
 
 			if (metricSuccess == ExportResult.Success)
 			{
-				//Delete all traces files
-				foreach (var file in allTracesFiles)
+				//Delete all metrics files
+				foreach (var file in allMetricsFiles)
 				{
 					File.Delete(file);
 				}
 			}
 			else
 			{
-				throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data.");
+				throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data.");
 			}
+
 		}
 
 		return Task.CompletedTask;

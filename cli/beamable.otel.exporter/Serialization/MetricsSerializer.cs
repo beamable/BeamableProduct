@@ -1,7 +1,7 @@
+using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using System.Diagnostics.Metrics;
 using System.Reflection;
-using System.Runtime.Serialization;
 
 namespace beamable.otel.exporter.Serialization;
 
@@ -15,6 +15,8 @@ public class SerializableMetric
 	public string MeterVersion { get; set; }
 	public string AggregationType { get; set; } = default!;
 	public string Temporality { get; set; }
+	public MetricType MetricType { get; set; }
+	public bool IsLongValue { get; set; }
 
 	public List<SerializableMetricPoint> Points { get; set; } = new();
 }
@@ -22,10 +24,10 @@ public class SerializableMetric
 [Serializable]
 public class SerializableMetricPoint
 {
-	public DateTime StartTimeUtc { get; set; } //TODO need to push this back to be a DateTimeOffset
+	public DateTime StartTimeUtc { get; set; }
+	public TimeSpan StartTimeOffset { get; set; }
 	public DateTime EndTimeUtc { get; set; }
-
-	public MetricType MetricType { get; set; }
+	public TimeSpan EndTimeOffset { get; set; }
 
 	public double DoubleValue { get; set; }
 	public long LongValue { get; set; }
@@ -35,9 +37,18 @@ public class SerializableMetricPoint
 
 public static class MetricsSerializer
 {
+	// These variables are copies of the default values existing in the Otel source code, we don't use this for our metrics, so it's here just to avoid errors
+	static readonly double[] DefaultHistogramBoundsLongSeconds = new double[] { 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300 };
+	private const int DefaultExponentialHistogramMaxBuckets = 160;
+	private const int DefaultExponentialHistogramMaxScale = 20;
+
 	private static readonly ConstructorInfo? _metricCtor;
 	private static readonly ConstructorInfo? _identityCtor;
 	private static readonly ConstructorInfo? _aggStoreCtor;
+	private static readonly ConstructorInfo? _tagsCollCtor;
+	private static readonly ConstructorInfo? _metricPointCtor;
+
+	private static readonly Type _aggregatorStoreType;
 
 	static MetricsSerializer()
 	{
@@ -68,13 +79,22 @@ public static class MetricsSerializer
 		}
 
 		var asm = typeof(Metric).Assembly;
-		var aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore");
-		_aggStoreCtor = aggregatorStoreType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+		_aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore");
+		_aggStoreCtor = _aggregatorStoreType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
 			.FirstOrDefault(c => c.GetParameters().Length >= 4);
 
 		if (_aggStoreCtor == null)
 		{
 			throw new InvalidOperationException("Constructor of type=[AggregatorStore] not found");
+		}
+
+		var mpType = asm.GetType("OpenTelemetry.Metrics.MetricPoint");
+		_metricPointCtor = mpType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+			.FirstOrDefault(c => c.GetParameters().Length >= 7);
+
+		if (_metricPointCtor == null)
+		{
+			throw new InvalidOperationException("Constructor of type=[MetricPoint] not found");
 		}
 	}
 
@@ -87,7 +107,8 @@ public static class MetricsSerializer
 			Unit = metric.Unit,
 			MeterName = metric.MeterName,
 			MeterVersion = metric.MeterVersion,
-			Temporality = metric.Temporality.ToString()
+			Temporality = metric.Temporality.ToString(),
+			MetricType = metric.MetricType
 		};
 
 		var points = metric.GetMetricPoints();
@@ -103,20 +124,24 @@ public static class MetricsSerializer
 			var pointData = new SerializableMetricPoint()
 			{
 				StartTimeUtc = point.StartTime.ToUniversalTime().UtcDateTime,
+				StartTimeOffset = point.StartTime.ToUniversalTime().Offset,
 				EndTimeUtc = point.EndTime.ToUniversalTime().UtcDateTime,
-				MetricType = metric.MetricType,
+				EndTimeOffset = point.EndTime.ToUniversalTime().Offset,
 				Tags = tags
 			};
 
-			if (metric.MetricType == MetricType.DoubleGauge || metric.MetricType == MetricType.DoubleSum)
+			if (metric.MetricType == MetricType.DoubleGauge || metric.MetricType == MetricType.DoubleSum || metric.MetricType == MetricType.DoubleSumNonMonotonic)
 			{
 				pointData.DoubleValue = point.GetSumDouble();
-			}else if (metric.MetricType == MetricType.LongGauge || metric.MetricType == MetricType.LongSum)
+				metricData.IsLongValue = false;
+			}else if (metric.MetricType == MetricType.LongGauge || metric.MetricType == MetricType.LongSum || metric.MetricType == MetricType.LongSumNonMonotonic)
 			{
 				pointData.LongValue = point.GetSumLong();
-			}else if (metric.MetricType == MetricType.Histogram)
+				metricData.IsLongValue = true;
+			}else
 			{
 				pointData.DoubleValue = point.GetHistogramSum();
+				metricData.IsLongValue = false;
 			}
 
 			metricData.Points.Add(pointData);
@@ -147,92 +172,12 @@ public static class MetricsSerializer
 		var aggregationType = ParseAggregationType(serializedMetric.AggregationType);
 		var temporalityType = ParseTemporalityType(serializedMetric.Temporality);
 
-		var meter = new Meter(metricName, serializedMetric.MeterVersion);
-		var counter = meter.CreateCounter<long>(metricName, unit, description);
-		object identity = _identityCtor?.Invoke(new object[] { counter, null });
+		object identity = GetIdentity(serializedMetric.MetricType, serializedMetric.AggregationType,
+			serializedMetric.MeterVersion, metricName, unit, description, serializedMetric.IsLongValue);
+
 
 		List<MetricPoint> metricsPoints = new List<MetricPoint>();
 		Type mpType = typeof(MetricPoint);
-
-		for (int i = 0; i < serializedMetric.Points.Count; i++)
-		{
-			var point = new MetricPoint();
-
-			var aggField = mpType.GetField("aggType", BindingFlags.NonPublic | BindingFlags.Instance);
-			aggField?.SetValueDirect(__makeref(point), aggregationType);
-
-			var startTimeField = mpType.GetField("startTime", BindingFlags.NonPublic | BindingFlags.Instance);
-			startTimeField?.SetValueDirect(__makeref(point), serializedMetric.Points[i].StartTimeUtc);
-
-			var endTimeField = mpType.GetField("endTime", BindingFlags.NonPublic | BindingFlags.Instance);
-			endTimeField?.SetValueDirect(__makeref(point), serializedMetric.Points[i].EndTimeUtc);
-
-			var runningValueField = mpType.GetField("runningValue", BindingFlags.NonPublic | BindingFlags.Instance);
-
-			if (runningValueField == null)
-			{
-				throw new Exception("Cannot find runningValue field");
-			}
-
-			Type valueStorageType = runningValueField.FieldType;
-
-			object? runningValueInstance = Activator.CreateInstance(valueStorageType);
-
-			if (runningValueInstance == null)
-			{
-				throw new Exception("Could not create MetricPointValueStorage");
-			}
-
-			var metricType = serializedMetric.Points[i].MetricType;
-			if (metricType == MetricType.DoubleGauge || metricType == MetricType.DoubleSum || metricType == MetricType.Histogram)
-			{
-				FieldInfo sumDoubleField = valueStorageType.GetField("AsDouble", BindingFlags.Public | BindingFlags.Instance);
-
-				if (sumDoubleField == null)
-				{
-					throw new Exception("Could not set AsDouble field");
-				}
-
-				sumDoubleField.SetValue(runningValueInstance, serializedMetric.Points[i].DoubleValue);
-			}
-			else if (metricType == MetricType.LongGauge || metricType == MetricType.LongSum)
-			{
-				FieldInfo sumLongField = valueStorageType.GetField("AsLong", BindingFlags.Public | BindingFlags.Instance);
-
-				if (sumLongField == null)
-				{
-					throw new Exception("Could not set AsDouble field");
-				}
-
-				sumLongField.SetValue(runningValueInstance, serializedMetric.Points[i].LongValue);
-			}
-
-			runningValueField.SetValue(point, runningValueInstance);
-
-			metricsPoints.Add(point);
-		}
-
-		var fields = new object[] {
-			identity,
-			temporalityType,
-			2000, //TODO not sure what this number means, using random one for now
-			null,
-			null
-		};
-
-		var metric = (Metric)_metricCtor?.Invoke(fields)!;
-
-		var meterNameProp = metric.GetType().GetProperty("MeterName", BindingFlags.NonPublic | BindingFlags.Instance);
-		if (meterNameProp != null && meterNameProp.CanWrite)
-		{
-			meterNameProp.SetValue(metric, serializedMetric.MeterName);
-		}
-
-		var meterVersionProp = metric.GetType().GetProperty("MeterVersion", BindingFlags.NonPublic | BindingFlags.Instance);
-		if (meterVersionProp != null && meterVersionProp.CanWrite)
-		{
-			meterVersionProp.SetValue(metric, serializedMetric.MeterVersion);
-		}
 
 		var aggregatorStore = _aggStoreCtor?.Invoke(new object[] {
 			identity,
@@ -248,8 +193,49 @@ public static class MetricsSerializer
 			throw new Exception("Could not create a new AggregatorStore");
 		}
 
-		var aggregatorStoreType = aggregatorStore?.GetType();
-		var metricPointsField = aggregatorStoreType?.GetField("metricPoints", BindingFlags.NonPublic | BindingFlags.Instance);
+		var startTimeOffset = new DateTimeOffset();
+		var endTimeOffset = new DateTimeOffset();
+
+		for (int i = 0; i < serializedMetric.Points.Count; i++)
+		{
+			KeyValuePair<string, object?>[]? tags = serializedMetric.Points[i].Tags.Select(kv => new KeyValuePair<string, object?>(kv.Key, kv.Value)).ToArray();
+			var mpFields = new object[] {
+				aggregatorStore,
+				aggregationType,
+				tags,
+				DefaultHistogramBoundsLongSeconds,
+				DefaultExponentialHistogramMaxBuckets,
+				DefaultExponentialHistogramMaxScale,
+				null
+			};
+			var point = (MetricPoint)_metricPointCtor?.Invoke(mpFields);
+
+			MethodInfo? updateMethodInfo;
+
+			if (serializedMetric.IsLongValue)
+			{
+				updateMethodInfo = mpType.GetMethod("Update", new Type[] { typeof(long) });
+				updateMethodInfo?.Invoke(point, new object[] { serializedMetric.Points[i].LongValue });
+			}
+			else
+			{
+				updateMethodInfo = mpType.GetMethod("Update", new Type[] { typeof(double) });
+				updateMethodInfo?.Invoke(point, new object[] { serializedMetric.Points[i].DoubleValue });
+			}
+
+			startTimeOffset = new DateTimeOffset(serializedMetric.Points[i].StartTimeUtc,
+				serializedMetric.Points[i].StartTimeOffset);
+
+			endTimeOffset = new DateTimeOffset(serializedMetric.Points[i].EndTimeUtc,
+				serializedMetric.Points[i].EndTimeOffset);
+
+			var aggregatorStoreField = mpType.GetField("aggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance);
+			aggregatorStoreField.SetValueDirect(__makeref(point), aggregatorStore);
+
+			metricsPoints.Add(point);
+		}
+
+		var metricPointsField = _aggregatorStoreType.GetField("metricPoints", BindingFlags.NonPublic | BindingFlags.Instance);
 
 		if (metricPointsField == null)
 		{
@@ -257,15 +243,44 @@ public static class MetricsSerializer
 		}
 
 		var metricPointsArray = (Array)metricPointsField.GetValue(aggregatorStore);
+		int[] currentMetricPointBatch = new int[metricPointsArray.Length];
 
-		for (int i = 0; i < metricsPoints.Count; i++)
+		for (int i = 2; i < metricsPoints.Count + 2; i++)
 		{
-			var point = metricsPoints[i];
+			var point = metricsPoints[i-2];
 
 			metricPointsArray.SetValue(point, i);
+			currentMetricPointBatch[i - 2] = i;
 		}
 
-		metricPointsField.SetValue(aggregatorStore, metricPointsArray);
+		metricPointsField.SetValueDirect(__makeref(aggregatorStore), metricPointsArray);
+
+		var batchSizeField = _aggregatorStoreType.GetField("batchSize", BindingFlags.NonPublic | BindingFlags.Instance);
+		batchSizeField.SetValueDirect(__makeref(aggregatorStore), serializedMetric.Points.Count);
+
+		var currentMetricPointBatchField = _aggregatorStoreType.GetField("currentMetricPointBatch", BindingFlags.NonPublic | BindingFlags.Instance);
+		currentMetricPointBatchField.SetValueDirect(__makeref(aggregatorStore), currentMetricPointBatch);
+
+		var startTimeProperty = _aggregatorStoreType.GetProperty("StartTimeExclusive", BindingFlags.NonPublic | BindingFlags.Instance);
+		startTimeProperty.SetValue(aggregatorStore, startTimeOffset);
+
+		var endTimeProperty = _aggregatorStoreType.GetProperty("EndTimeInclusive", BindingFlags.NonPublic | BindingFlags.Instance);
+		endTimeProperty.SetValue(aggregatorStore, endTimeOffset);
+
+		var fields = new object[] {
+			identity,
+			temporalityType,
+			2000,
+			null,
+			null
+		};
+
+		var metric = (Metric)_metricCtor?.Invoke(fields)!;
+
+		var aggregatorField =
+			metric.GetType().GetField("AggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance);
+		aggregatorField.SetValue(metric, aggregatorStore);
+
 
 		return metric;
 	}
@@ -296,6 +311,66 @@ public static class MetricsSerializer
 		}
 
 		return Enum.Parse(temporalityEnum, serializedTemporalityType);
+	}
+
+	private static object GetIdentity(MetricType type, string aggType, string meterVersion, string metricName, string unit, string description, bool isLong)
+	{
+		object instrumentIdentity;
+
+		var meter = new Meter(metricName, meterVersion);
+
+		switch ((type, aggType))
+		{
+			case (MetricType.LongSum, "LongSumIncomingDelta"):
+			case (MetricType.LongSum, "LongSumIncomingCumulative"):
+				Counter<long> counterLong = meter.CreateCounter<long>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { counterLong, null });
+				break;
+			case (MetricType.DoubleSum, "DoubleSumIncomingDelta"):
+			case (MetricType.DoubleSum, "DoubleSumIncomingCumulative"):
+				Counter<double> counterDouble = meter.CreateCounter<double>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { counterDouble, null });
+				break;
+			case (MetricType.LongSumNonMonotonic, "LongSumIncomingCumulative"):
+			case (MetricType.LongSumNonMonotonic, "LongSumIncomingDelta"):
+				UpDownCounter<long> counterUpDown = meter.CreateUpDownCounter<long>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { counterUpDown, null });
+				break;
+			case (MetricType.DoubleSumNonMonotonic, "DoubleSumIncomingDelta"):
+			case (MetricType.DoubleSumNonMonotonic, "DoubleSumIncomingCumulative"):
+				UpDownCounter<double> counterUpDownDouble = meter.CreateUpDownCounter<double>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { counterUpDownDouble, null });
+				break;
+			case (MetricType.DoubleGauge, "DoubleGauge"):
+				Gauge<double> gaugeDouble = meter.CreateGauge<double>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { gaugeDouble, null });
+				break;
+			case (MetricType.LongGauge, "LongGauge"):
+				Gauge<long> gaugeLong = meter.CreateGauge<long>(metricName, unit, description);
+				instrumentIdentity = _identityCtor?.Invoke(new object[] { gaugeLong, null });
+				break;
+			default:
+				if (isLong)
+				{
+					Histogram<long> histogramLong = meter.CreateHistogram<long>(metricName, unit, description);
+					instrumentIdentity = _identityCtor?.Invoke(new object[] { histogramLong, null });
+				}
+				else
+				{
+					Histogram<double> histogramDouble = meter.CreateHistogram<double>(metricName, unit, description);
+					instrumentIdentity = _identityCtor?.Invoke(new object[] { histogramDouble, null });
+				}
+
+				break;
+		}
+
+		if (instrumentIdentity == null)
+		{
+			throw new Exception("Couldn't create instrument identity");
+		}
+
+
+		return instrumentIdentity;
 	}
 
 }
