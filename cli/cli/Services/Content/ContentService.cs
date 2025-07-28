@@ -704,8 +704,10 @@ public class ContentService
 		}
 
 		// Now, we compute our status against the latest manifest and get ONLY the files that weren't deleted (these are the ones that will be included in the new manifest).
+		// We need to send all Up To Date because the new manifest will replace the old one, and it needs to have all contents
 		var changedContents = localAgainstLatest.ContentFiles
-			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted))
+			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted)).ToArray();
+		var changedContentDefinitions = changedContents
 			.Select(c =>
 			{
 				// Build the properties from the local data.
@@ -749,14 +751,14 @@ public class ContentService
 			}).ToArray();
 
 		
-		var batches = changedContents.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
+		var batches = changedContentDefinitions.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
 		// Then we save them to S3
 		Task<SaveContentResponse>[] saveContentRequestsTasks = batches.Select(async contentDefinitions =>
 			{
 				var contentProgressUpdateData = new ContentProgressUpdateData()
 				{
 					contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
-					totalItems = changedContents.Length,
+					totalItems = changedContentDefinitions.Length,
 				};
 			
 				var saveRequest = new SaveContentRequest() { content = contentDefinitions };
@@ -829,13 +831,27 @@ public class ContentService
 		// Update the local reference manifest
 		try
 		{
-			_ = await _contentApi.PostManifest(saveManifestRequest);
+			var postRequestResult = await _contentApi.PostManifest(saveManifestRequest);
+			
+			// Make published contents manifest references synchronized with remote.
+			string contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+			Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+			var saveTasks = new List<Task>();
+			foreach (ContentFile c in changedContents)
+			{
+				ContentFile contentFile = c;
+				contentFile.FetchedFromManifestUid = postRequestResult.uid;
+				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
+			}
+
+			await Task.WhenAll(saveTasks);
 		}
 		catch (RequesterException e)
 		{
 			Log.Information(e.RequestError.error);
 			throw;
 		}
+		
 	}
 
 	/// <summary>
