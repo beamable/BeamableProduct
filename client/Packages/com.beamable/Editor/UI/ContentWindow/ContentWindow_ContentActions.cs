@@ -143,7 +143,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					foreach (string error in errorList)
 					{
-						var itemRect = rectController.ReserveSingleLine();
+						var errorContent = new GUIContent(error);
+						float itemHeight = redStyle.CalcHeight(errorContent, rectController.rect.width - BASE_PADDING);
+						var itemRect = rectController.ReserveHeight(itemHeight);
 						EditorGUILayout.BeginHorizontal();
 						{
 							itemRect.xMin = iconRect.xMax;
@@ -153,7 +155,7 @@ namespace Beamable.Editor.UI.ContentWindow
 							EditorGUI.DrawRect(idValidationRect, Color.red);
 							itemRectController.ReserveWidth(BASE_PADDING);
 							
-							EditorGUI.LabelField(itemRectController.rect, error, redStyle);
+							EditorGUI.LabelField(itemRectController.rect, errorContent, redStyle);
 						}
 						EditorGUILayout.EndHorizontal();
 						rectController.ReserveHeight(EditorGUIUtility.standardVerticalSpacing);

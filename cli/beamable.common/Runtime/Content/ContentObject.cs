@@ -579,10 +579,9 @@ namespace Beamable.Common.Content
 
 					foreach (var attribute in field.GetCustomAttributes<ValidationAttribute>())
 					{
+						var wrapper = new ValidationFieldWrapper(field, obj);
 						try
 						{
-							var wrapper = new ValidationFieldWrapper(field, obj);
-
 							if (typeof(IList).IsAssignableFrom(field.FieldType))
 							{
 								var value = field.GetValue(obj) as IList;
@@ -599,7 +598,20 @@ namespace Beamable.Common.Content
 						}
 						catch (ContentValidationException e)
 						{
-							errors.Add(e);
+							string[] errorMessages = e.Message.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None)
+								.Where(item => !string.IsNullOrEmpty(item)).ToArray();
+							if (errorMessages.Length > 1)
+							{
+								foreach (string errorMessage in errorMessages)
+								{
+									errors.Add(new ContentValidationException(this, wrapper, errorMessage));
+								}
+							}
+							else
+							{
+								errors.Add(e);	
+							}
+							
 						}
 					}
 

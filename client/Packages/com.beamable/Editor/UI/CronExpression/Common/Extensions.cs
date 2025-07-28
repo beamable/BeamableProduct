@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Common.CronExpression;
+using System.Collections.Generic;
 
 namespace Beamable.CronExpression
 {
