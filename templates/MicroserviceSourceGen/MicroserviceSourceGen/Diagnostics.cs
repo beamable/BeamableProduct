@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Microservice.SourceGen.Analyzers;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
 using System;
@@ -97,7 +98,7 @@ public static class Diagnostics
 		public const string STATIC_FIELD_FOUND_IN_MICROSERVICE_ID = "BEAM_SRV_0011";
 		public const string MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID = "BEAM_SRV_0012";
 		public const string PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0013";
-		public const string NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0014";
+		public const string NULLABLE_TYPE_FOUND_ID = "BEAM_SRV_0014";
 		public const string INVALID_CONTENT_OBJECT_ID = "BEAM_SRV_0015";
 		public const string TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID = "BEAM_SRV_0016";
 		public const string FIELD_DICTIONARY_IS_INVALID = "BEAM_SRV_0017";
@@ -106,6 +107,7 @@ public static class Diagnostics
 		public const string CALLABLE_METHOD_DECLARATION_IS_INVALID_DICTIONARY = "BEAM_SRV_0020";
 		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0021";
 		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0022";
+		public const string INVALID_GENERIC_TYPE_ID = "BEAM_SRV_0023";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -219,10 +221,10 @@ public static class Diagnostics
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#property-found-in-serializable-type",
 				isEnabledByDefault: true);
 		
-		public static readonly DiagnosticDescriptor NullableFieldsInSerializableTypes
-			= new(NULLABLE_FIELDS_IN_SERIALIZABLE_TYPES_ID,
-				$"Nullable fields are not supported in serializable types",
-				$"Nullable fields are not supported in serializable types. On {{0}} change field '{{1}}' to use {nameof(Optional)}<T> instead of a nullable type.",
+		public static readonly DiagnosticDescriptor NullableTypeFoundInMicroservice
+			= new(NULLABLE_TYPE_FOUND_ID,
+				$"Nullables on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported",
+				$"Nullables on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. On {{0}} change it's type to use an {nameof(Optional)} type instead of '{{1}}'.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#nullable-field-in-serializable-type",
@@ -298,6 +300,15 @@ public static class Diagnostics
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-declaration-type-is-subtype-from-list",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor InvalidGenericTypeOnMicroservice
+			= new(INVALID_GENERIC_TYPE_ID,
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported",
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. The only generic types allowed are: {string.Join(", ", ServicesAnalyzer.AllowedGenericTypes)}. Please change {{0}} in {{1}} to a non-generic type.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-generic-type-on-microservice",
 				isEnabledByDefault: true);
 	}
 
