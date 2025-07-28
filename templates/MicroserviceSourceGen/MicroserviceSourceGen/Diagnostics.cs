@@ -308,7 +308,7 @@ public static class Diagnostics
 				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. The only generic types allowed are: {string.Join(", ", ServicesAnalyzer.AllowedGenericTypes)}. Please change {{0}} in {{1}} to a non-generic type.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#todo",
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-generic-type-on-microservice",
 				isEnabledByDefault: true);
 	}
 

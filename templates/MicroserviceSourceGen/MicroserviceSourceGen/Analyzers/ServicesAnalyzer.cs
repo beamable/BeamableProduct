@@ -31,6 +31,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private const string LIST_CLASS_FULLNAME = "System.Collections.Generic.List";
 	private const string TASK_CLASS_FULLNAME = "System.Threading.Tasks.Task";
 	private const string PROMISE_BASE_CLASS_FULLNAME = "Beamable.Common.PromiseBase";
+	private const string BEAMABLE_COMMON_CONTENT_CONTENTREF = "Beamable.Common.Content.ContentRef";
 	private static readonly string LibraryGeneratedPath = Path.Combine("Library", "BeamableEditor", "GeneratedProjects");
 
 	public static readonly List<string> AllowedGenericTypes = new()
@@ -39,7 +40,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		LIST_CLASS_FULLNAME,
 		TASK_CLASS_FULLNAME,
 		PROMISE_BASE_CLASS_FULLNAME,
-		"Beamable.Common.Content.ContentRef"
+		BEAMABLE_COMMON_CONTENT_CONTENTREF
 	};
 
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
@@ -459,7 +460,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			return;
 		}
 		
-		if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, true, 
+		if (ValidateGenericTypes(context.Compilation, context.ReportDiagnostic, true, 
 			    methodSymbol.Name, methodSymbol.Name, methodSymbolReturnType, returnLocation))
 		{
 			return;
@@ -491,7 +492,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				continue;
 			}
 			
-			if (ValidateListAndDictionaryDeclarationTypes(context.Compilation, context.ReportDiagnostic, false, 
+			if (ValidateGenericTypes(context.Compilation, context.ReportDiagnostic, false, 
 				    parameterSymbol.Name, methodSymbol.Name, parameterSymbol.Type, parameterLocation))
 			{
 				continue;
@@ -794,6 +795,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], checkBeamGenAttr, fallbackLocation, processedTypes);
 					continue;
 				}
+				foreach (ITypeSymbol typeArgument in genericTypeSymbol.TypeArguments)
+				{
+					ValidateMembersInSymbol(compilation, reportDiagnostic, typeArgument, checkBeamGenAttr, fallbackLocation, processedTypes);
+				}
 			}
 
 			
@@ -865,7 +870,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		
 		foreach ((ITypeSymbol typeSymbol, ITypeSymbol parent) in allTypesFromGeneric)
 		{
-			if(parent != null && parent.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith("Beamable.Common.Content.ContentRef"))
+			if(parent != null && parent.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith(BEAMABLE_COMMON_CONTENT_CONTENTREF))
 				continue;
 			
 			var diagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidContentObject, location, analyseReference, typeSymbol.Name);
@@ -911,8 +916,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		       typeSymbol.NullableAnnotation is NullableAnnotation.Annotated;
 	}
 	
-	private static bool ValidateListAndDictionaryDeclarationTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, string reference, string methodName,
-		ITypeSymbol typeSymbol, Location location, HashSet<string> processedTypes = null)
+	private static bool ValidateGenericTypes(Compilation compilation, Action<Diagnostic> reportDiagnostic, bool isReturnType, 
+		string reference, string methodName, ITypeSymbol typeSymbol, Location location, HashSet<string> processedTypes = null)
 	{
 		
 		processedTypes ??= new HashSet<string>();
@@ -923,7 +928,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		var allBaseTypes = typeSymbol.GetAllBaseTypes(false);
 		string allBaseTypesString = string.Join(", ", allBaseTypes);
         			
-		reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateListAndDictionaryDeclarationTypes), 
+		reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateGenericTypes), 
 			$"Reference {reference} - IsReturn: {isReturnType}, has base types: {allBaseTypesString}", 
 			location, 
 			compilation));
@@ -966,8 +971,13 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 						location, messageParam, typeSymbol.Name);
 					reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 				}
-				ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], false, location);
+				ValidateGenericTypes(compilation, reportDiagnostic, isReturnType, reference, methodName, genericTypeSymbol.TypeArguments[1], location, processedTypes);
 				return true;
+			}
+			
+			foreach (ITypeSymbol typeArgument in genericTypeSymbol.TypeArguments)
+			{
+				ValidateGenericTypes(compilation, reportDiagnostic, isReturnType, reference, methodName, typeArgument, location, processedTypes);
 			}
 		}
 
