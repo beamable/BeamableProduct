@@ -704,6 +704,7 @@ public class ContentService
 		}
 
 		// Now, we compute our status against the latest manifest and get ONLY the files that weren't deleted (these are the ones that will be included in the new manifest).
+		// We need to send all Up To Date because the new manifest will replace the old one, and it needs to have all contents
 		var changedContents = localAgainstLatest.ContentFiles
 			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted)).ToArray();
 		var changedContentDefinitions = changedContents
@@ -834,6 +835,7 @@ public class ContentService
 			
 			// Make published contents manifest references synchronized with remote.
 			string contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+			Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
 			var saveTasks = new List<Task>();
 			foreach (ContentFile c in changedContents)
 			{
