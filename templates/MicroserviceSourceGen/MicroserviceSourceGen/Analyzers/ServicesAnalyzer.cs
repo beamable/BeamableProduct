@@ -755,7 +755,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				fallbackLocation, 
 				compilation));
 			bool hasDictOrListBaseType = false;
-			bool isMapOfString = fieldSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith(BEAMABLE_COMMON_CONTENT_MAPOFSTRING);
+ 			bool isMapOfString = fieldSymbol.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat).StartsWith(BEAMABLE_COMMON_CONTENT_MAPOFSTRING);
 			foreach (string baseType in allBaseTypes)
 			{
 				if (baseType.StartsWith(DICTIONARY_CLASS_FULLNAME) && !isMapOfString)
