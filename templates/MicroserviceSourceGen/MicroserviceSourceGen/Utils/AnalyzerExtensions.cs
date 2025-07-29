@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -25,6 +26,24 @@ namespace Beamable.Microservice.SourceGen.Utils
 				allTypes.Add(lastSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
 			}
 			return allTypes;
+		}
+
+		public static bool AnyBaseTypes(this ITypeSymbol symbol, Func<ITypeSymbol, bool> validation)
+		{
+			while (true)
+			{
+				if (validation.Invoke(symbol))
+				{
+					return true;
+				}
+
+				if (symbol.BaseType == null)
+				{
+					return false;
+				}
+
+				symbol = symbol.BaseType;
+			}
 		}
 
 		public static string GetDataString(this ImmutableArray<AttributeData> attributes)

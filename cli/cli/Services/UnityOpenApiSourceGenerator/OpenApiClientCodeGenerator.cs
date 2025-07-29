@@ -197,6 +197,7 @@ namespace Beamable.Server.Generator
 				}
 				
 				string methodName = path.Replace("/", string.Empty);
+				string pathName = path[0] == '/' ? path.Substring(1) : path;
 				if (item.Extensions.TryGetValue(COMPONENT_METHOD_NAME_KEY, out var methodNameExt) && methodNameExt is OpenApiString methodNameExtStr)
 				{
 					methodName = methodNameExtStr.Value;
@@ -236,7 +237,7 @@ namespace Beamable.Server.Generator
 							itemValue => itemValue.Value.GetEffective(document));
 					}
 					
-					AddCallableMethod(targetClass, methodName, parameters, responseType, addedParameters);
+					AddCallableMethod(targetClass, methodName, pathName, parameters, responseType, addedParameters);
 				}
 			}
 
@@ -314,7 +315,7 @@ namespace Beamable.Server.Generator
 			parameterClass.Members.Add(wrapper);
 		}
 
-		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName,
+		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName, string servicePath,
 			IDictionary<string, OpenApiSchema> parameters, OpenApiMediaType returnMediaType,
 			Dictionary<string, string> paramsTypeName)
 		{
@@ -374,8 +375,6 @@ namespace Beamable.Server.Generator
 
 			// Declaring a return statement for method ToString.
 			var returnStatement = new CodeMethodReturnStatement();
-
-			string servicePath = methodName;
 
 			// servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidentally stop out an existing service.
 
