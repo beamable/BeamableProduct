@@ -208,14 +208,30 @@ namespace Beamable.Editor.ContentService
 			entry.Tags = tags;
 			EntriesCache[contentId] = entry;
 
-			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+			if (tags.Length == 0)
 			{
-				manifestIds = GetSelectedManifestIdsCliOption(),
-				filterType = ContentFilterType.ExactIds,
-				filter = contentId,
-				tag = string.Join(",", tags)
-			});
-			setContentTagCommand.Run();
+				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+					filterType = ContentFilterType.ExactIds,
+					filter = contentId,
+					clear = true,
+					tag = "<none>"
+				});
+				setContentTagCommand.Run();
+			}
+			else
+			{
+				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+					filterType = ContentFilterType.ExactIds,
+					filter = contentId,
+					tag = string.Join(",", tags)
+				});
+				setContentTagCommand.Run();
+			}
+			
 		}
 
 		public string RenameContent(string contentId, string newName)

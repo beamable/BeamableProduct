@@ -286,18 +286,21 @@ workflow, then you may safely delete the {_legacyContentFolder} folder. ");
 			{
 				Debug.LogError($"Failed to save content=[{content.Id}]. message=[{dp.Message}]");
 			});
-			
-			var setContentTagCommand = ActiveContext.Cli.ContentTagSet(new ContentTagSetArgs()
+
+			if (content.Tags?.Length > 0)
 			{
-				filterType = ContentFilterType.ExactIds,
-				filter = content.Id,
-				tag = string.Join(",", content.Tags)
-			});
-			await setContentTagCommand.Run().Error(dp =>
-			{
-				Debug.LogError($"Failed to tag content=[{content.Id}]. message=[{dp.Message}]");
-			});
-			
+				var setContentTagCommand = ActiveContext.Cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					filterType = ContentFilterType.ExactIds,
+					filter = content.Id,
+					tag = string.Join(",", content.Tags)
+				});
+				await setContentTagCommand.Run().Error(dp =>
+				{
+					Debug.LogError($"Failed to tag content=[{content.Id}]. message=[{dp.Message}]");
+				});
+			} 
+		
 			return new ContentMigrationResult
 			{
 				originalAssetPath = assetPath
