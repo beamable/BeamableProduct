@@ -72,5 +72,10 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
+        public virtual ContentPsWrapper OnProgressStreamContentPsProgressMessage(System.Action<ReportDataPoint<BeamContentPsProgressMessage>> cb)
+        {
+            this.Command.On("progressStream", cb);
+            return this;
+        }
     }
 }

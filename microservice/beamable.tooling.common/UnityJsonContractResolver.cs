@@ -23,6 +23,7 @@ namespace Beamable.Server.Common
         {
 			Converters = new List<JsonConverter>
 			{
+				new MapOfStringConverter(),
 				new StringToSomethingDictionaryConverter<string>(),
 				new StringToSomethingDictionaryConverter<int>(),
 				new StringToSomethingDictionaryConverter<long>(),
@@ -102,6 +103,21 @@ namespace Beamable.Server.Common
         /// <returns>The deserialized object of type T.</returns>
         public T FromJson<T>(string json) => JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
     }
+
+	public class MapOfStringConverter : JsonConverter<MapOfString>
+	{
+		public override void WriteJson(JsonWriter writer, MapOfString value, JsonSerializer serializer)
+		{
+			serializer.Serialize(writer, new Dictionary<string, string>(value));
+		}
+
+		public override MapOfString ReadJson(JsonReader reader, Type objectType, MapOfString existingValue, bool hasExistingValue,
+			JsonSerializer serializer)
+		{
+			var map = serializer.Deserialize<Dictionary<string, string>>(reader);
+			return new MapOfString(map);
+		}
+	}
 
 	/// <summary>
 	/// Custom JSON converter for serializing and deserializing dictionaries with string keys and values of type T.

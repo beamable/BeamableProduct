@@ -8,7 +8,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	[TestFixture]
 	public class NamedSerializationTests : CommonTest
 	{
-
 		[Test]
 		[NonParallelizable]
 		public async Task Call_NamedInts_Success()
