@@ -7,15 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- `beam publish` commands now updates published content reference manifest UID for the published one
 
 ## [5.2.0]
 ### Added
- - Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
- - New Static Analyzer for Generic Types on `Microservice` classes; 
+- Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
+- New Static Analyzer for Generic Types on `Microservice` classes; 
 
 ### Fixed
 - `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services. 
+- `beam publish` commands now updates published content reference manifest UID for the published one
+- `beam checks scan` MongoDB validator for `MongoDB.Driver 3.3.0` no longer adds incorrect xml to `.csproj` files
+
+### Changed
+- `beam content sync` command emits a progress event on initial content downloads
 
 ## [5.1.0] - 2025-07-23
 ### Added
