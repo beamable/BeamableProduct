@@ -532,7 +532,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		try
 		{
 			processedTypes ??= new HashSet<string>();
-            processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+			
+			// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
+            if(!processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+			{
+				return;
+			}
 
             if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
             {
@@ -543,12 +548,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	            foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 	            {
-		            // If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
-		            if (processedTypes.Contains(typeMember.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-		            {
-			            continue;
-		            }
-
 		            ValidateIfTypeIsInMicroservice(context, location, typeMember, methodAssemblySymbol, methodName, processedTypes);
 	            }
             }
@@ -588,7 +587,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		ITypeSymbol typeSymbol, Location fallbackLocation = null, HashSet<string> processedTypes = null)
 	{
 		processedTypes ??= new HashSet<string>();
-		processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+		
+		// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
+		if (!processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+		{
+			return;
+		}
 		
 		Location location = Diagnostics.GetValidLocation(typeSymbol.Locations.FirstOrDefault(), compilation, fallbackLocation);
 		reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateSerializableAttributeOnSymbol),
@@ -605,22 +609,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
-				// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
-				if (processedTypes.Contains(typeMember.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-				{
-					continue;
-				}
 				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, fallbackLocation, processedTypes);
 			}
 		}
 
 		if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
 		{
-			// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
-			if (processedTypes.Contains(arrayTypeSymbol.ElementType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-			{
-				return;
-			}
 			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, arrayTypeSymbol.ElementType, fallbackLocation, processedTypes);
 			return;
 		}
@@ -652,8 +646,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		ITypeSymbol typeSymbol, bool checkBeamGenAttr = false, Location fallbackLocation = null, HashSet<string> processedTypes = null)
 	{
 		processedTypes ??= new HashSet<string>();
-		processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
 		
+		// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
+		if (!processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+		{
+			return;
+		}
 		
 		// Recursively checks all generic types
 		if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol)
@@ -665,11 +663,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
-				// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
-				if (processedTypes.Contains(typeMember.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-				{
-					continue;
-				}
 				ValidateMembersInSymbol(compilation, reportDiagnostic, typeMember, checkBeamGenAttr, fallbackLocation, processedTypes);
 			}
 		}
@@ -792,7 +785,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 						var keyMustBeStringDiagnostic = Diagnostic.Create(Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes, fieldLocation, typeSymbol.Name, fieldSymbol.Name, fieldSymbol.Type.Name);
 						reportDiagnostic.Invoke(keyMustBeStringDiagnostic);
 					}
-					ValidateMembersInSymbol(compilation, reportDiagnostic, genericTypeSymbol.TypeArguments[1], checkBeamGenAttr, fallbackLocation, processedTypes);
+					ITypeSymbol dictKeySymbol = genericTypeSymbol.TypeArguments[1];
+					ValidateMembersInSymbol(compilation, reportDiagnostic, dictKeySymbol, checkBeamGenAttr, fallbackLocation, processedTypes);
 					continue;
 				}
 				foreach (ITypeSymbol typeArgument in genericTypeSymbol.TypeArguments)
@@ -835,7 +829,10 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			{
 				continue;
 			}
+			
+			
 			ValidateMembersInSymbol(compilation, reportDiagnostic, fieldSymbol.Type, checkBeamGenAttr, fallbackLocation, processedTypes);
+			
 			
 			// Check if parent was type with BeamGen attribute, if so, need to check if class or type members are as well
 			if (!checkBeamGenAttr)
@@ -882,8 +879,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		List<(ITypeSymbol symbol, ITypeSymbol parent)> allTypes = new();
 		processedTypes ??= new HashSet<string>();
-		string displayString = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-		processedTypes.Add(displayString);
+		
+		// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
+		if(!processedTypes.Add(symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
+			return allTypes;
+		
 		if (symbol.GetAllBaseTypes().Any(baseType => baseType.StartsWith(typeString)))
 		{
 			allTypes.Add(new ValueTuple<ITypeSymbol, ITypeSymbol>(symbol, parent));
@@ -893,16 +893,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		{
 			foreach (ITypeSymbol genericTypeTypeArgument in genericType.TypeArguments)
 			{
-				if(processedTypes.Contains(genericTypeTypeArgument.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-					continue;
 				allTypes.AddRange(FindAllFromType(genericTypeTypeArgument, typeString, symbol, processedTypes));
 			}
 		}
 		
 		if (symbol is IArrayTypeSymbol arrayTypeSymbol)
 		{
-			if(processedTypes.Contains(arrayTypeSymbol.ElementType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)))
-				return allTypes;
 			allTypes.AddRange(FindAllFromType(arrayTypeSymbol.ElementType, typeString, symbol, processedTypes));
 		}
 		
@@ -921,8 +917,15 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	{
 		
 		processedTypes ??= new HashSet<string>();
-		processedTypes.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+		string displayString = typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
 		
+		// If type is already processed we skip it, this is needed so the Roslyn Analyzer don't get stuck in a circular reference
+		if (!processedTypes.Add(displayString))
+		{
+			return false;
+		}
+
+
 		string messageParam = isReturnType ? $"{reference} return" : $"parameter {reference}";
 		
 		var allBaseTypes = typeSymbol.GetAllBaseTypes(false);
