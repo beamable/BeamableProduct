@@ -52,6 +52,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("When true, it will use the Old Microservice Generator based on Reflection instead of the OpenApi.")]
 		public bool UseOldMicroserviceGenerator = false;
 
+		[Tooltip("When true, the `beam checks scan` command will not be run in the beam services window.")]
+		public bool DisableAutoChecks;
+
 	}
 	
 	/// <summary>

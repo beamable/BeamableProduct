@@ -52,6 +52,7 @@ namespace Beamable.Editor.ContentService
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
+		public BeamContentPsProgressMessage LatestProgressUpdate;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 		public int ManifestChangedCount { get; private set; }
@@ -161,6 +162,7 @@ namespace Beamable.Editor.ContentService
 					
 				});
 
+				
 				contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
 				{
 					HandleProgressUpdate(reportData.data, SYNC_OPERATION_TITLE, SYNC_OPERATION_SUCCESS_BASE_MESSAGE,
@@ -426,6 +428,7 @@ namespace Beamable.Editor.ContentService
 				}
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
+				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
 				_ = _contentWatcher.Command.Run();
 
 				bool addedAnyDefault = false;
@@ -487,6 +490,7 @@ namespace Beamable.Editor.ContentService
 
 		private void ClearCaches()
 		{
+			LatestProgressUpdate = new BeamContentPsProgressMessage();
 			ValidationContext.AllContent.Clear();
 			EntriesCache.Clear();
 			TypeContentCache.Clear();

@@ -32,6 +32,10 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		public void FindLegacyContent()
 		{
+			#if BEAM_IGNORE_CONTENT_MIGRATION
+			return;
+			#endif
+			
 			var sw = new Stopwatch();
 			sw.Start();
 			if (Directory.Exists(_legacyContentFolder))

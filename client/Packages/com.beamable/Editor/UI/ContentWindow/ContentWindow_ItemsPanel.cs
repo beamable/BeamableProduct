@@ -133,7 +133,19 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			if (_contentService.isReloading)
 			{
+				GUILayout.BeginVertical();
+				GUILayout.Space(24);
+				
 				BeamGUI.LoadingSpinnerWithState("Fetching Content...");
+
+				if (_contentService.LatestProgressUpdate != null && _contentService.LatestProgressUpdate.total > 0)
+				{
+					var update = _contentService.LatestProgressUpdate;
+					var ratio = update.completed / (float) update.total;
+					BeamGUI.DrawLoadingBar(update.message, ratio);
+				}
+				
+				GUILayout.EndVertical();
 				return;
 			}
 			
