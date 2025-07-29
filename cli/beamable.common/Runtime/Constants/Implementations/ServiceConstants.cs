@@ -69,6 +69,7 @@ namespace Beamable.Common
 				public const string SCHEMA_IS_OPTIONAL_KEY = "x-beamable-is-optional-schema";
 				public const string SCHEMA_OPTIONAL_TYPE_NAME_KEY = "x-beamable-optional-type";
 				public const string OPERATION_CALLABLE_METHOD_TYPE_KEY = "x-beamable-operation-method-type";
+				public const string PATH_CALLABLE_METHOD_NAME_KEY = "x-beamable-callable-method-name";
 				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";
