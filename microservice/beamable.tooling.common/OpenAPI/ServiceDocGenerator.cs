@@ -285,6 +285,7 @@ public class ServiceDocGenerator
 			}
 
 			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(shouldSkipClientCodeGeneration));
+			pathItem.Extensions.Add(Constants.Features.Services.PATH_CALLABLE_METHOD_NAME_KEY, new OpenApiString(method.Method.Name));
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
 

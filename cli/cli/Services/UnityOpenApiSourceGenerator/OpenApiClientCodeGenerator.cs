@@ -26,6 +26,7 @@ namespace Beamable.Server.Generator
 			ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
 
 		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = ServiceConstants.METHOD_SKIP_CLIENT_GENERATION_KEY;
+		private const string COMPONENT_METHOD_NAME_KEY = ServiceConstants.PATH_CALLABLE_METHOD_NAME_KEY;
 
 		private const string SCHEMA_QUALIFIED_NAME_KEY =
 			ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME;
@@ -194,8 +195,13 @@ namespace Beamable.Server.Generator
 				{
 					continue;
 				}
-
+				
 				string methodName = path.Replace("/", string.Empty);
+				if (item.Extensions.TryGetValue(COMPONENT_METHOD_NAME_KEY, out var methodNameExt) && methodNameExt is OpenApiString methodNameExtStr)
+				{
+					methodName = methodNameExtStr.Value;
+				}
+				
 				foreach ((OperationType _, OpenApiOperation operation) in item.Operations)
 				{
 					if (!operation.Extensions.TryGetValue(ServiceConstants.OPERATION_CALLABLE_METHOD_TYPE_KEY,
