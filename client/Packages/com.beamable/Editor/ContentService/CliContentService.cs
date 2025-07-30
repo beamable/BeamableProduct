@@ -441,6 +441,7 @@ namespace Beamable.Editor.ContentService
 
 					ValidationContext.Initialized = true;
 					ComputeTags();
+					ValidateAllContents();
 				}
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
@@ -501,6 +502,14 @@ namespace Beamable.Editor.ContentService
 			finally
 			{
 				isReloading = false;
+			}
+		}
+
+		private void ValidateAllContents()
+		{
+			foreach (KeyValuePair<string, ContentObject> scriptableCache in _contentScriptableCache)
+			{
+				ValidateForInvalidFields(scriptableCache.Value);
 			}
 		}
 
