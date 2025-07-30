@@ -112,8 +112,14 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawTopBarHeader()
 		{
-			
-			if (_windowStatus is ContentWindowStatus.Normal)
+			if (_windowStatus != ContentWindowStatus.Normal)
+			{
+				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
+				{
+					ChangeWindowStatus(ContentWindowStatus.Normal);
+				}
+			}
+			if (_windowStatus is ContentWindowStatus.Normal || _windowStatus is ContentWindowStatus.Validate)
 			{
 				var hasContentToPublish = _contentService.HasChangedContents;
 				var hasConflictedOrInvalid = _contentService.HasConflictedContent || _contentService.HasInvalidContent;
@@ -132,12 +138,15 @@ namespace Beamable.Editor.UI.ContentWindow
 					validateTooltip = "There is not any modified items to validate.";
 				}
 
-				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
-				                         () => BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
-				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: validateTooltip)))
+				if (_windowStatus != ContentWindowStatus.Validate)
 				{
-					ChangeToValidateMode();
+					if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
+					                         () => BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
+					                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+					                                                    tooltip: validateTooltip)))
+					{
+						ChangeToValidateMode();
+					}
 				}
 
 				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
@@ -161,17 +170,13 @@ namespace Beamable.Editor.UI.ContentWindow
 					ChangeToPublishMode();
 				}
 
-				EditorGUILayout.Space(5, false);
-				this.DrawSearchBar(_contentSearchData, true);
-				DrawFilterButton(ContentSearchFilterType.Tag, BeamGUI.iconTag, _allTags);
-				DrawFilterButton(ContentSearchFilterType.Type, BeamGUI.iconType, _allTypes);
-				DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
-			}
-			else
-			{
-				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
+				if (_windowStatus != ContentWindowStatus.Validate)
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal);
+					EditorGUILayout.Space(5, false);
+					this.DrawSearchBar(_contentSearchData, true);
+					DrawFilterButton(ContentSearchFilterType.Tag, BeamGUI.iconTag, _allTags);
+					DrawFilterButton(ContentSearchFilterType.Type, BeamGUI.iconType, _allTypes);
+					DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
 				}
 			}
 		}

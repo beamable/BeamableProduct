@@ -213,7 +213,8 @@ namespace Beamable.Editor.Util
 
 			if (iconCheck == null)
 			{
-				iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
 			}
 
 			if (iconUpload == null)
