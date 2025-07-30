@@ -34,9 +34,9 @@ namespace Beamable.Editor.Util
 			return CustomButton(rect, content, primaryButtonStyle);
 		}
 
-		public static bool CancelButton(string text="Cancel")
+		public static bool CancelButton(string text="Cancel", params GUILayoutOption[] options)
 		{
-			return GUILayout.Button(text, new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)});
+			return GUILayout.Button(text, new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)}, options);
 		}
 
 		public static bool CustomButton(GUIContent content, GUIStyle style, bool allowEnterKeyToClick=false)

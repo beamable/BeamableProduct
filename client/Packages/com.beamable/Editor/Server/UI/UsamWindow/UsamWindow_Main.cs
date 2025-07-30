@@ -244,7 +244,7 @@ namespace Beamable.Editor.Microservice.UI2
 						}
 
 						clickedPublish =
-							BeamGUI.HeaderButton("Release", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
+							BeamGUI.HeaderButton("Release", BeamGUI.iconPublish);
 
 
 						clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,

@@ -6,6 +6,7 @@ using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Beamable.Editor.BeamCli.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -43,7 +44,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 
-			DrawContentActionPanel(
+			DrawContentActionPanel(BeamGUI.iconPublish, "Publish Content",
 				$"Clicking \"Publish Contents\" button will upload all content changes to realm {realmName}. Check the list below for the changes that will be applied.",
 				"Publish Contents", PublishContents, true);
 		}
@@ -66,10 +67,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 
-			DrawContentActionPanel(
+			DrawContentActionPanel( BeamGUI.iconSync,"Revert Content",
 				$"Clicking \"Revert Contents\" button will discard all listed below content changes to realm.",
 				"Revert Contents", RevertContent);
 		}
+
+		public int selectedValidationIndex;
+		public Vector2 validationDetailScrollPosition;
 		
 		private void DrawValidatePanel()
 		{
@@ -78,128 +82,124 @@ namespace Beamable.Editor.UI.ContentWindow
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 				return;
 			}
-			
-			var redStyle = new GUIStyle(EditorStyles.label)
+
+
+			var errorStyle = new GUIStyle(EditorStyles.label)
 			{
-				normal = {textColor = Color.red}, 
+				normal = {textColor = Color.red},
 				wordWrap = true
 			};
-			
-			float screenWidth = EditorGUIUtility.currentViewWidth;
-			float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
-			
-			EditorGUILayout.BeginVertical();
-			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, false, screenWidth < ACTION_PANEL_MIN_WIDTH, GUILayout.ExpandWidth(true));
-			availableSpace -= 20f;
-			EditorGUILayout.BeginVertical(GUILayout.MinWidth(ACTION_PANEL_MIN_WIDTH));
 
-			var contents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
-			contents.AddRange(_contentService.GetAllContentFromStatus(ContentStatus.Created));
-
-			var sortedItems = SortItems("contentActionCache", contents, ContentSortOptionType.ValidStatus);
-			for (int index = sortedItems.Count - 1; index >= 0; index--)
+			var idStyle = new GUIStyle(EditorStyles.label)
 			{
-				LocalContentManifestEntry entry = sortedItems[index];
-				bool hasError = false;
-				List<string> errorList = new List<string>();
-				string entryId = entry.FullId;
-				if (_contentService.TryGetContentObject(entryId, out var cachedContentObj))
+				wordWrap = false,
+			};
+			
+			// render all content that are invalid in a virtual scroller....
+			var entries = _contentService.GetAllInvalidContents();
+
+			EditorGUILayout.BeginHorizontal();
+			var headerTexRect = EditorGUILayout.GetControlRect(GUILayout.Width(24), GUILayout.Height(24));
+			GUI.DrawTexture(headerTexRect, BeamGUI.iconCheck);
+			EditorGUILayout.LabelField("Validation Results", _contentHeaderStyle);
+			EditorGUILayout.EndHorizontal();
+			GUILayout.Space(12);
+
+			if (entries.Count == 0)
+			{
+				EditorGUILayout.LabelField("There are no validation errors.", _contentHeaderDescriptionStyle);
+				GUILayout.Space(12);
+			}
+			else
+			{
+				EditorGUILayout.LabelField("The following content items have validation issues. Select a content item to view the errors.", _contentHeaderDescriptionStyle);
+				GUILayout.Space(12);
+			}
+
+			var visHeight = Mathf.Min(300, 30 * entries.Count);
+			BeamCliWindow.DrawVirtualScroller(30, entries.Count, ref _mainScrollPosition, (index, rect) =>
+			{
+				if (index == selectedValidationIndex)
 				{
-					hasError = cachedContentObj.HasValidationErrors(_contentService.GetValidationContext(),
-					                                                out errorList);
+					EditorGUI.DrawRect(rect, GUI.skin.settings.selectionColor);
 				}
-
-				_foldoutStates.TryAdd(entryId, true);
-
-				var heightSize = CalculateItemValidationHeight(_foldoutStates[entryId], errorList, availableSpace);
-				EditorGUILayout.BeginVertical();
-				var rectController = new EditorGUIRectController(
-					EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace), GUILayout.Height(heightSize)));
 				
-				var headerRect =
-					new EditorGUIRectController(rectController.ReserveHeight(BeamGUI.StandardVerticalSpacing));
+				var wasPressed =
+					GUI.Button(rect, GUIContent.none, EditorStyles.label);
 
-				headerRect.ReserveWidth(BASE_PADDING);
-				var foldoutRect = headerRect.ReserveWidth(FOLDOUT_WIDTH);
-				if (hasError)
+				if (wasPressed)
 				{
-					_foldoutStates[entryId] = EditorGUI.Foldout(foldoutRect, _foldoutStates[entryId], GUIContent.none);
+					selectedValidationIndex = index;
+				}
+				
+				EditorGUI.LabelField(rect, entries[index].FullId, idStyle);
+				EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+			}, visHeight);
+
+			GUILayout.Space(12);
+			BeamGUI.DrawSeparatorLine(false, color: new Color(0,0,0,.2f));
+
+
+			if (selectedValidationIndex < entries.Count)
+			{
+				List<string> errorList = new List<string>();
+				var selectedEntry = entries[selectedValidationIndex];
+				if (_contentService.TryGetContentObject(selectedEntry.FullId, out var cachedContentObj))
+				{
+					cachedContentObj.HasValidationErrors(_contentService.GetValidationContext(), out errorList);
 				}
 
-				var iconSize = 15f;
-				var iconRect = headerRect.ReserveWidth(iconSize);
-				Texture iconForStatus = hasError ? BeamGUI.iconStatusInvalid : GetIconForStatus(entry.IsInConflict, entry.StatusEnum);
-				GUI.DrawTexture(new Rect(iconRect.x, iconRect.center.y - iconSize / 2f, iconSize, iconSize),
-				                iconForStatus,
-				                ScaleMode.ScaleToFit);
-
-				headerRect.ReserveWidth(BASE_PADDING);
-
-				var labelRect = headerRect.rect;
-				var guiStyle = new GUIStyle(EditorStyles.boldLabel) {alignment = TextAnchor.MiddleLeft,};
-				EditorGUI.LabelField(labelRect, entryId, guiStyle);
-
-				if (_foldoutStates[entryId])
+				GUILayout.Space(6);
+				
+				EditorGUILayout.LabelField($"Selected: {selectedEntry.FullId}", new GUIStyle(EditorStyles.boldLabel)
 				{
-					foreach (string error in errorList)
+					wordWrap = true
+				});
+				SetEntryIdAsSelected(selectedEntry.FullId);
+
+				
+				validationDetailScrollPosition = EditorGUILayout.BeginScrollView(validationDetailScrollPosition);
+				for (var i = 0 ; i < errorList.Count; i ++)
+				{
+					var error = errorList[i];
+					EditorGUILayout.BeginHorizontal();
+					var texRect = EditorGUILayout.GetControlRect(GUILayout.Width(16), GUILayout.Height(16));
+					GUI.DrawTexture(texRect, BeamGUI.iconStatusInvalid);
+
+					var labelRect = GUILayoutUtility.GetRect(new GUIContent(error), errorStyle);
+
+					if (i % 2 == 1)
 					{
-						var errorContent = new GUIContent(error);
-						float itemHeight = redStyle.CalcHeight(errorContent, rectController.rect.width - BASE_PADDING);
-						var itemRect = rectController.ReserveHeight(itemHeight);
-						EditorGUILayout.BeginHorizontal();
-						{
-							itemRect.xMin = iconRect.xMax;
-							itemRect.width -= BASE_PADDING;
-							var itemRectController = new EditorGUIRectController(itemRect);
-							var idValidationRect = itemRectController.ReserveWidth(4);
-							EditorGUI.DrawRect(idValidationRect, Color.red);
-							itemRectController.ReserveWidth(BASE_PADDING);
-							
-							EditorGUI.LabelField(itemRectController.rect, errorContent, redStyle);
-						}
-						EditorGUILayout.EndHorizontal();
-						rectController.ReserveHeight(EditorGUIUtility.standardVerticalSpacing);
+						var backdropRect = new Rect(texRect.xMin, texRect.yMin, texRect.width + labelRect.width,
+						                            labelRect.height);
+						EditorGUI.DrawRect(backdropRect, new Color(0, 0, 0, .1f));
 					}
+					
+
+					EditorGUI.LabelField(labelRect, error, errorStyle);
+					EditorGUILayout.EndHorizontal();
 				}
 
-				EditorGUILayout.EndVertical();
+				EditorGUILayout.EndScrollView();
+				
+			}
+			else
+			{
+				GUILayout.Space(6);
+				EditorGUILayout.LabelField($"(no selection)", new GUIStyle(EditorStyles.boldLabel)
+				{
+					wordWrap = true
+				});
 			}
 
-			EditorGUILayout.EndVertical();
-			EditorGUILayout.EndScrollView();
-
-			bool hasConflictOrInvalid = _contentService.HasInvalidContent || _contentService.HasConflictedContent;
-			
-			var buttonsRect = EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace), GUILayout.Height(30f));
-			
-			var buttonsRectController = new EditorGUIRectController(buttonsRect);
-			var publishBtnContent = new GUIContent("Go to Publish");
-			var publishBtnSize = GUI.skin.button.CalcSize(publishBtnContent);
-			Rect publicBtnRect = buttonsRectController.ReserveWidthFromRight(publishBtnSize.x + BASE_PADDING * 2);
-			if (BeamGUI.ShowDisabled(!hasConflictOrInvalid, () => BeamGUI.PrimaryButton(publicBtnRect, publishBtnContent)))
-			{
-				ChangeToPublishMode();
-			}
-			
-			var revertSyncBtnContent = new GUIContent("Go to Revert/Sync");
-			var revertSyncBtnSize = GUI.skin.button.CalcSize(revertSyncBtnContent);
-			Rect revertSyncBtnRect = buttonsRectController.ReserveWidthFromRight(revertSyncBtnSize.x + BASE_PADDING * 2);
-			if (BeamGUI.PrimaryButton(revertSyncBtnRect, revertSyncBtnContent))
-			{
-				ChangeToRevertAll();
-			}
-			
-			var cancelBtnContent = new GUIContent("Cancel");
-			var cancelBtnSize = GUI.skin.button.CalcSize(cancelBtnContent);
-			if (BeamGUI.CustomButton(buttonsRectController.ReserveWidthFromRight(cancelBtnSize.x + BASE_PADDING * 2), cancelBtnContent, BeamGUI.ColorizeButton(Color.gray)))
+			GUILayout.FlexibleSpace();
+			if (BeamGUI.CancelButton("Back", GUILayout.Width(60)))
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
-			
-			EditorGUILayout.EndVertical();
 		}
 		
-		private void DrawContentActionPanel(string warningMessage, string buttonText, Action onButtonClicked, bool showRevert = false)
+		private void DrawContentActionPanel(Texture icon, string title, string warningMessage, string buttonText, Action onButtonClicked, bool showRevert = false)
 		{
 			var emptyList = new List<LocalContentManifestEntry>();
 			var allModified = (_statusToDraw & ContentStatus.Modified) != 0 ? _contentService.GetAllContentFromStatus(ContentStatus.Modified) : emptyList;
@@ -207,26 +207,30 @@ namespace Beamable.Editor.UI.ContentWindow
 			var allDeleted = (_statusToDraw & ContentStatus.Deleted) != 0 ? _contentService.GetAllContentFromStatus(ContentStatus.Deleted) : emptyList;
 
 			float screenWidth = EditorGUIUtility.currentViewWidth;
+			// float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
 			float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
 
 			EditorGUILayout.BeginVertical();
+
+			EditorGUILayout.BeginHorizontal();
+			var texRect = EditorGUILayout.GetControlRect(GUILayout.Width(24), GUILayout.Height(24));
+			GUI.DrawTexture(texRect, icon);
+			EditorGUILayout.LabelField(title, _contentHeaderStyle);
+			EditorGUILayout.EndHorizontal();
 			
-			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, false, screenWidth < ACTION_PANEL_MIN_WIDTH, GUILayout.ExpandWidth(true));
-			availableSpace -= 20f;
+			GUILayout.Space(12);
+			EditorGUILayout.LabelField(warningMessage, _contentHeaderDescriptionStyle);
+			GUILayout.Space(12);
+		
+			
+			EditorGUILayout.Space(12);
+			
+			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, GUILayout.ExpandWidth(true));
+			const int widthOfAUnityScrollBar = 25;
+			availableSpace -= widthOfAUnityScrollBar + NESTED_CONTENT_PADDING*2;
 
-			EditorGUILayout.BeginVertical(GUILayout.MinWidth(ACTION_PANEL_MIN_WIDTH));
+			EditorGUILayout.BeginVertical();
 
-			Rect publishHelpBoxRect =
-				EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace),
-				                               GUILayout.Height(BeamGUI.StandardVerticalSpacing * 2));
-			var helpBoxStyle = new GUIStyle(EditorStyles.helpBox)
-			{
-				fontSize = 12, alignment = TextAnchor.MiddleCenter, wordWrap = true
-			};
-			EditorGUI.HelpBox(publishHelpBoxRect, "", MessageType.Info);
-			EditorGUI.LabelField(publishHelpBoxRect,
-			                     new GUIContent(warningMessage),
-			                     helpBoxStyle);
 
 			DrawChangedContents(availableSpace, "Created Contents", BeamGUI.iconStatusAdded, allCreated, showRevert);
 			DrawChangedContents(availableSpace, "Modified Contents", BeamGUI.iconStatusModified, allModified, showRevert);
@@ -235,7 +239,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndScrollView();
 			
-			var buttonsRect = EditorGUILayout.GetControlRect(GUILayout.Width(availableSpace), GUILayout.Height(30f));
+			EditorGUILayout.Space(12);
+			
+			var buttonsRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.Height(30f));
 			var buttonsRectController = new EditorGUIRectController(buttonsRect);
 			var primaryBtnContent = new GUIContent(buttonText);
 			var primaryBtnSize = GUI.skin.button.CalcSize(primaryBtnContent);
@@ -309,8 +315,12 @@ namespace Beamable.Editor.UI.ContentWindow
 						{
 							GUI.DrawTexture(itemIconRect, isContentInvalid ? BeamGUI.iconStatusInvalid : BeamGUI.iconStatusConflicted, ScaleMode.ScaleToFit);
 						}
-						
-						var buttonRect = itemRectController.ReserveWidthFromRight(80);
+
+						Rect buttonRect = default;
+						if (showRevert)
+						{
+							buttonRect = itemRectController.ReserveWidthFromRight(80);
+						}
 						var contentRect = itemRectController.rect;
 						var entryContent = new GUIContent(localContentManifestEntry.FullId, localContentManifestEntry.FullId);
 						EditorGUI.LabelField(contentRect, entryContent);
