@@ -823,11 +823,6 @@ public class ContentService
 				}).ToArray()
 		};
 		
-		foreach (ReferenceSuperset referenceSuperset in saveManifestRequest.references)
-		{
-			Log.Verbose($"Saving manifest {referenceSuperset.id} - {referenceSuperset.visibility.Value} - {referenceSuperset.version}");
-		}
-		
 		// Update the local reference manifest
 		try
 		{
