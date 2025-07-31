@@ -153,7 +153,11 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
         await command;
 
         { // read the build log
-            var json = File.ReadAllText(buildLogFile);
+            string json = "{}";
+            if (File.Exists(buildLogFile))
+            {
+                json = File.ReadAllText(buildLogFile);
+            }
             var results = JsonSerializer.Deserialize<SolutionLogs>(json, new JsonSerializerOptions
             {
                 IncludeFields = true

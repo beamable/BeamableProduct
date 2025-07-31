@@ -80,9 +80,7 @@ namespace Beamable.Server.Editor.Usam
 		public BeamShowManifestCommandOutput latestManifest;
 		public List<BeamServiceStatus> latestStatus;
 		public BeamDockerStatusCommandOutput latestDockerStatus;
-
-		public SerializableDictionaryStringToBool serviceToAutoGenClient = new SerializableDictionaryStringToBool();
-
+		
 		public Dictionary<string, AssemblyDefinitionAsset> allAssemblyAssets;
 
 		/// <summary>
