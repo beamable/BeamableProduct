@@ -504,7 +504,7 @@ namespace Beamable.Editor.BeamCli
 							});
 							if (string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("BEAM_UNITY_TEST_CI")))
 							{
-								throw new CliInvocationException(_command, _errors);
+								//throw new CliInvocationException(_command, _errors);
 							}
 						}
 						else
