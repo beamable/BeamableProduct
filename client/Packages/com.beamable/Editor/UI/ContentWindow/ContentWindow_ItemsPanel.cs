@@ -534,7 +534,13 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", ""};
+			
+			// TODO: replace with the LatestUpdateAtDate
+			string lastUpdateDate = string.Empty;
+			// DateTime latestUpdateDateTime = DateTime.FromFileTimeUtc(entry.LatestUpdateAtDate);
+			// string lastUpdateDate = latestUpdateDateTime.ToLocalTime().ToString("g");
+			
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
 								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
 								: BeamGUI.iconStatusInvalid;
