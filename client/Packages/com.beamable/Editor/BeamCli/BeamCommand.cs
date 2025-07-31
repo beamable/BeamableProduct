@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -302,10 +303,12 @@ namespace Beamable.Editor.BeamCli
 			return false;
 		}
 
+		private StringBuilder _logBuffer = new StringBuilder();
 		private void ProcessStandardOut(string message)
 		{
 			if (string.IsNullOrEmpty(message)) return;
 
+			_logBuffer.AppendLine(message);
 			_messageBuffer += message;
 
 			if (CheckForData(ref _messageBuffer, out ReportDataPointDescription data, out string jsonRaw))
@@ -316,9 +319,11 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		private StringBuilder _errorBuffer = new StringBuilder();
 		private void ProcessStandardErr(string data)
 		{
 			if (string.IsNullOrWhiteSpace(data)) return;
+			_errorBuffer.AppendLine(data);
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
@@ -491,7 +496,7 @@ namespace Beamable.Editor.BeamCli
 
 							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
-								Debug.LogError($"CLI Beam Command had {_errors.Count} errors");
+								Debug.LogError($"CLI Beam Command had {_errors.Count} errors. stdourbuffer=[{_logBuffer}] stderrbuffer=[{_errorBuffer}]");
 								foreach (var err in _errors)
 								{
 									Debug.LogError(err.message);
