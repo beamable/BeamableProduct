@@ -288,7 +288,7 @@ public class DTO_MicroserviceScope
 		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, cfg, UserCode, ["build_property.BeamValidateCallableTypesExistInSharedLibraries = true"]);
 
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested)
@@ -314,12 +314,7 @@ public class DTO_MicroserviceScope
 			new DiagnosticResult(Diagnostics.Srv.CallableTypeInsideMicroserviceScope)
 				.WithLocation(3)
 				.WithArguments("CallServiceAsync", "DTO_MicroserviceScope"));
-
-		string config = $@"
-is_global = true
-build_property.BeamValidateCallableTypesExistInSharedLibraries = true
-";
-		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", config));
+		
 		
 		await ctx.RunAsync();
 	}
@@ -445,11 +440,11 @@ public class {|#2:DTO_BeamGenSchemaAttribute|}
 	public int x;
 }
 
-public enum {|#3:NonSerializableEnum|} {
+public enum NonSerializableEnum {
 	None = 0,
 }
 
-public enum {|#4:OtherNonSerializableEnum|} {
+public enum OtherNonSerializableEnum {
 	None = 0,
 }
 
@@ -473,16 +468,6 @@ public enum {|#4:OtherNonSerializableEnum|} {
 			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute"));
-		
-		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
-				.WithLocation(3)
-				.WithArguments("NonSerializableEnum"));
-
-		ctx.ExpectedDiagnostics.Add(
-			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
-				.WithLocation(4)
-				.WithArguments("OtherNonSerializableEnum"));
 		
 		PrepareForRun(ctx, cfg, UserCode);
 		

@@ -73,7 +73,7 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 	}
 
 	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg,
-		string userCode) where T : DiagnosticAnalyzer, new()
+		string userCode, string[]? extraGlobalConfigs = null) where T : DiagnosticAnalyzer, new()
 	{
 		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
 		AddAssemblyReferences(ctx.TestState);
@@ -84,6 +84,21 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
 			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
 		}
+
+		string globalConfig = @"
+is_global = true 
+build_property.EnableUnrealBlueprintCompability = true";
+		if (extraGlobalConfigs != null)
+		{
+			foreach (string extraGlobalConfig in extraGlobalConfigs)
+			{
+				globalConfig += $@"
+{extraGlobalConfig}";
+
+			}
+		}
+
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", globalConfig));
 	}
 
 	private static void PrepareForRun<TAnalyzer,TFixProvider>(CSharpCodeFixTest<TAnalyzer, TFixProvider, DefaultVerifier> ctx,
