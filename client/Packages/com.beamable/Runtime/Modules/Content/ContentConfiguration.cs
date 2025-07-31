@@ -95,14 +95,6 @@ namespace Beamable.Content
                 Debug.LogWarning($"Invalid manifest ID: {message}");
                 EditorManifestID = DEFAULT_MANIFEST_ID;
             }
-
-            var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
-            var allTypes = reflectionCache.GetAll().ToList();
-            if (ContentTextureConfiguration == null || ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
-            {
-	            
-	            ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
-            }
 #endif
 
 			if (!EnableMultipleContentNamespaces)

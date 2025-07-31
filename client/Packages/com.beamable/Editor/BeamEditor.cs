@@ -400,9 +400,9 @@ namespace Beamable
 			const string PATH = "PATH";
 			
 			string PATH_DELIM = ";"; // WINDOWS
-			if (Application.platform == RuntimePlatform.OSXEditor)
+			if (Application.platform == RuntimePlatform.OSXEditor  || Application.platform == RuntimePlatform.LinuxEditor || Application.platform == RuntimePlatform.LinuxPlayer || Application.platform == RuntimePlatform.LinuxServer)
 			{
-				PATH_DELIM = ":"; // mac
+				PATH_DELIM = ":"; // mac and linux
 			}
 			var inclusions = configuration.CustomPathInclusions.GetOrElse(() => new List<string>
 			{

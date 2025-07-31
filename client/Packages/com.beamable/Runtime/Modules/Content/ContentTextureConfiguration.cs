@@ -16,11 +16,21 @@ namespace Beamable.Modules.Content
 		public static Dictionary<string, Texture> OriginalTypeIcons = new()
 		{
 			["announcements"] = GetTextureFromBeamAssets("IconBeam_Announcements.png"),
+			["api"] = GetTextureFromBeamAssets("IconBeam_API.png"),
+			["api.announcementApi"] = GetTextureFromBeamAssets("IconBeam_AnnouncementsAPI.png"),
 			["game_types"] = GetTextureFromBeamAssets("IconBeam_GameType.png"),
 			["currency"] =  GetTextureFromBeamAssets("IconBeam_Currency.png"),
 			["items"] =  GetTextureFromBeamAssets("IconBeam_Item.png"),
 			["listings"] =  GetTextureFromBeamAssets("IconBeam_Listing.png"),
+			["tournaments"] =  GetTextureFromBeamAssets("IconBeam_Tournaments.png"),
+			["leaderboards"] =  GetTextureFromBeamAssets("IconBeam_LeaderBoards.png"),
+			["events"] =  GetTextureFromBeamAssets("IconBeam_Tournaments.png"),
+			["calendars"] =  GetTextureFromBeamAssets("IconBeam_Calendar.png"),
 			["stores"] =  GetTextureFromBeamAssets("IconBeam_ItemStoreContent.png"),
+			["skus"] =  GetTextureFromBeamAssets("IconBeam_SKUs.png"),
+			["emails"] =  GetTextureFromBeamAssets("IconBeam_Emails.png"),
+			["donations"] =  GetTextureFromBeamAssets("IconBeam_Donation.png"),
+			["vip"] =  GetTextureFromBeamAssets("IconBeam_VIP.png"),
 		};
 
 		public static Texture FallbackTexture => GetTextureFromBeamAssets("IconBeam_ItemFallback.png");

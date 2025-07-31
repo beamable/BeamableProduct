@@ -32,14 +32,14 @@ public class ProjectCommand : CommandGroup
 	private static Option<bool> ExactIdsOption = new Option<bool>(
 		name: "--exact-ids",
 		description:
-		"By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids.");
+		"By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids");
 	
 	public static void AddIdsOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, List<string>> binder)
 		where TArgs : CommandArgs
 	{
 		command.AddOption(new Option<List<string>>(
 			name: "--ids",
-			description: "The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag.") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
+			description: "The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
 		command.AddOption(ExactIdsOption);
 	}
 
