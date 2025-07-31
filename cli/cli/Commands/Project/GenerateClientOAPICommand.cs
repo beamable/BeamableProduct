@@ -3,6 +3,8 @@ using Beamable.Server.Generator;
 using cli.Services;
 using Newtonsoft.Json;
 using System.CommandLine;
+using Beamable.Server;
+using cli.Dotnet;
 
 namespace cli;
 
@@ -14,6 +16,10 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 
 	public override void Configure()
 	{
+		ProjectCommand.AddIdsOption(this, (args, i) =>
+		{
+			args.beamoIds = i;
+		});
 		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
 	}
 
@@ -25,6 +31,8 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 
 	public override Task<GenerateClientOapiCommandArgsResult> GetResult(GenerateClientOapiCommandArgs args)
 	{
+		ProjectCommand.FinalizeServicesArg(args, ref args.beamoIds, true);
+		
 		var result = new GenerateClientOapiCommandArgsResult();
 		if (string.IsNullOrEmpty(args.outputDirectory))
 		{
@@ -32,11 +40,16 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 		}
 
 		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
-		foreach ((string _, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
+		foreach ((string beamoId, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
 		{
+			if (!args.beamoIds.Contains(beamoId)) continue;
+			
 			var openApiDoc = localProtocol.OpenApiDoc;
-			if(openApiDoc == null)
+			if (openApiDoc == null)
+			{
+				Log.Warning($"Skipping client-gen for {beamoId} because no open-api doc was found. Please build the service first and try again.");
 				continue;
+			}
 			var generator = new OpenApiClientCodeGenerator(openApiDoc);
 
 			Directory.CreateDirectory(args.outputDirectory);
@@ -58,4 +71,5 @@ public class GenerateClientOapiCommandArgsResult
 public class GenerateClientOapiCommandArgs : CommandArgs
 {
 	public string outputDirectory;
+	public List<string> beamoIds;
 }
