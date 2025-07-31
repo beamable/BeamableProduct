@@ -104,6 +104,10 @@ namespace Beamable.Editor.BeamCli
 			{
 				Debug.Log("------  LIST LOCAL SOURCES EXPIRED");
 			}
+			
+			BeamCliUtil.InitializeBeamCli();
+			Debug.Log("------  BEAM CLI FINISHED");
+
 		}
 		
 		static bool InstallTool()
