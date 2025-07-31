@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] 
+### Added
+- `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids. 
+
+### Changed
+- `generate-client-oapi` command can generate a subset of services using the `--ids` flag.
+
+### Fixed
+- `beam deploy plan` no longer breaks when `publish.json` file does not exist due to an empty workspace folder.
+
 ## [5.2.0] - 2025-07-30
 ### Added
 - Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
