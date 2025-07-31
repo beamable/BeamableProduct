@@ -107,7 +107,8 @@ namespace Beamable.Editor.BeamCli
 			
 			BeamCliUtil.InitializeBeamCli();
 			Debug.Log("------  BEAM CLI FINISHED");
-
+			
+			System.Environment.SetEnvironmentVariable("BEAM_UNITY_TEST_CI", "true");
 		}
 		
 		static bool InstallTool()

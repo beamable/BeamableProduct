@@ -494,17 +494,19 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
 
-							BeamEditorContext.Default.Dispatcher.Schedule(() =>
-							{
-								Debug.LogError($"CLI Beam Command had {_errors.Count} errors. stdourbuffer=[{_logBuffer}] stderrbuffer=[{_errorBuffer}]");
-								foreach (var err in _errors)
-								{
-									Debug.LogError(err.message);
-								}
-							});
 							if (string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("BEAM_UNITY_TEST_CI")))
 							{
-								//throw new CliInvocationException(_command, _errors);
+								BeamEditorContext.Default.Dispatcher.Schedule(() =>
+								{
+									Debug.LogError(
+										$"CLI Beam Command had {_errors.Count} errors. stdourbuffer=[{_logBuffer}] stderrbuffer=[{_errorBuffer}]");
+									foreach (var err in _errors)
+									{
+										Debug.LogError(err.message);
+									}
+								});
+
+								throw new CliInvocationException(_command, _errors);
 							}
 						}
 						else
