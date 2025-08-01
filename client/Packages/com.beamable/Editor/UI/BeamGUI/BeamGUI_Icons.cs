@@ -67,7 +67,7 @@ namespace Beamable.Editor.Util
 		{
 			var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 			var allTypes = reflectionCache.GetAll().ToList();
-			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration.TextureConfigurations.Count != allTypes.Count)
+			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration?.TextureConfigurations?.Count != allTypes.Count)
 			{
 				ContentConfiguration.Instance.ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
 			}
