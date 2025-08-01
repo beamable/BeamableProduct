@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [5.3.0]
+### Added
+- `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids.
+
+### Changed
+- `generate-client-oapi` command can generate a subset of services using the `--ids` flag.
+
+### Fixed
+- `beam deploy plan` no longer breaks when `publish.json` file does not exist due to an empty workspace folder.
+
+## [5.2.0] - 2025-07-30
+### Added
+- Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
+- New Static Analyzer for Generic Types on `Microservice` classes;
+
+### Fixed
+- `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services.
+- `beam publish` commands now updates published content reference manifest UID for the published one
+- `beam checks scan` MongoDB validator for `MongoDB.Driver 3.3.0` no longer adds incorrect xml to `.csproj` files
+
+### Changed
+- `beam content sync` command emits a progress event on initial content downloads
+
 ## [5.1.0] - 2025-07-23
 ### Added
 - Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
@@ -94,6 +117,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
+
+## [4.3.4] - 2025-08-01
+### Fixed
+- (backported from 5.2.0) - `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services.
 
 ## [4.3.3] - 2025-07-23
 ### Fixed
