@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common.Content;
+using System;
 using UnityEngine;
 
 namespace Beamable.Content.Utility
