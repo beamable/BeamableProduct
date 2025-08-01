@@ -742,6 +742,9 @@ namespace Beamable.Editor.ContentService
 
 		public void ValidateForInvalidFields(ContentObject contentObject)
 		{
+			// No need to validate content that is deleted.
+			if(contentObject.ContentStatus is ContentStatus.Deleted)
+				return;
 			bool hasValidationError =
 				contentObject != null && contentObject.HasValidationErrors(ValidationContext, out var _);
 			UpdateContentValidationStatus(contentObject.Id, hasValidationError);
