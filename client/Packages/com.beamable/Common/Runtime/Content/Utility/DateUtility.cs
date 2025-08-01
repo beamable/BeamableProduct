@@ -117,17 +117,5 @@ namespace Beamable.Content.Utility
 				return false;
 			}
 		}
-		
-		public static DateTime ConvertBackendTimestampToDateTime(OptionalLong timestamp) 
-		{
-			if (!timestamp.HasValue)
-			{
-				return DateTime.UtcNow;
-			}
-			
-			DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-			dateTime = dateTime.AddMilliseconds(timestamp).ToUniversalTime();
-			return dateTime;
-		}
 	}
 }

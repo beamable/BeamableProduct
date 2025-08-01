@@ -523,6 +523,7 @@ public class ContentService
 					var id = Path.GetFileNameWithoutExtension(fp);
 					var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
 					var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
+					
 					var contentFile = new ContentFile()
 					{
 						Id = id,
@@ -531,8 +532,6 @@ public class ContentService
 						Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 						FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
 						ReferenceContent = referenceContent,
-						// TODO: Change it later when backend team finish implementing the lastUpdate
-						//LatestUpdateAtDate = DateTimeOffset.FromUnixTimeMilliseconds(referenceContent.lastUpdate)
 					};
 					SortContentProperties(ref contentFile);
 					contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -564,8 +563,6 @@ public class ContentService
 							FetchedFromManifestUid = localFiles.TargetManifest.uid.GetOrElse(""),
 							PropertiesChecksum = e.version,
 							ReferenceContent = e,
-							// TODO: Change it later when backend team finish implementing the lastUpdate
-							//LatestUpdateAtDate = DateTimeOffset.FromUnixTimeMilliseconds(e.lastUpdate)
 						}))
 				).ToList();
 
@@ -1356,7 +1353,7 @@ public class ContentService
 				IsInConflict = file.IsInConflict,
 				JsonFilePath = file.LocalFilePath,
 				ReferenceManifestUid = file.FetchedFromManifestUid,
-				LatestUpdateAtDate = file.LatestUpdateAtDate.ToFileTimeUtc()
+				LatestUpdateAtDate = file.GetLastUpdateAt(),
 			};
 		});
 	}
@@ -1590,7 +1587,6 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonIgnore] public bool IsInConflict;
 	[JsonIgnore] public bool CanAutoSync;
 	[JsonIgnore] public bool CanUpdateReferenceWithTarget;
-	[JsonIgnore] public DateTime LatestUpdateAtDate;
 
 	[JsonPropertyName(JSON_NAME_PROPERTIES)]
 	public JsonElement Properties;
@@ -1611,12 +1607,33 @@ public struct ContentFile : IEquatable<ContentFile>
 		return ret;
 	}
 
+	public long GetLastUpdateAt()
+	{
+		if (ReferenceContent == null)
+		{
+			if (!File.Exists(LocalFilePath))
+			{
+				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			}
+			DateTimeOffset lastWriteTimeUtc = File.GetLastWriteTimeUtc(LocalFilePath);
+			return lastWriteTimeUtc.ToUnixTimeMilliseconds();
+		}
+			
+		var refLongTime = ReferenceContent.updatedAt.HasValue ? ReferenceContent.updatedAt : ReferenceContent.createdAt;
+		if (!refLongTime.HasValue && File.Exists(LocalFilePath))
+		{
+			DateTimeOffset lastWriteTimeUtc = File.GetLastWriteTimeUtc(LocalFilePath);
+			refLongTime = new OptionalLong(lastWriteTimeUtc.ToUnixTimeMilliseconds());
+		}
+		return refLongTime.HasValue ? refLongTime.Value : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+	}
+
 	public ContentFile ChangeReference(ClientManifestJsonResponse newReferenceManifest)
 	{
 		var copy = this;
-		copy.ReferenceContent = newReferenceManifest == null ? null : newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
+		ClientContentInfoJson clientContentInfoJson = newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
+		copy.ReferenceContent = newReferenceManifest == null ? null : clientContentInfoJson;
 		copy.FetchedFromManifestUid = newReferenceManifest != null ? newReferenceManifest.uid : copy.FetchedFromManifestUid;
-		copy.LatestUpdateAtDate = newReferenceManifest != null ? DateUtility.ConvertBackendTimestampToDateTime(newReferenceManifest.latestUpdate) : copy.LatestUpdateAtDate;
 		return copy;
 	}
 

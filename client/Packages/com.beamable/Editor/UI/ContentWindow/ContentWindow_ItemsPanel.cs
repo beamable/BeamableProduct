@@ -405,12 +405,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			headerRect.width -= BASE_PADDING * 3;
 			headerRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 			
-			string[] labels = { "Name", "Tags", 
-				
-				// TODO: replace with latest-update when manifest has that information...
-				""
-				// "Latest Update" 
-			};
+			string[] labels = { "Name", "Tags", "Latest Update"};
     
 			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
 			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
@@ -535,10 +530,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
 			
-			// TODO: replace with the LatestUpdateAtDate
-			string lastUpdateDate = string.Empty;
-			// DateTime latestUpdateDateTime = DateTime.FromFileTimeUtc(entry.LatestUpdateAtDate);
-			// string lastUpdateDate = latestUpdateDateTime.ToLocalTime().ToString("g");
+			string lastUpdateDate = DateTimeOffset.FromUnixTimeMilliseconds(entry.LatestUpdateAtDate).ToLocalTime().ToString("g");
 			
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
