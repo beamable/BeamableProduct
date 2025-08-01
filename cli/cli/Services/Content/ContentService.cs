@@ -1613,6 +1613,7 @@ public struct ContentFile : IEquatable<ContentFile>
 		{
 			if (!File.Exists(LocalFilePath))
 			{
+				Log.Warning("ContentFile doesn't have a Reference Content neither a Local File Path. This should not happen as ContentFile is created by one of those.");
 				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 			}
 			DateTimeOffset lastWriteTimeUtc = File.GetLastWriteTimeUtc(LocalFilePath);
