@@ -63,6 +63,11 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string ReferenceManifestUid;
 
 		/// <summary>
+		/// The latest time that this content were changed
+		/// </summary>
+		public long LatestUpdateAtDate;
+
+		/// <summary>
 		/// This is done this way because Unreal can't generate the enums properly but... unity can use this type directly.
 		/// So... we declare this as a helper.
 		/// </summary>
