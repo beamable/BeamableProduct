@@ -490,6 +490,7 @@ public class App
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddSubCommand<SetEnabledCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<SetDisableCommand, SetEnabledCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<SaveProjectPathsCommand, SaveProjectPathsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GroupCommand,CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GroupAddCommand, UpdateGroupArgs, GroupCommand>();
