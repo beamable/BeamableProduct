@@ -10,9 +10,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
-        /// <summary>The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag.</summary>
+        /// <summary>The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag</summary>
         public string[] ids;
-        /// <summary>By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids.</summary>
+        /// <summary>By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids</summary>
         public bool exactIds;
         /// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
         public string[] withoutGroup;

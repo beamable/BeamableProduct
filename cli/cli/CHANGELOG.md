@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.3.0] 
 ### Added
 - `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids. 
+- `beam project add-paths` command to add paths to the `project-paths-to-ignore.json` and `additional-project-paths.json` files. 
 
 ### Changed
 - `generate-client-oapi` command can generate a subset of services using the `--ids` flag.

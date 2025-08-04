@@ -66,6 +66,7 @@ namespace Beamable.Editor.BeamCli
 		private OrgGamesWrapper _gamesInvoke;
 		private ConfigRoutesWrapper _routesInvoke;
 		private ProjectAddUnityProjectWrapper _linkCommand;
+		private ProjectAddPathsWrapper _addPathsInvoke;
 
 		// public Dictionary<string, BeamOrgRealmData> pidToRealm = new Dictionary<string, BeamOrgRealmData>();
 
@@ -101,6 +102,14 @@ namespace Beamable.Editor.BeamCli
 
 		public async Promise Refresh()
 		{
+			_addPathsInvoke?.Cancel();
+			_addPathsInvoke = Command.ProjectAddPaths(new ProjectAddPathsArgs
+			{
+				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray(),
+				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
+			});
+			var addPathsPromise = _addPathsInvoke.Run();
+			
 			_configInvoke?.Cancel();
 			_configInvoke = Command.Config(new ConfigArgs());
 			_configInvoke.OnError(dp =>
@@ -172,6 +181,7 @@ namespace Beamable.Editor.BeamCli
 			await mePromise;
 			await routePromise;
 			await linkPromise;
+			await addPathsPromise;
 			
 			if (IsLoggedOut)
 			{
