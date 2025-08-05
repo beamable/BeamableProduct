@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
 
-## [5.3.0] 
+## [5.3.0] - 2025-08-05
 ### Added
 - `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids. 
 - `beam project add-paths` command to add paths to the `project-paths-to-ignore.json` and `additional-project-paths.json` files. 
