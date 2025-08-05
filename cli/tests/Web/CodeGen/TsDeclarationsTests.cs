@@ -246,4 +246,47 @@ public class TsDeclarationsTests
 		Assert.AreEqual(expected, writer.ToString());
 		Assert.AreEqual(expected, ta.Render());
 	}
+
+	[Test]
+	public void Declare_Class_WritesDeclareClass()
+	{
+		const string expected =
+			"declare class C {\n" +
+			"}\n";
+		var decl = new TsDeclare(new TsClass("C"));
+		var writer = new TsCodeWriter();
+		decl.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, decl.Render());
+	}
+
+	[Test]
+	public void Module_Minimal_WritesModule()
+	{
+		const string expected = "module 'm';\n";
+		var mb = new TsModule("m");
+		var writer = new TsCodeWriter();
+		mb.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, mb.Render());
+	}
+
+	[Test]
+	public void ModuleBlock_WithStatements_WritesStatementsInModule()
+	{
+		const string expected =
+			"module 'm' {\n" +
+			"  class C {\n" +
+			"  }\n" +
+			"  class D {\n" +
+			"  }\n" +
+			"}\n";
+		var mb = new TsModule("m")
+			.AddStatement(new TsClass("C"))
+			.AddStatement(new TsClass("D"));
+		var writer = new TsCodeWriter();
+		mb.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, mb.Render());
+	}
 }
