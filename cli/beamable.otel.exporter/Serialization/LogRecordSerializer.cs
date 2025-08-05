@@ -5,6 +5,13 @@ using System.Reflection;
 namespace beamable.otel.exporter.Serialization;
 
 [Serializable]
+public class LogsBatch
+{
+	public List<SerializableLogRecord> AllRecords { get; set; }
+	public Dictionary<string, string> ResourceAttributes { get; set; }
+}
+
+[Serializable]
 public class SerializableLogRecord
 {
 	public string Timestamp { get; set; }

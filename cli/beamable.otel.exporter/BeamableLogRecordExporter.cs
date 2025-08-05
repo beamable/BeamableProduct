@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
 using System.Text.Json;
 
 namespace beamable.otel.exporter;
@@ -11,6 +12,8 @@ namespace beamable.otel.exporter;
 public class BeamableLogRecordExporter : BeamableExporter<LogRecord>
 {
 	private readonly string _filesPath;
+	private Resource? resource;
+
 	public BeamableLogRecordExporter(BeamableExporterOptions options) : base(options)
 	{
 		_filesPath = options.ExportPath;
@@ -18,6 +21,7 @@ public class BeamableLogRecordExporter : BeamableExporter<LogRecord>
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
 	{
+		var resource = this.ParentProvider.GetResource();
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
@@ -29,7 +33,13 @@ public class BeamableLogRecordExporter : BeamableExporter<LogRecord>
 			allLogsSerialized.Add(LogRecordSerializer.SerializeLogRecord(log));
 		}
 
-		var json = JsonSerializer.Serialize(allLogsSerialized, new JsonSerializerOptions() { WriteIndented = true });
+		var serializedBatch = new LogsBatch()
+		{
+			AllRecords = allLogsSerialized,
+			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+		};
+
+		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = true });
 
 		File.WriteAllText(filePath, json + Environment.NewLine);
 

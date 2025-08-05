@@ -1,4 +1,5 @@
 using Beamable.Common;
+using beamable.otel.exporter;
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
 using Newtonsoft.Json;
@@ -6,6 +7,7 @@ using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using System.Diagnostics;
 
 namespace cli.OtelCommands;
@@ -42,21 +44,10 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			throw new CliException("Couldn't resolve telemetry metrics path");
 		}
 
-		var allLogsFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelLogsDirectoryPath);
 		var allTracesFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelTracesDirectoryPath);
 		var allMetricsFiles = FolderManagementHelper.GetAllFiles(args.ConfigService.ConfigTempOtelMetricsDirectoryPath);
-
-		List<SerializableLogRecord> allLogs = new List<SerializableLogRecord>();
 		List<SerializableActivity> allActivities = new List<SerializableActivity>();
 		List<SerializableMetric> allMetrics = new List<SerializableMetric>();
-
-		foreach (string file in allLogsFiles)
-		{
-			var content = File.ReadAllText(file);
-			var logsFromFile = JsonConvert.DeserializeObject<List<SerializableLogRecord>>(content);
-
-			allLogs.AddRange(logsFromFile);
-		}
 
 		foreach (string file in allTracesFiles)
 		{
@@ -74,9 +65,6 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 			allMetrics.AddRange(metricsFromFile);
 		}
 
-		var logRecords = allLogs.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
-		var logsBatch = new Batch<LogRecord>(logRecords, logRecords.Length);
-
 		var activities = allActivities.Select(ActivitySerializer.DeserializeActivity).ToArray();
 		var tracesBatch = new Batch<Activity>(activities, activities.Length);
 
@@ -85,28 +73,12 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 
 
 		{ // Sending deserialized telemetry data through Otlp exporter
-			var logExporterOptions = new OtlpExporterOptions
-			{
-				Endpoint = new Uri($"http://127.0.0.1:4355/v1/logs"), //TODO get this in a nicer way
-				Protocol = OtlpExportProtocol.HttpProtobuf,
-			};
+			var logsResult = BeamableOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath);
 
-			BaseExporter<LogRecord> otlpLogExporter = new OtlpLogExporter(
-                                    				logExporterOptions);
-
-			var logSuccess = otlpLogExporter.Export(logsBatch);
-
-			if (logSuccess == ExportResult.Success)
+			if (logsResult == ExportResult.Failure)
 			{
-				//Delete all logs files
-				foreach (var file in allLogsFiles)
-				{
-					File.Delete(file);
-				}
-			}
-			else
-			{
-				throw new CliException("Error while trying to export logs to collector. Make sure you have a collector running and expecting data.");
+				throw new CliException(
+					"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint"); //TODO improve this log with more information
 			}
 
 			var activityExporterOptions = new OtlpExporterOptions
