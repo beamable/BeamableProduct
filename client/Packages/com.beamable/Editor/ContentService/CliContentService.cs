@@ -704,16 +704,23 @@ namespace Beamable.Editor.ContentService
 		private ContentObject LoadContentObject(LocalContentManifestEntry entry, ContentObject contentObject)
 		{
 			string fileContent = File.ReadAllText(entry.JsonFilePath);
-			contentObject = ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId) as ContentObject;
-			if (contentObject)
+			try
 			{
-				contentObject.Tags = entry.Tags.ToArray();
-				contentObject.ContentStatus = entry.StatusEnum;
-				contentObject.IsInConflict = entry.IsInConflict;
-				contentObject.OnEditorChanged = () =>
+				contentObject =
+					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId,
+					                                                  disableExceptions: true) as ContentObject;
+				if (contentObject)
 				{
-					SaveContent(contentObject);
-				};
+					contentObject.Tags = entry.Tags.ToArray();
+					contentObject.ContentStatus = entry.StatusEnum;
+					contentObject.IsInConflict = entry.IsInConflict;
+					contentObject.OnEditorChanged = () => { SaveContent(contentObject); };
+				}
+			}
+			catch
+			{
+				Debug.LogError($"Could not load content from json file. id=[{entry.FullId}] path=[{entry.JsonFilePath}]");
+				throw;
 			}
 
 			return contentObject;
