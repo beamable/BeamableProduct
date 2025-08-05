@@ -9,6 +9,7 @@ export * from '@/network/http/types/HttpRequest';
 export * from '@/network/http/types/HttpRequester';
 export * from '@/network/http/types/HttpResponse';
 export * from '@/platform/types/TokenStorage';
+export * from '@/services';
 export * from '@/constants/Errors';
 export * from '@/configs/BeamEnvironmentConfig';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';

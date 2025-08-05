@@ -11,9 +11,9 @@ import {
 } from '@/constants/Errors';
 import { DELETE, GET, HEADERS } from '@/constants';
 import { HttpMethod } from '@/network/http/types/HttpMethod';
-import process from 'node:process';
 import { getPathAndQuery } from '@/utils/getPathAndQuery';
 import { createHash } from '@/utils/createHash';
+import { BeamBase } from '@/core/BeamBase';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
@@ -88,6 +88,14 @@ export class BeamRequester implements HttpRequester {
       }
     }
 
+    // add the routing key to the request headers if it exists
+    if (BeamBase.env.BEAM_ROUTING_KEY) {
+      req.headers = {
+        ...req.headers,
+        [HEADERS.ROUTING_KEY]: BeamBase.env.BEAM_ROUTING_KEY,
+      };
+    }
+
     const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
@@ -132,9 +140,11 @@ export class BeamRequester implements HttpRequester {
 
   private generateSignature(url: string, body: string | null): string {
     const version = '1';
-    const secret = process.env.BEAM_REALM_SECRET;
+    const secret = BeamBase.env.BEAM_REALM_SECRET;
     if (!secret) {
-      throw new BeamError('BEAM_REALM_SECRET environment variable is not set');
+      throw new BeamError(
+        '`BEAM_REALM_SECRET` environment variable is not set. Assign `BeamServer.env.BEAM_REALM_SECRET = process.env.BEAM_REALM_SECRET` to enable signed requests.',
+      );
     }
 
     let data = `${secret}${this.pid}${version}${getPathAndQuery(url)}`;

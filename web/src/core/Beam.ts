@@ -2,7 +2,6 @@ import { BeamConfig } from '@/configs/BeamConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { BeamService } from '@/core/BeamService';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
 import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
@@ -11,82 +10,194 @@ import type { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
 import { BeamError, BeamWebSocketError } from '@/constants/Errors';
-import { AnnouncementsService } from '@/services/AnnouncementsService';
-import { Refreshable } from '@/services/types/Refreshable';
-import { ContextMap, Subscription, SubscriptionMap } from '@/core/types';
+import {
+  BeamServiceType,
+  REFRESHABLE_SERVICES,
+  RefreshableServiceMap,
+  Subscription,
+  SubscriptionMap,
+} from '@/core/types';
 import { wait } from '@/utils/wait';
 import { HEADERS } from '@/constants';
-import { BeamBase } from '@/core/BeamBase';
-import { StatsService } from '@/services/StatsService';
-import { LeaderboardsService } from '@/services/LeaderboardsService';
+import { BeamBase, type BeamEnvVars } from '@/core/BeamBase';
+import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
+import { ClientServicesMixin } from '@/core/mixins';
+import { Refreshable } from '@/services';
+import {
+  BeamMicroServiceClient,
+  type BeamMicroServiceClientCtor,
+} from '@/core/BeamMicroServiceClient';
 
 /** The main class for interacting with the Beam Client SDK. */
-export class Beam extends BeamBase {
+export class Beam extends ClientServicesMixin(BeamBase) {
   /**
    * A namespace of player-related services.
    * Use `beam.player.<method>` to access player-specific operations.
    */
-  public readonly player: PlayerService;
+  player: PlayerService;
 
   /**
    * The token storage instance used by the SDK.
    * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
    * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
    */
-  public tokenStorage: TokenStorage;
+  tokenStorage: TokenStorage;
 
   private static localTokenStorage: TokenStorage;
-  private readonly refreshable: Record<keyof ContextMap, Refreshable<unknown>>;
+  private readonly beamConfig: BeamConfig;
   private ws: BeamWebSocket;
   private subscriptions: Partial<SubscriptionMap> = {};
-  private readyPromise?: Promise<void>;
-  private isReadyPromise: boolean = false;
 
-  constructor(config: BeamConfig) {
+  /** Initialize a new Beam client instance. */
+  static async init(config: BeamConfig) {
+    const beam = new this(config);
+    await beam.connect();
+    beam.isInitialized = true;
+    return beam;
+  }
+
+  protected constructor(config: BeamConfig) {
     Beam.localTokenStorage =
       config.tokenStorage ??
       defaultTokenStorage(config.pid, config.instanceTag);
     super(config);
+    this.beamConfig = config;
     this.tokenStorage = Beam.localTokenStorage;
     this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
     this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.gameEngineVersion);
     this.ws = new BeamWebSocket();
     this.player = new PlayerService();
-    BeamService.attachServices(this);
-    this.refreshable = {
-      'announcements.refresh': this.announcements,
-    };
+    this.use(AuthService);
+    this.use(AccountService);
   }
 
-  /** Initializes the Beam SDK instance. Later calls return the same initialization promise. */
-  ready(): Promise<void> {
-    if (!this.readyPromise) this.readyPromise = this.init();
-    return this.readyPromise;
+  protected createBeamRequester(config: BeamConfig): BeamRequester {
+    const baseRequester = config.requester ?? new BaseRequester();
+    return new BeamRequester({
+      inner: baseRequester,
+      tokenStorage: Beam.localTokenStorage,
+      pid: this.pid,
+    });
   }
 
-  /** Returns whether the Beam SDK instance is ready. */
-  get isReady(): boolean {
-    return this.isReadyPromise;
+  static get env(): BeamEnvVars {
+    return BeamBase.env;
+  }
+
+  use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
+  use<T extends BeamMicroServiceClient>(
+    Client: BeamMicroServiceClientCtor<T>,
+  ): this;
+  use(ctor: any): this {
+    if (this.isApiService(ctor)) {
+      const svc = new ctor({ beam: this, getPlayer: () => this.player });
+      const svcName = svc.serviceName;
+      (this.clientServices as any)[svc.serviceName] = svc;
+
+      if (REFRESHABLE_SERVICES.includes(svcName)) {
+        this.refreshable[`${svcName}.refresh` as keyof RefreshableServiceMap] =
+          svc as unknown as Refreshable<unknown>;
+      }
+    } else if (this.isMicroServiceClient(ctor)) {
+      const client = new ctor(this);
+      const serviceName = client.serviceName;
+      const serviceNameIdentifier =
+        serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
+      const clientName = `${serviceNameIdentifier}Client`;
+      (this as any)[clientName] = client;
+    }
+
+    return this;
+  }
+
+  /** Connects the client SDK to the Beamable platform. This method is called automatically during `Beam.init()`. */
+  protected async connect(): Promise<void> {
+    try {
+      const savedConfig = await readConfig();
+      // If the saved config cid does not match the current one, clear the token storage
+      if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
+      // If the cid or pid has changed, save the new configuration
+      if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
+        await saveConfig({ cid: this.cid, pid: this.pid });
+
+      let tokenResponse: TokenResponse | undefined;
+      const accessToken = await this.tokenStorage.getAccessToken();
+      if (!accessToken) {
+        // If no access token exists, login as a guest
+        tokenResponse = await this.clientServices.auth.loginAsGuest();
+      } else if (this.tokenStorage.isExpired) {
+        // If the access token is expired, try to refresh it using the refresh token
+        // If no refresh token exists, sign in as a guest
+        const refreshToken = await this.tokenStorage.getRefreshToken();
+        tokenResponse = refreshToken
+          ? await this.clientServices.auth.refreshAuthToken({ refreshToken })
+          : await this.clientServices.auth.loginAsGuest();
+      }
+
+      if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
+
+      await Promise.all([
+        this.clientServices.account.current(),
+        this.setupRealtimeConnection(),
+      ]);
+    } finally {
+      this.clientServices = {} as BeamServiceType; // clear the services added during initialization
+    }
+  }
+
+  private async setupRealtimeConnection() {
+    const refreshToken = await this.tokenStorage.getRefreshToken();
+    if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
+
+    await this.ws.connect({
+      requester: this.requester,
+      cid: this.cid,
+      pid: this.pid,
+      refreshToken,
+    });
+  }
+
+  /**
+   * Refreshes the current Beam SDK instance with a new token response.
+   * This method re-initializes the SDK with the provided token,
+   * updates the internal state, and re-establishes necessary connections.
+   * @param tokenResponse The new token response to use for refreshing the SDK.
+   * @example
+   * ```ts
+   * const newToken = await beam.auth.loginWithEmail({ email, password });
+   * await beam.refresh(newToken);
+   * ```
+   */
+  async refresh(tokenResponse?: TokenResponse) {
+    if (tokenResponse) {
+      await saveToken(this.tokenStorage, tokenResponse);
+    }
+
+    const cachedClientServices = this.clientServices;
+    const beam = await Beam.init(this.beamConfig);
+    beam.clientServices = cachedClientServices;
+    Object.assign(this, beam);
   }
 
   /**
    * Subscribes to a specific context and listens for messages.
-   * @template {keyof ContextMap} K
-   * @template {ContextMap[K]['data']} T
+   * @template {keyof RefreshableServiceMap} K
+   * @template {RefreshableServiceMap[K]['data']} T
    * @param context The context to subscribe to, e.g., 'inventory.refresh'.
    * @param handler The callback to process the data when a message is received.
    * @example
    * ```ts
+   * beam.use(InventoryService);
    * beam.on('inventory.refresh', (data) => {
    *   console.log('New inventory data:', data);
    * });
    * ```
    */
-  on<K extends keyof ContextMap, T extends ContextMap[K]['data']>(
-    context: K,
-    handler: (data: T) => void,
-  ) {
-    this.checkIfReadyAndSupportedContext(context, 'subscribing');
+  on<
+    K extends keyof RefreshableServiceMap,
+    T extends RefreshableServiceMap[K]['data'],
+  >(context: K, handler: (data: T) => void) {
+    this.checkIfInitAndSupportedContext(context);
     const abortController = new AbortController();
     const listener = async (e: MessageEvent) => {
       const eventData = JSON.parse(e.data) as {
@@ -98,7 +209,7 @@ export class Beam extends BeamBase {
 
       // parse the messageFull as the expected type
       const payload = JSON.parse(eventData.messageFull) as Omit<
-        ContextMap[K],
+        RefreshableServiceMap[K],
         'data'
       >;
 
@@ -122,7 +233,7 @@ export class Beam extends BeamBase {
 
   /**
    * Unsubscribes from a specific context or removes all subscriptions if no handler is provided.
-   * @template {keyof ContextMap} K
+   * @template {keyof RefreshableServiceMap} K
    * @param context The context to unsubscribe from, e.g., 'inventory.refresh'.
    * @param handler The callback to remove. If not provided, all handlers for the context are removed.
    * @example
@@ -132,11 +243,11 @@ export class Beam extends BeamBase {
    * beam.off('inventory.refresh');
    * ```
    */
-  off<K extends keyof ContextMap>(
+  off<K extends keyof RefreshableServiceMap>(
     context: K,
-    handler?: (data: ContextMap[K]['data']) => void,
+    handler?: (data: RefreshableServiceMap[K]['data']) => void,
   ) {
-    this.checkIfReadyAndSupportedContext(context, 'unsubscribing');
+    this.checkIfInitAndSupportedContext(context);
     const subs = this.subscriptions[context];
     if (!subs) return;
 
@@ -160,73 +271,10 @@ export class Beam extends BeamBase {
     if (subs.length === 0) delete this.subscriptions[context];
   }
 
-  private async init(): Promise<void> {
-    try {
-      const savedConfig = await readConfig();
-      // If the saved config cid does not match the current one, clear the token storage
-      if (this.cid !== savedConfig.cid) this.tokenStorage.clear();
-      // If the cid or pid has changed, save the new configuration
-      if (this.cid !== savedConfig.cid || this.pid !== savedConfig.pid)
-        await saveConfig({ cid: this.cid, pid: this.pid });
-
-      let tokenResponse: TokenResponse | undefined;
-      const accessToken = await this.tokenStorage.getAccessToken();
-      if (!accessToken) {
-        // If no access token exists, login as a guest
-        tokenResponse = await this.auth.loginAsGuest();
-      } else if (this.tokenStorage.isExpired) {
-        // If the access token is expired, try to refresh it using the refresh token
-        // If no refresh token exists, sign in as a guest
-        const refreshToken = await this.tokenStorage.getRefreshToken();
-        tokenResponse = refreshToken
-          ? await this.auth.refreshAuthToken({ refreshToken })
-          : await this.auth.loginAsGuest();
-      }
-
-      if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
-
-      const [account] = await Promise.all([
-        this.account.current(),
-        this.setupRealtimeConnection(),
-      ]);
-
-      this.player.account = account;
-      this.isReadyPromise = true;
-    } catch (error) {
-      this.isReadyPromise = false;
-      this.readyPromise = undefined;
-      throw error;
-    }
-  }
-
-  protected createBeamRequester(config: BeamConfig): BeamRequester {
-    const baseRequester = config.requester ?? new BaseRequester();
-    return new BeamRequester({
-      inner: baseRequester,
-      tokenStorage: Beam.localTokenStorage,
-      pid: this.pid,
-    });
-  }
-
-  private async setupRealtimeConnection() {
-    const refreshToken = await this.tokenStorage.getRefreshToken();
-    if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
-
-    await this.ws.connect({
-      requester: this.requester,
-      cid: this.cid,
-      pid: this.pid,
-      refreshToken,
-    });
-  }
-
-  private checkIfReadyAndSupportedContext(
-    context: keyof ContextMap,
-    messageType: string,
-  ) {
-    if (!this.isReadyPromise) {
+  private checkIfInitAndSupportedContext(context: keyof RefreshableServiceMap) {
+    if (!this.isInitialized) {
       throw new BeamError(
-        `Beam SDK is not ready. Please call \`await beam.ready()\` before ${messageType}.`,
+        `Call \`await Beam.init({...})\` to initialize the Beam client SDK.`,
       );
     }
 
@@ -240,15 +288,6 @@ export class Beam extends BeamBase {
   }
 }
 
-export interface Beam {
-  /** High-level account helper built on top of accounts api endpoints. */
-  account: AccountService;
-  /** High-level announcement helper built on top of announcements api endpoints. */
-  announcements: AnnouncementsService;
-  /** High-level auth helper built on top of auth api endpoints. */
-  auth: AuthService;
-  /** High-level leaderboards helper built on top of leaderboards api endpoints. */
-  leaderboards: LeaderboardsService;
-  /** High-level stats helper built on top of stats api endpoints. */
-  stats: StatsService;
-}
+// Declaration‑merge interface that exposes all the client‑side services injected at runtime by the ClientServicesMixin.
+// Each property corresponds to a key in ServiceMap, so you get typed access to beam.account, beam.auth, etc.
+export interface Beam extends BeamServiceType {}
