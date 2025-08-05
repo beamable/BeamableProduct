@@ -12,23 +12,20 @@ namespace Beamable.Server.Editor.Usam
 {
 	public partial class UsamService
 	{
-		public string GetKeyForAutoGenerateClientSetting(string beamoId)
-		{
-			return $"beam.{_ctx.BeamCli.Cid}.{_ctx.BeamCli.Pid}.{beamoId}.enableClientAutoGen";
-		}
-		
-		
 		public bool ShouldServiceAutoGenerateClient(string beamoId)
 		{
-			var key = GetKeyForAutoGenerateClientSetting(beamoId);
-			return EditorPrefs.GetBool(key, true);
+			if (_config.AutoGenerateClientOnBuilds.TryGetValue(beamoId, out var value))
+			{
+				return value;
+			}
+
+			return true;
 		}
 
 		public void ToggleServiceAutoGenerateClient(string beamoId)
 		{
-			var key = GetKeyForAutoGenerateClientSetting(beamoId);
-			var existing = EditorPrefs.GetBool(key, true);
-			EditorPrefs.SetBool(key, !existing);
+			var value = ShouldServiceAutoGenerateClient(beamoId);
+			_config.AutoGenerateClientOnBuilds[beamoId] = !value;
 		}
 		
 		public async Promise GenerateClient(BeamManifestServiceEntry service)
