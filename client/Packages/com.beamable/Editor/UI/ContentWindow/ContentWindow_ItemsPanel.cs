@@ -133,7 +133,19 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			if (_contentService.isReloading)
 			{
+				GUILayout.BeginVertical();
+				GUILayout.Space(24);
+				
 				BeamGUI.LoadingSpinnerWithState("Fetching Content...");
+
+				if (_contentService.LatestProgressUpdate != null && _contentService.LatestProgressUpdate.total > 0)
+				{
+					var update = _contentService.LatestProgressUpdate;
+					var ratio = update.completed / (float) update.total;
+					BeamGUI.DrawLoadingBar(update.message, ratio);
+				}
+				
+				GUILayout.EndVertical();
 				return;
 			}
 			
@@ -393,12 +405,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			headerRect.width -= BASE_PADDING * 3;
 			headerRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 			
-			string[] labels = { "Name", "Tags", 
-				
-				// TODO: replace with latest-update when manifest has that information...
-				""
-				// "Latest Update" 
-			};
+			string[] labels = { "Name", "Tags", "Latest Update"};
     
 			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
 			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
@@ -522,7 +529,10 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", ""};
+			
+			string lastUpdateDate = DateTimeOffset.FromUnixTimeMilliseconds(entry.LatestUpdateAtDate).ToLocalTime().ToString("g");
+			
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
 								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
 								: BeamGUI.iconStatusInvalid;

@@ -26,12 +26,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		private SequencePromise<ContentMigrationResult> _migrationPromise;
 		private SequencePromise<Unit> _deletePromise;
 
-		private GUIStyle _migrationHeaderStyle;
-		private GUIStyle _migrationTextStyle;
+		private GUIStyle _contentHeaderStyle;
+		private GUIStyle _contentHeaderDescriptionStyle;
 		private GUIStyle _migrationErrorStyle;
 		
 		public void FindLegacyContent()
 		{
+			#if BEAM_IGNORE_CONTENT_MIGRATION
+			return;
+			#endif
+			
 			var sw = new Stopwatch();
 			sw.Start();
 			if (Directory.Exists(_legacyContentFolder))
@@ -48,7 +52,6 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public void DrawMigration()
 		{
-			BuildMigrationStyles();
 
 			if (IsMigrating == false)
 			{
@@ -63,18 +66,18 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public void BuildMigrationStyles()
 		{
-			if (_migrationHeaderStyle == null)
+			if (_contentHeaderStyle == null)
 			{
-				_migrationHeaderStyle = new GUIStyle(EditorStyles.largeLabel)
+				_contentHeaderStyle = new GUIStyle(EditorStyles.largeLabel)
 				{
 					fontSize = 18,
 					fixedHeight = 22
 				};
 			}
 
-			if (_migrationTextStyle == null)
+			if (_contentHeaderDescriptionStyle == null)
 			{
-				_migrationTextStyle = new GUIStyle(EditorStyles.label)
+				_contentHeaderDescriptionStyle = new GUIStyle(EditorStyles.label)
 				{
 					wordWrap = true,
 					richText = true,
@@ -100,16 +103,16 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			
 			var headerContent = new GUIContent("Running Content Migration");
-			var headerRect = GUILayoutUtility.GetRect(headerContent, _migrationHeaderStyle);
-			EditorGUI.LabelField(headerRect, headerContent, _migrationHeaderStyle);
+			var headerRect = GUILayoutUtility.GetRect(headerContent, _contentHeaderStyle);
+			EditorGUI.LabelField(headerRect, headerContent, _contentHeaderStyle);
 			GUILayout.Space(12);
 
 			var content = new GUIContent(
 				"Your content files are being migrated. Once all content is migrated, the old files will be removed. ");
 	
-			var rect = GUILayoutUtility.GetRect(content, _migrationTextStyle);
+			var rect = GUILayoutUtility.GetRect(content, _contentHeaderDescriptionStyle);
 	
-			EditorGUI.LabelField(rect, content.text, _migrationTextStyle);
+			EditorGUI.LabelField(rect, content.text, _contentHeaderDescriptionStyle);
 			GUILayout.Space(12);
 			
 			BeamGUI.DrawLoadingBar("Move Content", _migrationPromise.Ratio, _migrationPromise.IsFailed);
@@ -124,16 +127,16 @@ namespace Beamable.Editor.UI.ContentWindow
 				content = new GUIContent(
 					"The migration has finished. Your new files are in the <i>.beamable/content</i> folder. ");
 	
-				rect = GUILayoutUtility.GetRect(content, _migrationTextStyle);
-				EditorGUI.LabelField(rect, content.text, _migrationTextStyle);
+				rect = GUILayoutUtility.GetRect(content, _contentHeaderDescriptionStyle);
+				EditorGUI.LabelField(rect, content.text, _contentHeaderDescriptionStyle);
 			} else if (_migrationPromise.IsFailed)
 			{
 				GUILayout.Space(12);
 				content = new GUIContent(
 					"The migration has failed. Please review the console logs and try again.  ");
 	
-				rect = GUILayoutUtility.GetRect(content, _migrationTextStyle);
-				EditorGUI.LabelField(rect, content.text, new GUIStyle(_migrationTextStyle)
+				rect = GUILayoutUtility.GetRect(content, _contentHeaderDescriptionStyle);
+				EditorGUI.LabelField(rect, content.text, new GUIStyle(_contentHeaderDescriptionStyle)
 				{
 					normal = new GUIStyleState
 					{
@@ -179,8 +182,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			
 			var headerContent = new GUIContent("Please migrate your Content");
-			var headerRect = GUILayoutUtility.GetRect(headerContent, _migrationHeaderStyle);
-			EditorGUI.LabelField(headerRect, headerContent, _migrationHeaderStyle);
+			var headerRect = GUILayoutUtility.GetRect(headerContent, _contentHeaderStyle);
+			EditorGUI.LabelField(headerRect, headerContent, _contentHeaderStyle);
 			GUILayout.Space(12);
 
 			var content = new GUIContent(
@@ -195,9 +198,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				"\n" +
 				"Click the <i>Migrate Content</i> button to automatically move your <i>ScriptableObject</i> files to the new format.");
 	
-			var rect = GUILayoutUtility.GetRect(content, _migrationTextStyle);
+			var rect = GUILayoutUtility.GetRect(content, _contentHeaderDescriptionStyle);
 	
-			EditorGUI.LabelField(rect, content.text, _migrationTextStyle);
+			EditorGUI.LabelField(rect, content.text, _contentHeaderDescriptionStyle);
 			GUILayout.FlexibleSpace();
 
 			
@@ -282,18 +285,21 @@ workflow, then you may safely delete the {_legacyContentFolder} folder. ");
 			{
 				Debug.LogError($"Failed to save content=[{content.Id}]. message=[{dp.Message}]");
 			});
-			
-			var setContentTagCommand = ActiveContext.Cli.ContentTagSet(new ContentTagSetArgs()
+
+			if (content.Tags?.Length > 0)
 			{
-				filterType = ContentFilterType.ExactIds,
-				filter = content.Id,
-				tag = string.Join(",", content.Tags)
-			});
-			await setContentTagCommand.Run().Error(dp =>
-			{
-				Debug.LogError($"Failed to tag content=[{content.Id}]. message=[{dp.Message}]");
-			});
-			
+				var setContentTagCommand = ActiveContext.Cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					filterType = ContentFilterType.ExactIds,
+					filter = content.Id,
+					tag = string.Join(",", content.Tags)
+				});
+				await setContentTagCommand.Run().Error(dp =>
+				{
+					Debug.LogError($"Failed to tag content=[{content.Id}]. message=[{dp.Message}]");
+				});
+			} 
+		
 			return new ContentMigrationResult
 			{
 				originalAssetPath = assetPath

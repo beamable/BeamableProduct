@@ -5,8 +5,10 @@ using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
+using Beamable.Content.Utility;
 using Beamable.Serialization;
 using Beamable.Server;
+using cli.Deployment.Services;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json.Linq;
@@ -521,6 +523,7 @@ public class ContentService
 					var id = Path.GetFileNameWithoutExtension(fp);
 					var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
 					var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
+					
 					var contentFile = new ContentFile()
 					{
 						Id = id,
@@ -576,14 +579,49 @@ public class ContentService
 			// Gather all the distinct reference manifests.
 			localFiles.ReferenceManifestUids = localFiles.ContentFiles.Select(c => c.FetchedFromManifestUid).ToHashSet();
 
+			HashSet<string> newItemsOnRemote = new HashSet<string>();
 			// Fetch all the different reference manifests in parallel if we want not only the local state
 			if (!getLocalStateOnly)
 			{
 				var allRefsPromises = localFiles.ReferenceManifestUids.Select(rm => GetManifest(manifestId, rm)).ToArray();
 				localFiles.ReferenceManifests = (await Task.WhenAll(allRefsPromises)).ToDictionary(g => g.uid.Value, g => g);
 
+				if (latestManifest != null)
+				{
+					ClientManifestJsonResponse latestManifestFromContent =
+						localFiles.ReferenceManifests.Values.Where(manifest => manifest.uid != latestManifest.uid && manifest.createdAt.HasValue)
+							.OrderBy(manifest => manifest.createdAt.Value)
+							.FirstOrDefault();
+
+					if (latestManifestFromContent != null)
+					{
+						var diffChanges = await _contentApi.GetManifestDiffs(manifestId, fromUid: latestManifestFromContent.uid, toUid: latestManifest.uid);
+						var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest(Method.GET, diff.diffUrl, parser: JObject.Parse));
+						var parsedDiffs = await Task.WhenAll(getDiffTasks);
+
+						foreach (JObject parsedDiff in parsedDiffs)
+						{
+							// check if 'changes' child exists before continuing
+							// 'changes' contain all diff changes for each changed manifest
+							if (parsedDiff["changes"] is not JObject changes)
+							{
+								continue;
+							}
+							// Check each content changed individually, checking for any that the changeType is 'added'
+							foreach (JProperty contentItem in changes.Properties())
+							{
+								string changeType = contentItem.Value["changeType"]?.ToString();
+								if (changeType == "added")
+								{
+									newItemsOnRemote.Add(contentItem.Name);
+								}
+							}
+						}
+					}
+				}
+				
 				// Compute conflicts and update the state of the local file
-				ComputeCorrectSyncOp(localFiles, allowAutoSyncModified, allowAutoSyncDeleted, out var conflicts, out var autoSync, out var updateReference);
+				ComputeCorrectSyncOp(localFiles, allowAutoSyncModified, allowAutoSyncDeleted, newItemsOnRemote, out var conflicts, out var autoSync, out var updateReference);
 				for (int i = 0; i < localFiles.ContentFiles.Count; i++)
 				{
 					ContentFile localFilesContentFile = localFiles.ContentFiles[i];
@@ -704,8 +742,10 @@ public class ContentService
 		}
 
 		// Now, we compute our status against the latest manifest and get ONLY the files that weren't deleted (these are the ones that will be included in the new manifest).
+		// We need to send all Up To Date because the new manifest will replace the old one, and it needs to have all contents
 		var changedContents = localAgainstLatest.ContentFiles
-			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted))
+			.Where(c => !c.GetStatus().HasFlag(ContentStatus.Deleted)).ToArray();
+		var changedContentDefinitions = changedContents
 			.Select(c =>
 			{
 				// Build the properties from the local data.
@@ -749,14 +789,14 @@ public class ContentService
 			}).ToArray();
 
 		
-		var batches = changedContents.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
+		var batches = changedContentDefinitions.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
 		// Then we save them to S3
 		Task<SaveContentResponse>[] saveContentRequestsTasks = batches.Select(async contentDefinitions =>
 			{
 				var contentProgressUpdateData = new ContentProgressUpdateData()
 				{
 					contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
-					totalItems = changedContents.Length,
+					totalItems = changedContentDefinitions.Length,
 				};
 			
 				var saveRequest = new SaveContentRequest() { content = contentDefinitions };
@@ -821,21 +861,30 @@ public class ContentService
 				}).ToArray()
 		};
 		
-		foreach (ReferenceSuperset referenceSuperset in saveManifestRequest.references)
-		{
-			Log.Verbose($"Saving manifest {referenceSuperset.id} - {referenceSuperset.visibility.Value} - {referenceSuperset.version}");
-		}
-		
 		// Update the local reference manifest
 		try
 		{
-			_ = await _contentApi.PostManifest(saveManifestRequest);
+			var postRequestResult = await _contentApi.PostManifest(saveManifestRequest);
+			
+			// Make published contents manifest references synchronized with remote.
+			string contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+			Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
+			var saveTasks = new List<Task>();
+			foreach (ContentFile c in changedContents)
+			{
+				ContentFile contentFile = c;
+				contentFile.FetchedFromManifestUid = postRequestResult.uid;
+				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
+			}
+
+			await Task.WhenAll(saveTasks);
 		}
 		catch (RequesterException e)
 		{
 			Log.Information(e.RequestError.error);
 			throw;
 		}
+		
 	}
 
 	/// <summary>
@@ -1070,7 +1119,7 @@ public class ContentService
 	}
 	
 
-	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
+	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, HashSet<string> newItemsOnRemote, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
 		out HashSet<string> canUpdateReferenceToTargetWithoutDownload)
 	{
 		conflictedContent = new();
@@ -1110,8 +1159,11 @@ public class ContentService
 				var caseB = allowDeletedInAutoSync && statusAgainstTarget is ContentStatus.Deleted;
 				// C. If we want to syncModified and the status against target is modified
 				var caseC = allowModifiedInAutoSync && statusAgainstTarget is ContentStatus.Modified;
+				// D. If the content is newly created on the latest manifest we should auto sync it
+				var caseD = statusAgainstTarget is ContentStatus.Deleted && newItemsOnRemote.Contains(contentFile.Id);
+				
 				// If either of the above cases are true, we can auto-sync this content.
-				if (caseA || caseB || caseC) canAutoSync.Add(contentFile.Id);
+				if (caseA || caseB || caseC || caseD) canAutoSync.Add(contentFile.Id);
 
 				// We also need to check if we can to update the reference manifest uid without downloading the content.
 				// A. Our local content is up-to-date against the target AND it doesn't reference the target.
@@ -1301,6 +1353,7 @@ public class ContentService
 				IsInConflict = file.IsInConflict,
 				JsonFilePath = file.LocalFilePath,
 				ReferenceManifestUid = file.FetchedFromManifestUid,
+				LatestUpdateAtDate = file.GetLastUpdateAt(),
 			};
 		});
 	}
@@ -1554,10 +1607,33 @@ public struct ContentFile : IEquatable<ContentFile>
 		return ret;
 	}
 
+	public long GetLastUpdateAt()
+	{
+		if (ReferenceContent == null)
+		{
+			if (!File.Exists(LocalFilePath))
+			{
+				Log.Warning("ContentFile doesn't have a Reference Content neither a Local File Path. This should not happen as ContentFile is created by one of those.");
+				return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			}
+			DateTimeOffset lastWriteTimeUtc = File.GetLastWriteTimeUtc(LocalFilePath);
+			return lastWriteTimeUtc.ToUnixTimeMilliseconds();
+		}
+			
+		var refLongTime = ReferenceContent.updatedAt.HasValue ? ReferenceContent.updatedAt : ReferenceContent.createdAt;
+		if (!refLongTime.HasValue && File.Exists(LocalFilePath))
+		{
+			DateTimeOffset lastWriteTimeUtc = File.GetLastWriteTimeUtc(LocalFilePath);
+			refLongTime = new OptionalLong(lastWriteTimeUtc.ToUnixTimeMilliseconds());
+		}
+		return refLongTime.HasValue ? refLongTime.Value : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+	}
+
 	public ContentFile ChangeReference(ClientManifestJsonResponse newReferenceManifest)
 	{
 		var copy = this;
-		copy.ReferenceContent = newReferenceManifest == null ? null : newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
+		ClientContentInfoJson clientContentInfoJson = newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
+		copy.ReferenceContent = newReferenceManifest == null ? null : clientContentInfoJson;
 		copy.FetchedFromManifestUid = newReferenceManifest != null ? newReferenceManifest.uid : copy.FetchedFromManifestUid;
 		return copy;
 	}

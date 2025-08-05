@@ -1,3 +1,7 @@
+using System.Linq;
+using Beamable.Common.Content;
+using Beamable.Content;
+using Beamable.Modules.Content;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -61,6 +65,14 @@ namespace Beamable.Editor.Util
 		
 		public static void LoadAllIcons()
 		{
+			var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+			var allTypes = reflectionCache.GetAll().ToList();
+			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration?.TextureConfigurations?.Count != allTypes.Count)
+			{
+				ContentConfiguration.Instance.ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+			}
+			
+			
 			if (unitySpinnerTextures == null)
 			{
 				unitySpinnerTextures = new Texture[]
@@ -213,7 +225,8 @@ namespace Beamable.Editor.Util
 
 			if (iconCheck == null)
 			{
-				iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
 			}
 
 			if (iconUpload == null)

@@ -52,6 +52,7 @@ namespace Beamable.Editor.ContentService
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
+		public BeamContentPsProgressMessage LatestProgressUpdate;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 		public int ManifestChangedCount { get; private set; }
@@ -161,6 +162,7 @@ namespace Beamable.Editor.ContentService
 					
 				});
 
+				
 				contentSyncCommand.OnProgressStreamContentProgressUpdateData(reportData =>
 				{
 					HandleProgressUpdate(reportData.data, SYNC_OPERATION_TITLE, SYNC_OPERATION_SUCCESS_BASE_MESSAGE,
@@ -206,14 +208,30 @@ namespace Beamable.Editor.ContentService
 			entry.Tags = tags;
 			EntriesCache[contentId] = entry;
 
-			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+			if (tags.Length == 0)
 			{
-				manifestIds = GetSelectedManifestIdsCliOption(),
-				filterType = ContentFilterType.ExactIds,
-				filter = contentId,
-				tag = string.Join(",", tags)
-			});
-			setContentTagCommand.Run();
+				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+					filterType = ContentFilterType.ExactIds,
+					filter = contentId,
+					clear = true,
+					tag = "<none>"
+				});
+				setContentTagCommand.Run();
+			}
+			else
+			{
+				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
+				{
+					manifestIds = GetSelectedManifestIdsCliOption(),
+					filterType = ContentFilterType.ExactIds,
+					filter = contentId,
+					tag = string.Join(",", tags)
+				});
+				setContentTagCommand.Run();
+			}
+			
 		}
 
 		public string RenameContent(string contentId, string newName)
@@ -423,9 +441,11 @@ namespace Beamable.Editor.ContentService
 
 					ValidationContext.Initialized = true;
 					ComputeTags();
+					ValidateAllContents();
 				}
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
+				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
 				_ = _contentWatcher.Command.Run();
 
 				bool addedAnyDefault = false;
@@ -485,8 +505,17 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		private void ValidateAllContents()
+		{
+			foreach (KeyValuePair<string, ContentObject> scriptableCache in _contentScriptableCache)
+			{
+				ValidateForInvalidFields(scriptableCache.Value);
+			}
+		}
+
 		private void ClearCaches()
 		{
+			LatestProgressUpdate = new BeamContentPsProgressMessage();
 			ValidationContext.AllContent.Clear();
 			EntriesCache.Clear();
 			TypeContentCache.Clear();
@@ -713,6 +742,9 @@ namespace Beamable.Editor.ContentService
 
 		public void ValidateForInvalidFields(ContentObject contentObject)
 		{
+			// No need to validate content that is deleted.
+			if(contentObject.ContentStatus is ContentStatus.Deleted)
+				return;
 			bool hasValidationError =
 				contentObject != null && contentObject.HasValidationErrors(ValidationContext, out var _);
 			UpdateContentValidationStatus(contentObject.Id, hasValidationError);

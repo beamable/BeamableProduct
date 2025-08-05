@@ -33,9 +33,6 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private readonly Dictionary<string, List<string>> _contentTypeHierarchy = new();
 		private readonly Dictionary<string, bool> _groupExpandedStates = new();
-		
-		private GUIStyle _selectedStyle;
-		private GUIStyle _nonSelectedStyle;
 
 		private void BuildContentTypeHierarchy()
 		{
@@ -71,21 +68,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
-		private void BuildContentStyles()
-		{
-			_nonSelectedStyle = new GUIStyle("Label");
-		}
-
 		private void DrawContentGroupPanel()
 		{
-			_selectedStyle ??= new GUIStyle("TV Selection");
-			
 			EditorGUILayout.BeginVertical();
 			{
 				EditorGUILayout.Space(5);
 				bool isSelected = SelectedContentType.Count == 0;
 				
-				GUIStyle rowStyle = isSelected ? _selectedStyle : _nonSelectedStyle;
+				GUIStyle rowStyle = isSelected ? EditorStyles.selectionRect : EditorStyles.label;
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
 				
@@ -132,13 +122,16 @@ namespace Beamable.Editor.UI.ContentWindow
 				                        _contentTypeHierarchy[contentType].Count > 0;
 
 				bool isSelected = SelectedContentType.Contains(contentType);
-				GUIStyle rowStyle = isSelected ? _selectedStyle : _nonSelectedStyle;
+				GUIStyle rowStyle = isSelected ? EditorStyles.selectionRect : EditorStyles.label;
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
 				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 
+
 				if (isSelected)
 				{
+					// GUI.Box(rowRect, GUIContent.none, EditorStyles.selectionRect);
+
 					GUI.Box(rowRect, GUIContent.none, rowStyle ?? EditorStyles.label);
 				}
 				

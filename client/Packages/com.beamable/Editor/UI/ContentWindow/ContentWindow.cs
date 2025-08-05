@@ -118,10 +118,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			BuildHeaderStyles();
 			
-			BuildContentStyles();
+			BuildMigrationStyles();
 			
 			BuildItemsPanelStyles();
-			
 			
 			_cli = ActiveContext.BeamCli;
 			ClearRenderedItems();
@@ -311,18 +310,14 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public void DrawNestedContent(Action drawContent)
 		{
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.Space(1, true);
 			EditorGUILayout.BeginVertical(new GUIStyle()
 			{
-				padding = new RectOffset(0,0,12,12)
-			}, GUILayout.MaxWidth(position.width * .4f));
+				padding = new RectOffset(NESTED_CONTENT_PADDING,NESTED_CONTENT_PADDING,NESTED_CONTENT_PADDING,NESTED_CONTENT_PADDING)
+			});
 			drawContent();
 			EditorGUILayout.EndVertical();
-			EditorGUILayout.Space(1, true);
-			EditorGUILayout.EndHorizontal();
 		}
-		
+		public const int NESTED_CONTENT_PADDING = 24;
 	}
 
 	public enum ContentWindowStatus
@@ -333,4 +328,5 @@ namespace Beamable.Editor.UI.ContentWindow
 		Revert,
 		Validate
 	}
+	
 }

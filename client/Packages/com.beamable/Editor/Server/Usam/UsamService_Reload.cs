@@ -32,14 +32,18 @@ namespace Beamable.Server.Editor.Usam
 			// await _ctx.BeamCli.OnReady;
 
 			var command = _cli.UnityManifest();
-			var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
-			checkCommand.OnStreamCheckResultsForBeamoId(cb =>
+
+			if (!_config.DisableAutoChecks)
 			{
-				if (latestReloadTaskId != taskId)
-					return;
-				_requiredUpgrades.Add(cb.data);
-			});
-			_ = checkCommand.Run();
+				var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
+				checkCommand.OnStreamCheckResultsForBeamoId(cb =>
+				{
+					if (latestReloadTaskId != taskId)
+						return;
+					_requiredUpgrades.Add(cb.data);
+				});
+				_ = checkCommand.Run();
+			}
 			
 			
 			command.OnStreamShowManifestCommandOutput(cb =>

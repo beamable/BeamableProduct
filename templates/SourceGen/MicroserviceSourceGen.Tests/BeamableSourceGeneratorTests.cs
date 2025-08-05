@@ -15,6 +15,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using UnityEngine;
 
 namespace Microservice.SourceGen.Tests;
 
@@ -72,8 +73,9 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 	}
 
 	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx, MicroserviceFederationsConfig? cfg,
-		string userCode) where T : DiagnosticAnalyzer, new()
+		string userCode, string[]? extraGlobalConfigs = null) where T : DiagnosticAnalyzer, new()
 	{
+		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
 		AddAssemblyReferences(ctx.TestState);
 
 		ctx.TestCode = userCode;
@@ -82,6 +84,21 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 			string serialize = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { IncludeFields = true });
 			ctx.TestState.AdditionalFiles.Add((MicroserviceFederationsConfig.CONFIG_FILE_NAME, serialize));
 		}
+
+		string globalConfig = @"
+is_global = true 
+build_property.EnableUnrealBlueprintCompability = true";
+		if (extraGlobalConfigs != null)
+		{
+			foreach (string extraGlobalConfig in extraGlobalConfigs)
+			{
+				globalConfig += $@"
+{extraGlobalConfig}";
+
+			}
+		}
+
+		ctx.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", globalConfig));
 	}
 
 	private static void PrepareForRun<TAnalyzer,TFixProvider>(CSharpCodeFixTest<TAnalyzer, TFixProvider, DefaultVerifier> ctx,
@@ -93,6 +110,8 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		ctx.CodeActionValidationMode = CodeActionValidationMode.SemanticStructure;
 		ctx.TestCode = NormalizeLineEndings(userCode);
 		ctx.FixedCode = NormalizeLineEndings(fixedCode);
+		
+		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
 		
 		ctx.SolutionTransforms.Add((solution, projectId) =>
 		{
@@ -146,8 +165,10 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 		// Needs Beamable Runtime and Server Assemblies so it can properly find Interfaces and Classes
 		var serverAssembly = Assembly.GetAssembly(typeof(ClientCallableAttribute));
 		var runtimeAssembly = Assembly.GetAssembly(typeof(IFederationId));
+		var unityAssembly = Assembly.GetAssembly(typeof(ScriptableObject));
 		state.AdditionalReferences.Add(serverAssembly!);
 		state.AdditionalReferences.Add(runtimeAssembly!);
+		state.AdditionalReferences.Add(unityAssembly!);
 	}
 
 	public void Dispose()

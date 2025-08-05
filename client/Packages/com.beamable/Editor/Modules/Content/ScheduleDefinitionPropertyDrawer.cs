@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Common.CronExpression;
 using Beamable.CronExpression;
 using Beamable.Editor.Util;
 using Beamable.Editor.Utility;
@@ -253,14 +254,18 @@ namespace Beamable.Editor.Content
 			
 			var startRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var startLabel = new GUIContent("Start: ");
-			float startLabelSize = EditorStyles.label.CalcSize(startLabel).x;
+			GUIStyle labelStyle = new GUIStyle(EditorStyles.label)
+			{
+				alignment = TextAnchor.MiddleLeft
+			};
+			float startLabelSize = labelStyle.CalcSize(startLabel).x;
 			EditorGUI.LabelField(startRectController.ReserveWidth(startLabelSize), startLabel);
 			start = EditorGUI.IntField(startRectController.ReserveWidth(startRectController.rect.width - 2f), start);
 			
 			var endRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var endLabel = new GUIContent("End: ");
-			float endLabelSize = EditorStyles.label.CalcSize(endLabel).x;
-			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), endLabel);
+			float endLabelSize = labelStyle.CalcSize(endLabel).x;
+			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), "End:");
 			end = EditorGUI.IntField(endRectController.ReserveWidth(endRectController.rect.width - 2f), end);
 
 			UpdateCronPartValue($"{start}-{end}", i, propertyPath);
@@ -321,19 +326,23 @@ namespace Beamable.Editor.Content
 			
 			var startRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var startLabel = new GUIContent("Start: ");
-			float startLabelSize = EditorStyles.label.CalcSize(startLabel).x;
+			GUIStyle labelStyle = new GUIStyle(EditorStyles.label)
+			{
+				alignment = TextAnchor.MiddleLeft
+			};
+			float startLabelSize = labelStyle.CalcSize(startLabel).x;
 			EditorGUI.LabelField(startRectController.ReserveWidth(startLabelSize), startLabel);
 			nthStart = EditorGUI.IntField(startRectController.ReserveWidth(startRectController.rect.width - 2f), nthStart);
 			
 			var endRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var endLabel = new GUIContent("End: ");
-			float endLabelSize = EditorStyles.label.CalcSize(endLabel).x;
+			float endLabelSize = labelStyle.CalcSize(endLabel).x;
 			EditorGUI.LabelField(endRectController.ReserveWidth(endLabelSize), "End:");
 			nthEnd = EditorGUI.IntField(endRectController.ReserveWidth(endRectController.rect.width - 2f), nthEnd);
 			
 			var stepRectController = new EditorGUIRectController(lineRectController.ReserveWidth(fieldsSize));
 			var stepLabel = new GUIContent("Step: ");
-			float stepLabelSize = EditorStyles.label.CalcSize(stepLabel).x;
+			float stepLabelSize = labelStyle.CalcSize(stepLabel).x;
 			EditorGUI.LabelField(stepRectController.ReserveWidth(stepLabelSize), "Step:");
 			step = EditorGUI.IntField(stepRectController.ReserveWidth(stepRectController.rect.width - 2f), step);
 
@@ -392,14 +401,13 @@ namespace Beamable.Editor.Content
 					currentValues.Add(fieldProp.GetArrayElementAtIndex(j).stringValue);
 				}
 
-				string partValue = ExpressionDescriptor.ConvertToCronString(currentValues.ToArray());
+				string partValue = ExpressionParser.ConvertToCronString(currentValues.ToArray());
 				cronTypeParts[i] = GetFieldType(partValue);
 				cronParts[i] = partValue;
 			}
 			
 			SetPropertyValue(_propPathsCronTypes, propertyPropertyPath, cronTypeParts);
 			SetPropertyValue(_propPathCronParts, propertyPropertyPath, cronParts);
-			
 			UpdateCronExpressions(propertyPropertyPath, cronParts);
 			
 		}
@@ -493,7 +501,11 @@ namespace Beamable.Editor.Content
 			var rawCronExpression = cronParts.Any(string.IsNullOrWhiteSpace) ? string.Empty : string.Join(" ", cronParts);
 			string humanExpression = ExpressionDescriptor.GetDescription(rawCronExpression, out var errorData);
 			if (errorData.IsError)
+			{
 				humanExpression = errorData.ErrorMessage;
+				
+			}
+
 			SetPropertyValue(_propPathRawCronFormat, propertyPath, rawCronExpression);
 			SetPropertyValue(_propPathHumanCronFormat,  propertyPath, humanExpression);
 		}
@@ -506,11 +518,13 @@ namespace Beamable.Editor.Content
 				var rawCron =
 					string.Join(" ", cronParts.ToList().Select(item => string.IsNullOrWhiteSpace(item) ? "*" : item));
 				TryGetPropertyValue(_propPathPreviousCronFormat, property.propertyPath, out string oldRawCron);
-				if (oldRawCron == rawCron)
+				var scheduleCron = ExpressionParser.ScheduleDefinitionToCron(scheduleDefinition);
+				if (oldRawCron == rawCron && rawCron == scheduleCron)
 				{
 					return;
 				}
 				SetPropertyValue(_propPathPreviousCronFormat, property.propertyPath, rawCron);
+
 				scheduleDefinition.ApplyCronToScheduleDefinition(rawCron);
 				property.serializedObject.ApplyModifiedProperties();
 				Object targetObject = property.serializedObject.targetObject;
@@ -530,9 +544,8 @@ namespace Beamable.Editor.Content
 				return EditorGUIUtility.singleLineHeight;
 			
 			Rect tempRect = new Rect(0, 0, EditorGUIUtility.currentViewWidth, 0);
-			Rect indentedRect = EditorGUI.IndentedRect(tempRect);
 			float margin = 5f; 
-			float availableWidth = indentedRect.width - margin * 2;
+			float availableWidth = tempRect.width - 15f - margin * 2;
 			GUIStyle style = EditorStyles.label;
 			style.wordWrap = true;
 			return style.CalcHeight(new GUIContent(humanCronExpression), availableWidth);

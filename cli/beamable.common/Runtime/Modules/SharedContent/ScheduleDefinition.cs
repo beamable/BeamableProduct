@@ -38,7 +38,7 @@ namespace Beamable.Common.Content
 
 		[MustBeDateString]
 		public OptionalString activeTo = new OptionalString();
-
+		
 		public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
 
 
@@ -89,7 +89,16 @@ namespace Beamable.Common.Content
 		[HideInInspector]
 		public List<string> dayOfWeek;
 
-		public ScheduleDefinition() { }
+		public ScheduleDefinition()
+		{
+			second = new  List<string> { "*" };
+			minute = new  List<string> { "*" };
+			hour = new  List<string> { "*" };
+			dayOfMonth = new  List<string> { "*" };
+			month = new  List<string> { "*" };
+			dayOfWeek = new  List<string> { "*" };
+			year = new  List<string> { "*" };
+		}
 
 		public ScheduleDefinition(string second, string minute, string hour, List<string> dayOfMonth, string month, string year, List<string> dayOfWeek)
 		{
