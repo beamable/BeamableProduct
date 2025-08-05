@@ -5,6 +5,7 @@ import type {
   LeaderBoardView,
 } from '@/__generated__/schemas';
 import { GetLeaderboardParams } from '@/services/LeaderboardsService';
+import { ThirdPartyAuthProvider } from '@/services/enums';
 
 /** A service for managing player-related data and operations. */
 export class PlayerService {
@@ -30,6 +31,20 @@ export class PlayerService {
       external: [],
       language: '',
     };
+  }
+
+  /**
+   * Checks if the current player has an association with the given third-party provider.
+   * @example
+   * ```ts
+   * const hasGoogle = beam.player.hasThirdPartyAssociation(ThirdPartyAuthProvider.Google);
+   * ```
+   * @returns `true` if the player has an association with the given third-party provider, `false` otherwise.
+   */
+  hasThirdPartyAssociation(provider: ThirdPartyAuthProvider): boolean {
+    return this.playerAccount.thirdPartyAppAssociations.some(
+      (thirdParty) => thirdParty.toLowerCase() === provider.toLowerCase(),
+    );
   }
 
   /**

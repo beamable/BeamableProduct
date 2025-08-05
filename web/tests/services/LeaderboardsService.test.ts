@@ -13,6 +13,7 @@ import type {
   LeaderBoardView,
   LeaderBoardViewResponse,
 } from '@/__generated__/schemas';
+import { BeamBase } from '@/core/BeamBase';
 
 describe('LeaderboardsService', () => {
   describe('get', () => {
@@ -30,10 +31,15 @@ describe('LeaderboardsService', () => {
       });
 
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const params: GetLeaderboardParams = {
         id: 'lb1',
@@ -76,10 +82,15 @@ describe('LeaderboardsService', () => {
       });
 
       const mockRequester = {} as HttpRequester;
-      const service = new LeaderboardsService({
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
         requester: mockRequester,
-        userId: '123',
+      } as unknown as BeamBase;
+      const service = new LeaderboardsService({
+        beam,
       });
+      service.userId = '123';
       const params: GetLeaderboardParams = { id: 'lb2' };
       const result = await service.get(params);
 
@@ -90,10 +101,15 @@ describe('LeaderboardsService', () => {
   describe('getAssignedBoard', () => {
     it('throws BeamError when assignment is not found', async () => {
       const mockRequester = {} as HttpRequester;
-      const service = new LeaderboardsService({
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
         requester: mockRequester,
-        userId: 'user1',
+      } as unknown as BeamBase;
+      const service = new LeaderboardsService({
+        beam,
       });
+      service.userId = '123';
       vi.spyOn(service as any, 'getAssignment').mockResolvedValue(
         undefined as any,
       );
@@ -112,9 +128,14 @@ describe('LeaderboardsService', () => {
         rankings: [],
       };
       const mockRequester = {} as HttpRequester;
-      const service = new LeaderboardsService({
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
         requester: mockRequester,
-        player: new PlayerService(),
+      } as unknown as BeamBase;
+      const service = new LeaderboardsService({
+        beam,
+        getPlayer: () => new PlayerService(),
       });
       const params: GetLeaderboardParams = {
         id: 'assignId',
@@ -150,10 +171,15 @@ describe('LeaderboardsService', () => {
       });
 
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const result = await service.getFriendRanks({ id: 'lbFriends' });
 
@@ -181,10 +207,15 @@ describe('LeaderboardsService', () => {
       });
 
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const result = await service.getRanks({
         id: 'lbRanks',
@@ -208,8 +239,13 @@ describe('LeaderboardsService', () => {
         headers: {},
         body: { result: 'ok', data: {} },
       });
-      const mockRequester = {} as HttpRequester;
 
+      const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       // ensure previous params exist so setScore will pass them to get
       const getParams: GetLeaderboardParams = { id: 'lb', from: 1, max: 10 };
@@ -221,8 +257,8 @@ describe('LeaderboardsService', () => {
       };
       playerService.leaderboardsParams = { [getParams.id]: getParams };
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       // mock assignment resolution
       vi.spyOn(service as any, 'getAssignment').mockResolvedValue({
@@ -250,10 +286,15 @@ describe('LeaderboardsService', () => {
 
     it('throws BeamError when assignment is not found', async () => {
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       vi.spyOn(service as any, 'getAssignment').mockResolvedValue(
         undefined as any,
@@ -269,11 +310,17 @@ describe('LeaderboardsService', () => {
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
-      const service = new LeaderboardsService({
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
         requester: mockRequester,
-        userId: 'user1',
+      } as unknown as BeamBase;
+      const service = new LeaderboardsService({
+        beam,
       });
+      service.userId = '123';
       vi.spyOn(service as any, 'getAssignment').mockResolvedValue({
         leaderboardId: 'lb',
       } as LeaderboardAssignmentInfo);
@@ -304,11 +351,17 @@ describe('LeaderboardsService', () => {
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const service = new LeaderboardsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
 
       await expect(service.freeze({ id: 'lbFreeze' })).rejects.toThrow(
@@ -322,11 +375,17 @@ describe('LeaderboardsService', () => {
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
-      const service = new LeaderboardsService({
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
         requester: mockRequester,
-        userId: 'adminId',
+      } as unknown as BeamBase;
+      const service = new LeaderboardsService({
+        beam,
       });
+      service.userId = 'adminId';
 
       await service.freeze({ id: 'lbFreeze' });
 

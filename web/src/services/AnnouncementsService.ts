@@ -20,9 +20,13 @@ export class AnnouncementsService
   extends ApiService
   implements Refreshable<AnnouncementView[]>
 {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'announcements';
   }
 
   /**

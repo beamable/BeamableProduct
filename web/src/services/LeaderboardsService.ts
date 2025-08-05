@@ -70,9 +70,13 @@ export interface FreezeLeaderboardParams {
 }
 
 export class LeaderboardsService extends ApiService {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'leaderboards';
   }
 
   /**
@@ -83,6 +87,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch a leaderboard view
    * const leaderboardView = await leaderboards.get({
    *   id: 'leaderboard-id',
    *   from: 1, // optional, to start from a specific rank
@@ -130,6 +135,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the assigned leaderboard view
    * const assignedBoard = await leaderboards.getAssignedBoard({ id: 'leaderboard-id' });
    * ```
    * @throws {BeamError} If the assignment does not exist or the leaderboard cannot be fetched.
@@ -158,6 +164,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the ranks of friends in a leaderboard
    * const friendRanks = await leaderboards.getFriendRanks({
    *   id: 'leaderboard-id',
    * });
@@ -184,6 +191,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the ranks of specific players in a leaderboard
    * const ranks = await leaderboards.getRanks({
    *   id: 'leaderboard-id',
    *   playerIds: ['player1GamertagOrId', 'player2GamertagOrId'],
@@ -210,6 +218,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // set the score for the current player in a leaderboard
    * await leaderboards.setScore({
    *   id: 'leaderboard-id',
    *   score: 1000,
@@ -290,7 +299,10 @@ export class LeaderboardsService extends ApiService {
 
     if (!this.player) return body;
 
-    this.player.leaderboardsAssignments[`${this.player.id}:${id}`] = body;
+    this.player.leaderboardsAssignments = {
+      ...this.player.leaderboardsAssignments,
+      [`${this.player.id}:${id}`]: body,
+    };
     return body;
   }
 
