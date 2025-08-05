@@ -55,6 +55,10 @@ namespace Beamable.Server.Editor
 		[Tooltip("When true, the `beam checks scan` command will not be run in the beam services window.")]
 		public bool DisableAutoChecks;
 
+		[Tooltip("For each service, a boolean to control if the client code should be generated automatically when the service is built. By default, services will autogenerate, so if the key does not exist, the service will autogenerate a client. ")]
+		public SerializableDictionaryStringToBool AutoGenerateClientOnBuilds =
+			new SerializableDictionaryStringToBool();
+
 	}
 	
 	/// <summary>

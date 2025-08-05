@@ -118,11 +118,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			BuildHeaderStyles();
 			
-			BuildContentStyles();
 			BuildMigrationStyles();
 			
 			BuildItemsPanelStyles();
-			
 			
 			_cli = ActiveContext.BeamCli;
 			ClearRenderedItems();
