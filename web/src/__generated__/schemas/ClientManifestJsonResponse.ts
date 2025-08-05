@@ -7,6 +7,8 @@ import type { ClientContentInfoJson } from './ClientContentInfoJson';
 
 export type ClientManifestJsonResponse = { 
   entries: ClientContentInfoJson[]; 
+  createdAt?: bigint | string; 
+  latestUpdate?: bigint | string; 
   publisherAccountId?: bigint | string; 
   uid?: string; 
 };
