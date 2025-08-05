@@ -1,6 +1,6 @@
 {
   "name": "beamable-sdk",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.js",
   "module": "dist/node/index.mjs",
@@ -21,7 +21,8 @@
     "format": "prettier --write .",
     "doc": "typedoc",
     "changeset": "changeset",
-    "release": "changeset version && pnpm build"
+    "release": "changeset version && pnpm build",
+    "prepublishOnly": "pnpm build"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",
