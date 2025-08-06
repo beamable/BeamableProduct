@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
-import {
+import type {
   AnnouncementQueryResponse,
   AnnouncementView,
 } from '@/__generated__/schemas';
 import { AnnouncementsService } from '@/services/AnnouncementsService';
 import { PlayerService } from '@/services/PlayerService';
+import { BeamBase } from '@/core/BeamBase';
 
 describe('AnnouncementsService', () => {
   describe('list', () => {
@@ -27,16 +28,23 @@ describe('AnnouncementsService', () => {
           },
         ],
       };
+
       vi.spyOn(apis, 'announcementsGetByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const announcementsService = new AnnouncementsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const result = await announcementsService.list();
 
@@ -65,17 +73,24 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
+
       vi.spyOn(apis, 'announcementsPostClaimByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       await announcementsService.claim({ id: announcementId });
 
@@ -104,17 +119,24 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
+
       vi.spyOn(apis, 'announcementsPutReadByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       await announcementsService.markAsRead({ id: announcementId });
 
@@ -143,17 +165,24 @@ describe('AnnouncementsService', () => {
         summary: 'New game update available',
         title: 'Game Update',
       };
+
       vi.spyOn(apis, 'announcementsDeleteByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok', data: {} },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       playerService.announcements = [mockAnnouncement];
       const announcementsService = new AnnouncementsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       await announcementsService.delete({ id: announcementId });
 

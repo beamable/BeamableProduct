@@ -22,6 +22,7 @@ import type { Lobby } from '@/__generated__/schemas/Lobby';
 import type { LobbyQueryResponse } from '@/__generated__/schemas/LobbyQueryResponse';
 import type { RemoveFromLobby } from '@/__generated__/schemas/RemoveFromLobby';
 import type { RemoveTags } from '@/__generated__/schemas/RemoveTags';
+import type { SetLobbyResponse } from '@/__generated__/schemas/SetLobbyResponse';
 import type { UpdateLobby } from '@/__generated__/schemas/UpdateLobby';
 
 /**
@@ -72,6 +73,30 @@ export async function lobbiesPost(requester: HttpRequester, payload: CreateLobby
     r: requester,
     e: endpoint,
     m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `Lobby` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function lobbiesPut(requester: HttpRequester, payload: Lobby, gamertag?: string): Promise<HttpResponse<SetLobbyResponse>> {
+  let endpoint = "/api/lobbies";
+  
+  // Make the API request
+  return makeApiRequest<SetLobbyResponse, Lobby>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
     p: payload,
     g: gamertag,
     w: true

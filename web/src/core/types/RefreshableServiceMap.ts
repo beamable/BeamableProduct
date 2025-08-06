@@ -1,6 +1,8 @@
-import { AnnouncementView } from '@/__generated__/schemas';
+import type { AnnouncementView } from '@/__generated__/schemas';
 
-export interface ContextMap {
+export const REFRESHABLE_SERVICES = ['announcements'];
+
+export interface RefreshableServiceMap {
   'announcements.refresh': AnnouncementsRefresh;
 }
 

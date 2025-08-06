@@ -49,9 +49,17 @@ public class WebClientCodeGenerator
 		tsClass.AddModifier(TsModifier.Export);
 		tsClass.AddMethod(tsGetServiceNameMethod);
 
+		AddFederationIdProps(tsClass, document);
 		AddMethodsToClass(tsClass, document);
 
 		_clientFile = new TsFile(serviceClientClassName);
+
+		if (IsTypeScript)
+		{
+			ProcessClientTypes();
+			GenerateBeamSDKModuleDeclaration(_clientFile, tsClass);
+		}
+
 		_clientFile.AddDeclaration(tsClass);
 
 		var tsBeamSdkImport = new TsImport("beamable-sdk");
@@ -60,7 +68,7 @@ public class WebClientCodeGenerator
 
 		if (!IsTypeScript)
 			return;
-
+		
 		tsBeamSdkImport.AddNamedImport("type BeamBase");
 
 		if (_schemas.Count > 0)
@@ -70,8 +78,38 @@ public class WebClientCodeGenerator
 			_clientFile.AddImport(tsBeamSchemaImport);
 		}
 
-		var tsClientTypesImport = new TsImport("./types", defaultImport: "* as Types", typeImportOnly: true);
-		_clientFile.AddImport(tsClientTypesImport);
+		if (ClientTypes.Count > 0)
+		{
+			var tsClientTypesImport = new TsImport("./types", defaultImport: "* as Types", typeImportOnly: true);
+			_clientFile.AddImport(tsClientTypesImport);
+		}
+	}
+
+	private void AddFederationIdProps(TsClass tsClass, OpenApiDocument document)
+	{
+		if (!document.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY, out var ext) ||
+		    ext is not OpenApiArray { Count: > 0 } federationIds)
+			return;
+
+		const string federationIdsIdentifierName = "federationIds";
+		var tsObjectLiteral = new TsObjectLiteralExpression();
+
+		foreach (var id in federationIds)
+		{
+			if (id is not OpenApiObject obj || !obj.TryGetValue("federationId", out var raw) ||
+			    raw is not OpenApiString { Value: var federationId })
+				continue;
+
+			// sanitize federationId to ensure it is a valid TypeScript identifier
+			var sanitizedFederationId = federationId.Replace("-", "_").Replace(" ", "_").Replace(".", "_");
+			tsObjectLiteral.AddMember(new TsIdentifier(sanitizedFederationId), new TsLiteralExpression(federationId));
+		}
+
+		var tsProperty = new TsProperty(federationIdsIdentifierName, emitJavaScript: !IsTypeScript)
+			.AddModifier(TsModifier.Readonly)
+			.WithInitializer(tsObjectLiteral)
+			.AsConstAssertion(); // default TsType.Any will be ignored since this is a const assertion
+		tsClass.AddProperty(tsProperty);
 	}
 
 	private void AddMethodsToClass(TsClass tsClass, OpenApiDocument document)
@@ -233,6 +271,30 @@ public class WebClientCodeGenerator
 		schemaType = isNullable ? TsType.Union(schemaType, TsType.Null) : schemaType;
 		return schemaType;
 	}
+	
+	private static void ProcessClientTypes()
+	{
+		foreach (var (moduleType, _) in ModuleTypes)
+			ClientTypes.Add(moduleType);
+	}
+
+	private static void GenerateBeamSDKModuleDeclaration(TsFile clientFile, TsClass tsClass)
+	{
+		var className = tsClass.Name;
+		var camelCaseClassName = StringHelper.ToCamelCaseIdentifier(className);
+		var serviceName = tsClass.Name.Replace("Client", string.Empty);
+		var tsModule = new TsModule("beamable-sdk");
+		var tsInterface = new TsInterface("BeamBase");
+		var tsProperty = new TsProperty(camelCaseClassName, TsType.Of(className));
+		var tsComment = new TsComment(
+			$"Access the {serviceName} microservice.\n@remarks Before accessing this property, register it first via the `use` method.\n@example\n```ts\n// client-side:\nbeam.use({className});\nbeam.{camelCaseClassName}.serviceName;\n// server-side:\nbeamServer.use({className});\nbeamServer.{camelCaseClassName}.serviceName;\n```",
+			TsCommentStyle.Doc);
+		tsProperty.AddComment(tsComment);
+		tsInterface.AddProperty(tsProperty);
+		tsModule.AddStatement(tsInterface);
+		var tsDeclare = new TsDeclare(tsModule);
+		clientFile.AddDeclaration(tsDeclare);
+	}
 
 	public string GenerateClientCode(string clientsOutputDirectory)
 	{
@@ -243,14 +305,11 @@ public class WebClientCodeGenerator
 		return clientFilePath;
 	}
 
-	public static void ProcessClientTypes()
-	{
-		foreach (var (moduleType, _) in ModuleTypes)
-			ClientTypes.Add(moduleType);
-	}
-
 	public static string GenerateClientTypes(string typesOutputDirectory)
 	{
+		if (ClientTypes.Count == 0)
+			return string.Empty;
+
 		var tsClientTypeFile = new TsFile("index");
 		foreach (var clientType in ClientTypes)
 			tsClientTypeFile.AddDeclaration(clientType);
@@ -261,5 +320,6 @@ public class WebClientCodeGenerator
 		return clientTypeFilePath;
 	}
 
-	public static bool IsTypeScript => _langType.Equals("typescript", StringComparison.InvariantCultureIgnoreCase);
+	public static bool IsTypeScript => _langType.Equals("typescript", StringComparison.InvariantCultureIgnoreCase) ||
+	                                   _langType.Equals("ts", StringComparison.InvariantCultureIgnoreCase);
 }
