@@ -1,0 +1,61 @@
+name: Release Web SDK Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+          type: string
+          description: Commit hash to deploy
+          default: main
+
+run-name: Release Web SDK Docs for commit ${{ inputs.commit }} by @${{ github.actor }}
+jobs:
+  websdkdocs:
+      timeout-minutes: 10
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: web
+      concurrency:
+        group: publish-websdkdocs
+        cancel-in-progress: true
+      steps:
+      - uses: actions/checkout@v4
+        with: 
+          ref: ${{ github.event.inputs.commit }}
+
+      # Setup Node.js LTS version 22.14.0
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.14.0'
+
+      # Install pnpm package manager version 10.8.0 globally
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
+      # Install project dependencies using pnpm
+      - name: Install dependencies
+        run: pnpm install
+
+      # Run the docs
+      - name: Build Docs
+        run: pnpm doc
+
+      #Push the collector builds to s3 so that they can be downloaded by distros later
+      - name: Upload Docs to S3
+        working-directory: web/docs
+        run: |
+          AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-websdkdocs/latest --acl public-read
+      
+      # Invalidate the CDN for collector builds
+      - name: Prepare Cloudfront Invalidation 
+        run: |
+          CLOUD_DISTRO=E1P1ZRR5EERH3Z
+          CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
+      - name: Preview Cloudfront Invalidation 
+        run: |
+          cat cloudfront-invalidation.json
+      - name: Do Cloudfront Invalidation
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
