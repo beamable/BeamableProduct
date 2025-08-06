@@ -253,6 +253,11 @@ resource "aws_s3_bucket_policy" "websdkdocs" {
 
 resource "aws_s3_bucket_lifecycle_configuration" "websdkdocs" {
   bucket = aws_s3_bucket.websdkdocs.id
+
+  rule {
+    id = "default"
+    status = "Enabled"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "websdkdocs" {
