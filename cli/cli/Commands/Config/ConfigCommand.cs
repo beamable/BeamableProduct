@@ -2,6 +2,7 @@ using Beamable.Common;
 using Newtonsoft.Json;
 using System.CommandLine;
 using Beamable.Common.BeamCli;
+using Beamable.Server;
 using cli.Services;
 
 namespace cli;
@@ -17,7 +18,7 @@ public class ConfigCommandProjectResult
 
 public class ConfigCommandProjectChannel : IResultChannel
 {
-	public string ChannelName => "project-config";
+	public string ChannelName => "projectconfig";
 }
 
 public class ConfigCommand 
@@ -61,6 +62,10 @@ public class ConfigCommand
 				linkedUnrealProjects = projectData.unrealProjectsPaths.Select(x => x.Path).ToList()
 			};
 			this.SendResults<ConfigCommandProjectChannel, ConfigCommandProjectResult>(projectRes);
+			if (AutoLogOutput)
+			{
+				LogResult(projectRes);
+			}
 		}
 		
 		if (args.IgnoreOverrides)

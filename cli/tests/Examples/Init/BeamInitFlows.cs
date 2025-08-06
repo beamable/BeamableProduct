@@ -35,7 +35,7 @@ public class BeamInitFlows : CLITest
   ""unrealProjectsPaths"": []
 }");
 
-		var subFolder = Path.Combine(initArg, "sub");
+		var subFolder = Path.Combine(initArg, "sub", "folder");
 		Directory.CreateDirectory(subFolder);
 		Directory.SetCurrentDirectory(subFolder);
 
