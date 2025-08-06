@@ -25,8 +25,8 @@ resource "aws_s3_bucket" "otel-collector-ch" {
 }
 
 # WebSdkDocs Collector
-resource "aws_s3_bucket" "websdkdocs-ch" {
-  bucket = "beamable-websdkdocs-ch"
+resource "aws_s3_bucket" "websdkdocs" {
+  bucket = "beamable-websdkdocs"
   tags = {
     Terraform = true
   }
