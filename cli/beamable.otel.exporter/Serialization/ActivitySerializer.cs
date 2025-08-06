@@ -3,6 +3,13 @@ using System.Diagnostics;
 namespace beamable.otel.exporter.Serialization;
 
 [Serializable]
+public class ActivityBatch
+{
+	public List<SerializableActivity> AllTraces { get; set; }
+	public Dictionary<string, string> ResourceAttributes { get; set; }
+}
+
+[Serializable]
 public class SerializableActivity
 {
 	public string TraceId { get; set; }

@@ -17,6 +17,7 @@ public class BeamableActivityExporter : BeamableExporter<Activity>
 
 	public override ExportResult Export(in Batch<Activity> batch)
 	{
+		var resource = this.ParentProvider.GetResource();
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
@@ -28,7 +29,13 @@ public class BeamableActivityExporter : BeamableExporter<Activity>
 			allActivitiesSerialized.Add(ActivitySerializer.SerializeActivity(activity));
 		}
 
-		var json = JsonSerializer.Serialize(allActivitiesSerialized, new JsonSerializerOptions() { WriteIndented = true });
+		var serializedBatch = new ActivityBatch()
+		{
+			AllTraces = allActivitiesSerialized,
+			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+		};
+
+		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = true });
 
 		File.WriteAllText(filePath, json + Environment.NewLine);
 

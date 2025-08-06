@@ -6,6 +6,13 @@ using System.Reflection;
 namespace beamable.otel.exporter.Serialization;
 
 [Serializable]
+public class MetricsBatch
+{
+	public List<SerializableMetric> AllMetrics { get; set; }
+	public Dictionary<string, string> ResourceAttributes { get; set; }
+}
+
+[Serializable]
 public class SerializableMetric
 {
 	public string Name { get; set; }

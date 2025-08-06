@@ -4,18 +4,20 @@ using OpenTelemetry;
 using Newtonsoft.Json;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using System.Diagnostics;
 
 namespace beamable.otel.exporter;
 
 public class BeamableOtlpExporter
 {
-	public static ExportResult ExportLogs(string filesPath)
+	public static ExportResult ExportLogs(string filesPath, string endpoint)
 	{
 		var allLogsFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
 		var logExporterOptions = new OtlpExporterOptions
 		{
-			Endpoint = new Uri($"http://127.0.0.1:4355/v1/logs"), //TODO get this in a nicer way
+			Endpoint = new Uri($"{endpoint}/v1/logs"), //TODO get this in a nicer way
 			Protocol = OtlpExportProtocol.HttpProtobuf,
 		};
 
@@ -26,6 +28,12 @@ public class BeamableOtlpExporter
 		foreach (string file in allLogsFiles)
 		{
 			var content = File.ReadAllText(file);
+
+			if (string.IsNullOrEmpty(content))
+			{
+				continue; //ignore this file for now, it will be deleted in the deletion part of this
+			}
+
 			var deserializedBatch = JsonConvert.DeserializeObject<LogsBatch>(content);
 
 			var logRecords = deserializedBatch.AllRecords.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
@@ -36,7 +44,7 @@ public class BeamableOtlpExporter
 				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
 			);
 
-			if (!OtlpExporterResourceInjector.TryInjectResource(otlpLogExporter, objectDict))
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpLogExporter>(otlpLogExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
 			{
 				return ExportResult.Failure;
 			}
@@ -51,10 +59,116 @@ public class BeamableOtlpExporter
 
 		if (result == ExportResult.Success)
 		{
-			foreach (var f in allLogsFiles)
+			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
+		}
+
+		return result;
+	}
+
+	public static ExportResult ExportTraces(string filesPath, string endpoint)
+	{
+		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
+
+		var options = new OtlpExporterOptions
+		{
+			Endpoint = new Uri($"{endpoint}/v1/traces"),
+			Protocol = OtlpExportProtocol.HttpProtobuf,
+		};
+
+		OtlpTraceExporter otlpTraceExporter = new OtlpTraceExporter(options);
+
+		var result = ExportResult.Success;
+
+		foreach (string file in allFiles)
+		{
+			var content = File.ReadAllText(file);
+
+			if (string.IsNullOrEmpty(content))
 			{
-				File.Delete(f);
+				continue; //ignore this file for now, it will be deleted in the deletion part of this
 			}
+
+			var deserializedBatch = JsonConvert.DeserializeObject<ActivityBatch>(content);
+
+			var activities = deserializedBatch.AllTraces.Select(ActivitySerializer.DeserializeActivity).ToArray();
+			var activitiesBatch = new Batch<Activity>(activities, activities.Length);
+
+			var objectDict = deserializedBatch.ResourceAttributes.ToDictionary(
+				kvp => kvp.Key,
+				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
+			);
+
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpTraceExporter>(otlpTraceExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
+			{
+				return ExportResult.Failure;
+			}
+
+			result = otlpTraceExporter.Export(activitiesBatch);
+
+			if (result == ExportResult.Failure)
+			{
+				break;
+			}
+		}
+
+		if (result == ExportResult.Success)
+		{
+			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
+		}
+
+		return result;
+	}
+
+	public static ExportResult ExportMetrics(string filesPath, string endpoint)
+	{
+		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
+
+		var options = new OtlpExporterOptions
+		{
+			Endpoint = new Uri($"{endpoint}/v1/metrics"),
+			Protocol = OtlpExportProtocol.HttpProtobuf,
+		};
+
+		OtlpMetricExporter otlpMetricsExporter = new OtlpMetricExporter(options);
+
+		var result = ExportResult.Success;
+
+		foreach (string file in allFiles)
+		{
+			var content = File.ReadAllText(file);
+
+			if (string.IsNullOrEmpty(content))
+			{
+				continue; //ignore this file for now, it will be deleted in the deletion part of this
+			}
+
+			var deserializedBatch = JsonConvert.DeserializeObject<MetricsBatch>(content);
+
+			var metrics = deserializedBatch.AllMetrics.Select(MetricsSerializer.DeserializeMetric).ToArray();
+			var metricsBatch = new Batch<Metric>(metrics, metrics.Length);
+
+			var objectDict = deserializedBatch.ResourceAttributes.ToDictionary(
+				kvp => kvp.Key,
+				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
+			);
+
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpMetricExporter>(otlpMetricsExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
+			{
+				return ExportResult.Failure;
+			}
+
+			result = otlpMetricsExporter.Export(metricsBatch);
+			otlpMetricsExporter.ForceFlush();
+
+			if (result == ExportResult.Failure)
+			{
+				break;
+			}
+		}
+
+		if (result == ExportResult.Success)
+		{
+			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
 		}
 
 		return result;

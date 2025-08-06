@@ -17,6 +17,7 @@ public class BeamableMetricExporter : BeamableExporter<Metric>
 
 	public override ExportResult Export(in Batch<Metric> batch)
 	{
+		var resource = this.ParentProvider.GetResource();
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
@@ -28,7 +29,13 @@ public class BeamableMetricExporter : BeamableExporter<Metric>
 			allMetricsSerialized.Add(MetricsSerializer.SerializeMetric(metric));
 		}
 
-		var json = JsonSerializer.Serialize(allMetricsSerialized, new JsonSerializerOptions() { WriteIndented = true });
+		var serializedBatch = new MetricsBatch()
+		{
+			AllMetrics = allMetricsSerialized,
+			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+		};
+
+		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = true });
 
 		File.WriteAllText(filePath, json + Environment.NewLine);
 
