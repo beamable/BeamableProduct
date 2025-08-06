@@ -34,16 +34,14 @@ public class BeamInitFlows : CLITest
   ],
   ""unrealProjectsPaths"": []
 }");
-		
-		// set the working dir to the initArg folder (where the init ran)
-		if (!string.IsNullOrEmpty(initArg))
-		{
-			Directory.SetCurrentDirectory(initArg);
-		}
-		
+
+		var subFolder = Path.Combine(initArg, "sub");
+		Directory.CreateDirectory(subFolder);
+		Directory.SetCurrentDirectory(subFolder);
+
 		// and run the config command...
 		var report = new TestDataReporter();
-		RunFull(new string[]{"config"}, true, builder =>
+		RunFull(new string[]{"config", "-ipc"}, true, builder =>
 		{
 			// override the data extraction...
 			builder.RemoveIfExists<IDataReporterService>();
@@ -51,8 +49,9 @@ public class BeamInitFlows : CLITest
 		});
 		_mockObjects.Clear();
 		
-		Assert.That(report.reports.Count, Is.EqualTo(1));
-		var result = report.reports["stream"][0] as ConfigCommandResult;
+		Assert.That(report.reports.Count, Is.EqualTo(2));
+		var channel = new ConfigCommandProjectChannel();
+		var result = report.reports[channel.ChannelName][0] as ConfigCommandProjectResult;
 		Assert.That(result, Is.Not.Null);
 		
 		Assert.That(result.linkedUnityProjects.Count, Is.EqualTo(1));

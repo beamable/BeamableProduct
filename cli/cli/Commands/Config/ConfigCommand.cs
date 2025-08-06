@@ -1,11 +1,29 @@
 using Beamable.Common;
 using Newtonsoft.Json;
 using System.CommandLine;
+using Beamable.Common.BeamCli;
 using cli.Services;
 
 namespace cli;
 
-public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResult>, ISkipManifest
+public class ConfigCommandProjectResult
+{
+	public List<string> linkedUnityProjects;
+	public List<string> linkedUnrealProjects;
+	public List<string> additionalProjectPaths;
+	public List<string> projectPathsToIgnore;
+	public string projectRoot;
+}
+
+public class ConfigCommandProjectChannel : IResultChannel
+{
+	public string ChannelName => "project-config";
+}
+
+public class ConfigCommand 
+	: AtomicCommand<ConfigCommandArgs, ConfigCommandResult>
+		, IResultSteam<ConfigCommandProjectChannel, ConfigCommandProjectResult>
+		, ISkipManifest
 {
 	public ConfigCommand() : base("config", "List the current beamable configuration")
 	{
@@ -19,6 +37,10 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 			new Option<bool>("--set", () => false,
 				"When true, whatever '--host', '--cid', '--pid' values you provide will be set. If '--no-overrides' is true, this will set the version controlled configuration file. If not, this will set the local overrides file inside the .beamable/temp directory"),
 			(args, b) => args.IsSet = b);
+		AddOption(
+			new Option<bool>(new string[] { "--include-project-config", "-ipc" },
+				"Should the command also emit project configuration values"),
+			(args, i) => args.includeProjectConfig = i);
 	}
 
 	public override Task<ConfigCommandResult> GetResult(ConfigCommandArgs args)
@@ -27,12 +49,19 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 		var res = new ConfigCommandResult();
 		res.configPath = args.ConfigService.ConfigDirectoryPath;
 
-		res.projectRoot = args.ConfigService.GetProjectRootPath();
-		res.additionalProjectPaths = args.ConfigService.LoadExtraPathsFromFile();
-		res.projectPathsToIgnore = args.ConfigService.LoadPathsToIgnoreFromFile();
-		var projectData = args.ConfigService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
-		res.linkedUnityProjects = projectData.unityProjectsPaths?.ToList();
-		res.linkedUnrealProjects = projectData.unrealProjectsPaths.Select(x => x.Path).ToList();
+		if (args.includeProjectConfig)
+		{
+			var projectData = args.ConfigService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
+			var projectRes = new ConfigCommandProjectResult
+			{
+				projectRoot = args.ConfigService.GetProjectRootPath(),
+				additionalProjectPaths = args.ConfigService.LoadExtraPathsFromFile(),
+				projectPathsToIgnore = args.ConfigService.LoadPathsToIgnoreFromFile(),
+				linkedUnityProjects = projectData.unityProjectsPaths?.ToList(),
+				linkedUnrealProjects = projectData.unrealProjectsPaths.Select(x => x.Path).ToList()
+			};
+			this.SendResults<ConfigCommandProjectChannel, ConfigCommandProjectResult>(projectRes);
+		}
 		
 		if (args.IgnoreOverrides)
 		{
@@ -85,16 +114,11 @@ public class ConfigCommandResult
 	public string cid;
 	public string pid;
 	public string configPath;
-
-	public List<string> linkedUnityProjects;
-	public List<string> linkedUnrealProjects;
-	public List<string> additionalProjectPaths;
-	public List<string> projectPathsToIgnore;
-	public string projectRoot;
 }
 
 public class ConfigCommandArgs : CommandArgs
 {
 	public bool IgnoreOverrides;
 	public bool IsSet;
+	public bool includeProjectConfig;
 }
