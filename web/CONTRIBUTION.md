@@ -64,11 +64,10 @@ Create a file `temp/test-cjs.js`:
 
 ```js
 const { Beam } = require('./dist/index.js');
-const beam = new Beam({
+const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
 });
-await beam.ready();
 console.log(beam.player.id);
 ```
 
@@ -84,11 +83,10 @@ Create a file `temp/test-esm.mjs`:
 
 ```js
 import { Beam } from './dist/index.mjs';
-const beam = new Beam({
+const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
 });
-await beam.ready();
 console.log(beam.player.id);
 ```
 
@@ -116,13 +114,12 @@ Create an HTML file `temp/test-iife.html`:
     <script>
       // Instantiate the SDK via the `Beam` constructor
       const { Beam, BeamEnvironment } = Beamable;
-      const beam = new Beam({
+      const beam = await Beam.init({
         cid: 'YOUR_CUSTOMER_ID',
         pid: 'YOUR_PROJECT_ID',
         // Environment must be one of: 'Dev', 'Stg', or 'Prod'
         environment: 'Prod',
       });
-      await beam.ready();
 
       // List all built-in environments:
       console.log(BeamEnvironment.list());

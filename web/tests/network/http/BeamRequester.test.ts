@@ -8,6 +8,7 @@ import {
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { TokenStorage } from '@/platform/types/TokenStorage';
 import * as apis from '@/__generated__/apis';
+import { BeamBase } from '@/core/BeamBase';
 
 type ObjReq = { date: Date; big: bigint; normal: string };
 type ObjRes = { date: Date; num: bigint };
@@ -303,7 +304,7 @@ describe('BeamRequester', () => {
   });
 
   it('should sign request if useSignedRequest is true', async () => {
-    process.env.BEAM_REALM_SECRET = 'test_secret';
+    BeamBase.env.BEAM_REALM_SECRET = 'test_secret';
     const inner = {
       request: vi
         .fn()

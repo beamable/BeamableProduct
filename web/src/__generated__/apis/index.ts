@@ -7,6 +7,7 @@ export * from './AccountsApi';
 export * from './AnnouncementsApi';
 export * from './AuthApi';
 export * from './BeamoApi';
+export * from './BeamoOtelApi';
 export * from './CalendarsApi';
 export * from './CloudsavingApi';
 export * from './CommerceApi';

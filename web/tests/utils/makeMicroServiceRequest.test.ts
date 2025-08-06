@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { makeMicroServiceRequest } from '@/utils/makeMicroServiceRequest';
-import type { BeamBase } from '@/core/BeamBase';
+import { BeamBase } from '@/core/BeamBase';
 import type { HttpRequest } from '@/network/http/types/HttpRequest';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import { HEADERS, POST } from '@/constants';
@@ -11,7 +11,7 @@ describe('makeMicroServiceRequest', () => {
   });
 
   it('should call requester.request with minimal data when only required props are provided', async () => {
-    process.env.BEAM_ROUTING_KEY = 'route-key';
+    BeamBase.env.BEAM_ROUTING_KEY = 'route-key';
     const mockBody = { data: 'ok' };
     const mockResponse: HttpResponse<{ data: string }> = {
       status: 200,
@@ -52,7 +52,7 @@ describe('makeMicroServiceRequest', () => {
   });
 
   it('should include routingKey header when routingKey is provided', async () => {
-    process.env.BEAM_ROUTING_KEY = 'route-key';
+    BeamBase.env.BEAM_ROUTING_KEY = 'route-key';
     const mockResponse: HttpResponse<unknown> = {
       status: 204,
       headers: {},

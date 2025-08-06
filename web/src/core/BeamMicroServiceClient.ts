@@ -7,6 +7,8 @@ export interface BeamMicroServiceClientRequestProps<TReq = any> {
   withAuth: boolean;
 }
 
+export type BeamMicroServiceClientCtor<T> = new (beam: BeamBase) => T;
+
 export abstract class BeamMicroServiceClient {
   private readonly beam: BeamBase;
 

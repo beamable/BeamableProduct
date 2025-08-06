@@ -21,7 +21,7 @@ export async function makeMicroServiceRequest<TRes = any, TReq = any>(
   const { beam, serviceName, endpoint, payload, withAuth } = props;
   const { cid, pid, requester } = beam;
   const url = `/basic/${cid}.${pid}.micro_${serviceName}/${endpoint}`;
-  const routingKey = process.env.BEAM_ROUTING_KEY;
+  const routingKey = BeamBase.env.BEAM_ROUTING_KEY;
 
   // Create the header parameters object
   const headers: Record<string, string> = {};

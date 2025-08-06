@@ -4,8 +4,7 @@
     "src/schema.ts",
     "src/api.ts",
     "src/core/BeamEnvironmentRegistry.ts",
-    "src/core/types/ContextMap.ts",
-    "src/services/**/*.ts"
+    "src/core/types/RefreshableServiceMap.ts"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs",

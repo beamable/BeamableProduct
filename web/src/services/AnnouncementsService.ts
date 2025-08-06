@@ -1,4 +1,4 @@
-import { AnnouncementView } from '@/__generated__/schemas';
+import type { AnnouncementView } from '@/__generated__/schemas';
 import { Refreshable } from '@/services/types/Refreshable';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import {
@@ -20,9 +20,13 @@ export class AnnouncementsService
   extends ApiService
   implements Refreshable<AnnouncementView[]>
 {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'announcements';
   }
 
   /**

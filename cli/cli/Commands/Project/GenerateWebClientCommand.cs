@@ -1,4 +1,5 @@
-﻿using cli.Services;
+﻿using Beamable.Common;
+using cli.Services;
 using cli.Services.Web;
 using System.CommandLine;
 
@@ -12,6 +13,8 @@ public class GenerateWebClientCommand :
 	{
 	}
 
+	private static readonly string[] VALID_LANGUAGES = { "typescript", "ts", "javascript", "js" };
+
 	private static readonly string[] OutputDirAliases = { "--output-dir", "-o" };
 	private static readonly string[] LangAliases = { "--lang", "-l" };
 
@@ -22,7 +25,7 @@ public class GenerateWebClientCommand :
 
 		AddOption(
 			new Option<string>(LangAliases, () => "typescript",
-				"The language of the generated code. Valid values are: `typescript` (default), `javascript`"),
+				"The language of the generated code. Valid values are: `typescript` (default), `ts`, `javascript`, `js`"),
 			(arg, i) => arg.lang = i);
 	}
 
@@ -37,6 +40,13 @@ public class GenerateWebClientCommand :
 		var result = new GenerateWebClientCommandArgsResult();
 		if (string.IsNullOrEmpty(args.outputDirectory))
 			return Task.FromResult(result);
+
+		// validate lang argument
+		if (!VALID_LANGUAGES.Contains(args.lang.ToLower()))
+		{
+			BeamableLogger.Log($"Unsupported language type: {args.lang}");
+			return Task.FromResult(result);
+		}
 
 		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
 		foreach ((_, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
@@ -55,8 +65,10 @@ public class GenerateWebClientCommand :
 			return Task.FromResult(result);
 
 		var typesOutputDirectory = Path.Combine(args.outputDirectory, "beamable/clients/types");
-		WebClientCodeGenerator.ProcessClientTypes();
 		var clientTypeFilePath = WebClientCodeGenerator.GenerateClientTypes(typesOutputDirectory);
+		if (string.IsNullOrEmpty(clientTypeFilePath))
+			return Task.FromResult(result);
+
 		result.Types.Add(clientTypeFilePath);
 		return Task.FromResult(result);
 	}

@@ -3,6 +3,7 @@ import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import { PlayerService } from '@/services/PlayerService';
 import { StatsService } from '@/services/StatsService';
+import { BeamBase } from '@/core/BeamBase';
 
 describe('StatsService', () => {
   describe('set', () => {
@@ -11,16 +12,23 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
+
       vi.spyOn(apis, 'statsPostClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok' },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const objectId = `client.private.player.${playerService.id}`;
       await statsService.set({ accessType: 'private', stats: mockStats });
@@ -39,16 +47,23 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
+
       vi.spyOn(apis, 'statsPostByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { result: 'ok' },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const objectId = `game.private.player.${playerService.id}`;
       await statsService.set({
@@ -73,16 +88,23 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
+
       vi.spyOn(apis, 'statsGetClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: mockStats },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const objectId = `client.public.player.${playerService.id}`;
       const result = await statsService.get({ accessType: 'public' });
@@ -101,16 +123,23 @@ describe('StatsService', () => {
         level: '10',
         score: '1000',
       };
+
       vi.spyOn(apis, 'statsGetByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: mockStats },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       const statsService = new StatsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const objectId = `game.public.player.${playerService.id}`;
       const result = await statsService.get({
@@ -134,17 +163,24 @@ describe('StatsService', () => {
       const scoreStats: Record<string, string> = {
         score: '1000',
       };
+
       vi.spyOn(apis, 'statsGetClientByObjectId').mockResolvedValue({
         status: 200,
         headers: {},
         body: { id: '123', stats: scoreStats },
       });
+
       const mockRequester = {} as HttpRequester;
+      const beam = {
+        cid: 'cid',
+        pid: 'pid',
+        requester: mockRequester,
+      } as unknown as BeamBase;
       const playerService = new PlayerService();
       playerService.stats = levelStats; // Initial stats
       const statsService = new StatsService({
-        requester: mockRequester,
-        player: playerService,
+        beam,
+        getPlayer: () => playerService,
       });
       const objectId = `client.public.player.${playerService.id}`;
       const result = await statsService.get({

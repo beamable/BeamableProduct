@@ -1,4 +1,4 @@
-import { TokenResponse } from '@/__generated__/schemas';
+import type { TokenResponse } from '@/__generated__/schemas';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 
 /** Saves the access token, refresh token, and expiration time from a token response to the token storage. */

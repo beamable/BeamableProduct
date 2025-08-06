@@ -20,6 +20,7 @@ import type { ContentOrText } from '@/__generated__/schemas/ContentOrText';
 import type { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import type { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
+import type { GetManifestDiffsResponse } from '@/__generated__/schemas/GetManifestDiffsResponse';
 import type { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
@@ -32,6 +33,7 @@ import type { SaveBinaryResponse } from '@/__generated__/schemas/SaveBinaryRespo
 import type { SaveContentRequest } from '@/__generated__/schemas/SaveContentRequest';
 import type { SaveContentResponse } from '@/__generated__/schemas/SaveContentResponse';
 import type { SaveManifestRequest } from '@/__generated__/schemas/SaveManifestRequest';
+import type { SaveManifestResponse } from '@/__generated__/schemas/SaveManifestResponse';
 import type { SaveTextRequest } from '@/__generated__/schemas/SaveTextRequest';
 import type { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
 
@@ -345,15 +347,53 @@ export async function contentGetManifestBasic(requester: HttpRequester, id?: str
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentPostManifestBasic(requester: HttpRequester, payload: SaveManifestRequest, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentPostManifestBasic(requester: HttpRequester, payload: SaveManifestRequest, gamertag?: string): Promise<HttpResponse<SaveManifestResponse>> {
   let endpoint = "/basic/content/manifest";
   
   // Make the API request
-  return makeApiRequest<ContentBasicManifest, SaveManifestRequest>({
+  return makeApiRequest<SaveManifestResponse, SaveManifestRequest>({
     r: requester,
     e: endpoint,
     m: POST,
     p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param manifestId - The `manifestId` parameter to include in the API request.
+ * @param fromDate - The `fromDate` parameter to include in the API request.
+ * @param fromUid - The `fromUid` parameter to include in the API request.
+ * @param limit - The `limit` parameter to include in the API request.
+ * @param offset - The `offset` parameter to include in the API request.
+ * @param toDate - The `toDate` parameter to include in the API request.
+ * @param toUid - The `toUid` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function contentGetManifestDiffsBasic(requester: HttpRequester, manifestId: string, fromDate?: bigint | string, fromUid?: string, limit?: number, offset?: number, toDate?: bigint | string, toUid?: string, gamertag?: string): Promise<HttpResponse<GetManifestDiffsResponse>> {
+  let endpoint = "/basic/content/manifest/diffs";
+  
+  // Make the API request
+  return makeApiRequest<GetManifestDiffsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      manifestId,
+      fromDate,
+      fromUid,
+      limit,
+      offset,
+      toDate,
+      toUid
+    },
     g: gamertag,
     w: true
   });

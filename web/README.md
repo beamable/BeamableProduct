@@ -30,11 +30,10 @@ You can use the Beam SDK across different JavaScript environments:
 
 ```js
 const { Beam } = require('beamable-sdk');
-const beam = new Beam({
+const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
 });
-await beam.ready();
 console.log(beam.player.id);
 ```
 
@@ -42,11 +41,10 @@ console.log(beam.player.id);
 
 ```js
 import { Beam } from 'beamable-sdk';
-const beam = new Beam({
+const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
 });
-await beam.ready();
 console.log(beam.player.id);
 ```
 
@@ -57,11 +55,10 @@ console.log(beam.player.id);
 <script>
   // global variable exposed as Beamable
   const { Beam, BeamEnvironment } = Beamable;
-  const beam = new Beam({
+  const beam = await Beam.init({
     cid: 'YOUR_CUSTOMER_ID',
     pid: 'YOUR_PROJECT_ID',
   });
-  await beam.ready();
   console.log(beam.player.id);
 </script>
 ```
@@ -110,7 +107,7 @@ class MyTokenStorage implements TokenStorage {
   /* implement getAccessToken, setAccessToken, ... */
 }
 
-const beam = new Beam({
+const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
   tokenStorage: new MyTokenStorage(),

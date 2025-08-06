@@ -47,9 +47,13 @@ export interface SetStatsParams {
 }
 
 export class StatsService extends ApiService {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'stats';
   }
 
   /**

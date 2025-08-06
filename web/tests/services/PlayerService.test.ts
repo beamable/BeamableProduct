@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerService } from '@/services/PlayerService';
-import { AccountPlayerView, AnnouncementView } from '@/__generated__/schemas';
+import { ThirdPartyAuthProvider } from '@/services/enums';
+import type {
+  AccountPlayerView,
+  AnnouncementView,
+} from '@/__generated__/schemas';
 
 describe('PlayerService', () => {
   it('initializes account with default values', () => {
@@ -49,5 +53,28 @@ describe('PlayerService', () => {
     ];
     playerService.announcements = customAnnouncements;
     expect(playerService.announcements).toEqual(customAnnouncements);
+  });
+  describe('hasThirdPartyAssociation', () => {
+    it('returns true when association exists', () => {
+      const playerService = new PlayerService();
+      playerService.account = {
+        ...playerService.account,
+        thirdPartyAppAssociations: ['google'],
+      };
+      expect(
+        playerService.hasThirdPartyAssociation(ThirdPartyAuthProvider.Google),
+      ).toBe(true);
+    });
+
+    it('returns false when association does not exist', () => {
+      const playerService = new PlayerService();
+      playerService.account = {
+        ...playerService.account,
+        thirdPartyAppAssociations: [],
+      };
+      expect(
+        playerService.hasThirdPartyAssociation(ThirdPartyAuthProvider.Facebook),
+      ).toBe(false);
+    });
   });
 });

@@ -11,8 +11,8 @@ export interface BeamBaseConfig {
 
   /**
    * The Beamable environment to connect to.
-   * Can be one of 'Prod', 'Stg', 'Dev', or a custom environment name.
-   * @default 'Prod'
+   * Can be one of 'prod', 'stg', 'dev', or a custom environment name.
+   * @default 'prod'
    */
   environment?: BeamEnvironmentName;
 
