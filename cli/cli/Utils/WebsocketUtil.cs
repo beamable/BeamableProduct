@@ -220,9 +220,30 @@ public class WebsocketUtil
 
 	public struct AuthResult
 	{
+		// {
+		// 	"id" : 2,
+		// 	"status" : 400,
+		// 	"body" : {
+		// 		"status" : 400,
+		// 		"service" : "gateway",
+		// 		"error" : "TBD",
+		// 		"message" : ""
+		// 	}
+		// }
+
+		public int id;
 		public int status;
+		public AuthResultBody body;
+
+		public struct AuthResultBody
+		{
+			public int status;
+			public string service;
+			public string message;
+			public string error;
+		}
 	}
-	
+
 	
 	private static async Task AuthenticateWithToken(ClientWebSocket ws, string accessToken, string cid, string pid, CancellationToken cancellationToken)
 	{
@@ -241,7 +262,7 @@ public class WebsocketUtil
 		var authResult = JsonConvert.DeserializeObject<AuthResult>(authResponse);
 		if (authResult.status != 200)
 		{
-			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}]");
+			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}] service=[{authResult.body.service}] message=[{authResult.body.message}] error=[{authResult.body.error}]");
 		}
 	}
 
@@ -280,7 +301,7 @@ public class WebsocketUtil
 		var authResult = JsonConvert.DeserializeObject<AuthResult>(authResponse);
 		if (authResult.status != 200)
 		{
-			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}]");
+			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}] service=[{authResult.body.service}] message=[{authResult.body.message}] error=[{authResult.body.error}]");
 		}
 	}
 
