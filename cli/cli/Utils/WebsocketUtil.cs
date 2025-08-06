@@ -267,6 +267,7 @@ public class WebsocketUtil
 	}
 
 
+	[Obsolete("this is here for documentation purposes; if you wanted to connect with a realm secret, this is how. ")]
 	private static async Task Authenticate(ClientWebSocket ws, string secret, string cid, string pid, CancellationToken cancellationToken)
 	{
 		string CalculateSignature(string text)
