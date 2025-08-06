@@ -7,6 +7,8 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Beamable.Common;
+using cli;
 using cli.Services;
 using Microsoft.Extensions.Logging;
 using tests.MoqExtensions;
@@ -16,6 +18,61 @@ namespace tests.Examples.Init;
 public class BeamInitFlows : CLITest
 {
 
+	[TestCase("")]
+	[TestCase("toast")]
+	[TestCase("with a space")]
+	[TestCase("with a space/Iglued")]
+	public void Config_HasLinkedProjectInNestedFolder(string initArg)
+	{
+		InEmptyDirectory(initArg);
+
+		// save the linked-projects json file
+		var path = Path.Combine(initArg, ".beamable", cli.Constants.CONFIG_LINKED_PROJECTS);
+		File.WriteAllText(path, @"{
+  ""unityProjectsPaths"": [
+    "".""
+  ],
+  ""unrealProjectsPaths"": []
+}");
+		
+		// set the working dir to the initArg folder (where the init ran)
+		if (!string.IsNullOrEmpty(initArg))
+		{
+			Directory.SetCurrentDirectory(initArg);
+		}
+		
+		// and run the config command...
+		var report = new TestDataReporter();
+		RunFull(new string[]{"config"}, true, builder =>
+		{
+			// override the data extraction...
+			builder.RemoveIfExists<IDataReporterService>();
+			builder.AddSingleton<IDataReporterService>(report);
+		});
+		_mockObjects.Clear();
+		
+		Assert.That(report.reports.Count, Is.EqualTo(1));
+		var result = report.reports["stream"][0] as ConfigCommandResult;
+		Assert.That(result, Is.Not.Null);
+		
+		Assert.That(result.linkedUnityProjects.Count, Is.EqualTo(1));
+	}
+
+	class TestDataReporter : IDataReporterService
+	{
+		public Dictionary<string, List<object>> reports = new Dictionary<string, List<object>>();
+		
+		
+		public void Report<T>(string type, T data)
+		{
+			if (!reports.TryGetValue(type, out var obj))
+			{
+				reports[type] = obj = new List<object>();
+			}
+			obj.Add(data);
+		}
+	}
+	
 	[TestCase("")]
 	[TestCase("toast")]
 	[TestCase("with a space")]

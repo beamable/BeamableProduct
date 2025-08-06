@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Newtonsoft.Json;
 using System.CommandLine;
+using cli.Services;
 
 namespace cli;
 
@@ -26,6 +27,13 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 		var res = new ConfigCommandResult();
 		res.configPath = args.ConfigService.ConfigDirectoryPath;
 
+		res.projectRoot = args.ConfigService.GetProjectRootPath();
+		res.additionalProjectPaths = args.ConfigService.LoadExtraPathsFromFile();
+		res.projectPathsToIgnore = args.ConfigService.LoadPathsToIgnoreFromFile();
+		var projectData = args.ConfigService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
+		res.linkedUnityProjects = projectData.unityProjectsPaths?.ToList();
+		res.linkedUnrealProjects = projectData.unrealProjectsPaths.Select(x => x.Path).ToList();
+		
 		if (args.IgnoreOverrides)
 		{
 			if (args.IsSet)
@@ -77,6 +85,12 @@ public class ConfigCommandResult
 	public string cid;
 	public string pid;
 	public string configPath;
+
+	public List<string> linkedUnityProjects;
+	public List<string> linkedUnrealProjects;
+	public List<string> additionalProjectPaths;
+	public List<string> projectPathsToIgnore;
+	public string projectRoot;
 }
 
 public class ConfigCommandArgs : CommandArgs
