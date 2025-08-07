@@ -139,7 +139,7 @@ public class App
 					opts.IncludeScopes = true;
 					
 					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
-					opts.AddBeamableExporter(opts =>
+					opts.AddFileExporter(opts =>
 					{
 						var configPath = provider.GetService<ConfigService>().ConfigTempOtelLogsDirectoryPath;
 						opts.ExportPath = configPath ?? ".";
@@ -274,7 +274,7 @@ public class App
 						opts.RecordException = true;
 					})
 					.AddSource(Otel.METER_CLI_NAME)
-					.AddBeamableExporter(opt =>
+					.AddFileExporter(opt =>
 					{
 						var path = p.GetService<ConfigService>().ConfigTempOtelTracesDirectoryPath;
 						opt.ExportPath = path ?? ".";
@@ -295,7 +295,7 @@ public class App
 					.AddRuntimeInstrumentation()
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation()
-					.AddBeamableExporter(opts =>
+					.AddFileExporter(opts =>
 					{
 						var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
 						opts.ExportPath = path ?? ".";

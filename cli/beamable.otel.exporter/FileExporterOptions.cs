@@ -1,6 +1,6 @@
 namespace beamable.otel.exporter;
 
-public class BeamableExporterOptions
+public class FileExporterOptions
 {
 	private string? _path;
 

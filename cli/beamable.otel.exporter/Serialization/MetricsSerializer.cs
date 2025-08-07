@@ -88,7 +88,7 @@ public static class MetricsSerializer
 		var asm = typeof(Metric).Assembly;
 		_aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore");
 		_aggStoreCtor = _aggregatorStoreType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-			.FirstOrDefault(c => c.GetParameters().Length >= 4);
+			.FirstOrDefault(c => c.GetParameters().Length >= 4); //TODO change this to check types and make sure it's the constructor we are expecting
 
 		if (_aggStoreCtor == null)
 		{

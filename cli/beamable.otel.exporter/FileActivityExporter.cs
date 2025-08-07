@@ -6,11 +6,11 @@ using System.Text.Json;
 
 namespace beamable.otel.exporter;
 
-public class BeamableActivityExporter : BeamableExporter<Activity>
+public class FileActivityExporter : FileExporter<Activity>
 {
 	private readonly string _filesPath;
 
-	public BeamableActivityExporter(BeamableExporterOptions options) : base(options)
+	public FileActivityExporter(FileExporterOptions options) : base(options)
 	{
 		_filesPath = options.ExportPath;
 	}

@@ -5,7 +5,7 @@ using OpenTelemetry.Trace;
 
 namespace beamable.otel.exporter;
 
-public static class BeamableExporterHelperExtensions
+public static class FileExporterHelperExtensions
 {
 
 	/// <summary>
@@ -13,18 +13,18 @@ public static class BeamableExporterHelperExtensions
 	/// </summary>
 	/// <param name="builder"><see cref="TracerProviderBuilder"/> builder to use.</param>
 	/// <returns>The instance of <see cref="TracerProviderBuilder"/> to chain the calls.</returns>
-	public static TracerProviderBuilder AddBeamableExporter(this TracerProviderBuilder builder)
-		=> AddBeamableExporter(builder, name: null, configure: null);
+	public static TracerProviderBuilder AddFileExporter(this TracerProviderBuilder builder)
+		=> AddFileExporter(builder, name: null, configure: null);
 
 
 	/// <summary>
 	/// Adds Beamable exporter to the TracerProvider.
 	/// </summary>
 	/// <param name="builder"><see cref="TracerProviderBuilder"/> builder to use.</param>
-	/// <param name="configure">Callback action for configuring <see cref="BeamableExporterOptions"/>.</param>
+	/// <param name="configure">Callback action for configuring <see cref="FileExporterOptions"/>.</param>
 	/// <returns>The instance of <see cref="TracerProviderBuilder"/> to chain the calls.</returns>
-	public static TracerProviderBuilder AddBeamableExporter(this TracerProviderBuilder builder, Action<BeamableExporterOptions> configure)
-		=> AddBeamableExporter(builder, name: null, configure);
+	public static TracerProviderBuilder AddFileExporter(this TracerProviderBuilder builder, Action<FileExporterOptions> configure)
+		=> AddFileExporter(builder, name: null, configure);
 
 
 	/// <summary>
@@ -32,12 +32,12 @@ public static class BeamableExporterHelperExtensions
 	/// </summary>
 	/// <param name="builder"><see cref="TracerProviderBuilder"/> builder to use.</param>
 	/// <param name="name">Optional name which is used when retrieving options.</param>
-	/// <param name="configure">Optional callback action for configuring <see cref="BeamableExporterOptions"/>.</param>
+	/// <param name="configure">Optional callback action for configuring <see cref="FileExporterOptions"/>.</param>
 	/// <returns>The instance of <see cref="TracerProviderBuilder"/> to chain the calls.</returns>
-	public static TracerProviderBuilder AddBeamableExporter(
+	public static TracerProviderBuilder AddFileExporter(
 		this TracerProviderBuilder builder,
 		string? name,
-		Action<BeamableExporterOptions>? configure)
+		Action<FileExporterOptions>? configure)
 	{
 		if (builder == null)
 		{
@@ -53,9 +53,9 @@ public static class BeamableExporterHelperExtensions
 
 		return builder.AddProcessor(sp =>
 		{
-			var options = sp.GetRequiredService<IOptionsMonitor<BeamableExporterOptions>>().Get(name);
+			var options = sp.GetRequiredService<IOptionsMonitor<FileExporterOptions>>().Get(name);
 
-			return new SimpleActivityExportProcessor(new BeamableActivityExporter(options));
+			return new SimpleActivityExportProcessor(new FileActivityExporter(options));
 		});
 	}
 }

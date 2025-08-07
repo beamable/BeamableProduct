@@ -34,4 +34,24 @@ public static class FolderManagementHelper
 		var allFiles = Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
 		return allFiles.ToList();
 	}
+
+	public static void DeleteAllFilesInPath(string path)
+	{
+		var allFiles = GetAllFiles(path);
+		foreach (var f in allFiles) //TODO also make this do a better job and not let empty folders dangling
+		{
+			DeleteFileInPath(f);
+		}
+	}
+
+	public static void DeleteFileInPath(string path)
+	{
+		File.Delete(path);
+		var dir = Path.GetDirectoryName(path);
+
+		if (!Directory.EnumerateFiles(dir).Any())
+		{
+			Directory.Delete(dir);
+		}
+	}
 }

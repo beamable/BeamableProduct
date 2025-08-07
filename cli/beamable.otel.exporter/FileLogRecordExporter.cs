@@ -9,12 +9,12 @@ using System.Text.Json;
 
 namespace beamable.otel.exporter;
 
-public class BeamableLogRecordExporter : BeamableExporter<LogRecord>
+public class FileLogRecordExporter : FileExporter<LogRecord>
 {
 	private readonly string _filesPath;
 	private Resource? resource;
 
-	public BeamableLogRecordExporter(BeamableExporterOptions options) : base(options)
+	public FileLogRecordExporter(FileExporterOptions options) : base(options)
 	{
 		_filesPath = options.ExportPath;
 	}

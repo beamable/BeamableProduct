@@ -38,7 +38,7 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 
 		{ // Sending deserialized telemetry data through Otlp exporter
 			//TODO: get the endpoint through command args, also enable the option of running the standard collector first and then exporting the data, which we can get the endpoint by that manner as well
-			var logsResult = BeamableOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath, "http://127.0.0.1:4355");
+			var logsResult = FileOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath, "http://127.0.0.1:4355");
 
 			if (logsResult == ExportResult.Failure)
 			{
@@ -46,14 +46,14 @@ public class PushTelemetryCollectorCommand : AppCommand<PushTelemetryCollectorCo
 					"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint"); //TODO improve this log with more information
 			}
 
-			var traceResult = BeamableOtlpExporter.ExportTraces(args.ConfigService.ConfigTempOtelTracesDirectoryPath, "http://127.0.0.1:4355");
+			var traceResult = FileOtlpExporter.ExportTraces(args.ConfigService.ConfigTempOtelTracesDirectoryPath, "http://127.0.0.1:4355");
 
 			if (traceResult == ExportResult.Failure)
 			{
 				throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data.");
 			}
 
-			var metricsResult = BeamableOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, "http://127.0.0.1:4355");
+			var metricsResult = FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, "http://127.0.0.1:4355");
 
 			if (metricsResult == ExportResult.Failure)
 			{

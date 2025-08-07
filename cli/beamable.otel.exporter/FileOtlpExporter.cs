@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace beamable.otel.exporter;
 
-public class BeamableOtlpExporter
+public class FileOtlpExporter
 {
 	public static ExportResult ExportLogs(string filesPath, string endpoint)
 	{
@@ -55,11 +55,10 @@ public class BeamableOtlpExporter
 			{
 				break;
 			}
-		}
-
-		if (result == ExportResult.Success)
-		{
-			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
+			else
+			{
+				FolderManagementHelper.DeleteFileInPath(file);
+			}
 		}
 
 		return result;
@@ -109,11 +108,10 @@ public class BeamableOtlpExporter
 			{
 				break;
 			}
-		}
-
-		if (result == ExportResult.Success)
-		{
-			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
+			else
+			{
+				FolderManagementHelper.DeleteFileInPath(file);
+			}
 		}
 
 		return result;
@@ -164,11 +162,10 @@ public class BeamableOtlpExporter
 			{
 				break;
 			}
-		}
-
-		if (result == ExportResult.Success)
-		{
-			FolderManagementHelper.DeleteAllFilesInPath(filesPath);
+			else
+			{
+				FolderManagementHelper.DeleteFileInPath(file);
+			}
 		}
 
 		return result;
