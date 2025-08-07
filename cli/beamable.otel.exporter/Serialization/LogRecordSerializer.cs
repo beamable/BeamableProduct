@@ -9,6 +9,7 @@ public class LogsBatch
 {
 	public List<SerializableLogRecord> AllRecords { get; set; }
 	public Dictionary<string, string> ResourceAttributes { get; set; }
+	public int SchemaVersion { get; set; }
 }
 
 [Serializable]

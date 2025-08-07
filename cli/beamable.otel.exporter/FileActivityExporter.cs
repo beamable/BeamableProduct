@@ -32,7 +32,8 @@ public class FileActivityExporter : FileExporter<Activity>
 		var serializedBatch = new ActivityBatch()
 		{
 			AllTraces = allActivitiesSerialized,
-			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString())
+			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString()),
+			SchemaVersion = ExporterConstants.SchemaVersion
 		};
 
 		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = true });

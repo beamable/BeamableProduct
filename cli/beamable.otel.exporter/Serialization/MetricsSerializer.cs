@@ -10,6 +10,7 @@ public class MetricsBatch
 {
 	public List<SerializableMetric> AllMetrics { get; set; }
 	public Dictionary<string, string> ResourceAttributes { get; set; }
+	public int SchemaVersion { get; set; }
 }
 
 [Serializable]
@@ -48,6 +49,7 @@ public static class MetricsSerializer
 	static readonly double[] DefaultHistogramBoundsLongSeconds = new double[] { 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300 };
 	private const int DefaultExponentialHistogramMaxBuckets = 160;
 	private const int DefaultExponentialHistogramMaxScale = 20;
+
 
 	private static readonly ConstructorInfo? _metricCtor;
 	private static readonly ConstructorInfo? _identityCtor;
@@ -115,7 +117,7 @@ public static class MetricsSerializer
 			MeterName = metric.MeterName,
 			MeterVersion = metric.MeterVersion,
 			Temporality = metric.Temporality.ToString(),
-			MetricType = metric.MetricType
+			MetricType = metric.MetricType,
 		};
 
 		var points = metric.GetMetricPoints();

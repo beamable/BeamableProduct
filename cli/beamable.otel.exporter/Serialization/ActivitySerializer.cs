@@ -7,6 +7,7 @@ public class ActivityBatch
 {
 	public List<SerializableActivity> AllTraces { get; set; }
 	public Dictionary<string, string> ResourceAttributes { get; set; }
+	public int SchemaVersion { get; set; }
 }
 
 [Serializable]
