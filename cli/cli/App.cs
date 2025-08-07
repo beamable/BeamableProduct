@@ -472,12 +472,15 @@ public class App
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 
-		Commands.AddRootCommand<CollectorCommand>();
-		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<PushTelemetryCollectorCommand, PushTelemetryCollectorCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
+		Commands.AddRootCommand<OtelCommand>();
+		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
+
+		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommandWithHandler<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
+
+		Commands.AddSubCommandWithHandler<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
+		Commands.AddSubCommandWithHandler<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
 		
 		Commands.AddRootCommand<GrafanaCommand>();
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
