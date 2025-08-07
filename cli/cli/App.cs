@@ -474,6 +474,7 @@ public class App
 
 		Commands.AddRootCommand<OtelCommand>();
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();

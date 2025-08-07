@@ -19,7 +19,7 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("endpoint", "The endpoint to which the telemetry data should be exported"),
+		AddOption(new Option<string>("--endpoint", "The endpoint to which the telemetry data should be exported"),
 			(args, i) => args.Endpoint = i);
 	}
 
