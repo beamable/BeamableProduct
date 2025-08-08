@@ -81,67 +81,69 @@ public class JsonNodeTests
 	}
 	public class TestContentSerializer : ContentSerializer<IContentObject>
 	{
+		static readonly string[] excludedAssemblyPrefixes = new[]
+		{
+			"System.",
+			"nunit.",
+			"JetBrains.",
+			"Microsoft.",
+			"Serilog."
+		};
+
 		protected override TContent CreateInstance<TContent>()
 		{
 			return new TContent();
+		}
+
+		public static TestContentSerializer PopulateCacheAndGetSerializer()
+		{
+			var reflectionCache = new ReflectionCache();
+			var contentTypeReflectionCache = new ContentTypeReflectionCache();
+	        
+			reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
+			reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+
+
+			var relevantAssemblyNames = AppDomain.CurrentDomain
+				.GetAssemblies()
+				.Select(asm => asm.GetName().Name)
+				.Where(name => name != null && excludedAssemblyPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+				.ToList();
+
+			reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
+			return new TestContentSerializer();
 		}
 	}
 	
 	[Test]
 	public void ContentTest()
 	{
-		{
-			var referencedAssemblies = Assembly.GetEntryAssembly().GetReferencedAssemblies();
-			foreach (var asm in referencedAssemblies)
+		var deserialized = TestContentSerializer.PopulateCacheAndGetSerializer().Deserialize<ConsumableContent>("""
 			{
-				Assembly.Load(asm);
+			  "id": "items.ConsumableContent.new_one",
+			  "version": "some_id",
+			  "properties": {
+			    "InitialProperties": {
+			      "data": {
+			        "asdds": "asdf",
+			        "dasa": "ddd",
+			        "asaaa": "ddaa"
+			      }
+			    },
+			    "icon": {
+			      "data": {
+			        "referenceKey": "",
+			        "subObjectName": ""
+			      }
+			    },
+			    "clientPermission": {
+			      "data": {
+			        "write_self": false
+			      }
+			    }
+			  }
 			}
-		}
-
-		var reflectionCache = new ReflectionCache();
-		var contentTypeReflectionCache = new ContentTypeReflectionCache();
-		var mongoIndexesReflectionCache = new MongoIndexesReflectionCache();
-	        
-		reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
-		reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
-		reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
-		reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
-
-		var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
-				!asm.GetName().Name.StartsWith("nunit.") &&
-				!asm.GetName().Name.StartsWith("JetBrains.") &&
-				!asm.GetName().Name.StartsWith("Microsoft.") &&
-				!asm.GetName().Name.StartsWith("Serilog."))
-			.Select(asm => asm.GetName().Name)
-			.ToList();
-		reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
-		var contentSerializer = new TestContentSerializer();
-		var deserialized = contentSerializer.Deserialize<ConsumableContent>("""
-		                                                 {
-		                                                   "id": "items.ConsumableContent.new_one",
-		                                                   "version": "some_id",
-		                                                   "properties": {
-		                                                     "InitialProperties": {
-		                                                       "data": {
-		                                                         "asdds": "asdf",
-		                                                         "dasa": "ddd",
-		                                                         "asaaa": "ddaa"
-		                                                       }
-		                                                     },
-		                                                     "icon": {
-		                                                       "data": {
-		                                                         "referenceKey": "",
-		                                                         "subObjectName": ""
-		                                                       }
-		                                                     },
-		                                                     "clientPermission": {
-		                                                       "data": {
-		                                                         "write_self": false
-		                                                       }
-		                                                     }
-		                                                   }
-		                                                 }
-		                                                 """);
+			""");
 		
 		Assert.That(deserialized.initialProperties.Count, Is.EqualTo(3));
 	}
