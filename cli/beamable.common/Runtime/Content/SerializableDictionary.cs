@@ -1,5 +1,6 @@
 using Beamable.Content;
 using Beamable.Serialization;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -146,6 +147,7 @@ namespace Beamable.Common.Content
 
 
 	[Serializable]
+	[JsonConverter(typeof(SerializableDictionaryJsonConverter<,>))]
 	public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver
 	{
 		[SerializeField] private List<TKey> keys = new List<TKey>();
@@ -177,4 +179,54 @@ namespace Beamable.Common.Content
 				this.Add(keys[i], values[i]);
 		}
 	}
+	
+	public class SerializableDictionaryJsonConverter<TKey, TValue> : JsonConverter<SerializableDictionary<TKey, TValue>>
+	{
+		public override SerializableDictionary<TKey, TValue> ReadJson(JsonReader reader, Type objectType, SerializableDictionary<TKey, TValue> existingValue, bool hasExistingValue, JsonSerializer serializer)
+		{
+			if (reader.TokenType == JsonToken.Null)
+				return null;
+
+			var dictionary = new SerializableDictionary<TKey, TValue>();
+
+			reader.Read();
+
+			while (reader.TokenType != JsonToken.EndObject)
+			{
+				if (reader.TokenType != JsonToken.PropertyName)
+				{
+					throw new JsonSerializationException($"Expected PropertyName but got {reader.TokenType}");
+				}
+
+				var key = serializer.Deserialize<TKey>(reader);
+				reader.Read();
+				var value = serializer.Deserialize<TValue>(reader);
+
+				dictionary.Add(key, value);
+				reader.Read();
+			}
+
+			return dictionary;
+		}
+
+		public override void WriteJson(JsonWriter writer, SerializableDictionary<TKey, TValue> value, JsonSerializer serializer)
+		{
+			if (value == null)
+			{
+				writer.WriteNull();
+				return;
+			}
+
+			writer.WriteStartObject();
+
+			foreach (var kvp in value)
+			{
+				writer.WritePropertyName(JsonConvert.ToString(kvp.Key));
+				serializer.Serialize(writer, kvp.Value);
+			}
+
+			writer.WriteEndObject();
+		}
+	}
+
 }

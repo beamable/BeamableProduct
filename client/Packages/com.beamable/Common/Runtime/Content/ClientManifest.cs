@@ -132,14 +132,29 @@ namespace Beamable.Common.Content
 		public string[] tags;
 
 		/// <summary>
+		/// Underlying content type.
+		/// </summary>
+		public Type ContentType {
+			get
+			{
+					if (_contentType == null)
+					{
+						_contentType = ContentTypeReflectionCache.Instance.GetTypeFromId(contentId);
+					}
+					return _contentType;
+			}
+		}
+
+		private Type _contentType;
+		
+		/// <summary>
 		/// Convert this <see cref="ClientContentInfo"/> into a <see cref="IContentRef"/> by using the <see cref="contentId"/> field.
 		/// This method verifies that the backing C# class exists.
 		/// </summary>
 		/// <returns>A <see cref="IContentRef{TContent}"/></returns>
 		public IContentRef ToContentRef()
 		{
-			var contentType = ContentTypeReflectionCache.Instance.GetTypeFromId(contentId);
-			return new ContentRef(contentType, contentId);
+			return new ContentRef(ContentType, contentId);
 		}
 
 		/// <summary>
@@ -151,6 +166,15 @@ namespace Beamable.Common.Content
 		public Promise<IContentObject> Resolve()
 		{
 			return ContentApi.Instance.FlatMap(api => api.GetContent(ToContentRef()));
+		}
+
+		/// <summary>
+		/// Calculates content hash code based on content id, content version and manifest id.
+		/// </summary>
+		/// <returns>int hash code for content</returns>
+		public int CalculateHashCode()
+		{
+			return contentId?.GetHashCode() ?? 0 ^ (manifestID ?.GetHashCode() ?? 0) ^ version.GetHashCode();
 		}
 	}
 

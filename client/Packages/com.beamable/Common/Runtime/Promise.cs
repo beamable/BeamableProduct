@@ -570,6 +570,7 @@ namespace Beamable.Common
 		{
 			foreach (var existingError in _errors)
 			{
+				
 				handler?.Invoke(existingError);
 			}
 

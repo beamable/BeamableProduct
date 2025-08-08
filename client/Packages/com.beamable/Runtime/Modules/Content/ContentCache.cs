@@ -17,33 +17,16 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
 {
-	public struct ContentCacheEntry<TContent> where TContent : ContentObject
-	{
-		public readonly string Version;
-		public readonly Promise<TContent> Content;
-
-		public ContentCacheEntry(string version, Promise<TContent> content)
-		{
-			Version = version;
-			Content = content;
-		}
-	}
-
-	public abstract class ContentCache
-	{
-		public abstract Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo);
-	}
-
-	public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
+	public class ContentCache
 	{
 		private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
 		
-		private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
-			new Dictionary<string, ContentCacheEntry<TContent>>();
+		private readonly Dictionary<int, Promise<ContentObject>> _cache =
+			new Dictionary<int, Promise<ContentObject>>();
 
 		private readonly IHttpRequester _requester;
 		private readonly ContentService _contentService;
-
+		private readonly ContentTypeReflectionCache _reflectionCache;
 
 		public ContentCache(
 			IHttpRequester requester, 
@@ -51,47 +34,31 @@ namespace Beamable.Content
 			ContentService contentService, 
 			CoroutineService coroutineService) // not removing unused field so as to not cause a breaking change.
 		{
+			_reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 			_requester = requester;
 			_contentService = contentService;
 		}
 
-		public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
+		public Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
 		{
 			return GetContent(requestedInfo).Map(content => (IContentObject)content);
 		}
 
-		private static string GetCacheKey(ClientContentInfo requestedInfo)
+		public Promise<ContentObject> GetContent(ClientContentInfo requestedInfo)
 		{
-			return $"{requestedInfo.contentId}:{requestedInfo.manifestID}:{requestedInfo.version}";
-		}
-
-		private void SetCacheEntry(string cacheId, ContentCacheEntry<TContent> entry)
-		{
-			_cache[cacheId] = entry;
-		}
-
-		public Promise<TContent> GetContent(ClientContentInfo requestedInfo)
-		{
-			var cacheId = GetCacheKey(requestedInfo);
+			var cacheId = requestedInfo.CalculateHashCode();
 
 			// First, try the in memory cache
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
+			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry;
 			
 			// Then, try the on disk cache
-			if (TryGetValueFromDisk(requestedInfo, out var diskContent))
+			// Then check if the data exists as baked content
+			if (TryGetValueFromDisk(requestedInfo, out var cachedContent)|| TryGetBaked(requestedInfo, out cachedContent))
 			{
-				var promise = Promise<TContent>.Successful(diskContent);
-				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
-				return promise;
-			}
-			
-			// Check if the data exists as baked content
-			if (TryGetBaked(requestedInfo, out var bakedContent))
-			{
-				var promise = Promise<TContent>.Successful(bakedContent);
-				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+				var promise = Promise<ContentObject>.Successful(cachedContent);
+				_cache.Add(cacheId, promise);
 				return promise;
 			}
 			
@@ -100,13 +67,13 @@ namespace Beamable.Content
 			return fetchedContent;
 		}
 
-		private async Promise<TContent> DownloadContent(ClientContentInfo requestedInfo)
+		private async Promise<ContentObject> DownloadContent(ClientContentInfo requestedInfo)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			var cacheId = GetCacheKey(requestedInfo);
+			var cacheId = requestedInfo.CalculateHashCode();
 
-			async Promise<TContent> Download()
+			async Promise<ContentObject> Download()
 			{
 				var raw = await FetchContentFromCDN(requestedInfo);
 				UpdateDiskFile(requestedInfo, raw);
@@ -116,7 +83,7 @@ namespace Beamable.Content
 			try
 			{
 				var promise = Download();
-				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+				_cache.Add(cacheId, promise);
 				return await promise;
 			}
 			catch (Exception err)
@@ -128,7 +95,7 @@ namespace Beamable.Content
 			}
 		}
 
-		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out TContent content)
+		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out ContentObject content)
 		{
 			content = default;
 			if (!wrapper.TryGetContent(info.contentId, info.version, out var existingInfo))
@@ -150,14 +117,14 @@ namespace Beamable.Content
 			return true;
 		}
 
-		private bool TryGetBaked(ClientContentInfo info, out TContent content)
+		private bool TryGetBaked(ClientContentInfo info, out ContentObject content)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Checking content from baked for {info.contentId}: version: {info.version}");
 			return TryGetContentFromInfo(_contentService.BakedContentDataInfo, info, out content);
 		}
 
-		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content)
+		private bool TryGetValueFromDisk(ClientContentInfo info, out ContentObject content)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Loading content from disk for {info.contentId}: version: {info.version}");
@@ -169,9 +136,9 @@ namespace Beamable.Content
 			_contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
 		}
 
-		private static TContent DeserializeContent(ClientContentInfo info, string raw)
+		private static ContentObject DeserializeContent(ClientContentInfo info, string raw)
 		{
-			var content = _serializer.Deserialize<TContent>(raw);
+			var content = _serializer.DeserializeByType(raw, info.ContentType);
 			content.SetManifestID(info.manifestID);
 			content.Tags = info.tags;
 			return content;

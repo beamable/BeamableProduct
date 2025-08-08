@@ -283,7 +283,6 @@ namespace Beamable.Content
 				// pay attention, server...
 			});
 
-
 			InitializeCachedContent();
 			InitializeBakedManifest();
 			BakedContentDataInfo = LoadBakedContent();
@@ -481,7 +480,7 @@ namespace Beamable.Content
 			return GetContent(contentId, referencedType, DetermineManifestID(manifestID));
 		}
 
-		public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
+		public async Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
 		{
 			if (string.IsNullOrEmpty(contentId))
 				return Promise<IContentObject>.Failed(new ContentNotFoundException(contentId));
