@@ -1,8 +1,15 @@
+using Beamable.Common.Content;
+using Beamable.Common.Inventory;
+using Beamable.Common.Reflection;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using Beamable.Server;
 using Moq;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace tests.JsonTests;
 
@@ -62,5 +69,80 @@ public class JsonNodeTests
 
 		var outputSettings = clone.str.Deserialize<MockSettings>();
 		Assert.That(outputSettings.contentId, Is.EqualTo(contentId));
+	}
+	
+	
+	[ContentType("ConsumableContent")]
+	[System.Serializable]
+	public class ConsumableContent : ItemContent
+	{
+		[ContentField("initialProperties", FormerlySerializedAs = new[] { "InitialProperties" })]
+		public Dictionary<string,string> initialProperties;
+	}
+	public class TestContentSerializer : ContentSerializer<IContentObject>
+	{
+		protected override TContent CreateInstance<TContent>()
+		{
+			return new TContent();
+		}
+	}
+	
+	[Test]
+	public void ContentTest()
+	{
+		{
+			var referencedAssemblies = Assembly.GetEntryAssembly().GetReferencedAssemblies();
+			foreach (var asm in referencedAssemblies)
+			{
+				Assembly.Load(asm);
+			}
+		}
+
+		var reflectionCache = new ReflectionCache();
+		var contentTypeReflectionCache = new ContentTypeReflectionCache();
+		var mongoIndexesReflectionCache = new MongoIndexesReflectionCache();
+	        
+		reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
+		reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+		reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
+		reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
+
+		var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
+				!asm.GetName().Name.StartsWith("nunit.") &&
+				!asm.GetName().Name.StartsWith("JetBrains.") &&
+				!asm.GetName().Name.StartsWith("Microsoft.") &&
+				!asm.GetName().Name.StartsWith("Serilog."))
+			.Select(asm => asm.GetName().Name)
+			.ToList();
+		reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
+		var contentSerializer = new TestContentSerializer();
+		var deserialized = contentSerializer.Deserialize<ConsumableContent>("""
+		                                                 {
+		                                                   "id": "items.ConsumableContent.new_one",
+		                                                   "version": "some_id",
+		                                                   "properties": {
+		                                                     "InitialProperties": {
+		                                                       "data": {
+		                                                         "asdds": "asdf",
+		                                                         "dasa": "ddd",
+		                                                         "asaaa": "ddaa"
+		                                                       }
+		                                                     },
+		                                                     "icon": {
+		                                                       "data": {
+		                                                         "referenceKey": "",
+		                                                         "subObjectName": ""
+		                                                       }
+		                                                     },
+		                                                     "clientPermission": {
+		                                                       "data": {
+		                                                         "write_self": false
+		                                                       }
+		                                                     }
+		                                                   }
+		                                                 }
+		                                                 """);
+		
+		Assert.That(deserialized.initialProperties.Count, Is.EqualTo(3));
 	}
 }

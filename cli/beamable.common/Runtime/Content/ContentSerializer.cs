@@ -254,6 +254,28 @@ namespace Beamable.Common.Content
 				}
 			}
 
+			bool TryGetDictionaryElementType(Type baseType, out Type elementType)
+			{
+				elementType = null;
+				if (!typeof(IDictionary).IsAssignableFrom(baseType))
+				{
+					return false;
+				}
+				var hasMatchingType = baseType.GenericTypeArguments.Length == 2;
+				if (!hasMatchingType)
+				{
+					return false;
+				}
+
+				if (!baseType.GenericTypeArguments[0].IsEquivalentTo(typeof(string)))
+				{
+					return false;
+				}
+
+				elementType = baseType.GenericTypeArguments[1];
+				return true;
+			}
+
 			IContentRef contentRef;
 			IContentLink contentLink;
 			type = Nullable.GetUnderlyingType(type) ?? type;
@@ -372,8 +394,14 @@ namespace Beamable.Common.Content
 					}
 
 					return assetRef;
-
-
+				case ArrayDict dict when TryGetDictionaryElementType(type, out var dictElementType):
+					var dictionaryTest = (IDictionary)Activator.CreateInstance(type);
+					foreach (var kvp in dict)
+					{
+						var elemValue = DeserializeResult(kvp.Value, dictElementType);
+						dictionaryTest.Add(kvp.Key, elemValue);
+					}
+					return dictionaryTest;
 				case ArrayDict dict:
 
 					var fields = GetFieldInfos(type);
