@@ -44,7 +44,7 @@ public static class DirectoryUtils
 			}
 			catch (Exception ex)
 			{
-				Log.Warning($"Warning: Could not access directory {subdirectory}: {ex.Message}");
+				Log.Warning($"Could not access directory {subdirectory}: {ex.Message}");
 			}
 		}
 
