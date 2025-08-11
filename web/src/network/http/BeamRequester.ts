@@ -119,10 +119,16 @@ export class BeamRequester implements HttpRequester {
         `Request to '${req.url}' failed with status ${response.status}: ${response.body}`,
         {
           context: {
-            url: req.url,
-            method: req.method,
-            headers: req.headers,
-            body: req.body,
+            request: {
+              url: newReq.url,
+              method: newReq.method,
+              headers: newReq.headers,
+              body: newReq.body,
+            },
+            response: {
+              status: response.status,
+              message: response.body,
+            }
           },
         },
       );
