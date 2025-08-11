@@ -117,6 +117,14 @@ export class BeamRequester implements HttpRequester {
     if (response.status < 200 || response.status >= 300) {
       throw new BeamError(
         `Request to '${req.url}' failed with status ${response.status}: ${response.body}`,
+        {
+          context: {
+            url: req.url,
+            method: req.method,
+            headers: req.headers,
+            body: req.body,
+          },
+        },
       );
     }
 
