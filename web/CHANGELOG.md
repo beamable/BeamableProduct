@@ -1,5 +1,11 @@
 # beamable-sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- Fix invalid credential when `loginWithEmail` triggers a refresh token and retries.
+
 ## 0.4.0
 
 ### Minor Changes
