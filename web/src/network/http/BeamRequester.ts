@@ -99,9 +99,18 @@ export class BeamRequester implements HttpRequester {
     const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
-    if (response.status === 401 && !this.useSignedRequest) {
+    const isInvalidCredentialsError =
+      typeof response.body === 'string'
+        ? (response.body as string).includes('InvalidCredentialsError')
+        : false;
+
+    if (
+      response.status === 401 &&
+      !this.useSignedRequest &&
+      !isInvalidCredentialsError
+    ) {
       await this.handleRefresh();
-      response = await this.inner.request<TRes, TReq>(req);
+      response = await this.inner.request<TRes, TReq>(newReq);
     }
 
     // throw a beam error if the response is not successful
