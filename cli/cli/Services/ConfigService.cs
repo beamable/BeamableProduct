@@ -56,6 +56,12 @@ public class ConfigService
 	public string ConfigTempDirectoryPath { get; private set; }
 
 	/// <summary>
+	/// When <see cref="DirectoryExists"/>, this holds the path to the <see cref="Constants.CONFIG_FOLDER"/>/<see cref="Constants.TEMP_FOLDER"/>/<see cref="Constants.TEMP_OTEL_FOLDER"/>.
+	/// </summary>
+	[CanBeNull]
+	public string ConfigTempOtelDirectoryPath { get; private set; }
+
+	/// <summary>
 	/// When <see cref="DirectoryExists"/>, this holds the path to the <see cref="Constants.CONFIG_FOLDER"/>/<see cref="Constants.TEMP_FOLDER"/>/<see cref="Constants.TEMP_OTEL_FOLDER"/>/<see cref="Constants.TEMP_OTEL_TRACES_FOLDER"/>.
 	/// </summary>
 	[CanBeNull]
@@ -138,12 +144,10 @@ public class ConfigService
 		ConfigDirectoryPath = configPath;
 		ConfigTempDirectoryPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER);
 		ConfigLocalOverridesDirectoryPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY);
-		ConfigTempOtelLogsDirectoryPath = Path.Combine(ConfigTempDirectoryPath,
-			Constants.TEMP_OTEL_FOLDER, Constants.TEMP_OTEL_LOGS_FOLDER);
-		ConfigTempOtelTracesDirectoryPath = Path.Combine(ConfigTempDirectoryPath,
-			Constants.TEMP_OTEL_FOLDER, Constants.TEMP_OTEL_TRACES_FOLDER);
-		ConfigTempOtelMetricsDirectoryPath = Path.Combine(ConfigTempDirectoryPath,
-			Constants.TEMP_OTEL_FOLDER, Constants.TEMP_OTEL_METRICS_FOLDER);
+		ConfigTempOtelDirectoryPath = Path.Combine(ConfigTempDirectoryPath, Constants.TEMP_OTEL_FOLDER);
+		ConfigTempOtelLogsDirectoryPath = Path.Combine(ConfigTempOtelDirectoryPath, Constants.TEMP_OTEL_LOGS_FOLDER);
+		ConfigTempOtelTracesDirectoryPath = Path.Combine(ConfigTempOtelDirectoryPath, Constants.TEMP_OTEL_TRACES_FOLDER);
+		ConfigTempOtelMetricsDirectoryPath = Path.Combine(ConfigTempOtelDirectoryPath, Constants.TEMP_OTEL_METRICS_FOLDER);
 	}
 
 	/// <summary>

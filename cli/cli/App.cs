@@ -1017,6 +1017,24 @@ public class App
 				}
 				
 			}
+
+			//in case otel is enabled, check if otel data stored in files is too large
+			if (Otel.CliTracesEnabled())
+			{
+				var otelDirectory = provider.GetService<ConfigService>().ConfigTempOtelDirectoryPath;
+
+				if (Directory.Exists(otelDirectory))
+				{
+					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
+
+					if (dirResult.Size >= Otel.MAX_OTEL_TEMP_DIR_SIZE)
+					{
+						Log.Warning($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
+						            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
+						Log.Warning($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
+					}
+				}
+			}
 			
 			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
 			// resolve the root trace, must be done app context is applied with cli bindings 

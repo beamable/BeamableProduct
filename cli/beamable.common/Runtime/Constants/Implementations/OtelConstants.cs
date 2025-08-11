@@ -15,6 +15,8 @@ namespace Beamable.Common
                  
                     // and the NO option needs to be left empty
                     && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+
+                public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 50; // Equivalent to 50mb worth of space
                 
                 public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";

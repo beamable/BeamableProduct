@@ -1,5 +1,6 @@
 using Beamable.Common;
 using beamable.otel.exporter.Utils;
+using cli.Utils;
 using System.CommandLine;
 
 namespace cli.OtelCommands;
@@ -73,7 +74,7 @@ public class PruneTelemetryCommand : AppCommand<PruneTelemetryCommandArgs>
 		else
 		{
 			BeamableLogger.Log("Telemetry data cleared successfully!");
-			BeamableLogger.Log($"Total data cleared: {result.BytesFreedFormatted()}");
+			BeamableLogger.Log($"Total data cleared: {DirectoryUtils.FormatBytes(result.BytesFreed)}");
 		}
 
 		return Task.CompletedTask;
