@@ -1,15 +1,53 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Content;
+using Beamable.Microservice.SourceGen.Analyzers;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Microservice.SourceGen;
 
 public static class Diagnostics
 {
+	public const string Category_Debug = "BeamableSourceGenerator_Debug";
 	public const string Category_Config = "BeamableSourceGenerator_Config";
 	public const string Category_Services = "BeamableSourceGenerator_Microservices";
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
 
+	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
+	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Hidden,
+		true);
+	
+	public static readonly DiagnosticDescriptor BeamExceptionDescriptor = new("BEAM_EXC_0001", "Beamable Exception Debug", "{0}", Category_Debug, DiagnosticSeverity.Error,
+		true);
+	
+	
+	public static Diagnostic GetVerbose(string title, string message, Location location, Compilation compilation, Location fallbackLocation = null)
+	{
+		return Diagnostic.Create(BeamVerboseDescriptor, GetValidLocation(location,compilation, fallbackLocation), $"{title} | {message}");
+	}
+
+	public static Diagnostic GetException(Exception exception, Location location, Compilation compilation, Location fallbackLocation = null)
+	{
+		return Diagnostic.Create(BeamExceptionDescriptor, GetValidLocation(location,compilation, fallbackLocation),$"Exception | {exception.Message} | Stacktrace: {exception.StackTrace}");
+	}
+	
+	// Microsoft does this to check location to see if it is valid, we are checking it beforehand so we don't send invalid locations to the Diagnostic.
+	public static Location GetValidLocation(Location location, Compilation compilation, Location fallback = null)
+	{
+		bool isLocationNull = location == null;
+		bool isLocationNotInSource = isLocationNull || !location.IsInSource;
+		bool isLocationNotInSyntaxTree = isLocationNull || location.SourceTree == null || !compilation.ContainsSyntaxTree(location.SourceTree);
+		bool isLocationOutOfSourceTree = isLocationNull || location.SourceTree == null || location.SourceSpan.End > location.SourceTree.Length;
+		if(isLocationNull || isLocationNotInSource || isLocationNotInSyntaxTree || isLocationOutOfSourceTree)
+		{
+			return fallback == null ? Location.None : GetValidLocation(fallback, compilation);
+		}
+
+		return location;
+	}
+	
 	public static class Cfg
 	{
 		public static readonly DiagnosticDescriptor NoSourceGenConfigFound
@@ -51,13 +89,25 @@ public static class Diagnostics
 		public const string MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O002";
 		public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";
 		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
-		public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005";
+		// public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005"; This isn't being used anymore, but we kept it here to keep the Dagnostics IDs order.
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
 		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
 		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
 		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
 		public const string MICROSERVICE_ID_INVALID_FROM_CS_PROJ_ID = "BEAM_SRV_0010";
 		public const string STATIC_FIELD_FOUND_IN_MICROSERVICE_ID = "BEAM_SRV_0011";
+		public const string MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID = "BEAM_SRV_0012";
+		public const string PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID = "BEAM_SRV_0013";
+		public const string NULLABLE_TYPE_FOUND_ID = "BEAM_SRV_0014";
+		public const string INVALID_CONTENT_OBJECT_ID = "BEAM_SRV_0015";
+		public const string TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID = "BEAM_SRV_0016";
+		public const string FIELD_DICTIONARY_IS_INVALID = "BEAM_SRV_0017";
+		public const string FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0018";
+		public const string FIELD_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0019";
+		public const string CALLABLE_METHOD_DECLARATION_IS_INVALID_DICTIONARY = "BEAM_SRV_0020";
+		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_DICTIONARY_ID = "BEAM_SRV_0021";
+		public const string CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_LIST_ID = "BEAM_SRV_0022";
+		public const string INVALID_GENERIC_TYPE_ID = "BEAM_SRV_0023";
 
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
@@ -84,7 +134,7 @@ public static class Diagnostics
 				$"Non-Partial {nameof(Server.Microservice)} classes detected",
 				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
 				Category_Services,
-				DiagnosticSeverity.Error,
+				DiagnosticSeverity.Info,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#non-partial-microservice-class-detected",
 				isEnabledByDefault: true);
 		
@@ -97,13 +147,7 @@ public static class Diagnostics
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#microservice-class-missing-microservice-id",
 				isEnabledByDefault: true);
 		
-		public static readonly DiagnosticDescriptor InvalidMicroserviceId
-			= new(INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID,
-				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
-				$"{nameof(Server.Microservice)} ids can only contain alphanumeric characters",
-				Category_Services,
-				DiagnosticSeverity.Error,
-				true);
+		
 		
 		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod
 			= new(INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID,
@@ -153,10 +197,118 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor StaticFieldFoundInMicroservice
 			= new(STATIC_FIELD_FOUND_IN_MICROSERVICE_ID,
 				$"Its not recommended to have non-readonly static field on Microservice as those field doesn't work as expected when scale horizontally",
-				$"Consider making {{0}} a readonly field. Otherwise the value may be inconsistent in production environments.",
+				$"Its not recommended to have non-readonly static field on Microservice as those field doesn't work as expected when scale horizontally. Consider making {{0}} a readonly field. Otherwise the value may be inconsistent in production environments.",
 				Category_Services,
 				DiagnosticSeverity.Warning,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-microservice-id",
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#static-field-in-microservice",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor MissingSerializableAttributeOnType
+			= new(MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID,
+				$"Types used in Microservice methods or marked with [BeamGenerateSchema] must be serializable",
+				$"Types used in Microservice methods or marked with [BeamGenerateSchema] must be serializable. Add the [Serializable] attribute to type '{{0}}'.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#missing-serializable-attribute-on-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor PropertiesFoundInSerializableTypes
+			= new(PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID,
+				$"Properties in serializable types are ignored by the client code generator",
+				$"Properties in serializable types are ignored by the client code generator. On {{0}} consider changing property '{{1}}' to a field to include it in client-generated code.",
+				Category_Services,
+				DiagnosticSeverity.Info,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#property-found-in-serializable-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor NullableTypeFoundInMicroservice
+			= new(NULLABLE_TYPE_FOUND_ID,
+				$"Nullables on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported",
+				$"Nullables on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. On {{0}} change it's type to use an {nameof(Optional)} type instead of '{{1}}'.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#nullable-field-in-serializable-type",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor InvalidContentObject
+			= new(INVALID_CONTENT_OBJECT_ID,
+				$"{nameof(ContentObject)} type or its subtypes are not recommended to use as it can use a lot of data, use ContentRef<T> instead",
+				$"{nameof(ContentObject)} type or its subtypes are not recommended to use as it can use a lot of data, use ContentRef<T> instead. Change {{0}} to use ContentRef<{{1}}> instead of {{1}}.",
+				Category_Services,
+				DiagnosticSeverity.Warning,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-contentobject-used",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor TypeInBeamGeneratedIsMissingBeamGeneratedAttribute
+			= new(TYPE_IN_BEAM_GENERATED_IS_MISSING_BEAM_GENERATED_ATTRIBUTE_ID,
+				$"Types used in fields of [BeamGenerateSchema] classes must also be marked with [BeamGenerateSchema]",
+				$"Types used in fields of [BeamGenerateSchema] classes must also be marked with [BeamGenerateSchema]. Add the [BeamGenerateSchema] attribute to type '{{0}}'.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#type-used-in-beamgenerateschema-is-missing-attribute",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor DictionaryKeyMustBeStringOnSerializableTypes
+			= new(FIELD_DICTIONARY_IS_INVALID,
+				$"Dictionary fields in serializable types are only allowed if the key is string",
+				$"Dictionary fields in serializable types are only allowed if the key is string. On {{0}} change the dictionary key of field {{1}} to string instead of type {{2}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#dictionary-key-must-be-string-on-serializable-types",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromDictionary
+			= new(FIELD_IS_SUBTYPE_FROM_DICTIONARY_ID,
+				$"Fields that are subtype from Dictionary are not supported in serializable types",
+				$"Fields that are subtype from Dictionary are not supported in serializable types. On {{0}} replace field {{1}} to Dictionary instead of type {{2}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#field-on-serializable-type-is-subtype-from-dictionary",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromList
+			= new(FIELD_IS_SUBTYPE_FROM_LIST_ID,
+				$"Fields that are subtype from List are not supported in serializable types",
+				$"Fields that are subtype from List are not supported in serializable types. On {{0}} replace field {{1}} to List instead of type {{2}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#field-on-serializable-type-is-subtype-from-list",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsInvalidDictionary
+			= new(CALLABLE_METHOD_DECLARATION_IS_INVALID_DICTIONARY,
+				$"Dictionaries on {nameof(Server.Microservice)} Callable methods are only allowed if the key is string",
+				$"Dictionaries on {nameof(Server.Microservice)} Callable methods are only allowed if the key is string. Change the dictionary key of {{0}} to string instead of type {{1}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-declaration-type-is-invalid-dictionary",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsSubtypeFromDictionary
+			= new(CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_DICTIONARY_ID,
+				$"Types on {nameof(Server.Microservice)} Callable methods that inherits Dictionary are not supported",
+				$"Types on {nameof(Server.Microservice)} Callable methods that inherits Dictionary are not supported. Replace {{0}} to Dictionary instead of type {{1}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-declaration-type-is-subtype-from-dictionary",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsSubtypeFromList
+			= new(CALLABLE_METHOD_DECLARATION_TYPE_IS_SUBTYPE_FROM_LIST_ID,
+				$"Types on {nameof(Server.Microservice)} Callable methods that inherits List are not supported",
+				$"Types on {nameof(Server.Microservice)} Callable methods that inherits List are not supported. Replace {{0}} to List instead of type {{1}}.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#callable-method-declaration-type-is-subtype-from-list",
+				isEnabledByDefault: true);
+		
+		public static readonly DiagnosticDescriptor InvalidGenericTypeOnMicroservice
+			= new(INVALID_GENERIC_TYPE_ID,
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported",
+				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. The only generic types allowed are: {string.Join(", ", ServicesAnalyzer.AllowedGenericTypes)}. Please change {{0}} in {{1}} to a non-generic type.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-generic-type-on-microservice",
 				isEnabledByDefault: true);
 	}
 

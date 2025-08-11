@@ -7,17 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
- - Added Developer User Manager command `developer-user-manager`, which is responsible for management of multiple developers users that can be attached when you starting a new session in the engine.
+- Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
+
+## [5.3.1] - 2025-08-06
+### Fixed
+- `beam project share-code` copies all dll dependencies into Unity, and adds debug logging.
+
+## [5.3.0] - 2025-08-05
+### Added
+- `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids. 
+- `beam project add-paths` command to add paths to the `project-paths-to-ignore.json` and `additional-project-paths.json` files. 
+
+### Changed
+- `generate-client-oapi` command can generate a subset of services using the `--ids` flag.
+
+### Fixed
+- `beam deploy plan` no longer breaks when `publish.json` file does not exist due to an empty workspace folder.
+
+## [5.2.0] - 2025-07-30
+### Added
+- Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
+- New Static Analyzer for Generic Types on `Microservice` classes; 
+
+### Fixed
+- `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services. 
+- `beam publish` commands now updates published content reference manifest UID for the published one
+- `beam checks scan` MongoDB validator for `MongoDB.Driver 3.3.0` no longer adds incorrect xml to `.csproj` files
+
+### Changed
+- `beam content sync` command emits a progress event on initial content downloads
+
+## [5.1.0] - 2025-07-23
+### Added
   - `developer-user-manager ps` command that watches your developer users files to check if there's any user created/removed/updated.
   - `developer-user-manager create-user-batch` command that create multiple developer users in a batch, it can received a list of templates to copy from.
   - `developer-user-manager create-user` command that can create one developer user.
   - `developer-user-manager remove-user` command that remove the user from the local files (it will not remove from the portal).
   - `developer-user-manager save-user` command that can save a new developer user in the local files.
   - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
-  
+- Improved diagnostic information for failures in `beam project generate-client --logs v` and better error messaging  
+- `beam org games` command will fetch list of available games
+- `beam content` commands for handling multiple content manifest ids
 
 ### Changed
 - `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+- `beam deploy release` requires explicit typing `yes` to deploy, unless the `--quiet | -q` flag is given. [4101](https://github.com/beamable/BeamableProduct/issues/4101)
+
+### Fixed
+- Fixed issue in the `beam checks scan -f *` command that would cause the fixed code to break serialization of federations.
+- Fixed issue in `beam project generate-client` command (for Unreal's code-generation) that caused internal `AdminRoutes`'s Callables (health-check/docs every microservice has) to be seen by the UE generation.
+- `beam project ps` shows remote running storage objects [4146](https://github.com/beamable/BeamableProduct/issues/4146)
+- `beam init` no longer tries to use old PID when switching CID [4178](https://github.com/beamable/BeamableProduct/issues/4178)
+- Content serializer will not serialize `null` Optional values as default values of optional type.
 
 ## [5.0.4] - 2025-07-02
 ### Fixed

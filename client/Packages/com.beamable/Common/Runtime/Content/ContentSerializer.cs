@@ -547,6 +547,8 @@ namespace Beamable.Common.Content
 						fieldDict.Add("$link", link.GetId());
 						propertyDict.Add(fieldName, fieldDict);
 						break;
+					case null when typeof(Optional).IsAssignableFrom(fieldType):
+						continue;
 					default: // data block.
 						if (fieldValue is Optional optional)
 						{

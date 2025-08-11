@@ -2,8 +2,10 @@ using Beamable.Common;
 using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Editor.BeamCli.Commands;
 using UnityEditor;
 using UnityEditor.Graphs;
 using UnityEngine;
@@ -39,6 +41,29 @@ namespace Beamable.Editor.BeamCli.UI
 				FocusOnShow = false,
 				RequireLoggedUser = false,
 			};
+		}
+		
+		
+		[MenuItem(
+			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/" +
+			Constants.Commons.OPEN + " " +
+			"CLI Workspace Folder",
+			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+		)]
+		public static void OpenCliFolderInFileManager()
+		{
+			BeamEditorContext.Default.Cli.Config(new ConfigArgs()).OnStreamConfigCommandResult(data =>
+			{
+				var configPath = data.data.configPath;
+				var folderPath = Path.GetDirectoryName(configPath);
+				Debug.Log($"config path: {configPath}");
+				Debug.Log($"folder path: {folderPath}");
+
+				Application.OpenURL($"file://{folderPath}");
+			}).OnError(data =>
+			{
+				Debug.LogError($"{data.data.message}");
+			}).Run();
 		}
 		
 		

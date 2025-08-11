@@ -1,5 +1,10 @@
-import { CloudStorage } from './CloudStorage';
-import { CustomCohortRule } from './CustomCohortRule';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CloudStorage } from './CloudStorage';
+import type { CustomCohortRule } from './CustomCohortRule';
 
 export type Cohort = { 
   assigned: bigint | string; 

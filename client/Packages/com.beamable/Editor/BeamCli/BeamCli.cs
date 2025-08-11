@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
+using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -66,6 +67,7 @@ namespace Beamable.Editor.BeamCli
 		private OrgGamesWrapper _gamesInvoke;
 		private ConfigRoutesWrapper _routesInvoke;
 		private ProjectAddUnityProjectWrapper _linkCommand;
+		private ProjectAddPathsWrapper _addPathsInvoke;
 
 		// public Dictionary<string, BeamOrgRealmData> pidToRealm = new Dictionary<string, BeamOrgRealmData>();
 
@@ -101,6 +103,21 @@ namespace Beamable.Editor.BeamCli
 
 		public async Promise Refresh()
 		{
+			_addPathsInvoke?.Cancel();
+			_addPathsInvoke = Command.ProjectAddPaths(new ProjectAddPathsArgs
+			{
+				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray(),
+				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
+			});
+			var addPathsPromise = _addPathsInvoke.Run();
+			
+			var regeneratePromise = Command.ProjectOpen(new ProjectOpenArgs
+			{
+				onlyGenerate = true,
+				sln = UsamService.SERVICES_SLN_PATH,
+				fromUnity = true
+			}).Run();
+			
 			_configInvoke?.Cancel();
 			_configInvoke = Command.Config(new ConfigArgs());
 			_configInvoke.OnError(dp =>
@@ -118,7 +135,10 @@ namespace Beamable.Editor.BeamCli
 			_meInvoke = Command.Me();
 			_meInvoke.OnError(dp =>
 			{
-				Debug.Log("Not signed in");
+				if (!string.Equals("Not logged in", dp.data.message, StringComparison.InvariantCultureIgnoreCase))
+				{
+					Debug.LogError($"Could not fetch Beamable account info. Error=[{dp.data.message}]");
+				}
 			});
 			_meInvoke.OnStreamAccountMeCommandOutput(dp =>
 			{
@@ -172,6 +192,9 @@ namespace Beamable.Editor.BeamCli
 			await mePromise;
 			await routePromise;
 			await linkPromise;
+			await addPathsPromise;
+			await regeneratePromise;
+			
 			
 			if (IsLoggedOut)
 			{

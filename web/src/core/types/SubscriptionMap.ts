@@ -1,4 +1,7 @@
-import { ContextMap } from './ContextMap';
+import { RefreshableServiceMap } from './RefreshableServiceMap';
 import { Subscription } from './Subscription';
 
-export type SubscriptionMap = Record<keyof ContextMap, Subscription[]>;
+export type SubscriptionMap = Record<
+  keyof RefreshableServiceMap,
+  Subscription[]
+>;

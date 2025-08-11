@@ -12,7 +12,19 @@ using System.Text.Json;
 
 namespace cli.Content;
 
-public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<DefaultStreamResultChannel, ContentPsCommandEvent>, ISkipManifest
+[Serializable]
+public class ContentPsProgressMessage
+{
+	public int total;
+	public int completed;
+	public string message;
+}
+
+public class ContentPsCommand 
+	: AppCommand<ContentPsCommandArgs>
+	, IResultSteam<DefaultStreamResultChannel, ContentPsCommandEvent>
+	, IResultSteam<ProgressStreamResultChannel, ContentPsProgressMessage>
+	, ISkipManifest
 {
 	public ContentPsCommand() : base("ps", "List the running status of local services not running in docker")
 	{
@@ -39,16 +51,32 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 		Promise<ClientManifestJsonResponse> latestManifest = contentService.GetManifest(manifestId).ToPromise();
 		await latestManifest;
 
+		void OnMessage(ContentProgressUpdateData data)
+		{
+			if (data.EventType != ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount)
+			{
+				// we only care about progress messages
+				return;
+			}
+			
+			this.SendResults<ProgressStreamResultChannel, ContentPsProgressMessage>(new ContentPsProgressMessage
+			{
+				total = data.totalItems,
+				completed = data.processedItems,
+				message = "syncing local content"
+			});
+		}
+		
 		// If we are just creating the local representation for this realm+manifest combo, let's reset our state to match the remote state.
 		_ = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
 		if (created)
 		{
-			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId);
+			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage);
 		}
 		// Auto-sync with latest like when we react to a published manifest.
 		else
 		{
-			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
+			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage);
 		}
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.
@@ -76,7 +104,7 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 			PublisherEmail = "",
 			SyncReports = new(),
 		};
-		this.SendResults(eventToEmit);
+		this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(eventToEmit);
 		this.LogResult(eventToEmit);
 
 		// If we are meant to watch the content folder, let's set up jobs to do that.
@@ -171,7 +199,7 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 						};
 
 						// Send it out.
-						this.SendResults(fileChangeManifestToEmit);
+						this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(fileChangeManifestToEmit);
 						this.LogResult(fileChangeManifestToEmit);
 					}
 					finally
@@ -224,7 +252,7 @@ public class ContentPsCommand : AppCommand<ContentPsCommandArgs>, IResultSteam<D
 						};
 
 						// Send it out.
-						this.SendResults(remotePublishManifestToEmit);
+						this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(remotePublishManifestToEmit);
 						this.LogResult(remotePublishManifestToEmit);
 					}
 					finally

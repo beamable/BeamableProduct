@@ -1,4 +1,3 @@
-export const objectIdPlaceholder = '{objectId}';
 export const GET = 'GET';
 export const POST = 'POST';
 export const PUT = 'PUT';
@@ -14,4 +13,6 @@ export const enum HEADERS {
   GAME_VERSION = 'X-KS-GAME-VERSION',
   UA = 'X-KS-USER-AGENT',
   UA_VERSION = 'X-KS-USER-AGENT-VERSION',
+  GAMERTAG = 'X-BEAM-GAMERTAG',
+  ROUTING_KEY = 'X-BEAM-SERVICE-ROUTING-KEY',
 }

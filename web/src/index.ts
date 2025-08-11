@@ -1,5 +1,7 @@
+export * from '@/core/BeamBase';
 export * from '@/core/Beam';
 export * from '@/core/BeamServer';
+export * from '@/core/BeamMicroServiceClient';
 export * from '@/configs/BeamConfig';
 export * from '@/configs/BeamServerConfig';
 export * from '@/network/http/types/HttpMethod';
@@ -7,7 +9,8 @@ export * from '@/network/http/types/HttpRequest';
 export * from '@/network/http/types/HttpRequester';
 export * from '@/network/http/types/HttpResponse';
 export * from '@/platform/types/TokenStorage';
+export * from '@/services';
 export * from '@/constants/Errors';
+export * from '@/configs/BeamEnvironmentConfig';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
-export { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 export { GET, POST, PUT, PATCH, DELETE } from '@/constants';

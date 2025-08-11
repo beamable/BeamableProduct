@@ -1,13 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
-import { AuthApi } from '@/__generated__/apis';
 import {
   RefreshAccessTokenError,
   NoRefreshTokenError,
 } from '@/constants/Errors';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { TokenStorage } from '@/platform/types/TokenStorage';
+import * as apis from '@/__generated__/apis';
+import { BeamBase } from '@/core/BeamBase';
 
 type ObjReq = { date: Date; big: bigint; normal: string };
 type ObjRes = { date: Date; num: bigint };
@@ -31,6 +32,10 @@ describe('BeamRequester', () => {
       setRefreshToken: vi.fn(),
       removeRefreshToken: vi.fn(),
     } as unknown as TokenStorage;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it('serializes request body using replacer', async () => {
@@ -180,9 +185,10 @@ describe('BeamRequester', () => {
     (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
     const mockRefreshResponse = {
       status: 200,
+      headers: {},
       body: { access_token: 'at', refresh_token: 'nrt' },
     };
-    vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
+    vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({
@@ -194,7 +200,7 @@ describe('BeamRequester', () => {
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(inner.request).toHaveBeenCalledTimes(2);
     expect(tokenStorage.getRefreshToken).toHaveBeenCalled();
-    expect(AuthApi.prototype.postAuthToken).toHaveBeenCalledWith({
+    expect(apis.authPostTokenBasic).toHaveBeenCalledWith(requester, {
       grant_type: 'refresh_token',
       refresh_token: 'rt',
     });
@@ -235,7 +241,7 @@ describe('BeamRequester', () => {
     } as unknown as HttpRequester;
     (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
     const mockRefreshResponse = { status: 400, body: {} };
-    vi.spyOn(AuthApi.prototype, 'postAuthToken').mockResolvedValue(
+    vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue(
       mockRefreshResponse as any,
     );
     const requester = new BeamRequester({
@@ -298,7 +304,7 @@ describe('BeamRequester', () => {
   });
 
   it('should sign request if useSignedRequest is true', async () => {
-    process.env.BEAM_REALM_SECRET = 'test_secret';
+    BeamBase.env.BEAM_REALM_SECRET = 'test_secret';
     const inner = {
       request: vi
         .fn()

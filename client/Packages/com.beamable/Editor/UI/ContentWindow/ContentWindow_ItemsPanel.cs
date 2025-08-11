@@ -7,9 +7,12 @@ using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.UI.ContentWindow
 {
@@ -29,17 +32,22 @@ namespace Beamable.Editor.UI.ContentWindow
 		private readonly Dictionary<(string filterKey, ContentSortOptionType sortOption), List<LocalContentManifestEntry>> _sortedCache = new();
 
 		private Vector2 _itemsPanelScrollPos;
-		private string SelectedItemId
+
+		private List<string> MultiSelectItemIds
 		{
 			get
 			{
-				if (Selection.activeObject && Selection.activeObject is ContentObject contentObject)
+				// TODO: cache this once per frame; could be a lot of allocation :(
+				var ids = new List<string>();
+				foreach (var obj in Selection.objects)
 				{
-					return contentObject.Id;
+					if (obj && obj is ContentObject content)
+					{
+						ids.Add(content.Id);
+					}
 				}
 
-				return string.Empty;
-
+				return ids;
 			}
 		}
 
@@ -58,13 +66,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void BuildItemsPanelStyles()
 		{
-			_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
+			if (_itemPanelHeaderRowStyle == null || _itemPanelHeaderRowStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.28f, 0.28f, 0.28f)) },
-				fontStyle = FontStyle.Bold,
-				alignment = TextAnchor.MiddleLeft,
-				fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
-			};
+				_itemPanelHeaderRowStyle = new GUIStyle(EditorStyles.toolbar)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.28f, 0.28f, 0.28f))},
+					fontStyle = FontStyle.Bold,
+					alignment = TextAnchor.MiddleLeft,
+					fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
+				};
+			}
 
 			_itemPanelHeaderFieldStyle = new GUIStyle(EditorStyles.miniBoldLabel)
 			{
@@ -80,36 +91,64 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			
 			float itemRowHeight = EditorGUIUtility.singleLineHeight * 1.1f;
-			
-			_rowEvenItemStyle = new GUIStyle(EditorStyles.label)
+
+			if (_rowEvenItemStyle == null || _rowEvenItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.2f, 0.2f, 0.2f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
-			
-			_rowOddItemStyle = new GUIStyle(EditorStyles.label)
+				_rowEvenItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.2f, 0.2f, 0.2f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
+
+			if (_rowOddItemStyle == null || _rowOddItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.22f, 0.22f, 0.22f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
-			
-			
-			_rowSelectedItemStyle = new GUIStyle(EditorStyles.label)
+				_rowOddItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.22f, 0.22f, 0.22f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
+
+
+			if (_rowSelectedItemStyle == null || _rowSelectedItemStyle.normal.background == null)
 			{
-				normal = { background = BeamGUI.CreateColorTexture(new Color(0.21f, 0.32f, 0.49f)) },
-				margin = new RectOffset(0, 0, 0, 0),
-				fixedHeight = itemRowHeight,
-				alignment = TextAnchor.MiddleLeft
-			};
+				_rowSelectedItemStyle = new GUIStyle(EditorStyles.label)
+				{
+					normal = {background = BeamGUI.CreateColorTexture(new Color(0.21f, 0.32f, 0.49f))},
+					margin = new RectOffset(0, 0, 0, 0),
+					fixedHeight = itemRowHeight,
+					alignment = TextAnchor.MiddleLeft
+				};
+			}
 		}
 		
 		
 		private void DrawContentItemPanel()
 		{
+			
+			if (_contentService.isReloading)
+			{
+				GUILayout.BeginVertical();
+				GUILayout.Space(24);
+				
+				BeamGUI.LoadingSpinnerWithState("Fetching Content...");
+
+				if (_contentService.LatestProgressUpdate != null && _contentService.LatestProgressUpdate.total > 0)
+				{
+					var update = _contentService.LatestProgressUpdate;
+					var ratio = update.completed / (float) update.total;
+					BeamGUI.DrawLoadingBar(update.message, ratio);
+				}
+				
+				GUILayout.EndVertical();
+				return;
+			}
+			
 			GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true));
 			{
 				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
@@ -120,7 +159,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			GUILayout.EndVertical();
 			
-			if (!string.IsNullOrEmpty(SelectedItemId) && Event.current.type == EventType.KeyDown &&
+			if (MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
 			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
 			{
 				
@@ -129,15 +168,35 @@ namespace Beamable.Editor.UI.ContentWindow
 					return;
 				}
 
-				if (_contentService.EntriesCache.TryGetValue(SelectedItemId, out var entry) &&
-				    entry.StatusEnum is not ContentStatus.Deleted)
+				var toBeDeleted = new List<LocalContentManifestEntry>();
+				foreach (var id in MultiSelectItemIds)
 				{
+					if (_contentService.EntriesCache.TryGetValue(id, out var contentEntry) &&
+					    contentEntry.StatusEnum is not ContentStatus.Deleted)
+					{
+						toBeDeleted.Add(contentEntry);
+					}
+				}
+				
+				if (toBeDeleted.Count > 0)
+				{
+					var message = toBeDeleted.Count == 1
+						? "Are you sure you want to delete this content?"
+						: $"Are you sure you want to delete these {toBeDeleted.Count} contents?";
+					
 					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
-					                                                "Are you sure you want to delete this content?",
+					                                                message,
 					                                                "Delete", "Cancel");
 					if (shouldDelete)
 					{
-						_contentService.DeleteContent(entry.FullId);
+						_contentService.TempDisableWatcher(() =>
+						{
+							foreach (var id in toBeDeleted)
+							{
+								_contentService.DeleteContent(id.FullId);
+							}
+						});
+						
 						Selection.activeObject = null;
 						Event.current.Use();
 						Repaint();
@@ -197,17 +256,23 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				GUI.Box(rowRect, GUIContent.none, rowStyle);
 				
+
+				var isRowHover = rowRect.Contains(Event.current.mousePosition);
+				var isRowClicked = isRowHover && Event.current.rawType == EventType.MouseDown;
+				var isRowLeftClick = isRowClicked && Event.current.button == 0;
+				var isRowRightClick = isRowClicked && Event.current.button == 1;
+				
 				Rect contentRect = new Rect(rowRect);
 				
 				contentRect.xMin += BASE_PADDING;
+				var foldoutRect = new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height);
 
 				bool isGroupExpanded = _itemsExpandedStates[contentType];
 				if (hasChildrenSubtypes || hasChildrenItems)
 				{
-					_itemsExpandedStates[contentType] = EditorGUI.Foldout(
-						new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height),
-						isGroupExpanded,
-						GUIContent.none
+					_itemsExpandedStates[contentType] = EditorGUI.Foldout(foldoutRect,
+					                                                      isGroupExpanded,
+					                                                      GUIContent.none
 					);
 				}
 				
@@ -218,19 +283,36 @@ namespace Beamable.Editor.UI.ContentWindow
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
-				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
-				{
-					SettingsService.OpenProjectSettings("Project/Beamable/Content");
-				}
-
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, $"{displayName} - [{items.Count}]");
+				GUI.Label(contentRect, $"{displayName} - [{items.Count}]", new GUIStyle(EditorStyles.label)
+				{
+					alignment = TextAnchor.MiddleLeft
+				});
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
 				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
 				{
 					CreateNewItem(contentType);
+				}
+
+
+				if (hasChildrenSubtypes || hasChildrenItems)
+				{
+					EditorGUIUtility.AddCursorRect(rowRect, MouseCursor.Link);
+				}
+				
+				if (isRowLeftClick)
+				{
+					if (!foldoutRect.Contains(Event.current.mousePosition) &&
+					    !buttonCreateRect.Contains(Event.current.mousePosition))
+					{
+						_itemsExpandedStates[contentType] = !_itemsExpandedStates[contentType];
+						GUI.changed = true;
+					}
+				} else if (isRowRightClick)
+				{
+					ShowTypeMenu(contentType);
 				}
 				
 				if ((hasChildrenSubtypes || hasChildrenItems) && isGroupExpanded)
@@ -246,8 +328,47 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 		}
-		
 
+		private void ShowTypeMenu(string contentType)
+		{
+			var menu = new GenericMenu();
+			menu.AddItem(new GUIContent($"Create {contentType} Content"), false, () =>
+			{
+				CreateNewItem(contentType);
+			});
+			menu.AddSeparator("");
+
+			menu.AddItem(new GUIContent("Open Settings"), false, () =>
+			{
+				SettingsService.OpenProjectSettings("Project/Beamable/Content");
+			});
+			if (_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(contentType, out var classType))
+			{
+				menu.AddItem(new GUIContent("Open Class File"), false, () =>
+				{
+					MethodInfo fromTypeMethod = typeof(MonoScript).GetMethod(
+						"FromType", 
+						BindingFlags.NonPublic | BindingFlags.Static);
+
+					if (fromTypeMethod != null)
+					{
+						MonoScript script = fromTypeMethod.Invoke(null, new object[] { classType }) as MonoScript;
+						if (script != null)
+						{
+							AssetDatabase.OpenAsset(script);
+							return;
+						}
+					}
+				});	
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Open Class File"), false);
+			}
+					
+			menu.ShowAsContext();
+		}
+		
 		private void CreateNewItem(string itemType)
 		{
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
@@ -267,6 +388,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_contentService.ValidateForInvalidFields(contentObject);
 			_contentService.SaveContent(contentObject);
 			Selection.activeObject = contentObject;
+			_itemsExpandedStates[itemType] = true;
+			GUI.changed = true;
 		}
 
 		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth, string groupName)
@@ -282,7 +405,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			headerRect.width -= BASE_PADDING * 3;
 			headerRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
 			
-			string[] labels = { "Name", "Tags", "Latest Update" };
+			string[] labels = { "Name", "Tags", "Latest Update"};
     
 			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
 			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
@@ -290,8 +413,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
 		}
 
+		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();
+		
 		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth, string groupName)
 		{
+			_frameRenderedItems.AddRange(items);
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
 			if (items.Count <= maxVisibleItems)
 			{
@@ -390,17 +516,23 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
+		public SerializableDictionaryStringToInt _itemContentIdToRowRect = new SerializableDictionaryStringToInt();
+		
 		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
 		{
-			GUIStyle style = SelectedItemId == entry.FullId ? _rowSelectedItemStyle :
-				index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
+			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId) 
+				? _rowSelectedItemStyle 
+				: index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
 
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
 
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", "-----"};
+			
+			string lastUpdateDate = DateTimeOffset.FromUnixTimeMilliseconds(entry.LatestUpdateAtDate).ToLocalTime().ToString("g");
+			
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
 								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
 								: BeamGUI.iconStatusInvalid;
@@ -429,22 +561,113 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
 			}
+
+			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
 			
 			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
-				if (Event.current.button == 1)
+				var isShiftClick = Event.current.shift;
+				var isLeftClick = Event.current.button == 0;
+				var isRightClick = Event.current.button == 1;
+				
+				var isAddClick = (Event.current.control || Event.current.alt  ||
+				                    Event.current.command);
+				var isRepeatClick = MultiSelectItemIds.Contains(entry.FullId);
+
+
+				var shouldShowMenu = false;
+				if (!isShiftClick)
 				{
-					ShowItemOptionsMenu(entry);
+					// either adding, setting, or removing selection.
+					switch (isAddClick, isRepeatClick)
+					{
+						case (true, false):
+							AddEntryIdAsSelected(entry.FullId);
+							shouldShowMenu = isRightClick;
+							break;
+						case (false, false):
+							ClearSelection();
+							SetEntryIdAsSelected(entry.FullId);
+							shouldShowMenu = isRightClick;
+							break;
+						case (true, true):
+							if (isRightClick)
+							{
+								shouldShowMenu = true;
+							}
+							else
+							{
+								RemoveEntryIdAsSelected(entry.FullId);
+							}
+							break;
+						case (false, true):
+							if (isRightClick)
+							{
+								shouldShowMenu = true;
+							}
+							else
+							{
+								ClearSelection();
+							}
+							break;
+					}
+				}
+				else if (isShiftClick && isLeftClick)
+				{
+					if (Selection.objects.Length == 0)
+					{
+						// there is no selection yet, so handle this as the first click.
+						ClearSelection();
+						SetEntryIdAsSelected(entry.FullId);
+					}
+					else
+					{
+						var first = Selection.objects.OfType<ContentObject>().FirstOrDefault();
+						if (first == null)
+						{
+							// there is no CONTENT selection yet, so handle this as the first click.
+							ClearSelection();
+							SetEntryIdAsSelected(entry.FullId);
+						}
+						else
+						{
+							var firstId = first.Id;
+							var entryId = entry.FullId;
+							AddDelayedAction(() => {
+								var from = _frameRenderedItems.FindIndex(c => c.FullId == firstId);
+								var to = _frameRenderedItems.FindIndex(c => c.FullId == entryId);
+								
+								if (from == -1 || to == -1)
+								{
+									Debug.LogError($"Beam Content Manager cannot find index map between ids=[{firstId}:{entryId}] as index=[{from}:{to}] ");
+								}
+								else
+								{
+									var min = Math.Min(from, to);
+									var max = Math.Max(from, to);
+									for (var i = min; i <= max; i++)
+									{
+										AddEntryIdAsSelected(_frameRenderedItems[i].FullId);
+									}
+								}
+							});
+						}
+					}
+				}
+
+				if (shouldShowMenu)
+				{
+					// AddDelayedAction(() =>
+					var evt = Event.current;
+					var mousePosition = evt.mousePosition;
+					Event.current.Use();
+					Repaint();
+					ShowItemOptionsMenu(mousePosition);
 					return;
+
 				}
-				if (SelectedItemId == entry.FullId)
-				{
-					Selection.activeObject = null;
-				}
-				else
-				{
-					SetEntryIdAsSelected(entry.FullId);
-				}
+
+				
 				Event.current.Use();
 				Repaint();
 			}
@@ -458,77 +681,156 @@ namespace Beamable.Editor.UI.ContentWindow
 			Repaint();
 		}
 
-		private void ShowItemOptionsMenu(LocalContentManifestEntry entry)
+		private void ShowItemOptionsMenu(Vector2 menuPosition)
 		{
 			GenericMenu menu = new GenericMenu();
-			
-			
-			
-			if (entry.StatusEnum is ContentStatus.Deleted)
+
+			var selection = Selection.objects;
+			var entries = new List<LocalContentManifestEntry>();
+			foreach (var selected in selection)
 			{
-				menu.AddDisabledItem(new GUIContent("Duplicate Item"));
-				menu.AddDisabledItem(new GUIContent("Rename Item"));
-				menu.AddDisabledItem(new GUIContent("Delete Item"));
-			}
-			else
-			{
-				menu.AddItem(new  GUIContent("Open File Item"), false, () =>
+				if (selected is ContentObject content)
 				{
-					EditorUtility.OpenWithDefaultApp(entry.JsonFilePath);
-				});
-				menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
-				{
-					if (_contentService.ContentScriptableCache.TryGetValue(entry.FullId, out var contentObject))
+					if (_contentService.EntriesCache.TryGetValue(content.Id, out var entry))
 					{
-						var duplicatedObject = Instantiate(contentObject);
-						string baseName = $"{contentObject.ContentName}_Copy";
-						int itemsWithBaseNameCount =  _contentService.GetContentsFromType(contentObject.GetType()).Count(item => item.Name.StartsWith(baseName));
-						duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-						duplicatedObject.ContentStatus = ContentStatus.Created;
-						_contentService.SaveContent(duplicatedObject);
-						Selection.activeObject = duplicatedObject;
+						entries.Add(entry);
 					}
-				
-				});
-				
-				menu.AddItem(new GUIContent("Rename Item"), false, () =>
-				{
-					_editItemId = entry.FullId;
-					_editLabels = new[] {entry.Name};
-					_needToFocusLabel = true;
-				});
+				}
+			}
 
-
-				menu.AddItem(new GUIContent("Delete Item"), false, () =>
+			if (entries.Count == 1)
+			{
+				var entry = entries[0];
+				if (entry.StatusEnum is ContentStatus.Deleted)
 				{
-					if (EditorUtility.DisplayDialog("Delete Content",
-					                                "Are you sure you want to delete this content?", "Delete", "Cancel"))
+					menu.AddDisabledItem(new GUIContent("Duplicate Item"));
+					menu.AddDisabledItem(new GUIContent("Rename Item"));
+					menu.AddDisabledItem(new GUIContent("Delete Item"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Open File Item"), false,
+					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
+					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 					{
-						_contentService.DeleteContent(entry.FullId);
+						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
+						{
+							var duplicatedObject = Instantiate(contentObject);
+							string baseName = $"{contentObject.ContentName}_Copy";
+							int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
+							                                            .Count(item => item.Name.StartsWith(baseName));
+							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+							duplicatedObject.ContentStatus = ContentStatus.Created;
+							_contentService.SaveContent(duplicatedObject);
+							Selection.activeObject = duplicatedObject;
+						}
+
+					});
+
+					menu.AddItem(new GUIContent("Rename Item"), false, () =>
+					{
+						_editItemId = entry.FullId;
+						_editLabels = new[] {entry.Name};
+						_needToFocusLabel = true;
+					});
+
+
+					menu.AddItem(new GUIContent("Delete Item"), false, () =>
+					{
+						if (EditorUtility.DisplayDialog("Delete Content",
+						                                "Are you sure you want to delete this content?", "Delete",
+						                                "Cancel"))
+						{
+							_contentService.DeleteContent(entry.FullId);
+						}
+
+					});
+				}
+
+				if (entry.StatusEnum is not ContentStatus.UpToDate)
+				{
+					menu.AddItem(new GUIContent("Revert Item"), false,
+					             () =>
+					             {
+						             _ = _contentService.SyncContentsWithProgress(
+							             true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
+					             });
+				}
+				else
+				{
+					menu.AddDisabledItem(new GUIContent("Revert Item"));
+				}
+
+				menu.AddSeparator("");
+				menu.AddItem(new GUIContent("Copy content ID to clipboard"), false,
+				             () => { GUIUtility.systemCopyBuffer = entry.FullId; });
+			}
+			else if (entries.Count > 1)
+			{
+				var allDeleted = entries.All(e => e.StatusEnum == ContentStatus.Deleted);
+				var allUpToDate = entries.All(e => e.StatusEnum == ContentStatus.UpToDate);
+				if (allDeleted)
+				{
+					menu.AddDisabledItem(new GUIContent("Delete Items"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Delete Existing Items"), false, () =>
+					{
+						if (EditorUtility.DisplayDialog("Delete Content",
+						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
+						                                "Cancel"))
+						{
+							_contentService.TempDisableWatcher(() =>
+							{
+								foreach (var entry in entries)
+								{
+									_contentService.DeleteContent(entry.FullId);
+								}
+							});
+						}
+					});
+				}
+
+				menu.AddItem(new GUIContent("Duplicate Items"), false, () =>
+				{
+					ClearSelection();
+
+					// TODO: it would be better to pre-calculate all of the file names for the new content
+					//       and then temporarily disable the content watcher.
+					foreach (var entry in entries)
+					{
+						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
+						{
+							var duplicatedObject = Instantiate(contentObject);
+							string baseName = $"{contentObject.ContentName}_Copy";
+							int itemsWithBaseNameCount = _contentService
+							                             .GetContentsFromType(contentObject.GetType())
+							                             .Count(item => item.Name.StartsWith(baseName));
+							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+							duplicatedObject.ContentStatus = ContentStatus.Created;
+							_contentService.SaveContent(duplicatedObject);
+						}
 					}
 
 				});
-			}
 
-			if (entry.StatusEnum is not ContentStatus.UpToDate)
-			{
-				menu.AddItem(new GUIContent("Revert Item"), false, () =>
+				if (allUpToDate)
 				{
-					_ = _contentService.SyncContentsWithProgress(true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
-				});
+					menu.AddDisabledItem(new GUIContent("Revert Items"));
+				}
+				else
+				{
+					menu.AddItem(new GUIContent("Revert changed Items"), false, () =>
+					{
+						_ = _contentService.SyncContentsWithProgress(
+							true, true, true, true, string.Join(",",entries.Select(e => e.FullId)), ContentFilterType.ExactIds);
+					});
+				}
+				
 			}
-			else
-			{
-				menu.AddDisabledItem(new GUIContent("Revert Item"));
-			}
-			
-			menu.AddSeparator("");
-			menu.AddItem(new GUIContent("Copy content ID to clipboard"), false, () =>
-			{
-				GUIUtility.systemCopyBuffer = entry.FullId;
-			});
 
-			menu.ShowAsContext();
+			menu.DropDown(new Rect(menuPosition, Vector2.zero));
 		}
 
 		private string[] DrawTableRow(string[] labels,
@@ -597,7 +899,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (Selection.activeObject is ContentObject contentObject)
 			{
-				if(!_contentService.ContentScriptableCache.ContainsKey(contentObject.Id))
+				if(!_contentService.TryGetContentObject(contentObject.Id, out _))
 				{
 					Selection.activeObject = null;
 				}
@@ -626,11 +928,59 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void SetEntryIdAsSelected(string entryId)
 		{
-			if(_contentService.ContentScriptableCache.TryGetValue(entryId, out ContentObject value))
+			if(_contentService.TryGetContentObject(entryId, out ContentObject value))
 			{
 				Selection.activeObject = value;
 			}
 		}
+
+		private void ClearSelection()
+		{
+			Selection.activeObject = null;
+			Selection.objects = new Object[] { };
+		}
+		private void AddEntryIdAsSelected(string entryId)
+		{
+			var selection = Selection.objects;
+			foreach (var existing in selection)
+			{
+				if (existing is ContentObject content && content.Id == entryId)
+				{
+					// the item already exists in the selection.
+					return; 
+				}
+			}
+			
+			var newSelection = selection.ToList();
+			
+			if (_contentService.TryGetContentObject(entryId, out ContentObject value))
+			{
+				newSelection.Add(value);
+			}
+
+			Selection.objects = newSelection.ToArray();
+		}
+		
+		private void RemoveEntryIdAsSelected(string entryId)
+		{
+			var selection = Selection.objects;
+			var found = false;
+			var newSelection = selection.ToList();
+			foreach (var existing in selection)
+			{
+				if (existing is ContentObject content && content.Id == entryId)
+				{
+					found = true;
+					newSelection.Remove(existing);
+				}
+			}
+
+			// the item does not exist in the selection
+			if (!found) return; 
+
+			Selection.objects = newSelection.ToArray();
+		}
+		
 
 		private List<LocalContentManifestEntry> GetFilteredItems(string specificType = "", bool shouldSort = false)
 		{

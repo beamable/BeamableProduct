@@ -1,26 +1,30 @@
 import { BeamServerConfig } from '@/configs/BeamServerConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
-import { BeamApi } from '@/core/BeamApi';
-import { BeamBase } from '@/core/BeamBase';
+import { BeamBase, type BeamEnvVars } from '@/core/BeamBase';
 import { HEADERS } from '@/constants';
-import { AccountService } from '@/services/AccountService';
-import { AnnouncementsService } from '@/services/AnnouncementsService';
-import { AuthService } from '@/services/AuthService';
-import { StatsService } from '@/services/StatsService';
-import { BeamService } from '@/core/BeamService';
-import { LeaderboardsService } from '@/services/LeaderboardsService';
+import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
+import { BeamConfig } from '@/configs/BeamConfig';
+import { ServerServicesMixin } from '@/core/mixins';
+import { BeamServerServiceType } from '@/core/types';
+import {
+  BeamMicroServiceClient,
+  type BeamMicroServiceClientCtor,
+} from '@/core/BeamMicroServiceClient';
 
 /** The main class for interacting with the Beam Server SDK. */
-export class BeamServer extends BeamBase {
-  public readonly api: BeamApi;
+export class BeamServer extends ServerServicesMixin(BeamBase) {
+  /** Initialize a new Beam server instance. */
+  static init(config: BeamConfig): BeamServer {
+    const beamServer = new this(config);
+    beamServer.isInitialized = true;
+    return beamServer;
+  }
 
-  constructor(config: BeamServerConfig) {
+  protected constructor(config: BeamServerConfig) {
     super(config);
     this.addOptionalDefaultHeader(HEADERS.UA, config.engine);
     this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.engineVersion);
-    this.api = new BeamApi(this.requester);
-    BeamService.attachServicesToServer(this);
   }
 
   protected createBeamRequester(config: BeamServerConfig): BeamRequester {
@@ -31,17 +35,35 @@ export class BeamServer extends BeamBase {
       pid: this.pid,
     });
   }
+
+  static get env(): BeamEnvVars {
+    return BeamBase.env;
+  }
+
+  use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
+  use<T extends BeamMicroServiceClient>(
+    Client: BeamMicroServiceClientCtor<T>,
+  ): this;
+  use(Ctor: any): this {
+    if (this.isApiService(Ctor)) {
+      const svc = new Ctor({ beam: this });
+      (this.serverServices as any)[svc.serviceName] = (userId: string) => {
+        svc.userId = userId;
+        return svc;
+      };
+    } else if (this.isMicroServiceClient(Ctor)) {
+      const client = new Ctor(this);
+      const serviceName = client.serviceName;
+      const serviceNameIdentifier =
+        serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
+      const clientName = `${serviceNameIdentifier}Client`;
+      (this as any)[clientName] = client;
+    }
+
+    return this;
+  }
 }
 
-export interface BeamServer {
-  /** High-level account helper built on top of `beam.api.accounts.*` endpoints. */
-  account: (userId: string) => AccountService;
-  /** High-level announcement helper built on top of `beam.api.announcements.*` endpoints. */
-  announcements: (userId: string) => AnnouncementsService;
-  /** High-level auth helper built on top of `beam.api.auth.*` endpoints. */
-  auth: (userId: string) => AuthService;
-  /** High-level leaderboards helper built on top of `beam.api.leaderboards.*` endpoints. */
-  leaderboards: (userId: string) => LeaderboardsService;
-  /** High-level stats helper built on top of `beam.api.stats.*` endpoints. */
-  stats: (userId: string) => StatsService;
-}
+// Declaration‑merge interface that exposes all the server‑side services injected at runtime by the ServerServicesMixin.
+// Each property corresponds to a key in ServiceMap, so you get typed access to beamServer.account(userId), beam.auth(userId), etc.
+export interface BeamServer extends BeamServerServiceType {}

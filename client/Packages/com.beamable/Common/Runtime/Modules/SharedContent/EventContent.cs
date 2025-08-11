@@ -126,6 +126,7 @@ namespace Beamable.Common.Content
 		public ClientPermissions permissions;
 
 		[Tooltip(ContentObject.TooltipEventSchedule)]
+		[MustBeValidCron]
 		public OptionalEventSchedule schedule;
 
 		public void OnBeforeSerialize()

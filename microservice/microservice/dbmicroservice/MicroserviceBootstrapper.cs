@@ -50,6 +50,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using Beamable.Common.Util;
 using Microsoft.Extensions.Logging;
@@ -827,6 +828,38 @@ namespace Beamable.Server
 	        {
 		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
 	        }
+
+	        // AdjustWorkingDirectory(attribute);
+        }
+
+        /// <summary>
+        /// When you run `dotnet run`, the working directory is from where you ran `dotnet run` from.
+        /// When you run from Docker or Rider, the working directory is where the built dll is.
+        /// This is confusing, and this function will attempt to map to the Docker behaviour.
+        /// </summary>
+        /// <param name="attr"></param>
+        public static void AdjustWorkingDirectory<TMicroservice>() where TMicroservice : Microservice
+        {
+	        Type microserviceType = typeof(TMicroservice);
+	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+	        var dllName = attribute.MicroserviceName + ".dll";
+	        if (File.Exists(dllName)) return; // hooray, we are in the right folder already.
+	        
+	        var assembly = Assembly.GetExecutingAssembly();
+	        var frameworkAttr = assembly
+		        .GetCustomAttributes(typeof(TargetFrameworkAttribute), false)
+		        .OfType<TargetFrameworkAttribute>()
+		        .FirstOrDefault();
+
+	        var frameworkFolder = frameworkAttr.FrameworkDisplayName.ToLowerInvariant().Replace(" ", "").Substring(1);
+	        var likelyFolder = Path.Combine("bin", "Debug", frameworkFolder);
+
+	        var likelyDllPath = Path.Combine(likelyFolder, dllName);
+	        if (File.Exists(likelyDllPath))
+	        {
+		        // ah, this should be the working directory.
+		        Environment.CurrentDirectory = likelyFolder;
+	        }
         }
 
         public static void ForceUseRemoteDependencies<TMicroservice>() where TMicroservice : Microservice
@@ -851,14 +884,11 @@ namespace Beamable.Server
         private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
         {
 	        var generator = new ServiceDocGenerator();
-		        
-	        var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out List<Type> _);
-		        
 	        var doc = generator.Generate(microserviceType, attribute, new AdminRoutes
 	        {
 		        MicroserviceAttribute = attribute,
 		        MicroserviceType = microserviceType
-	        }, false, extraSchemas.Select(t => t.type).ToArray());
+	        });
 				
 	        var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		       

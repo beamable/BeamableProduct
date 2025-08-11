@@ -29,9 +29,12 @@ namespace Beamable.Editor.Content
 				
 				
 				SerializedProperty activeToProp = property.FindPropertyRelative("activeTo");
-				Rect activeToRect = new Rect(position.x, position.y + yOffset, position.width, EditorGUIUtility.singleLineHeight);
+				float activeToSize = position.width < DatePropertyDrawer.SingleLineWidth
+					? EditorGUIUtility.singleLineHeight * 2f
+					: EditorGUIUtility.singleLineHeight;
+				Rect activeToRect = new Rect(position.x, position.y + yOffset, position.width, activeToSize);
 				EditorGUI.PropertyField(activeToRect, activeToProp);
-				yOffset += BeamGUI.StandardVerticalSpacing;
+				yOffset += activeToSize;
 				var hasValueProp = activeToProp.FindPropertyRelative(nameof(Optional.HasValue));
 				if (hasValueProp.boolValue)
 				{
@@ -63,7 +66,16 @@ namespace Beamable.Editor.Content
 				return EditorGUIUtility.singleLineHeight;
 			}
 
-			float height = BeamGUI.StandardVerticalSpacing * 3; // Label + Description + activeTo
+			float height = BeamGUI.StandardVerticalSpacing * 2; // Label + Description
+
+			if (EditorGUIUtility.currentViewWidth < DatePropertyDrawer.SingleLineWidth)
+			{
+				height += BeamGUI.StandardVerticalSpacing * 2;
+			}
+			else
+			{
+				height += BeamGUI.StandardVerticalSpacing;
+			}
 			
 			// Add height for definitions list
 			SerializedProperty definitionsProp = property.FindPropertyRelative("definitions");

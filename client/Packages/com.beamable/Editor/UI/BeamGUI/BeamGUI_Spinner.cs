@@ -22,7 +22,7 @@ namespace Beamable.Editor.Util
 			var spinnerRect = new Rect(bounds.x, bounds.y, bounds.width, bounds.height - size.y - padding);
 
 			GUI.DrawTexture(spinnerRect, GetSpinner(), ScaleMode.ScaleToFit);
-			
+			GUI.changed = true;
 			EditorGUI.LabelField(labelRect, content, style);
 
 		}

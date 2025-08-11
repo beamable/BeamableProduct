@@ -1,317 +1,327 @@
-import { BatchReadStatsResponse } from '@/__generated__/schemas/BatchReadStatsResponse';
-import { BatchSetStatsRequest } from '@/__generated__/schemas/BatchSetStatsRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
+import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
-import { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
-import { StatRequest } from '@/__generated__/schemas/StatRequest';
-import { StatsResponse } from '@/__generated__/schemas/StatsResponse';
-import { StatsSearchRequest } from '@/__generated__/schemas/StatsSearchRequest';
-import { StatsSearchResponse } from '@/__generated__/schemas/StatsSearchResponse';
-import { StatsSubscribeRequest } from '@/__generated__/schemas/StatsSubscribeRequest';
-import { StatsUnsubscribeRequest } from '@/__generated__/schemas/StatsUnsubscribeRequest';
-import { StatUpdateRequest } from '@/__generated__/schemas/StatUpdateRequest';
-import { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatUpdateRequestStringListFormat';
+import type { BatchReadStatsResponse } from '@/__generated__/schemas/BatchReadStatsResponse';
+import type { BatchSetStatsRequest } from '@/__generated__/schemas/BatchSetStatsRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
+import type { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
+import type { StatRequest } from '@/__generated__/schemas/StatRequest';
+import type { StatsResponse } from '@/__generated__/schemas/StatsResponse';
+import type { StatsSearchRequest } from '@/__generated__/schemas/StatsSearchRequest';
+import type { StatsSearchResponse } from '@/__generated__/schemas/StatsSearchResponse';
+import type { StatsSubscribeRequest } from '@/__generated__/schemas/StatsSubscribeRequest';
+import type { StatsUnsubscribeRequest } from '@/__generated__/schemas/StatsUnsubscribeRequest';
+import type { StatUpdateRequest } from '@/__generated__/schemas/StatUpdateRequest';
+import type { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatUpdateRequestStringListFormat';
 
-export class StatsApi {
-  constructor(
-    private readonly r: HttpRequester
-  ) {
-  }
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatsSubscribeRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPutSubscribeBasic(requester: HttpRequester, payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/basic/stats/subscribe";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatsSubscribeRequest} payload - The `StatsSubscribeRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async putStatSubscribe(payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/basic/stats/subscribe";
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, StatsSubscribeRequest>({
-      r: this.r,
-      e,
-      m: PUT,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, StatsSubscribeRequest>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatsUnsubscribeRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsDeleteSubscribeBasic(requester: HttpRequester, payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/basic/stats/subscribe";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatsUnsubscribeRequest} payload - The `StatsUnsubscribeRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async deleteStatSubscribe(payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/basic/stats/subscribe";
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, StatsUnsubscribeRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, StatsUnsubscribeRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectIds - The `objectIds` parameter to include in the API request.
+ * @param format - The `format` parameter to include in the API request.
+ * @param stats - The `stats` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsGetClientBatchBasic(requester: HttpRequester, objectIds: string, format?: string, stats?: string, gamertag?: string): Promise<HttpResponse<BatchReadStatsResponse>> {
+  let endpoint = "/basic/stats/client/batch";
   
-  /**
-   * @param {string} objectIds - The `objectIds` parameter to include in the API request.
-   * @param {string} format - The `format` parameter to include in the API request.
-   * @param {string} stats - The `stats` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<BatchReadStatsResponse>>} A promise containing the HttpResponse of BatchReadStatsResponse
-   */
-  async getStatsClientBatch(objectIds: string, format?: string, stats?: string, gamertag?: string): Promise<HttpResponse<BatchReadStatsResponse>> {
-    let e = "/basic/stats/client/batch";
-    
-    // Make the API request
-    return makeApiRequest<BatchReadStatsResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        objectIds,
-        format,
-        stats
-      },
-      g: gamertag
-    });
-  }
+  // Make the API request
+  return makeApiRequest<BatchReadStatsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      objectIds,
+      format,
+      stats
+    },
+    g: gamertag
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `BatchSetStatsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostBatchBasic(requester: HttpRequester, payload: BatchSetStatsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/stats/batch";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {BatchSetStatsRequest} payload - The `BatchSetStatsRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postStatBatch(payload: BatchSetStatsRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/stats/batch";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, BatchSetStatsRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, BatchSetStatsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatsSearchRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostSearchBasic(requester: HttpRequester, payload: StatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsSearchResponse>> {
+  let endpoint = "/basic/stats/search";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatsSearchRequest} payload - The `StatsSearchRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<StatsSearchResponse>>} A promise containing the HttpResponse of StatsSearchResponse
-   */
-  async postStatSearch(payload: StatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsSearchResponse>> {
-    let e = "/basic/stats/search";
-    
-    // Make the API request
-    return makeApiRequest<StatsSearchResponse, StatsSearchRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<StatsSearchResponse, StatsSearchRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `SearchExtendedRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostSearchExtendedBasic(requester: HttpRequester, payload: SearchExtendedRequest, gamertag?: string): Promise<HttpResponse<SearchExtendedResponse>> {
+  let endpoint = "/basic/stats/search/extended";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {SearchExtendedRequest} payload - The `SearchExtendedRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<SearchExtendedResponse>>} A promise containing the HttpResponse of SearchExtendedResponse
-   */
-  async postStatSearchExtended(payload: SearchExtendedRequest, gamertag?: string): Promise<HttpResponse<SearchExtendedResponse>> {
-    let e = "/basic/stats/search/extended";
-    
-    // Make the API request
-    return makeApiRequest<SearchExtendedResponse, SearchExtendedRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<SearchExtendedResponse, SearchExtendedRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatUpdateRequestStringListFormat` instance to use for the API request
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostClientStringlistByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/object/stats/{objectId}/client/stringlist".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatUpdateRequestStringListFormat} payload - The `StatUpdateRequestStringListFormat` instance to use for the API request
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postStatClientStringlistByObjectId(objectId: string, payload: StatUpdateRequestStringListFormat, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/object/stats/{objectId}/client/stringlist".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, StatUpdateRequestStringListFormat>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, StatUpdateRequestStringListFormat>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param stats - The `stats` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsGetByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
+  let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} stats - The `stats` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
-   */
-  async getStatByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<StatsResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        stats
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<StatsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      stats
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatUpdateRequest` instance to use for the API request
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatUpdateRequest} payload - The `StatUpdateRequest` instance to use for the API request
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postStatByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, StatUpdateRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, StatUpdateRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatRequest` instance to use for the API request
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsDeleteByObjectId(requester: HttpRequester, objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatRequest} payload - The `StatRequest` instance to use for the API request
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async deleteStatByObjectId(objectId: string, payload: StatRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/object/stats/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, StatRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, StatRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param stats - The `stats` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsGetClientByObjectId(requester: HttpRequester, objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
+  let endpoint = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} stats - The `stats` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<StatsResponse>>} A promise containing the HttpResponse of StatsResponse
-   */
-  async getStatClientByObjectId(objectId: string, stats?: string, gamertag?: string): Promise<HttpResponse<StatsResponse>> {
-    let e = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<StatsResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        stats
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<StatsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      stats
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StatUpdateRequest` instance to use for the API request
+ * @param objectId - Format: domain.visibility.type.gamerTag
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function statsPostClientByObjectId(requester: HttpRequester, objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {StatUpdateRequest} payload - The `StatUpdateRequest` instance to use for the API request
-   * @param {string} objectId - Format: domain.visibility.type.gamerTag
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postStatClientByObjectId(objectId: string, payload: StatUpdateRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/object/stats/{objectId}/client".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, StatUpdateRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, StatUpdateRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
 }

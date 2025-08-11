@@ -51,6 +51,8 @@ namespace Beamable.Common
 			public const string COMMON_COMPONENTS_PATH = BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Components";
 
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";
+			public const string DEFAULT_DATA_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultContent";
+
 			/// <summary>
 			/// Path for dlls compiled from SAMS common code. Relative to Assets directory. 
 			/// </summary>

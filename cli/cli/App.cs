@@ -511,6 +511,7 @@ public class App
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddSubCommand<SetEnabledCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<SetDisableCommand, SetEnabledCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<SaveProjectPathsCommand, SaveProjectPathsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GroupCommand,CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GroupAddCommand, UpdateGroupArgs, GroupCommand>();
@@ -533,6 +534,10 @@ public class App
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
+
+		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
+
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
@@ -675,7 +680,10 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSyncCommand, ContentSyncCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentResolveConflictCommand, ContentResolveConflictCommandArgs, ContentCommand>();
-
+		Commands.AddSubCommandWithHandler<ContentListManifestsCommand, ContentListManifestsCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentCreateLocalManifestCommand, ContentCreateLocalManifestCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentArchiveManifestCommand, ContentArchiveManifestCommandArgs, ContentCommand>();
+		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
@@ -801,6 +809,8 @@ public class App
 	class ZLoggerBufferedProcessor : IAsyncLogProcessor
 	{
 		public List<IZLoggerEntry> logs = new List<IZLoggerEntry>();
+		public List<IZLoggerEntry> logsGotWhileDisabled = new List<IZLoggerEntry>();
+		public bool isDisabled;
 		public ValueTask DisposeAsync()
 		{
 			return ValueTask.CompletedTask;
@@ -808,6 +818,11 @@ public class App
 
 		public void Post(IZLoggerEntry log)
 		{
+			if (isDisabled)
+			{
+				logsGotWhileDisabled.Add(log);
+				return; 
+			}
 			logs.Add(log);
 		}
 	}
@@ -1011,11 +1026,19 @@ public class App
 			// update log information before dependency injection is sealed.
 			{
 				_setLogger(provider);
-				foreach (var log in CommandProvider.GetService<ZLoggerBufferedProcessor>().logs)
+				var proc = CommandProvider.GetService<ZLoggerBufferedProcessor>();
+				proc.isDisabled = true;
+				foreach (var log in proc.logs)
 				{
 					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
 				}
-				
+
+				proc.isDisabled = false;
+				foreach (var log in proc.logsGotWhileDisabled)
+				{
+					BeamableZLoggerProvider.LogContext.Value.LogWarning("The following log was received while the internal logger was switching.");
+					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
+				}
 			}
 
 			//in case otel is enabled, check if otel data stored in files is too large

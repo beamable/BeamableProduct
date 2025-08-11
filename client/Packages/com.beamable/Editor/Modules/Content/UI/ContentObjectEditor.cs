@@ -31,6 +31,7 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			var isEditingMultiple = targets.Length > 1;
 
 			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 
@@ -40,7 +41,7 @@ namespace Beamable.Editor.Content.UI
 			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted;
 			var isInConflict = contentObject.IsInConflict;
 
-			var headerHeight = isModified || isInConflict ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
+			var headerHeight = (isModified || isInConflict) && !isEditingMultiple ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
 			
 			GUIStyle headerStyle = new GUIStyle(GUI.skin.box)
 			{
@@ -57,6 +58,20 @@ namespace Beamable.Editor.Content.UI
 				var iconRect = new Rect(headerRect.x, headerRect.y + iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
+				Rect contentRect = new Rect(
+					iconRect.xMax + 10f,
+					headerRect.y + 10,
+					headerRect.width - iconRect.width,
+					EditorGUIUtility.singleLineHeight * 3);
+
+				if (isEditingMultiple)
+				{
+					EditorGUI.LabelField(contentRect, "Editing multiple content files...", EditorStyles.miniLabel);
+					GUILayout.EndHorizontal();
+					GUILayout.EndVertical();
+					return;
+				}
+				
 				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
 				{
 					var statusIconSize = 15f;
@@ -83,12 +98,7 @@ namespace Beamable.Editor.Content.UI
 					SettingsService.OpenProjectSettings("Project/Beamable/Content");
 				}
 
-				Rect contentRect = new Rect(
-					iconRect.xMax + 10f,
-					headerRect.y + 10,
-					headerRect.width - iconRect.width,
-					EditorGUIUtility.singleLineHeight * 3);
-
+				
 				DrawHeaderFields(contentRect, boldLabelFieldStyle, contentObject, contentService);
 
 				DrawNameValidator(contentObject, headerRect);

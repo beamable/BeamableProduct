@@ -1,5 +1,30 @@
 # beamable-sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- Introduced initialization via `Beam.init()` and `BeamServer.init()`. 
+- Introduced new environment-variable support via `BeamBase.env` or `Beam.env` or `BeamServer.env`.
+- Introduced `use()` as a service locator, and an SDK mixin to register client and server services.
+- Added support for authentication via email/password, third-party providers, and external identity.
+- Added `federationIds` to generated microservice web client to support federated authentication.
+- Normalized built-in Beamable environment names (`dev`, `stg` and `prod`) to lowercase for consistency.
+
+## 0.3.2
+
+### Patch Changes
+
+- Web client generation for Beamable C# Microservices
+
+## 0.3.1
+
+### Patch Changes
+
+- Switch from Api classes to functions
+- Access to SDK APIs via `beamable-sdk/api`
+- Removed `BeamApi` class
+
 ## 0.3.0
 
 ### Minor Changes

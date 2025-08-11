@@ -1,6 +1,12 @@
-import { AnnouncementView } from '@/__generated__/schemas';
+import type { AnnouncementView } from '@/__generated__/schemas';
 import { Refreshable } from '@/services/types/Refreshable';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
+import {
+  announcementsDeleteByObjectId,
+  announcementsGetByObjectId,
+  announcementsPostClaimByObjectId,
+  announcementsPutReadByObjectId,
+} from '@/__generated__/apis';
 
 export interface AnnouncementIdParams {
   /**
@@ -14,9 +20,13 @@ export class AnnouncementsService
   extends ApiService
   implements Refreshable<AnnouncementView[]>
 {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'announcements';
   }
 
   /**
@@ -44,7 +54,8 @@ export class AnnouncementsService
    * @throws {BeamError} If the request fails.
    */
   async list(): Promise<AnnouncementView[]> {
-    const { body } = await this.api.announcements.getAnnouncementByObjectId(
+    const { body } = await announcementsGetByObjectId(
+      this.requester,
       this.accountId,
       false,
       this.accountId,
@@ -78,7 +89,8 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.postAnnouncementClaimByObjectId(
+    await announcementsPostClaimByObjectId(
+      this.requester,
       this.accountId,
       { announcements: ids },
       this.accountId,
@@ -114,7 +126,8 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.putAnnouncementReadByObjectId(
+    await announcementsPutReadByObjectId(
+      this.requester,
       this.accountId,
       { announcements: ids },
       this.accountId,
@@ -150,7 +163,8 @@ export class AnnouncementsService
       : [announcementIds];
     const idSet = new Set(ids);
 
-    await this.api.announcements.deleteAnnouncementByObjectId(
+    await announcementsDeleteByObjectId(
+      this.requester,
       this.accountId,
       { announcements: ids },
       this.accountId,

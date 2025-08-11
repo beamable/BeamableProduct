@@ -8,8 +8,10 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The .dll filepath for the built microservice</summary>
         public string source;
-        /// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
+        /// <summary>The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag</summary>
         public string[] ids;
+        /// <summary>By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids</summary>
+        public bool exactIds;
         /// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
         public string[] withoutGroup;
         /// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
@@ -41,6 +43,11 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
                 }
+            }
+            // If the exactIds value was not default, then add it to the list of args.
+            if ((this.exactIds != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--exact-ids=" + this.exactIds));
             }
             // If the withoutGroup value was not default, then add it to the list of args.
             if ((this.withoutGroup != default(string[])))

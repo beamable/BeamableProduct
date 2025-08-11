@@ -83,8 +83,7 @@ namespace microservice.Common
       public string Docs()
       {
 	      var docs = new ServiceDocGenerator();
-	      var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(MicroserviceType.Assembly.GetExportedTypes(), out var typesMissingAttribute).Select(t => t.type).ToArray();
-	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this, false, extraSchemas);
+	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this);
 
 	      if (!string.IsNullOrEmpty(PublicHost))
 	      {

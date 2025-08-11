@@ -1,5 +1,10 @@
-import { ClientPermission } from './ClientPermission';
-import { LeaderboardCohortSettings } from './LeaderboardCohortSettings';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { ClientPermission } from './ClientPermission';
+import type { LeaderboardCohortSettings } from './LeaderboardCohortSettings';
 
 export type LeaderboardCreateRequest = { 
   sharded: boolean; 

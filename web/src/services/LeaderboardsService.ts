@@ -1,9 +1,17 @@
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import { BeamError } from '@/constants/Errors';
-import {
+import type {
   LeaderboardAssignmentInfo,
   LeaderBoardView,
 } from '@/__generated__/schemas';
+import {
+  leaderboardsGetAssignmentBasic,
+  leaderboardsGetFriendsByObjectId,
+  leaderboardsGetRanksByObjectId,
+  leaderboardsGetViewByObjectId,
+  leaderboardsPutEntryByObjectId,
+  leaderboardsPutFreezeByObjectId,
+} from '@/__generated__/apis';
 
 export interface GetLeaderboardParams {
   /** The ID of the leaderboard to fetch. */
@@ -62,9 +70,13 @@ export interface FreezeLeaderboardParams {
 }
 
 export class LeaderboardsService extends ApiService {
-  /** @internal */
   constructor(props: ApiServiceProps) {
     super(props);
+  }
+
+  /** @internal */
+  get serviceName(): string {
+    return 'leaderboards';
   }
 
   /**
@@ -75,6 +87,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch a leaderboard view
    * const leaderboardView = await leaderboards.get({
    *   id: 'leaderboard-id',
    *   from: 1, // optional, to start from a specific rank
@@ -90,7 +103,8 @@ export class LeaderboardsService extends ApiService {
   async get(params: GetLeaderboardParams): Promise<LeaderBoardView> {
     const { id, from, max, focus, outlier, includeFriends, includeGuilds } =
       params;
-    const { body } = await this.api.leaderboards.getLeaderboardViewByObjectId(
+    const { body } = await leaderboardsGetViewByObjectId(
+      this.requester,
       id,
       focus,
       includeFriends,
@@ -121,6 +135,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the assigned leaderboard view
    * const assignedBoard = await leaderboards.getAssignedBoard({ id: 'leaderboard-id' });
    * ```
    * @throws {BeamError} If the assignment does not exist or the leaderboard cannot be fetched.
@@ -149,6 +164,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the ranks of friends in a leaderboard
    * const friendRanks = await leaderboards.getFriendRanks({
    *   id: 'leaderboard-id',
    * });
@@ -159,11 +175,11 @@ export class LeaderboardsService extends ApiService {
     params: GetLeaderboardFriendsParams,
   ): Promise<LeaderBoardView> {
     const { id } = params;
-    const { body } =
-      await this.api.leaderboards.getLeaderboardFriendsByObjectId(
-        id,
-        this.accountId,
-      );
+    const { body } = await leaderboardsGetFriendsByObjectId(
+      this.requester,
+      id,
+      this.accountId,
+    );
     return body.lb;
   }
 
@@ -175,6 +191,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // fetch the ranks of specific players in a leaderboard
    * const ranks = await leaderboards.getRanks({
    *   id: 'leaderboard-id',
    *   playerIds: ['player1GamertagOrId', 'player2GamertagOrId'],
@@ -184,7 +201,8 @@ export class LeaderboardsService extends ApiService {
    */
   async getRanks(params: GetLeaderboardRanksParams): Promise<LeaderBoardView> {
     const { id, playerIds } = params;
-    const { body } = await this.api.leaderboards.getLeaderboardRanksByObjectId(
+    const { body } = await leaderboardsGetRanksByObjectId(
+      this.requester,
       id,
       playerIds.join(','),
       this.accountId,
@@ -200,6 +218,7 @@ export class LeaderboardsService extends ApiService {
    * const leaderboards = beam.leaderboards;
    * // server-side:
    * const leaderboards = beamServer.leaderboards(playerId);
+   * // set the score for the current player in a leaderboard
    * await leaderboards.setScore({
    *   id: 'leaderboard-id',
    *   score: 1000,
@@ -211,14 +230,13 @@ export class LeaderboardsService extends ApiService {
    */
   async setScore(params: SetLeaderboardScoreParams): Promise<void> {
     const { id, score, increment = false, stats } = params;
-    const assignment = await this.getAssignment(params.id, true);
+    const assignment = await this.getAssignment(id, true);
     if (!assignment) {
-      throw new BeamError(
-        `Leaderboard assignment not found for ID: ${params.id}`,
-      );
+      throw new BeamError(`Leaderboard assignment not found for ID: ${id}`);
     }
 
-    await this.api.leaderboards.putLeaderboardEntryByObjectId(
+    await leaderboardsPutEntryByObjectId(
+      this.requester,
       assignment.leaderboardId,
       {
         id: this.accountId,
@@ -257,10 +275,7 @@ export class LeaderboardsService extends ApiService {
     }
 
     const { id } = params;
-    await this.api.leaderboards.putLeaderboardFreezeByObjectId(
-      id,
-      this.accountId,
-    );
+    await leaderboardsPutFreezeByObjectId(this.requester, id, this.accountId);
   }
 
   // Returns the leaderboard assignment for the current player, using a cached assignment if available, or joining the leaderboard if not.
@@ -275,7 +290,8 @@ export class LeaderboardsService extends ApiService {
       if (cachedAssignment) return cachedAssignment;
     }
 
-    const { body } = await this.api.leaderboards.getLeaderboardsAssignment(
+    const { body } = await leaderboardsGetAssignmentBasic(
+      this.requester,
       id,
       joinBoard,
       this.accountId,
@@ -283,7 +299,10 @@ export class LeaderboardsService extends ApiService {
 
     if (!this.player) return body;
 
-    this.player.leaderboardsAssignments[`${this.player.id}:${id}`] = body;
+    this.player.leaderboardsAssignments = {
+      ...this.player.leaderboardsAssignments,
+      [`${this.player.id}:${id}`]: body,
+    };
     return body;
   }
 
