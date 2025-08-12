@@ -54,27 +54,35 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>
 		}
 
 		{ // Sending deserialized telemetry data through Otlp exporter
-			var logsResult = FileOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath, endpointToUse);
+			Log.Verbose($"Exporting logs to endpoint: {endpointToUse}");
+			var logsResult = FileOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath, endpointToUse, out string errorLogMsg);
 
 			if (logsResult == ExportResult.Failure)
 			{
 				throw new CliException(
-					"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint"); //TODO improve this log with more information
+					"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint." +
+					$"Error=[{errorLogMsg}]");
 			}
 
-			var traceResult = FileOtlpExporter.ExportTraces(args.ConfigService.ConfigTempOtelTracesDirectoryPath, endpointToUse);
+			Log.Verbose($"Exporting traces to endpoint: {endpointToUse}");
+			var traceResult = FileOtlpExporter.ExportTraces(args.ConfigService.ConfigTempOtelTracesDirectoryPath, endpointToUse, out string errorTraceMsg);
 
 			if (traceResult == ExportResult.Failure)
 			{
-				throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data.");
+				throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data." +
+				                       $"Error=[{errorTraceMsg}]");
 			}
 
-			var metricsResult = FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, endpointToUse);
+			Log.Verbose($"Exporting metrics to endpoint: {endpointToUse}");
+			var metricsResult = FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, endpointToUse, out string errorMetricMsg);
 
 			if (metricsResult == ExportResult.Failure)
 			{
-				throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data.");
+				throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data." +
+				                       $"Error=[{errorMetricMsg}]");
 			}
+
+			Log.Information("Telemetry data was successfully exported!");
 		}
 	}
 }

@@ -11,13 +11,13 @@ namespace beamable.otel.exporter;
 
 public class FileOtlpExporter
 {
-	public static ExportResult ExportLogs(string filesPath, string endpoint)
+	public static ExportResult ExportLogs(string filesPath, string endpoint, out string errorMessage)
 	{
 		var allLogsFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
 		var logExporterOptions = new OtlpExporterOptions
 		{
-			Endpoint = new Uri($"{endpoint}/v1/logs"), //TODO get this in a nicer way
+			Endpoint = new Uri($"{endpoint}/v1/logs"),
 			Protocol = OtlpExportProtocol.HttpProtobuf,
 		};
 
@@ -44,7 +44,7 @@ public class FileOtlpExporter
 				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
 			);
 
-			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpLogExporter>(otlpLogExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpLogExporter>(otlpLogExporter, objectDict, out errorMessage))
 			{
 				return ExportResult.Failure;
 			}
@@ -53,7 +53,8 @@ public class FileOtlpExporter
 
 			if (result == ExportResult.Failure)
 			{
-				break;
+				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
+				return result;
 			}
 			else
 			{
@@ -61,10 +62,11 @@ public class FileOtlpExporter
 			}
 		}
 
+		errorMessage = string.Empty;
 		return result;
 	}
 
-	public static ExportResult ExportTraces(string filesPath, string endpoint)
+	public static ExportResult ExportTraces(string filesPath, string endpoint, out string errorMessage)
 	{
 		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
@@ -97,7 +99,7 @@ public class FileOtlpExporter
 				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
 			);
 
-			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpTraceExporter>(otlpTraceExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpTraceExporter>(otlpTraceExporter, objectDict, out errorMessage))
 			{
 				return ExportResult.Failure;
 			}
@@ -106,7 +108,8 @@ public class FileOtlpExporter
 
 			if (result == ExportResult.Failure)
 			{
-				break;
+				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
+				return result;
 			}
 			else
 			{
@@ -114,10 +117,11 @@ public class FileOtlpExporter
 			}
 		}
 
+		errorMessage = string.Empty;
 		return result;
 	}
 
-	public static ExportResult ExportMetrics(string filesPath, string endpoint)
+	public static ExportResult ExportMetrics(string filesPath, string endpoint, out string errorMessage)
 	{
 		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
@@ -150,7 +154,7 @@ public class FileOtlpExporter
 				kvp => OtlpExporterResourceInjector.ParseStringToObject(kvp.Value)
 			);
 
-			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpMetricExporter>(otlpMetricsExporter, objectDict, out string errorMessage)) //TODO not sure what to do with this error message, throw exception?
+			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpMetricExporter>(otlpMetricsExporter, objectDict, out errorMessage))
 			{
 				return ExportResult.Failure;
 			}
@@ -160,7 +164,8 @@ public class FileOtlpExporter
 
 			if (result == ExportResult.Failure)
 			{
-				break;
+				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
+				return result;
 			}
 			else
 			{
@@ -168,6 +173,7 @@ public class FileOtlpExporter
 			}
 		}
 
+		errorMessage = string.Empty;
 		return result;
 	}
 }

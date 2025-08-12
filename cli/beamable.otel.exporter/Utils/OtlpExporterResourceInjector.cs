@@ -11,7 +11,7 @@ public class OtlpExporterResourceInjector
 	{
 		var type = typeof(T);
 		var baseType = type.BaseType;
-		var fieldName = "resource"; //TODO make this a constant prob
+		var fieldName = "resource";
 
 		if (baseType != null && baseType.IsGenericType) // This is validating that the exporter type is a BaseExporter<T>, with T being either LogRecord, Activity or Metric
 		{
