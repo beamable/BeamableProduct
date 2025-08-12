@@ -17,6 +17,10 @@ processors:
     timeout: 5s
     send_batch_size: 5000
 exporters:
+  # debug: Uncomment this if wanting to debug all values flowing to the collector, printing the information in the console
+  #   verbosity: detailed
+  #   sampling_initial: 2
+  #   sampling_thereafter: 500
   clickhouse:
     endpoint: ${env:BEAM_CLICKHOUSE_ENDPOINT}
     username: ${env:BEAM_CLICKHOUSE_USERNAME}
@@ -74,4 +78,4 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [clickhouse]
+      exporters: [clickhouse] #add "debug" here to enable debug for metrics

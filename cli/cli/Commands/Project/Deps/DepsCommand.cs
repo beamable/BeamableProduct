@@ -1,5 +1,4 @@
 using Beamable.Server;
-using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP;
 using System.CommandLine.Help;
 
 namespace cli.Commands.Project.Deps;
