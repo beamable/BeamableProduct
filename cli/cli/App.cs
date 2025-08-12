@@ -662,6 +662,9 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentListManifestsCommand, ContentListManifestsCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentCreateLocalManifestCommand, ContentCreateLocalManifestCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentArchiveManifestCommand, ContentArchiveManifestCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		

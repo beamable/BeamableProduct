@@ -721,7 +721,7 @@ public class ContentService
 	///
 	/// For now, users cannot publish UNLESS they make their changes against the latest published manifest.
 	/// </summary>
-	public async Task PublishContent(string manifestId = "global", Action<ContentProgressUpdateData> onProgressUpdateAction = null)
+	public async Task PublishContent(bool takeSnapshotAfter, string manifestId = "global", Action<ContentProgressUpdateData> onProgressUpdateAction = null)
 	{
 		// Reset processed count on starting publish content command
 		_publishProcessedCount = 0;
@@ -860,7 +860,8 @@ public class ContentService
 					visibility = c.visibility.ToString().ToLower()
 				}).ToArray()
 		};
-		
+
+		string lastPublishedUid = string.Empty;
 		// Update the local reference manifest
 		try
 		{
@@ -873,7 +874,7 @@ public class ContentService
 			foreach (ContentFile c in changedContents)
 			{
 				ContentFile contentFile = c;
-				contentFile.FetchedFromManifestUid = postRequestResult.uid;
+				lastPublishedUid = contentFile.FetchedFromManifestUid = postRequestResult.uid;
 				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
 			}
 
@@ -884,7 +885,20 @@ public class ContentService
 			Log.Information(e.RequestError.error);
 			throw;
 		}
-		
+
+		if (takeSnapshotAfter)
+		{
+			try
+			{
+				await TakeSnapshotAfterPublish(lastPublishedUid, manifestId);
+			}
+			catch (Exception e)
+			{
+				Log.Information(e.Message);
+				throw;
+			}
+		}
+
 	}
 
 	/// <summary>
@@ -1117,7 +1131,170 @@ public class ContentService
 			_fileSystemOperationSemaphore.Release();
 		}
 	}
+
+
+	public string[] GetContentSnapshots(bool local)
+	{
+		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, local);
+		return Directory.GetFiles(contentPath, "*.json", SearchOption.TopDirectoryOnly);
+	}
 	
+	public async Task TakeSnapshotAfterPublish(string lastPublishedManifestUid, string manifestId = "global")
+	{
+		string autoSnapshotTempBaseName = $"OnPublishManifest-{manifestId}-";
+		string autoSnapshotSharedName = $"LastPublished-{manifestId}.json";
+
+		var tempFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, true);
+		var sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, false);
+
+		
+		// Make sure to not save more than 20 temp snapshots
+		var tempSnapshots = Directory.GetFiles(tempFolder, $"{autoSnapshotTempBaseName}*.json", SearchOption.TopDirectoryOnly);
+		if (tempSnapshots.Length > 20)
+		{
+			var lastFileToDelete = tempSnapshots.OrderBy(File.GetLastWriteTimeUtc).First();
+			File.Delete(lastFileToDelete);
+		}
+		await SnapshotLocalContent($"{autoSnapshotTempBaseName}{lastPublishedManifestUid}", true, manifestId);
+		
+		string lastPublishedSnapshotFullPath = Path.Combine(sharedFolder, autoSnapshotSharedName);
+		// Make sure to delete the old published snapshot
+		if (File.Exists(lastPublishedSnapshotFullPath))
+		{
+			File.Delete(lastPublishedSnapshotFullPath);
+		}
+		await SnapshotLocalContent(autoSnapshotSharedName, true, manifestId);
+		
+
+	}
+
+	public async Task<string> SnapshotLocalContent(string snapshotName, bool saveLocal, string manifestId = "global")
+	{
+
+		if (Path.GetInvalidFileNameChars().Any(snapshotName.Contains))
+		{
+			throw new CliException($"Snapshot name: {snapshotName} contains invalid file name characters.");
+		}
+		
+		// Get Folder to save the snapshot
+		string folderPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, saveLocal);
+
+		// Ensure that the snapshot folder path exists
+		Directory.CreateDirectory(folderPath);
+
+		string snapshotFilePath = Path.Combine(folderPath, $"{snapshotName}.json");
+		if (File.Exists(snapshotFilePath))
+			throw new CliException($"Manifest with name {snapshotName} already exist in folder {folderPath}, please use another name for this snapshot or delete it");
+		
+		var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, manifestId);
+		var parseContentFiles = Directory.EnumerateFiles(contentFolder).Select(async fp =>
+		{
+			// We got to do this so that we don't collide with other software editing the files on disk. 
+			string text = "";
+			bool readText = false;
+			while (!readText || text == "")
+			{
+				try
+				{
+					text = await File.ReadAllTextAsync(fp);
+					readText = true;
+				}
+				catch (IOException)
+				{
+					readText = false;
+					text = "";
+				}
+			}
+
+			try
+			{
+				var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
+			
+				var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
+					
+				var contentFile = new ContentFileSnapshot()
+				{
+					Properties = properties,
+					Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
+				};
+				string id = Path.GetFileNameWithoutExtension(fp);
+				return (id, contentFile);
+			}
+			catch (Exception e)
+			{
+				throw new CliException($"Error deserializing content {fp}. ErrorMessage: {e.Message}");
+			}
+		});
+
+		try
+		{
+			var contentFiles = await Task.WhenAll(parseContentFiles);
+			var contentSnapshot = new ManifestSnapshot()
+			{
+				ContentFiles = contentFiles.ToDictionary(item => item.id, item => item.contentFile),
+				SnapshotTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+			};
+			await File.WriteAllTextAsync(snapshotFilePath, JsonSerializer.Serialize(contentSnapshot, GetContentFileSerializationOptions()));
+		}
+		catch (Exception e)
+		{
+			Log.Error($"Error when saving snapshot, please check log for more details. ErrorMessage: {e.Message}");
+			throw;
+		}
+
+		return snapshotFilePath;
+	}
+
+	public static string GetContentSnapshotDirectoryPath(string configDirPath, bool useLocal)
+	{
+		return useLocal
+			? Path.Combine(configDirPath, Constants.TEMP_FOLDER, Constants.CONTENT_SNAPSHOTS_DIRECTORY)
+			: Path.Combine(configDirPath, Constants.CONTENT_SNAPSHOTS_DIRECTORY);
+	}
+
+	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, string manifestId = "global")
+	{
+		List<string> restoredContents = new List<string>();
+		string contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		string manifestSnapshotText = await File.ReadAllTextAsync(snapshotFilePath);
+		try
+		{
+			ManifestSnapshot manifestSnapshot = JsonSerializer.Deserialize<ManifestSnapshot>(manifestSnapshotText, GetContentFileSerializationOptions());
+			// Clear content folder
+			foreach (string file in Directory.GetFiles(contentFolder))
+			{
+				File.Delete(file);
+			}
+			ClientManifestJsonResponse latestManifest = await GetManifest(replaceLatest: true);
+			
+			restoredContents.AddRange(manifestSnapshot.ContentFiles.Keys);
+			
+			IEnumerable<Task> contentRestoreTasks = manifestSnapshot.ContentFiles.Select(async item =>
+			{
+				string fileName = Path.Join(contentFolder, $"{item.Key}.json");
+				// Create a new ContentFile from the snapshot
+				ContentFile content = new ContentFile()
+				{
+					Properties = item.Value.Properties, 
+					Tags = item.Value.Tags, FetchedFromManifestUid = 
+						latestManifest.uid.GetOrElse("")
+				};
+				SortContentProperties(ref content);
+				string contentData = JsonSerializer.Serialize(content, GetContentFileSerializationOptions());
+				await File.WriteAllTextAsync(fileName, contentData);
+			});
+			await Task.WhenAll(contentRestoreTasks);
+			if(deleteSnapshotAfterRestore) File.Delete(snapshotFilePath);
+		}
+		catch (Exception e)
+		{
+			Log.Error(e, "Error when restoring contents snapshot");
+			throw;
+		}
+		
+		return restoredContents.ToArray();
+		
+	}
 
 	public static void ComputeCorrectSyncOp(LocalContentFiles file, bool allowModifiedInAutoSync, bool allowDeletedInAutoSync, HashSet<string> newItemsOnRemote, out HashSet<string> conflictedContent, out HashSet<string> canAutoSync,
 		out HashSet<string> canUpdateReferenceToTargetWithoutDownload)
@@ -1686,6 +1863,28 @@ public struct ContentFile : IEquatable<ContentFile>
 
 	public static bool operator !=(ContentFile left, ContentFile right) => !left.Equals(right);
 }
+
+[Serializable]
+public struct ManifestSnapshot
+{
+	public const string JSON_NAME_CONTENTS = "contents";
+	
+	public long SnapshotTimestamp;
+	
+	[JsonPropertyName(JSON_NAME_CONTENTS)]
+	public Dictionary<string, ContentFileSnapshot> ContentFiles;
+}
+
+[Serializable]
+public struct ContentFileSnapshot
+{
+	[JsonPropertyName(ContentFile.JSON_NAME_PROPERTIES)]
+	public JsonElement Properties;
+
+	[JsonPropertyName(ContentFile.JSON_NAME_TAGS)] 
+	public JsonElement Tags;
+}
+
 
 public class ContentProgressUpdateData
 {
