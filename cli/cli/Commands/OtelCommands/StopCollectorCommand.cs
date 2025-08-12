@@ -34,13 +34,6 @@ public class StopCollectorCommand : AppCommand<StopCollectorCommandArgs>
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_HOST");
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
-		}
-
 		Log.Information($"Starting listening to otel collector in port [{portNumber}]...");
 
 		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
