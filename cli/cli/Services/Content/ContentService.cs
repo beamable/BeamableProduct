@@ -1141,6 +1141,8 @@ public class ContentService
 	
 	public async Task TakeSnapshotAfterPublish(string lastPublishedManifestUid, string manifestId = "global")
 	{
+		const int maxAutoSavedTempSnapshots = 20;
+		
 		string autoSnapshotTempBaseName = $"OnPublishManifest-{manifestId}-";
 		string autoSnapshotSharedName = $"LastPublished-{manifestId}.json";
 
@@ -1148,11 +1150,12 @@ public class ContentService
 		var sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, false);
 
 		
-		// Make sure to not save more than 20 temp snapshots
+		// Make sure to not save more than the max allowed
 		var tempSnapshots = Directory.GetFiles(tempFolder, $"{autoSnapshotTempBaseName}*.json", SearchOption.TopDirectoryOnly);
-		if (tempSnapshots.Length > 20)
+		if (tempSnapshots.Length >= maxAutoSavedTempSnapshots)
 		{
-			var lastFileToDelete = tempSnapshots.OrderBy(File.GetLastWriteTimeUtc).First();
+			// Delete the older one
+			var lastFileToDelete = tempSnapshots.OrderBy(item => File.GetLastWriteTime(item).ToFileTime()).First();
 			File.Delete(lastFileToDelete);
 		}
 		await SnapshotLocalContent($"{autoSnapshotTempBaseName}{lastPublishedManifestUid}", true, manifestId);
@@ -1163,7 +1166,7 @@ public class ContentService
 		{
 			File.Delete(lastPublishedSnapshotFullPath);
 		}
-		await SnapshotLocalContent(autoSnapshotSharedName, true, manifestId);
+		await SnapshotLocalContent(autoSnapshotSharedName, false, manifestId);
 		
 
 	}
@@ -1208,17 +1211,18 @@ public class ContentService
 
 			try
 			{
-				var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
-			
-				var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
+				var contentFile = JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
+
+				var properties = contentFile.Properties;
 					
-				var contentFile = new ContentFileSnapshot()
+				var contentFileSnapshot = new ContentFileSnapshot()
 				{
 					Properties = properties,
-					Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
+					Tags = contentFile.Tags,
+					Checksum = CalculateChecksum(in contentFile)
 				};
 				string id = Path.GetFileNameWithoutExtension(fp);
-				return (id, contentFile);
+				return (id, contentFile: contentFileSnapshot);
 			}
 			catch (Exception e)
 			{
@@ -1883,6 +1887,8 @@ public struct ContentFileSnapshot
 
 	[JsonPropertyName(ContentFile.JSON_NAME_TAGS)] 
 	public JsonElement Tags;
+
+	public string Checksum;
 }
 
 

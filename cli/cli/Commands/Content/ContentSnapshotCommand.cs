@@ -48,6 +48,7 @@ public class ContentSnapshotResult
 	public string SnapshotFullPath;
 }
 
+[CliContractType, Serializable]
 public enum ContentSnapshotType
 {
 	Local,
