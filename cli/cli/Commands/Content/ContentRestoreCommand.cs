@@ -82,12 +82,13 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 	}
 }
 
-[Serializable]
+[CliContractType, Serializable]
 public class ContentRestoreErrorReport : ErrorOutput
 {
 	public string[] AvailableSnapshots;
 }
 
+[CliContractType, Serializable]
 public class ContentRestoreCommandArgs : ContentCommandArgs
 {
 	public string ManifestId;

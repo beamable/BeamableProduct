@@ -251,7 +251,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUIStyle rowStyle = EditorStyles.helpBox;
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEM_GROUP_HEIGHT));
-				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+				rowRect.xMin += indentLevel * INDENT_WIDTH;
 				rowRect.width -= BASE_PADDING * 3;
 				
 				GUI.Box(rowRect, GUIContent.none, rowStyle);
@@ -319,7 +319,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						float availableSpace = Mathf.Max(0, rowRect.width - (indentLevel * CONTENT_GROUP_INDENT_WIDTH));
+						float availableSpace = Mathf.Max(0, rowRect.width - (indentLevel * INDENT_WIDTH));
 						
 						DrawTypeItems(items, indentLevel, availableSpace, contentType);
 						GUILayout.Space(BASE_PADDING);
@@ -377,8 +377,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			var contentObject = CreateInstance(type) as ContentObject;
-			string baseName = $"New_{itemType.Replace(".","_")}";
-			int itemsWithBaseNameCount =  _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
+			string baseName = $"New__{itemType.Replace(".","_")}";
+			int itemsWithBaseNameCount = _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
 			contentObject.SetContentName($"{baseName}_{itemsWithBaseNameCount}");
 			contentObject.ContentStatus = ContentStatus.Created;
 			contentObject.OnEditorChanged = () =>
@@ -403,7 +403,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			Rect headerRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
 			headerRect.width -= BASE_PADDING * 3;
-			headerRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+			headerRect.xMin += indentLevel * INDENT_WIDTH;
 			
 			string[] labels = { "Name", "Tags", "Latest Update"};
     
@@ -426,7 +426,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
 					rowRect.width -= BASE_PADDING * 3;
-					rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+					rowRect.xMin += indentLevel * INDENT_WIDTH;
 					DrawItemRow(items[index], index, rowRect, columnWidths);
 
 					if (index == items.Count - 1)
@@ -490,7 +490,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				for (int index = firstVisible; index <= lastVisible; index++)
 				{
 					Rect rowRect = new Rect(
-						indentLevel * CONTENT_GROUP_INDENT_WIDTH + 3f,
+						indentLevel * INDENT_WIDTH + 3f,
 						index * ITEMS_TABLE_ROW_HEIGHT,
 						contentRect.width,
 						ITEMS_TABLE_ROW_HEIGHT

@@ -1185,7 +1185,8 @@ public class ContentService
 		// Ensure that the snapshot folder path exists
 		Directory.CreateDirectory(folderPath);
 
-		string snapshotFilePath = Path.Combine(folderPath, $"{snapshotName}.json");
+		snapshotName = Path.GetExtension(snapshotName) == ".json" ? snapshotName : $"{snapshotName}.json";
+		string snapshotFilePath = Path.Combine(folderPath, snapshotName);
 		if (File.Exists(snapshotFilePath))
 			throw new CliException($"Manifest with name {snapshotName} already exist in folder {folderPath}, please use another name for this snapshot or delete it");
 		
@@ -1236,7 +1237,9 @@ public class ContentService
 			var contentSnapshot = new ManifestSnapshot()
 			{
 				ContentFiles = contentFiles.ToDictionary(item => item.id, item => item.contentFile),
-				SnapshotTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+				SnapshotTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+				Pid = _requester.Pid,
+				ManifestId = manifestId,
 			};
 			await File.WriteAllTextAsync(snapshotFilePath, JsonSerializer.Serialize(contentSnapshot, GetContentFileSerializationOptions()));
 		}
@@ -1874,6 +1877,8 @@ public struct ManifestSnapshot
 	public const string JSON_NAME_CONTENTS = "contents";
 	
 	public long SnapshotTimestamp;
+	public string Pid;
+	public string ManifestId;
 	
 	[JsonPropertyName(JSON_NAME_CONTENTS)]
 	public Dictionary<string, ContentFileSnapshot> ContentFiles;

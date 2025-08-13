@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
+- `beam content snapshot` creates a new snapshot based on your local contents.
+- `beam content restore` take `--name` to restore your local content based on the snapshot path or name. It can also take `--delete-after-restore` to delete the snapshot after restoring it.
+- `beam content snapshot-list` list all snapshots under the local and shared folders with the changes for each content.
 
 ## [5.3.1] - 2025-08-06
 ### Fixed
