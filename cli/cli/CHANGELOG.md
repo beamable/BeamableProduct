@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
 
+### Changed
+- Changed how federations are detected. Federation.json is not needed anymore, instead the federations are found by openApi specs.
+- Removed CodeAnalyzers and CodeFixers that were validating federation from Federation.json
+
 ## [5.3.1] - 2025-08-06
 ### Fixed
 - `beam project share-code` copies all dll dependencies into Unity, and adds debug logging.

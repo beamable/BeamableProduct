@@ -34,13 +34,11 @@ public partial class TunaService : Beamable.Server.Microservice, IFederatedLogin
 	}
 }";
 
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		// Microsoft.CodeAnalysis.Testing v1.1.1 used on tests don't have the Net9 Reference, so we need to manually create it
 		ctx.ReferenceAssemblies = new ReferenceAssemblies("net9.0",
 			new PackageIdentity("Microsoft.NETCore.App.Ref", "9.0.0"), Path.Combine("ref", "net9.0"));
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		ctx.TestState.AdditionalReferences.Add(Assembly.GetAssembly(typeof(ExampleFederationId))!);
 		
@@ -61,12 +59,9 @@ namespace TestNamespace;
 public class SomeUserMicroservice
 {		
 }";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
-
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NoMicroserviceClassesDetected));
 		
@@ -92,12 +87,10 @@ public partial class {|#0:SomeOtherUserMicroservice|} : Microservice
 {		
 }
 ";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-
+		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
 			.WithLocation(0)
@@ -125,12 +118,10 @@ public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-
+		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -149,12 +140,10 @@ public class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 ";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-
+		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NonPartialMicroserviceClassDetected).WithLocation(0));
 		
@@ -174,12 +163,10 @@ public partial class {|#0:SomeUserMicroservice|} : Microservice
 {		
 }
 ";
-
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
-
+		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MissingMicroserviceId).WithLocation(0));
 		
@@ -215,11 +202,9 @@ public partial class SomeUserMicroservice : Microservice
 	}
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
 			.WithLocation(0)
@@ -284,11 +269,9 @@ public class DTO_MicroserviceScope
     public int x;
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode, ["build_property.BeamValidateCallableTypesExistInSharedLibraries = true"]);
+		PrepareForRun(ctx, UserCode, ["build_property.BeamValidateCallableTypesExistInSharedLibraries = true"]);
 
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested)
@@ -345,11 +328,9 @@ public partial class MyMicroservice : Microservice
 	}
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 
 		string config = $@"
 is_global = true
@@ -376,11 +357,9 @@ public partial class MyMicroservice : Microservice
 	static string {|#0:TestField|} = ""Hello"";
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
@@ -450,8 +429,6 @@ public enum OtherNonSerializableEnum {
 
 
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
@@ -469,7 +446,7 @@ public enum OtherNonSerializableEnum {
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute"));
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -524,8 +501,6 @@ public class DTO_BeamGenSchemaAttribute
 	public int {|#2:Prop3|} {get; set;}
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
@@ -543,7 +518,7 @@ public class DTO_BeamGenSchemaAttribute
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute", "Prop3"));
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -594,8 +569,6 @@ public class DTO_BeamGenSchemaAttribute
 	public long? {|#2:nullableLong|};
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
@@ -613,7 +586,7 @@ public class DTO_BeamGenSchemaAttribute
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute", "nullableLong"));
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -669,8 +642,6 @@ public class DTO_BeamGenSchemaAttribute
 	public OtherContentObject {|#2:otherContentObject3|};
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
@@ -688,7 +659,7 @@ public class DTO_BeamGenSchemaAttribute
 				.WithLocation(2)
 				.WithArguments("field otherContentObject3 on DTO_BeamGenSchemaAttribute", "OtherContentObject"));
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -724,8 +695,6 @@ public class DTO_BeamGenSchemaAttribute
 	public DTO_NonBeamGenSchemaAttribute otherNonBeamGenObj;
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
 		ctx.ExpectedDiagnostics.Add(
@@ -733,7 +702,7 @@ public class DTO_BeamGenSchemaAttribute
 				.WithLocation(0)
 				.WithArguments("DTO_NonBeamGenSchemaAttribute"));
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		await ctx.RunAsync();
 	}
@@ -897,11 +866,9 @@ using Unity.Beamable.Customer.Common;
 }
 
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode);
+		PrepareForRun(ctx, UserCode);
 		
 		ctx.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
@@ -997,10 +964,9 @@ public partial class SomeUserMicroservice : Microservice
 	}
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, AsyncVoidCallableFixer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+		PrepareForRun(ctx, UserCode, FixedCode, false);
 
 		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.InvalidAsyncVoidCallableMethod)
 			.WithLocation(0)
@@ -1043,10 +1009,9 @@ public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, InvalidMicroserviceAttributeFixer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+		PrepareForRun(ctx, UserCode, FixedCode, false);
 
 		ctx.TestState.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MicroserviceIdInvalidFromCsProj)
 			.WithLocation(0)
@@ -1091,11 +1056,9 @@ public partial class MyMicroservice : Microservice
     static readonly string TestField = ""Hello"";
 }
 ";
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
-		
 		var ctx = new CSharpCodeFixTest<ServicesAnalyzer, MicroserviceNonReadonlyStaticFieldFixer, DefaultVerifier>();
 		
-		PrepareForRun(ctx, cfg, UserCode, FixedCode, false);
+		PrepareForRun(ctx, UserCode, FixedCode, false);
 		
 		ctx.TestState.ExpectedDiagnostics.Add(
 			new DiagnosticResult(Diagnostics.Srv.StaticFieldFoundInMicroservice)
