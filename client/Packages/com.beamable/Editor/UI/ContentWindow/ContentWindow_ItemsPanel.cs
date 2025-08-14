@@ -382,7 +382,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			                                .Select(item => item.Name)
 			                                .Where(itemName => itemName.StartsWith(baseName))
 			                                .Select(itemName => {
-				                                string numPart = itemName.Substring(baseName.Length + 1);
+				                                string numPart = itemName.Substring(baseName.Length);
 				                                return int.TryParse(numPart, out int num) ? num : -1;
 			                                })
 			                                .Where(num => num >= 0)
