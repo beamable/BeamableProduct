@@ -190,12 +190,13 @@ namespace Beamable.Editor.UI.ContentWindow
 					if (_selectedSnapshot == snapshotItem.Path)
 					{
 						_selectedSnapshot = string.Empty;
-						return;
 					}
-					
-					_selectedSnapshot =  snapshotItem.Path;
-					Event.current.Use();
-					GUI.changed = true;
+					else
+					{
+						_selectedSnapshot = snapshotItem.Path;
+						Event.current.Use();
+						GUI.changed = true;
+					}
 				}
 			}
 		}

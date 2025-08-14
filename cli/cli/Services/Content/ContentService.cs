@@ -1146,16 +1146,14 @@ public class ContentService
 		string autoSnapshotTempBaseName = $"OnPublishManifest-{manifestId}-";
 		string autoSnapshotSharedName = $"LastPublished-{manifestId}.json";
 
-		var tempFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, true);
-		var sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, false);
-
+		string tempFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, true);
+		string sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, false);
 		
-		// Make sure to not save more than the max allowed
-		var tempSnapshots = Directory.GetFiles(tempFolder, $"{autoSnapshotTempBaseName}*.json", SearchOption.TopDirectoryOnly);
+		string[] tempSnapshots = Directory.GetFiles(tempFolder, $"{autoSnapshotTempBaseName}*.json", SearchOption.TopDirectoryOnly);
 		if (tempSnapshots.Length >= maxAutoSavedTempSnapshots)
 		{
-			// Delete the older one
-			var lastFileToDelete = tempSnapshots.OrderBy(item => File.GetLastWriteTime(item).ToFileTime()).First();
+			// Find and delete the older one if we reached the limit of temp snapshots
+			string lastFileToDelete = tempSnapshots.OrderBy(item => File.GetLastWriteTime(item).ToFileTime()).First();
 			File.Delete(lastFileToDelete);
 		}
 		await SnapshotLocalContent($"{autoSnapshotTempBaseName}{lastPublishedManifestUid}", true, manifestId);
@@ -1173,7 +1171,6 @@ public class ContentService
 
 	public async Task<string> SnapshotLocalContent(string snapshotName, bool saveLocal, string manifestId = "global")
 	{
-
 		if (Path.GetInvalidFileNameChars().Any(snapshotName.Contains))
 		{
 			throw new CliException($"Snapshot name: {snapshotName} contains invalid file name characters.");
@@ -1190,6 +1187,7 @@ public class ContentService
 		if (File.Exists(snapshotFilePath))
 			throw new CliException($"Manifest with name {snapshotName} already exist in folder {folderPath}, please use another name for this snapshot or delete it");
 		
+		// Get content folder to the snapshot
 		var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, manifestId);
 		var parseContentFiles = Directory.EnumerateFiles(contentFolder).Select(async fp =>
 		{
@@ -1212,10 +1210,11 @@ public class ContentService
 
 			try
 			{
+				// Deserialize ContentFile to pass it's values to the new ContentFileSnapshot.
 				var contentFile = JsonSerializer.Deserialize<ContentFile>(text, GetContentFileSerializationOptions());
 
 				var properties = contentFile.Properties;
-					
+				
 				var contentFileSnapshot = new ContentFileSnapshot()
 				{
 					Properties = properties,
@@ -1262,12 +1261,12 @@ public class ContentService
 	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, string manifestId = "global")
 	{
 		List<string> restoredContents = new List<string>();
-		string contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
+		string contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, manifestId);
 		string manifestSnapshotText = await File.ReadAllTextAsync(snapshotFilePath);
 		try
 		{
 			ManifestSnapshot manifestSnapshot = JsonSerializer.Deserialize<ManifestSnapshot>(manifestSnapshotText, GetContentFileSerializationOptions());
-			// Clear content folder
+			// Clear content folder before restoring snapshot. This ensures that the local content will have only the snapshot contents.
 			foreach (string file in Directory.GetFiles(contentFolder))
 			{
 				File.Delete(file);

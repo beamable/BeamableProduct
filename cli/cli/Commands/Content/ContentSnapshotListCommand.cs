@@ -30,7 +30,6 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 
 		var allContentFiles = await _contentService.GetAllContentFiles(manifestId:args.ManifestId);
 		
-
 		var parseLocalSnapshots = localSnapshotPaths.Select(async path => await PaseManifestSnapshot(path));
 		var parseSharedSnapshots = sharedSnapshotPaths.Select(async path => await PaseManifestSnapshot(path));
 
@@ -56,7 +55,7 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 				var manifestSnapshot = JsonSerializer.Deserialize<ManifestSnapshot>(manifestContent, ContentService.GetContentFileSerializationOptions());
 				var contentSnapshotListItems = manifestSnapshot.ContentFiles.Select(contentSnapshot =>
 				{
-					// Lets check what the current status of the content to be restored
+					// Lets check what the status of the content to be restored
 					ContentStatus status = ContentStatus.Invalid;
 					int contentManifestReferenceIndex = allContentFiles.ContentFiles.FindIndex(content => content.Id == contentSnapshot.Key);
 					// If the content doesn't exist on manifest, it means that it is new
@@ -69,6 +68,7 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 						var contentManifestRef = allContentFiles.ContentFiles[contentManifestReferenceIndex];
 						switch (contentManifestRef.GetStatus())
 						{
+							// If modified, UpToDate, or Created we need to check if the checksum will change
 							case ContentStatus.Modified:
 							case ContentStatus.UpToDate:
 							case ContentStatus.Created:
@@ -76,6 +76,7 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 									? ContentStatus.UpToDate
 									: ContentStatus.Modified;
 								break;
+							// If it is deleted on manifest, it will be created
 							case ContentStatus.Deleted:
 								status = ContentStatus.Created;
 								break;
@@ -84,10 +85,10 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 					return new ContentSnapshotListItem() { Name = contentSnapshot.Key, CurrentStatus = (int) status, };
 				}).ToList();
 				
-				// All contents that doesn't exist in the snapshot will be deleted
+				// All contents that doesn't exist in the snapshot and aren't deleted will be added to the snapshot as deleted
 				contentSnapshotListItems.AddRange(allContentFiles.ContentFiles
-					.Where(content => !manifestSnapshot.ContentFiles.ContainsKey(content.Id) && content.GetStatus() != ContentStatus.Deleted).Select(content =>
-						new ContentSnapshotListItem() { Name = content.Id, CurrentStatus = (int)ContentStatus.Deleted }));
+					.Where(content => !manifestSnapshot.ContentFiles.ContainsKey(content.Id) && content.GetStatus() != ContentStatus.Deleted)
+					.Select(content => new ContentSnapshotListItem() { Name = content.Id, CurrentStatus = (int)ContentStatus.Deleted }));
 				
 				return new ManifestSnapshotItem()
 				{

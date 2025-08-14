@@ -377,9 +377,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			var contentObject = CreateInstance(type) as ContentObject;
-			string baseName = $"New__{itemType.Replace(".","_")}";
-			int itemsWithBaseNameCount = _contentService.GetContentsFromType(type).Count(item => item.Name.StartsWith(baseName));
-			contentObject.SetContentName($"{baseName}_{itemsWithBaseNameCount}");
+			string baseName = $"New_{itemType.Replace(".","_")}_";
+			int nextNumber = _contentService.GetContentsFromType(type)
+			                                .Select(item => item.Name)
+			                                .Where(itemName => itemName.StartsWith(baseName))
+			                                .Select(itemName => {
+				                                string numPart = itemName.Substring(baseName.Length + 1);
+				                                return int.TryParse(numPart, out int num) ? num : -1;
+			                                })
+			                                .Where(num => num >= 0)
+			                                .DefaultIfEmpty(-1)
+			                                .Max() + 1;
+			contentObject.SetContentName($"{baseName}{nextNumber}");
 			contentObject.ContentStatus = ContentStatus.Created;
 			contentObject.OnEditorChanged = () =>
 			{

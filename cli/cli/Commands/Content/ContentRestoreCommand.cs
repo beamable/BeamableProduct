@@ -15,8 +15,7 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--manifest-id", () => "global", "Defines the name of the manifest on which the snapshot will be restored. The default value is `global`"), (args, s) => args.ManifestId = s);
-		AddOption(
-			new Option<string>("--name", () => "",
+		AddOption(new Option<string>("--name", () => "",
 				"Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots' than from the local only under '.beamable/temp/content-snapshots'. If a path is passed, it is going to try get the json file from the path"),
 			(args, s) => args.SnapshotNameOrPath = s, new[] { "-n" });
 		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring."), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
