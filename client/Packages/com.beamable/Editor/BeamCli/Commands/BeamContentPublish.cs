@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
+        /// <summary>Defines if after publish the Content System should take a snapshot under temp folder</summary>
+        public bool takeSnapshot;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -21,6 +23,11 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds[i]));
                 }
+            }
+            // If the takeSnapshot value was not default, then add it to the list of args.
+            if ((this.takeSnapshot != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--take-snapshot=" + this.takeSnapshot));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

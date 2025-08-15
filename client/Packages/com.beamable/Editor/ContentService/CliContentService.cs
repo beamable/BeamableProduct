@@ -106,6 +106,58 @@ namespace Beamable.Editor.ContentService
 			});
 			saveCommand.Run();
 		}
+		
+		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
+		{
+			TaskCompletionSource<BeamContentSnapshotListResult> taskWaiter = new TaskCompletionSource<BeamContentSnapshotListResult>();
+			var snapshotListWrapper = _cli.ContentSnapshotList(new ContentSnapshotListArgs()
+			{
+				manifestId = GetSelectedManifestIdCliOption()
+			});
+			snapshotListWrapper.OnStreamContentSnapshotListResult(report =>
+			{
+				taskWaiter.SetResult(report.data);
+			});
+			await snapshotListWrapper.Run();
+			return await taskWaiter.Task;
+		}
+
+		public async Promise RestoreSnapshot(string snapshotPath)
+		{
+			// Disable watcher when doing a restore
+			if (_contentWatcher != null)
+			{
+				_contentWatcher.Cancel();
+				_contentWatcher = null;
+			}
+
+			var restoreWrapper = _cli.ContentRestore(new ContentRestoreArgs() {manifestId = GetSelectedManifestIdCliOption(), name = snapshotPath, deleteAfterRestore = false});
+			
+			await restoreWrapper.Run();
+
+			// Re-enable watcher
+			await Reload();
+		}
+
+		public async Promise TakeSnapshot(string snapshotName, bool isLocal)
+		{
+			// Disable watcher when creating a snapshot to prevent changes on files during snapshot
+			if (_contentWatcher != null)
+			{
+				_contentWatcher.Cancel();
+				_contentWatcher = null;
+			}
+
+			var snapshotWrapper = _cli.ContentSnapshot(new ContentSnapshotArgs()
+			{
+				manifestId = GetSelectedManifestIdCliOption(), name = snapshotName, snapshotType = isLocal ? "Local" : "Shared"
+			});
+			
+			await snapshotWrapper.Run();
+			
+			// Re-enable watcher
+			await Reload();
+		}
 
 		public void TempDisableWatcher(Action withoutWatcher)
 		{
@@ -630,6 +682,11 @@ namespace Beamable.Editor.ContentService
 			}
 			// perhaps if the manifestIdOverride was "global", we don't need to specify it, because that is the default anyway.
 			return new string[] {manifestIdOverride};
+		}
+
+		public string GetSelectedManifestIdCliOption()
+		{
+			return string.IsNullOrEmpty(manifestIdOverride) ? null : manifestIdOverride;
 		}
 
 		private void AddContentToCache(LocalContentManifestEntry entry)

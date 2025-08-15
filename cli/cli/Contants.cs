@@ -6,6 +6,7 @@ public static class Constants
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_LOCAL_OVERRIDES_DIRECTORY = $"{TEMP_FOLDER}/overrides";
 	public const string CONTENT_DIRECTORY = "content";
+	public const string CONTENT_SNAPSHOTS_DIRECTORY = "content-snapshots";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
 	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
 	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";

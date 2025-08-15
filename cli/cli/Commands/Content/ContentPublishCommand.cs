@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using cli.DeploymentCommands;
 using cli.Services;
+using System.CommandLine;
 
 namespace cli.Content;
 
@@ -15,6 +16,7 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 	public override void Configure()
 	{
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToPublish = s);
+		AddOption(new Option<bool>("--take-snapshot", () => true, "Defines if after publish the Content System should take a snapshot under temp folder"), (args, b) => args.TakeSnapshot = b);
 	}
 
 	public override async Task<ContentPublishResult> GetResult(ContentPublishCommandArgs args)
@@ -25,7 +27,7 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 		var publishPromises = new List<Task>();
 		foreach (string manifestId in args.ManifestIdsToPublish)
 		{
-			publishPromises.Add(_contentService.PublishContent(manifestId, this.SendResults<ProgressStreamResultChannel, ContentProgressUpdateData>));
+			publishPromises.Add(_contentService.PublishContent(args.TakeSnapshot, manifestId, this.SendResults<ProgressStreamResultChannel, ContentProgressUpdateData>));
 		}
 		await Task.WhenAll(publishPromises);
 
@@ -37,6 +39,7 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 public class ContentPublishCommandArgs : ContentCommandArgs
 {
 	public string[] ManifestIdsToPublish;
+	public bool TakeSnapshot;
 }
 
 public class ContentPublishResult

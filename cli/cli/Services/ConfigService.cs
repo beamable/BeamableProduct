@@ -767,6 +767,11 @@ public class ConfigService
 		builder.Append(Constants.TEMP_FOLDER);
 		builder.Append('/');
 		builder.Append(Environment.NewLine);
+
+		builder.Append(Constants.CONTENT_DIRECTORY);
+		builder.Append('/');
+		builder.Append(Environment.NewLine);
+		
 		File.WriteAllText(ignoreFilePath, builder.ToString());
 
 		Log.Debug($"Generated ignore file at {ignoreFilePath}");

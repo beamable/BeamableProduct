@@ -8,7 +8,6 @@ namespace Beamable.Editor.UI.ContentWindow
 	public partial class ContentWindow
 	{
 		private const float CONTENT_GROUP_PANEL_WIDTH = 250;
-		private const int CONTENT_GROUP_INDENT_WIDTH = 15;
 		private Vector2 _contentGroupScrollPos;
 
 		private HashSet<string> SelectedContentType
@@ -86,7 +85,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				Rect contentRect = new Rect(rowRect);
 				
-				contentRect.xMin += CONTENT_GROUP_INDENT_WIDTH;
+				contentRect.xMin += INDENT_WIDTH;
 				GUI.Label(contentRect, "Show all");
 
 				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
@@ -125,7 +124,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUIStyle rowStyle = isSelected ? EditorStyles.selectionRect : EditorStyles.label;
 
 				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight));
-				rowRect.xMin += indentLevel * CONTENT_GROUP_INDENT_WIDTH;
+				rowRect.xMin += indentLevel * INDENT_WIDTH;
 
 
 				if (isSelected)
@@ -147,7 +146,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					);
 				}
 
-				contentRect.xMin += CONTENT_GROUP_INDENT_WIDTH;
+				contentRect.xMin += INDENT_WIDTH;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
 				float iconSize = 15f;
