@@ -236,15 +236,16 @@ public struct UnrealCliStreamDeclaration
 	public const string STREAM_PARSE_IMPL = $@"
 	if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
 	{{
-		₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
-		Data->OuterOwner = this;
-		Data->BeamDeserializeProperties(DataJson);
-
-		₢{nameof(StreamName)}₢Stream.Add(Data);
-		₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
-		
-		AsyncTask(ENamedThreads::GameThread, [this, Op]
+		AsyncTask(ENamedThreads::GameThread, [this, DataJson, Timestamp, Op]
 		{{
+			₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
+			Data->OuterOwner = this;
+			Data->BeamDeserializeProperties(DataJson);
+
+			₢{nameof(StreamName)}₢Stream.Add(Data);
+			₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
+		
+		
 			On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
 		}});
 		
