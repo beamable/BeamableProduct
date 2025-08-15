@@ -25,8 +25,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		public List<BeamStorageDependencySetting> storageDependencies;
 		private List<BeamStorageDependencySetting> originalStorageDependencies = new List<BeamStorageDependencySetting>();
 
-		public List<BeamFederationSetting> federations;
-		private List<BeamFederationSetting> originalFederations = new List<BeamFederationSetting>();
+		public BeamFederationSetting federations;
 
 		public static List<string> availableFederationIds = new List<string>();
 		
@@ -35,9 +34,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 		public bool CheckAllValidFederations()
 		{
-			var allValid = federations.All(x => x.IsValid());
-
-			return allValid;
+			return federations.IsValid();
 		}
 		
 		public static bool CheckAllValidAssemblies(List<AssemblyDefinitionAsset> assemblyReferences, out string validationMessage)
@@ -77,47 +74,16 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 		public bool HasChanges()
 		{
-			// TODO: add federation change detection
-			if (originalAssemblyReferences == null || assemblyReferences == null ||
-			    originalStorageDependencies == null || storageDependencies == null
-			    || originalFederations == null || federations == null)
-			{
-				return false;
-			}
-
 			var nonEmptyStorages = storageDependencies.ToList();
 			nonEmptyStorages.RemoveAll(x => string.IsNullOrEmpty(x.StorageName));
 			
 			var nonEmptyAssemblies = assemblyReferences.ToList();
 			nonEmptyAssemblies.RemoveAll(x => x==null);
 
-			var nonEmptyFederations = federations.ToList();
-			nonEmptyFederations.RemoveAll(x => x?.entry == null);
-
 			if (!ScrambledEquals(originalAssemblyReferences, nonEmptyAssemblies))
 				return true;
 			if (!ScrambledEquals(originalStorageDependencies, nonEmptyStorages))
 				return true;
-	
-			{ // do check for federations
-
-				
-				if (originalFederations.Count != federations.Count)
-				{
-					return true;
-				}
-
-				for (var i = 0; i < originalFederations.Count; i++)
-				{
-					var original = originalFederations[i];
-					var current = federations[i];
-					if (!string.Equals(original.entry.federationId, current.entry.federationId))
-						return true;
-					if (!string.Equals(original.entry.interfaceName, current.entry.interfaceName))
-						return true;
-
-				}
-			}
 			
 			return false;
 		}
@@ -126,12 +92,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			UpdateOriginalData();
 			var dependencies = storageDependencies.Select(dep => dep.StorageName).ToList();
-			var feds = federations.Select(x => new BeamFederationEntry
-			{
-				federationId = x.entry.federationId,
-				interfaceName = x.entry.interfaceName
-			}).ToList();
-			return usam.SetMicroserviceChanges(serviceName, assemblyReferences, dependencies, feds);
+			return usam.SetMicroserviceChanges(serviceName, assemblyReferences, dependencies);
 		}
 
 		public static SerializedObject GetSerializedSettingsLegacy(string serviceName)
@@ -186,15 +147,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			}
 
 			{ // update the federations
-				instance.federations =
-					service.federations.Select(x => new BeamFederationSetting
-					{
-						entry = new BeamFederationEntry
-						{
-							federationId = x.federationId,
-							interfaceName = x.interfaceName
-						}
-					}).ToList(); // copy the list
+				instance.federations = new BeamFederationSetting()
+				{
+					entries = service.federations.ToList() // copy the list
+				};
 			}
 			
 			instance.UpdateOriginalData();
@@ -211,20 +167,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			originalAssemblyReferences.Clear();
 			originalStorageDependencies.Clear();
-			originalFederations.Clear();
 			
 			assemblyReferences.ForEach(asmdef => originalAssemblyReferences.Add(asmdef));
 			storageDependencies.ForEach(dep => originalStorageDependencies.Add(dep));
-			federations.ForEach(f => originalFederations.Add(new BeamFederationSetting
-			{
-				entry = new BeamFederationEntry
-				{
-					federationId = f.entry.federationId,
-					interfaceName = f.entry.interfaceName
-				}
-			}));
 			
-			originalFederations.RemoveAll(x => x?.entry == null || string.IsNullOrEmpty(x?.entry.federationId));
 			originalStorageDependencies.RemoveAll(x => x.StorageName == null);
 			originalAssemblyReferences.RemoveAll(x => x == null);
 		}
