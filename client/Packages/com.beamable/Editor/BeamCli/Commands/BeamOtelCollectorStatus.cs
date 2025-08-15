@@ -4,26 +4,19 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class ProjectGenerateWebClientArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class OtelCollectorStatusArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The directory where the generated code will be written</summary>
-        public string outputDir;
-        /// <summary>The language of the generated code. Valid values are: `typescript` (default), `ts`, `javascript`, `js`</summary>
-        public string lang;
+        /// <summary>When true, the command will run forever and watch the state of the program</summary>
+        public bool watch;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // If the outputDir value was not default, then add it to the list of args.
-            if ((this.outputDir != default(string)))
+            // If the watch value was not default, then add it to the list of args.
+            if ((this.watch != default(bool)))
             {
-                genBeamCommandArgs.Add(("--output-dir=" + this.outputDir));
-            }
-            // If the lang value was not default, then add it to the list of args.
-            if ((this.lang != default(string)))
-            {
-                genBeamCommandArgs.Add(("--lang=" + this.lang));
+                genBeamCommandArgs.Add(("--watch=" + this.watch));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -33,31 +26,31 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ProjectGenerateWebClientWrapper ProjectGenerateWebClient(ProjectGenerateWebClientArgs webClientArgs)
+        public virtual OtelCollectorStatusWrapper OtelCollectorStatus(OtelCollectorStatusArgs statusArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("project");
-            genBeamCommandArgs.Add("generate");
-            genBeamCommandArgs.Add("web-client");
-            genBeamCommandArgs.Add(webClientArgs.Serialize());
+            genBeamCommandArgs.Add("otel");
+            genBeamCommandArgs.Add("collector");
+            genBeamCommandArgs.Add("status");
+            genBeamCommandArgs.Add(statusArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            ProjectGenerateWebClientWrapper genBeamCommandWrapper = new ProjectGenerateWebClientWrapper();
+            OtelCollectorStatusWrapper genBeamCommandWrapper = new OtelCollectorStatusWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class ProjectGenerateWebClientWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class OtelCollectorStatusWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual ProjectGenerateWebClientWrapper OnStreamGenerateWebClientCommandArgsResult(System.Action<ReportDataPoint<BeamGenerateWebClientCommandArgsResult>> cb)
+        public virtual OtelCollectorStatusWrapper OnStreamCollectorStatusResult(System.Action<ReportDataPoint<BeamCollectorStatusResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;
