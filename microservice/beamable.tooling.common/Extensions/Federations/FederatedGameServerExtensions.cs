@@ -39,11 +39,12 @@ namespace Beamable.Server
 		public static void SetConnectionUrl(this ServerInfo info, string url) => info.globalData[RESERVED_GAME_SERVER_URL] = url;
 		public static void SetConnectionPort(this ServerInfo info, string port) => info.globalData[RESERVED_GAME_SERVER_PORT] = port;
 
-		public static String GetConnectionUrl(this ServerInfo info) => info.globalData[RESERVED_GAME_SERVER_URL];
-		
-		public static String GetConnectionPort(this ServerInfo info) => info.globalData[RESERVED_GAME_SERVER_URL];
-		
-		// Override the properties in a server info using a prioritized one
+		public static string GetConnectionUrl(this ServerInfo info) => info.globalData[RESERVED_GAME_SERVER_URL];
+		public static string GetConnectionPort(this ServerInfo info) => info.globalData[RESERVED_GAME_SERVER_PORT];
+
+		/// <summary>
+		/// Override the properties in a server info using a prioritized one. This ONLY affects <see cref="ServerInfo.globalData"/> and <see cref="ServerInfo.playerData"/>.
+		/// </summary>
 		public static void PrioritizedMerge(this ServerInfo info, IEnumerable<ServerInfo> prioritizedInfos)
 		{
 			foreach (ServerInfo sortedInfo in prioritizedInfos)
@@ -67,31 +68,48 @@ namespace Beamable.Server
 				}
 			}
 		}
+
 		/// <summary>
 		/// Utility function that allows you to do parallel operations for the player/global data when you are creating the server.
+		/// The returning <see cref="ServerInfo"/>/<see cref="Dictionary{TKey,TValue}"/> of each function is merged together in the following fashion:
+		///  - First, <paramref name="returningInfo"/> is merged with the result from <see cref="globalFunc"/>.
+		///  - Then, the result's set of <see cref="ServerInfo.playerData"/>'s is merged-by-id with the returning <see cref="Dictionary{TKey,TValue}"/> from <paramref name="perPlayerFunc"/>.
+		///  - Finally, the resulting <see cref="ServerInfo"/> is merged with the result from <paramref name="provisionServer"/>.
+		///  - The merge is defined in <see cref="PrioritizedMerge"/>.
+		/// 
 		/// </summary>
-		/// <param name="lobby"></param>
-		/// <param name="returningInfo"></param>
+		/// <param name="lobby">The lobby you are preparing.</param>
+		/// <param name="returningInfo">This object will be modified --- it'll be <see cref="PrioritizedMerge"/> with the results of the various functions passed in here.</param>
 		/// <param name="provisionServer">In this function you should request you provision server asking for a new instance.</param>
 		/// <param name="globalFunc">A function that you can use to modify/add any key pair to lobby global data</param>
 		/// <param name="perPlayerFunc">A function that you can use to add any key pair to the player lobby data</param>
-		public static async Promise PrepareLobbyAsDedicatedServer(this Lobby lobby,
+		/// <returns>The modified <paramref name="returningInfo"/> object.</returns>
+		public static async Promise<ServerInfo> PrepareLobbyAsDedicatedServer(this Lobby lobby,
 			ServerInfo returningInfo,
 			Func<Lobby, Task<ServerInfo>> provisionServer,
 			Func<Lobby, Task<ServerInfo>> globalFunc = null,
 			Func<LobbyPlayer, Task<Dictionary<string, string>>> perPlayerFunc = null)
 		{
 			var players = lobby.players.GetOrThrow();
-
+			var perPlayerTasks = players.Select(RunPlayersFunc).ToArray();
+			
 			var allPromises = new List<Task<ServerInfo>>();
 			allPromises.Add(RunGlobalFunc());
-			allPromises.AddRange(players.Select(RunPlayersFunc));
+			allPromises.AddRange(perPlayerTasks);
 			allPromises.Add(SetAsGameServer());
-			
+
 			// Let's merge all the infos into the returning info
-			var allInfos = await Task.WhenAll(allPromises);
-			returningInfo.PrioritizedMerge(allInfos);
-			return;
+			try
+			{
+				var allInfos = await Task.WhenAll(allPromises);
+				returningInfo.PrioritizedMerge(allInfos);
+				return returningInfo;
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogError(e);
+				throw;
+			}
 
 			// Adding the flat to lobby global data, so game server knows it is a dedicated server.
 			async Task<ServerInfo> SetAsGameServer()
@@ -101,7 +119,7 @@ namespace Beamable.Server
 				serverInfo.globalData[RESERVED_DEDICATED_SERVER_PROPERTY] = "true";
 				return serverInfo;
 			}
-			
+
 			// The global function will make updates in the lobby global data parallel to the updates in the RunPlayersFunc
 			async Task<ServerInfo> RunGlobalFunc()
 			{
@@ -118,22 +136,22 @@ namespace Beamable.Server
 				return new ServerInfo() { playerData = new Dictionary<string, Dictionary<string, string>>() { { p.playerId.Value, dict } } };
 			}
 		}
-		
+
 		/// <summary>
-		/// Wait until the lobby receive the flag ready from the game server.
+		/// Wait until the lobby receive the flag ready from the game server. This method does nothing if the lobby comes from PIE/Playmode.
 		/// </summary>
-		/// <param name="lobby"></param>
-		/// <param name="beamLobbyApi"></param>
-		/// <param name="millisecondsDelay"></param>
 		public static async Promise WaitForGameServerReady(this Lobby lobby, IBeamLobbyApi beamLobbyApi, int millisecondsDelay = 500)
 		{
-			var lobbyApi = beamLobbyApi;
-			while (lobby.data.TryGet(out var d) && d.ContainsKey(RESERVED_GAME_SERVER_READY_PROPERTY))
+			if (!lobby.IsLobbyFromEditorPlayMode())
 			{
-				var id = lobby.lobbyId.GetOrThrow();
-				var guid = Guid.Parse(id);
-				lobby = await lobbyApi.Get(guid);
-				await Task.Delay(millisecondsDelay);
+				var lobbyApi = beamLobbyApi;
+				while (lobby.data.TryGet(out var d) && d.ContainsKey(RESERVED_GAME_SERVER_READY_PROPERTY))
+				{
+					var id = lobby.lobbyId.GetOrThrow();
+					var guid = Guid.Parse(id);
+					lobby = await lobbyApi.Get(guid);
+					await Task.Delay(millisecondsDelay);
+				}
 			}
 		}
 	}
