@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
+- New utilities in the Lobby that helps handling server provisioning and updates in the player/global data.
 
 ## [5.3.1] - 2025-08-06
 ### Fixed
