@@ -78,6 +78,11 @@ using RankEntry = Beamable.Common.Api.Leaderboards.RankEntry;
 
 namespace Beamable.Server
 {
+	public class SingleUseUserContext : IUserContext
+	{
+		public long UserId { get; set; }
+	}
+
     public static class MicroserviceBootstrapper
     {
 	    private const int MSG_SIZE_LIMIT = 1000;
@@ -679,12 +684,13 @@ namespace Beamable.Server
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
 			        .SetResourceBuilder(_resourceBuilder)
-			        .AddMicroserviceExporter(option =>
+			        // We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
+			        .AddOtlpExporter(option =>
 			        {
 				        if (shouldStartStandardOtel)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-					        option.OtlpEndpoint = otlpEndpoint;
+					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");;
 				        }
 
 			        })
@@ -1075,7 +1081,7 @@ namespace Beamable.Server
 
 		        _logger.ZLogInformation($"Starting otel collector discovery event...");
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        var collectorStatus = await CollectorManager.StartCollector("", false, false, tokenSource, _logger);
+		        var collectorStatus = await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
 	        }
 
             await Task.Delay(-1);

@@ -11,6 +11,8 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpLogExporter _exporter;
 
+	private Queue<LogRecordQueueData> _logRecordsToFlush;
+
 	public MicroserviceOtelLogRecordExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
 		_otlpOptions = new OtlpExporterOptions
@@ -20,6 +22,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		};
 
 		_exporter = new OtlpLogExporter(_otlpOptions);
+		_logRecordsToFlush = new Queue<LogRecordQueueData>();
 	}
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
@@ -28,10 +31,48 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 		if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpLogExporter>(_exporter, resource.Attributes.ToDictionary(), out _))
 		{
-			return ExportResult.Failure;
+			throw new Exception("Couldn't set resources data into OtlpExporter!");
+		}
+
+		// this needs to happen before we try exporting it, because the OtlpExporter will just vanish with the records, even when failing
+		List<LogRecord> records = new List<LogRecord>();
+		foreach (var record in batch)
+		{
+			records.Add(record);
 		}
 
 		var result = _exporter.Export(batch);
-		return result;
+
+		if (result == ExportResult.Success)
+		{
+			while (_logRecordsToFlush.Count > 0)
+			{
+				var record = _logRecordsToFlush.Dequeue();
+				var lateRecords = new Batch<LogRecord>(record.Batch.ToArray(), record.Batch.Count);
+				var recordResult = _exporter.Export(lateRecords);
+
+				if (recordResult == ExportResult.Failure) // in case the export failed, we put the batch back in the queue and quit execution
+				{
+					_logRecordsToFlush.Enqueue(record);
+					return ExportResult.Failure;
+				}
+			}
+		}
+		else
+		{
+			_logRecordsToFlush.Enqueue(new LogRecordQueueData()
+			{
+				Batch = records
+			});
+
+			return ExportResult.Failure;
+		}
+
+		return ExportResult.Success;
 	}
+}
+
+public class LogRecordQueueData
+{
+	public List<LogRecord> Batch;
 }
