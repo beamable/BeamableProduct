@@ -10,6 +10,8 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpTraceExporter _exporter;
 
+	private Queue<ActivityQueueData> _activitiesToFlush;
+
 	public MicroserviceOtelActivityExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
 		_otlpOptions = new OtlpExporterOptions
@@ -19,6 +21,7 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		};
 
 		_exporter = new OtlpTraceExporter(_otlpOptions);
+		_activitiesToFlush = new Queue<ActivityQueueData>();
 	}
 
 	public override ExportResult Export(in Batch<Activity> batch)
@@ -30,7 +33,45 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 			return ExportResult.Failure;
 		}
 
+		// this needs to happen before we try exporting it, because the OtlpExporter will just vanish with the records, even when failing
+		List<Activity> records = new List<Activity>();
+		foreach (var record in batch)
+		{
+			records.Add(record);
+		}
+
 		var result = _exporter.Export(batch);
+
+		if (result == ExportResult.Success)
+		{
+			while (_activitiesToFlush.Count > 0)
+			{
+				var record = _activitiesToFlush.Dequeue();
+				var lateRecords = new Batch<Activity>(record.Batch.ToArray(), record.Batch.Count);
+				var recordResult = _exporter.Export(lateRecords);
+
+				if (recordResult == ExportResult.Failure) // in case the export failed, we put the batch back in the queue and quit execution
+				{
+					_activitiesToFlush.Enqueue(record);
+					return ExportResult.Failure;
+				}
+			}
+		}
+		else
+		{
+			_activitiesToFlush.Enqueue(new ActivityQueueData()
+			{
+				Batch = records
+			});
+
+			return ExportResult.Failure;
+		}
+
 		return result;
 	}
+}
+
+public class ActivityQueueData
+{
+	public List<Activity> Batch;
 }
