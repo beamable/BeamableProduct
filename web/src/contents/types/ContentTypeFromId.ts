@@ -2,23 +2,54 @@ import { ContentTypeMap } from '@/contents/types/ContentTypeMap';
 import { ContentBase } from '@/contents/types/ContentBase';
 
 /**
- * @internal
- * Recursively removes the last segment of a dot-separated string. e.g., 'a.b.c' -> 'a.b'
+ * A helper type that removes the last segment of a dot-delimited string.
+ * "items.shield.wooden.rare" -> "items.shield.wooden"
+ * "items.shield" -> "items"
+ * "items" -> ContentBase (as there's no '.' to split on)
  */
-export type RemoveLastSegment<S extends string> =
-  S extends `${infer Head}.${infer Tail}` // Split the string at the first dot into a Head and Tail
-    ? Tail extends `${string}.${string}` // Check if the Tail ('b.c') also contains a dot
-      ? `${Head}.${RemoveLastSegment<Tail>}` // If yes, keep the Head and recurse on the Tail
-      : Head // If no, return the Head as it's the second-to-last segment
-    : S; // If the string has no dots, return it as-is
+type ExtractPrefixes<T extends string> =
+  T extends `${infer Prefix}.${infer Rest}`
+    ? Rest extends `${string}.${string}`
+      ? `${Prefix}.${ExtractPrefixes<Rest>}`
+      : Prefix
+    : never;
 
 /**
- * Maps a content ID string to its most specific TypeScript type.
- * It searches for a match by progressively removing the last segment of the ID.
+ * Finds the best-matching type for an ID in `ContentTypeMap`.
+ * The logic is:
+ * 1. Check for an exact ID match.
+ * 2. If not found, check for the immediate parent ID (e.g., `items.shield` for `items.shield.wooden`).
+ * 3. If neither is found, fallback to `ContentBase`.
  */
-export type ContentTypeFromId<Id extends string> =
-  Id extends keyof ContentTypeMap // Check if the full ID is an exact key in the type map
-    ? ContentTypeMap[Id] // Then return the mapped type
-    : Id extends `${string}.${string}` // If not, check if the ID has a dot
-      ? ContentTypeFromId<RemoveLastSegment<Id>> // If yes, recurse with the last segment stripped off
-      : ContentBase; // If there are no more dots or no matches were found, fall back to ContentBase
+type FindBestMatch<Id extends string> = Id extends keyof ContentTypeMap
+  ? ContentTypeMap[Id]
+  : ExtractPrefixes<Id> extends infer Prefixes
+    ? Prefixes extends keyof ContentTypeMap
+      ? ContentTypeMap[Prefixes]
+      : ContentBase
+    : ContentBase;
+
+/**
+ * Derives the most specific TypeScript type for a given content ID.
+ *
+ * This utility searches for a type by first attempting an exact match on the ID.
+ * If no direct match is found, it falls back to checking the parent ID
+ * (the string with its last segment removed). If no match is found, it defaults
+ * to the base `ContentBase` type.
+ *
+ * @param Id The dot-delimited content identifier.
+ *
+ * @example
+ * ```ts
+ * // Assuming ContentTypeMap contains:
+ * // "items": ItemContent
+ * // "items.shield": ShieldContent
+ * // "items.shield.wooden": WoodenShieldContent
+ *
+ * type T1 = ContentTypeFromId<"items.shield.wooden.rare">; // -> WoodenShieldContent
+ * type T2 = ContentTypeFromId<"items.shield.metal">; // -> ShieldContent
+ * type T3 = ContentTypeFromId<"items.weapon">; // -> ItemContent
+ * type T4 = ContentTypeFromId<"unknown.type">; // -> ContentBase
+ * ```
+ */
+export type ContentTypeFromId<Id extends string> = FindBestMatch<Id>;

@@ -5,5 +5,8 @@
 export interface ContentBase<T = unknown> {
   id: string;
   version: string;
+  // tags: string[];
+  // uri: string;
+  // createdAt: bigint | string;
   properties: T;
 }
