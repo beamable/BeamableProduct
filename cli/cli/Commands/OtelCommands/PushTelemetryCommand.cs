@@ -49,7 +49,7 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>
 		{
 			CancellationTokenSource tokenSource = new CancellationTokenSource();
 			var basePath = CollectorManager.GetCollectorBasePathForCli();
-			var collectorStatus = await CollectorManager.StartCollector(basePath, true, true, tokenSource, BeamableZLoggerProvider.LogContext.Value);
+			var collectorStatus = await CollectorManager.StartCollectorAndWait(basePath, true, true, tokenSource, BeamableZLoggerProvider.LogContext.Value);
 			endpointToUse = $"http://{collectorStatus.otlpEndpoint}";
 		}
 

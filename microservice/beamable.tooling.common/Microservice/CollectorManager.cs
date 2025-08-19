@@ -369,7 +369,52 @@ public class CollectorManager
 		return socket;
 	}
 
-	public static async Task<CollectorStatus> StartCollector(
+	public static async Task StartCollector(
+		string absBasePath,
+		bool allowDownload,
+		bool detach,
+		CancellationTokenSource cts,
+		ILogger logger,
+		string otlpEndpoint = null)
+	{
+		AddDefaultCollectorHostAndPortFallback();
+
+		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
+		if(string.IsNullOrEmpty(port))
+		{
+			throw new Exception("There is no port configured for the collector discovery");
+		}
+
+		if (!Int32.TryParse(port, out int portNumber))
+		{
+			throw new Exception("Invalid value for port");
+		}
+
+		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
+
+		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
+
+		var connectedPromise = new Promise<CollectorStatus>();
+
+		Socket socket = GetSocket(portNumber, logger);
+
+		var backgroundTask = Task.Run(async () =>
+		{
+			try
+			{
+				await CollectorDiscovery(collectorInfo.filePath, socket, detach, cts, connectedPromise, logger, otlpEndpoint);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+
+				Environment.Exit(1);
+				throw;
+			}
+		});
+	}
+
+	public static async Task<CollectorStatus> StartCollectorAndWait(
 		string absBasePath, 
 		bool allowDownload,
 		bool detach, 
@@ -388,13 +433,6 @@ public class CollectorManager
 		if (!Int32.TryParse(port, out int portNumber))
 		{
 			throw new Exception("Invalid value for port");
-		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
 		}
 
 		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");

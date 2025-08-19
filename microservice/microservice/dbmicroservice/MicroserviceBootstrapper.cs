@@ -940,12 +940,11 @@ namespace Beamable.Server
 	        }
 
 	        string otlpEndpoint = null;
-	        bool shouldStartCollector = true;
+
 	        if (ShouldStartStandardOtel())
 	        {
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, _logger);
-		        shouldStartCollector = !status.isRunning;
 
 		        if (status.isRunning)
 		        {
@@ -955,7 +954,21 @@ namespace Beamable.Server
 		        {
 			        otlpEndpoint = PortUtil.FreeEndpoint();
 		        }
+
+		        if (!status.isRunning)
+		        {
+			        _logger.ZLogInformation($"Sending request to get clickhouse credentials...");
+			        var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
+			        var otelApi = new BeamBeamootelApi(requester);
+			        var res = await otelApi.GetOtelAuthWriterConfig();
+
+			        CollectorManager.AddAuthEnvironmentVars(res);
+		        }
+
+		        _logger.ZLogInformation($"Starting otel collector discovery event...");
+		        await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
 	        }
+
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = _args = new EnvironmentArgs();
@@ -1071,70 +1084,24 @@ namespace Beamable.Server
 	            var _ = beamableService.RunForever();
             }
 
-	        if (ShouldStartStandardOtel() && shouldStartCollector)
-	        {
-		        _logger.ZLogInformation($"Sending request to get clickhouse credentials...");
-		        var otelApi = rootServiceScope.GetService<IBeamBeamootelApi>();
-		        var res = await otelApi.GetOtelAuthWriterConfig();
-
-		        CollectorManager.AddAuthEnvironmentVars(res);
-
-		        _logger.ZLogInformation($"Starting otel collector discovery event...");
-		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        var collectorStatus = await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
-	        }
-
             await Task.Delay(-1);
         }
 
-        private static async Task StartCollectorFromCLI()
+        private static IBeamableRequester GenerateTemporarySignedRequester(EnvironmentArgs args)
         {
-	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
-	        var beamProgram = GetBeamProgram();
-
-	        string arguments = $"{beamProgram} collector start --logs v";
-	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
-
-	        using var process = new Process();
-
-	        process.StartInfo.FileName = fileName;
-	        process.StartInfo.Arguments = arguments;
-	        process.StartInfo.RedirectStandardOutput = true;
-	        process.StartInfo.RedirectStandardError = true;
-	        process.StartInfo.CreateNoWindow = true;
-	        process.StartInfo.UseShellExecute = false;
-	        process.EnableRaisingEvents = true;
-	        process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-
-	        var result = "";
-	        var sublogs = "";
-	        //TODO: These events are still not working for some reason
-	        process.ErrorDataReceived += (sender, args) =>
+	        var userContext = new SingleUseUserContext();
+	        var config = new DefaultSignedRequesterConfig
 	        {
-		        _logger.ZLogTrace($"Start Collector (error): [{args.Data}]");
-		        if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
+		        Host = args.Host
+			        .Replace("ws://", "http://")
+			        .Replace("wss://", "https://")
+			        .Replace("/socket/", "")
+			        .Replace("/socket", ""),
+		        RealmSecretGenerator = () => Promise<string>.Successful(args.Secret)
 	        };
 
-	        process.OutputDataReceived += (sender, args) =>
-	        {
-		        _logger.ZLogTrace($"Start Collector (log): [{args.Data}]");
-		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
-	        };
-
-	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
-	        process.Start();
-	        process.BeginOutputReadLine();
-	        process.BeginErrorReadLine();
-
-	        var exitSignal = new Promise();
-	        process.Exited += (sender, args) =>
-	        {
-		        exitSignal.CompleteSuccess();
-	        };
-
-	        await process.WaitForExitAsync();
-	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
-	        await exitSignal;
+	        return new HttpSignedRequester(config, args, userContext);
         }
+
     }
 }

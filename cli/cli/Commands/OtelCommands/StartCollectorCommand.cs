@@ -25,9 +25,9 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 		await AssertEnvironmentVars(args);
 
 		var basePath = CollectorManager.GetCollectorBasePathForCli();
-		var processId = await CollectorManager.StartCollector(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
+		var status = await CollectorManager.StartCollectorAndWait(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
-		Log.Information($"Collector with process id [{processId}] started successfully");
+		Log.Information($"Collector with process id [{status.pid}] started successfully");
 	}
 
 	private async Promise AssertEnvironmentVars(StartCollectorCommandArgs args)
