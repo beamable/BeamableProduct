@@ -128,7 +128,7 @@ export class BeamRequester implements HttpRequester {
             response: {
               status: response.status,
               message: response.body,
-            }
+            },
           },
         },
       );

@@ -7,12 +7,11 @@ import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 import { BeamError } from '@/constants/Errors';
 import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
-import {
+import type {
   BeamServerServiceType,
   BeamServiceType,
-  RefreshableServiceMap,
+  RefreshableRegistry,
 } from '@/core/types';
-import type { Refreshable } from '@/services';
 import {
   BeamMicroServiceClient,
   BeamMicroServiceClientCtor,
@@ -39,10 +38,7 @@ export abstract class BeamBase {
   protected defaultHeaders: Record<string, string>;
   protected clientServices = {} as BeamServiceType;
   protected serverServices = {} as BeamServerServiceType;
-  protected refreshable = {} as Record<
-    keyof RefreshableServiceMap,
-    Refreshable<unknown>
-  >;
+  protected refreshableRegistry = {} as RefreshableRegistry;
   protected isInitialized = false;
 
   private static _env: BeamEnvVars = {
