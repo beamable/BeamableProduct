@@ -40,7 +40,9 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 			records.Add(record);
 		}
 
-		var result = _exporter.Export(batch);
+		var copyBatch = new Batch<Activity>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<Activity> actually removes the entries from the Batch
+
+		var result = _exporter.Export(copyBatch);
 
 		if (result == ExportResult.Success)
 		{

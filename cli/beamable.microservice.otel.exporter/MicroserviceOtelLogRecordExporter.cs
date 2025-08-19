@@ -41,7 +41,9 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 			records.Add(record);
 		}
 
-		var result = _exporter.Export(batch);
+		var copyBatch = new Batch<LogRecord>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<LogRecord> actually removes the entries from the Batch
+
+		var result = _exporter.Export(copyBatch);
 
 		if (result == ExportResult.Success)
 		{
