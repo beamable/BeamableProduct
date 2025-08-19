@@ -486,6 +486,18 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
+	/// Remove multiple users from local files
+	/// OBS: It will not delete the user from the backend  
+	/// </summary>
+	public void DeleteUsers(List<string> gamerTags)
+	{
+		foreach (string gamerTag in gamerTags)
+		{
+			DeleteUser(gamerTag);
+		}
+	}
+	
+	/// <summary>
 	/// Load from the local cache a user for a given gamer tag
 	/// Still requires to check the DeveloperUser.IsValidUser() to see if it was loaded successful.
 	/// </summary>
