@@ -6,38 +6,29 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class DeveloperUserManagerSaveUserArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The access token to be saved</summary>
-        public string[] accessToken;
-        /// <summary>The refresh token to be saved</summary>
-        public string[] refreshToken;
+        /// <summary>The user type of the user</summary>
+        public int userType;
         /// <summary>The PID of the user</summary>
         public string[] pid;
         /// <summary>The CID of the user</summary>
         public string[] cid;
         /// <summary>The Gamer Tag of the user</summary>
         public string[] gamerTag;
+        /// <summary>The access token to be saved</summary>
+        public string[] accessToken;
+        /// <summary>The refresh token to be saved</summary>
+        public string[] refreshToken;
+        /// <summary>The expires to be saved</summary>
+        public string[] expiresIn;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // If the accessToken value was not default, then add it to the list of args.
-            if ((this.accessToken != default(string[])))
+            // If the userType value was not default, then add it to the list of args.
+            if ((this.userType != default(int)))
             {
-                for (int i = 0; (i < this.accessToken.Length); i = (i + 1))
-                {
-                    // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--access-token=" + this.accessToken[i]));
-                }
-            }
-            // If the refreshToken value was not default, then add it to the list of args.
-            if ((this.refreshToken != default(string[])))
-            {
-                for (int i = 0; (i < this.refreshToken.Length); i = (i + 1))
-                {
-                    // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken[i]));
-                }
+                genBeamCommandArgs.Add(("--user-type=" + this.userType));
             }
             // If the pid value was not default, then add it to the list of args.
             if ((this.pid != default(string[])))
@@ -64,6 +55,33 @@ namespace Beamable.Editor.BeamCli.Commands
                 {
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--gamer-tag=" + this.gamerTag[i]));
+                }
+            }
+            // If the accessToken value was not default, then add it to the list of args.
+            if ((this.accessToken != default(string[])))
+            {
+                for (int i = 0; (i < this.accessToken.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--access-token=" + this.accessToken[i]));
+                }
+            }
+            // If the refreshToken value was not default, then add it to the list of args.
+            if ((this.refreshToken != default(string[])))
+            {
+                for (int i = 0; (i < this.refreshToken.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken[i]));
+                }
+            }
+            // If the expiresIn value was not default, then add it to the list of args.
+            if ((this.expiresIn != default(string[])))
+            {
+                for (int i = 0; (i < this.expiresIn.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--expires-in=" + this.expiresIn[i]));
                 }
             }
             string genBeamCommandStr = "";

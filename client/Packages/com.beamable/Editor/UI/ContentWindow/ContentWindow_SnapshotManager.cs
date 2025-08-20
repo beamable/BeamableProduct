@@ -111,14 +111,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			_snapshotListScroll = EditorGUILayout.BeginScrollView(_snapshotListScroll, scrollOptions.ToArray());
 			
-			EditorGUILayout.BeginHorizontal(GUILayout.Height(30), GUILayout.Width(snapshotListAreaWidth));
+			EditorGUILayout.BeginHorizontal(GUILayout.Height(30));
 			EditorGUILayout.Space(BASE_PADDING, false);
 			this.DrawSearchBar(_snapshotSearchData);
 			EditorGUILayout.Space(BASE_PADDING, false);
 			EditorGUILayout.EndHorizontal();
 			
 			
-			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
+			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -135,7 +135,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawSnapshotsList(_localSnapshots.Values.ToList(), ContentSnapshotType.Local, true);
 			}
 
-			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
+			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -191,7 +191,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			if (secondsList.Count > 0)
 			{
-				BeamGUI.DrawVerticalSeparatorLine(new RectOffset(BASE_PADDING, BASE_PADDING, BASE_PADDING, BASE_PADDING), new Color(0.15f, 0.15f, 0.15f));
+				BeamGUI.DrawHorizontalSeparatorLine(new RectOffset(BASE_PADDING * 4, BASE_PADDING * 4, BASE_PADDING, BASE_PADDING), new Color(0.15f, 0.15f, 0.15f));
 				secondsList.ForEach(DrawItem);
 			}
 			
@@ -384,7 +384,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			GUIStyle boldLabel = new GUIStyle(EditorStyles.boldLabel)
 			{
-				padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0,0)
+				padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0,0),
+				alignment = TextAnchor.MiddleLeft,
 			};
 
 			float snapshotFullNameSize = boldLabel.CalcSize(new GUIContent($"Snapshot Name: {snapshot.Name}")).x + BASE_PADDING * 3;
@@ -397,8 +398,15 @@ namespace Beamable.Editor.UI.ContentWindow
 			_snapshotInfoScroll = EditorGUILayout.BeginScrollView(_snapshotInfoScroll, GUILayout.MinWidth(contentMinSize));
 			
 			EditorGUILayout.BeginVertical();
-			// Snapshot Name
 			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
+			if (snapshot.IsAutoSnapshot)
+			{
+				rectController.ReserveWidth(BASE_PADDING);
+				EditorGUI.LabelField(rectController.rect, "(Auto Generated)");
+				rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
+			}
+			
+			// Snapshot Name
 			var nameContent = new GUIContent("Name: ");
 			EditorGUI.LabelField(rectController.ReserveWidth(boldLabel.CalcSize(nameContent).x), nameContent, boldLabel);
 			EditorGUI.LabelField(rectController.rect, snapshot.Name);
@@ -424,11 +432,21 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUI.LabelField(rectController.ReserveWidth(boldLabel.CalcSize(manifestLabel).x), manifestLabel, boldLabel);
 			EditorGUI.LabelField(rectController.ReserveWidth(EditorStyles.label.CalcSize(manifestValue).x), manifestValue, EditorStyles.label);
 			
-			// Snapshot PID (Realm)
+			// Snapshot Realm (PID)
 			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
-			var pidLabel = new GUIContent("PID: ");
-			EditorGUI.LabelField(rectController.ReserveWidth(boldLabel.CalcSize(pidLabel).x), pidLabel, boldLabel);
-			EditorGUI.LabelField(rectController.rect,$"{snapshot.ProjectData.PID} ({snapshot.ProjectData.RealmName})");
+            var realmLabel = new GUIContent("Realm: ");
+            EditorGUI.LabelField(rectController.ReserveWidth(boldLabel.CalcSize(realmLabel).x), realmLabel, boldLabel);
+            string currentRealmMessage = "(Could not find current realm)";
+            Color messageColor = Color.red;
+            if (_cli.CurrentRealm != null)
+            {
+	            bool isSameRealm = _cli.CurrentRealm.Pid == snapshot.ProjectData.PID;
+	            currentRealmMessage = isSameRealm ? "(Current Realm)" : $"(Current Realm is `{_cli.CurrentRealm.DisplayName}`)";
+	            messageColor = isSameRealm ? Color.green : new Color(0.95f, 0.69f, 0.07f);
+            }
+            
+            string colorHex = ColorUtility.ToHtmlStringRGBA(messageColor);
+            EditorGUI.LabelField(rectController.rect,$"{snapshot.ProjectData.RealmName} ({snapshot.ProjectData.PID}) - <color=#{colorHex}>{currentRealmMessage}</color>", new GUIStyle(EditorStyles.label) { richText = true});
 			
 			var newContents = snapshot.Contents.Where(item => item.CurrentStatus == (int)ContentStatus.Created).ToList();
 			var modifiedContents = snapshot.Contents.Where(item => item.CurrentStatus == (int)ContentStatus.Modified).ToList();
@@ -482,7 +500,11 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			if (newContents.Count == 0 && modifiedContents.Count == 0 && deletedContents.Count == 0)
 			{
-				EditorGUILayout.LabelField("Snapshot matches all your local changes, so not change will be made");
+				EditorGUILayout.LabelField("Snapshot matches all your local changes, so no change will be made",
+				                           new GUIStyle(EditorStyles.label)
+				                           {
+					                           padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0, 0)
+				                           });
 			}
 
 			EditorGUILayout.EndVertical();
