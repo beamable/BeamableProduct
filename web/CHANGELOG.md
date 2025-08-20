@@ -1,10 +1,16 @@
 # beamable-sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- Fix invalid credential when `loginWithEmail` triggers a refresh token and retries.
+
 ## 0.4.0
 
 ### Minor Changes
 
-- Introduced initialization via `Beam.init()` and `BeamServer.init()`. 
+- Introduced initialization via `Beam.init()` and `BeamServer.init()`.
 - Introduced new environment-variable support via `BeamBase.env` or `Beam.env` or `BeamServer.env`.
 - Introduced `use()` as a service locator, and an SDK mixin to register client and server services.
 - Added support for authentication via email/password, third-party providers, and external identity.
