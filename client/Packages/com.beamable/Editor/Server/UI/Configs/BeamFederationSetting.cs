@@ -1,8 +1,10 @@
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Util;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,7 +29,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	[CustomPropertyDrawer(typeof(BeamFederationSetting))]
 	public class FederationEntryPropertyDraw : PropertyDrawer
 	{
-		private const string NO_FEDEDERATIONS_FOUND_INFO = "No Federation Implementation found. Make sure that your Microservice is implementing any federation interface with your Federation ID. You can create a new federation ID one by clicking on <b>Create->Federation Id</b>.";
+		private const string NO_FEDEDERATIONS_FOUND_INFO = "No Federation Implementation found. Make sure that your Microservice is implementing any federation interface with your Federation ID. You can create a new federation ID one by clicking on:";
 		private Dictionary<string, bool> _foldoutStates = new();
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -36,12 +38,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			
 			if (!_foldoutStates.TryGetValue(property.propertyPath, out bool state) || !state)
 				return height;
-
-			height += EditorGUIUtility.singleLineHeight;
 			
-			var groupedFederations = GroupFederations(property);
-
-			if (groupedFederations.Count == 0)
+			var entriesCount = property.FindPropertyRelative(nameof(BeamFederationSetting.entries)).arraySize;
+			
+			if (entriesCount == 0)
 			{
 				var noFedInfoContent = new GUIContent(NO_FEDEDERATIONS_FOUND_INFO);
 				GUIStyle guiStyle = new GUIStyle(EditorStyles.label)
@@ -53,19 +53,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				height += guiStyle.CalcHeight(noFedInfoContent, EditorGUIUtility.currentViewWidth - EditorGUI.indentLevel * indentPaddingSpace);
 				return height;
 			}
-
-			height += groupedFederations.Select(kvp =>
-			{
-				float groupHeight = EditorGUIUtility.singleLineHeight; // Federation ID foldout
-				if (_foldoutStates.TryGetValue(kvp.Key, out bool foldoutState) && foldoutState)
-				{
-					groupHeight += EditorGUIUtility.singleLineHeight; // Interfaces that uses it title
-					groupHeight += groupedFederations.Values.Count * EditorGUIUtility.singleLineHeight; // For each interface
-				}
-
-				return groupHeight;
-			}).Sum();
-
+			height += entriesCount * EditorGUIUtility.singleLineHeight;
+			
 			return height;
 		}
 
@@ -91,10 +80,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			
 			position.y += EditorGUIUtility.singleLineHeight;
 			EditorGUI.indentLevel++;
-
-			var groupedFederations = GroupFederations(property);
-
-			if (groupedFederations.Count == 0)
+			
+			var entriesProperty = property.FindPropertyRelative(nameof(BeamFederationSetting.entries));
+			
+			if (entriesProperty.arraySize == 0)
 			{
 				var noFederationContent = new GUIContent(NO_FEDEDERATIONS_FOUND_INFO);
 				GUIStyle guiStyle = new GUIStyle(EditorStyles.label)
@@ -102,44 +91,40 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 					wordWrap = true,
 					richText = true,
 				};
+				
+				const int indentWidth = 15;
 				position.height = guiStyle.CalcHeight(noFederationContent, EditorGUI.IndentedRect(position).width);
 				EditorGUI.LabelField(position, noFederationContent, guiStyle);
+				var linkStyle = new GUIStyle(EditorStyles.linkLabel)
+				{
+					richText = true, 
+					margin = new RectOffset(indentWidth * (EditorGUI.indentLevel + 1), 0,0,0)
+				};
+				if (BeamGUI.LinkButton(new GUIContent("<b>Create-<Federation Id</b>"), linkStyle))
+				{
+					var usamWindow = EditorWindow.GetWindow<UsamWindow>();
+					if(usamWindow == null)
+					{
+						UsamWindow.CreateInState(UsamWindow.WindowState.CREATE_FEDERATION_ID);
+						return;
+					}
+					usamWindow.state = UsamWindow.WindowState.CREATE_FEDERATION_ID;
+				}
 				EditorGUI.indentLevel--;
 				EditorGUI.EndProperty();
 				return;
 			}
 
-			foreach ((string federationId, List<string> interfaces) in groupedFederations)
+			for (int j = 0; j < entriesProperty.arraySize; j++)
 			{
-				string foldoutKey = federationId + property.propertyPath;
-				
-				_foldoutStates.TryAdd(foldoutKey, true);
-				position.height = EditorGUIUtility.singleLineHeight;
-				_foldoutStates[foldoutKey] = EditorGUI.Foldout(
-					position,
-					_foldoutStates[foldoutKey],
-					federationId,
-					true);
-
+				var entry = entriesProperty.GetArrayElementAtIndex(j);
+				string federationClassName = entry.FindPropertyRelative(nameof(BeamFederationEntry.federationClassName)).stringValue;
+				string interfaceName = entry.FindPropertyRelative(nameof(BeamFederationEntry.interfaceName)).stringValue;
+				EditorGUI.LabelField(position, $"• {interfaceName}<{federationClassName}>");
 				position.y += EditorGUIUtility.singleLineHeight;
-
-				if (!_foldoutStates[foldoutKey])
-				{
-					continue;
-				}
-				
-				EditorGUI.indentLevel++;
-				EditorGUI.LabelField(position,"Interfaces that uses it:", EditorStyles.boldLabel);
-				position.y += EditorGUIUtility.singleLineHeight;
-				foreach (string interfaceName in interfaces)
-				{
-					position.height = EditorGUIUtility.singleLineHeight;
-					EditorGUI.LabelField(position, $" - {interfaceName}");
-					position.y += EditorGUIUtility.singleLineHeight;
-				}
-
-				EditorGUI.indentLevel--;
 			}
+			
+
 			EditorGUI.indentLevel--;
 			EditorGUI.EndProperty();
 		}

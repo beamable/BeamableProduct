@@ -29,6 +29,8 @@ public class FederationInstanceConfig : IEquatable<FederationInstanceConfig>
 {
 	[JsonProperty("interface"), System.Text.Json.Serialization.JsonPropertyName("interface"), System.Text.Json.Serialization.JsonRequired]
 	public string Interface;
+	[JsonProperty("className")] 
+	public string ClassName;
 
 	public bool Equals(FederationInstanceConfig other)
 	{

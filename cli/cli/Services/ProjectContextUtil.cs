@@ -240,9 +240,16 @@ public static class ProjectContextUtil
 					if(!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY, out var extInterface) ||
 					   extInterface is not OpenApiString {Value: var interfaceFullName })
 						continue;
+					if(!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY, out var extFedClassName) ||
+					   extFedClassName is not OpenApiString {Value: var federationClassName })
+						continue;
 
 					string interfaceNameOnly = interfaceFullName.Split('.').Last();
-					var federationInstanceConfig = new FederationInstanceConfig { Interface = interfaceNameOnly };
+					var federationInstanceConfig = new FederationInstanceConfig 
+					{
+						Interface = interfaceNameOnly, 
+						ClassName = federationClassName
+					};
 					
 					if (foundFederationsAndInterfaces.TryGetValue(federationId, out var interfaces))
 					{
