@@ -111,7 +111,8 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);	}
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);
+	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
 	{
@@ -631,6 +632,11 @@ public class BeamoServiceDefinition
 	/// Absolute path to csproj file
 	/// </summary>
 	public string AbsoluteProjectPath;
+
+	/// <summary>
+	/// Absolute path to the microservice OpenApi specs
+	/// </summary>
+	public string OpenApiPath;
 	
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.

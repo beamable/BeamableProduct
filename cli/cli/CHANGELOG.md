@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New utilities in the Lobby that helps handling server provisioning and updates in the player/global data.
 - `IFederatedGameServer`'s `ServerInfo` schema now allows for modifying other lobby properties than just player/global data.  
 
+### Changed
+- Changed how `beam fed list` finds the implemented federations. Now `federation.json` is obsolete and replaced by the OpenApi specifications. 
+
+### Removed
+- `beam fed add` Command as it isn't being used anymore
+- `beam fed remove` Command as it isn't being used anymore
+- `beam fed set` Command as it isn't being used anymore
+
+### Changed
+- Changed how federations are detected. Federation.json is not needed anymore, instead the federations are found by openApi specs.
+- Removed CodeAnalyzers and CodeFixers that were validating federation from Federation.json
+
 ## [5.3.1] - 2025-08-06
 ### Fixed
 - `beam project share-code` copies all dll dependencies into Unity, and adds debug logging.

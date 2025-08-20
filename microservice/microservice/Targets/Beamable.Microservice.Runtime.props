@@ -63,11 +63,7 @@
             <Visible>false</Visible>
         </BeamableSetting>
     </ItemDefinitionGroup>
-
-    <ItemGroup>
-        <AdditionalFiles Include="federations.json" />
-    </ItemGroup>
-
+    
     <ItemGroup>
         <CompilerVisibleProperty Include="BeamValidateCallableTypesExistInSharedLibraries" />
         <CompilerVisibleProperty Include="EnableUnrealBlueprintCompability" />

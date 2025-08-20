@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Changed
+- Updated Microservices configuration Federation list to a view-mode only. Now federation are listed based on the OpenApi specification generated from the Microservices. So no need to previously add Federation Id to a Federation Interface on Unity.
 ### Added
 - Support to CLI Snapshot management on Content editor.
+
 
 ## [3.0.0] - 2025-08-05
 
