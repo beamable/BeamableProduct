@@ -293,6 +293,7 @@ namespace Beamable.Editor.Microservice.UI2
 						new GUIContent("Assembly Definitions"));
 					EditorGUILayout.Separator();
 					
+					EditorGUILayout.LabelField("This Federations list is just for view-only. It is a representation of what federations are being implemented on your Microservice class.", new GUIStyle(EditorStyles.label) { wordWrap = true });
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)), 
 						new GUIContent("Federations"), true);

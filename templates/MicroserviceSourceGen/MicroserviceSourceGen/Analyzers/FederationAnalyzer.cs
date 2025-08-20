@@ -2,14 +2,13 @@
 using Beamable.Common;
 using Beamable.Server;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.OpenApi.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 
 namespace Beamable.Microservice.SourceGen.Analyzers;
 
@@ -22,66 +21,19 @@ namespace Beamable.Microservice.SourceGen.Analyzers;
 public class FederationAnalyzer : DiagnosticAnalyzer
 {
 	public const string FEDERATION_ATTRIBUTE_NAME = "FederationId";
-	
-	private MicroserviceFederationsConfig _sourceGenConfig;
 
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
-		Diagnostics.Fed.FederationIdMissingAttribute,
-		Diagnostics.Fed.ConfiguredFederationMissingFromCode, Diagnostics.Fed.DeclaredFederationInvalidFederationId,
-		Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig, Diagnostics.Fed.FederationIdMustBeDefault,
-		Diagnostics.Fed.FederationCodeGeneratedProperly, Diagnostics.Fed.FederationIdInvalidConfigFile,
-		Diagnostics.Cfg.NoSourceGenConfigFound, Diagnostics.Cfg.FailedToDeserializeSourceGenConfig,
-		Diagnostics.Cfg.MultipleSourceGenConfigsFound);
+		Diagnostics.BeamVerboseDescriptor, Diagnostics.BeamExceptionDescriptor,
+		Diagnostics.Fed.FederationIdMissingAttribute, Diagnostics.Fed.DeclaredFederationInvalidFederationId,
+		Diagnostics.Fed.FederationIdMustBeDefault, Diagnostics.Fed.FederationCodeGeneratedProperly);
 	
 	public override void Initialize(AnalysisContext context)
 	{
 		context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
 		context.EnableConcurrentExecution();
-		context.RegisterCompilationStartAction(InitializeCompilation);
+		context.RegisterSymbolAction(AnalyzeForInvalidFederations, SymbolKind.NamedType);
 	}
-
-	private void InitializeCompilation(CompilationStartAnalysisContext context)
-	{
-		var configFiles = context.Options.AdditionalFiles.Where(item =>
-			Path.GetFileName(item.Path) == MicroserviceFederationsConfig.CONFIG_FILE_NAME).ToList();
-
-		if (configFiles.Count > 1)
-		{
-			string fileNames = string.Join(", ",configFiles.Select(item => item.Path));
-			var multipleFiles = Diagnostic.Create(Diagnostics.Cfg.MultipleSourceGenConfigsFound, Location.None, fileNames);
-			context.RegisterCompilationEndAction(endContext => endContext.ReportDiagnostic(multipleFiles));
-		} else if (configFiles.Count == 0)
-		{
-			var noFileFoundFederation = Diagnostic.Create(Diagnostics.Cfg.NoSourceGenConfigFound, Location.None);
-			context.RegisterCompilationEndAction(endContext => endContext.ReportDiagnostic(noFileFoundFederation));
-			return;
-		}
-
-		var configFile = configFiles.FirstOrDefault();
-		var text = configFile!.GetText(context.CancellationToken);
-		if (text == null)
-		{
-			var noFileFoundFederation = Diagnostic.Create(Diagnostics.Cfg.NoSourceGenConfigFound, Location.None);
-			context.RegisterCompilationEndAction(endContext => endContext.ReportDiagnostic(noFileFoundFederation));
-			return;
-		}
-
-		try
-		{
-			_sourceGenConfig = JsonSerializer.Deserialize<MicroserviceFederationsConfig>(
-				text.ToString(),
-				new JsonSerializerOptions { IncludeFields = true });
-
-			context.RegisterSymbolAction(AnalyzeForInvalidFederations, SymbolKind.NamedType);
-		}
-		catch (Exception ex)
-		{
-			var diag = Diagnostic.Create(Diagnostics.Cfg.FailedToDeserializeSourceGenConfig, Location.None, ex.Message);
-			context.RegisterCompilationEndAction(endContext => endContext.ReportDiagnostic(diag));
-		}
-
-	}
-
+	
 	private void AnalyzeForInvalidFederations(SymbolAnalysisContext context)
 	{
 		var classSymbol = (INamedTypeSymbol)context.Symbol;
@@ -89,9 +41,11 @@ public class FederationAnalyzer : DiagnosticAnalyzer
 		{
 			return;
 		}
-		List<FederationInfo> federations = GetFederationInterfaces(classSymbol);
-		if (ValidateFederations(context.ReportDiagnostic, classSymbol.Name, classSymbol.Locations[0], federations,
-			    _sourceGenConfig))
+		var classSyntax = (ClassDeclarationSyntax) classSymbol.DeclaringSyntaxReferences.FirstOrDefault(reference =>
+				reference.GetSyntax() is ClassDeclarationSyntax).GetSyntax();
+		var location = Diagnostics.GetValidLocation(classSyntax.Identifier.GetLocation(), context.Compilation);
+		List<FederationInfo> federations = GetFederationInterfaces(classSymbol, context.ReportDiagnostic, location, context.Compilation);
+		if (ValidateFederations(context.ReportDiagnostic, context.Compilation, classSymbol.Name, location, federations))
 		{
 			var federationCodeGenSuccess = Diagnostic.Create(Diagnostics.Fed.FederationCodeGeneratedProperly, Location.None);
 			context.ReportDiagnostic(federationCodeGenSuccess);
@@ -99,9 +53,14 @@ public class FederationAnalyzer : DiagnosticAnalyzer
 	}
 
 
-	public static List<FederationInfo> GetFederationInterfaces(INamedTypeSymbol classSymbol)
+	public static List<FederationInfo> GetFederationInterfaces(INamedTypeSymbol classSymbol, Action<Diagnostic> reportDiagnostic, Location location, Compilation compilation)
 	{
 		List<FederationInfo> federations = new();
+
+		string classInterfaces = string.Join(", ", classSymbol.Interfaces.Select(item => item.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat)));
+		reportDiagnostic?.Invoke(Diagnostics.GetVerbose(nameof(GetFederationInterfaces),
+			$"Finding federations for class: {classSymbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat)}. This class contains the following interfaces: {classInterfaces}", location,
+			compilation));
 		foreach (INamedTypeSymbol symbol in classSymbol.Interfaces)
 		{
 			if (!symbol.Interfaces.Any(it => it.Name == nameof(IFederation)))
@@ -134,24 +93,20 @@ public class FederationAnalyzer : DiagnosticAnalyzer
 		return federations;
 	}
 
-	private static bool ValidateFederations(Action<Diagnostic> reportDiagnostic, string microserviceName,
-		Location microserviceLocation, List<FederationInfo> federationInfos,
-		MicroserviceFederationsConfig federationConfig)
+	private static bool ValidateFederations(Action<Diagnostic> reportDiagnostic, Compilation compilation, string microserviceName, Location microserviceLocation, List<FederationInfo> federationInfos)
 	{
 		bool isValid = true;
-		var federations = federationConfig.Federations;
-
-		Dictionary<string, (string Id, string Interface)> flatConfig = federations
-			.SelectMany(kvp => kvp.Value.Select(f => (kvp.Key, f.Interface)))
-			.ToDictionary(x => $"{x.Key}/{x.Interface}");
-
-		var flatCode = federationInfos.Where(f => f.Id != null).ToDictionary(x => $"{x.Id}/{x.Federation.Interface}");
-
+		
 		foreach (var fed in federationInfos)
 		{
+			Location diagnosticLocation = Diagnostics.GetValidLocation(fed.Location, compilation, microserviceLocation);
+
+			reportDiagnostic?.Invoke(Diagnostics.GetVerbose(nameof(ValidateFederations),
+				$"Validating federation {fed.ClassName}. ID: {fed.Id}. Interface: {fed.Federation.Interface}", diagnosticLocation, compilation));
+			
 			if (fed.Id == null)
 			{
-				var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMissingAttribute, fed.Location);
+				var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMissingAttribute, diagnosticLocation);
 				reportDiagnostic(error);
 				isValid = false;
 			}
@@ -160,7 +115,7 @@ public class FederationAnalyzer : DiagnosticAnalyzer
 				// Only one IFederatedPlayerInit federation can exit and its ID must be "default". 
 				if (fed.Id != "default")
 				{
-					var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMustBeDefault, fed.Location, fed.Id);
+					var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMustBeDefault, diagnosticLocation, fed.Id);
 					reportDiagnostic(error);
 					isValid = false;
 				}
@@ -168,64 +123,11 @@ public class FederationAnalyzer : DiagnosticAnalyzer
 			else if (!ValidateFederationId(fed.Id))
 			{
 				var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationInvalidFederationId,
-					fed.Location, microserviceName, fed.Id);
+					diagnosticLocation, microserviceName, fed.Id);
 				reportDiagnostic(error);
 				isValid = false;
 			}
 		}
-
-		var configsThatDoNotExistInCode = flatConfig.Keys.Except(flatCode.Keys).ToList();
-		var configsThatDoNotExistInSource = flatCode.Where(item => !flatConfig.Keys.Contains(item.Key));
-
-		foreach (var configKey in configsThatDoNotExistInCode)
-		{
-			var (fedId, fedInterface) = flatConfig[configKey];
-			var properties = ImmutableDictionary<string, string>.Empty
-				.Add(Diagnostics.Fed.PROP_FEDERATION_ID, fedId)
-				.Add(Diagnostics.Fed.PROP_FEDERATION_INTERFACE, fedInterface)
-				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName);
-			
-			
-			if (!ValidateFederationId(fedId))
-			{
-				var invalidFedId = Diagnostic.Create(Diagnostics.Fed.FederationIdInvalidConfigFile, microserviceLocation, properties, fedId);
-				reportDiagnostic(invalidFedId);
-				continue;
-			}
-
-			isValid = false;
-			var error = Diagnostic.Create(
-				Diagnostics.Fed.ConfiguredFederationMissingFromCode,
-				microserviceLocation,
-				properties,
-				microserviceName,
-				fedId,
-				fedInterface);
-			reportDiagnostic(error);
-		}
-
-		foreach (var codeFedInfo in configsThatDoNotExistInSource)
-		{
-			string codeKey = codeFedInfo.Key;
-			var federationInfo = flatCode[codeKey];
-			
-			var properties = ImmutableDictionary<string, string>.Empty
-				.Add(Diagnostics.Fed.PROP_FEDERATION_ID, federationInfo.Id)
-				.Add(Diagnostics.Fed.PROP_FEDERATION_INTERFACE, federationInfo.Federation.Interface)
-				.Add(Diagnostics.Fed.PROP_MICROSERVICE_NAME, microserviceName)
-				.Add(Diagnostics.Fed.PROP_FEDERATION_CLASS_NAME, federationInfo.ClassName);
-			
-			isValid = false;
-			var error = Diagnostic.Create(
-				Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig,
-				codeFedInfo.Value.Location,
-				properties,
-				microserviceName,
-				federationInfo.Id,
-				federationInfo.Federation.Interface);
-			reportDiagnostic(error);
-		}
-
 		return isValid;
 	}
 	

@@ -22,13 +22,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			.Where(type => type != default)!
 			.Collect<MicroserviceInfo>();
 
-		var sourceConfigText = context.AdditionalTextsProvider
-			.Where(text => text.Path.EndsWith(MicroserviceFederationsConfig.CONFIG_FILE_NAME, StringComparison.OrdinalIgnoreCase))
-			.Select((text, token) => (Path: text.Path, Text: text.GetText(token)?.ToString()))
-			.Where(text => text.Item2 is not null)!
-			.Collect<ValueTuple<string, string>>();
-
-		context.RegisterSourceOutput(microserviceTypes.Combine(sourceConfigText), GenerateCode);
+		context.RegisterSourceOutput(microserviceTypes, GenerateCode);
 		return;
 
 		static bool CouldBeMicroserviceAsync(SyntaxNode syntaxNode, CancellationToken cancellationToken)
@@ -48,7 +42,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		}
 	}
 
-	private static void GenerateCode(SourceProductionContext context, (ImmutableArray<MicroserviceInfo> Left, ImmutableArray<(string, string)> Right) args)
+	private static void GenerateCode(SourceProductionContext context, ImmutableArray<MicroserviceInfo> args)
 	{
 		// All the validations from this method were moved to their specific DiagnosticAnalyzer, which are the FederationAnalyzer and ServicesAnalyzer.
 		// This method isn't removed just to keep the reference from the IncrementalGenerator, but at the moment this class isn't doing much
