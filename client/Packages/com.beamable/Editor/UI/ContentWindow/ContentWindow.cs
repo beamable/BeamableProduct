@@ -19,6 +19,7 @@ namespace Beamable.Editor.UI.ContentWindow
 	public partial class ContentWindow : BeamEditorWindow<ContentWindow>
 	{
 		private const int MARGIN_SEPARATOR_WIDTH = 10;
+		private const int INDENT_WIDTH = 15;
 
 		private ContentWindowStatus _windowStatus = ContentWindowStatus.Normal;
 		
@@ -137,6 +138,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 			
+			if (_gatheringSnapshots)
+			{
+				DrawBlockLoading("Loading snapshots");
+				return;
+			}
+			
 			if (_contentService.ManifestChangedCount != _lastManifestChangedCount)
 			{
 				_lastManifestChangedCount = _contentService.ManifestChangedCount;
@@ -159,12 +166,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				case ContentWindowStatus.Validate:
 					DrawNestedContent(DrawValidatePanel);
 					break;
+				case ContentWindowStatus.SnapshotManager:
+					DrawSnapshotManager();
+					break;
 			}
 			
 			RunDelayedActions();
 		}
 
-			
 		private void DrawContentData()
 		{
 			if (NeedsMigration)
@@ -326,7 +335,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		Publish,
 		Building,
 		Revert,
-		Validate
+		Validate,
+		SnapshotManager,
 	}
 	
 }
