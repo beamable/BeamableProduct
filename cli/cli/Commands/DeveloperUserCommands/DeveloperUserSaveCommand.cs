@@ -12,11 +12,20 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOptionList("access-token", "The access token to be saved"), (args, s) => { args.AccessToken = s.ToList(); } );
-		AddOption(new ConfigurableOptionList("refresh-token", "The refresh token to be saved"), (args, s) => { args.RefreshToken = s.ToList(); } );
+		AddOption(new ConfigurableIntOption("user-type", "The user type of the user"), (args, s) => { args.DeveloperUserType = s; });
 		AddOption(new ConfigurableOptionList("pid", "The PID of the user"), (args, s) => { args.Pid = s.ToList(); } );
 		AddOption(new ConfigurableOptionList("cid", "The CID of the user"), (args, s) => { args.Cid = s.ToList(); } );
 		AddOption(new ConfigurableOptionList("gamer-tag", "The Gamer Tag of the user"), (args, s) => { args.GamerTag = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("access-token", "The access token to be saved"), (args, s) => { args.AccessToken = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("refresh-token", "The refresh token to be saved"), (args, s) => { args.RefreshToken = s.ToList(); } );
+		AddOption(new ConfigurableOptionList("expires-in", "The expires to be saved"), (args, enumerable) =>
+		{
+			args.ExpiresIn = new List<long>();
+			foreach (string arg in enumerable)
+			{
+				args.ExpiresIn.Add(long.Parse(arg));
+			}
+		} );
 	}
 	
 	public override async Task<DeveloperUserResult> GetResult(DeveloperUserSaveArgs args)
@@ -29,6 +38,7 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 			{
 				AccessToken = args.AccessToken[i],
 				RefreshToken = args.RefreshToken[i],
+				ExpiresIn = args.ExpiresIn[i],
 				Pid = args.Pid[i],
 				Cid = args.Cid[i],
 				GamerTag = long.Parse(args.GamerTag[i]),
@@ -38,7 +48,7 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 		}
 
 		try{
-			await args.DeveloperUserManagerService.SaveDeveloperUsers(developerUsers);
+			await args.DeveloperUserManagerService.SaveDeveloperUsers(developerUsers, (DeveloperUserType)args.DeveloperUserType);
 		}
 		catch (Exception e) // Any generic exception on save the users
 		{
@@ -52,6 +62,7 @@ public class DeveloperUserSaveCommand : AtomicCommand<DeveloperUserSaveArgs, Dev
 
 public class DeveloperUserSaveArgs : ContentCommandArgs
 {
+	public int DeveloperUserType;
 	public List<string> GamerTag;
 	
 	// Backend info
@@ -59,5 +70,6 @@ public class DeveloperUserSaveArgs : ContentCommandArgs
 	public List<string> RefreshToken;
 	public List<string> Pid;
 	public List<string> Cid;
+	public List<long> ExpiresIn;
 }
 

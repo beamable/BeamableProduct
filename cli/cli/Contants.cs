@@ -35,6 +35,12 @@ public static class Constants
 
 	public const string TEMP_FOLDER = "temp";
 
+	public const string TEMP_OTEL_FOLDER = "otel";
+
+	public const string TEMP_OTEL_LOGS_FOLDER = "logs";
+	public const string TEMP_OTEL_METRICS_FOLDER = "metrics";
+	public const string TEMP_OTEL_TRACES_FOLDER = "traces";
+
 	public static readonly string[] TEMP_FILES = new[]
 	{
 		CONFIG_TOKEN_FILE_NAME, 

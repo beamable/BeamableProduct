@@ -76,6 +76,7 @@ public class DeveloperUserData
 	public string Pid = string.Empty;
 	public string Cid = string.Empty;
 	public long ExpiresIn;
+	public long IssuedAt;
 	
 	public long CreatedDate;
 }
@@ -107,6 +108,8 @@ public struct DeveloperUser
 	public string Pid;
 	public string Cid;
 	public long CreatedByGamerTag;
+
+	public long IssuedAt;
 	
 	/// <summary>
 	/// We are preventing serialization for shared users of the AccessToken
@@ -160,16 +163,22 @@ public struct DeveloperUser
 		Description = description;
 		Tags = tags;
 	}
-
-
-
+	
 	public void UpdateToken(TokenResponse tokenResponse)
 	{
 		AccessToken = tokenResponse.access_token;
 		RefreshToken = tokenResponse.refresh_token;
 		ExpiresIn = tokenResponse.expires_in;
+		IssuedAt = DateTime.UtcNow.Ticks;
 	}
 
+	public void UpdateToken(DeveloperUser developerUser)
+	{
+		AccessToken = developerUser.AccessToken;
+		RefreshToken = developerUser.RefreshToken;
+		ExpiresIn = developerUser.ExpiresIn;
+		IssuedAt = DateTime.UtcNow.Ticks;
+	}
 	public void UpdateUserInfo(string alias, string description)
 	{
 		Alias = alias;
@@ -273,9 +282,9 @@ public class DeveloperUserManagerService
 		// In the case of the user passes a template we should load this template and validate it to copy the state from the template to the new user. 
 		if (copyFromTemplate)
 		{
-			DeveloperUser templateDeveloperUser = LoadCachedDeveloperUser(templateGamerTag);
+			DeveloperUser templateDeveloperUser;
 
-			if (!IsUserDeveloperValid(templateDeveloperUser))
+			if (!TryLoadCachedDeveloperUser(templateGamerTag, out templateDeveloperUser))
 			{
 				throw new CliException($"There's no user with the given gamer tag: {templateGamerTag}");
 			}
@@ -433,35 +442,48 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
-	/// Save multiple developer users to disk in a batch
+	/// Save/refresh multiple developer users to disk in a batch
 	/// </summary>
 	/// <param name="developerUsers"></param>
 	/// <param name="developerUserType"></param>
 	/// <exception cref="ArgumentNullException"></exception>
 	public async Task SaveDeveloperUsers(List<DeveloperUser> developerUsers, DeveloperUserType developerUserType = DeveloperUserType.Captured)
 	{
-		string directoryPath = GetFullPath(developerUserType);
-		
-		// if the directory path is null or empty we should throw an exception.
-		if (string.IsNullOrEmpty(directoryPath))
-		{
-			throw new ArgumentNullException(nameof(directoryPath));
-		}
-
 		List<Task> writeUserTasks = new List<Task>();
 		foreach (DeveloperUser developerUser in developerUsers)
 		{
-			var developerUserCopy = developerUser;
-			// Making sure that we are saving the developer user with the correct properties
-			developerUserCopy.DeveloperUserType = (int)developerUserType;
+			DeveloperUser developerUserCopy;
+
+			// If there's a cached developer user we just update the token information.
+			if (TryLoadCachedDeveloperUser(developerUser.GamerTag.ToString(), out developerUserCopy))
+			{
+				developerUserCopy.UpdateToken(developerUser);
+			}
+			else
+			{
+				developerUserCopy = developerUser;
+				
+				// Making sure that we are saving the developer user with the correct properties
+				developerUserCopy.DeveloperUserType = (int)developerUserType;
+				
+				developerUserCopy.IssuedAt = DateTime.UtcNow.Ticks;
+			}
 			
 			string developerUserJson = JsonConvert.SerializeObject(developerUserCopy, Formatting.Indented);
 
+			string directoryPath = GetFullPath((DeveloperUserType)developerUserCopy.DeveloperUserType);
+			
 			if (!Directory.Exists(directoryPath))
 			{
-				Directory.CreateDirectory(directoryPath);
+				Directory.CreateDirectory(directoryPath!);
 			}
-	
+			
+			// if the directory path is null or empty we should throw an exception.
+			if (string.IsNullOrEmpty(directoryPath))
+			{
+				throw new ArgumentNullException(nameof(directoryPath));
+			}
+			
 			string fileFullPath = Path.Combine(directoryPath, developerUser.GamerTag + ".json");
 			writeUserTasks.Add( File.WriteAllTextAsync(fileFullPath, developerUserJson) );
 		}
@@ -475,9 +497,7 @@ public class DeveloperUserManagerService
 	/// </summary>
 	public void DeleteUser(string gamerTag)
 	{
-		DeveloperUser developerUser = LoadCachedDeveloperUser(gamerTag);
-
-		if (!IsUserDeveloperValid(developerUser))
+		if (!TryLoadCachedDeveloperUser(gamerTag, out DeveloperUser developerUser))
 		{
 			throw new CliException($"There's no user with the given gamer tag {gamerTag}");
 		}
@@ -486,17 +506,30 @@ public class DeveloperUserManagerService
 	}
 	
 	/// <summary>
-	/// Load from the local cache a user for a given gamer tag
-	/// Still requires to check the DeveloperUser.IsValidUser() to see if it was loaded successful.
+	/// Remove multiple users from local files
+	/// OBS: It will not delete the user from the backend  
 	/// </summary>
-	public DeveloperUser LoadCachedDeveloperUser(string gamerTag)
+	public void DeleteUsers(List<string> gamerTags)
+	{
+		foreach (string gamerTag in gamerTags)
+		{
+			DeleteUser(gamerTag);
+		}
+	}
+	
+	/// <summary>
+	/// Try Load from the local cache a user for a given gamer tag
+	/// </summary>
+	public bool TryLoadCachedDeveloperUser(string gamerTag, out DeveloperUser developerUser)
 	{
 		List<DeveloperUser> developerUsers = LoadCachedUsersInfo(new List<string>() { gamerTag }, out List<DeveloperUser> missingDeveloperUsers);
 		if (missingDeveloperUsers.Count > 0)
 		{
-			return missingDeveloperUsers[0];
+			developerUser = missingDeveloperUsers[0];
+			return false;
 		}
-		return developerUsers[0];
+		developerUser = developerUsers[0];
+		return true;
 	}
 
 	public async IAsyncEnumerable<LocalDeveloperUserFileChanges> ListenToLocalDeveloperUserFileChanges(DeveloperUserType developerUserType, [EnumeratorCancellation] CancellationToken token = default)
@@ -635,9 +668,9 @@ public class DeveloperUserManagerService
 	/// <exception cref="CliException"></exception>
 	public async Task<DeveloperUser> UpdateDeveloperUserInfo(string gamerTag, string alias, string description, List<string> tags)
 	{
-		DeveloperUser cachedDeveloperUser = LoadCachedDeveloperUser(gamerTag);
+		DeveloperUser cachedDeveloperUser;
 		
-		if (!IsUserDeveloperValid(cachedDeveloperUser))
+		if (!TryLoadCachedDeveloperUser(gamerTag, out cachedDeveloperUser))
 		{
 			throw new CliException($"There's no user with the given gamer tag: {gamerTag}");
 		}
@@ -1220,6 +1253,7 @@ public class DeveloperUserManagerService
 			CreatedDate = developerUser.CreatedDate,
 			DeveloperUserType = developerUser.DeveloperUserType,
 			ExpiresIn = developerUser.ExpiresIn,
+			IssuedAt = developerUser.IssuedAt,
 			Tags = developerUser.Tags ?? new List<string>(),
 			IsCorrupted = developerUser.IsCorrupted,
 		};
