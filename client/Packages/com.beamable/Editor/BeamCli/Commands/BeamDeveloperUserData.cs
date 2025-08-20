@@ -19,6 +19,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string Pid;
         public string Cid;
         public long ExpiresIn;
+        public long IssuedAt;
         public long CreatedDate;
     }
 }
