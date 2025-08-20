@@ -1166,7 +1166,7 @@ public class ContentService
 			}
 
 			var snapshotTakeTime = DateTimeOffset.Now;
-			await SnapshotLocalContent($"{autoSnapshotTempBaseName}{snapshotTakeTime:yyyy-MM-ddTHH-mm-ss}", true, manifestId, snapshotTakeTime);
+			await SnapshotLocalContent($"{autoSnapshotTempBaseName}{snapshotTakeTime:yyyy-MM-ddTHH-mm-ss}", true, manifestId, snapshotTakeTime, true);
 		}
 
 		if (autoSnapshotType is AutoSnapshotType.SharedOnly or AutoSnapshotType.Both)
@@ -1180,7 +1180,7 @@ public class ContentService
 				File.Delete(lastPublishedSnapshotFullPath);
 			}
 
-			await SnapshotLocalContent(autoSnapshotSharedName, false, manifestId);
+			await SnapshotLocalContent(autoSnapshotSharedName, false, manifestId, isAutoSnapshot:true);
 		}
 
 	}
