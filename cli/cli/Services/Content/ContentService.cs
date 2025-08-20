@@ -1142,6 +1142,8 @@ public class ContentService
 	public string[] GetContentSnapshots(bool local)
 	{
 		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, local);
+		// Ensure that the snapshot folder path exists
+        Directory.CreateDirectory(contentPath);
 		return Directory.GetFiles(contentPath, "*.json", SearchOption.TopDirectoryOnly);
 	}
 	
