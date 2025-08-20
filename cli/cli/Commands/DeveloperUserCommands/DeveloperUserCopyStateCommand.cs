@@ -1,4 +1,6 @@
-﻿namespace cli.DeveloperUserCommands;
+﻿using cli.Services.DeveloperUserManager;
+
+namespace cli.DeveloperUserCommands;
 public class DeveloperUserCopyStateCommand : AppCommand<DeveloperUserCopyStateArgs>, ISkipManifest
 
 {
@@ -14,9 +16,16 @@ public class DeveloperUserCopyStateCommand : AppCommand<DeveloperUserCopyStateAr
 
 	public override async Task Handle(DeveloperUserCopyStateArgs args)
 	{
-		var sourceDeveloperUser =  args.DeveloperUserManagerService.LoadCachedDeveloperUser(args.SourceIdentifier);
-		var targetDeveloperUser =  args.DeveloperUserManagerService.LoadCachedDeveloperUser(args.TargetIdentifier);
-
+		
+		if (!args.DeveloperUserManagerService.TryLoadCachedDeveloperUser(args.SourceIdentifier, out DeveloperUser sourceDeveloperUser))
+		{
+			throw new CliException("Unable to load the source user from developer user.");
+		}
+		if (!args.DeveloperUserManagerService.TryLoadCachedDeveloperUser(args.TargetIdentifier, out DeveloperUser targetDeveloperUser))
+		{
+			throw new CliException("Unable to load the target user from developer user.");
+		}
+		
 		await args.DeveloperUserManagerService.CopyState(sourceDeveloperUser, targetDeveloperUser);
 	}
 }
