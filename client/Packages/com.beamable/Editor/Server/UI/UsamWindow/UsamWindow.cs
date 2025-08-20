@@ -40,6 +40,11 @@ namespace Beamable.Editor.Microservice.UI2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
+		public static async void CreateInState(WindowState state)
+		{
+			var window = await GetFullyInitializedWindow();
+			window.state = state;
+		}
 		
 		protected override void Build()
 		{

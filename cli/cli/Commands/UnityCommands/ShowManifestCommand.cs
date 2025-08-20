@@ -37,6 +37,7 @@ public class FederationEntry
 {
 	public string interfaceName;
 	public string federationId;
+	public string federationClassName;
 }
 
 public class ManifestStorageEntry
@@ -89,7 +90,8 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 						results.Add(new FederationEntry
 						{
 							interfaceName = fed.Interface,
-							federationId = kvp.Key
+							federationId = kvp.Key,
+							federationClassName = fed.ClassName,
 						});
 					}
 					return results;
