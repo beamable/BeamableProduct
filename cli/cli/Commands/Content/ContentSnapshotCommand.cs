@@ -16,11 +16,11 @@ public class ContentSnapshotCommand : AtomicCommand<ContentSnapshotCommandArgs, 
 	{
 		AddOption(new Option<string>("--manifest-id", () => "global", "Defines the name of the manifest that the snapshot will be created from. The default value is `global`"), (args, s) => args.ManifestIdToSnapshot = s);
 		AddOption(new Option<string>("--name", () => "", "Defines the name for the snapshot to be created"), (args, s) => args.SnapshotName = s, new[] { "-n" });
-		AddOption(new Option<string>("--snapshot-type", () => nameof(ContentSnapshotType.Local),
+		AddOption(new Option<ContentSnapshotType>("--snapshot-type", () => ContentSnapshotType.Local,
 				"Defines where the snapshot will be stored to." +
 				$"\n{nameof(ContentSnapshotType.Local)} => Will save the snapshot under `.beamable/temp/content-snapshots` folder" +
 				$"\n{nameof(ContentSnapshotType.Shared)} => Will save the snapshot under `.beamable/content-snapshots` folder"),
-			(args, type) => args.ContentSnapshotType = Enum.Parse<ContentSnapshotType>(type), new[] { "-t" });
+			(args, type) => args.ContentSnapshotType = type, new[] { "-t" });
 	}
 
 	public override async Task<ContentSnapshotResult> GetResult(ContentSnapshotCommandArgs args)

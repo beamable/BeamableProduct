@@ -89,15 +89,19 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 				contentSnapshotListItems.AddRange(allContentFiles.ContentFiles
 					.Where(content => !manifestSnapshot.ContentFiles.ContainsKey(content.Id) && content.GetStatus() != ContentStatus.Deleted)
 					.Select(content => new ContentSnapshotListItem() { Name = content.Id, CurrentStatus = (int)ContentStatus.Deleted }));
+
+				
 				
 				return new ManifestSnapshotItem()
 				{
 					Name = Path.GetFileNameWithoutExtension(path),
 					Path = path,
-					Pid = manifestSnapshot.Pid,
+					ProjectData = manifestSnapshot.ProjectData,
+					Author = manifestSnapshot.Author,
 					ManifestId = manifestSnapshot.ManifestId,
 					SavedTimestamp = manifestSnapshot.SnapshotTimestamp,
-					Contents = contentSnapshotListItems.ToArray()
+					Contents = contentSnapshotListItems.ToArray(),
+					IsAutoSnapshot = manifestSnapshot.IsAutoSnapshot,
 				};
 			}
 			catch (Exception e)
@@ -128,10 +132,13 @@ public class ManifestSnapshotItem
 	public string Name;
 	public string Path;
 	public string ManifestId;
-	public string Pid;
+	public ManifestProjectData ProjectData;
 	public long SavedTimestamp;
+	public ManifestAuthor Author;
+	public bool IsAutoSnapshot;
 	public ContentSnapshotListItem[] Contents;
 }
+
 
 [CliContractType, Serializable]
 public class ContentSnapshotListItem

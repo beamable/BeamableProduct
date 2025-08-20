@@ -13,7 +13,7 @@ namespace Beamable.Editor.BeamCli.Commands
         /// <summary>Defines where the snapshot will be stored to.
         ///Local => Will save the snapshot under `.beamable/temp/content-snapshots` folder
         ///Shared => Will save the snapshot under `.beamable/content-snapshots` folder</summary>
-        public string snapshotType;
+        public Beamable.Common.BeamCli.Contracts.ContentSnapshotType snapshotType;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -30,7 +30,7 @@ namespace Beamable.Editor.BeamCli.Commands
                 genBeamCommandArgs.Add(("--name=" + this.name));
             }
             // If the snapshotType value was not default, then add it to the list of args.
-            if ((this.snapshotType != default(string)))
+            if ((this.snapshotType != default(Beamable.Common.BeamCli.Contracts.ContentSnapshotType)))
             {
                 genBeamCommandArgs.Add(("--snapshot-type=" + this.snapshotType));
             }

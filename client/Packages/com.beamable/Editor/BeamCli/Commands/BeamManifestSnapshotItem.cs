@@ -10,8 +10,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string Name;
         public string Path;
         public string ManifestId;
-        public string Pid;
+        public Beamable.Common.BeamCli.Contracts.ManifestProjectData ProjectData;
         public long SavedTimestamp;
+        public Beamable.Common.BeamCli.Contracts.ManifestAuthor Author;
+        public bool IsAutoSnapshot;
         public BeamContentSnapshotListItem[] Contents;
     }
 }
