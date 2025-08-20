@@ -150,15 +150,27 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 	public override async Task Handle(TArgs args)
 	{
-		var result = await GetResult(args);
-		if (result == null) return;
-
-		var reporter = args.Provider.GetService<IDataReporterService>();
-		reporter.Report(_channel.ChannelName, result);
-		
-		if (AutoLogOutput)
+		try
 		{
-			LogResult(result);
+			var result = await GetResult(args);
+			if (result == null) return;
+
+			var reporter = args.Provider.GetService<IDataReporterService>();
+			reporter.Report(_channel.ChannelName, result);
+		
+			if (AutoLogOutput)
+			{
+				LogResult(result);
+			}
+		}
+		catch (CliException cliException)
+		{
+			if (!cliException.GetType().GetGenericArguments().Any(t => t.IsAssignableTo(typeof(ErrorOutput))))
+			{
+				throw;
+			}
+
+			LogResult(cliException.GetPayload(cliException.NonZeroOrOneExitCode, ""));
 		}
 	}
 

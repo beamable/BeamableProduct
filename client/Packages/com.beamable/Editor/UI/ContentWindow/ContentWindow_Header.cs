@@ -170,6 +170,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ChangeToPublishMode();
 				}
 
+				if (BeamGUI.HeaderButton("Snapshot", BeamGUI.iconContentSnapshotWhite, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                         tooltip: "Manages content snapshots"))
+				{
+					ChangeToSnapshotManager();
+				}
+
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					EditorGUILayout.Space(5, false);
@@ -204,6 +210,15 @@ namespace Beamable.Editor.UI.ContentWindow
 			ChangeWindowStatus(ContentWindowStatus.Revert);
 			_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
 			_revertAction = RevertAllContents;
+		}
+		
+		private void ChangeToSnapshotManager()
+		{
+			AddDelayedAction(() =>
+			{
+				_ = CacheSnapshots();
+				ChangeWindowStatus(ContentWindowStatus.SnapshotManager);
+			});
 		}
 
 		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)

@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The directory where the generated code will be written</summary>
         public string outputDir;
-        /// <summary>The language of the generated code. Valid values are: `typescript` (default), `javascript`</summary>
+        /// <summary>The language of the generated code. Valid values are: `typescript` (default), `ts`, `javascript`, `js`</summary>
         public string lang;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

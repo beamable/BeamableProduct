@@ -46,6 +46,8 @@ namespace Beamable.Editor.Util
 		public static Texture iconRevertAction;
 		public static Texture iconStatusInvalid;
 		public static Texture iconContentEditorIcon;
+		public static Texture iconContentSnapshotColor;
+		public static Texture iconContentSnapshotWhite;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -312,6 +314,16 @@ namespace Beamable.Editor.Util
 			if (iconContentEditorIcon == null)
 			{
 				iconContentEditorIcon = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ItemFallback.png");
+			}
+			
+			if (iconContentSnapshotWhite == null)
+			{
+				iconContentSnapshotWhite = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconsWhite_ContentSnapshot.png");
+			}
+			
+			if (iconContentSnapshotColor == null)
+			{
+				iconContentSnapshotColor = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ContentSnapshot.png");
 			}
 		}
 	}

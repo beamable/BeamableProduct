@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Modules.Content;
 using System;
 using System.Linq;
@@ -64,6 +65,15 @@ namespace Beamable.Content
 		[Tooltip("This options is used for disable content download exceptions to allow manual repairs.")]
 		public bool DisableContentDownloadExceptions = false;
 
+		[Header("Content Snapshot")]
+		[Tooltip("This define what will be the AutoSnapshot types to be taken after publishing content from Unity.")]
+		public AutoSnapshotType OnPublishAutoSnapshotType = AutoSnapshotType.LocalOnly;
+
+		[Tooltip("This define the max stored local snapshot taken when auto creating snapshot during publish, when hit the desired value, the older one will be replaced by the new auto generated one")]
+		public OptionalInt MaxLocalAutoSnapshot;
+		
+			
+		
 		[Header("Content Editor")]
 		[Tooltip("This option will change the Max size of Content Items before showing it as a list.")]
 		public int MaxContentVisibleItems = 15;
