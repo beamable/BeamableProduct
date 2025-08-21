@@ -6,6 +6,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
+using Beamable.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Utility;
 using System;
@@ -53,6 +54,7 @@ namespace Beamable.Editor.ContentService
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
 		public BeamContentPsProgressMessage LatestProgressUpdate;
+		private readonly ContentConfiguration _contentConfiguration;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 		public int ManifestChangedCount { get; private set; }
@@ -76,7 +78,7 @@ namespace Beamable.Editor.ContentService
 
 		public List<string> TagsCache => _tagsCache;
 
-		public CliContentService(BeamCommands cli, BeamEditorContext beamContext, IDependencyProvider provider)
+		public CliContentService(BeamCommands cli, BeamEditorContext beamContext, IDependencyProvider provider, ContentConfiguration contentConfiguration)
 		{
 			_cli = cli;
 			_beamContext = beamContext;
@@ -85,6 +87,7 @@ namespace Beamable.Editor.ContentService
 			_contentScriptableCache = new();
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			_contentConfiguration = contentConfiguration;
 		}
 
 		
@@ -105,6 +108,58 @@ namespace Beamable.Editor.ContentService
 				contentProperties = new[] {contentPropertiesJson}
 			});
 			saveCommand.Run();
+		}
+		
+		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
+		{
+			TaskCompletionSource<BeamContentSnapshotListResult> taskWaiter = new TaskCompletionSource<BeamContentSnapshotListResult>();
+			var snapshotListWrapper = _cli.ContentSnapshotList(new ContentSnapshotListArgs()
+			{
+				manifestId = GetSelectedManifestIdCliOption()
+			});
+			snapshotListWrapper.OnStreamContentSnapshotListResult(report =>
+			{
+				taskWaiter.SetResult(report.data);
+			});
+			await snapshotListWrapper.Run();
+			return await taskWaiter.Task;
+		}
+
+		public async Promise RestoreSnapshot(string snapshotPath)
+		{
+			// Disable watcher when doing a restore
+			if (_contentWatcher != null)
+			{
+				_contentWatcher.Cancel();
+				_contentWatcher = null;
+			}
+
+			var restoreWrapper = _cli.ContentRestore(new ContentRestoreArgs() {manifestId = GetSelectedManifestIdCliOption(), name = snapshotPath, deleteAfterRestore = false});
+			
+			await restoreWrapper.Run();
+
+			// Re-enable watcher
+			await Reload();
+		}
+
+		public async Promise TakeSnapshot(string snapshotName, bool isLocal)
+		{
+			// Disable watcher when creating a snapshot to prevent changes on files during snapshot
+			if (_contentWatcher != null)
+			{
+				_contentWatcher.Cancel();
+				_contentWatcher = null;
+			}
+
+			var snapshotWrapper = _cli.ContentSnapshot(new ContentSnapshotArgs()
+			{
+				manifestId = GetSelectedManifestIdCliOption(), name = snapshotName, snapshotType = isLocal ? ContentSnapshotType.Local : ContentSnapshotType.Shared
+			});
+			
+			await snapshotWrapper.Run();
+			
+			// Re-enable watcher
+			await Reload();
 		}
 
 		public void TempDisableWatcher(Action withoutWatcher)
@@ -330,10 +385,16 @@ namespace Beamable.Editor.ContentService
 			
 			try
 			{
-				var publishCommand = _cli.ContentPublish(new ContentPublishArgs
+				var contentPublishArgs = new ContentPublishArgs
 				{
 					manifestIds = GetSelectedManifestIdsCliOption(),
-				});
+					autoSnapshotType = _contentConfiguration.OnPublishAutoSnapshotType
+				};
+				if (_contentConfiguration.MaxLocalAutoSnapshot.HasValue)
+				{
+					contentPublishArgs.maxLocalSnapshots = _contentConfiguration.MaxLocalAutoSnapshot.Value;
+				}
+				var publishCommand = _cli.ContentPublish(contentPublishArgs);
 				publishCommand.OnProgressStreamContentProgressUpdateData(report =>
 				{
 					HandleProgressUpdate(report.data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
@@ -355,10 +416,16 @@ namespace Beamable.Editor.ContentService
 
 		public async Task PublishContents()
 		{
-			var publishCommand = _cli.ContentPublish(new ContentPublishArgs
+			var contentPublishArgs = new ContentPublishArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption(),
-			});
+				autoSnapshotType = _contentConfiguration.OnPublishAutoSnapshotType
+			};
+			if (_contentConfiguration.MaxLocalAutoSnapshot.HasValue)
+			{
+				contentPublishArgs.maxLocalSnapshots = _contentConfiguration.MaxLocalAutoSnapshot.Value;
+			}
+			var publishCommand = _cli.ContentPublish(contentPublishArgs);
 			await publishCommand.Run();
 		}
 
@@ -630,6 +697,11 @@ namespace Beamable.Editor.ContentService
 			}
 			// perhaps if the manifestIdOverride was "global", we don't need to specify it, because that is the default anyway.
 			return new string[] {manifestIdOverride};
+		}
+
+		public string GetSelectedManifestIdCliOption()
+		{
+			return string.IsNullOrEmpty(manifestIdOverride) ? null : manifestIdOverride;
 		}
 
 		private void AddContentToCache(LocalContentManifestEntry entry)

@@ -29,11 +29,10 @@ that define the types of functions that they require.
 3. `IFederatedGameServer`
 4. `IFederatedPlayerInit`
 
-A Microservice supports these federations when both of the following requirements are true.
-1. The `Microservice` class includes the associated federation interface.
-2. The Microservice's local `federations.json` file includes information about the federation. 
+A Microservice supports these federations when The `Microservice` class includes the associated federation interface
 
-Starting with the first constraint, take the example below, a service that federates login functionality may have a class signature like the following.
+
+A service that federates login functionality may have a class signature like the following.
 
 ```csharp
 public partial class ExampleService : IFederatedLogin<MySample> 
@@ -48,28 +47,11 @@ The `MySample` class included as the generic type in the `IFederatedLogin` inter
 [FederationId("myId")]
 public class MySample : IFederationId { }
 ```
-
-The second constraint refers to the configuration file, `federations.json`. This file must specify that the `ExampleService` class federates `IFederatedLogin` with the unique name `"myId"`. If this is not true, then the Microservice should receive a compile error. 
-
-> 📘 Make sure you have the source generator!
->
-> The compile error that ensures the `federations.json` file is in-sync with the C# code comes from a custom source generator. If your files are out of date, and you are not getting compile errors, make sure your `.csproj` file has the `<PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />` reference.
-
-If the `federations.json` file is not accurate, you should see an error like this when attempting to compile or run the service. 
-
-```sh
-Error BEAM_FED_O001 : Missing declared Federation in MicroserviceFederationsConfig. Microservice=ExampleService, Id=myId, Interface=IFederatedLogin. Please add this Id by running `dotnet beam fed add MyExample myId IFederatedLogin` from your project's root directory. Or remove the IFederatedLogin that references myId  interface from the ExampleService Microservice class.
-```
-
-You should use the CLI to set the `federations.json` file, and it should look like the following, 
-
-```json
-{"federations":{"myId":[{"interface":"IFederatedLogin"}]}}
-```
 ---
+
 ## CLI Commands
 
-The CLI offers a few commands to enable and disable federations for a service. The `beam fed` command suite allows you to read and write federation data. None of the commands will modify your C# source files, so you must always make sure the class signature of the `Microservice` aligns with the `federations.json` file. 
+The CLI offers a few commands to enable and disable federations for a service. The `beam fed` command suite allows you to read and write federation data. None of the commands will modify your C# source files. 
 
 The `beam fed list` command will show all federations for all services. 
 ```sh
@@ -90,76 +72,9 @@ dotnet beam fed list
             
 ```
 
-The `beam fed add` and `beam fed remove` commands will modify the `federations.json` file one service and federation at a time. If you need to set all the federations at once, use the `beam fed set` command.
-
 ---
 
 ## Possible Issues and Solutions
-
-### Missing declared Federation in MicroserviceFederationsConfig
-
-**Example Code Triggering the Error**:
-```csharp
-[FederationId("MyFederation")]
-public class MyFederation : IFederationId {}
-
-public partial class MyMicroservice : Microservice, IFederatedInventory<MyFederation> {}
-```
-
-**Example Config Triggering the Error**:
-```json
-{
-  "federations": {}
-}
-```
-
-**Example Error Message**:
-```
-Missing declared Federation in MicroserviceFederationsConfig. Microservice=MyMicroservice, Id=MyFederation, Interface=IFederatedInventory.
-```
-
-**Solutions**:
-- Add the federation via CLI:
-  ```
-  dotnet beam fed add MyMicroservice MyFederation IFederatedInventory
-  ```
-- Or remove the `IFederatedInventory` interface reference from the `MyMicroservice` Microservice class.
-
----
-
-### MicroserviceFederationsConfig contains Federations that do not exist in code
-
-**Example Code Triggering the Error**:
-```csharp
-public partial class MyMicroservice : Microservice {}
-```
-
-**Example Config Triggering the Error**:
-```json
-{
-  "federations": {
-    "MyFederation": [
-      {
-        "interface": "IFederatedInventory"
-      }
-    ]
-  }
-}
-```
-
-**Example Error Message**:
-```
-You have configured federation, but the Microservice does not implement the required interface. Microservice=MyMicroservice, Id=MyFederation, Interface=IFederatedInventory.
-```
-
-**Solutions**:
-- Remove the federation via CLI:
-  ```
-  dotnet beam fed remove MyMicroservice MyFederation IFederatedInventory
-  ```
-- Or add the `IFederatedInventory` interface to the `MyMicroservice` Microservice class.
-
----
 
 ### Invalid Federation Id detected
 
@@ -222,37 +137,3 @@ The following IFederationId must be annotated with a FederationIdAttribute with 
   ```
 
 ---
-
-### Invalid Federation Id detected on Config File
-
-**Example Config Triggering the Error**:
-```json
-{
-  "federations": {
-    "123-MyFederation": [
-      {
-        "interface": "IFederatedInventory"
-      }
-    ]
-  }
-}
-```
-
-**Example Message**:
-```
-The following IFederationId is invalid. They must: Start with a letter. Contain only alphanumeric characters and/or `_`. Id=123-MyFederation.
-```
-
-**Solutions**:
-- Edit your `federations.json` file to ensure the ID is valid:
-  ```json
-  {
-    "federations": {
-      "MyFederation": [
-        {
-          "interface": "IFederatedInventory"
-        }
-      ]
-    }
-  }
-  ```

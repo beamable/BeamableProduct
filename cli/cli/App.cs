@@ -551,9 +551,6 @@ public class App
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
 		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<AddFederationCommand, AddFederationCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<SetAllFederationsCommand, SetAllFederationsCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<RemoveFederationCommand, RemoveFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();
@@ -698,6 +695,9 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentListManifestsCommand, ContentListManifestsCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentCreateLocalManifestCommand, ContentCreateLocalManifestCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentArchiveManifestCommand, ContentArchiveManifestCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
