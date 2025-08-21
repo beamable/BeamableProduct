@@ -353,6 +353,7 @@ export class ContentService
 
     contentData['uri'] = contentEntry.uri;
     contentData['tags'] = contentEntry.tags;
+    contentData['createdAt'] = contentEntry.createdAt;
 
     // Cache the fetched content
     const contentDataWithChecksum = {

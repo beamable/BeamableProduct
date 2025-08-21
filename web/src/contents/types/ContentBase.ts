@@ -7,5 +7,6 @@ export interface ContentBase<T = unknown> {
   version: string;
   uri: string;
   tags: string[];
+  createdAt?: bigint | string;
   properties: T;
 }
