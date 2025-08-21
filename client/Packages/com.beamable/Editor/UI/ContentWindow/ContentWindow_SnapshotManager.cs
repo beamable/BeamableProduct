@@ -117,8 +117,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(BASE_PADDING, false);
 			EditorGUILayout.EndHorizontal();
 			
-			
-			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
+			var minWidth = Mathf.Min(biggerNameSize, snapshotListAreaWidth);
+			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -135,7 +135,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawSnapshotsList(_localSnapshots.Values.ToList(), ContentSnapshotType.Local, true);
 			}
 
-			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight));
+			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			

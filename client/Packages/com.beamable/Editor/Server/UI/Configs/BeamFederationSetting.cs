@@ -98,9 +98,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				var linkStyle = new GUIStyle(EditorStyles.linkLabel)
 				{
 					richText = true, 
-					margin = new RectOffset(indentWidth * (EditorGUI.indentLevel + 1), 0,0,0)
+					margin = new RectOffset(indentWidth * (EditorGUI.indentLevel + 1), 0,0,0),
+					alignment = TextAnchor.MiddleLeft,
 				};
-				if (BeamGUI.LinkButton(new GUIContent("<b>Create-<Federation Id</b>"), linkStyle))
+				if (BeamGUI.LinkButton(new GUIContent("<b>Create->Federation Id</b>"), linkStyle))
 				{
 					var usamWindow = EditorWindow.GetWindow<UsamWindow>();
 					if(usamWindow == null)
