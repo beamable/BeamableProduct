@@ -12,21 +12,6 @@ type ExtractPrefixes<T extends string> =
     ? Rest extends `${string}.${string}`
       ? `${Prefix}.${ExtractPrefixes<Rest>}`
       : Prefix
-    : never;
-
-/**
- * Finds the best-matching type for an ID in `ContentTypeMap`.
- * The logic is:
- * 1. Check for an exact ID match.
- * 2. If not found, check for the immediate parent ID (e.g., `items.shield` for `items.shield.wooden`).
- * 3. If neither is found, fallback to `ContentBase`.
- */
-type FindBestMatch<Id extends string> = Id extends keyof ContentTypeMap
-  ? ContentTypeMap[Id]
-  : ExtractPrefixes<Id> extends infer Prefixes
-    ? Prefixes extends keyof ContentTypeMap
-      ? ContentTypeMap[Prefixes]
-      : ContentBase
     : ContentBase;
 
 /**
@@ -52,4 +37,11 @@ type FindBestMatch<Id extends string> = Id extends keyof ContentTypeMap
  * type T4 = ContentTypeFromId<"unknown.type">; // -> ContentBase
  * ```
  */
-export type ContentTypeFromId<Id extends string> = FindBestMatch<Id>;
+export type ContentTypeFromId<Id extends string> =
+  Id extends keyof ContentTypeMap
+    ? ContentTypeMap[Id]
+    : ExtractPrefixes<Id> extends infer Prefixes
+      ? Prefixes extends keyof ContentTypeMap
+        ? ContentTypeMap[Prefixes]
+        : ContentBase
+      : ContentBase;

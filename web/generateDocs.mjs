@@ -64,6 +64,7 @@ async function generateDocs() {
       --out ${outDir} \
       --tsconfig ${tsconfig} \
       --plugin typedoc-github-theme \
+      --intentionallyNotExported ExtractPrefixes \
       --exclude [${excludePatterns}] \
       --excludePrivate \
       --excludeProtected \

@@ -1,6 +1,7 @@
 import type { TokenResponse } from '@/__generated__/schemas';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 import type { RefreshableServiceMap } from '@/core/types';
+import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 
 /** Saves the access token, refresh token, and expiration time from a token response to the token storage. */
 export async function saveToken(
@@ -18,7 +19,7 @@ export async function saveToken(
 export function parseSocketMessage<K extends keyof RefreshableServiceMap>(
   rawMessage: string,
 ): RefreshableServiceMap[K] {
-  const parsed = JSON.parse(rawMessage);
+  const parsed = JSON.parse(rawMessage, BeamJsonUtils.reviver);
 
   const { scopes, delay, ...rest } = parsed;
 

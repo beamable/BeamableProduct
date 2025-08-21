@@ -21,13 +21,25 @@ interface CachedContentData {
 export interface ContentManifestChecksum {
   id: string;
   checksum: string;
+  created: bigint | string;
   uid?: string;
+}
+
+export interface GetManifestEntriesParams {
+  /** Optional manifest ID to fetch specific content, defaults to 'global' */
+  manifestId?: string;
 }
 
 export interface GetContentByIdParams<T extends string = string> {
   /** Optional manifest ID to fetch specific content, defaults to 'global' */
   manifestId?: string;
   id: T;
+}
+
+export interface GetContentByIdsParams {
+  /** Optional manifest ID to fetch specific content, defaults to 'global' */
+  manifestId?: string;
+  ids: string[];
 }
 
 export interface GetContentByTypeParams<T extends keyof ContentTypeMap> {
@@ -45,14 +57,18 @@ export class ContentService
   extends ApiService
   implements RefreshableService<ContentManifestChecksum>
 {
-  private readonly contentStoragePromise: Promise<ContentStorage>;
-  private static contentCache: Record<string, ContentBase> = {};
-  private static manifestChecksumsCache: Record<
+  private static _contentsCache: Record<string, Record<string, ContentBase>> =
+    {};
+  private static _manifestChecksumsCache: Record<
     string,
     ContentManifestChecksum
   > = {};
-  private static manifestEntriesCache: Record<string, ClientContentInfoJson[]> =
-    {};
+  private static _manifestEntriesCache: Record<
+    string,
+    ClientContentInfoJson[]
+  > = {};
+
+  private readonly contentStoragePromise: Promise<ContentStorage>;
 
   constructor(props: ApiServiceProps) {
     super(props);
@@ -62,6 +78,21 @@ export class ContentService
   /** @internal */
   get serviceName(): string {
     return 'content';
+  }
+
+  /** Retrieves the contents cache. */
+  get contentsCache(): Record<string, Record<string, ContentBase>> {
+    return ContentService._contentsCache;
+  }
+
+  /** Retrieves the manifest checksums cache. */
+  get manifestChecksumsCache(): Record<string, ContentManifestChecksum> {
+    return ContentService._manifestChecksumsCache;
+  }
+
+  /** Retrieves the manifest entries cache. */
+  get manifestEntriesCache(): Record<string, ClientContentInfoJson[]> {
+    return ContentService._manifestEntriesCache;
   }
 
   /**
@@ -81,7 +112,37 @@ export class ContentService
     data: ContentManifestChecksum,
   ): Promise<ContentManifestChecksum> {
     await this.fetchAndCacheManifestEntries(data.id, data);
-    return data;
+    return {
+      id: data.id,
+      checksum: data.checksum,
+      created: data.created,
+      uid: data.uid,
+    };
+  }
+
+  /**
+   * Retrieves all manifest entries for a given manifest ID.
+   * @remarks This method first checks the in-memory cache, then persistent storage, and finally fetches from the API if not found.
+   * @example
+   * ```ts
+   * const entries = await beam.content.getManifestEntries({
+   *   manifestId: 'global', // Optional, defaults to 'global'
+   * });
+   * console.log(entries[0].contentId);
+   * ```
+   * @returns An array of manifest entries.
+   */
+  async getManifestEntries(
+    params: GetManifestEntriesParams = {},
+  ): Promise<ClientContentInfoJson[]> {
+    const { manifestId = 'global' } = params;
+    const manifestEntriesKey = this.getManifestEntriesKey(manifestId);
+    const contentStorage = await this.contentStoragePromise;
+    return (
+      ContentService._manifestEntriesCache[manifestId] ??
+      (await contentStorage.get<ClientContentInfoJson[]>(manifestEntriesKey)) ??
+      (await this.fetchAndCacheManifestEntries(manifestId))
+    );
   }
 
   /**
@@ -105,6 +166,32 @@ export class ContentService
     // Get the content's manifest entry (from cache or storage or API).
     const contentEntry = await this.getContentEntryFromManifest(manifestId, id);
     return this.getContentDataByEntry(manifestId, contentEntry);
+  }
+
+  /**
+   * Retrieves group of contents by their IDs.
+   * @remarks This method first checks the in-memory cache, then persistent storage, and finally fetches from the API if not found or if the content is outdated.
+   * @example
+   * ```ts
+   * const items = await beam.content.getByIds({
+   *   ids: ['items.my_item_1', 'items.my_item_2'],
+   *   manifestId: 'global', // Optional, defaults to 'global'
+   * });
+   * console.log(items[0].properties);
+   * ```
+   * @returns An array of content objects.
+   * @throws {BeamError} If any content is not found or cannot be retrieved.
+   */
+  async getByIds(params: GetContentByIdsParams): Promise<ContentBase[]> {
+    const { ids, manifestId = 'global' } = params;
+    const contentEntries = await Promise.all(
+      ids.map((id) => this.getContentEntryFromManifest(manifestId, id)),
+    );
+    return Promise.all(
+      contentEntries.map((entry) =>
+        this.getContentDataByEntry(manifestId, entry),
+      ),
+    );
   }
 
   /**
@@ -137,47 +224,6 @@ export class ContentService
     );
   }
 
-  /** Retrieves content data from a manifest entry, using cache or fetching as needed. */
-  private async getContentDataByEntry<T extends string>(
-    manifestId: string,
-    contentEntry: ClientContentInfoJson,
-  ): Promise<ContentTypeFromId<T>> {
-    if (!contentEntry.uri) {
-      throw new BeamError(
-        `Content entry for ID ${contentEntry.contentId} does not have a valid URI.`,
-      );
-    }
-
-    // Check in-memory cache first for immediate access
-    const inMemoryKey = `${manifestId}:${contentEntry.contentId}`;
-    if (ContentService.contentCache[inMemoryKey]) {
-      return ContentService.contentCache[inMemoryKey] as ContentTypeFromId<T>;
-    }
-
-    // Check the persistent storage for content matching the checksum.
-    const contentKey = this.getContentKey(inMemoryKey);
-    const contentStorage = await this.contentStoragePromise;
-    const contentEntryChecksum = contentEntry.checksum;
-
-    const cachedContentData =
-      (await contentStorage.get<CachedContentData>(contentKey)) ?? {};
-
-    if (contentEntryChecksum && cachedContentData[contentEntryChecksum]) {
-      const contentData = cachedContentData[contentEntryChecksum];
-      // Cache hit. Populate the in-memory cache and return the content.
-      ContentService.contentCache[inMemoryKey] = contentData;
-      return contentData as ContentTypeFromId<T>;
-    }
-
-    // Cache miss. Fetch from URI, cache the result, and return it.
-    return this.fetchAndCacheContentData(
-      manifestId,
-      contentEntry.contentId as T,
-      contentEntry.uri,
-      contentEntryChecksum,
-    );
-  }
-
   /** Retrieves a content entry from the manifest, fetching from the API if not cached. */
   private async getContentEntryFromManifest(
     manifestId: string,
@@ -187,9 +233,9 @@ export class ContentService
     const contentStorage = await this.contentStoragePromise;
     // Check in-memory cache first, then storage
     const cachedManifestEntries =
-      ContentService.manifestEntriesCache[manifestId] ??
+      ContentService._manifestEntriesCache[manifestId] ??
       (await contentStorage.get<ClientContentInfoJson[]>(manifestEntriesKey)) ??
-      [];
+      (await this.fetchAndCacheManifestEntries(manifestId));
 
     let contentEntry = cachedManifestEntries.find(
       (entry) => entry.contentId === contentId,
@@ -224,7 +270,7 @@ export class ContentService
     const contentStorage = await this.contentStoragePromise;
     // Check in-memory cache first, then storage
     const manifestEntries =
-      ContentService.manifestEntriesCache[manifestId] ??
+      ContentService._manifestEntriesCache[manifestId] ??
       (await contentStorage.get<ClientContentInfoJson[]>(manifestEntriesKey)) ??
       [];
 
@@ -233,11 +279,59 @@ export class ContentService
     );
   }
 
+  /** Retrieves content data from a manifest entry, using cache or fetching as needed. */
+  private async getContentDataByEntry<T extends string>(
+    manifestId: string,
+    contentEntry: ClientContentInfoJson,
+  ): Promise<ContentTypeFromId<T>> {
+    if (!contentEntry.uri) {
+      throw new BeamError(
+        `Content entry for ID ${contentEntry.contentId} does not have a valid URI.`,
+      );
+    }
+
+    const contentEntryChecksum = contentEntry.checksum;
+    // Check in-memory cache first for immediate access
+    const inMemoryKey = `${manifestId}:${contentEntry.contentId}`;
+    if (
+      contentEntryChecksum &&
+      ContentService._contentsCache[inMemoryKey]?.[contentEntryChecksum]
+    ) {
+      return ContentService._contentsCache[inMemoryKey][
+        contentEntryChecksum
+      ] as ContentTypeFromId<T>;
+    }
+
+    // Check the persistent storage for content matching the checksum.
+    const contentKey = this.getContentKey(inMemoryKey);
+    const contentStorage = await this.contentStoragePromise;
+
+    const cachedContentData =
+      (await contentStorage.get<CachedContentData>(contentKey)) ?? {};
+
+    if (contentEntryChecksum && cachedContentData[contentEntryChecksum]) {
+      const contentData = cachedContentData[contentEntryChecksum];
+      // Cache hit. Populate the in-memory cache and return the content.
+      ContentService._contentsCache[inMemoryKey] = {
+        [contentEntryChecksum]: contentData,
+      };
+      return contentData as ContentTypeFromId<T>;
+    }
+
+    // Cache miss. Fetch from URI, cache the result, and return it.
+    return this.fetchAndCacheContentData(
+      manifestId,
+      contentEntry.contentId as T,
+      contentEntry,
+      contentEntryChecksum,
+    );
+  }
+
   /** Fetches content data from a URI, validates it, and caches it. */
   private async fetchAndCacheContentData<T extends string>(
     manifestId: string,
     id: T,
-    uri: string,
+    contentEntry: ClientContentInfoJson,
     contentChecksum: string | undefined,
   ): Promise<ContentTypeFromId<T>> {
     const contentKey = this.getContentKey(`${manifestId}:${id}`);
@@ -247,7 +341,7 @@ export class ContentService
     const { body: contentData } = await this.requester.request<
       ContentTypeFromId<T>
     >({
-      url: uri,
+      url: contentEntry.uri,
       withAuth: true,
     });
 
@@ -257,11 +351,19 @@ export class ContentService
       );
     }
 
+    contentData['uri'] = contentEntry.uri;
+    contentData['tags'] = contentEntry.tags;
+
     // Cache the fetched content
-    ContentService.contentCache[`${manifestId}:${id}`] = contentData;
-    await contentStorage.set<CachedContentData>(contentKey, {
+    const contentDataWithChecksum = {
       [contentChecksum ?? 'no-checksum']: contentData,
-    });
+    };
+    ContentService._contentsCache[`${manifestId}:${id}`] =
+      contentDataWithChecksum;
+    await contentStorage.set<CachedContentData>(
+      contentKey,
+      contentDataWithChecksum,
+    );
 
     return contentData as ContentTypeFromId<T>;
   }
@@ -318,19 +420,21 @@ export class ContentService
         await this.fetchAndCacheManifestEntries(manifestId, {
           id: latestChecksum.id,
           checksum: latestChecksum.checksum,
+          created: latestChecksum.createdAt,
           uid: latestChecksum.uid,
         });
         return;
       }
 
       // Manifest entries found in storage. Load them into the in-memory cache.
-      ContentService.manifestChecksumsCache[manifestId] = cachedChecksum;
-      ContentService.manifestEntriesCache[manifestId] = manifestEntries;
+      ContentService._manifestChecksumsCache[manifestId] = cachedChecksum;
+      ContentService._manifestEntriesCache[manifestId] = manifestEntries;
     } else {
       // Checksums differ. Fetch the manifest entries from the API and cache it.
       await this.fetchAndCacheManifestEntries(manifestId, {
         id: latestChecksum.id,
         checksum: latestChecksum.checksum,
+        created: latestChecksum.createdAt,
         uid: latestChecksum.uid,
       });
     }
@@ -351,9 +455,9 @@ export class ContentService
     const manifestEntries = body.entries ?? [];
 
     // in-memory cache
-    ContentService.manifestEntriesCache[manifestId] = manifestEntries;
+    ContentService._manifestEntriesCache[manifestId] = manifestEntries;
     if (manifestChecksum) {
-      ContentService.manifestChecksumsCache[manifestId] = manifestChecksum;
+      ContentService._manifestChecksumsCache[manifestId] = manifestChecksum;
     }
 
     // persist to storage
