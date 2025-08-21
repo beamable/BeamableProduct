@@ -8,7 +8,7 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 {
 	private ContentService _contentService;
 	
-	public ContentRestoreCommand() : base("restore", "Restore content data based on a local snapshot, remote manifest ID or manifest file.")
+	public ContentRestoreCommand() : base("restore", "Restore content data based on a local snapshot, remote manifest ID or manifest file")
 	{
 	}
 
@@ -18,7 +18,7 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 		AddOption(new Option<string>("--name", () => "",
 				"Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots' than from the local only under '.beamable/temp/content-snapshots'. If a path is passed, it is going to try get the json file from the path"),
 			(args, s) => args.SnapshotNameOrPath = s, new[] { "-n" });
-		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring."), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
+		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring"), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
 	}
 
 	public override async Task<ContentRestoreResult> GetResult(ContentRestoreCommandArgs args)
