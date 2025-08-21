@@ -429,12 +429,11 @@ public class ConfigService
 		}
 	}
 
-	public void GetProjectSearchPaths(out string rootPath, out List<string> searchPaths)
+	public void GetProjectSearchPaths(out List<string> searchPaths)
 	{
 		searchPaths = new List<string>();
-		rootPath = GetProjectRootPath();
+		var rootPath = GetProjectRootPath();
 		var extraPaths = GetExtraProjectPaths();
-
 		if (string.IsNullOrEmpty(rootPath))
 		{
 			rootPath = ".";

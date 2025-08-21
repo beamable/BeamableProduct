@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.4.0]
 ### Added
 - Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
 - `beam content snapshot` command creates a new snapshot based on your local contents.
@@ -16,15 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Changed how `beam fed list` finds the implemented federations. Now `federation.json` is obsolete and replaced by the OpenApi specifications. 
+- Changed how federations are detected. Federation.json is not needed anymore, instead the federations are found by openApi specs.
+- Removed CodeAnalyzers and CodeFixers that were validating federation from Federation.json
+
+### Fixed
+- Projects using the `project-root-path.json` file can now use `beam services run` again, [4323](https://github.com/beamable/BeamableProduct/issues/4232)
 
 ### Removed
 - `beam fed add` Command as it isn't being used anymore
 - `beam fed remove` Command as it isn't being used anymore
 - `beam fed set` Command as it isn't being used anymore
-
-### Changed
-- Changed how federations are detected. Federation.json is not needed anymore, instead the federations are found by openApi specs.
-- Removed CodeAnalyzers and CodeFixers that were validating federation from Federation.json
 
 ## [5.3.1] - 2025-08-06
 ### Fixed
