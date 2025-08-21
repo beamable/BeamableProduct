@@ -119,3 +119,107 @@ public class DockerPathOption : Option<string>
 	}
 
 }
+
+
+public class JavaPathOption : Option<string>
+{
+	public static readonly JavaPathOption Instance = new JavaPathOption();
+	private JavaPathOption() : base(
+		name: "--java-path", 
+		description: "a custom location for java 8. By default, the CLI will attempt to resolve" +
+		             $" java through its usual install locations. You can also use the {ConfigService.ENV_VAR_JAVA_EXE} " +
+		             "environment variable to specify. ")
+	{
+		if (TryGetJavaPath(out var dockerPath, out _))
+		{
+			Description += "\nCurrently, a java path has been automatically identified.";
+			SetDefaultValue(dockerPath);
+		}
+		else
+		{
+			if (!string.IsNullOrEmpty(ConfigService.CustomJavaExe))
+			{
+				SetDefaultValue(ConfigService.CustomJavaExe);
+			}
+			Description += "\nCurrently, no java path is available, and you must set this option to use docker CLI.";
+		}
+	}
+	
+	
+	public static bool TryGetJavaPath(out string javaPath, out string errorMessage)
+	{
+		javaPath = ConfigService.CustomJavaExe;
+		errorMessage = null;
+		if (!string.IsNullOrEmpty(javaPath))
+		{
+			// the path is specified, so we must use it.
+			if (!TryValidateJavaExec(javaPath, out var message))
+			{
+				errorMessage = $"specified java path via {ConfigService.ENV_VAR_JAVA_EXE} env var, but {message}";
+				return false;
+			}
+
+			return true;
+		}
+
+		var paths = new string[]
+		{
+			"java", // hopefully its just on the PATH
+			// TODO: come up with common folders where java lives when installed
+		};
+		foreach (var path in paths)
+		{
+			if (!TryValidateJavaExec(path, out _))
+				continue;
+
+			javaPath = path;
+			return true; // yahoo!
+		}
+
+		errorMessage =
+			$"java executable not found using common paths. Please specify with {ConfigService.ENV_VAR_JAVA_EXE} env var";
+		return false;
+
+	}
+	
+	
+	public static bool TryValidateJavaExec(string candidatePath, out string message)
+	{
+		message = null;
+		Log.Verbose($"testing java candidate=[{candidatePath}]");
+
+		var command = CliWrap.Cli
+			.Wrap(candidatePath)
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(x =>
+			{
+				Log.Verbose($"java-version-check-stdout=[{x}]");
+			}))
+			.WithStandardErrorPipe(PipeTarget.ToDelegate(x =>
+			{
+				Log.Verbose($"java-version-check-stderr=[{x}]");
+			}))
+			.WithArguments("-version")
+			.WithValidation(CommandResultValidation.None);
+
+		try
+		{
+			var res = command.ExecuteAsync();
+			res.Task.Wait();
+			var success = res.Task.Result.ExitCode == 0;
+			if (!success)
+			{
+				message = $"given path=[{candidatePath}] is not a valid java executable";
+				return false;
+			}
+
+			Log.Verbose($"found java path=[{candidatePath}]");
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log.Verbose($"given path=[{candidatePath}] was not able to invoke java, and threw an error=[{ex.Message}]");
+			return false;
+		}
+	}
+
+}
