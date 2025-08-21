@@ -23,7 +23,7 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 		    $"\n{nameof(AutoSnapshotType.Both)} => Will save two snapshots, under local and shared folders"), 
 			(args, t) => args.SnapshotType = t);
 		AddOption(new Option<int>("--max-local-snapshots", () => 20, 
-			"Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot."),
+			"Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot"),
 			(args, value) => args.MaxLocalSnapshot = value);
 	}
 
