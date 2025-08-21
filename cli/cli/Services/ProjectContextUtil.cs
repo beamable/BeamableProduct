@@ -73,7 +73,7 @@ public static class ProjectContextUtil
 			remote = await _existingManifest;
 		}
 
-		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
+		configService.GetProjectSearchPaths(out var searchPaths);
 		var pathsToIgnore = configService.LoadPathsToIgnoreFromFile();
 		var sw = new Stopwatch();
 		sw.Start();
@@ -82,7 +82,7 @@ public static class ProjectContextUtil
 		{
 			ignoreIds.Add(id);
 		}
-		var allProjects = FindCsharpProjects(rootFolder, searchPaths, pathsToIgnore).ToArray();
+		var allProjects = FindCsharpProjects(configService.BaseDirectory, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
