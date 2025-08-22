@@ -201,11 +201,18 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	private MicroserviceInfo? ValidateMicroservice(SymbolAnalysisContext symbolContext)
 	{
+		const string MicroserviceClassName = "Beamable.Server.Microservice";
 		try
 		{
 			var namedSymbol = (INamedTypeSymbol)symbolContext.Symbol;
+			var allBaseClasses = namedSymbol.GetAllBaseTypes();
+			symbolContext.ReportDiagnostic(Diagnostics.GetVerbose(nameof(ValidateMicroservice),
+				$"Class {namedSymbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat)} has the following base classes {string.Join(", ", allBaseClasses)}",
+				namedSymbol.Locations.First(),
+				symbolContext.Compilation));
+			
 
-			if (namedSymbol.TypeKind != TypeKind.Class || namedSymbol.BaseType is not { Name: nameof(Server.Microservice) })
+			if (namedSymbol.TypeKind != TypeKind.Class || !allBaseClasses.Any(name => name.StartsWith(MicroserviceClassName, StringComparison.OrdinalIgnoreCase)))
 			{
 				return null;
 			}
