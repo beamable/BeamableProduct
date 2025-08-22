@@ -6,6 +6,7 @@ public static class Constants
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_LOCAL_OVERRIDES_DIRECTORY = $"{TEMP_FOLDER}/overrides";
 	public const string CONTENT_DIRECTORY = "content";
+	public const string CONTENT_SNAPSHOTS_DIRECTORY = "content-snapshots";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
 	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
 	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
@@ -33,6 +34,12 @@ public static class Constants
 	public const int CMD_RESULT_CONFIG_RESOLUTION_CONFLICT = 701;
 
 	public const string TEMP_FOLDER = "temp";
+
+	public const string TEMP_OTEL_FOLDER = "otel";
+
+	public const string TEMP_OTEL_LOGS_FOLDER = "logs";
+	public const string TEMP_OTEL_METRICS_FOLDER = "metrics";
+	public const string TEMP_OTEL_TRACES_FOLDER = "traces";
 
 	public static readonly string[] TEMP_FILES = new[]
 	{

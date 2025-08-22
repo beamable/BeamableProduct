@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string interfaceName;
         public string federationId;
+        public string federationClassName;
     }
 }

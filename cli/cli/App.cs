@@ -9,6 +9,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using Beamable.Common.Util;
+using beamable.otel.exporter;
 using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
@@ -59,6 +60,7 @@ using cli.OtelCommands.Grafana;
 using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -137,7 +139,11 @@ public class App
 					opts.IncludeScopes = true;
 					
 					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
-					opts.AddOtlpExporter();
+					opts.AddFileExporter(opts =>
+					{
+						var configPath = provider.GetService<ConfigService>().ConfigTempOtelLogsDirectoryPath;
+						opts.ExportPath = configPath ?? ".";
+					});
 				});
 			}
 
@@ -268,11 +274,17 @@ public class App
 						opts.RecordException = true;
 					})
 					.AddSource(Otel.METER_CLI_NAME)
-					.AddOtlpExporter()
+					.AddFileExporter(opt =>
+					{
+						var path = p.GetService<ConfigService>().ConfigTempOtelTracesDirectoryPath;
+						opt.ExportPath = path ?? ".";
+					})
 					.Build();
+
 			}
 			return null;
 		});
+
 		services.AddSingleton<MeterProvider>(p =>
 		{
 			var resourceBuilder = p.GetService<ResourceBuilder>();
@@ -283,7 +295,11 @@ public class App
 					.AddRuntimeInstrumentation()
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation()
-					.AddOtlpExporter()
+					.AddFileExporter(opts =>
+					{
+						var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
+						opts.ExportPath = path ?? ".";
+					})
 					.Build();
 			}
 
@@ -456,11 +472,16 @@ public class App
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 
-		Commands.AddRootCommand<CollectorCommand>();
-		Commands.AddSubCommand<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
-		Commands.AddSubCommand<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
+		Commands.AddRootCommand<OtelCommand>();
+		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
+
+		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
+		Commands.AddSubCommandWithHandler<StopCollectorCommand, StopCollectorCommandArgs, CollectorCommand>();
+
+		Commands.AddSubCommandWithHandler<CollectorStatusCommand, CollectorStatusCommandArgs, CollectorCommand>();
+		Commands.AddSubCommandWithHandler<DownloadCollectorCommand, DownloadCollectorCommandArgs, CollectorCommand>();
 		
 		Commands.AddRootCommand<GrafanaCommand>();
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
@@ -527,9 +548,6 @@ public class App
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
 		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<AddFederationCommand, AddFederationCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<SetAllFederationsCommand, SetAllFederationsCommandArgs, FederationCommand>();
-		Commands.AddSubCommand<RemoveFederationCommand, RemoveFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();
@@ -662,6 +680,9 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentListManifestsCommand, ContentListManifestsCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentCreateLocalManifestCommand, ContentCreateLocalManifestCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentArchiveManifestCommand, ContentArchiveManifestCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
@@ -1017,6 +1038,24 @@ public class App
 				{
 					BeamableZLoggerProvider.LogContext.Value.LogWarning("The following log was received while the internal logger was switching.");
 					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
+				}
+			}
+
+			//in case otel is enabled, check if otel data stored in files is too large
+			if (Otel.CliTracesEnabled())
+			{
+				var otelDirectory = provider.GetService<ConfigService>().ConfigTempOtelDirectoryPath;
+
+				if (Directory.Exists(otelDirectory))
+				{
+					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
+
+					if (dirResult.Size >= Otel.MAX_OTEL_TEMP_DIR_SIZE)
+					{
+						Log.Warning($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
+						            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
+						Log.Warning($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
+					}
 				}
 			}
 			
