@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Projects using the `project-root-path.json` file can now use `beam services run` again, [4323](https://github.com/beamable/BeamableProduct/issues/4232)
+- Announcements deserialization issue which weren't correctly deserializing Announcements gift [4228](https://github.com/beamable/BeamableProduct/issues/4228)
 
 ### Removed
 - `beam fed add` Command as it isn't being used anymore
