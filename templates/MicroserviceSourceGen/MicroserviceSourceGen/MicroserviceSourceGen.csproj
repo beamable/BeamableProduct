@@ -68,6 +68,10 @@
               Visible="false" />
         
     </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="Fixers\FederationMissingFromCodeFixer.cs" />
+    </ItemGroup>
 
     <PropertyGroup>
         <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>

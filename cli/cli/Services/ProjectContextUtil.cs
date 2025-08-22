@@ -9,9 +9,10 @@ using CliWrap;
 using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
 using microservice.Extensions;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Readers;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using ServiceConstants = Beamable.Common.Constants.Features.Services;
 
 namespace cli.Services;
 
@@ -36,17 +37,7 @@ public static class ProjectContextUtil
 		}
 	}
 
-	public static async Task SerializeSourceGenConfigToDisk(string rootFolder, BeamoServiceDefinition selectedService)
-	{
-		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.FederationsConfig, new JsonSerializerOptions { IncludeFields = true});
-		
-		var projectDir = Path.GetDirectoryName(selectedService.AbsoluteProjectPath);
-		var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
-		// Because this can be invoked from any point inside the root folder,
-		// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
-		sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-		await File.WriteAllTextAsync(sourceGenPath, serializedSourceGenConfig);
-	}
+	
 	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string dotnetPath, 
@@ -82,7 +73,7 @@ public static class ProjectContextUtil
 			remote = await _existingManifest;
 		}
 
-		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
+		configService.GetProjectSearchPaths(out var searchPaths);
 		var pathsToIgnore = configService.LoadPathsToIgnoreFromFile();
 		var sw = new Stopwatch();
 		sw.Start();
@@ -91,7 +82,7 @@ public static class ProjectContextUtil
 		{
 			ignoreIds.Add(id);
 		}
-		var allProjects = FindCsharpProjects(rootFolder, searchPaths, pathsToIgnore).ToArray();
+		var allProjects = FindCsharpProjects(configService.BaseDirectory, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
@@ -201,54 +192,88 @@ public static class ProjectContextUtil
 			var isLocal = sd.IsLocal;
 			return isMicroservice && isLocal;
 		});
-		await Task.WhenAll(microservicesOnly.Select(sd =>
+		
+		// Convert microservice openApi federation extensions into MicroserviceFederationsConfig
+		var convertOpenToMSFedConfigTasks = microservicesOnly.Select(async microservice =>
 		{
-			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-			var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
-			
-			// Because this can be invoked from any point inside the root folder,
-			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
-			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-			
-			if (!File.Exists(sourceGenPath))
-				return File.WriteAllTextAsync(sourceGenPath, "{}");
+			string openApiPath = microservice.OpenApiPath;
+			if (File.Exists(openApiPath))
+			{
+				var openApiStringReader = new OpenApiStringReader();
+				var fileContent = await File.ReadAllTextAsync(openApiPath);
+				var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
+				foreach (var warning in diagnostic.Warnings)
+				{
+					Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+						warning.Pointer);
+					throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+				}
+				foreach (var error in diagnostic.Errors)
+				{
+					Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+						error.Pointer);
+					throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+				}
 
-			return Task.CompletedTask;
-		}));
-		
-		// Let's load all the SourceGenConfig files
-		var sourceGenFiles = await Task.WhenAll(microservicesOnly.Select(sd =>
-		{
-			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-			var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
-			
-			// Because this can be invoked from any point inside the root folder,
-			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
-			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-			
-			return File.ReadAllTextAsync(sourceGenPath);
-		}));
-		
-		// Now we can deserialize and set it in the service definition
-		foreach (var (sd, cfg) in microservicesOnly.Zip(sourceGenFiles))
-		{
-			try
-			{
-				sd.FederationsConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceFederationsConfig>(cfg, new JsonSerializerOptions(){ IncludeFields = true });
-			}
-			catch (Exception e)
-			{
-				var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-				var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
-			
-				// Because this can be invoked from any point inside the root folder,
-				// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
-				sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
+				if (!openApiDocument.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY, out var ext) ||
+				    ext is not OpenApiArray { Count: > 0 } federationIds)
+				{
+					microservice.FederationsConfig = new MicroserviceFederationsConfig();
+					return;
+				}
+
+				Dictionary<string, List<FederationInstanceConfig>> foundFederationsAndInterfaces = new();
+				foreach (IOpenApiAny openApiAny in federationIds)
+				{
+					// federationId: Is the Federation ID set in the FederationId attribute in the C# Federation Class. Ex: "default"
+					// interfaceFullname: Is the fullname of the Interface on which that federation uses
+					
+					// We can skip this federation if there is an error when parsing or if the OpenApi is invalid
+					// If not an OpenApiObject OR
+					// federationId doesn't exist OR
+					// interfaceFullName doesn't exist
+					if(openApiAny is not OpenApiObject obj)
+						continue;
+					if (!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY, out var extId) ||
+					    extId is not OpenApiString { Value: var federationId })
+						continue;
+					if(!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY, out var extInterface) ||
+					   extInterface is not OpenApiString {Value: var interfaceFullName })
+						continue;
+					if(!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY, out var extFedClassName) ||
+					   extFedClassName is not OpenApiString {Value: var federationClassName })
+						continue;
+
+					string interfaceNameOnly = interfaceFullName.Split('.').Last();
+					var federationInstanceConfig = new FederationInstanceConfig 
+					{
+						Interface = interfaceNameOnly, 
+						ClassName = federationClassName
+					};
+					
+					if (foundFederationsAndInterfaces.TryGetValue(federationId, out var interfaces))
+					{
+						
+						interfaces.Add(federationInstanceConfig);
+					}
+					else
+					{
+						foundFederationsAndInterfaces[federationId] = new List<FederationInstanceConfig> { federationInstanceConfig };
+					}
+				}
 				
-				Log.Fatal(e, "Failed to load source gen config");
-				throw new CliException($"Failed to parse {nameof(MicroserviceFederationsConfig)} at {sourceGenPath}. Please make sure the source gen config is valid json.");
+				var federationsConfig = new FederationsConfig(foundFederationsAndInterfaces.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray()));
+
+				microservice.FederationsConfig = new MicroserviceFederationsConfig() { Federations = federationsConfig };
+
 			}
-		}
+			else
+			{
+				microservice.FederationsConfig = new MicroserviceFederationsConfig();
+			}
+		});
+		
+		await Task.WhenAll(convertOpenToMSFedConfigTasks);
 
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
@@ -722,6 +747,9 @@ public static class ProjectContextUtil
 
 
 		// the project directory is just "where is the csproj" 
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
+		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		definition.OpenApiPath = openApiPath;
 		definition.ProjectPath = project.relativePath;
 		definition.AbsoluteProjectPath = project.absolutePath;
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
@@ -756,6 +784,9 @@ public static class ProjectContextUtil
 		}
 
 		// the project directory is just "where is the csproj" 
+		string outDirDirectory = project.msbuildProject.GetPropertyValue(Beamable.Common.Constants.OPEN_API_DIR_PROPERTY_KEY).LocalizeSlashes();
+		string openApiPath = Path.Join(project.msbuildProject.DirectoryPath, outDirDirectory, Beamable.Common.Constants.OPEN_API_FILE_NAME);
+		definition.OpenApiPath = openApiPath;
 		definition.ProjectPath = project.relativePath;
 		definition.AbsoluteProjectPath = project.absolutePath;
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;

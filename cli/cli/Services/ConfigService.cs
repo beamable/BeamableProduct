@@ -429,12 +429,11 @@ public class ConfigService
 		}
 	}
 
-	public void GetProjectSearchPaths(out string rootPath, out List<string> searchPaths)
+	public void GetProjectSearchPaths(out List<string> searchPaths)
 	{
 		searchPaths = new List<string>();
-		rootPath = GetProjectRootPath();
+		var rootPath = GetProjectRootPath();
 		var extraPaths = GetExtraProjectPaths();
-
 		if (string.IsNullOrEmpty(rootPath))
 		{
 			rootPath = ".";
@@ -767,6 +766,11 @@ public class ConfigService
 		builder.Append(Constants.TEMP_FOLDER);
 		builder.Append('/');
 		builder.Append(Environment.NewLine);
+
+		builder.Append(Constants.CONTENT_DIRECTORY);
+		builder.Append('/');
+		builder.Append(Environment.NewLine);
+		
 		File.WriteAllText(ignoreFilePath, builder.ToString());
 
 		Log.Debug($"Generated ignore file at {ignoreFilePath}");
