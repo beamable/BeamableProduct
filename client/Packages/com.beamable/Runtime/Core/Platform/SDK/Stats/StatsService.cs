@@ -48,7 +48,7 @@ namespace Beamable.Api.Stats
 			).RecoverWith(ex =>
 			   {
 				   if (!_offlineCache.UseOfflineCache)
-					   return Promise<BatchReadStatsResponse>.Successful(new BatchReadStatsResponse());
+					   return Promise<BatchReadStatsResponse>.Successful(new BatchReadStatsResponse(){results = new List<BatchReadEntry>()});
 
 				   return _offlineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
 				   stats =>
