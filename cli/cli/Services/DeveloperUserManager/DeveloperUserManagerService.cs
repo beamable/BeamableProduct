@@ -971,12 +971,23 @@ public class DeveloperUserManagerService
 	/// <param name="secretMap"></param>
 	private async Task CopyStatsState(DeveloperUser sourceDeveloperUser, DeveloperUser targetDeveloperUser, Dictionary<string, string> secretMap)
 	{
-		IStatsApi adminStatsApi = CreateStatsApi(sourceDeveloperUser.GamerTag, _appContext.Cid, _appContext.Pid, secretMap[_appContext.Pid]);
+		if (!secretMap.ContainsKey(sourceDeveloperUser.Pid))
+		{
+			throw new CliException($"There's no secret realm key for the source developer pid {sourceDeveloperUser.Pid}");
+		}
+
+		if (!secretMap.ContainsKey(targetDeveloperUser.Pid))
+		{
+			throw new CliException($"There's no secret realm key for the target developer pid {targetDeveloperUser.Pid}");
+		}
+
+		IStatsApi sourceStatsAPI = CreateStatsApi(sourceDeveloperUser.GamerTag, sourceDeveloperUser.Cid, sourceDeveloperUser.Pid, secretMap[sourceDeveloperUser.Pid]);
 		
+		IStatsApi targetStatsAPI = CreateStatsApi(targetDeveloperUser.GamerTag, targetDeveloperUser.Cid, targetDeveloperUser.Pid, secretMap[targetDeveloperUser.Pid]);
 		
-		Task<Dictionary<string, StatsResponse>> sourceStatMapTask = GetStatMap(sourceDeveloperUser.GamerTag, adminStatsApi);
+		Task<Dictionary<string, StatsResponse>> sourceStatMapTask = GetStatMap(sourceDeveloperUser.GamerTag, sourceStatsAPI);
 		
-		Task<Dictionary<string, StatsResponse>> targetStatMapTask = GetStatMap(targetDeveloperUser.GamerTag, adminStatsApi);
+		Task<Dictionary<string, StatsResponse>> targetStatMapTask = GetStatMap(targetDeveloperUser.GamerTag, targetStatsAPI);
 
 		await Task.WhenAll(sourceStatMapTask, targetStatMapTask);
 		
@@ -990,7 +1001,7 @@ public class DeveloperUserManagerService
 			foreach (var stat in targetStatKeyPair.Value.stats)
 			{
 				string objectId = string.Format(targetStatKeyPair.Key, targetDeveloperUser.GamerTag);
-				deleteStatTasks.Add(adminStatsApi.ObjectDelete(objectId, new StatRequest
+				deleteStatTasks.Add(targetStatsAPI.ObjectDelete(objectId, new StatRequest
 				{
 					stats = new OptionalString(stat.Key)
 				}).TaskFromPromise()); 
@@ -1005,7 +1016,7 @@ public class DeveloperUserManagerService
 
 			StatUpdateRequest statUpdateRequest = new StatUpdateRequest() { set = new OptionalMapOfString(sourceStatKeyPair.Value.stats) };
 				
-			await adminStatsApi.ObjectPost(objectId, statUpdateRequest);
+			await targetStatsAPI.ObjectPost(objectId, statUpdateRequest);
 		}
 	}
 
