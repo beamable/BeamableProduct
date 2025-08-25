@@ -59,7 +59,10 @@ namespace Beamable.Common
                 /// But in the future, could be "UnityEditor" or "UnityRuntime" for example.
                 /// </summary>
                 public const string ATTR_SOURCE = "beam.source";
-                
+
+                public const string ATTR_SOURCE_VERSION = "beam.source.version";
+                public const string ATTR_SOURCE_ENGINE_VERSION = "beam.source.engine.version";
+
                 /// <summary>
                 /// A UUID to identify the individual connection within an application.
                 /// </summary>

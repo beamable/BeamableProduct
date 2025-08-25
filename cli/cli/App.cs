@@ -254,6 +254,8 @@ public class App
 			{
 				dict[Otel.ATTR_PID] = ctx.Pid;
 			}
+
+			dict[Otel.ATTR_SOURCE] = "cli";
 				
 			var resourceBuilder = ResourceBuilder.CreateEmpty()
 				.AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
@@ -477,6 +479,7 @@ public class App
 		Commands.AddRootCommand<OtelCommand>();
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<ReportTelemetryCommand, ReportTelemetryCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
