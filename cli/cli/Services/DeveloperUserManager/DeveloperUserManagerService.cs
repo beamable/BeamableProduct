@@ -172,8 +172,11 @@ public struct DeveloperUser
 		IssuedAt = DateTime.UtcNow.Ticks;
 	}
 
-	public void UpdateToken(DeveloperUser developerUser)
+	public void UpdateUserInfo(DeveloperUser developerUser)
 	{
+		Alias = developerUser.Alias;
+		Description = developerUser.Description;
+		Tags = developerUser.Tags;
 		AccessToken = developerUser.AccessToken;
 		RefreshToken = developerUser.RefreshToken;
 		ExpiresIn = developerUser.ExpiresIn;
@@ -457,7 +460,7 @@ public class DeveloperUserManagerService
 			// If there's a cached developer user we just update the token information.
 			if (TryLoadCachedDeveloperUser(developerUser.GamerTag.ToString(), out developerUserCopy))
 			{
-				developerUserCopy.UpdateToken(developerUser);
+				developerUserCopy.UpdateUserInfo(developerUser);
 			}
 			else
 			{
