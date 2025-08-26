@@ -920,14 +920,7 @@ namespace Beamable.Server
 
         private static bool ShouldStartStandardOtel()
         {
-	        string startStandardOtelEnv = Environment.GetEnvironmentVariable("BEAM_START_STANDARD_OTEL");
-
-	        if (startStandardOtelEnv == "true")
-	        {
-		        return true;
-	        }
-
-	        return false;
+	        return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
