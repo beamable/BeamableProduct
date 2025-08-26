@@ -2,7 +2,7 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using System.Reflection;
 
-namespace beamable.otel.exporter.Utils;
+namespace beamable.otel.common;
 
 public class OtlpExporterResourceInjector
 {

@@ -3,71 +3,71 @@ using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 
-namespace beamable.otel.exporter;
+namespace beamable.microservice.otel.exporter;
 
-public static class FileExporterLoggingExtensions
+public static class MicroserviceOtelLoggingExtensions
 {
 	/// <summary>
-	/// Adds Beamable exporter with OpenTelemetryLoggerOptions.
+	/// Adds Beamable Microservice exporter with OpenTelemetryLoggerOptions.
 	/// </summary>
 	/// <param name="loggerOptions"><see cref="OpenTelemetryLoggerOptions"/> options to use.</param>
 	/// <returns>The instance of <see cref="OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
-	public static OpenTelemetryLoggerOptions AddFileExporter(this OpenTelemetryLoggerOptions loggerOptions)
-		=> AddFileExporter(loggerOptions, configure: null);
+	public static OpenTelemetryLoggerOptions AddMicroserviceExporter(this OpenTelemetryLoggerOptions loggerOptions)
+		=> AddMicroserviceExporter(loggerOptions, configure: null);
 
 	/// <summary>
-	/// Adds Beamable exporter with OpenTelemetryLoggerOptions.
+	/// Adds Beamable Microservice exporter with OpenTelemetryLoggerOptions.
 	/// </summary>
 	/// <param name="loggerOptions"><see cref="OpenTelemetryLoggerOptions"/> options to use.</param>
-	/// <param name="configure">Optional callback action for configuring <see cref="ConsoleExporterOptions"/>.</param>
+	/// <param name="configure">Optional callback action for configuring <see cref="MicroserviceOtelExporterOptions"/>.</param>
 	/// <returns>The instance of <see cref="OpenTelemetryLoggerOptions"/> to chain the calls.</returns>
-	public static OpenTelemetryLoggerOptions AddFileExporter(this OpenTelemetryLoggerOptions loggerOptions, Action<FileExporterOptions>? configure)
+	public static OpenTelemetryLoggerOptions AddMicroserviceExporter(this OpenTelemetryLoggerOptions loggerOptions, Action<MicroserviceOtelExporterOptions>? configure)
 	{
 		if (loggerOptions == null)
 		{
 			throw new Exception("LoggerOptions param cannot be null");
 		}
 
-		var options = new FileExporterOptions();
+		var options = new MicroserviceOtelExporterOptions();
 		configure?.Invoke(options);
 #pragma warning disable CA2000 // Dispose objects before losing scope
-		return loggerOptions.AddProcessor(new BatchLogRecordExportProcessor(new FileLogRecordExporter(options)));
+		return loggerOptions.AddProcessor(new BatchLogRecordExportProcessor(new MicroserviceOtelLogRecordExporter(options)));
 #pragma warning restore CA2000 // Dispose objects before losing scope
 	}
 
 
 	/// <summary>
-	/// Adds Beamable exporter with LoggerProviderBuilder.
+	/// Adds Beamable Microservice exporter with LoggerProviderBuilder.
 	/// </summary>
 	/// <param name="loggerProviderBuilder"><see cref="LoggerProviderBuilder"/>.</param>
 	/// <returns>The supplied instance of <see cref="LoggerProviderBuilder"/> to chain the calls.</returns>
-	public static LoggerProviderBuilder AddFileExporter(
+	public static LoggerProviderBuilder AddMicroserviceExporter(
 		this LoggerProviderBuilder loggerProviderBuilder)
-		=> AddFileExporter(loggerProviderBuilder, name: null, configure: null);
+		=> AddMicroserviceExporter(loggerProviderBuilder, name: null, configure: null);
 
 	/// <summary>
-	/// Adds Beamable exporter with LoggerProviderBuilder.
+	/// Adds Beamable Microservice exporter with LoggerProviderBuilder.
 	/// </summary>
 	/// <param name="loggerProviderBuilder"><see cref="LoggerProviderBuilder"/>.</param>
-	/// <param name="configure">Callback action for configuring <see cref="FileExporterOptions"/>.</param>
+	/// <param name="configure">Callback action for configuring <see cref="MicroserviceOtelExporterOptions"/>.</param>
 	/// <returns>The supplied instance of <see cref="LoggerProviderBuilder"/> to chain the calls.</returns>
-	public static LoggerProviderBuilder AddFileExporter(
+	public static LoggerProviderBuilder AddMicroserviceExporter(
 		this LoggerProviderBuilder loggerProviderBuilder,
-		Action<FileExporterOptions> configure)
-		=> AddFileExporter(loggerProviderBuilder, name: null, configure);
+		Action<MicroserviceOtelExporterOptions> configure)
+		=> AddMicroserviceExporter(loggerProviderBuilder, name: null, configure);
 
 
 	/// <summary>
-	/// Adds Beamable exporter with LoggerProviderBuilder.
+	/// Adds Beamable Microservice exporter with LoggerProviderBuilder.
 	/// </summary>
 	/// <param name="loggerProviderBuilder"><see cref="LoggerProviderBuilder"/>.</param>
 	/// <param name="name">Optional name which is used when retrieving options.</param>
-	/// <param name="configure">Optional callback action for configuring <see cref="FileExporterOptions"/>.</param>
+	/// <param name="configure">Optional callback action for configuring <see cref="MicroserviceOtelExporterOptions"/>.</param>
 	/// <returns>The supplied instance of <see cref="LoggerProviderBuilder"/> to chain the calls.</returns>
-	public static LoggerProviderBuilder AddFileExporter(
+	public static LoggerProviderBuilder AddMicroserviceExporter(
 		this LoggerProviderBuilder loggerProviderBuilder,
 		string? name,
-		Action<FileExporterOptions>? configure)
+		Action<MicroserviceOtelExporterOptions>? configure)
 	{
 		if (loggerProviderBuilder == null)
 		{
@@ -83,9 +83,9 @@ public static class FileExporterLoggingExtensions
 
 		return loggerProviderBuilder.AddProcessor(sp =>
 		{
-			var options = sp.GetRequiredService<IOptionsMonitor<FileExporterOptions>>().Get(name);
+			var options = sp.GetRequiredService<IOptionsMonitor<MicroserviceOtelExporterOptions>>().Get(name);
 
-			return new BatchLogRecordExportProcessor(new FileLogRecordExporter(options));
+			return new BatchLogRecordExportProcessor(new MicroserviceOtelLogRecordExporter(options));
 		});
 	}
 }
