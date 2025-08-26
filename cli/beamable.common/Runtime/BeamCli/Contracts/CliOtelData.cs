@@ -5,6 +5,16 @@ namespace Beamable.Common.BeamCli.Contracts
 {
 	[CliContractType]
 	[Serializable]
+	public class TelemetryReportStatus
+	{
+		public string FilePath;
+		public bool Success;
+		public string ErrorMessage;
+	}
+
+
+	[CliContractType]
+	[Serializable]
 	public class CliOtelMessage
 	{
 		public List<CliOtelLogRecord> allLogs;

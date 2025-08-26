@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Util;
 using beamable.otel.common;
 using beamable.otel.exporter;
 using beamable.otel.exporter.Serialization;
@@ -16,10 +17,15 @@ namespace cli.OtelCommands;
 [Serializable]
 public class ReportTelemetryCommandArgs : CommandArgs
 {
-	public string Path;
+	public List<string> Paths;
 }
 
-public class ReportTelemetryCommand : AppCommand<ReportTelemetryCommandArgs>
+public class ReportTelemetryResult
+{
+	public List<TelemetryReportStatus> AllStatus;
+}
+
+public class ReportTelemetryCommand : AtomicCommand<ReportTelemetryCommandArgs, ReportTelemetryResult>
 {
 	public override bool IsForInternalUse => true;
 
@@ -29,95 +35,194 @@ public class ReportTelemetryCommand : AppCommand<ReportTelemetryCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--path", "The path for the file with logs to be saved and later pushed to Clickhouse"),
-			(args, i) => args.Path = i);
+		AddOption(new Option<List<string>>("--paths", "All paths to files that contain custom log data to be later exported to clickhouse"),
+			(args, i) => args.Paths = i);
 	}
 
-	public override Task Handle(ReportTelemetryCommandArgs args)
+	public override Task<ReportTelemetryResult> GetResult(ReportTelemetryCommandArgs args)
 	{
-		var fileContent = File.ReadAllText(args.Path);
-
-		if (string.IsNullOrEmpty(fileContent))
+		//Just for testing purposes
 		{
-			Log.Warning("Report command was called, but file passed is empty.");
+			for (int i = 0; i < args.Paths.Count; i++)
+			{
+				var logsTest = new CliOtelMessage()
+				{
+					EngineVersion = "3.0",
+					SdkVersion = $"2022.13f.{i}",
+					Source = "unity",
+					allLogs = new List<CliOtelLogRecord>()
+				};
+				logsTest.allLogs.Add(new CliOtelLogRecord()
+				{
+					Body = $"{i} - The first log here!",
+					ExceptionMessage = "",
+					ExceptionStackTrace = "",
+					LogLevel = "Information",
+					Timestamp = "2025-08-26T15:25:46.2695590Z",
+					Attributes = new Dictionary<string, string>()
+				});
+				logsTest.allLogs.Add(new CliOtelLogRecord()
+				{
+					Body = $"{i} - The second log here!",
+					ExceptionMessage = "",
+					ExceptionStackTrace = "",
+					LogLevel = "Information",
+					Timestamp = "2025-08-26T15:25:48.2695590Z",
+					Attributes = new Dictionary<string, string>()
+				});
+
+				File.WriteAllText(args.Paths[i], JsonConvert.SerializeObject(logsTest));
+			}
+
 		}
 
-		try
+		if (args.Paths.Count == 0)
 		{
-			var cliOtelData = JsonConvert.DeserializeObject<CliOtelMessage>(fileContent);
-			List<SerializableLogRecord> serializedLogs = new List<SerializableLogRecord>();
+			throw new CliException("Must have at least one path to a file to be exported");
+		}
 
-			foreach (var log in cliOtelData.allLogs)
+		List<TelemetryReportStatus> results = new List<TelemetryReportStatus>();
+
+		foreach (var path in args.Paths)
+		{
+			var fileContent = File.ReadAllText(path);
+
+			if (string.IsNullOrEmpty(fileContent))
 			{
-				if (!Enum.TryParse(log.LogLevel, out LogLevel level))
+				Log.Warning("Report command was called, but file passed is empty.");
+			}
+
+			try
+			{
+				var cliOtelData = JsonConvert.DeserializeObject<CliOtelMessage>(fileContent);
+
+				(List<SerializableLogRecord> serializedLogs, bool success) = GetSerializedLogs(cliOtelData.allLogs, out string errorSerializing);
+
+				if (!success)
 				{
-					Log.Error($"Couldn't parse log level, got: [{log.LogLevel}]. Make sure that the string value for LogLevel is correct");
+					Log.Error(errorSerializing);
+
+					results.Add(new TelemetryReportStatus()
+					{
+						Success = false,
+						ErrorMessage = errorSerializing,
+						FilePath = path
+					});
+
+					continue;
 				}
 
-				serializedLogs.Add(new SerializableLogRecord()
+				List<LogRecord> logRecords = serializedLogs.Select(LogRecordSerializer.DeserializeLogRecord).ToList();
+
+				FileLogRecordExporter exporter = new FileLogRecordExporter(new FileExporterOptions()
 				{
-					Body = log.Body,
-					CategoryName = "",
-					FormattedMessage = log.Body,
-					Timestamp = log.Timestamp,
-					LogLevel = level,
-					Exception = new ExceptionInfo()
+					ExportPath = args.ConfigService.ConfigTempOtelLogsDirectoryPath ?? ""
+				});
+
+				var objectDict = new Dictionary<string, object>()
+				{
+					{ Otel.ATTR_SOURCE, cliOtelData.Source },
+					{ Otel.ATTR_SOURCE_VERSION, cliOtelData.SdkVersion },
+					{ Otel.ATTR_SOURCE_ENGINE_VERSION, cliOtelData.EngineVersion },
+					{ Otel.ATTR_SDK_VERSION, BeamAssemblyVersionUtil.GetVersion<App>() }
+				};
+
+				if (!string.IsNullOrEmpty(args.AppContext.Cid))
+				{
+					objectDict[Otel.ATTR_CID] = args.AppContext.Cid;
+				}
+				if (!string.IsNullOrEmpty(args.AppContext.Pid))
+				{
+					objectDict[Otel.ATTR_PID] = args.AppContext.Pid;
+				}
+
+				if (!OtlpExporterResourceInjector.TrySetResourceField<FileLogRecordExporter>(exporter, objectDict, out var errorMessage))
+				{
+					var message = $"Failed to inject resource attributes into exporter. Message=[{errorMessage}]";
+					Log.Error(message);
+					results.Add(new TelemetryReportStatus()
 					{
-						Message = log.ExceptionMessage,
-						StackTrace = log.ExceptionStackTrace
-					}
+						Success = false,
+						ErrorMessage = message,
+						FilePath = path
+					});
+
+					continue;
+				}
+
+				var result = exporter.Export(new Batch<LogRecord>(logRecords.ToArray(), logRecords.Count));
+
+				if (result == ExportResult.Failure)
+				{
+					var message = "Failed at exporting logs using the [FileLogExporter]";
+					Log.Error(message);
+					results.Add(new TelemetryReportStatus()
+					{
+						Success = false,
+						ErrorMessage = message,
+						FilePath = path
+					});
+				}
+				else
+				{
+					results.Add(new TelemetryReportStatus()
+					{
+						Success = true,
+						ErrorMessage = "",
+						FilePath = path
+					});
+				}
+
+			}
+			catch (Exception ex)
+			{
+				var errorMessage =
+					$"Failed to deserialize file at path=[{path}], it needs to be a json serialized format of the class [CliOtelMessage]";
+				Log.Error(ex, errorMessage);
+				results.Add(new TelemetryReportStatus()
+				{
+					Success = false,
+					ErrorMessage = errorMessage,
+					FilePath = path
 				});
 			}
 
-			List<LogRecord> logRecords = serializedLogs.Select(LogRecordSerializer.DeserializeLogRecord).ToList();
-
-			FileLogRecordExporter exporter = new FileLogRecordExporter(new FileExporterOptions()
-			{
-				ExportPath = args.ConfigService.ConfigTempOtelLogsDirectoryPath ?? ""
-			});
-
-			var objectDict = new Dictionary<string, object>()
-			{
-				{ Otel.ATTR_SOURCE, cliOtelData.Source },
-				{ Otel.ATTR_SOURCE_VERSION, cliOtelData.SdkVersion },
-				{ Otel.ATTR_SOURCE_ENGINE_VERSION, cliOtelData.EngineVersion },
-			};
-
-			//TODO fix this
-			// if (!string.IsNullOrEmpty(args.))
-			// {
-			// 	objectDict[Otel.ATTR_CID] = ctx.Cid;
-			// }
-			// if (!string.IsNullOrEmpty(ctx.Pid))
-			// {
-			// 	dict[Otel.ATTR_PID] = ctx.Pid;
-			// }
-
-			//TODO also fix this, need to work for the FileLogExporter instead of the otlp one
-			// if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpTraceExporter>(otlpTraceExporter, objectDict, out var errorMessage))
-			// {
-			// 	Log.Error($"Failed to inject resource attributes into exporter. Message=[{errorMessage}]");
-			// }
-
-
-			var result = exporter.Export(new Batch<LogRecord>(logRecords.ToArray(), logRecords.Count));
-
-			if (result == ExportResult.Failure)
-			{
-				Log.Error("Failed at exporting logs using the [FileLogExporter]");
-			}
-			else
-			{
-				Log.Information("All logs were exported to files!");
-			}
-
 		}
-		catch (Exception ex)
+
+		var finalResult = new ReportTelemetryResult() { AllStatus = results };
+
+		return Task.FromResult(finalResult);
+	}
+
+
+	private (List<SerializableLogRecord>, bool) GetSerializedLogs(List<CliOtelLogRecord> allLogs, out string errorMessage)
+	{
+		List<SerializableLogRecord> serializedLogs = new List<SerializableLogRecord>();
+
+		foreach (var log in allLogs)
 		{
-			Log.Error(ex, $"Failed to deserialize file at path=[{args.Path}], it needs to be a json serialized format of the class [CliOtelMessage]");
+			if (!Enum.TryParse(log.LogLevel, out LogLevel level))
+			{
+				errorMessage = $"Couldn't parse log level, got: [{log.LogLevel}]. Make sure that the string value for LogLevel is correct";
+				return (new List<SerializableLogRecord>(), false);
+			}
+
+			serializedLogs.Add(new SerializableLogRecord()
+			{
+				Body = log.Body,
+				CategoryName = "",
+				FormattedMessage = log.Body,
+				Timestamp = log.Timestamp,
+				LogLevel = level,
+				Exception = new ExceptionInfo()
+				{
+					Message = log.ExceptionMessage,
+					StackTrace = log.ExceptionStackTrace
+				}
+			});
 		}
 
-
-		return Task.CompletedTask;
+		errorMessage = "";
+		return (serializedLogs, true);
 	}
 }
