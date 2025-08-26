@@ -41,40 +41,6 @@ public class ReportTelemetryCommand : AtomicCommand<ReportTelemetryCommandArgs, 
 
 	public override Task<ReportTelemetryResult> GetResult(ReportTelemetryCommandArgs args)
 	{
-		//Just for testing purposes
-		{
-			for (int i = 0; i < args.Paths.Count; i++)
-			{
-				var logsTest = new CliOtelMessage()
-				{
-					EngineVersion = "3.0",
-					SdkVersion = $"2022.13f.{i}",
-					Source = "unity",
-					allLogs = new List<CliOtelLogRecord>()
-				};
-				logsTest.allLogs.Add(new CliOtelLogRecord()
-				{
-					Body = $"{i} - The first log here!",
-					ExceptionMessage = "",
-					ExceptionStackTrace = "",
-					LogLevel = "Information",
-					Timestamp = "2025-08-26T15:25:46.2695590Z",
-					Attributes = new Dictionary<string, string>()
-				});
-				logsTest.allLogs.Add(new CliOtelLogRecord()
-				{
-					Body = $"{i} - The second log here!",
-					ExceptionMessage = "",
-					ExceptionStackTrace = "",
-					LogLevel = "Information",
-					Timestamp = "2025-08-26T15:25:48.2695590Z",
-					Attributes = new Dictionary<string, string>()
-				});
-
-				File.WriteAllText(args.Paths[i], JsonConvert.SerializeObject(logsTest));
-			}
-
-		}
 
 		if (args.Paths.Count == 0)
 		{
