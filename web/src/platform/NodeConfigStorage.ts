@@ -1,6 +1,7 @@
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import { BEAM_NODE_DIR } from '@/constants';
 
 interface Config {
   cid: string;
@@ -12,7 +13,7 @@ interface Config {
  * In Node.js environments, it reads from a JSON file in the user's home directory.
  */
 export async function readConfigNode(): Promise<Config> {
-  const directory = path.join(os.homedir(), '.beamable_node');
+  const directory = path.join(os.homedir(), BEAM_NODE_DIR);
   const filePath = path.join(directory, 'beam_config.json');
 
   try {
@@ -36,7 +37,7 @@ export async function readConfigNode(): Promise<Config> {
  * In Node.js environments, it saves it to a JSON file in the user's home directory.
  */
 export async function saveConfigNode({ cid, pid }: Config): Promise<void> {
-  const directory = path.join(os.homedir(), '.beamable_node');
+  const directory = path.join(os.homedir(), BEAM_NODE_DIR);
   const filePath = path.join(directory, 'beam_config.json');
 
   try {

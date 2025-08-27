@@ -56,5 +56,6 @@ export abstract class ApiService {
     return this.userId;
   }
 
+  /** @internal */
   abstract get serviceName(): string;
 }

@@ -1,5 +1,5 @@
 import type { AnnouncementView } from '@/__generated__/schemas';
-import { Refreshable } from '@/services/types/Refreshable';
+import type { RefreshableService } from '@/services/types/RefreshableService';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import {
   announcementsDeleteByObjectId,
@@ -18,7 +18,7 @@ export interface AnnouncementIdParams {
 
 export class AnnouncementsService
   extends ApiService
-  implements Refreshable<AnnouncementView[]>
+  implements RefreshableService<AnnouncementView[]>
 {
   constructor(props: ApiServiceProps) {
     super(props);

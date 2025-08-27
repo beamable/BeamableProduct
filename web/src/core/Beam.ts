@@ -5,28 +5,29 @@ import { TokenStorage } from '@/platform/types/TokenStorage';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
 import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
-import { saveToken } from '@/core/BeamUtils';
+import { parseSocketMessage, saveToken } from '@/core/BeamUtils';
 import type { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
 import { BeamError, BeamWebSocketError } from '@/constants/Errors';
 import {
-  BeamServiceType,
   REFRESHABLE_SERVICES,
-  RefreshableServiceMap,
-  Subscription,
-  SubscriptionMap,
+  type BeamServiceType,
+  type RefreshableServiceMap,
+  type Subscription,
+  type SubscriptionMap,
 } from '@/core/types';
 import { wait } from '@/utils/wait';
 import { HEADERS } from '@/constants';
 import { BeamBase, type BeamEnvVars } from '@/core/BeamBase';
 import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
 import { ClientServicesMixin } from '@/core/mixins';
-import { Refreshable } from '@/services';
 import {
   BeamMicroServiceClient,
   type BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
+import { ContentService } from '@/services/ContentService';
+import type { RefreshableService } from '@/services';
 
 /** The main class for interacting with the Beam Client SDK. */
 export class Beam extends ClientServicesMixin(BeamBase) {
@@ -53,6 +54,8 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     const beam = new this(config);
     await beam.connect();
     beam.isInitialized = true;
+    const noop = () => {};
+    beam.on('content.refresh', noop); // listen for content refresh; cache update happens inside the listener via refreshableRegistry
     return beam;
   }
 
@@ -69,6 +72,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     this.player = new PlayerService();
     this.use(AuthService);
     this.use(AccountService);
+    this.use(ContentService);
   }
 
   protected createBeamRequester(config: BeamConfig): BeamRequester {
@@ -95,8 +99,9 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       (this.clientServices as any)[svc.serviceName] = svc;
 
       if (REFRESHABLE_SERVICES.includes(svcName)) {
-        this.refreshable[`${svcName}.refresh` as keyof RefreshableServiceMap] =
-          svc as unknown as Refreshable<unknown>;
+        const refreshKey = `${svcName}.refresh` as keyof RefreshableServiceMap;
+        this.refreshableRegistry[refreshKey] =
+          svc as unknown as RefreshableService<any>;
       }
     } else if (this.isMicroServiceClient(ctor)) {
       const client = new ctor(this);
@@ -139,6 +144,11 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       await Promise.all([
         this.clientServices.account.current(),
         this.setupRealtimeConnection(),
+        this.clientServices.content.syncContentManifests({
+          ids: Array.from(
+            new Set(['global', ...(this.beamConfig.contentNamespaces ?? [])]),
+          ),
+        }),
       ]);
     } finally {
       this.clientServices = {} as BeamServiceType; // clear the services added during initialization
@@ -174,15 +184,16 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     }
 
     const cachedClientServices = this.clientServices;
+    const cachedRefreshableRegistry = this.refreshableRegistry;
     const beam = await Beam.init(this.beamConfig);
     beam.clientServices = cachedClientServices;
+    beam.refreshableRegistry = cachedRefreshableRegistry;
     Object.assign(this, beam);
   }
 
   /**
    * Subscribes to a specific context and listens for messages.
    * @template {keyof RefreshableServiceMap} K
-   * @template {RefreshableServiceMap[K]['data']} T
    * @param context The context to subscribe to, e.g., 'inventory.refresh'.
    * @param handler The callback to process the data when a message is received.
    * @example
@@ -193,10 +204,10 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    * });
    * ```
    */
-  on<
-    K extends keyof RefreshableServiceMap,
-    T extends RefreshableServiceMap[K]['data'],
-  >(context: K, handler: (data: T) => void) {
+  on<K extends keyof RefreshableServiceMap>(
+    context: K,
+    handler: (data: RefreshableServiceMap[K]['data']) => void,
+  ) {
     this.checkIfInitAndSupportedContext(context);
     const abortController = new AbortController();
     const listener = async (e: MessageEvent) => {
@@ -208,10 +219,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       if (eventData.context !== context) return;
 
       // parse the messageFull as the expected type
-      const payload = JSON.parse(eventData.messageFull) as Omit<
-        RefreshableServiceMap[K],
-        'data'
-      >;
+      const payload = parseSocketMessage<K>(eventData.messageFull);
 
       if ('delay' in payload) {
         try {
@@ -221,7 +229,9 @@ export class Beam extends ClientServicesMixin(BeamBase) {
         }
       }
 
-      const data = (await this.refreshable[context].refresh()) as T;
+      const data = await this.refreshableRegistry[context].refresh(
+        payload.data,
+      );
       handler(data);
     };
 
@@ -278,10 +288,10 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       );
     }
 
-    if (!this.refreshable[context]) {
+    if (!this.refreshableRegistry[context]) {
       throw new BeamError(
         `Context "${context}" is not supported. Available contexts: ${Object.keys(
-          this.refreshable,
+          this.refreshableRegistry,
         ).join(', ')}`,
       );
     }
