@@ -1315,6 +1315,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						OperationType.Put => "Put",
 						OperationType.Post => "Post",
 						OperationType.Delete => "Delete",
+						OperationType.Patch => "Patch",
+						OperationType.Trace => "Trace",
+						OperationType.Options => "Options",
+						OperationType.Head => "Head",
 						_ => throw new ArgumentOutOfRangeException()
 					};
 
@@ -1989,6 +1993,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			OperationType.Put => $"Put{methodName}",
 			OperationType.Post => $"Post{methodName}",
 			OperationType.Delete => $"Delete{methodName}",
+			OperationType.Patch => $"Patch{methodName}",
+			OperationType.Trace => $"Trace{methodName}",
+			OperationType.Options => $"Options{methodName}",
+			OperationType.Head => $"Head{methodName}",
 			_ => throw new ArgumentOutOfRangeException(nameof(httpVerb), httpVerb, null)
 		};
 
@@ -2796,7 +2804,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		return "";
 
-		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime();
+		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealEnum() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime();
 	}
 }
 
