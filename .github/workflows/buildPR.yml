@@ -218,6 +218,11 @@ jobs:
           dotnet-version: |
             9.0.x
             8.0.302
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
@@ -335,6 +340,11 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
