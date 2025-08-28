@@ -108,6 +108,11 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Install local packages
         working-directory: ./
         shell: bash
