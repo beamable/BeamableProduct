@@ -44,6 +44,11 @@ jobs:
           name: Microservice Nuget Package
           path: ./nuget-build
           retention-days: 1
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
