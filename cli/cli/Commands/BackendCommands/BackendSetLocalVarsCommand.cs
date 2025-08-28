@@ -19,7 +19,9 @@ public class BackendSetLocalVarsCommandResults
 {
     
 }
-public class BackendSetLocalVarsCommand : AtomicCommand<BackendSetLocalVarsCommandArgs, BackendSetLocalVarsCommandResults>
+public class BackendSetLocalVarsCommand 
+    : AtomicCommand<BackendSetLocalVarsCommandArgs, BackendSetLocalVarsCommandResults>
+,IStandaloneCommand, ISkipManifest
 {
     public BackendSetLocalVarsCommand() : base("set-local-vars", "Set local variables from github")
     {

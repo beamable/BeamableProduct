@@ -1,3 +1,5 @@
+using CliWrap;
+
 namespace cli.BackendCommands;
 
 public class BackendCompileCommandArgs : CommandArgs
@@ -6,10 +8,11 @@ public class BackendCompileCommandArgs : CommandArgs
     
 }
 
-public class BackendCompileCommand : AppCommand<BackendCompileCommandArgs>
+public class BackendCompileCommand 
+    : AppCommand<BackendCompileCommandArgs>
+        , ISkipManifest
+        ,IStandaloneCommand
 {
-    //mvn install -DskipTests=true
-    // 
     public BackendCompileCommand() : base("compile", "Compile a scala project")
     {
     }
@@ -19,25 +22,27 @@ public class BackendCompileCommand : AppCommand<BackendCompileCommandArgs>
         BackendCommandGroup.AddBackendHomeOption(this, (args, i) => args.backendHome = i);
     }
 
-    public override Task Handle(BackendCompileCommandArgs args)
+    public override async Task Handle(BackendCompileCommandArgs args)
     {
         BackendCommandGroup.ValidateBackendHomeDirectoryExists(args.backendHome);
-
-        var core = Path.Combine(args.backendHome, "core");
-        var needsToRebuild = CheckSourceAndTargets(core);
-        
-        throw new NotImplementedException();
+        await CompileProject(args.backendHome);
     }
 
-    public static bool CheckSourceAndTargets(string projectPath)
+
+    public static async Task CompileProject(string projectPath)
+    {
+        await JavaUtility.RunMaven("install -DskipTests=true", projectPath);
+    }
+
+    public static bool CheckSourceAndTargets(string projectPath, out DateTimeOffset latestSourceTime)
     {
         var srcFolder = Path.Combine(projectPath, "src");
-        var targetFolder = Path.Combine(projectPath, "target");
+        var targetFolder = Path.Combine(projectPath, "target", "classes");
 
-        var latestSrc = GetLatestFileWriteTimeFromFolder(srcFolder);
-        var latestBuild = GetLatestFileWriteTimeFromFolder(targetFolder);
+        latestSourceTime = GetLatestFileWriteTimeFromFolder(srcFolder);
+        var latestBuildTime = GetLatestFileWriteTimeFromFolder(targetFolder);
 
-        if (latestSrc > latestBuild)
+        if (latestSourceTime > latestBuildTime)
         {
             // likely need to re-build.
             //  note, this won't care if a file is the same content as before; but its better than nothing.

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Beamable.Server;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -17,20 +18,33 @@ public class BackendListToolsCommandResults
 
 public class BackendToolList
 {
+    public string coreProjectPath;
+    public List<BackendInfraInfo> infra = new List<BackendInfraInfo>();
     public List<BackendToolInfo> tools = new List<BackendToolInfo>();
     public List<string> invalidFolders = new List<string>();
 }
 
+public class BackendInfraInfo
+{
+    public string name;
+    public string[] dependsOn = Array.Empty<string>();
+}
+
+[DebuggerDisplay("tool=[{name}]")]
 public class BackendToolInfo
 {
-    public string toolName;
+    public string name;
     public string projectPath;
     public string mainClassName;
     public string[] profiles = Array.Empty<string>();
     public string[] dependsOn = Array.Empty<string>();
+    public string[] basicServiceNames = Array.Empty<string>();
+    public string[] objectSerivceNames = Array.Empty<string>();
 }
 
-public class BackendListToolsCommand : AtomicCommand<BackendListToolsCommandArgs, BackendListToolsCommandResults>
+public class BackendListToolsCommand 
+    : AtomicCommand<BackendListToolsCommandArgs, BackendListToolsCommandResults>
+, ISkipManifest, IStandaloneCommand
 {
     public BackendListToolsCommand() : base("list-tools", "List all the available tools in the backend source")
     {
@@ -55,7 +69,7 @@ public class BackendListToolsCommand : AtomicCommand<BackendListToolsCommandArgs
         BackendCommandGroup.ValidateBackendHomeDirectoryExists(backendHome);
 
         var deserializer = new DeserializerBuilder()
-            .IgnoreUnmatchedProperties() 
+            .IgnoreUnmatchedProperties()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)  // see height_in_inches in sample yml 
             .Build();
         const string localDockerComposeFile = "docker/local/docker-compose.yml";
@@ -71,9 +85,24 @@ public class BackendListToolsCommand : AtomicCommand<BackendListToolsCommandArgs
     {
         BackendCommandGroup.ValidateBackendHomeDirectoryExists(backendHome);
 
-        var result = new BackendToolList();
-
+        var result = new BackendToolList
+        {
+            coreProjectPath = Path.Combine(backendHome, "core")
+        };
+        
         var dockerComposeInfo = GetLocalDockerComposeInfo(backendHome);
+
+        foreach (var (name, service) in dockerComposeInfo.services)
+        {
+            if (service.labels.ContainsKey(BackendPsCommand.BEAMABLE_LABEL)) // "core" means "infra"
+            {
+                result.infra.Add(new BackendInfraInfo
+                {
+                    name = name, 
+                    dependsOn = service.dependsOn
+                });
+            }
+        }
         
         var toolsDir = Path.Combine(backendHome, "tools");
         var toolFolders = Directory.GetDirectories(toolsDir);
@@ -109,18 +138,48 @@ public class BackendListToolsCommand : AtomicCommand<BackendListToolsCommandArgs
 
                     var toolInfo = new BackendToolInfo
                     {
-                        toolName = tool,
+                        name = tool,
                         projectPath = toolFolder,
                         mainClassName = package + "." + className
                     };
                     if (!dockerComposeInfo.services.TryGetValue(tool, out var service))
                     {
-                        Log.Warning($"Found a tool=[{tool}] that was not listed in the docker-compose file");
+                        Log.Debug($"Found a tool=[{tool}] that was not listed in the docker-compose file");
                     }
                     else
                     {
                         toolInfo.profiles = service.profiles;
                         toolInfo.dependsOn = service.dependsOn;
+                       
+
+                        if (service.services?.TryGetValue("basic", out var basic) ?? false)
+                        {
+                            toolInfo.basicServiceNames = basic ?? new string[] { tool };
+                        }
+                        if (service.services?.TryGetValue("object", out var objects) ?? false)
+                        {
+                            toolInfo.objectSerivceNames = objects ?? new string[] { tool };
+                        }
+                        
+                        // var explicitBasicServices = service.ExplicitBasicServices;
+                        // var explicitObjectServices = service.ExplicitObjectServices;
+                        // if (explicitBasicServices != null)
+                        // {
+                        //     toolInfo.basicServiceNames = explicitBasicServices;
+                        //     if (toolInfo.basicServiceNames.Length == 0)
+                        //     {
+                        //         toolInfo.basicServiceNames = new string[] { tool };
+                        //     }
+                        // }
+                        //
+                        // if (explicitObjectServices != null)
+                        // {
+                        //     toolInfo.objectSerivceNames = explicitObjectServices;
+                        //     if (toolInfo.objectSerivceNames.Length == 0)
+                        //     {
+                        //         toolInfo.objectSerivceNames = new string[] { tool };
+                        //     }
+                        // }
                     }
                     
                     result.tools.Add(toolInfo);

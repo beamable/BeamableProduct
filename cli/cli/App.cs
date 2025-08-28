@@ -676,12 +676,12 @@ public class App
 		Commands.AddSubCommandWithHandler<BackendPsCommand, BackendPsCommandArgs, BackendCommandGroup>();
 		Commands.AddSubCommandWithHandler<BackendSetLocalVarsCommand, BackendSetLocalVarsCommandArgs, BackendCommandGroup>();
 		Commands.AddSubCommandWithHandler<BackendCompileCommand, BackendCompileCommandArgs, BackendCommandGroup>();
-		Commands.AddSubCommandWithHandler<BackendRunToolCommand, BackendRunToolCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendRunCommand, BackendRunToolCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendStopCommand, BackendStopCommandArgs, BackendCommandGroup>();
 		Commands.AddSubCommandWithHandler<BackendListToolsCommand, BackendListToolsCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendLogCommand, BackendLogCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendInspectToolCommand, BackendInspectToolCommandArgs, BackendCommandGroup>();
 		
-		
-		Commands.AddSubCommandWithHandler<SetupBackendCommand, SetupBackendCommandArgs, BackendCommandGroup>();
-		Commands.AddSubCommandWithHandler<SetupOpenJDKCommand, SetupOpenJDKCommandArgs, BackendCommandGroup>();
 		
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPsCommand, ContentPsCommandArgs, ContentCommand>();

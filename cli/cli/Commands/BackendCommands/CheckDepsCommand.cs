@@ -35,8 +35,10 @@ public class CheckDepsCommandResultChannel : IResultChannel
 public class CheckDepsCommand 
     : AppCommand<CheckDepsCommandArgs>
     , IResultSteam<CheckDepsCommandResultChannel, CheckDepsCommandProgramsResult>
+    ,IStandaloneCommand, ISkipManifest
+
 {
-    public CheckDepsCommand() : base("deps", "Check that the current machine has the dependencies to run the Beamable backend.")
+    public CheckDepsCommand() : base("validate", "Check that the current machine has the dependencies to run the Beamable backend.")
     {
     }
 

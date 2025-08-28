@@ -5,6 +5,11 @@ using JetBrains.Annotations;
 
 namespace cli.BackendCommands;
 
+public interface IBackendCommandArgs
+{
+    public string BackendHome { get; }
+}
+
 public class BackendCommandGroup : CommandGroup
 {
     public override bool IsForInternalUse => true;
@@ -30,9 +35,20 @@ public class BackendCommandGroup : CommandGroup
 
     public static void ValidateBackendHomeDirectoryExists(string backendHomeDir)
     {
+        if (!TryValidateBackendHomeDirectoryExists(backendHomeDir, out var message))
+        {
+            throw new CliException($"{message}\n" +
+                                   $"Pass the --backend-home option, or navigate to the backend directory.\n" +
+                                   $"path=[{backendHomeDir}]");
+        }
+    }
+    public static bool TryValidateBackendHomeDirectoryExists(string backendHomeDir, out string message)
+    {
+        message = null;
         if (!Directory.Exists(backendHomeDir))
         {
-            throw new CliException($"The backend home directory does not exist. path=[{backendHomeDir}]");
+            message = "The backend home directory does not exist. ";
+            return false;
         }
 
         var dirs = Directory.GetDirectories(backendHomeDir).Select(Path.GetFileName).ToList();
@@ -55,9 +71,11 @@ public class BackendCommandGroup : CommandGroup
 
         if (missingDirs.Count > 0 || missingFiles.Count > 0)
         {
-            throw new CliException(
-                $"The backend home directory does not look like a valid Beamable backend scala folder. path=[{backendHomeDir}]");
+            message = "The backend home directory does not look like a valid Beamable backend scala folder. ";
+            return false;
         }
+
+        return true;
     }
 
     
@@ -67,16 +85,11 @@ public class BackendCommandGroup : CommandGroup
 
 public class BackendHomeOption : Option<string>
 {
-    // TODO: The scala backend itself uses an ENV var called "PLATFORM" to do essentially the same thing.
-    //  but "PLATFORM" is also used by MSBuild, so it feels like we should STOP using "PLATFORM" and
-    //  converge to something with a BEAM prefix. 
-    public const string ENV_VAR = "BEAM_BACKEND_HOME";
-
     public static BackendHomeOption Instance { get; } = new BackendHomeOption();
 
     private BackendHomeOption() : base(
         aliases: new string[]{"--backend-home"}, 
-        description: $"The path to the local checkout of the Beamable Backend codebase. Control the default value with the {ENV_VAR} environment variable. ",
+        description: $"The path to the local checkout of the Beamable Backend codebase. ",
         getDefaultValue: GetDefaultValue)
     {
         
@@ -84,12 +97,19 @@ public class BackendHomeOption : Option<string>
 
     public static string GetDefaultValue()
     {
-        var env = Environment.GetEnvironmentVariable(ENV_VAR);
-        if (!string.IsNullOrEmpty(env))
+        var thisFolder = Path.GetFullPath(".");
+        var current = thisFolder;
+
+        while (!BackendCommandGroup.TryValidateBackendHomeDirectoryExists(current, out _))
         {
-            return env;
+            current = Path.GetDirectoryName(current);
+            if (current == null)
+            {
+                return thisFolder;
+            }
         }
-        return ".";
+        
+        return Path.GetFullPath(current);
     }
 }
 
