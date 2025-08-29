@@ -1251,8 +1251,8 @@ public class ContentService
 		try
 		{
 			var contentFiles = await Task.WhenAll(parseContentFiles);
+			var currentUser = await _accountsApi.GetAdminMe();
 			var currentRealm = await _realmsApi.GetRealm();
-			var currentUser = await _authApi.GetUser();
 			var contentSnapshot = new ManifestSnapshot()
 			{
 				ContentFiles = contentFiles.ToDictionary(item => item.id, item => item.contentFile),
