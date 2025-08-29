@@ -21,7 +21,7 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
 	{
-		var resource = this.ParentProvider.GetResource();
+		var res = this.resource ?? this.ParentProvider.GetResource();
 		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
@@ -36,7 +36,7 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 		var serializedBatch = new LogsBatch()
 		{
 			AllRecords = allLogsSerialized,
-			ResourceAttributes = resource.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString()),
+			ResourceAttributes = res.Attributes.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString()),
 			SchemaVersion = ExporterConstants.SchemaVersion
 		};
 

@@ -1,3 +1,4 @@
+using beamable.otel.common;
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
 using OpenTelemetry;

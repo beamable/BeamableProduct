@@ -3,43 +3,43 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 
-namespace beamable.otel.exporter;
+namespace beamable.microservice.otel.exporter;
 
-public static class FileExporterMetricsExtensions
+public static class MicroserviceOtelMetricsExtensions
 {
 	private const int DefaultExportIntervalMilliseconds = 10000;
 	private const int DefaultExportTimeoutMilliseconds = Timeout.Infinite;
 
 	/// <summary>
-	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/> using default options.
+	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/> using default options.
 	/// </summary>
 	/// <param name="builder"><see cref="MeterProviderBuilder"/> builder to use.</param>
 	/// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
-	public static MeterProviderBuilder AddFileExporter(this MeterProviderBuilder builder)
-		=> AddFileExporter(builder, name: null, configureExporter: null);
+	public static MeterProviderBuilder AddMicroserviceExporter(this MeterProviderBuilder builder)
+		=> AddMicroserviceExporter(builder, name: null, configureExporter: null);
 
 
 	/// <summary>
-	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
+	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
 	/// </summary>
 	/// <param name="builder"><see cref="MeterProviderBuilder"/> builder to use.</param>
-	/// <param name="configureExporter">Callback action for configuring <see cref="FileExporterOptions"/>.</param>
+	/// <param name="configureExporter">Callback action for configuring <see cref="MicroserviceOtelExporterOptions"/>.</param>
 	/// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
-	public static MeterProviderBuilder AddFileExporter(this MeterProviderBuilder builder, Action<FileExporterOptions> configureExporter)
-		=> AddFileExporter(builder, name: null, configureExporter);
+	public static MeterProviderBuilder AddMicroserviceExporter(this MeterProviderBuilder builder, Action<MicroserviceOtelExporterOptions> configureExporter)
+		=> AddMicroserviceExporter(builder, name: null, configureExporter);
 
 
 	/// <summary>
-	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
+	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
 	/// </summary>
 	/// <param name="builder"><see cref="MeterProviderBuilder"/> builder to use.</param>
 	/// <param name="name">Optional name which is used when retrieving options.</param>
-	/// <param name="configureExporter">Optional callback action for configuring <see cref="FileExporterOptions"/>.</param>
+	/// <param name="configureExporter">Optional callback action for configuring <see cref="MicroserviceOtelExporterOptions"/>.</param>
 	/// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
-	public static MeterProviderBuilder AddFileExporter(
+	public static MeterProviderBuilder AddMicroserviceExporter(
 		this MeterProviderBuilder builder,
 		string? name,
-		Action<FileExporterOptions>? configureExporter)
+		Action<MicroserviceOtelExporterOptions>? configureExporter)
 	{
 		if (builder == null)
 		{
@@ -56,38 +56,38 @@ public static class FileExporterMetricsExtensions
 		return builder.AddReader(sp =>
 		{
 			return BuildFileExporterMetricReader(
-				sp.GetRequiredService<IOptionsMonitor<FileExporterOptions>>().Get(name),
+				sp.GetRequiredService<IOptionsMonitor<MicroserviceOtelExporterOptions>>().Get(name),
 				sp.GetRequiredService<IOptionsMonitor<MetricReaderOptions>>().Get(name));
 		});
 	}
 
 	/// <summary>
-	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
+	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
 	/// </summary>
 	/// <param name="builder"><see cref="MeterProviderBuilder"/> builder to use.</param>
 	/// <param name="configureExporterAndMetricReader">Callback action for
-	/// configuring <see cref="FileExporterOptions"/> and <see
+	/// configuring <see cref="MicroserviceOtelExporterOptions"/> and <see
 	/// cref="MetricReaderOptions"/>.</param>
 	/// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
-	public static MeterProviderBuilder AddFileExporter(
+	public static MeterProviderBuilder AddMicroserviceExporter(
 		this MeterProviderBuilder builder,
-		Action<FileExporterOptions, MetricReaderOptions>? configureExporterAndMetricReader)
-		=> AddFileExporter(builder, name: null, configureExporterAndMetricReader);
+		Action<MicroserviceOtelExporterOptions, MetricReaderOptions>? configureExporterAndMetricReader)
+		=> AddMicroserviceExporter(builder, name: null, configureExporterAndMetricReader);
 
 
 	/// <summary>
-	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
+	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/>.
 	/// </summary>
 	/// <param name="builder"><see cref="MeterProviderBuilder"/> builder to use.</param>
 	/// <param name="name">Name which is used when retrieving options.</param>
 	/// <param name="configureExporterAndMetricReader">Callback action for
-	/// configuring <see cref="FileExporterOptions"/> and <see
+	/// configuring <see cref="MicroserviceOtelExporterOptions"/> and <see
 	/// cref="MetricReaderOptions"/>.</param>
 	/// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
-	public static MeterProviderBuilder AddFileExporter(
+	public static MeterProviderBuilder AddMicroserviceExporter(
 		this MeterProviderBuilder builder,
 		string? name,
-		Action<FileExporterOptions, MetricReaderOptions>? configureExporterAndMetricReader)
+		Action<MicroserviceOtelExporterOptions, MetricReaderOptions>? configureExporterAndMetricReader)
 	{
 		if (builder == null)
 		{
@@ -98,7 +98,7 @@ public static class FileExporterMetricsExtensions
 
 		return builder.AddReader(sp =>
 		{
-			var exporterOptions = sp.GetRequiredService<IOptionsMonitor<FileExporterOptions>>().Get(name);
+			var exporterOptions = sp.GetRequiredService<IOptionsMonitor<MicroserviceOtelExporterOptions>>().Get(name);
 			var metricReaderOptions = sp.GetRequiredService<IOptionsMonitor<MetricReaderOptions>>().Get(name);
 
 			configureExporterAndMetricReader?.Invoke(exporterOptions, metricReaderOptions);
@@ -109,11 +109,11 @@ public static class FileExporterMetricsExtensions
 
 
 	private static PeriodicExportingMetricReader BuildFileExporterMetricReader(
-		FileExporterOptions exporterOptions,
+		MicroserviceOtelExporterOptions exporterOptions,
 		MetricReaderOptions metricReaderOptions)
 	{
 #pragma warning disable CA2000 // Dispose objects before losing scope
-		var metricExporter = new FileMetricExporter(exporterOptions);
+		var metricExporter = new MicroserviceOtelMetricExporter(exporterOptions);
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
 		return PeriodicExportingMetricReaderHelper.CreatePeriodicExportingMetricReader(

@@ -22,7 +22,7 @@ public class CollectorStatusResult
 
 public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>
 {
-	public CollectorStatusCommand() : base("status", "Starts a stream of messages containing the status of the collector")
+	public CollectorStatusCommand() : base("ps", "Starts a stream of messages containing the status of the collector")
 	{
 	}
 
