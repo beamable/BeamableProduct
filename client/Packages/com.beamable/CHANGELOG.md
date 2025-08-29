@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-08-29
+### Changed
+- Bumped CLI Version to 5.4.1
+
 ## [3.1.0] - 2025-08-28
 ### Changed
 - Updated Microservices configuration Federation list to a view-mode only. Now federation are listed based on the OpenApi specification generated from the Microservices. So no need to previously add Federation Id to a Federation Interface on Unity.
