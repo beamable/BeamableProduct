@@ -28,7 +28,7 @@ namespace Beamable.Common.BeamCli.Contracts
 	public class CliOtelLogRecord
 	{
 		public string Timestamp { get; set; }
-		public string LogLevel { get; set; } // needs to be either of ["Trace", "Debug", "Information", "Warning", "Error", "Critical", "None"
+		public string LogLevel { get; set; } // needs to be either of ["Trace", "Debug", "Information", "Warning", "Error", "Critical", "None"]
 		public string Body { get; set; }
 		public string ExceptionMessage { get; set; }
 		public string ExceptionStackTrace { get; set; }

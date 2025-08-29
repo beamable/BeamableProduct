@@ -12,7 +12,7 @@ public class PruneTelemetryCommandArgs : CommandArgs
 	public int MaxDaysToStore;
 }
 
-public class PruneTelemetryCommand : AppCommand<PruneTelemetryCommandArgs>
+public class PruneTelemetryCommand : AppCommand<PruneTelemetryCommandArgs>, IEmptyResult
 {
 	private const int DefaultRetainingDays = 10;
 

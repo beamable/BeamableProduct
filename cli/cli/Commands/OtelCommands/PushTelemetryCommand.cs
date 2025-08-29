@@ -11,7 +11,7 @@ public class PushTelemetryCommandArgs : CommandArgs
 	public string Endpoint;
 }
 
-public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>
+public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult
 {
 	public PushTelemetryCommand() : base("push", "Pushes local telemetry data saved through the BeamableExporter to a running collector. This uses the Open Telemetry OTLP exporter to push telemetry from files to a running collector using Http protocol")
 	{
