@@ -54,6 +54,8 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	/// </summary>
 	string LocalProjectVersion { get; }
 	string DockerPath { get; }
+	
+	string JavaPath { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -98,6 +100,7 @@ public class DefaultAppContext : IAppContext
 
 	public string DotnetPath { get; private set; }
 	public string DockerPath { get; private set; }
+	public string JavaPath { get; private set; }
 	public HashSet<string> IgnoreBeamoIds { get; private set; }
 
 
@@ -190,6 +193,7 @@ public class DefaultAppContext : IAppContext
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
+		JavaPath = consoleContext.ParseResult.GetValueForOption(JavaPathOption.Instance);
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}
