@@ -185,7 +185,8 @@ public class ReportTelemetryCommand : AtomicCommand<ReportTelemetryCommandArgs, 
 				{
 					Message = log.ExceptionMessage,
 					StackTrace = log.ExceptionStackTrace
-				}
+				},
+				Attributes = log.Attributes
 			});
 		}
 
