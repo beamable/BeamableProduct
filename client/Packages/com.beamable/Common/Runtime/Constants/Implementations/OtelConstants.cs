@@ -55,13 +55,24 @@ namespace Beamable.Common
                 
                 /// <summary>
                 /// A tag used to identify the type of source providing data,
-                ///  for now, always "microservice".
-                /// But in the future, could be "UnityEditor" or "UnityRuntime" for example.
+                ///  for now, it's either "microservice" or "cli".
                 /// </summary>
                 public const string ATTR_SOURCE = "beam.source";
 
-                public const string ATTR_SOURCE_VERSION = "beam.source.version";
-                public const string ATTR_SOURCE_ENGINE_VERSION = "beam.source.engine.version";
+                /// <summary>
+                /// A tag used to identify which engine is using the CLI, either "unity" or "unreal"
+                /// </summary>
+                public const string ATTR_ENGINE_SOURCE = "beam.engine.source";
+
+                /// <summary>
+                /// A tag used tp identify the version of Beamable SDK calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_SDK_VERSION = "beam.engine.source.sdk_version";
+
+                /// <summary>
+                /// A tag used to identify the engine version that is running and calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_VERSION = "beam.engine.source.engine_version";
 
                 /// <summary>
                 /// A UUID to identify the individual connection within an application.
@@ -94,8 +105,6 @@ namespace Beamable.Common
                 /// The SDK version publishing the data
                 /// </summary>
                 public const string ATTR_SDK_VERSION = "beam.sdk_version";
-                
-                
                 
                 
                 public const string METER_SERVICE_NAME = "Beamable.Service.Core";

@@ -87,9 +87,10 @@ public class ReportTelemetryCommand : AtomicCommand<ReportTelemetryCommandArgs, 
 
 				var objectDict = new Dictionary<string, object>()
 				{
-					{ Otel.ATTR_SOURCE, cliOtelData.Source },
-					{ Otel.ATTR_SOURCE_VERSION, cliOtelData.SdkVersion },
-					{ Otel.ATTR_SOURCE_ENGINE_VERSION, cliOtelData.EngineVersion },
+					{ Otel.ATTR_SOURCE, "cli" },
+					{ Otel.ATTR_ENGINE_SOURCE, args.AppContext.EngineCalling},
+					{ Otel.ATTR_ENGINE_SDK_VERSION, args.AppContext.EngineSdkVersion },
+					{ Otel.ATTR_ENGINE_VERSION, args.AppContext.EngineVersion },
 					{ Otel.ATTR_SDK_VERSION, BeamAssemblyVersionUtil.GetVersion<App>() }
 				};
 

@@ -14,16 +14,11 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string ErrorMessage;
 	}
 
-
 	[Serializable]
 	public class CliOtelMessage
 	{
 		public List<CliOtelLogRecord> allLogs;
-		public string Source;
-		public string SdkVersion;
-		public string EngineVersion;
 	}
-
 
 	[Serializable]
 	public class CliOtelLogRecord

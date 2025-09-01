@@ -254,6 +254,18 @@ public class App
 			{
 				dict[Otel.ATTR_PID] = ctx.Pid;
 			}
+			if (!string.IsNullOrEmpty(ctx.EngineCalling))
+			{
+				dict[Otel.ATTR_ENGINE_SOURCE] = ctx.EngineCalling;
+			}
+			if (!string.IsNullOrEmpty(ctx.EngineSdkVersion))
+			{
+				dict[Otel.ATTR_ENGINE_SDK_VERSION] = ctx.EngineSdkVersion;
+			}
+			if (!string.IsNullOrEmpty(ctx.EngineVersion))
+			{
+				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
+			}
 
 			dict[Otel.ATTR_SOURCE] = "cli";
 				
@@ -414,6 +426,9 @@ public class App
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton(PreferRemoteFederationOption.Instance);
 		Commands.AddSingleton(CidOption.Instance);
+		Commands.AddSingleton(EngineCallerOption.Instance);
+		Commands.AddSingleton(EngineSdkVersionOption.Instance);
+		Commands.AddSingleton(EngineVersionOption.Instance);
 		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
 		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton(PidOption.Instance);
@@ -439,6 +454,9 @@ public class App
 			var root = new RootCommand();
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EngineCallerOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EngineSdkVersionOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EngineVersionOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());

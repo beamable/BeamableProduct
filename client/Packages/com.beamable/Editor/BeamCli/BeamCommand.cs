@@ -70,7 +70,10 @@ namespace Beamable.Editor.BeamCli.Commands
 				quiet = true,
 				noLogFile = true,
 				raw = true,
-				emitLogStreams = true
+				emitLogStreams = true,
+				engine = "unity",
+				engineVersion = Application.unityVersion,
+				engineSdkVersion = BeamableEnvironment.SdkVersion.ToString()
 			};
 			return beamArgs;
 		}
