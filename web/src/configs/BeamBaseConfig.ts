@@ -21,4 +21,7 @@ export interface BeamBaseConfig {
 
   /** Published version of the game. */
   gameVersion?: string;
+
+  /** List of content namespaces to load. By default, only 'global' is loaded. */
+  contentNamespaces?: string[];
 }
