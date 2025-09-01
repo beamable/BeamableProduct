@@ -13,11 +13,8 @@ namespace Beamable.Common
                 public const string ENV_CLI_ENABLE_TELEMETRY = "BEAM_TELEMETRY";
 
                 public static bool CliTracesEnabled() =>
-                    // need to opt in
-                    !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_ENABLE_TELEMETRY))
-                 
-                    // and the NO option needs to be left empty
-                    && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+                    // if the disable env var is set, we don't setup otel
+                    string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
 
                 public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 50; // Equivalent to 50mb worth of space
                 
@@ -62,7 +59,10 @@ namespace Beamable.Common
                 /// But in the future, could be "UnityEditor" or "UnityRuntime" for example.
                 /// </summary>
                 public const string ATTR_SOURCE = "beam.source";
-                
+
+                public const string ATTR_SOURCE_VERSION = "beam.source.version";
+                public const string ATTR_SOURCE_ENGINE_VERSION = "beam.source.engine.version";
+
                 /// <summary>
                 /// A UUID to identify the individual connection within an application.
                 /// </summary>
