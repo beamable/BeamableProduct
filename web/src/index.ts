@@ -12,5 +12,8 @@ export * from '@/platform/types/TokenStorage';
 export * from '@/services';
 export * from '@/constants/Errors';
 export * from '@/configs/BeamEnvironmentConfig';
+export * from '@/core/types/RefreshableServiceMap';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { GET, POST, PUT, PATCH, DELETE } from '@/constants';
+export { BeamEnvironmentRegistry } from '@/core/BeamEnvironmentRegistry';
+export type * from '@/contents/types';

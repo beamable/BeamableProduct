@@ -2,6 +2,7 @@ import { TokenStorage } from '@/platform/types/TokenStorage';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { BEAM_NODE_DIR } from '@/constants';
 
 /**
  * TokenStorage implementation for Node.js environments.
@@ -14,7 +15,7 @@ export class NodeTokenStorage extends TokenStorage {
   constructor(pid: string, tag?: string) {
     super();
     this.prefix = tag ? `${tag}_${pid}_` : `${pid}_`;
-    const directory = path.join(os.homedir(), '.beamable_node');
+    const directory = path.join(os.homedir(), BEAM_NODE_DIR);
     this.filePath = path.join(directory, `${this.prefix}beam_tokens.json`);
     try {
       if (fs.existsSync(this.filePath)) {
@@ -93,7 +94,7 @@ export class NodeTokenStorage extends TokenStorage {
 
   async clear(): Promise<void> {
     // Remove all token files from disk regardless of prefix
-    const dir = path.join(os.homedir(), '.beamable_node');
+    const dir = path.join(os.homedir(), BEAM_NODE_DIR);
     try {
       const files = await fs.promises.readdir(dir);
       await Promise.all(

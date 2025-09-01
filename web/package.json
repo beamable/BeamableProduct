@@ -1,6 +1,6 @@
 {
   "name": "beamable-sdk",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.js",
   "module": "dist/node/index.mjs",
@@ -19,7 +19,7 @@
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
     "format": "prettier --write .",
-    "doc": "typedoc",
+    "doc": "node ./generateDocs.mjs",
     "changeset": "changeset",
     "release": "changeset version && pnpm build",
     "prepublishOnly": "pnpm build"
@@ -35,6 +35,7 @@
     "prettier": "^3.5.3",
     "tsup": "^8.4.0",
     "typedoc": "^0.28.5",
+    "typedoc-github-theme": "^0.3.0",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.1"
