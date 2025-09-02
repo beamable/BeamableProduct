@@ -98,7 +98,7 @@ namespace Beamable.Server
    public class BeamableMicroService
    {
       public string MicroserviceName => _serviceAttribute.MicroserviceName;
-      public string MicroserviceID => _microServiceId;
+      public static string MicroserviceID => _microServiceId;
       
       /// <summary>
       /// The term, "micro_" is a legacy string from 1.x days.
@@ -119,7 +119,7 @@ namespace Beamable.Server
       private Promise<IConnection> _webSocketPromise;
       private MicroserviceRequester _requester;
       private IActivityProvider _activityProvider;
-      private readonly string _microServiceId = Guid.NewGuid().ToString();
+      private static readonly string _microServiceId = Guid.NewGuid().ToString();
       public SocketRequesterContext SocketContext => _socketRequesterContext;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
