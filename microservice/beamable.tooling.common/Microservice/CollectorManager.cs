@@ -262,7 +262,7 @@ public class CollectorManager
 		};
 	}
 	
-	private static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath, bool makeExecutable)
+	public static async Task DownloadAndDecompressGzip(HttpClient httpClient, string url, string outputPath, bool makeExecutable, bool decompress=true)
 	{
 		Log.Information($"Downloading {url} to {outputPath}");
 		var folder = Path.GetDirectoryName(outputPath);
@@ -271,10 +271,17 @@ public class CollectorManager
 		response.EnsureSuccessStatusCode();
 
 		using var responseStream = await response.Content.ReadAsStreamAsync();
-		using var gzipStream = new GZipStream(responseStream, CompressionMode.Decompress);
 		using var outputFileStream = File.Create(outputPath);
 
-		await gzipStream.CopyToAsync(outputFileStream);
+		if (decompress)
+		{
+			using var gzipStream = new GZipStream(responseStream, CompressionMode.Decompress);
+			await gzipStream.CopyToAsync(outputFileStream);
+		}
+		else
+		{
+			await responseStream.CopyToAsync(outputFileStream);
+		}
 
 		if (makeExecutable)
 		{
