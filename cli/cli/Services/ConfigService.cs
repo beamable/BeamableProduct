@@ -10,6 +10,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Beamable.Server;
+using Microsoft.Extensions.Logging;
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 namespace cli;
 
@@ -21,6 +23,13 @@ public enum Vcs
 	// ReSharper disable once InconsistentNaming
 	SVN,
 	P4
+}
+
+[Serializable]
+public class OtelConfig
+{
+	public LogLevel? BeamTelemetryLogLevel;
+	public long BeamTelemetryMaxSize;
 }
 
 public class ConfigService
@@ -337,6 +346,28 @@ public class ConfigService
 		File.WriteAllText(file, json);
 	}
 
+	public OtelConfig LoadOtelConfigFromFile()
+	{
+		var config = LoadDataFile<OtelConfig>(CONFIG_FILE_OTEL);
+
+		if (config.BeamTelemetryLogLevel == null)
+		{
+			config.BeamTelemetryLogLevel = LogLevel.Warning;
+		}
+
+		if (config.BeamTelemetryMaxSize == 0)
+		{
+			config.BeamTelemetryMaxSize = Otel.MAX_OTEL_TEMP_DIR_SIZE;
+		}
+
+		return config;
+	}
+
+	public void SaveOtelConfigToFile(OtelConfig config)
+	{
+		SaveDataFile<OtelConfig>(CONFIG_FILE_OTEL, config);
+	}
+
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
 
 	public List<string> LoadPathsToIgnoreFromFile()
@@ -401,6 +432,7 @@ public class ConfigService
 
 	public const string CONFIG_FILE_PROJECT_PATH_ROOT = "project-root-path.json";
 	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
+	public const string CONFIG_FILE_OTEL = "otel-config.json";
 	public const string CONFIG_FILE_PATHS_TO_IGNORE = "project-paths-to-ignore.json";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));

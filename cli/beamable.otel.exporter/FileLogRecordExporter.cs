@@ -1,5 +1,6 @@
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
@@ -12,11 +13,13 @@ namespace beamable.otel.exporter;
 public class FileLogRecordExporter : FileExporter<LogRecord>
 {
 	private readonly string _filesPath;
+	private readonly LogLevel _minimalLogLevel;
 	private Resource? resource;
 
 	public FileLogRecordExporter(FileExporterOptions options) : base(options)
 	{
 		_filesPath = options.ExportPath;
+		_minimalLogLevel = options.MinimalLogLevel;
 	}
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
@@ -30,7 +33,11 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 
 		foreach (var log in batch)
 		{
-			allLogsSerialized.Add(LogRecordSerializer.SerializeLogRecord(log));
+			//We only export what is configured to be, the default being "Warning" and above
+			if (log.LogLevel >= _minimalLogLevel )
+			{
+				allLogsSerialized.Add(LogRecordSerializer.SerializeLogRecord(log));
+			}
 		}
 
 		var serializedBatch = new LogsBatch()

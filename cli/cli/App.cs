@@ -142,8 +142,12 @@ public class App
 					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
 					opts.AddFileExporter(opts =>
 					{
-						var configPath = provider.GetService<ConfigService>().ConfigTempOtelLogsDirectoryPath;
+						var configService = provider.GetService<ConfigService>();
+						var configPath = configService.ConfigTempOtelLogsDirectoryPath;
 						opts.ExportPath = configPath ?? ".";
+
+						var otelConfig = configService.LoadOtelConfigFromFile();
+						opts.MinimalLogLevel = (LogLevel)otelConfig.BeamTelemetryMaxSize;
 					});
 				});
 			}
@@ -498,6 +502,9 @@ public class App
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<ReportTelemetryCommand, ReportTelemetryCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<FetchTelemetryLogsCommand, FetchTelemetryLogsCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<SetBeamOtelConfigCommand, SetBeamOtelConfigCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<GetBeamOtelConfigCommand, GetBeamOtelConfigCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
@@ -1067,17 +1074,20 @@ public class App
 			//in case otel is enabled, check if otel data stored in files is too large
 			if (Otel.CliTracesEnabled())
 			{
-				var otelDirectory = provider.GetService<ConfigService>().ConfigTempOtelDirectoryPath;
+				var configService = provider.GetService<ConfigService>();
+				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
 
 				if (Directory.Exists(otelDirectory))
 				{
 					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
 
-					if (dirResult.Size >= Otel.MAX_OTEL_TEMP_DIR_SIZE)
+					var maxSize = configService.LoadOtelConfigFromFile().BeamTelemetryMaxSize;
+
+					if (dirResult.Size >= maxSize)
 					{
-						Log.Warning($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
+						Log.Information($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
 						            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
-						Log.Warning($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
+						Log.Information($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
 					}
 				}
 			}
