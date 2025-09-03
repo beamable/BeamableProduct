@@ -1,3 +1,4 @@
+using Beamable.Common.Api;
 using beamable.otel.exporter;
 using Beamable.Server;
 using OpenTelemetry;
@@ -48,6 +49,18 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 		}else
 		{
 			CancellationTokenSource tokenSource = new CancellationTokenSource();
+
+			try
+			{
+				var res = await args.OtelApi.GetOtelAuthWriterConfig();
+				CollectorManager.AddAuthEnvironmentVars(res);
+			}
+			catch (RequesterException ex)
+			{
+				throw new CliException(
+					message: $"An error happened while trying to get otel credentials from Beamo. Message=[{ex.Message}] StackTrace=[{ex.StackTrace}]");
+			}
+
 			var basePath = CollectorManager.GetCollectorBasePathForCli();
 			var collectorStatus = await CollectorManager.StartCollectorAndWait(basePath, true, true, tokenSource, BeamableZLoggerProvider.LogContext.Value);
 			endpointToUse = $"http://{collectorStatus.otlpEndpoint}";
