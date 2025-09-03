@@ -156,11 +156,18 @@ namespace Beamable.Server
 						    .SetResourceBuilder(_resourceBuilder)
 						    .AddMicroserviceExporter(option =>
 						    {
-							    if (ShouldStartStandardOtel())
+
+							    if (!string.IsNullOrEmpty(args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(args.OtelExporterOtlpProtocol))
+							    {
+								    option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
+								    option.OtlpEndpoint = args.OtelExporterOtlpEndpoint;
+							    }
+							    else if(ShouldStartStandardOtel())
 							    {
 								    option.Protocol = OtlpExportProtocol.HttpProtobuf;
 								    option.OtlpEndpoint = otlpEndpoint;
 							    }
+
 						    });
 				    });
 			    }
@@ -687,10 +694,15 @@ namespace Beamable.Server
 			        // We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
 			        .AddOtlpExporter(option =>
 			        {
-				        if (shouldStartStandardOtel)
+				        if (!string.IsNullOrEmpty(args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(args.OtelExporterOtlpProtocol))
+				        {
+					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
+					        option.Endpoint = new Uri($"{args.OtelExporterOtlpEndpoint}/v1/metrics");
+				        }
+				        else if(ShouldStartStandardOtel())
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");;
+					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");
 				        }
 
 			        })
@@ -705,7 +717,12 @@ namespace Beamable.Server
 			        .SetSampler<TraceSampler>()
 			        .AddMicroserviceExporter(option =>
 			        {
-				        if (shouldStartStandardOtel)
+				        if (!string.IsNullOrEmpty(args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(args.OtelExporterOtlpProtocol))
+				        {
+					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
+					        option.OtlpEndpoint = args.OtelExporterOtlpEndpoint;
+				        }
+				        else if(ShouldStartStandardOtel())
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
 					        option.OtlpEndpoint = otlpEndpoint;

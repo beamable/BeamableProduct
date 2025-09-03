@@ -22,8 +22,8 @@ public class SetBeamOtelConfigCommand : AtomicCommand<SetBeamOtelConfigCommandAr
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("log-level", "The minimum Open Telemetry LogLevel to be sent to Clickhouse, this needs to be a valid LogLevel converted to string value"), (arg, i) => arg.logLevel = i);
-		AddArgument(new Argument<string>("max-size", "The maximum size in bytes for saved Otel data"), (arg, i) => arg.maxSize = i);
+		AddArgument(new Argument<string>("cli-log-level", "The minimum Open Telemetry LogLevel to be sent to Clickhouse, this needs to be a valid LogLevel converted to string value"), (arg, i) => arg.logLevel = i);
+		AddArgument(new Argument<string>("cli-telemetry-max-size", "The maximum size in bytes for saved Otel data"), (arg, i) => arg.maxSize = i);
 	}
 
 	public override Task<SetBeamOtelConfigCommandResults> GetResult(SetBeamOtelConfigCommandArgs args)
