@@ -310,6 +310,10 @@ public class App
 			var resourceBuilder = p.GetService<ResourceBuilder>();
 			if (Otel.CliTracesEnabled())
 			{
+				//TODO this is just for testing, if it works well, we will implement it in a more robust way
+				Environment.SetEnvironmentVariable("OTEL_TRACES_SAMPLER", "traceidratio");
+				Environment.SetEnvironmentVariable("OTEL_TRACES_SAMPLER_ARG", "0.05");
+
 				return Sdk.CreateMeterProviderBuilder()
 					.AddProcessInstrumentation()
 					.AddRuntimeInstrumentation()
