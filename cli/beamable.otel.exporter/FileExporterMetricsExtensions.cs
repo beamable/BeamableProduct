@@ -1,4 +1,4 @@
-using beamable.otel.exporter.Utils;
+using beamable.otel.common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
