@@ -7,6 +7,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -14,6 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Utility
 {
@@ -162,7 +164,7 @@ namespace Beamable.Editor.Utility
 					});
 				}
 
-				await _cli.OtelPush(new OtelPushArgs()).Run();
+				await _cli.OtelPush(new OtelPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
 
 				await FetchOtelData();
 			}
@@ -179,7 +181,12 @@ namespace Beamable.Editor.Utility
 			
 			try
 			{
-				await _cli.OtelPrune(new OtelPruneArgs() {deleteAll = true}).Run();
+				await _cli.OtelPrune(new OtelPruneArgs()
+				{
+					deleteAll = !CoreConfig.PruneRetainingDays.HasValue,
+					retainingDays = CoreConfig.PruneRetainingDays.Value,
+					processId = Process.GetCurrentProcess().Id.ToString()
+				}).Run();
 				string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
 				await Task.Run(() =>
 				{

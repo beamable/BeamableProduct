@@ -140,6 +140,9 @@ The default is 60 seconds.
 
 		[Tooltip("The Max size (in bytes) of Telemetries before doing an auto-update, default value is 50Mb (in bytes)")]
 		public Optional<long> TelemetryMaxSize = new() {HasValue = false, Value = 1024 * 1024 * 50};
+		
+		[Tooltip("Define which files we skip prunning based on how old they are in days")]
+			public Optional<int> PruneRetainingDays = new() {HasValue = false};
 
 		#if UNITY_EDITOR
 		public Action OnValidateCallback;
