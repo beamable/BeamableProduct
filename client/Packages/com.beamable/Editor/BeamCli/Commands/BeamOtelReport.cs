@@ -7,16 +7,20 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class OtelReportArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
         /// <summary>All paths to files that contain custom log data to be later exported to clickhouse</summary>
-        public System.Collections.Generic.List<string> paths;
+        public string[] paths;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // If the paths value was not default, then add it to the list of args.
-            if ((this.paths != default(System.Collections.Generic.List<string>)))
+            if ((this.paths != default(string[])))
             {
-                genBeamCommandArgs.Add(("--paths=" + this.paths));
+                for (int i = 0; (i < this.paths.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--paths=" + this.paths[i]));
+                }
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
