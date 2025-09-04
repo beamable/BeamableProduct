@@ -87,7 +87,7 @@ namespace Beamable.Editor.Utility
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
-			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {logLevel = _telemetryLogLevel.ToString(), maxSize = _telemetryMaxSize.ToString()});
+			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
 			commandWrapper.Run();
 
 		}
