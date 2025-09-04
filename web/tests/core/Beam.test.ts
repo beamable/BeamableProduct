@@ -46,12 +46,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => null,
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: null,
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: false,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };
@@ -88,12 +89,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => 'access-token',
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: true,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };
@@ -132,12 +134,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => 'access-token',
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: false,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };

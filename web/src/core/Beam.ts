@@ -1,10 +1,9 @@
-import { BeamConfig } from '@/configs/BeamConfig';
+import type { BeamConfig } from '@/configs/BeamConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
-import { TokenStorage } from '@/platform/types/TokenStorage';
 import { AccountService } from '@/services/AccountService';
 import { AuthService } from '@/services/AuthService';
-import { defaultTokenStorage, readConfig, saveConfig } from '@/defaults';
+import { readConfig, saveConfig } from '@/defaults';
 import { parseSocketMessage, saveToken } from '@/core/BeamUtils';
 import type { TokenResponse } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
@@ -15,7 +14,7 @@ import {
   type BeamServiceType,
   type RefreshableServiceMap,
   type Subscription,
-  type SubscriptionMap,
+  type ClientSubscriptionMap,
 } from '@/core/types';
 import { wait } from '@/utils/wait';
 import { HEADERS } from '@/constants';
@@ -37,17 +36,9 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    */
   player: PlayerService;
 
-  /**
-   * The token storage instance used by the SDK.
-   * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
-   * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
-   */
-  tokenStorage: TokenStorage;
-
-  private static localTokenStorage: TokenStorage;
   private readonly beamConfig: BeamConfig;
   private ws: BeamWebSocket;
-  private subscriptions: Partial<SubscriptionMap> = {};
+  private subscriptions: Partial<ClientSubscriptionMap> = {};
 
   /** Initialize a new Beam client instance. */
   static async init(config: BeamConfig) {
@@ -60,12 +51,8 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   }
 
   protected constructor(config: BeamConfig) {
-    Beam.localTokenStorage =
-      config.tokenStorage ??
-      defaultTokenStorage(config.pid, config.instanceTag);
     super(config);
     this.beamConfig = config;
-    this.tokenStorage = Beam.localTokenStorage;
     this.addOptionalDefaultHeader(HEADERS.UA, config.gameEngine);
     this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.gameEngineVersion);
     this.ws = new BeamWebSocket();
@@ -76,10 +63,10 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   }
 
   protected createBeamRequester(config: BeamConfig): BeamRequester {
-    const baseRequester = config.requester ?? new BaseRequester();
     return new BeamRequester({
-      inner: baseRequester,
-      tokenStorage: Beam.localTokenStorage,
+      inner: config.requester ?? new BaseRequester(),
+      tokenStorage: this.tokenStorage,
+      useSignedRequest: false,
       pid: this.pid,
     });
   }
@@ -116,7 +103,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   }
 
   /** Connects the client SDK to the Beamable platform. This method is called automatically during `Beam.init()`. */
-  protected async connect(): Promise<void> {
+  private async connect(): Promise<void> {
     try {
       const savedConfig = await readConfig();
       // If the saved config cid does not match the current one, clear the token storage
@@ -126,14 +113,15 @@ export class Beam extends ClientServicesMixin(BeamBase) {
         await saveConfig({ cid: this.cid, pid: this.pid });
 
       let tokenResponse: TokenResponse | undefined;
-      const accessToken = await this.tokenStorage.getAccessToken();
+      const tokenData = await this.tokenStorage.getTokenData();
+      const accessToken = tokenData.accessToken;
       if (!accessToken) {
         // If no access token exists, login as a guest
         tokenResponse = await this.clientServices.auth.loginAsGuest();
       } else if (this.tokenStorage.isExpired) {
         // If the access token is expired, try to refresh it using the refresh token
         // If no refresh token exists, sign in as a guest
-        const refreshToken = await this.tokenStorage.getRefreshToken();
+        const refreshToken = tokenData.refreshToken;
         tokenResponse = refreshToken
           ? await this.clientServices.auth.refreshAuthToken({ refreshToken })
           : await this.clientServices.auth.loginAsGuest();
@@ -156,7 +144,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   }
 
   private async setupRealtimeConnection() {
-    const refreshToken = await this.tokenStorage.getRefreshToken();
+    const { refreshToken } = await this.tokenStorage.getTokenData();
     if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
 
     await this.ws.connect({
@@ -198,10 +186,11 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    * @param handler The callback to process the data when a message is received.
    * @example
    * ```ts
-   * beam.use(InventoryService);
-   * beam.on('inventory.refresh', (data) => {
+   * const handler = (data) => {
    *   console.log('New inventory data:', data);
-   * });
+   * }
+   * beam.use(InventoryService);
+   * beam.on('inventory.refresh', handler);
    * ```
    */
   on<K extends keyof RefreshableServiceMap>(
@@ -248,7 +237,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    * @param handler The callback to remove. If not provided, all handlers for the context are removed.
    * @example
    * ```ts
-   * beam.off('inventory.refresh', myHandler);
+   * beam.off('inventory.refresh', handler);
    * // or to remove all handlers for the context
    * beam.off('inventory.refresh');
    * ```
@@ -265,7 +254,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       // if no handler is supplied, remove them all
       subs.forEach(({ listener, abortController }) => {
         this.ws.rawSocket?.removeEventListener('message', listener);
-        abortController.abort();
+        abortController?.abort();
       });
       delete this.subscriptions[context];
       return;
@@ -276,7 +265,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
 
     const { listener, abortController } = subs[index];
     this.ws.rawSocket?.removeEventListener('message', listener);
-    abortController.abort();
+    abortController?.abort();
     subs.splice(index, 1);
     if (subs.length === 0) delete this.subscriptions[context];
   }

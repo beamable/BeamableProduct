@@ -17,8 +17,8 @@ import { BeamBase } from '@/core/BeamBase';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
-  tokenStorage?: TokenStorage;
-  useSignedRequest?: boolean;
+  tokenStorage: TokenStorage;
+  useSignedRequest: boolean;
   pid: string;
 };
 
@@ -78,7 +78,8 @@ export class BeamRequester implements HttpRequester {
         [HEADERS.BEAM_SIGNATURE]: this.generateSignature(req.url, body),
       };
     } else if (req.withAuth) {
-      const token = await this.tokenStorage?.getAccessToken();
+      const data = await this.tokenStorage?.getTokenData();
+      const token = data?.accessToken ?? null;
       if (token) {
         // add the bearer token to the request headers
         req.headers = {
@@ -178,7 +179,8 @@ export class BeamRequester implements HttpRequester {
   }
 
   private async handleRefresh(): Promise<void> {
-    const refreshToken = await this.tokenStorage?.getRefreshToken();
+    const tokenData = await this.tokenStorage?.getTokenData();
+    const refreshToken = tokenData?.refreshToken ?? null;
     if (!refreshToken) {
       throw new NoRefreshTokenError();
     }
@@ -188,7 +190,7 @@ export class BeamRequester implements HttpRequester {
       refresh_token: refreshToken,
     });
     if (response.status !== 200) {
-      await this.tokenStorage?.removeRefreshToken();
+      await this.tokenStorage?.setTokenData({ refreshToken: null });
       throw new RefreshAccessTokenError();
     }
 
@@ -198,16 +200,12 @@ export class BeamRequester implements HttpRequester {
       expires_in: newExpiresIn,
     } = response.body;
 
-    if (newAccessToken) {
-      await this.tokenStorage?.setAccessToken(newAccessToken);
-    }
-
-    if (newRefreshToken) {
-      await this.tokenStorage?.setRefreshToken(newRefreshToken);
-    }
-
-    if (newExpiresIn) {
-      await this.tokenStorage?.setExpiresIn(Date.now() + Number(newExpiresIn));
+    const update: any = {};
+    if (newAccessToken) update.accessToken = newAccessToken;
+    if (newRefreshToken) update.refreshToken = newRefreshToken;
+    if (newExpiresIn) update.expiresIn = Date.now() + Number(newExpiresIn);
+    if (Object.keys(update).length > 0) {
+      await this.tokenStorage?.setTokenData(update);
     }
   }
 }
