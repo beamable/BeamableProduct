@@ -31,6 +31,11 @@ public class FileActivityExporter : FileExporter<Activity>
 			allActivitiesSerialized.Add(ActivitySerializer.SerializeActivity(activity));
 		}
 
+		if (allActivitiesSerialized.Count == 0)
+		{
+			return ExportResult.Success;
+		}
+
 		var serializedBatch = new ActivityBatch()
 		{
 			AllTraces = allActivitiesSerialized,
