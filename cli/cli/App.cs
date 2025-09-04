@@ -147,7 +147,7 @@ public class App
 						opts.ExportPath = configPath ?? ".";
 
 						var otelConfig = configService.LoadOtelConfigFromFile();
-						opts.MinimalLogLevel = (LogLevel)otelConfig.BeamTelemetryMaxSize;
+						opts.MinimalLogLevel = (LogLevel)otelConfig.BeamCliTelemetryMaxSize;
 					});
 				});
 			}
@@ -509,6 +509,7 @@ public class App
 		Commands.AddSubCommandWithHandler<FetchTelemetryLogsCommand, FetchTelemetryLogsCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<SetBeamOtelConfigCommand, SetBeamOtelConfigCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<GetBeamOtelConfigCommand, GetBeamOtelConfigCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<OtelStatusCommand, OtelStatusCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
@@ -1085,7 +1086,7 @@ public class App
 				{
 					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
 
-					var maxSize = configService.LoadOtelConfigFromFile().BeamTelemetryMaxSize;
+					var maxSize = configService.LoadOtelConfigFromFile().BeamCliTelemetryMaxSize;
 
 					if (dirResult.Size >= maxSize)
 					{

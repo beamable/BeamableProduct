@@ -30,8 +30,8 @@ public class SetBeamOtelConfigCommand : AtomicCommand<SetBeamOtelConfigCommandAr
 	{
 		var otelConfig = new OtelConfig()
 		{
-			BeamTelemetryLogLevel = (LogLevel?)Enum.Parse(typeof(LogLevel), args.logLevel),
-			BeamTelemetryMaxSize = long.Parse(args.maxSize)
+			BeamCliTelemetryLogLevel = args.logLevel,
+			BeamCliTelemetryMaxSize = long.Parse(args.maxSize)
 		};
 
 		args.ConfigService.SaveOtelConfigToFile(otelConfig);
