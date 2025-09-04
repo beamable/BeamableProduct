@@ -13,7 +13,7 @@ public class MicroserviceOtelExporterOptions
 		{
 			if (this._endpoint == null)
 			{
-				return $"http://127.0.0.1:4318";
+				return $"127.0.0.1:4318";
 			}
 
 			return this._endpoint;

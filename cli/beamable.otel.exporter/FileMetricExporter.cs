@@ -31,6 +31,11 @@ public class FileMetricExporter : FileExporter<Metric>
 			allMetricsSerialized.Add(MetricsSerializer.SerializeMetric(metric));
 		}
 
+		if (allMetricsSerialized.Count == 0)
+		{
+			return ExportResult.Success;
+		}
+
 		var serializedBatch = new MetricsBatch()
 		{
 			AllMetrics = allMetricsSerialized,

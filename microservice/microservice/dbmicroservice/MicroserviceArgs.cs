@@ -173,10 +173,19 @@ namespace Beamable.Server
 		public int RequireProcessId =>
 			GetIntFromEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, 0);
 
-		
-		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL");
-		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
+
+		/// <summary>
+		/// Sets the protocol in which the Otlp exporter will try sending telemetry data
+		/// </summary>
+		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_PROTOCOL");
+
+		/// <summary>
+		/// Sets the endpoint in which the Otlp exporter will try sending telemetry data.
+		/// In case the protocol is Http, then it should look like this: http://127.0.0.1:4348
+		/// In case the protocol is Grpc, then it should look like this: 127.0.0.1:4348
+		/// </summary>
+		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_ENDPOINT");
+		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
 		{
 			//CustomerID = resolvedCid;

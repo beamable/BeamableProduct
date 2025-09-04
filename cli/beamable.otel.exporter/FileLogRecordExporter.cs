@@ -40,6 +40,11 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 			}
 		}
 
+		if (allLogsSerialized.Count == 0)
+		{
+			return ExportResult.Success;
+		}
+
 		var serializedBatch = new LogsBatch()
 		{
 			AllRecords = allLogsSerialized,

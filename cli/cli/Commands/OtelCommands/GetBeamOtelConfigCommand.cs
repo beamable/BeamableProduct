@@ -5,7 +5,14 @@ public class GetBeamOtelConfigCommandArgs : CommandArgs
 
 }
 
-public class GetBeamOtelConfigCommand : AtomicCommand<GetBeamOtelConfigCommandArgs, OtelConfig>, ISkipManifest
+[Serializable]
+public class GetBeamOtelConfigCommandResult
+{
+	public string BeamCliTelemetryLogLevel;
+	public long BeamCliTelemetryMaxSize;
+}
+
+public class GetBeamOtelConfigCommand : AtomicCommand<GetBeamOtelConfigCommandArgs, GetBeamOtelConfigCommandResult>, ISkipManifest
 {
 	public GetBeamOtelConfigCommand() : base("config", "Retrieves Beam Open Telemetry configuration")
 	{
@@ -15,8 +22,14 @@ public class GetBeamOtelConfigCommand : AtomicCommand<GetBeamOtelConfigCommandAr
 	{
 	}
 
-	public override Task<OtelConfig> GetResult(GetBeamOtelConfigCommandArgs args)
+	public override Task<GetBeamOtelConfigCommandResult> GetResult(GetBeamOtelConfigCommandArgs args)
 	{
-		return Task.FromResult(args.ConfigService.LoadOtelConfigFromFile());
+		var otelConfig = args.ConfigService.LoadOtelConfigFromFile();
+
+		return Task.FromResult(new GetBeamOtelConfigCommandResult()
+		{
+			BeamCliTelemetryLogLevel = otelConfig.BeamTelemetryLogLevel.ToString(),
+			BeamCliTelemetryMaxSize = otelConfig.BeamTelemetryMaxSize
+		});
 	}
 }
