@@ -23,7 +23,7 @@ namespace Beamable.Editor.Utility
 	{
 		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
 		private const double SECONDS_TO_AUTO_FLUSH = 300; // 5 minutes
-		private const double OTEL_DATA_CHECK_DELAY = 60;
+		private const double OTEL_DATA_CHECK_DELAY = 15;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
 
