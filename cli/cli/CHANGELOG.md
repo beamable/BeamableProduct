@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
+
 ## [5.4.1] - 2025-08-29
  - Fixed an issue with how `beam content publish` command retrieves information from the developer user. This resolves potential lockups that could occur in certain realms during content publishing.
 
