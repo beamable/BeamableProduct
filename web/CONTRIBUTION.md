@@ -7,7 +7,6 @@ Contributions are welcome! This project is configured with:
 - TypeScript for compile-time type safety.
 
 - `tsup` for bundling the code into multiple formats:
-
   - esm
   - cjs
   - iife (for CDN usage)
