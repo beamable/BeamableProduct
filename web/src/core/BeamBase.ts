@@ -16,6 +16,8 @@ import {
   BeamMicroServiceClient,
   BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
+import { TokenStorage } from '@/platform/types/TokenStorage';
+import { defaultTokenStorage } from '@/defaults';
 
 export interface BeamEnvVars {
   /** The secret key for signing requests. */
@@ -28,11 +30,16 @@ export interface BeamEnvVars {
 export abstract class BeamBase {
   /** The HTTP requester instance used by the Beam SDK. */
   readonly requester: HttpRequester;
-
   /** The Beamable Customer ID. */
   cid: string;
   /** The Beamable Project ID. */
   pid: string;
+  /**
+   * The token storage instance used by the client SDK.
+   * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
+   * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
+   */
+  tokenStorage: TokenStorage;
 
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
@@ -97,6 +104,9 @@ export abstract class BeamBase {
     this.cid = config.cid;
     this.pid = config.pid;
     this.envConfig = BeamEnvironment.get(config.environment ?? 'prod');
+    this.tokenStorage =
+      config.tokenStorage ??
+      defaultTokenStorage({ pid: config.pid, tag: config.instanceTag });
     this.defaultHeaders = {
       [HEADERS.ACCEPT]: 'application/json',
       [HEADERS.CONTENT_TYPE]: 'application/json',
