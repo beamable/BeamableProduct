@@ -35,7 +35,7 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 		bool couldLockFile = await args.ProcessFileLocker.LockFile(OtelCommand.OTEL_COMMANDS_LOCK_FILE, processId);
 		if (!couldLockFile)
 		{
-			throw new CliException($"Couldn't run operation because lock file {OtelCommand.OTEL_COMMANDS_LOCK_FILE} is locked by another process");
+			Log.Warning($"Couldn't run operation because lock file {OtelCommand.OTEL_COMMANDS_LOCK_FILE} is locked by another process");
 		}
 
 		try

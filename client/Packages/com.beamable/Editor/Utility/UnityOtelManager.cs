@@ -21,13 +21,13 @@ namespace Beamable.Editor.Utility
 	{
 		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
 		private const double SECONDS_TO_AUTO_FLUSH = 300; // 5 minutes
-		private const double OTEL_CHECK_DELAY = 60;
+		private const double OTEL_DATA_CHECK_DELAY = 60;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
 
 		private double _lastTimePublished;
 		private double _lastTimeFlush;
-		private double _lastOtelStatusRefresh;
+		private double _lastOtelDataRefresh;
 		BeamOtelStatusResult _otelStatus;
 		
 		private ConcurrentDictionary<string, CliOtelLogRecord> _cachedLogs = new();
@@ -180,12 +180,15 @@ namespace Beamable.Editor.Utility
 			try
 			{
 				await _cli.OtelPrune(new OtelPruneArgs() {deleteAll = true}).Run();
-				var allFiles = Directory.GetFiles(UnityOtelLogsFolder);
-				// TODO: Move to Task.run
-				foreach (string filePath in allFiles)
+				string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
+				await Task.Run(() =>
 				{
-					File.Delete(filePath);
-				}
+					foreach (string filePath in allFiles)
+					{
+						File.Delete(filePath);
+						;
+					}
+				});
 
 				await FetchOtelData();
 			}
@@ -197,17 +200,17 @@ namespace Beamable.Editor.Utility
 		
 		public async Promise FetchOtelData()
 		{
+			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
 			await FetchOtelConfig();
 			await FetchOtelStatus();
 		}
 
 		private async Promise FetchOtelStatus()
 		{
-			_lastOtelStatusRefresh = EditorApplication.timeSinceStartup;
 			OtelStatusWrapper wrapper = _cli.OtelStatus();
 			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
 			await wrapper.Run();
-			if (_otelStatus.FolderSize > _telemetryMaxSize)
+			if (_otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
 			{
 				await PublishLogs();
 			}
@@ -228,8 +231,8 @@ namespace Beamable.Editor.Utility
 
 			double now = EditorApplication.timeSinceStartup;
 			
-			double timeSinceLastRefresh = now - _lastOtelStatusRefresh;
-			if (timeSinceLastRefresh > OTEL_CHECK_DELAY)
+			double timeSinceLastRefresh = now - _lastOtelDataRefresh;
+			if (timeSinceLastRefresh > OTEL_DATA_CHECK_DELAY)
 			{
 				_ = FetchOtelData();
 			}
