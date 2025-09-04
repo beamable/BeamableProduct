@@ -24,7 +24,7 @@ namespace Beamable.Editor.BeamCli.UI
 				return;
 			}
 
-			BeamGUI.ShowDisabled(_unityOtelManager.OtelManagerStatus is OtelManagerStatus.Normal, () => DrawTools(new CliWindowToolAction
+			DrawTools(new CliWindowToolAction
 			{
 				name = "Publish Logs",
 				onClick = () =>
@@ -38,18 +38,8 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					_ = Scope.GetService<UnityOtelManager>().PruneLogs();
 				}
-			}));
+			});
 			
-			switch (_unityOtelManager.OtelManagerStatus)
-			{
-				case OtelManagerStatus.Publishing:
-					EditorGUILayout.LabelField("Publishing Logs...");
-					break;
-				case OtelManagerStatus.Pruning:
-					EditorGUILayout.LabelField("Pruning Logs...");
-					break;
-			}
-
 			string lastPublished = _unityOtelManager.OtelStatus.LastPublishTimestamp == 0
 				? "Never"
 				: DateTimeOffset.FromUnixTimeMilliseconds(_unityOtelManager.OtelStatus.LastPublishTimestamp).ToLocalTime().ToString("g");

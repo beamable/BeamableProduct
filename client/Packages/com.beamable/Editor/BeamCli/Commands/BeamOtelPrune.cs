@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool deleteAll;
         /// <summary>Can be passed to define a custom amount of days in which data should be preserved</summary>
         public int retainingDays;
+        /// <summary>Defines the process Id that called this method. If is not passed a new process ID will be generated</summary>
+        public string processId;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -24,6 +26,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.retainingDays != default(int)))
             {
                 genBeamCommandArgs.Add(("--retaining-days=" + this.retainingDays));
+            }
+            // If the processId value was not default, then add it to the list of args.
+            if ((this.processId != default(string)))
+            {
+                genBeamCommandArgs.Add(("--process-id=" + this.processId));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

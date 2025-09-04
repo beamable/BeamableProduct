@@ -237,6 +237,7 @@ public class App
 		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
 		services.AddSingleton<HttpSignedRequester>();
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
+		services.AddSingleton<ProcessFileLocker>();
 		
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());

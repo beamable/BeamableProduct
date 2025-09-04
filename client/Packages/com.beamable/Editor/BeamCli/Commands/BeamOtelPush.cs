@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The endpoint to which the telemetry data should be exported</summary>
         public string endpoint;
+        /// <summary>Defines the process Id that called this method. If is not passed a new process ID will be generated</summary>
+        public string processId;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,6 +19,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.endpoint != default(string)))
             {
                 genBeamCommandArgs.Add(("--endpoint=" + this.endpoint));
+            }
+            // If the processId value was not default, then add it to the list of args.
+            if ((this.processId != default(string)))
+            {
+                genBeamCommandArgs.Add(("--process-id=" + this.processId));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

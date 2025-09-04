@@ -5,6 +5,7 @@ using Beamable.Common.Dependencies;
 using cli.Content;
 using cli.Services;
 using cli.Services.DeveloperUserManager;
+using cli.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using BeamActivity = Beamable.Server.BeamActivity;
 
@@ -43,6 +44,8 @@ public abstract class CommandArgs
 
 	public AppLifecycle Lifecycle => Provider.GetService<AppLifecycle>();
 	public BeamActivity RootActivity => Provider.GetService<BeamActivity>();
+
+	public ProcessFileLocker ProcessFileLocker => Provider.GetService<ProcessFileLocker>();
 
 }
 
