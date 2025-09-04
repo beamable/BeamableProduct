@@ -19,7 +19,7 @@ namespace cli.Utils
 				throw new Exception("Lock file needs to have a name");
 			}
 
-			string lockFile = Path.Combine(_configService.BaseDirectory!, $"lock.{Path.GetFileNameWithoutExtension(fileLockName)}");
+			string lockFile = Path.Combine(_configService.ConfigDirectoryPath!, $"lock.{Path.GetFileNameWithoutExtension(fileLockName)}");
 			if (File.Exists(lockFile))
 			{
 				string fileProcessId = await File.ReadAllTextAsync(lockFile);
