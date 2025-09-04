@@ -46,12 +46,16 @@ namespace Beamable.Editor.Utility
 
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
+		private BeamCollectorStatusResult _collectorStatus;
+		private readonly OtelCollectorPsWrapper _collectorCommandWatcher;
 
 		private CoreConfiguration CoreConfig => CoreConfiguration.Instance;
 
 		public BeamOtelStatusResult OtelStatus => _otelStatus;
 
 		public OtelManagerStatus OtelManagerStatus => _otelManagerStatus;
+
+		public BeamCollectorStatusResult CollectorStatus => _collectorStatus;
 
 		public static string UnityOtelLogsFolder => Path.Join(Application.temporaryCachePath, "OtelLogs");
 		
@@ -76,6 +80,13 @@ namespace Beamable.Editor.Utility
 			{
 				_ = PublishLogs();
 			}
+
+			_collectorCommandWatcher = _cli.OtelCollectorPs(new OtelCollectorPsArgs() {watch = true});
+			_collectorCommandWatcher.OnStreamCollectorStatusResult(report =>
+			{
+				_collectorStatus = report.data;
+			});
+			_collectorCommandWatcher.Run();
 		}
 
 		private void OnCoreConfigChanged()
@@ -99,6 +110,7 @@ namespace Beamable.Editor.Utility
 			Application.wantsToQuit -= OnUnityQuitting;
 			AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
 			await PublishLogs();
+			_collectorCommandWatcher?.Cancel();
 		}
 		
 		public void AddLog(string message, string stacktrace, string logLevel, Exception exception = null, Dictionary<string, string> extraAttributes = null)
