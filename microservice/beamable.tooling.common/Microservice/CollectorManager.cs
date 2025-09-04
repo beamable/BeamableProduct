@@ -724,7 +724,7 @@ public class CollectorManager
 		{
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
-				arguments = "/C " + $"{fileExe} {arguments}".EnquotePath('(', ')');
+				arguments = "/C " + $"{fileExe.EnquotePath()} {arguments}".EnquotePath('(', ')');
 				fileExe = "cmd.exe";
 			}
 			else

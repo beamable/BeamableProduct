@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.BeamCli;
 using Beamable.Common.Util;
 using Beamable.Serialization.SmallerJSON;
 using cli.Options;
@@ -28,9 +29,11 @@ public enum Vcs
 [Serializable]
 public class OtelConfig
 {
-	public LogLevel? BeamTelemetryLogLevel;
-	public long BeamTelemetryMaxSize;
+	public string BeamCliTelemetryLogLevel;
+	public long BeamCliTelemetryMaxSize;
 }
+
+
 
 public class ConfigService
 {
@@ -350,14 +353,14 @@ public class ConfigService
 	{
 		var config = LoadDataFile<OtelConfig>(CONFIG_FILE_OTEL);
 
-		if (config.BeamTelemetryLogLevel == null)
+		if (string.IsNullOrEmpty(config.BeamCliTelemetryLogLevel))
 		{
-			config.BeamTelemetryLogLevel = LogLevel.Warning;
+			config.BeamCliTelemetryLogLevel = nameof(LogLevel.Warning);
 		}
 
-		if (config.BeamTelemetryMaxSize == 0)
+		if (config.BeamCliTelemetryMaxSize == 0)
 		{
-			config.BeamTelemetryMaxSize = Otel.MAX_OTEL_TEMP_DIR_SIZE;
+			config.BeamCliTelemetryMaxSize = Otel.MAX_OTEL_TEMP_DIR_SIZE;
 		}
 
 		return config;

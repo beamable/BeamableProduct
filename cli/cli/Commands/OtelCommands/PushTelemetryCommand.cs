@@ -14,6 +14,8 @@ public class PushTelemetryCommandArgs : CommandArgs
 
 public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult
 {
+	public const string LAST_PUBLISH_OTEL_FILE_NAME = "last-publish.txt";
+
 	public PushTelemetryCommand() : base("push", "Pushes local telemetry data saved through the BeamableExporter to a running collector. This uses the Open Telemetry OTLP exporter to push telemetry from files to a running collector using Http protocol")
 	{
 	}
@@ -96,6 +98,8 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 			}
 
 			Log.Information("Telemetry data was successfully exported!");
+			
+			await File.WriteAllTextAsync(Path.Join(args.ConfigService.ConfigTempOtelDirectoryPath, LAST_PUBLISH_OTEL_FILE_NAME), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 		}
 	}
 }
