@@ -11,7 +11,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpLogExporter _exporter;
 
-	private Queue<LogRecordQueueData> _logRecordsToFlush;
+	private Queue<LogRecordQueueData> _logRecordsToFlush; //TODO: Have a hard limit for this queue to not overflow with logs
 
 	public MicroserviceOtelLogRecordExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
@@ -40,6 +40,8 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		{
 			records.Add(record);
 		}
+
+		//TODO have an environment variable to disable the retry, just try sending once
 
 		var copyBatch = new Batch<LogRecord>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<LogRecord> actually removes the entries from the Batch
 

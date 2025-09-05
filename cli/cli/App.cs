@@ -309,24 +309,23 @@ public class App
 		services.AddSingleton<MeterProvider>(p =>
 		{
 			var resourceBuilder = p.GetService<ResourceBuilder>();
-			if (Otel.CliTracesEnabled())
-			{
-				//TODO this is just for testing, if it works well, we will implement it in a more robust way
-				Environment.SetEnvironmentVariable("OTEL_TRACES_SAMPLER", "traceidratio");
-				Environment.SetEnvironmentVariable("OTEL_TRACES_SAMPLER_ARG", "0.05");
 
-				return Sdk.CreateMeterProviderBuilder()
-					.AddProcessInstrumentation()
-					.AddRuntimeInstrumentation()
-					.SetResourceBuilder(resourceBuilder)
-					.AddHttpClientInstrumentation()
-					.AddFileExporter(opts =>
-					{
-						var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
-						opts.ExportPath = path ?? ".";
-					})
-					.Build();
-			}
+			//TODO: This is being removed because these instrumentations are spamming metrics when using the CLI in our engine integrations
+			//TODO We should research and fix this in a future release. Ticket for this work: [#4273]
+			// if (Otel.CliTracesEnabled())
+			// {
+			// 	return Sdk.CreateMeterProviderBuilder()
+			// 		.AddProcessInstrumentation()
+			// 		.AddRuntimeInstrumentation()
+			// 		.SetResourceBuilder(resourceBuilder)
+			// 		.AddHttpClientInstrumentation()
+			// 		.AddFileExporter(opts =>
+			// 		{
+			// 			var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
+			// 			opts.ExportPath = path ?? ".";
+			// 		})
+			// 		.Build();
+			// }
 
 			return null;
 		});
