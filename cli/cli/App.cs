@@ -289,6 +289,7 @@ public class App
 			{
 				
 				return Sdk.CreateTracerProviderBuilder()
+					.SetSampler(new TraceIdRatioBasedSampler(0.05f)) //TODO testing this for now
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation(opts =>
 					{
