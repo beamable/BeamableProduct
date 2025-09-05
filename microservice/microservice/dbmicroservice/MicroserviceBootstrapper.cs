@@ -162,11 +162,13 @@ namespace Beamable.Server
 								    option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
 								    option.OtlpEndpoint = args.OtelExporterOtlpEndpoint;
 							    }
-							    else if(ShouldStartStandardOtel())
+							    else if(_args.OtelExporterStandardEnabled)
 							    {
 								    option.Protocol = OtlpExportProtocol.HttpProtobuf;
 								    option.OtlpEndpoint = otlpEndpoint;
 							    }
+
+							    option.ShouldRetry = _args.OtelExporterShouldRetry;
 
 						    });
 				    });
@@ -683,7 +685,6 @@ namespace Beamable.Server
 
         public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute, string otlpEndpoint)
         {
-	        var shouldStartStandardOtel = ShouldStartStandardOtel();
 
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
 			        .AddMeter(Otel.METER_SERVICE_NAME)
@@ -699,7 +700,7 @@ namespace Beamable.Server
 					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
 					        option.Endpoint = new Uri($"{args.OtelExporterOtlpEndpoint}/v1/metrics");
 				        }
-				        else if(ShouldStartStandardOtel())
+				        else if(_args.OtelExporterStandardEnabled)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
 					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");
@@ -722,11 +723,13 @@ namespace Beamable.Server
 					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), args.OtelExporterOtlpProtocol);
 					        option.OtlpEndpoint = args.OtelExporterOtlpEndpoint;
 				        }
-				        else if(ShouldStartStandardOtel())
+				        else if(_args.OtelExporterStandardEnabled)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
 					        option.OtlpEndpoint = otlpEndpoint;
 				        }
+
+				        option.ShouldRetry = _args.OtelExporterShouldRetry;
 			        })
 			        .Build()
 		        ;
@@ -935,11 +938,6 @@ namespace Beamable.Server
 	        await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
         }
 
-        private static bool ShouldStartStandardOtel()
-        {
-	        return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
-        }
-
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 			var commandLineArgs = Environment.GetCommandLineArgs();
@@ -951,7 +949,9 @@ namespace Beamable.Server
 
 	        string otlpEndpoint = null;
 
-	        if (ShouldStartStandardOtel())
+	        var envArgs = _args = new EnvironmentArgs();
+
+	        if (_args.OtelExporterStandardEnabled)
 	        {
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, _logger);
@@ -981,7 +981,6 @@ namespace Beamable.Server
 
 
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = _args = new EnvironmentArgs();
 	        //var resolvedCid = await ConfigureCid(envArgs);
 	        //_args.SetResolvedCid(resolvedCid);
 

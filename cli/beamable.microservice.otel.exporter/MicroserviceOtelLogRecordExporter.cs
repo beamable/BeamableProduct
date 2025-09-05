@@ -10,6 +10,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpLogExporter _exporter;
+	private bool _shouldRetry;
 
 	private Queue<LogRecordQueueData> _logRecordsToFlush; //TODO: Have a hard limit for this queue to not overflow with logs
 
@@ -23,6 +24,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 		_exporter = new OtlpLogExporter(_otlpOptions);
 		_logRecordsToFlush = new Queue<LogRecordQueueData>();
+		_shouldRetry = options.ShouldRetry;
 	}
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
@@ -46,6 +48,11 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		var copyBatch = new Batch<LogRecord>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<LogRecord> actually removes the entries from the Batch
 
 		var result = _exporter.Export(copyBatch);
+
+		if (!_shouldRetry)
+		{
+			return result;
+		}
 
 		if (result == ExportResult.Success)
 		{

@@ -29,7 +29,8 @@ public class MicroserviceOtelExporterOptions
 		}
 	}
 
-	public OtlpExportProtocol Protocol{
+	public OtlpExportProtocol Protocol
+	{
 		get
 		{
 			if (this._protocol == null)
@@ -44,4 +45,6 @@ public class MicroserviceOtelExporterOptions
 			this._protocol = value;
 		}
 	}
+
+	public bool ShouldRetry { get; set; } = true;
 }
