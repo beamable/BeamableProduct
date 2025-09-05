@@ -168,8 +168,12 @@ namespace Beamable.Server
 								    option.OtlpEndpoint = otlpEndpoint;
 							    }
 
-							    option.ShouldRetry = _args.OtelExporterShouldRetry;
+							    option.ShouldRetry = args.OtelExporterShouldRetry;
 
+							    if (!string.IsNullOrEmpty(args.OtelExporterRetryMaxSize))
+							    {
+								    option.RetryQueueMaxSize = int.Parse(args.OtelExporterRetryMaxSize);
+							    }
 						    });
 				    });
 			    }
@@ -729,7 +733,12 @@ namespace Beamable.Server
 					        option.OtlpEndpoint = otlpEndpoint;
 				        }
 
-				        option.ShouldRetry = _args.OtelExporterShouldRetry;
+				        option.ShouldRetry = args.OtelExporterShouldRetry;
+
+				        if (!string.IsNullOrEmpty(args.OtelExporterRetryMaxSize))
+				        {
+					        option.RetryQueueMaxSize = int.Parse(args.OtelExporterRetryMaxSize);
+				        }
 			        })
 			        .Build()
 		        ;

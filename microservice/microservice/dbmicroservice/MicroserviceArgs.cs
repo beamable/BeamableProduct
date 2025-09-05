@@ -53,6 +53,7 @@ namespace Beamable.Server
 		public string OtelExporterOtlpHeaders { get; set; }
 		public bool OtelExporterShouldRetry { get; set; }
 		public bool OtelExporterStandardEnabled { get; set; }
+		public string OtelExporterRetryMaxSize { get; set; }
 
 		public void SetResolvedCid(string resolvedCid)
 		{
@@ -192,9 +193,11 @@ namespace Beamable.Server
 		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_ENDPOINT");
 
 		public bool OtelExporterShouldRetry =>
-			!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_RETRY_OTEL"));
+			string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_RETRY_OTEL"));
 
 		public bool OtelExporterStandardEnabled => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
+
+		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
 
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)

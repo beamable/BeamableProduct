@@ -6,6 +6,7 @@ public class MicroserviceOtelExporterOptions
 {
 	private string? _endpoint;
 	private OtlpExportProtocol? _protocol;
+	private int? _retryQueueMaxSize;
 
 	public string OtlpEndpoint
 	{
@@ -47,4 +48,18 @@ public class MicroserviceOtelExporterOptions
 	}
 
 	public bool ShouldRetry { get; set; } = true;
+
+	public int RetryQueueMaxSize
+	{
+		get
+		{
+			if (_retryQueueMaxSize == null)
+			{
+				return 1000; //TODO try to come up with a better value
+			}
+
+			return (int)_retryQueueMaxSize;
+		}
+		set => this._retryQueueMaxSize = value;
+	}
 }

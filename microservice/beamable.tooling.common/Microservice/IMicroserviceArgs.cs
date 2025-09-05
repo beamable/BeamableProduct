@@ -49,6 +49,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public string OtelExporterOtlpHeaders { get; }
     public bool OtelExporterShouldRetry { get; }
     public bool OtelExporterStandardEnabled { get; }
+    public string OtelExporterRetryMaxSize { get; }
 
     void SetResolvedCid(string resolvedCid);
 }
