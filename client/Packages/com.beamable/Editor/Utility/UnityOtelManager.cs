@@ -7,6 +7,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -14,22 +15,22 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Utility
 {
 	public class UnityOtelManager : IBeamableDisposable
 	{
-		private const double DEFAULT_TIME_INTERVAL = 30; 
+		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
 		private const double SECONDS_TO_AUTO_FLUSH = 300; // 5 minutes
-		private const double OTEL_CHECK_DELAY = 60;
+		private const double OTEL_DATA_CHECK_DELAY = 15;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
 
 		private double _lastTimePublished;
 		private double _lastTimeFlush;
-		private double _lastOtelStatusRefresh;
+		private double _lastOtelDataRefresh;
 		BeamOtelStatusResult _otelStatus;
-		private OtelManagerStatus _otelManagerStatus = OtelManagerStatus.Normal;
 		
 		private ConcurrentDictionary<string, CliOtelLogRecord> _cachedLogs = new();
 		private ConcurrentDictionary<string, List<string>> _cachedTimestamps = new();
@@ -46,12 +47,14 @@ namespace Beamable.Editor.Utility
 
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
+		private BeamCollectorStatusResult _collectorStatus;
+		private readonly OtelCollectorPsWrapper _collectorCommandWatcher;
 
 		private CoreConfiguration CoreConfig => CoreConfiguration.Instance;
 
 		public BeamOtelStatusResult OtelStatus => _otelStatus;
 
-		public OtelManagerStatus OtelManagerStatus => _otelManagerStatus;
+		public BeamCollectorStatusResult CollectorStatus => _collectorStatus;
 
 		public static string UnityOtelLogsFolder => Path.Join(Application.temporaryCachePath, "OtelLogs");
 		
@@ -64,6 +67,9 @@ namespace Beamable.Editor.Utility
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			CoreConfig.OnValidateCallback += OnCoreConfigChanged;
 
+			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
+			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
+			
 			_ = FetchOtelData();
 			
 			// On Windows we can try to get the crash logs
@@ -76,6 +82,13 @@ namespace Beamable.Editor.Utility
 			{
 				_ = PublishLogs();
 			}
+
+			_collectorCommandWatcher = _cli.OtelCollectorPs(new OtelCollectorPsArgs() {watch = true});
+			_collectorCommandWatcher.OnStreamCollectorStatusResult(report =>
+			{
+				_collectorStatus = report.data;
+			});
+			_collectorCommandWatcher.Run();
 		}
 
 		private void OnCoreConfigChanged()
@@ -87,7 +100,7 @@ namespace Beamable.Editor.Utility
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
-			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {logLevel = _telemetryLogLevel.ToString(), maxSize = _telemetryMaxSize.ToString()});
+			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
 			commandWrapper.Run();
 
 		}
@@ -99,6 +112,7 @@ namespace Beamable.Editor.Utility
 			Application.wantsToQuit -= OnUnityQuitting;
 			AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
 			await PublishLogs();
+			_collectorCommandWatcher?.Cancel();
 		}
 		
 		public void AddLog(string message, string stacktrace, string logLevel, Exception exception = null, Dictionary<string, string> extraAttributes = null)
@@ -128,12 +142,6 @@ namespace Beamable.Editor.Utility
 		public async Promise PublishLogs()
 		{
 			_lastTimePublished = EditorApplication.timeSinceStartup;
-			if (_otelManagerStatus is not OtelManagerStatus.Normal)
-			{
-				return;
-			}
-
-			_otelManagerStatus = OtelManagerStatus.Publishing;
 			try
 			{
 				await FlushUnityLogsAsync();
@@ -142,19 +150,21 @@ namespace Beamable.Editor.Utility
 				var allFiles = Directory.GetFiles(UnityOtelLogsFolder);
 				if (allFiles.Length > 0)
 				{
+					List<TelemetryReportStatus> reportStatusList = new();
 					var commandWrapper = _cli.OtelReport(new OtelReportArgs() {paths = allFiles});
-					// TODO: Change delete to use the OtelReport return status
+					commandWrapper.OnStreamReportTelemetryResult(report => reportStatusList = report.data.AllStatus);
 					await commandWrapper.Run();
+					
 					await Task.Run(() =>
 					{
-						foreach (string filePath in allFiles)
+						foreach (var reportItem in reportStatusList.Where(item => item.Success))
 						{
-							File.Delete(filePath);
+							File.Delete(reportItem.FilePath);
 						}
 					});
 				}
 
-				await _cli.OtelPush(new OtelPushArgs()).Run();
+				await _cli.OtelPush(new OtelPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
 
 				await FetchOtelData();
 			}
@@ -163,30 +173,29 @@ namespace Beamable.Editor.Utility
 				try { AddLog(e.Message, e.StackTrace, nameof(OtelLogLevel.Critical), e); }
 				catch { Debug.LogError($"[UnityOtelManager] Failed to log exception: {e}"); }
 			}
-			finally
-			{
-				_otelManagerStatus = OtelManagerStatus.Normal;
-			}
 		}
 
 		public async Promise PruneLogs()
 		{
 			_lastTimeFlush = _lastTimePublished = EditorApplication.timeSinceStartup;
-			if (_otelManagerStatus is not OtelManagerStatus.Normal)
-			{
-				return;
-			}
-
-			_otelManagerStatus = OtelManagerStatus.Pruning;
+			
 			try
 			{
-				await _cli.OtelPrune(new OtelPruneArgs() {deleteAll = true}).Run();
-				var allFiles = Directory.GetFiles(UnityOtelLogsFolder);
-				// TODO: Move to Task.run
-				foreach (string filePath in allFiles)
+				await _cli.OtelPrune(new OtelPruneArgs()
 				{
-					File.Delete(filePath);
-				}
+					deleteAll = !CoreConfig.PruneRetainingDays.HasValue,
+					retainingDays = CoreConfig.PruneRetainingDays.Value,
+					processId = Process.GetCurrentProcess().Id.ToString()
+				}).Run();
+				string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
+				await Task.Run(() =>
+				{
+					foreach (string filePath in allFiles)
+					{
+						File.Delete(filePath);
+						;
+					}
+				});
 
 				await FetchOtelData();
 			}
@@ -194,25 +203,21 @@ namespace Beamable.Editor.Utility
 			{
 				AddLog(e.Message, e.StackTrace, nameof(OtelLogLevel.Critical), e);
 			}
-			finally
-			{
-				_otelManagerStatus = OtelManagerStatus.Normal;
-			}
 		}
 		
 		public async Promise FetchOtelData()
 		{
+			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
 			await FetchOtelConfig();
 			await FetchOtelStatus();
 		}
 
 		private async Promise FetchOtelStatus()
 		{
-			_lastOtelStatusRefresh = EditorApplication.timeSinceStartup;
 			OtelStatusWrapper wrapper = _cli.OtelStatus();
 			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
 			await wrapper.Run();
-			if (_otelStatus.FolderSize > _telemetryMaxSize)
+			if (_otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
 			{
 				await PublishLogs();
 			}
@@ -220,22 +225,21 @@ namespace Beamable.Editor.Utility
 
 		private async Promise FetchOtelConfig()
 		{
-			await Task.Delay(1);
+			await _cli.OtelConfig().OnStreamGetBeamOtelConfigCommandResult(report =>
+			{
+				_telemetryMaxSize = report.data.BeamCliTelemetryMaxSize;
+				_telemetryLogLevel = Enum.TryParse(report.data.BeamCliTelemetryLogLevel, out OtelLogLevel logLevel) ? logLevel : _telemetryLogLevel;
+			}).Run();
 		}
 		
 		private void HandleUpdate()
 		{
-			if(_otelManagerStatus is not OtelManagerStatus.Normal) 
-			{
-				return; 
-			}
-			
 			TryToFlushUnityLogs();
 
 			double now = EditorApplication.timeSinceStartup;
 			
-			double timeSinceLastRefresh = now - _lastOtelStatusRefresh;
-			if (timeSinceLastRefresh > OTEL_CHECK_DELAY)
+			double timeSinceLastRefresh = now - _lastOtelDataRefresh;
+			if (timeSinceLastRefresh > OTEL_DATA_CHECK_DELAY)
 			{
 				_ = FetchOtelData();
 			}
@@ -244,7 +248,7 @@ namespace Beamable.Editor.Utility
 				return;
 
 			double timeSinceLastPublish = now - _lastTimePublished;
-			double timeIntervalToPublish = CoreConfig.TimeInterval.HasValue ? CoreConfig.TimeInterval.Value : DEFAULT_TIME_INTERVAL;
+			double timeIntervalToPublish = CoreConfig.TimeInterval.HasValue ? CoreConfig.TimeInterval.Value : DEFAULT_PUSH_TIME_INTERVAL;
 			if (timeSinceLastPublish >= timeIntervalToPublish)
 			{
 				_ = PublishLogs();
@@ -454,12 +458,5 @@ namespace Beamable.Editor.Utility
 				return BitConverter.ToString(hashBytes).Replace("-", string.Empty).ToLower();
 			}
 		}
-	}
-
-	public enum OtelManagerStatus
-	{
-		Normal,
-		Publishing,
-		Pruning
 	}
 }

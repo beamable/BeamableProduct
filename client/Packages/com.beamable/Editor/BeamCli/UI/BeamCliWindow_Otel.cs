@@ -1,9 +1,11 @@
-﻿using Beamable.Editor.BeamCli.Commands;
+﻿using Beamable.Common.BeamCli.Contracts;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Util;
 using Beamable.Editor.Utility;
 using System;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.BeamCli.UI
 {
@@ -22,7 +24,7 @@ namespace Beamable.Editor.BeamCli.UI
 				return;
 			}
 
-			BeamGUI.ShowDisabled(_unityOtelManager.OtelManagerStatus is OtelManagerStatus.Normal, () => DrawTools(new CliWindowToolAction
+			DrawTools(new CliWindowToolAction
 			{
 				name = "Publish Logs",
 				onClick = () =>
@@ -36,26 +38,26 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					_ = Scope.GetService<UnityOtelManager>().PruneLogs();
 				}
-			}));
+			});
 			
-			switch (_unityOtelManager.OtelManagerStatus)
-			{
-				case OtelManagerStatus.Publishing:
-					EditorGUILayout.LabelField("Publishing Logs...");
-					break;
-				case OtelManagerStatus.Pruning:
-					EditorGUILayout.LabelField("Pruning Logs...");
-					break;
-			}
-
 			string lastPublished = _unityOtelManager.OtelStatus.LastPublishTimestamp == 0
 				? "Never"
 				: DateTimeOffset.FromUnixTimeMilliseconds(_unityOtelManager.OtelStatus.LastPublishTimestamp).ToLocalTime().ToString("g");
-			CoreConfiguration.Instance.EnableOtelAutoPublish = EditorGUILayout.Toggle("Auto-Publish", CoreConfiguration.Instance.EnableOtelAutoPublish);
-			EditorGUILayout.LabelField("Last Published", lastPublished);
-			EditorGUILayout.LabelField("Size:", $"{(float)_unityOtelManager.OtelStatus.FolderSize/(1024 * 1024):F} MB");
-			EditorGUILayout.LabelField("Log Files Count: ", _unityOtelManager.OtelStatus.FileCount.ToString());
-			// TODO: List all collector running with watch
+			CoreConfiguration.Instance.EnableOtelAutoPublish = EditorGUILayout.Toggle("Auto-Publish", CoreConfiguration.Instance.EnableOtelAutoPublish, EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("Last Published", lastPublished, EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("Size:", $"{(float)_unityOtelManager.OtelStatus.FolderSize/(1024 * 1024):F} MB", EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("Log Files Count: ", _unityOtelManager.OtelStatus.FileCount.ToString(), EditorStyles.boldLabel);
+			var hasCollectors = _unityOtelManager.CollectorStatus != null && _unityOtelManager.CollectorStatus.collectorsStatus.Count > 0;
+			EditorGUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
+			EditorGUILayout.LabelField("Collectors", EditorStyles.boldLabel);
+			if (hasCollectors)
+			{
+				DrawJsonBlock(_unityOtelManager.CollectorStatus);
+			}
+			else
+			{
+				EditorGUILayout.LabelField("There are no collectors running...");
+			}
 		}
 		
 	}

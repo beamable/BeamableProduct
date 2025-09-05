@@ -132,14 +132,17 @@ The default is 60 seconds.
 		[Tooltip("When true, Unity will auto publish OTEL logs to backend each X seconds. X is defined in the field below")]
 		public bool EnableOtelAutoPublish = true;
 
-		[Tooltip("The interval (in seconds) between batches of logs being sent to the OpenTelemetry collector. Default value is 30 seconds. Smaller values send data more frequently but use more resources.")]
-		public OptionalDouble TimeInterval = new() { HasValue = false, Value = 30};
+		[Tooltip("The interval (in seconds) between batches of logs being sent to the OpenTelemetry collector. Default value is 120 seconds. Smaller values send data more frequently but use more resources.")]
+		public OptionalDouble TimeInterval = new() { HasValue = false, Value = 120};
 
 		[Tooltip("The minimum Loglevel that we will catch from Unity errors and report to OTEL. Default value is Error")]
 		public Optional<OtelLogLevel> TelemetryMinLogLevel = new() {HasValue = false, Value = OtelLogLevel.Warning};
 
-		[Tooltip("The Max size (in bytes) of Telemetries before doing an auto-update, default value is 50Mb")]
+		[Tooltip("The Max size (in bytes) of Telemetries before doing an auto-update, default value is 50Mb (in bytes)")]
 		public Optional<long> TelemetryMaxSize = new() {HasValue = false, Value = 1024 * 1024 * 50};
+		
+		[Tooltip("Define which files we skip prunning based on how old they are in days")]
+			public Optional<int> PruneRetainingDays = new() {HasValue = false};
 
 		#if UNITY_EDITOR
 		public Action OnValidateCallback;
