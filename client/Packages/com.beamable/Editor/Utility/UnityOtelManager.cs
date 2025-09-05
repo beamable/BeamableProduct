@@ -23,9 +23,10 @@ namespace Beamable.Editor.Utility
 	{
 		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
 		private const double SECONDS_TO_AUTO_FLUSH = 300; // 5 minutes
-		private const double OTEL_DATA_CHECK_DELAY = 15;
+		private const double OTEL_DATA_CHECK_DELAY = 30;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
+		public const string SKIP_OTEL_LOG_KEY = "[SKIP_OTEL]";
 
 		private double _lastTimePublished;
 		private double _lastTimeFlush;
@@ -70,7 +71,7 @@ namespace Beamable.Editor.Utility
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			
-			_ = FetchOtelData();
+			_ = FetchOtelConfig();
 			
 			// On Windows we can try to get the crash logs
 #if UNITY_EDITOR_WIN
@@ -78,9 +79,14 @@ namespace Beamable.Editor.Utility
 #endif
 			
 			// Make sure to Publish on Init so we make sure that all missing logs that weren't published on last session
+			// If disabled we only gather the OtelStatus for now
 			if (CoreConfig.EnableOtelAutoPublish)
 			{
 				_ = PublishLogs();
+			}
+			else
+			{
+				_ = FetchOtelStatus(false);
 			}
 
 			_collectorCommandWatcher = _cli.OtelCollectorPs(new OtelCollectorPsArgs() {watch = true});
@@ -93,30 +99,33 @@ namespace Beamable.Editor.Utility
 
 		private void OnCoreConfigChanged()
 		{
-			if (CoreConfig.TelemetryMaxSize.HasValue && CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize &&
-			    CoreConfig.TelemetryMinLogLevel.HasValue && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
+			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
 			{
 				return;
 			}
-			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
-			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
+			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
+			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
 			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
 			commandWrapper.Run();
 
 		}
 
-		public async Promise OnDispose()
+		public Promise OnDispose()
 		{
 			EditorApplication.update -= HandleUpdate;
 			Application.logMessageReceived -= OnUnityLogReceived;
 			Application.wantsToQuit -= OnUnityQuitting;
 			AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
-			await PublishLogs();
 			_collectorCommandWatcher?.Cancel();
+			//await PublishLogs();
+			return Promise.Success;
 		}
 		
 		public void AddLog(string message, string stacktrace, string logLevel, Exception exception = null, Dictionary<string, string> extraAttributes = null)
 		{
+			// Log as Key to skip log addition
+			if(message.Contains(SKIP_OTEL_LOG_KEY))
+				return;
 			string hashCode = GetLogKey(message, stacktrace, logLevel, exception, extraAttributes);
 			string timestamp = DateTime.UtcNow.ToString("O");
 			_cachedLogs.TryAdd(
@@ -141,32 +150,34 @@ namespace Beamable.Editor.Utility
 
 		public async Promise PublishLogs()
 		{
+			Debug.Log($"Publishing log {SKIP_OTEL_LOG_KEY}");
 			_lastTimePublished = EditorApplication.timeSinceStartup;
 			try
 			{
 				await FlushUnityLogsAsync();
-				if (!Directory.Exists(UnityOtelLogsFolder))
-					return;
-				var allFiles = Directory.GetFiles(UnityOtelLogsFolder);
-				if (allFiles.Length > 0)
+				if (Directory.Exists(UnityOtelLogsFolder))
 				{
-					List<TelemetryReportStatus> reportStatusList = new();
-					var commandWrapper = _cli.OtelReport(new OtelReportArgs() {paths = allFiles});
-					commandWrapper.OnStreamReportTelemetryResult(report => reportStatusList = report.data.AllStatus);
-					await commandWrapper.Run();
-					
-					await Task.Run(() =>
+					string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
+					if (allFiles.Length > 0)
 					{
-						foreach (var reportItem in reportStatusList.Where(item => item.Success))
+						List<TelemetryReportStatus> reportStatusList = new();
+						var commandWrapper = _cli.OtelReport(new OtelReportArgs() {paths = allFiles});
+						commandWrapper.OnStreamReportTelemetryResult(report => reportStatusList = report.data.AllStatus);
+						await commandWrapper.Run();
+
+						await Task.Run(() =>
 						{
-							File.Delete(reportItem.FilePath);
-						}
-					});
+							foreach (var reportItem in reportStatusList.Where(item => item.Success))
+							{
+								File.Delete(reportItem.FilePath);
+							}
+						});
+					}
 				}
 
 				await _cli.OtelPush(new OtelPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
 
-				await FetchOtelData();
+				await FetchOtelStatus(false);
 			}
 			catch (Exception e)
 			{
@@ -197,27 +208,22 @@ namespace Beamable.Editor.Utility
 					}
 				});
 
-				await FetchOtelData();
+				await FetchOtelStatus(false);
 			}
 			catch (Exception e)
 			{
 				AddLog(e.Message, e.StackTrace, nameof(OtelLogLevel.Critical), e);
 			}
 		}
-		
-		public async Promise FetchOtelData()
-		{
-			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
-			await FetchOtelConfig();
-			await FetchOtelStatus();
-		}
 
-		private async Promise FetchOtelStatus()
+		private async Promise FetchOtelStatus(bool autoUpdatePush = true)
 		{
+			Debug.Log($"Fetching Status {SKIP_OTEL_LOG_KEY}");
+			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
 			OtelStatusWrapper wrapper = _cli.OtelStatus();
 			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
 			await wrapper.Run();
-			if (_otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
+			if (autoUpdatePush && _otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
 			{
 				await PublishLogs();
 			}
@@ -234,14 +240,12 @@ namespace Beamable.Editor.Utility
 		
 		private void HandleUpdate()
 		{
-			TryToFlushUnityLogs();
-
 			double now = EditorApplication.timeSinceStartup;
 			
 			double timeSinceLastRefresh = now - _lastOtelDataRefresh;
 			if (timeSinceLastRefresh > OTEL_DATA_CHECK_DELAY)
 			{
-				_ = FetchOtelData();
+				_ = FetchOtelStatus();
 			}
 
 			if(!CoreConfiguration.Instance.EnableOtelAutoPublish)
@@ -375,9 +379,7 @@ namespace Beamable.Editor.Utility
 			}
 			File.WriteAllText(Path.Join(UnityOtelLogsFolder, data.fileName), data.jsonData);
 		}
-
 		
-
 		private async Task FlushUnityLogsAsync()
 		{
 			_lastTimeFlush = EditorApplication.timeSinceStartup;
