@@ -72,14 +72,10 @@ namespace Beamable.Editor.Utility
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			
 			_ = FetchOtelConfig();
-			
-			// On Windows we can try to get the crash logs
-#if UNITY_EDITOR_WIN
 			_ = GetUnparsedCrashLogs();
-#endif
 			
 			// Make sure to Publish on Init so we make sure that all missing logs that weren't published on last session
-			// If disabled we only gather the OtelStatus for now
+			// If disabled we only gather the OtelStatus
 			if (CoreConfig.EnableOtelAutoPublish)
 			{
 				_ = PublishLogs();
@@ -137,7 +133,6 @@ namespace Beamable.Editor.Utility
 
 		public async Promise PublishLogs()
 		{
-			Debug.Log($"Publishing log {SKIP_OTEL_LOG_KEY}");
 			_lastTimePublished = EditorApplication.timeSinceStartup;
 			try
 			{
@@ -202,9 +197,8 @@ namespace Beamable.Editor.Utility
 			}
 		}
 
-		private async Promise FetchOtelStatus(bool autoUpdatePush = true)
+		public async Promise FetchOtelStatus(bool autoUpdatePush = true)
 		{
-			Debug.Log($"Fetching Status {SKIP_OTEL_LOG_KEY}");
 			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
 			OtelStatusWrapper wrapper = _cli.OtelStatus();
 			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
@@ -304,22 +298,28 @@ namespace Beamable.Editor.Utility
 
 		private async Task GetUnparsedCrashLogs()
 		{
-			string crashFolder = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "Temp", "Unity", "Editor", "Crashes");
-			var lastParseFullPath = Path.Join(Application.temporaryCachePath, LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME);
+			
+			string crashFolder = GetCrashFolder();
+			if (!Directory.Exists(crashFolder))
+			{
+				throw new Exception($"Could not find Crash Folder {crashFolder}");
+			}
+			string lastParseFullPath = Path.Join(Application.temporaryCachePath, LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME);
 			if (!File.Exists(lastParseFullPath))
 			{
 				await File.WriteAllTextAsync(lastParseFullPath, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 				return;
 			}
-			var fileContent = await File.ReadAllTextAsync(lastParseFullPath);
+			string fileContent = await File.ReadAllTextAsync(lastParseFullPath);
 			if (!long.TryParse(fileContent, out long timestamp))
 			{
 				await File.WriteAllTextAsync(lastParseFullPath, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 				return;
 			}
-			var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
+			DateTime dateTime = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
 
-			var allCrashes = Directory.GetFiles(crashFolder, "*.log", SearchOption.AllDirectories);
+			string[] crashLogExtensions = {".log", ".txt", ".crash"};
+			var allCrashes = Directory.GetFiles(crashFolder, "*", SearchOption.AllDirectories).Where(path => crashLogExtensions.Any(path.EndsWith));
 			var unparsedCrashLogs = allCrashes.Where(filePath => File.GetLastAccessTime(filePath).ToUniversalTime() > dateTime).ToList();
 			if (unparsedCrashLogs.Count > 0)
 			{
@@ -359,13 +359,44 @@ namespace Beamable.Editor.Utility
 			}
 		}
 
+		private static string GetCrashFolder()
+		{
+			#if UNITY_EDITOR_WIN
+			string localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+			string crashFolder = Path.Combine(localAppData, "Unity", "Editor", "Crashes");
+			if (!Directory.Exists(crashFolder))
+			{
+				crashFolder = Path.Combine(localAppData, "Temp", "Unity", "Crashes");
+			}
+			return crashFolder;
+			#elif UNITY_EDITOR_OSX
+			string userHome = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+            string crashFolder = Path.Combine(userHome, "Library", "Logs", "Unity", "Crashes");
+            if (!Directory.Exists(crashFolder))
+            {
+            	crashFolder = Path.Combine(userHome, "Library", "Application Support", "Unity", "Crashes");
+            }
+
+            return crashFolder;
+			#elif UNITY_EDITOR_LINUX
+			string configFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+			string crashFolder = Path.Combine(configFolder, "unity3d", "Crashes");
+			if (!Directory.Exists(crashFolder))
+			{
+				crashFolder = Path.Combine(Path.GetTempPath(), "Unity", "Crashes");
+			}
+
+			return crashFolder;
+			#endif
+			
+		}
+		
 		private void TryToFlushUnityLogs()
 		{
 			
 			double timeSinceLastFlush = EditorApplication.timeSinceStartup - _lastTimeFlush;
 			if (timeSinceLastFlush < SECONDS_TO_AUTO_FLUSH)
 				return;
-			Debug.Log($"Flushing Unity Logs {SKIP_OTEL_LOG_KEY}");
 			_ = FlushUnityLogsAsync();
 		}
 
