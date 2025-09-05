@@ -22,7 +22,7 @@ namespace Beamable.Editor.Utility
 	public class UnityOtelManager : IBeamableDisposable
 	{
 		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
-		private const double SECONDS_TO_AUTO_FLUSH = 300; // 5 minutes
+		private const double SECONDS_TO_AUTO_FLUSH = 60; // 5 minutes
 		private const double OTEL_DATA_CHECK_DELAY = 30;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
@@ -95,19 +95,6 @@ namespace Beamable.Editor.Utility
 				_collectorStatus = report.data;
 			});
 			_collectorCommandWatcher.Run();
-		}
-
-		private void OnCoreConfigChanged()
-		{
-			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
-			{
-				return;
-			}
-			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
-			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
-			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
-			commandWrapper.Run();
-
 		}
 
 		public Promise OnDispose()
@@ -204,7 +191,6 @@ namespace Beamable.Editor.Utility
 					foreach (string filePath in allFiles)
 					{
 						File.Delete(filePath);
-						;
 					}
 				});
 
@@ -240,6 +226,7 @@ namespace Beamable.Editor.Utility
 		
 		private void HandleUpdate()
 		{
+			TryToFlushUnityLogs();
 			double now = EditorApplication.timeSinceStartup;
 			
 			double timeSinceLastRefresh = now - _lastOtelDataRefresh;
@@ -288,6 +275,18 @@ namespace Beamable.Editor.Utility
 			{
 				_ = FlushUnityLogsAsync();
 			}
+		}
+		
+		private void OnCoreConfigChanged()
+		{
+			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
+			{
+				return;
+			}
+			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
+			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
+			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
+			commandWrapper.Run();
 		}
 		
 		private bool IsBeamableRelated(string stackTrace)
@@ -362,10 +361,11 @@ namespace Beamable.Editor.Utility
 
 		private void TryToFlushUnityLogs()
 		{
+			
 			double timeSinceLastFlush = EditorApplication.timeSinceStartup - _lastTimeFlush;
 			if (timeSinceLastFlush < SECONDS_TO_AUTO_FLUSH)
 				return;
-
+			Debug.Log($"Flushing Unity Logs {SKIP_OTEL_LOG_KEY}");
 			_ = FlushUnityLogsAsync();
 		}
 
