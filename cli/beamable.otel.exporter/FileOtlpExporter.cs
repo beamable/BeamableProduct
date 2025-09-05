@@ -19,7 +19,7 @@ public class FileOtlpExporter
 		var logExporterOptions = new OtlpExporterOptions
 		{
 			Endpoint = new Uri($"{endpoint}/v1/logs"),
-			Protocol = OtlpExportProtocol.HttpProtobuf,
+			Protocol = OtlpExportProtocol.HttpProtobuf
 		};
 
 		OtlpLogExporter otlpLogExporter = new OtlpLogExporter(logExporterOptions);
