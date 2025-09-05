@@ -25,20 +25,28 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 
 			DrawTools(new CliWindowToolAction
-			{
-				name = "Publish Logs",
-				onClick = () =>
 				{
-					_ = Scope.GetService<UnityOtelManager>().PublishLogs();
-				}
-			}, new CliWindowToolAction
-			{
-				name = "Prune Logs",
-				onClick = () =>
+					name = "Publish Logs",
+					onClick = () =>
+					{
+						_ = Scope.GetService<UnityOtelManager>().PublishLogs();
+					}
+				}, new CliWindowToolAction
 				{
-					_ = Scope.GetService<UnityOtelManager>().PruneLogs();
+					name = "Prune Logs",
+					onClick = () =>
+					{
+						_ = Scope.GetService<UnityOtelManager>().PruneLogs();
+					}
+				}, new CliWindowToolAction
+				{
+					name = "Update OTEL Data",
+					onClick = () =>
+					{
+						_ = Scope.GetService<UnityOtelManager>().FetchOtelStatus();
+					}
 				}
-			});
+			);
 			
 			string lastPublished = _unityOtelManager.OtelStatus.LastPublishTimestamp == 0
 				? "Never"
