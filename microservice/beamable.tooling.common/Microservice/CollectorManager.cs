@@ -53,9 +53,9 @@ public class CollectorManager
 	
 	
 	public static string configFileName = "clickhouse-config.yaml";
-	private const int attemptsToConnect = 50;
+	private const int attemptsToConnect = 10;
 	private const int attemptsBeforeFailing = 10;
-	private const int delayBeforeNewAttempt = 500;
+	private const int delayBeforeNewAttempt = 100;
 	private const int delayBeforeNewMessage = 100;
 
 	public static CollectorStatus CollectorStatus;
@@ -548,11 +548,11 @@ public class CollectorManager
 		}
 	}
 
-	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger, int attemptsAmountOverride = attemptsToConnect)
+	public static async Task<List<CollectorStatus>> CheckAllRunningCollectors(Socket socket, CancellationToken token, ILogger logger)
 	{
 		var results = new List<CollectorStatus>();
 
-		for (int i = 0; i < attemptsAmountOverride; i++)
+		for (int i = 0; i < attemptsToConnect; i++)
 		{
 			var runningResult = await GetRunningCollectorMessage(socket, token);
 
