@@ -1139,12 +1139,12 @@ public class ContentService
 	}
 
 
-	public string[] GetContentSnapshots(bool local)
+	public string[] GetContentSnapshots(bool local, string pid = "")
 	{
-		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, _requester.Pid, local);
+		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, pid, local);
 		// Ensure that the snapshot folder path exists
         Directory.CreateDirectory(contentPath);
-		return Directory.GetFiles(contentPath, "*.json", SearchOption.TopDirectoryOnly);
+		return Directory.GetFiles(contentPath, "*.json", SearchOption.AllDirectories);
 	}
 	
 	public async Task TakeAutoSnapshot(AutoSnapshotType autoSnapshotType, AutoSnapshotActionType snapshotActionType, int maxAutoSavedTempSnapshots, string manifestId = "global")
