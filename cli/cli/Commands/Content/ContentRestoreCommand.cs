@@ -16,8 +16,9 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 	{
 		AddOption(new Option<string>("--manifest-id", () => "global", "Defines the name of the manifest on which the snapshot will be restored. The default value is `global`"), (args, s) => args.ManifestId = s);
 		AddOption(new Option<string>("--name", () => "",
-				"Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots' than from the local only under '.beamable/temp/content-snapshots'. If a path is passed, it is going to try get the json file from the path"),
+				"Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots/[PID]' than from the local only under '.beamable/temp/content-snapshots/[PID]'. If a path is passed, it is going to try get the json file from the path"),
 			(args, s) => args.SnapshotNameOrPath = s, new[] { "-n" });
+		AddOption(new Option<string>("--pid", () => string.Empty, "An optional field to set the PID from where you would like to get the snapshot to be restored. The default will be the current PID the user are in."), (args, s) => args.Pid = s);
 		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring"), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
 	}
 
@@ -31,6 +32,11 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 			throw new CliException($"{args.SnapshotNameOrPath} is not a json file.");
 		}
 		string beamPath = args.ConfigService.ConfigDirectoryPath;
+		string pid = args.Requester.Pid;
+		if (!string.IsNullOrEmpty(args.Pid))
+		{
+			pid = args.Pid;
+		}
 		string fullPath;
 		if (Path.IsPathFullyQualified(snapshotFileName))
 		{
@@ -45,8 +51,8 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 		}
 		else
 		{
-			string sharedFolder = ContentService.GetContentSnapshotDirectoryPath(beamPath, false);
-			string tempFolder = ContentService.GetContentSnapshotDirectoryPath(beamPath, true);
+			string sharedFolder = ContentService.GetContentSnapshotDirectoryPath(beamPath, pid, false);
+			string tempFolder = ContentService.GetContentSnapshotDirectoryPath(beamPath, pid, true);
 			
 			// Try to find it on shared or temp folder
 			string sharedFolderFile = Path.Combine(sharedFolder, snapshotFileName);
@@ -91,6 +97,7 @@ public class ContentRestoreErrorReport : ErrorOutput
 public class ContentRestoreCommandArgs : ContentCommandArgs
 {
 	public string ManifestId;
+	public string Pid;
 	public string SnapshotNameOrPath;
 	public bool DeleteSnapshotAfterRestore;
 }

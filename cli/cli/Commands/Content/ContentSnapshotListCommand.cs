@@ -12,7 +12,7 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 {
 	private ContentService _contentService;
 
-	public ContentSnapshotListCommand() : base("snapshot-list", "Find and list all shared (.beamable/content-snapshots) and local (.beamable/temp/content-snapshots) snapshots")
+	public ContentSnapshotListCommand() : base("snapshot-list", "Find and list all shared (.beamable/content-snapshots/[PID]) and local (.beamable/temp/content-snapshots/[PID]) snapshots")
 	{
 	}
 
