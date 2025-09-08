@@ -49,7 +49,7 @@ namespace Beamable.Editor.Utility
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
 		private BeamCollectorStatusResult _collectorStatus;
-		private readonly OtelCollectorPsWrapper _collectorCommandWatcher;
+		private readonly TelemetryCollectorPsWrapper _collectorCommandWatcher;
 
 		private CoreConfiguration CoreConfig => CoreConfiguration.Instance;
 
@@ -85,7 +85,7 @@ namespace Beamable.Editor.Utility
 				_ = FetchOtelStatus(false);
 			}
 
-			_collectorCommandWatcher = _cli.OtelCollectorPs(new OtelCollectorPsArgs() {watch = true});
+			_collectorCommandWatcher = _cli.TelemetryCollectorPs(new TelemetryCollectorPsArgs() {watch = true});
 			_collectorCommandWatcher.OnStreamCollectorStatusResult(report =>
 			{
 				_collectorStatus = report.data;
@@ -143,7 +143,7 @@ namespace Beamable.Editor.Utility
 					if (allFiles.Length > 0)
 					{
 						List<TelemetryReportStatus> reportStatusList = new();
-						var commandWrapper = _cli.OtelReport(new OtelReportArgs() {paths = allFiles});
+						var commandWrapper = _cli.TelemetryReport(new TelemetryReportArgs() {paths = allFiles});
 						commandWrapper.OnStreamReportTelemetryResult(report => reportStatusList = report.data.AllStatus);
 						await commandWrapper.Run();
 
@@ -157,7 +157,7 @@ namespace Beamable.Editor.Utility
 					}
 				}
 
-				await _cli.OtelPush(new OtelPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
+				await _cli.TelemetryPush(new TelemetryPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
 
 				await FetchOtelStatus(false);
 			}
@@ -174,7 +174,7 @@ namespace Beamable.Editor.Utility
 			
 			try
 			{
-				await _cli.OtelPrune(new OtelPruneArgs()
+				await _cli.TelemetryPrune(new TelemetryPruneArgs()
 				{
 					deleteAll = !CoreConfig.PruneRetainingDays.HasValue,
 					retainingDays = CoreConfig.PruneRetainingDays.Value,
@@ -200,7 +200,7 @@ namespace Beamable.Editor.Utility
 		public async Promise FetchOtelStatus(bool autoUpdatePush = true)
 		{
 			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
-			OtelStatusWrapper wrapper = _cli.OtelStatus();
+			TelemetryStatusWrapper wrapper = _cli.TelemetryStatus();
 			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
 			await wrapper.Run();
 			if (autoUpdatePush && _otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
@@ -211,7 +211,7 @@ namespace Beamable.Editor.Utility
 
 		private async Promise FetchOtelConfig()
 		{
-			await _cli.OtelConfig().OnStreamGetBeamOtelConfigCommandResult(report =>
+			await _cli.TelemetryConfig().OnStreamGetBeamOtelConfigCommandResult(report =>
 			{
 				_telemetryMaxSize = report.data.BeamCliTelemetryMaxSize;
 				_telemetryLogLevel = Enum.TryParse(report.data.BeamCliTelemetryLogLevel, out OtelLogLevel logLevel) ? logLevel : _telemetryLogLevel;
@@ -279,7 +279,7 @@ namespace Beamable.Editor.Utility
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
-			var commandWrapper = _cli.OtelSetConfig(new OtelSetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
+			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
 			commandWrapper.Run();
 		}
 		
