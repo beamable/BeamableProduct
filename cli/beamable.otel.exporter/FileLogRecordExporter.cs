@@ -24,8 +24,12 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 
 	public override ExportResult Export(in Batch<LogRecord> batch)
 	{
+		if (!Directory.Exists(_filesPath))
+		{
+			return ExportResult.Failure;
+		}
+
 		var res = this.resource ?? this.ParentProvider.GetResource();
-		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
 
