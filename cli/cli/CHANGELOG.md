@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
+- Change `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
 
 ## [5.4.1] - 2025-08-29
  - Fixed an issue with how `beam content publish` command retrieves information from the developer user. This resolves potential lockups that could occur in certain realms during content publishing.
