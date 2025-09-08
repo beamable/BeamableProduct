@@ -18,7 +18,7 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 		AddOption(new Option<string>("--name", () => "",
 				"Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots/[PID]' than from the local only under '.beamable/temp/content-snapshots/[PID]'. If a path is passed, it is going to try get the json file from the path"),
 			(args, s) => args.SnapshotNameOrPath = s, new[] { "-n" });
-		AddOption(new Option<string>("--pid", () => string.Empty, "An optional field to set the PID from where you would like to get the snapshot to be restored. The default will be the current PID the user are in."), (args, s) => args.Pid = s);
+		AddOption(new Option<string>("--pid", () => string.Empty, "An optional field to set the PID from where you would like to get the snapshot to be restored. The default will be the current PID the user are in"), (args, s) => args.Pid = s);
 		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring"), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
 	}
 
