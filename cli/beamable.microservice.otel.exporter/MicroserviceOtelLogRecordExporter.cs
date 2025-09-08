@@ -12,7 +12,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 	private OtlpLogExporter _exporter;
 	private bool _shouldRetry;
 
-	private LimitedQueue<LogRecordQueueData> _logRecordsToFlush; //TODO: Have a hard limit for this queue to not overflow with logs
+	private LimitedQueue<LogRecordQueueData> _logRecordsToFlush;
 
 	public MicroserviceOtelLogRecordExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
