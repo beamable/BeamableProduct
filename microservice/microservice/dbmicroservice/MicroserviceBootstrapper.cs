@@ -83,20 +83,17 @@ namespace Beamable.Server
 		public long UserId { get; set; }
 	}
 
-    public static class MicroserviceBootstrapper
+    public static partial class MicroserviceBootstrapper
     {
-	    private const int MSG_SIZE_LIMIT = 1000;
+	    // private const int MSG_SIZE_LIMIT = 1000;
 	    
 	    
 
-	    public static ReflectionCache ReflectionCache;
-	    public static ContentService ContentService;
-	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
+	    // public static ContentService ContentService;
 
-	    public static IUsageApi EcsService;
 
 	    // private static DebugLogSink _sink;
-	    private static Task _localDiscoveryBroadcast;
+	    // private static Task _localDiscoveryBroadcast;
 	    public static LogLevel LogLevel;
 
 	    public static ZLoggerOptions UseBeamJsonFormatter(ZLoggerOptions options)
@@ -121,16 +118,30 @@ namespace Beamable.Server
 			    };
 		    });
 	    }
-	    
-	    private static void ConfigureZLogging<TMicroservice>(IMicroserviceArgs args, bool includeOtel, string otlpEndpoint)
+
+	    private static void ConfigureLogging(IBeamServiceConfig configurator, StartupContext ctx, bool includeOtel,
+		    string otlpEndpoint, out DebugLogProcessor debugLogProcessor)
 	    {
-		    var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-		    if (!LogUtil.TryParseSystemLogLevel(args.LogLevel, out LogLevel))
+		    debugLogProcessor = null;
+		    if (configurator.LogFactory != null)
+		    {
+			    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
+			    Debug.Instance = new MicroserviceDebug();
+			    ctx.logger = configurator.LogFactory();
+			    BeamableZLoggerProvider.SetLogger(ctx.logger);
+			    return;
+		    }
+		    
+		    if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out LogLevel))
 		    {
 			    LogLevel = LogLevel.Warning;
 		    }
 
-		    _loggerFactory = LoggerFactory.Create(builder =>
+		    var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
+		    debugLogProcessor = new DebugLogProcessor(debugLogOptions);
+
+		    var processor = debugLogProcessor;
+		    ctx.logFactory = LoggerFactory.Create(builder =>
 		    {
 			    // TODO: handle per-route / config options
 			    
@@ -138,12 +149,9 @@ namespace Beamable.Server
 			    builder.SetMinimumLevel(LogLevel.Trace);
 			    
 			    builder.AddFilter(level => level >= LogLevel);
-			    if (!inDocker)
+			    if (!ctx.InDocker)
 			    {
-				    var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
-				    var debugLogProcessor = _debugLogProcessor = new DebugLogProcessor(debugLogOptions);
-				    builder
-					    .AddZLoggerLogProcessor(debugLogProcessor);
+				    builder.AddZLoggerLogProcessor(processor);
 			    }
 
 			    if (includeOtel)
@@ -153,7 +161,7 @@ namespace Beamable.Server
 					    // https://signoz.io/blog/opentelemetry-dotnet-logs/
 					    logging.IncludeScopes = true;
 					    logging
-						    .SetResourceBuilder(_resourceBuilder)
+						    .SetResourceBuilder(ctx.resourceProvider)
 						    .AddMicroserviceExporter(option =>
 						    {
 							    if (ShouldStartStandardOtel())
@@ -165,9 +173,9 @@ namespace Beamable.Server
 				    });
 			    }
 			    
-			    switch (args.LogOutputType)
+			    switch (ctx.args.LogOutputType)
 			    {
-				    case LogOutputType.DEFAULT when !inDocker:
+				    case LogOutputType.DEFAULT when !ctx.InDocker:
 				    case LogOutputType.UNSTRUCTURED:
 					    builder.AddZLoggerConsole(opts =>
 					    {
@@ -177,7 +185,7 @@ namespace Beamable.Server
 					    break;
 				    
 				    case LogOutputType.FILE:
-					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
+					    builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
 					    break;
 	            
 				    case LogOutputType.STRUCTURED_AND_FILE:
@@ -186,7 +194,7 @@ namespace Beamable.Server
 					    {
 						    UseBeamJsonFormatter(opts);
 					    });
-					    builder.AddZLoggerFile(args.LogOutputPath ?? "./service.log");
+					    builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
 
 					    break;
 				    case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
@@ -207,10 +215,10 @@ namespace Beamable.Server
 
 		    BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		    Debug.Instance = new MicroserviceDebug();
-		    _logger = _loggerFactory.CreateLogger<TMicroservice>();
-			BeamableZLoggerProvider.SetLogger(_logger);
+		    ctx.logger = ctx.logFactory.CreateLogger<Microservice>();
+			BeamableZLoggerProvider.SetLogger(ctx.logger);
 	    }
-
+	    
         public static void ConfigureUnhandledError()
         {
             PromiseBase.SetPotentialUncaughtErrorHandler((promise, exception) =>
@@ -228,7 +236,7 @@ namespace Beamable.Server
             });
         }
 
-        public static void ConfigureUncaughtExceptions()
+        public static void ConfigureUncaughtExceptions(StartupContext ctx)
         {
 	        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
 	        {
@@ -238,11 +246,11 @@ namespace Beamable.Server
 			        Console.Error.WriteLine($"{ex.Message} -- {ex.StackTrace}");
 		        }
 		        
-				_logger.ZLogCritical($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
+		        ctx.logger.ZLogCritical($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
 	        };
         }
 
-        public static ReflectionCache ConfigureReflectionCache()
+        public static ReflectionCache ConfigureReflectionCache(StartupContext ctx)
         {
 
 	        { 
@@ -273,28 +281,49 @@ namespace Beamable.Server
 			        !asm.GetName().Name.StartsWith("Serilog."))
 		        .Select(asm => asm.GetName().Name)
 		        .ToList();
-	        _logger.ZLogDebug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+	        ctx.logger.ZLogDebug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
 	        reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
 
 	        return reflectionCache;
         }
-
-        public static IDependencyBuilder ConfigureServices<T>(IMicroserviceArgs envArgs) where T : Microservice
+        
+        public static IDependencyBuilder ConfigureServices(StartupContext startupContext, MicroserviceResult result)
         {
-	        _logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
-	        var attribute = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
-	        
+	        startupContext.logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
+	        var attribute = startupContext.attributes;
+	        var envArgs = startupContext.args;
 	        try
 	        {
 		        var collection = new DependencyBuilder();
+		        foreach (var type in startupContext.microserviceTypes)
+		        {
+			        collection.AddScoped(type.InstanceType);
+		        }
 		        collection
-			        .AddScoped<T>()
+			        .AddSingleton(startupContext)
 			        .AddSingleton(attribute)
-			        .AddSingleton<IActivityProvider>(_activityProvider)
-			        .AddSingleton<ILoggerFactory>(_loggerFactory)
+			        
+			        // for legacy reasons, we should keep the MicroserviceAttribute in DI.
+			        //  it existed for a long time, and customers could be relying on it in their
+			        //  custom DI containers. 
+			        .AddSingleton<MicroserviceAttribute>(() =>
+			        {
+				        return new MicroserviceAttribute(attribute.MicroserviceName)
+				        {
+							CustomAutoGeneratedClientPath = attribute.CustomAutoGeneratedClientPath,
+							DisableAllBeamableEvents = attribute.DisableAllBeamableEvents,
+							EnableEagerContentLoading = attribute.EnableEagerContentLoading,
+#pragma warning disable CS0618 // Type or member is obsolete
+							UseLegacySerialization = attribute.UseLegacySerialization
+#pragma warning restore CS0618 // Type or member is obsolete
+				        };
+			        })
+			        .AddSingleton<IActivityProvider>(startupContext.activityProvider)
+			        .AddSingleton<ILoggerFactory>(startupContext.logFactory)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
-			        .AddSingleton<IUsageApi>(EcsService)
+			        .AddSingleton<FederationMetadata>()
+			        .AddSingleton<IUsageApi>(startupContext.ecsService)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -310,7 +339,7 @@ namespace Beamable.Server
 			        .AddSingleton<IMicroserviceArgs>(envArgs)
 			        .AddSingleton<SocketRequesterContext>(_ =>
 			        {
-				        return Instances[0].SocketContext;
+				        return result.Instances[0].SocketContext;
 			        })
 			        .AddScoped<MicroserviceRequester>(provider =>
 				        new MicroserviceRequester(
@@ -369,7 +398,7 @@ namespace Beamable.Server
 			        .AddSingleton<MongoSerializationService>()
 			        .AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
 			        .AddScoped<IMicroserviceChatApi, MicroserviceChatApi>()
-			        .AddSingleton(ReflectionCache)
+			        .AddSingleton(startupContext.reflectionCache)
 			        .AddSingleton<IBeamBeamootelApi, BeamBeamootelApi>()
 
 			        .AddScoped<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider =>
@@ -383,20 +412,26 @@ namespace Beamable.Server
 			        ;
 		        OpenApiRegistration.RegisterOpenApis(collection);
 		        
-		        _logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES);
+		        startupContext.logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES);
 		        var builder = new DefaultServiceBuilder(collection);
 
 		        // Gets Service Configuration Methods
-		        var configurationMethods = typeof(T)
-			        .GetMethods(BindingFlags.Static | BindingFlags.Public)
-			        .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
-			        .Select(method =>
-			        {
-				        var attr = method.GetCustomAttribute<ConfigureServicesAttribute>();
-				        return (method, attr);
-			        })
-			        .ToList();
 
+		        var configurationMethods = startupContext.microserviceTypes
+			        .Select(t => t.InstanceType)
+			        .SelectMany(type =>
+			        {
+				        return type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+					        .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
+					        .Select(method =>
+					        {
+						        var attr = method.GetCustomAttribute<ConfigureServicesAttribute>();
+						        return (method, attr);
+					        })
+					        .ToList();
+				        
+			        }).ToList();
+		        
 		        // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
 		        configurationMethods.Sort(delegate((MethodInfo method, ConfigureServicesAttribute attr) t1,
 			        (MethodInfo method, ConfigureServicesAttribute attr) t2)
@@ -429,7 +464,7 @@ namespace Beamable.Server
 		        
 		        // inject services we want to configure *AFTER* the user-level. 
 		        //  these services are ones that we do not want the user to be able to override. 
-		        collection.AddSingleton(_standardBeamTelemetryAttributes);
+		        collection.AddSingleton(startupContext.standardBeamTelemetryAttributes);
 
 		        
 		        return collection;
@@ -495,7 +530,7 @@ namespace Beamable.Server
 	        mongo.Init();
         }
 
-        public static Task ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        public static Task ConfigureDiscovery(StartupContext startupContext)
         {
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker)
@@ -506,13 +541,13 @@ namespace Beamable.Server
 	        var msg = new ServiceDiscoveryEntry
 	        {
 		        processId = Environment.ProcessId,
-		        cid = args.CustomerID,
-		        pid = args.ProjectName,
-		        prefix = args.NamePrefix,
-		        serviceName = attribute.MicroserviceName,
-		        healthPort = args.HealthPort,
+		        cid = startupContext.args.CustomerID,
+		        pid = startupContext.args.ProjectName,
+		        prefix = startupContext.args.NamePrefix,
+		        serviceName = startupContext.attributes.MicroserviceName,
+		        healthPort = startupContext.args.HealthPort,
 		        serviceType = "service",
-		        startedByAccountId = args.AccountId
+		        startedByAccountId = startupContext.args.AccountId
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
 	        var msgBytes = Encoding.UTF8.GetBytes(msgJson);
@@ -530,21 +565,21 @@ namespace Beamable.Server
 		        }
 		        catch (Exception e)
 		        {
-			        _logger.LogError(e, e.Message);
+			        startupContext.logger.LogError(e, e.Message);
 		        }
 	        });
         }
 
-        public static void ConfigureRequiredProcessIdWatcher(IMicroserviceArgs args)
+        public static void ConfigureRequiredProcessIdWatcher(StartupContext startupContext)
         {
-	        var requireProcessId = args.RequireProcessId;
+	        var requireProcessId = startupContext.args.RequireProcessId;
 	        if (requireProcessId <= 0) return;
 
 	        var _ = Task.Run(async () =>
 	        {
 		        try
 		        {
-					_logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
+			        startupContext.logger.ZLogDebug($"Running process-watcher loop for required process id=[{requireProcessId}]");
 					var processExists = true;
 					do
 					{
@@ -566,19 +601,111 @@ namespace Beamable.Server
 					} while (processExists);
 					
 					// terminate. 
-					_logger.LogInformation("Quitting because required process no longer exists");
+					startupContext.logger.LogInformation("Quitting because required process no longer exists");
 					Environment.Exit(0);
 		        }
 		        catch (Exception ex)
 		        {
-			        _logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			        startupContext.logger.ZLogError($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
 		        }
 	        });
 	        
         }
 
+        public static async Task GetLocalEnvironment(StartupContext ctx)
+        {
+	        var serviceName = ctx.attributes.MicroserviceName;
+
+	        var customArgs = ctx.localEnvArgs;
+	        customArgs ??= ". --auto-deploy";
+			
+	        using var process = new Process();
+
+	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
+	        var beamProgram = GetBeamProgram();
+
+	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty --no-log-file --remove-all-except-pid {Process.GetCurrentProcess().Id}";
+	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
+	        
+	        process.StartInfo.FileName = fileName;
+	        process.StartInfo.Arguments = arguments;
+	        process.StartInfo.RedirectStandardOutput = true;
+	        process.StartInfo.RedirectStandardError = true;
+	        process.StartInfo.CreateNoWindow = true;
+	        process.StartInfo.UseShellExecute = false;
+	        process.EnableRaisingEvents = true;
+	        
+	        var result = "";
+	        var sublogs = "";
+	        process.ErrorDataReceived += (sender, args) =>
+	        {
+				ctx.logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
+				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
+	        };
+
+	        process.OutputDataReceived += (sender, args) =>
+	        {
+		        ctx.logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
+		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
+	        };
+
+
+	        string path = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
+	        if (!string.IsNullOrEmpty(path))
+	        {
+		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] = path;
+	        }
+
+	        if (!string.IsNullOrEmpty(dotnetPath))
+	        {
+		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
+	        }
+	        ctx.logger.ZLogInformation($"Running command {fileName} {arguments}");
+	        process.Start();
+	        process.BeginOutputReadLine();
+	        process.BeginErrorReadLine();
+
+	        var exitSignal = new Promise();
+	        process.Exited += (sender, args) =>
+	        {
+		        exitSignal.CompleteSuccess();
+	        };
+	        
+	        await process.WaitForExitAsync();
+	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
+	        await exitSignal;
+	        await Task.Delay(100);
+
+	     
+	        if (process.ExitCode != 0)
+	        {
+		        ctx.logger.ZLogError($"generate-env output:\n{sublogs}");
+		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
+	        }
+	        ctx.logger.ZLogInformation($"environment:\n{result}");
+	        
+	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
+	        if (parsedOutput.type != "stream")
+	        {
+		        // the output type needs to be "stream" (the default data output channel name). 
+		        //  if the type isn't "stream", it is likely doing to be "error", but even if it isn't, 
+		        //  it isn't the expected value.
+		        throw new Exception($"Failed to parse generate-env output. raw=[{result}]");
+	        }
+
+	        // apply the environment data to the local process.
+	        var envData = parsedOutput.data;
+	        foreach (var envVar in envData.envVars)
+	        {
+		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
+	        }
+        }
+        
+        
         public static async Task<string> ConfigureCid(IMicroserviceArgs args)
         {
+	        if (args.SkipAliasResolve) return args.CustomerID;
+	        
 	        // it is possible that the user passed in an alias instead a cid for the env var, we should fix that...
 	        if (AliasHelper.IsCid(args.CustomerID)) return args.CustomerID;
 	        
@@ -588,27 +715,27 @@ namespace Beamable.Server
 	        return res.Cid.Value;
         }
 
-        public static async Task ConfigureUsageService(IMicroserviceArgs args)
+        public static async Task ConfigureUsageService(StartupContext ctx)
         {
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
 	        if (!inDocker)
 	        {
-		        EcsService = new LocalUsageService();
+		        ctx.ecsService = new LocalUsageService();
 	        }
 	        else
 	        {
-		        if (string.IsNullOrEmpty(args.MetadataUrl))
+		        if (string.IsNullOrEmpty(ctx.args.MetadataUrl))
 		        {
-			        EcsService = new DockerService();
+			        ctx.ecsService = new DockerService();
 		        }
 		        else
 		        {
-			        EcsService = new EcsService(new HttpClient());
+			        ctx.ecsService = new EcsService(new HttpClient());
 		        }
 	        }
 
-	        await EcsService.Init();
+	        await ctx.ecsService.Init();
         }
         
         /// <summary>
@@ -666,15 +793,7 @@ namespace Beamable.Server
 	        return false;
         }
 
-        private static IMicroserviceArgs _args;
-        private static IActivityProvider _activityProvider;
-        private static ResourceBuilder _resourceBuilder;
-        private static ILoggerFactory _loggerFactory;
-        private static DebugLogProcessor _debugLogProcessor;
-        public static ILogger _logger;
-        private static readonly BeamStandardTelemetryAttributeProvider _standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
-
-        public static void ConfigureTelemetry(IMicroserviceArgs args, MicroserviceAttribute attribute, string otlpEndpoint)
+        public static void ConfigureTelemetry(StartupContext ctx)
         {
 	        var shouldStartStandardOtel = ShouldStartStandardOtel();
 
@@ -683,14 +802,14 @@ namespace Beamable.Server
 			        .AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .AddProcessInstrumentation()
 			        .AddRuntimeInstrumentation()
-			        .SetResourceBuilder(_resourceBuilder)
+			        .SetResourceBuilder(ctx.resourceProvider)
 			        // We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
 			        .AddOtlpExporter(option =>
 			        {
 				        if (shouldStartStandardOtel)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-					        option.Endpoint = new Uri($"{otlpEndpoint}/v1/metrics");;
+					        option.Endpoint = new Uri($"{ctx.otlpEndpoint}/v1/metrics");;
 				        }
 
 			        })
@@ -699,7 +818,7 @@ namespace Beamable.Server
 
 			// TODO: keep references to providers so that we can force flush them at the shutdown
 	        var traceProvider = Sdk.CreateTracerProviderBuilder()
-			        .SetResourceBuilder(_resourceBuilder)
+			        .SetResourceBuilder(ctx.resourceProvider)
 			        .AddSource(Otel.METER_SERVICE_NAME)
 			        .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .SetSampler<TraceSampler>()
@@ -708,13 +827,15 @@ namespace Beamable.Server
 				        if (shouldStartStandardOtel)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-					        option.OtlpEndpoint = otlpEndpoint;
+					        option.OtlpEndpoint = ctx.otlpEndpoint;
 				        }
 			        })
 			        .Build()
 		        ;
         }
 
+
+        private static BeamServiceConfigBuilder _preparedBuilder;
         
         /// <summary>
         /// This method can be called before the start of the microservice to inject some CLI information.
@@ -723,122 +844,60 @@ namespace Beamable.Server
         /// <param name="customArgs">Optional string with args to be used instead of the default ones.</param>
         /// <typeparam name="TMicroservice">The type of the microservice calling this method.</typeparam>
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
-        public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
+        public static Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
-	        Type microserviceType = typeof(TMicroservice);
-	        
-	        var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
-	        
-	        var commandLineArgs = Environment.GetCommandLineArgs();
-	        
-	        // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
-	        if (commandLineArgs.Contains("--generate-oapi"))
-	        {
-		        await GenerateOpenApiSpecification(microserviceType, attribute);
-		        return;
-	        }
-	        
-	        var envArgs = _args = new EnvironmentArgs();
-	        
-	        ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false, string.Empty);
-	        
-	        _logger.LogInformation($"Starting Prepare");
-
-	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-	        if (inDocker)
-	        {
-		        return;
-	        }
-
-	        ConfigureRequiredProcessIdWatcher(envArgs);
-
-	        var serviceName = attribute.MicroserviceName;
-	        
-	        customArgs ??= ". --auto-deploy";
-			
-	        using var process = new Process();
-
-	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
-	        var beamProgram = GetBeamProgram();
-
-	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty --no-log-file --remove-all-except-pid {Process.GetCurrentProcess().Id}";
-	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
-	        
-	        process.StartInfo.FileName = fileName;
-	        process.StartInfo.Arguments = arguments;
-	        process.StartInfo.RedirectStandardOutput = true;
-	        process.StartInfo.RedirectStandardError = true;
-	        process.StartInfo.CreateNoWindow = true;
-	        process.StartInfo.UseShellExecute = false;
-	        process.EnableRaisingEvents = true;
-	        
-	        var result = "";
-	        var sublogs = "";
-	        //TODO: These events are still not working for some reason
-	        process.ErrorDataReceived += (sender, args) =>
-	        {
-				_logger.ZLogTrace($"Generate env process (error): [{args.Data}]");
-				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
-	        };
-
-	        process.OutputDataReceived += (sender, args) =>
-	        {
-		        _logger.ZLogTrace($"Generate env process (log): [{args.Data}]");
-		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
-	        };
+	        _preparedBuilder = BeamServer.Create()
+		        .IncludeRoutes<TMicroservice>(routePrefix: "", clientPrefix: "")
+		        .Override(conf =>
+		        {
+			        var attrs = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+			        if (attrs != null)
+			        {
+				        conf.Attributes.DisableAllBeamableEvents = attrs.DisableAllBeamableEvents;
+				        conf.Attributes.EnableEagerContentLoading = attrs.EnableEagerContentLoading;
+				        conf.Attributes.CustomAutoGeneratedClientPath = attrs.CustomAutoGeneratedClientPath;
+#pragma warning disable CS0618 // Type or member is obsolete
+				        conf.Attributes.UseLegacySerialization = attrs.UseLegacySerialization;
+#pragma warning restore CS0618 // Type or member is obsolete
+			        }
+			        conf.LocalEnvCustomArgs = customArgs;
+		        });
+	        return Task.CompletedTask;
 
 
-	        string path = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
-	        if (!string.IsNullOrEmpty(path))
-	        {
-		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] = path;
-	        }
-
-	        if (!string.IsNullOrEmpty(dotnetPath))
-	        {
-		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
-	        }
-	        _logger.ZLogInformation($"Running command {fileName} {arguments}");
-	        process.Start();
-	        process.BeginOutputReadLine();
-	        process.BeginErrorReadLine();
-
-	        var exitSignal = new Promise();
-	        process.Exited += (sender, args) =>
-	        {
-		        exitSignal.CompleteSuccess();
-	        };
-	        
-	        await process.WaitForExitAsync();
-	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
-	        await exitSignal;
-	        await Task.Delay(100);
-
-	     
-	        if (process.ExitCode != 0)
-	        {
-		        _logger.ZLogError($"generate-env output:\n{sublogs}");
-		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
-	        }
-	        _logger.ZLogInformation($"environment:\n{result}");
-	        
-	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
-	        if (parsedOutput.type != "stream")
-	        {
-		        // the output type needs to be "stream" (the default data output channel name). 
-		        //  if the type isn't "stream", it is likely doing to be "error", but even if it isn't, 
-		        //  it isn't the expected value.
-		        throw new Exception($"Failed to parse generate-env output. raw=[{result}]");
-	        }
-
-	        // apply the environment data to the local process.
-	        var envData = parsedOutput.data;
-	        foreach (var envVar in envData.envVars)
-	        {
-		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
-	        }
-
-	        // AdjustWorkingDirectory(attribute);
+	        // Type microserviceType = typeof(TMicroservice);
+	        //
+	        // var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+	        //
+	        // var commandLineArgs = Environment.GetCommandLineArgs();
+	        //
+	        // // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
+	        // if (commandLineArgs.Contains("--generate-oapi"))
+	        // {
+	        //  await GenerateOpenApiSpecification(microserviceType, attribute);
+	        //  return;
+	        // }
+	        //
+	        // var envArgs = _args = new EnvironmentArgs();
+	        //
+	        // ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false, string.Empty);
+	        //
+	        // _logger.LogInformation($"Starting Prepare");
+	        //
+	        // var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+	        // if (inDocker)
+	        // {
+	        //  return;
+	        // }
+	        //
+	        // ConfigureRequiredProcessIdWatcher(envArgs);
+	        //
+	        // await GetLocalEnvironment(new StartupContext
+	        // {
+	        //  args = envArgs,
+	        //  attributes = attribute,
+	        //  localEnvArgs = customArgs
+	        // });
         }
 
         /// <summary>
@@ -889,15 +948,11 @@ namespace Beamable.Server
 		        }
 	        }
         }
-
-        private static async Task GenerateOpenApiSpecification(Type microserviceType, MicroserviceAttribute attribute)
+        
+        private static async Task GenerateOpenApiSpecification(StartupContext startupCtx)
         {
 	        var generator = new ServiceDocGenerator();
-	        var doc = generator.Generate(microserviceType, attribute, new AdminRoutes
-	        {
-		        MicroserviceAttribute = attribute,
-		        MicroserviceType = microserviceType
-	        });
+	        var doc = generator.Generate(startupCtx);
 				
 	        var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		       
@@ -920,37 +975,30 @@ namespace Beamable.Server
 
         private static bool ShouldStartStandardOtel()
         {
-	        return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
+	        // TODO: move this into args class.
+	        return false;
+	        // return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
         }
 
-        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        private static async Task ConfigureOtelCollector(StartupContext ctx)
         {
-			var commandLineArgs = Environment.GetCommandLineArgs();
-	        // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
-	        if (commandLineArgs.Contains("--generate-oapi"))
-	        {
-		        return;
-	        }
-
-	        string otlpEndpoint = null;
-
 	        if (ShouldStartStandardOtel())
 	        {
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
-		        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, _logger);
+		        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, ctx.logger);
 
 		        if (status.isRunning)
 		        {
-			        otlpEndpoint = $"http://{status.otlpEndpoint}";
+			        ctx.otlpEndpoint = $"http://{status.otlpEndpoint}";
 		        }
 		        else
 		        {
-			        otlpEndpoint = PortUtil.FreeEndpoint();
+			        ctx.otlpEndpoint = PortUtil.FreeEndpoint();
 		        }
 
 		        if (!status.isRunning)
 		        {
-			        _logger.ZLogInformation($"Sending request to get clickhouse credentials...");
+			        ctx.logger.ZLogInformation($"Sending request to get clickhouse credentials...");
 			        var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
 			        var otelApi = new BeamBeamootelApi(requester);
 			        var res = await otelApi.GetOtelAuthWriterConfig();
@@ -958,126 +1006,197 @@ namespace Beamable.Server
 			        CollectorManager.AddAuthEnvironmentVars(res);
 		        }
 
-		        _logger.ZLogInformation($"Starting otel collector discovery event...");
-		        await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
+		        ctx.logger.ZLogInformation($"Starting otel collector discovery event...");
+		        await CollectorManager.StartCollector("", false, false, tokenSource, ctx.logger, ctx.otlpEndpoint);
 	        }
 
+        }
 
-	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = _args = new EnvironmentArgs();
-	        //var resolvedCid = await ConfigureCid(envArgs);
-	        //_args.SetResolvedCid(resolvedCid);
+        private static void ConfigureOtelData(StartupContext startupCtx)
+		{
+			var activityProvider = DefaultActivityProvider.CreateMicroServiceProvider(startupCtx.args, startupCtx.attributes);
+			startupCtx.activityProvider = activityProvider;
 
-	        var activityProvider = DefaultActivityProvider.CreateMicroServiceProvider(envArgs, attribute);
-	        _activityProvider = activityProvider;
+			var ctx = new DefaultAttributeContext
+			{
+				Attributes = new TelemetryAttributeCollection(),
+				Args = startupCtx.args
+			};
+			// TODO: allow customer to override the attributes
+        
+			// run the standard provider *AFTER* the user level stuff, so that
+			//  standard beamable attributes overwrite conflicting user attributes.
+			//  Ex: It is not valid for a user to override what "cid" does. 
+			startupCtx.standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
 	        
-	        var ctx = new DefaultAttributeContext
-	        {
-		        Attributes = new TelemetryAttributeCollection(),
-		        Args = envArgs
-	        };
-	        // TODO: allow customer to override the attributes
+			startupCtx.resourceProvider = ResourceBuilder.CreateEmpty()
+				.AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
+					autoGenerateServiceInstanceId: false,
+					serviceInstanceId: activityProvider.ServiceId)
+				.AddAttributes(ctx.Attributes.ToDictionary());
+		}
+        
+        public static async Task Start<TMicroService>() where TMicroService : Microservice
+        {
+	        // TODO: add obsolete warning.
+	        // TODO: add check if preparedBuilder is not ready.
+	        await _preparedBuilder
+		        .Start()
+		        .RunForever();
 
-	        // run the standard provider *AFTER* the user level stuff, so that
-	        //  standard beamable attributes overwrite conflicting user attributes.
-	        //  Ex: It is not valid for a user to override what "cid" does. 
-	        _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
-	        
-	        _resourceBuilder = ResourceBuilder.CreateEmpty()
-		        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
-			        autoGenerateServiceInstanceId: false,
-			        serviceInstanceId: activityProvider.ServiceId)
-		        .AddAttributes(ctx.Attributes.ToDictionary());
-
-	        ConfigureZLogging<TMicroService>(envArgs, includeOtel: true, otlpEndpoint);
-
-	        ConfigureTelemetry(envArgs, attribute, otlpEndpoint);
-
-	        ConfigureUncaughtExceptions();
-	        ConfigureUnhandledError();
-	        _localDiscoveryBroadcast = ConfigureDiscovery(envArgs, attribute);
-	        await ConfigureUsageService(envArgs);
-	        ReflectionCache = ConfigureReflectionCache();
-	        
-	        // configure the root service scope, and then build the root service provider.
-	        var serviceBuilder = ConfigureServices<TMicroService>(envArgs);
-	        var rootServiceScope = serviceBuilder.Build(new BuildOptions
-	        {
-		        allowHydration = false
-	        });
-
-	        InitializeServices(rootServiceScope);
-
-	        var resolvedCid = await ConfigureCid(envArgs);
-	        var args = envArgs.Copy(conf =>
-	        {
-		        conf.ServiceScope = rootServiceScope;
-		        conf.CustomerID = resolvedCid;
-	        });
-
-	        for (var i = 0; i < args.BeamInstanceCount; i++)
-            {
-	            var isFirstInstance = i == 0;
-	            var beamableService = new BeamableMicroService();
-				Instances.Add(beamableService);
-				
-				var instanceArgs = args.Copy(conf =>
-				{
-					// only the first instance needs to run, if anything should run at all.
-					conf.DisableCustomInitializationHooks |= !isFirstInstance;
-				});
-				
-	            if (isFirstInstance)
-	            {
-		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _debugLogProcessor);
-		            var runningDebugTask = localDebug.Run();
-	            }
-	            
-	            //In case that SdkVersionExecution is null or empty, we are executing it locally with dotnet and
-	            //therefore getting dependencies through nuget, so not required to check versions mismatch.
-	            if (!string.IsNullOrEmpty(args.SdkVersionExecution) && !string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
-	            {
-		            _logger.ZLogCritical(
-			            $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
-		            throw new Exception(
-			            $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
-	            }
-
-	            try
-	            {
-		            await beamableService.Start<TMicroService>(instanceArgs);
-		            if (isFirstInstance && (attribute?.EnableEagerContentLoading ?? false))
-		            {
-			            await rootServiceScope.GetService<ContentService>().initializedPromise;
-		            }
-	            }
-	            catch (Exception ex)
-	            {
-		            var message = new StringBuilder(1024 * 10);
-
-		            if (ex is not BeamableMicroserviceException beamEx)
-			            message.AppendLine(
-				            $"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
-				            $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
-		            else
-			            message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
-			                               $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
-
-		            message.AppendLine("Exception Info:");
-		            message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
-		            message.AppendLine("Stack Trace:");
-		            message.AppendLine(ex.StackTrace);
-		            _logger.LogCritical(message.ToString());
-		            throw;
-	            }
-
-	            if (args.WatchToken)
-		            HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-
-	            var _ = beamableService.RunForever();
-            }
-
-            await Task.Delay(-1);
+	        // var commandLineArgs = Environment.GetCommandLineArgs();
+	        //       // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
+	        //       if (commandLineArgs.Contains("--generate-oapi"))
+	        //       {
+	        //        return;
+	        //       }
+	        //
+	        //       string otlpEndpoint = null;
+	        //
+	        //       if (ShouldStartStandardOtel())
+	        //       {
+	        //        CancellationTokenSource tokenSource = new CancellationTokenSource();
+	        //        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, _logger);
+	        //
+	        //        if (status.isRunning)
+	        //        {
+	        //         otlpEndpoint = $"http://{status.otlpEndpoint}";
+	        //        }
+	        //        else
+	        //        {
+	        //         otlpEndpoint = PortUtil.FreeEndpoint();
+	        //        }
+	        //
+	        //        if (!status.isRunning)
+	        //        {
+	        //         _logger.ZLogInformation($"Sending request to get clickhouse credentials...");
+	        //         var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
+	        //         var otelApi = new BeamBeamootelApi(requester);
+	        //         var res = await otelApi.GetOtelAuthWriterConfig();
+	        //
+	        //         CollectorManager.AddAuthEnvironmentVars(res);
+	        //        }
+	        //
+	        //        _logger.ZLogInformation($"Starting otel collector discovery event...");
+	        //        await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
+	        //       }
+	        //
+	        //
+	        //       var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
+	        //       var envArgs = _args = new EnvironmentArgs();
+	        //       //var resolvedCid = await ConfigureCid(envArgs);
+	        //       //_args.SetResolvedCid(resolvedCid);
+	        //
+	        //       var activityProvider = DefaultActivityProvider.CreateMicroServiceProvider(envArgs, attribute);
+	        //       _activityProvider = activityProvider;
+	        //       
+	        //       var ctx = new DefaultAttributeContext
+	        //       {
+	        //        Attributes = new TelemetryAttributeCollection(),
+	        //        Args = envArgs
+	        //       };
+	        //       // TODO: allow customer to override the attributes
+	        //
+	        //       // run the standard provider *AFTER* the user level stuff, so that
+	        //       //  standard beamable attributes overwrite conflicting user attributes.
+	        //       //  Ex: It is not valid for a user to override what "cid" does. 
+	        //       _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
+	        //       
+	        //       _resourceBuilder = ResourceBuilder.CreateEmpty()
+	        //        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
+	        //         autoGenerateServiceInstanceId: false,
+	        //         serviceInstanceId: activityProvider.ServiceId)
+	        //        .AddAttributes(ctx.Attributes.ToDictionary());
+	        //
+	        //       ConfigureZLogging<TMicroService>(envArgs, includeOtel: true, otlpEndpoint);
+	        //
+	        //       ConfigureTelemetry(envArgs, attribute, otlpEndpoint);
+	        //
+	        //       ConfigureUncaughtExceptions();
+	        //       ConfigureUnhandledError();
+	        //       _localDiscoveryBroadcast = ConfigureDiscovery(envArgs, attribute);
+	        //       await ConfigureUsageService(envArgs);
+	        //       ReflectionCache = ConfigureReflectionCache();
+	        //       
+	        //       // configure the root service scope, and then build the root service provider.
+	        //       var serviceBuilder = ConfigureServices<TMicroService>(envArgs);
+	        //       var rootServiceScope = serviceBuilder.Build(new BuildOptions
+	        //       {
+	        //        allowHydration = false
+	        //       });
+	        //
+	        //       InitializeServices(rootServiceScope);
+	        //
+	        //       var resolvedCid = await ConfigureCid(envArgs);
+	        //       var args = envArgs.Copy(conf =>
+	        //       {
+	        //        conf.ServiceScope = rootServiceScope;
+	        //        conf.CustomerID = resolvedCid;
+	        //       });
+	        //
+	        //       for (var i = 0; i < args.BeamInstanceCount; i++)
+	        //          {
+	        //           var isFirstInstance = i == 0;
+	        //           var beamableService = new BeamableMicroService();
+	        // 	Instances.Add(beamableService);
+	        // 	
+	        // 	var instanceArgs = args.Copy(conf =>
+	        // 	{
+	        // 		// only the first instance needs to run, if anything should run at all.
+	        // 		conf.DisableCustomInitializationHooks |= !isFirstInstance;
+	        // 	});
+	        // 	
+	        //           if (isFirstInstance)
+	        //           {
+	        //            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _debugLogProcessor);
+	        //            var runningDebugTask = localDebug.Run();
+	        //           }
+	        //           
+	        //           //In case that SdkVersionExecution is null or empty, we are executing it locally with dotnet and
+	        //           //therefore getting dependencies through nuget, so not required to check versions mismatch.
+	        //           if (!string.IsNullOrEmpty(args.SdkVersionExecution) && !string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
+	        //           {
+	        //            _logger.ZLogCritical(
+	        //             $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
+	        //            throw new Exception(
+	        //             $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
+	        //           }
+	        //
+	        //           try
+	        //           {
+	        //            await beamableService.Start<TMicroService>(instanceArgs);
+	        //            if (isFirstInstance && (attribute?.EnableEagerContentLoading ?? false))
+	        //            {
+	        //             await rootServiceScope.GetService<ContentService>().initializedPromise;
+	        //            }
+	        //           }
+	        //           catch (Exception ex)
+	        //           {
+	        //            var message = new StringBuilder(1024 * 10);
+	        //
+	        //            if (ex is not BeamableMicroserviceException beamEx)
+	        //             message.AppendLine(
+	        // 	            $"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
+	        // 	            $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
+	        //            else
+	        //             message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
+	        //                                $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
+	        //
+	        //            message.AppendLine("Exception Info:");
+	        //            message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
+	        //            message.AppendLine("Stack Trace:");
+	        //            message.AppendLine(ex.StackTrace);
+	        //            _logger.LogCritical(message.ToString());
+	        //            throw;
+	        //           }
+	        //
+	        //           if (args.WatchToken)
+	        //            HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
+	        //
+	        //           var _ = beamableService.RunForever();
+	        //          }
+	        //
+	        //          await Task.Delay(-1);
         }
 
         private static IBeamableRequester GenerateTemporarySignedRequester(EnvironmentArgs args)

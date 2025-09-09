@@ -97,13 +97,8 @@ namespace Beamable.Server
    public class BeamableMicroService
    {
       public string MicroserviceName => _serviceAttribute.MicroserviceName;
-      
-      /// <summary>
-      /// The term, "micro_" is a legacy string from 1.x days.
-      /// If we remove it, it can break compatibility with existing deployed clients
-      ///  trying to communicate with services with a micro_ term.
-      /// </summary>
-      public string QualifiedName => "micro_" + MicroserviceName;
+
+      public string QualifiedName => _serviceAttribute.GetQualifiedName();
       
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
@@ -120,9 +115,9 @@ namespace Beamable.Server
       public SocketRequesterContext SocketContext => _socketRequesterContext;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
-      public List<FederationComponent> FederationComponents { get; private set; }
+      public List<FederationComponent> FederationComponents => Provider.GetService<FederationMetadata>().Components;
       public MicroserviceAuthenticationDaemon AuthenticationDaemon => _socketRequesterContext?.Daemon;
-      private MicroserviceAttribute _serviceAttribute;
+      private IMicroserviceAttributes _serviceAttribute;
 
       // default is false, set 1 for true.
       private int _refuseNewClientMessageFlag = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
@@ -176,22 +171,14 @@ namespace Beamable.Server
 
       public readonly string ConnectionId = Guid.NewGuid().ToString();
       private SingletonDependencyList<ITelemetryAttributeProvider> _telemetryProviders;
+      private StartupContext _startupContext;
 
-
-      public async Task Start<TMicroService>(IMicroserviceArgs args)
-         where TMicroService : Microservice
+      public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
-         if (HasInitialized) return;
-
-       
-         MicroserviceType = typeof(TMicroService);
-         FederationComponents = FederatedComponentGenerator.FindFederatedComponents(MicroserviceType);
+	      _startupContext = startupContext;
+	      if (HasInitialized) return;
          
-         _serviceAttribute = MicroserviceType.GetCustomAttribute<MicroserviceAttribute>();
-         if (_serviceAttribute == null)
-         {
-            throw new Exception($"Cannot create service. Missing [{typeof(MicroserviceAttribute).Name}].");
-         }
+         _serviceAttribute = startupContext.attributes;
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _args = args.Copy(conf =>
@@ -342,19 +329,7 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      var adminRoutes = new AdminRoutes
-	      {
-		      sdkVersionBaseBuild = _args.SdkVersionBaseBuild,
-		      sdkVersionExecution = _args.SdkVersionExecution,
-		      GlobalProvider = Provider,
-		      FederationComponents = FederationComponents,
-		      MicroserviceAttribute = _serviceAttribute, 
-		      MicroserviceType = MicroserviceType,
-		      routingKey = _args.NamePrefix,
-		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
-	      };
-	      
-	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
+	      ServiceMethods = RouteSourceUtil.BuildRoutes(_startupContext, _args);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)
@@ -363,7 +338,7 @@ namespace Beamable.Server
 
          socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
 
-         socket.OnMessage(async (s, message, messageNumber, sw) =>
+         socket.OnMessage(async void (s, message, messageNumber, sw) =>
          {
 	         try
 	         {
@@ -466,16 +441,18 @@ namespace Beamable.Server
       /// </summary>
       private async Task ResolveCustomInitializationHook()
       {
+	      // TODO: extract all this mumbo jumbo into startupContext.
+	      
          // Gets Service Initialization Methods
-         var serviceInitialization = MicroserviceType
-            .GetMethods(BindingFlags.Static | BindingFlags.Public)
-            .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
-            .Select(method =>
-            {
-               var attr = method.GetCustomAttribute<InitializeServicesAttribute>();
-               return (method, attr);
-            })
-            .ToList();
+         var serviceInitialization = _startupContext.microserviceTypes
+	         .SelectMany(t => t.InstanceType.GetMethods(BindingFlags.Static | BindingFlags.Public))
+	         .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
+	         .Select(method =>
+	         {
+		         var attr = method.GetCustomAttribute<InitializeServicesAttribute>();
+		         return (method, attr);
+	         })
+	         .ToList();
 
          // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
          // TODO: Add reflection utility that sorts (MemberInfo, ISortableByType<>) tuples to ReflectionCache and replace this usage.
@@ -549,6 +526,15 @@ namespace Beamable.Server
             }
          }
 
+
+         foreach (var initializer in _startupContext.initializers)
+         {
+	         var task = initializer?.Invoke(_args.ServiceScope);
+	         if (task != null)
+	         {
+		         await task;
+	         }
+         }
       }
 
 
@@ -660,36 +646,7 @@ namespace Beamable.Server
 		      });
 	      }
       }
-
-
-      Microservice BuildServiceInstance(MicroserviceRequestContext ctx)
-      {
-	      IDependencyProviderScope newScope = _args.ServiceScope.Fork(builder =>
-	      {
-		      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
-		      builder.AddScoped(ctx);
-		      builder.AddScoped<RequestContext>(ctx);
-		      builder.AddScoped(_args);
-	      });
-	      
-	      IDependencyProviderScope CreateFromScope(RequestContext requestContext, Action<IDependencyBuilder> configurator)
-	      {
-		      return newScope.Fork(builder =>
-		      {
-			      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
-			      builder.Remove<RequestContext>();
-			      builder.AddScoped(requestContext);
-			      
-			      configurator?.Invoke(builder);
-		      });
-	      }
-
-	      var service = newScope.GetRequiredService(MicroserviceType) as Microservice;
-	      service.ProvideDefaultServices(newScope, (requestContext, configurator) => CreateFromScope(requestContext, configurator));
-	      
-	      return service;
-      }
-
+      
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
@@ -858,6 +815,7 @@ namespace Beamable.Server
 	      }
       }
 
+      [Obsolete("this value is no longer available.")]
       public Type MicroserviceType { get; private set; }
 
 

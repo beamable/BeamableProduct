@@ -47,6 +47,23 @@
             <EmbeddedResource Include="$(BeamPropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
         </ItemGroup>
     </Target>
+    
+    <Target Name="BeamableSettings" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service'">
+        <Message Importance="high" Text="Bundling Beamable Settings..."/>
+        <PropertyGroup>
+            <BeamSettingsFile>$(IntermediateOutputPath)/beamableSettings.txt</BeamSettingsFile>
+            
+        </PropertyGroup>
+        <Delete Files="$(BeamSettingsFile)"/>
+
+        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>
+<!--        TODO: add more settings?   -->
+<!--        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>-->
+        
+        <ItemGroup>
+            <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
+        </ItemGroup>
+    </Target>
 
     <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamEnableCollectorResolution)'=='true'">
 
