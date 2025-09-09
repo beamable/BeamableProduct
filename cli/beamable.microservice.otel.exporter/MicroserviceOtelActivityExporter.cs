@@ -9,8 +9,9 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 {
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpTraceExporter _exporter;
+	private bool _shouldRetry;
 
-	private Queue<ActivityQueueData> _activitiesToFlush;
+	private LimitedQueue<ActivityQueueData> _activitiesToFlush;
 
 	public MicroserviceOtelActivityExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
@@ -21,7 +22,8 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		};
 
 		_exporter = new OtlpTraceExporter(_otlpOptions);
-		_activitiesToFlush = new Queue<ActivityQueueData>();
+		_activitiesToFlush = new LimitedQueue<ActivityQueueData>(options.RetryQueueMaxSize);
+		_shouldRetry = options.ShouldRetry;
 	}
 
 	public override ExportResult Export(in Batch<Activity> batch)
@@ -43,6 +45,11 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		var copyBatch = new Batch<Activity>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<Activity> actually removes the entries from the Batch
 
 		var result = _exporter.Export(copyBatch);
+
+		if (!_shouldRetry)
+		{
+			return result;
+		}
 
 		if (result == ExportResult.Success)
 		{

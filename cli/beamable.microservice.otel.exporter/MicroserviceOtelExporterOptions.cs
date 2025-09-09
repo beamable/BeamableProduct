@@ -6,6 +6,7 @@ public class MicroserviceOtelExporterOptions
 {
 	private string? _endpoint;
 	private OtlpExportProtocol? _protocol;
+	private int? _retryQueueMaxSize;
 
 	public string OtlpEndpoint
 	{
@@ -13,7 +14,7 @@ public class MicroserviceOtelExporterOptions
 		{
 			if (this._endpoint == null)
 			{
-				return $"http://127.0.0.1:4318";
+				return $"127.0.0.1:4318";
 			}
 
 			return this._endpoint;
@@ -29,7 +30,8 @@ public class MicroserviceOtelExporterOptions
 		}
 	}
 
-	public OtlpExportProtocol Protocol{
+	public OtlpExportProtocol Protocol
+	{
 		get
 		{
 			if (this._protocol == null)
@@ -43,5 +45,21 @@ public class MicroserviceOtelExporterOptions
 		{
 			this._protocol = value;
 		}
+	}
+
+	public bool ShouldRetry { get; set; } = true;
+
+	public int RetryQueueMaxSize
+	{
+		get
+		{
+			if (_retryQueueMaxSize == null)
+			{
+				return 1000; //TODO try to come up with a better value
+			}
+
+			return (int)_retryQueueMaxSize;
+		}
+		set => this._retryQueueMaxSize = value;
 	}
 }

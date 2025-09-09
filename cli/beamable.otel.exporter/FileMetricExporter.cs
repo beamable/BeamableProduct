@@ -19,8 +19,12 @@ public class FileMetricExporter : FileExporter<Metric>
 
 	public override ExportResult Export(in Batch<Metric> batch)
 	{
+		if (!Directory.Exists(_filesPath))
+		{
+			return ExportResult.Failure;
+		}
+
 		var res = this.resource ?? this.ParentProvider.GetResource();
-		FolderManagementHelper.EnsureDestinationFolderExists(_filesPath);
 
 		var filePath = FolderManagementHelper.GetDestinationFilePath(_filesPath);
 
@@ -29,6 +33,11 @@ public class FileMetricExporter : FileExporter<Metric>
 		foreach (Metric metric in batch)
 		{
 			allMetricsSerialized.Add(MetricsSerializer.SerializeMetric(metric));
+		}
+
+		if (allMetricsSerialized.Count == 0)
+		{
+			return ExportResult.Success;
 		}
 
 		var serializedBatch = new MetricsBatch()

@@ -19,7 +19,7 @@ get_app_data_dir() {
       Darwin*)    echo "$HOME/Library/Application Support";;
       CYGWIN*|MINGW*|MSYS*) 
                   # Windows Git Bash or similar
-                  echo "$APPDATA";;
+                  echo "$LOCALAPPDATA";;
       *)          echo "$HOME/.config";;
   esac
 }

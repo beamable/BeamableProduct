@@ -164,10 +164,23 @@ namespace Beamable.Server
 						    .SetResourceBuilder(ctx.resourceProvider)
 						    .AddMicroserviceExporter(option =>
 						    {
-							    if (ShouldStartStandardOtel())
+
+							    if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
+							    {
+								    option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+								    option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
+							    }
+							    else if(ctx.args.OtelExporterStandardEnabled)
 							    {
 								    option.Protocol = OtlpExportProtocol.HttpProtobuf;
 								    option.OtlpEndpoint = otlpEndpoint;
+							    }
+
+							    option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
+
+							    if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
+							    {
+								    option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
 							    }
 						    });
 				    });
@@ -795,7 +808,6 @@ namespace Beamable.Server
 
         public static void ConfigureTelemetry(StartupContext ctx)
         {
-	        var shouldStartStandardOtel = ShouldStartStandardOtel();
 
 	        var metricProvider = Sdk.CreateMeterProviderBuilder()
 			        .AddMeter(Otel.METER_SERVICE_NAME)
@@ -806,7 +818,12 @@ namespace Beamable.Server
 			        // We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
 			        .AddOtlpExporter(option =>
 			        {
-				        if (shouldStartStandardOtel)
+				        if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
+				        {
+					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+					        option.Endpoint = new Uri($"{ctx.args.OtelExporterOtlpEndpoint}/v1/metrics");
+				        }
+				        else if(ctx.args.OtelExporterStandardEnabled)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
 					        option.Endpoint = new Uri($"{ctx.otlpEndpoint}/v1/metrics");;
@@ -824,10 +841,22 @@ namespace Beamable.Server
 			        .SetSampler<TraceSampler>()
 			        .AddMicroserviceExporter(option =>
 			        {
-				        if (shouldStartStandardOtel)
+				        if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
+				        {
+					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+					        option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
+				        }
+				        else if(ctx.args.OtelExporterStandardEnabled)
 				        {
 					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
 					        option.OtlpEndpoint = ctx.otlpEndpoint;
+				        }
+
+				        option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
+
+				        if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
+				        {
+					        option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
 				        }
 			        })
 			        .Build()
@@ -982,7 +1011,7 @@ namespace Beamable.Server
 
         private static async Task ConfigureOtelCollector(StartupContext ctx)
         {
-	        if (ShouldStartStandardOtel())
+	        if (ctx.args.OtelExporterStandardEnabled)
 	        {
 		        CancellationTokenSource tokenSource = new CancellationTokenSource();
 		        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, ctx.logger);

@@ -142,8 +142,12 @@ public class App
 					opts.SetResourceBuilder(provider.GetService<ResourceBuilder>());
 					opts.AddFileExporter(opts =>
 					{
-						var configPath = provider.GetService<ConfigService>().ConfigTempOtelLogsDirectoryPath;
+						var configService = provider.GetService<ConfigService>();
+						var configPath = configService.ConfigTempOtelLogsDirectoryPath;
 						opts.ExportPath = configPath ?? ".";
+
+						var otelConfig = configService.LoadOtelConfigFromFile();
+						opts.MinimalLogLevel = (LogLevel)otelConfig.BeamCliTelemetryMaxSize;
 					});
 				});
 			}
@@ -233,6 +237,7 @@ public class App
 		services.AddSingleton<ISignedRequesterConfig, CliSignedRequesterConfig>();
 		services.AddSingleton<HttpSignedRequester>();
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
+		services.AddSingleton<ProcessFileLocker>();
 		
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
@@ -284,6 +289,7 @@ public class App
 			{
 				
 				return Sdk.CreateTracerProviderBuilder()
+					.SetSampler(new TraceIdRatioBasedSampler(0.05f)) //TODO testing this for now
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation(opts =>
 					{
@@ -304,20 +310,23 @@ public class App
 		services.AddSingleton<MeterProvider>(p =>
 		{
 			var resourceBuilder = p.GetService<ResourceBuilder>();
-			if (Otel.CliTracesEnabled())
-			{
-				return Sdk.CreateMeterProviderBuilder()
-					.AddProcessInstrumentation()
-					.AddRuntimeInstrumentation()
-					.SetResourceBuilder(resourceBuilder)
-					.AddHttpClientInstrumentation()
-					.AddFileExporter(opts =>
-					{
-						var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
-						opts.ExportPath = path ?? ".";
-					})
-					.Build();
-			}
+
+			//TODO: This is being removed because these instrumentations are spamming metrics when using the CLI in our engine integrations
+			//TODO We should research and fix this in a future release. Ticket for this work: [#4273]
+			// if (Otel.CliTracesEnabled())
+			// {
+			// 	return Sdk.CreateMeterProviderBuilder()
+			// 		.AddProcessInstrumentation()
+			// 		.AddRuntimeInstrumentation()
+			// 		.SetResourceBuilder(resourceBuilder)
+			// 		.AddHttpClientInstrumentation()
+			// 		.AddFileExporter(opts =>
+			// 		{
+			// 			var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
+			// 			opts.ExportPath = path ?? ".";
+			// 		})
+			// 		.Build();
+			// }
 
 			return null;
 		});
@@ -498,6 +507,10 @@ public class App
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<ReportTelemetryCommand, ReportTelemetryCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<FetchTelemetryLogsCommand, FetchTelemetryLogsCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<SetBeamOtelConfigCommand, SetBeamOtelConfigCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<GetBeamOtelConfigCommand, GetBeamOtelConfigCommandArgs, OtelCommand>();
+		Commands.AddSubCommandWithHandler<OtelStatusCommand, OtelStatusCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();
@@ -1067,17 +1080,20 @@ public class App
 			//in case otel is enabled, check if otel data stored in files is too large
 			if (Otel.CliTracesEnabled())
 			{
-				var otelDirectory = provider.GetService<ConfigService>().ConfigTempOtelDirectoryPath;
+				var configService = provider.GetService<ConfigService>();
+				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
 
 				if (Directory.Exists(otelDirectory))
 				{
 					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
 
-					if (dirResult.Size >= Otel.MAX_OTEL_TEMP_DIR_SIZE)
+					var maxSize = configService.LoadOtelConfigFromFile().BeamCliTelemetryMaxSize;
+
+					if (dirResult.Size >= maxSize)
 					{
-						Log.Warning($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
+						Log.Information($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
 						            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
-						Log.Warning($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
+						Log.Information($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
 					}
 				}
 			}

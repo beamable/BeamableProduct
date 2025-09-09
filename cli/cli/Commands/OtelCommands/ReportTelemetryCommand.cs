@@ -17,7 +17,7 @@ namespace cli.OtelCommands;
 [Serializable]
 public class ReportTelemetryCommandArgs : CommandArgs
 {
-	public List<string> Paths;
+	public string[] Paths;
 }
 
 [Serializable]
@@ -36,14 +36,14 @@ public class ReportTelemetryCommand : AtomicCommand<ReportTelemetryCommandArgs, 
 
 	public override void Configure()
 	{
-		AddOption(new Option<List<string>>("--paths", "All paths to files that contain custom log data to be later exported to clickhouse"),
+		AddOption(new Option<string[]>("--paths", "All paths to files that contain custom log data to be later exported to clickhouse"),
 			(args, i) => args.Paths = i);
 	}
 
 	public override Task<ReportTelemetryResult> GetResult(ReportTelemetryCommandArgs args)
 	{
 
-		if (args.Paths.Count == 0)
+		if (args.Paths == null || args.Paths.Length == 0)
 		{
 			throw new CliException("Must have at least one path to a file to be exported");
 		}

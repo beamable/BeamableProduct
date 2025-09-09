@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class OtelCollectorPsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class TelemetryCollectorPsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
         /// <summary>When true, the command will run forever and watch the state of the program</summary>
         public bool watch;
@@ -26,13 +26,13 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual OtelCollectorPsWrapper OtelCollectorPs(OtelCollectorPsArgs psArgs)
+        public virtual TelemetryCollectorPsWrapper TelemetryCollectorPs(TelemetryCollectorPsArgs psArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("otel");
+            genBeamCommandArgs.Add("telemetry");
             genBeamCommandArgs.Add("collector");
             genBeamCommandArgs.Add("ps");
             genBeamCommandArgs.Add(psArgs.Serialize());
@@ -42,15 +42,15 @@ namespace Beamable.Editor.BeamCli.Commands
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            OtelCollectorPsWrapper genBeamCommandWrapper = new OtelCollectorPsWrapper();
+            TelemetryCollectorPsWrapper genBeamCommandWrapper = new TelemetryCollectorPsWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class OtelCollectorPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class TelemetryCollectorPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual OtelCollectorPsWrapper OnStreamCollectorStatusResult(System.Action<ReportDataPoint<BeamCollectorStatusResult>> cb)
+        public virtual TelemetryCollectorPsWrapper OnStreamCollectorStatusResult(System.Action<ReportDataPoint<BeamCollectorStatusResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;
