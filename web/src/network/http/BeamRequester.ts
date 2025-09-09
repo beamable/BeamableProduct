@@ -78,15 +78,7 @@ export class BeamRequester implements HttpRequester {
         [HEADERS.BEAM_SIGNATURE]: this.generateSignature(req.url, body),
       };
     } else if (req.withAuth) {
-      const data = await this.tokenStorage?.getTokenData();
-      const token = data?.accessToken ?? null;
-      if (token) {
-        // add the bearer token to the request headers
-        req.headers = {
-          ...req.headers,
-          [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
-        };
-      }
+      await this.attachAuthHeader(req);
     }
 
     // add the routing key to the request headers if it exists
@@ -111,6 +103,8 @@ export class BeamRequester implements HttpRequester {
       !isInvalidCredentialsError
     ) {
       await this.handleRefresh();
+      // Re-attach Authorization header with the updated access token
+      await this.attachAuthHeader(newReq);
       response = await this.inner.request<TRes, TReq>(newReq);
     }
 
@@ -178,6 +172,17 @@ export class BeamRequester implements HttpRequester {
     return createHash('md5').update(data).digest('base64');
   }
 
+  private async attachAuthHeader(req: HttpRequest<any>): Promise<void> {
+    const data = await this.tokenStorage?.getTokenData();
+    const token = data?.accessToken ?? null;
+    if (token) {
+      req.headers = {
+        ...req.headers,
+        [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
+      };
+    }
+  }
+
   private async handleRefresh(): Promise<void> {
     const tokenData = await this.tokenStorage?.getTokenData();
     const refreshToken = tokenData?.refreshToken ?? null;
@@ -201,9 +206,9 @@ export class BeamRequester implements HttpRequester {
     } = response.body;
 
     const update: any = {};
-    if (newAccessToken) update.accessToken = newAccessToken;
-    if (newRefreshToken) update.refreshToken = newRefreshToken;
-    if (newExpiresIn) update.expiresIn = Date.now() + Number(newExpiresIn);
+    if (newAccessToken) update['accessToken'] = newAccessToken;
+    if (newRefreshToken) update['refreshToken'] = newRefreshToken;
+    if (newExpiresIn) update['expiresIn'] = Date.now() + Number(newExpiresIn);
     if (Object.keys(update).length > 0) {
       await this.tokenStorage?.setTokenData(update);
     }
