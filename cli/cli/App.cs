@@ -289,7 +289,7 @@ public class App
 			{
 				
 				return Sdk.CreateTracerProviderBuilder()
-					.SetSampler(new TraceIdRatioBasedSampler(0.05f)) //TODO testing this for now
+					.SetSampler(new TraceIdRatioBasedSampler(0.05f)) //TODO find a better way to reduce number of traces, also get this percentage from a env var
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation(opts =>
 					{

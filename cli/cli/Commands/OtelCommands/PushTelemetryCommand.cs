@@ -13,7 +13,7 @@ public class PushTelemetryCommandArgs : CommandArgs
 	public string ProcessId;
 }
 
-public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult
+public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult, ISkipManifest
 {
 	public const string LAST_PUBLISH_OTEL_FILE_NAME = "last-publish.txt";
 
