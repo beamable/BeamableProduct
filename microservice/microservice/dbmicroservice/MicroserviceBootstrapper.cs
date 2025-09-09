@@ -839,26 +839,26 @@ namespace Beamable.Server
 			        .AddSource(Otel.METER_SERVICE_NAME)
 			        .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			        .SetSampler<TraceSampler>()
-			        .AddMicroserviceExporter(option =>
-			        {
-				        if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
-				        {
-					        option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
-					        option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
-				        }
-				        else if(ctx.args.OtelExporterStandardEnabled)
-				        {
-					        option.Protocol = OtlpExportProtocol.HttpProtobuf;
-					        option.OtlpEndpoint = ctx.otlpEndpoint;
-				        }
-
-				        option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
-
-				        if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
-				        {
-					        option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
-				        }
-			        })
+			        // .AddMicroserviceExporter(option =>
+			        // {
+				       //  if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
+				       //  {
+					      //   option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+					      //   option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
+				       //  }
+				       //  else if(ctx.args.OtelExporterStandardEnabled)
+				       //  {
+					      //   option.Protocol = OtlpExportProtocol.HttpProtobuf;
+					      //   option.OtlpEndpoint = ctx.otlpEndpoint;
+				       //  }
+			        //
+				       //  option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
+			        //
+				       //  if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
+				       //  {
+					      //   option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
+				       //  }
+			        // })
 			        .Build()
 		        ;
         }
