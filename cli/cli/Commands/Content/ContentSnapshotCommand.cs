@@ -18,8 +18,8 @@ public class ContentSnapshotCommand : AtomicCommand<ContentSnapshotCommandArgs, 
 		AddOption(new Option<string>("--name", () => "", "Defines the name for the snapshot to be created"), (args, s) => args.SnapshotName = s, new[] { "-n" });
 		AddOption(new Option<ContentSnapshotType>("--snapshot-type", () => ContentSnapshotType.Local,
 				"Defines where the snapshot will be stored to." +
-				$"\n{nameof(ContentSnapshotType.Local)} => Will save the snapshot under `.beamable/temp/content-snapshots` folder" +
-				$"\n{nameof(ContentSnapshotType.Shared)} => Will save the snapshot under `.beamable/content-snapshots` folder"),
+				$"\n{nameof(ContentSnapshotType.Local)} => Will save the snapshot under `.beamable/temp/content-snapshots/[PID]` folder" +
+				$"\n{nameof(ContentSnapshotType.Shared)} => Will save the snapshot under `.beamable/content-snapshots/[PID]` folder"),
 			(args, type) => args.ContentSnapshotType = type, new[] { "-t" });
 	}
 

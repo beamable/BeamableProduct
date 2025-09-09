@@ -1,5 +1,22 @@
 # beamable-sdk
 
+## 0.5.1
+
+### Patch Changes
+
+- Fix remove unexpected dependencies
+
+## 0.5.0
+
+### Minor Changes
+
+- Added `Content` Service.
+- Added `Content` Types.
+- Added `ContentStorage` for persisting manifests and contents to indexedDB or file system.
+- Added `content.refresh` to list of refreshable events.
+- Added in-memory cache for `Content` to optimize content retrieval.
+- Updates to auto-generated apis and schemas.
+
 ## 0.4.1
 
 ### Patch Changes
