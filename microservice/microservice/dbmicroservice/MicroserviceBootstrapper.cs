@@ -85,15 +85,6 @@ namespace Beamable.Server
 
     public static partial class MicroserviceBootstrapper
     {
-	    // private const int MSG_SIZE_LIMIT = 1000;
-	    
-	    
-
-	    // public static ContentService ContentService;
-
-
-	    // private static DebugLogSink _sink;
-	    // private static Task _localDiscoveryBroadcast;
 	    public static LogLevel LogLevel;
 
 	    public static ZLoggerOptions UseBeamJsonFormatter(ZLoggerOptions options)
@@ -876,7 +867,12 @@ namespace Beamable.Server
         public static Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
 	        _preparedBuilder = BeamServer.Create()
-		        .IncludeRoutes<TMicroservice>(routePrefix: "", clientPrefix: "")
+		        .IncludeRoutes<TMicroservice>(
+			        // enable backward compat, 
+			        //  old microservices never had route prefixes or client prefixes, 
+			        //  so best to leave them blank. 
+			        routePrefix: "", 
+			        clientPrefix: "")
 		        .Override(conf =>
 		        {
 			        var attrs = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
@@ -892,41 +888,6 @@ namespace Beamable.Server
 			        conf.LocalEnvCustomArgs = customArgs;
 		        });
 	        return Task.CompletedTask;
-
-
-	        // Type microserviceType = typeof(TMicroservice);
-	        //
-	        // var attribute = microserviceType.GetCustomAttribute<MicroserviceAttribute>();
-	        //
-	        // var commandLineArgs = Environment.GetCommandLineArgs();
-	        //
-	        // // If argument --generate-oapi exist we are going to generate the OAPI specifications for this MS instead of preparing to start.
-	        // if (commandLineArgs.Contains("--generate-oapi"))
-	        // {
-	        //  await GenerateOpenApiSpecification(microserviceType, attribute);
-	        //  return;
-	        // }
-	        //
-	        // var envArgs = _args = new EnvironmentArgs();
-	        //
-	        // ConfigureZLogging<TMicroservice>(envArgs, includeOtel: false, string.Empty);
-	        //
-	        // _logger.LogInformation($"Starting Prepare");
-	        //
-	        // var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-	        // if (inDocker)
-	        // {
-	        //  return;
-	        // }
-	        //
-	        // ConfigureRequiredProcessIdWatcher(envArgs);
-	        //
-	        // await GetLocalEnvironment(new StartupContext
-	        // {
-	        //  args = envArgs,
-	        //  attributes = attribute,
-	        //  localEnvArgs = customArgs
-	        // });
         }
 
         /// <summary>
@@ -1001,14 +962,7 @@ namespace Beamable.Server
 	        
 	        await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
         }
-
-        private static bool ShouldStartStandardOtel()
-        {
-	        // TODO: move this into args class.
-	        return false;
-	        // return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
-        }
-
+        
         private static async Task ConfigureOtelCollector(StartupContext ctx)
         {
 	        if (ctx.args.OtelExporterStandardEnabled)
@@ -1067,165 +1021,13 @@ namespace Beamable.Server
         
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        // TODO: add obsolete warning.
-	        // TODO: add check if preparedBuilder is not ready.
+	        if (_preparedBuilder == null)
+	        {
+		        throw new InvalidOperationException("You must call " + nameof(Prepare) + " first.");
+	        }
 	        await _preparedBuilder
 		        .Start()
 		        .RunForever();
-
-	        // var commandLineArgs = Environment.GetCommandLineArgs();
-	        //       // If argument --generate-oapi exist we instead generated the OAPI specifications for it, so we can skip it.
-	        //       if (commandLineArgs.Contains("--generate-oapi"))
-	        //       {
-	        //        return;
-	        //       }
-	        //
-	        //       string otlpEndpoint = null;
-	        //
-	        //       if (ShouldStartStandardOtel())
-	        //       {
-	        //        CancellationTokenSource tokenSource = new CancellationTokenSource();
-	        //        var status = await CollectorManager.IsCollectorRunning(tokenSource.Token, _logger);
-	        //
-	        //        if (status.isRunning)
-	        //        {
-	        //         otlpEndpoint = $"http://{status.otlpEndpoint}";
-	        //        }
-	        //        else
-	        //        {
-	        //         otlpEndpoint = PortUtil.FreeEndpoint();
-	        //        }
-	        //
-	        //        if (!status.isRunning)
-	        //        {
-	        //         _logger.ZLogInformation($"Sending request to get clickhouse credentials...");
-	        //         var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
-	        //         var otelApi = new BeamBeamootelApi(requester);
-	        //         var res = await otelApi.GetOtelAuthWriterConfig();
-	        //
-	        //         CollectorManager.AddAuthEnvironmentVars(res);
-	        //        }
-	        //
-	        //        _logger.ZLogInformation($"Starting otel collector discovery event...");
-	        //        await CollectorManager.StartCollector("", false, false, tokenSource, _logger, otlpEndpoint);
-	        //       }
-	        //
-	        //
-	        //       var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        //       var envArgs = _args = new EnvironmentArgs();
-	        //       //var resolvedCid = await ConfigureCid(envArgs);
-	        //       //_args.SetResolvedCid(resolvedCid);
-	        //
-	        //       var activityProvider = DefaultActivityProvider.CreateMicroServiceProvider(envArgs, attribute);
-	        //       _activityProvider = activityProvider;
-	        //       
-	        //       var ctx = new DefaultAttributeContext
-	        //       {
-	        //        Attributes = new TelemetryAttributeCollection(),
-	        //        Args = envArgs
-	        //       };
-	        //       // TODO: allow customer to override the attributes
-	        //
-	        //       // run the standard provider *AFTER* the user level stuff, so that
-	        //       //  standard beamable attributes overwrite conflicting user attributes.
-	        //       //  Ex: It is not valid for a user to override what "cid" does. 
-	        //       _standardBeamTelemetryAttributes.CreateDefaultAttributes(ctx);
-	        //       
-	        //       _resourceBuilder = ResourceBuilder.CreateEmpty()
-	        //        .AddService(activityProvider.ServiceName, activityProvider.ServiceNamespace,
-	        //         autoGenerateServiceInstanceId: false,
-	        //         serviceInstanceId: activityProvider.ServiceId)
-	        //        .AddAttributes(ctx.Attributes.ToDictionary());
-	        //
-	        //       ConfigureZLogging<TMicroService>(envArgs, includeOtel: true, otlpEndpoint);
-	        //
-	        //       ConfigureTelemetry(envArgs, attribute, otlpEndpoint);
-	        //
-	        //       ConfigureUncaughtExceptions();
-	        //       ConfigureUnhandledError();
-	        //       _localDiscoveryBroadcast = ConfigureDiscovery(envArgs, attribute);
-	        //       await ConfigureUsageService(envArgs);
-	        //       ReflectionCache = ConfigureReflectionCache();
-	        //       
-	        //       // configure the root service scope, and then build the root service provider.
-	        //       var serviceBuilder = ConfigureServices<TMicroService>(envArgs);
-	        //       var rootServiceScope = serviceBuilder.Build(new BuildOptions
-	        //       {
-	        //        allowHydration = false
-	        //       });
-	        //
-	        //       InitializeServices(rootServiceScope);
-	        //
-	        //       var resolvedCid = await ConfigureCid(envArgs);
-	        //       var args = envArgs.Copy(conf =>
-	        //       {
-	        //        conf.ServiceScope = rootServiceScope;
-	        //        conf.CustomerID = resolvedCid;
-	        //       });
-	        //
-	        //       for (var i = 0; i < args.BeamInstanceCount; i++)
-	        //          {
-	        //           var isFirstInstance = i == 0;
-	        //           var beamableService = new BeamableMicroService();
-	        // 	Instances.Add(beamableService);
-	        // 	
-	        // 	var instanceArgs = args.Copy(conf =>
-	        // 	{
-	        // 		// only the first instance needs to run, if anything should run at all.
-	        // 		conf.DisableCustomInitializationHooks |= !isFirstInstance;
-	        // 	});
-	        // 	
-	        //           if (isFirstInstance)
-	        //           {
-	        //            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _debugLogProcessor);
-	        //            var runningDebugTask = localDebug.Run();
-	        //           }
-	        //           
-	        //           //In case that SdkVersionExecution is null or empty, we are executing it locally with dotnet and
-	        //           //therefore getting dependencies through nuget, so not required to check versions mismatch.
-	        //           if (!string.IsNullOrEmpty(args.SdkVersionExecution) && !string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
-	        //           {
-	        //            _logger.ZLogCritical(
-	        //             $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
-	        //            throw new Exception(
-	        //             $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
-	        //           }
-	        //
-	        //           try
-	        //           {
-	        //            await beamableService.Start<TMicroService>(instanceArgs);
-	        //            if (isFirstInstance && (attribute?.EnableEagerContentLoading ?? false))
-	        //            {
-	        //             await rootServiceScope.GetService<ContentService>().initializedPromise;
-	        //            }
-	        //           }
-	        //           catch (Exception ex)
-	        //           {
-	        //            var message = new StringBuilder(1024 * 10);
-	        //
-	        //            if (ex is not BeamableMicroserviceException beamEx)
-	        //             message.AppendLine(
-	        // 	            $"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
-	        // 	            $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
-	        //            else
-	        //             message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
-	        //                                $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
-	        //
-	        //            message.AppendLine("Exception Info:");
-	        //            message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
-	        //            message.AppendLine("Stack Trace:");
-	        //            message.AppendLine(ex.StackTrace);
-	        //            _logger.LogCritical(message.ToString());
-	        //            throw;
-	        //           }
-	        //
-	        //           if (args.WatchToken)
-	        //            HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-	        //
-	        //           var _ = beamableService.RunForever();
-	        //          }
-	        //
-	        //          await Task.Delay(-1);
         }
 
         private static IBeamableRequester GenerateTemporarySignedRequester(EnvironmentArgs args)
