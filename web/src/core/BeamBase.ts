@@ -103,7 +103,7 @@ export abstract class BeamBase {
   protected constructor(config: BeamBaseConfig) {
     this.cid = config.cid;
     this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(config.environment ?? 'prod');
+    this.envConfig = BeamEnvironment.get(this.getConfigEnvironment(config));
     this.tokenStorage =
       config.tokenStorage ??
       defaultTokenStorage({ pid: config.pid, tag: config.instanceTag });
@@ -125,6 +125,10 @@ export abstract class BeamBase {
     if (value) {
       this.defaultHeaders[key] = value;
     }
+  }
+
+  protected getConfigEnvironment(config: BeamBaseConfig) {
+    return config.environment ?? 'prod'; // default to prod if not provided
   }
 
   protected isApiService(ctor: any): ctor is ApiServiceCtor<ApiService> {
