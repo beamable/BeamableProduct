@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Defines the name of the manifest that will be used to compare the changes between the manifest and the snapshot. The default value is `global`</summary>
         public string manifestId;
+        /// <summary>An optional field to set the PID from where you would like to get the snapshot to list. The default will get for all the realms</summary>
+        public string pid;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,6 +19,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.manifestId != default(string)))
             {
                 genBeamCommandArgs.Add(("--manifest-id=" + this.manifestId));
+            }
+            // If the pid value was not default, then add it to the list of args.
+            if ((this.pid != default(string)))
+            {
+                genBeamCommandArgs.Add(("--pid=" + this.pid));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
