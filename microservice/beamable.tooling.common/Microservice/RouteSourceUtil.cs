@@ -40,10 +40,10 @@ public static class RouteSourceUtil
 	
 	public static ServiceMethodCollection BuildRoutes(StartupContext startupContext, IMicroserviceArgs instanceArgs)
 	{
-		var providers = new ServiceMethodProvider[startupContext.microserviceTypes.Length];
-		for (var i = 0; i < startupContext.microserviceTypes.Length; i++)
+		var providers = new ServiceMethodProvider[startupContext.routeSources.Length];
+		for (var i = 0; i < startupContext.routeSources.Length; i++)
 		{
-			var routeType = startupContext.microserviceTypes[i];
+			var routeType = startupContext.routeSources[i];
 			providers[i] = new ServiceMethodProvider
 			{
 				instanceType = routeType.InstanceType,

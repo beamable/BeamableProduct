@@ -38,20 +38,7 @@ using Otel = Beamable.Common.Constants.Features.Otel;
 
 namespace Beamable.Server
 {
-   public class MicroserviceNonceResponse
-   {
-      public string nonce;
-   }
-
-   public class MicroserviceAuthRequest
-   {
-      public string cid, pid, signature;
-   }
-
-   public class MicroserviceAuthResponse
-   {
-      public string result;
-   }
+  
 
    public class MicroserviceServiceProviderRequest
    {
@@ -82,19 +69,8 @@ namespace Beamable.Server
    //  ) extends MongoSerializable with NetworkSerializable
 
 
-   public class MicroserviceEventProviderRequest
-   {
-	   public string type = "event";
-	   public string[] evtWhitelist;
-	   public string name; // We can remove this field after the platform no longer needs it. Maybe mid August 2022?
-   }
 
-   public class MicroserviceProviderResponse
-   {
-
-   }
-
-   public class BeamableMicroService
+   public class BeamableMicroService : IBeamableService
    {
       public string MicroserviceName => _serviceAttribute.MicroserviceName;
 
@@ -146,10 +122,10 @@ namespace Beamable.Server
       public bool HasInitialized { get; private set; }
 
 
-      private IMicroserviceArgs _args;
+      public IMicroserviceArgs InstanceArgs;
       private CancellationTokenSource _serviceShutdownTokenSource;
       private Task _socketDaemen;
-      private string Host => _args.Host;
+      private string Host => InstanceArgs.Host;
       private int[] _retryIntervalsInSeconds = new[]
       {
          5,
@@ -167,7 +143,7 @@ namespace Beamable.Server
       private bool _ranCustomUserInitializationHooks = false;
 
 
-      public IServiceProvider Provider => _args.ServiceScope;
+      public IDependencyProvider Provider => InstanceArgs.ServiceScope;
 
       public readonly string ConnectionId = Guid.NewGuid().ToString();
       private SingletonDependencyList<ITelemetryAttributeProvider> _telemetryProviders;
@@ -181,7 +157,7 @@ namespace Beamable.Server
          _serviceAttribute = startupContext.attributes;
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
-         _args = args.Copy(conf =>
+         InstanceArgs = args.Copy(conf =>
          {
 	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
 	         {
@@ -193,8 +169,8 @@ namespace Beamable.Server
          });
 
 
-         _telemetryProviders = _args.ServiceScope.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
-         var connectionOtelTags = _telemetryProviders.CreateConnectionAttributes(_args, ConnectionId);
+         _telemetryProviders = InstanceArgs.ServiceScope.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
+         var connectionOtelTags = _telemetryProviders.CreateConnectionAttributes(InstanceArgs, ConnectionId);
          var _serviceLogScope = BeamableZLoggerProvider.LogContext.Value.BeginScope(connectionOtelTags);
 
          
@@ -204,9 +180,9 @@ namespace Beamable.Server
 
          _activityProvider = Provider.GetService<IActivityProvider>();
 
-         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false, _activityProvider);
+         _requester = new MicroserviceRequester(InstanceArgs, null, _socketRequesterContext, false, _activityProvider);
          _serviceShutdownTokenSource = new CancellationTokenSource();
-         (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
+         (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(InstanceArgs, _requester, _serviceShutdownTokenSource);
 
          _ = _serviceInitialized.Error(ex =>
          {
@@ -222,7 +198,7 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
          
-         if (!_args.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+         if (!InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
          {
 	         await SetupStorage();
          }
@@ -329,7 +305,7 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      ServiceMethods = RouteSourceUtil.BuildRoutes(_startupContext, _args);
+	      ServiceMethods = RouteSourceUtil.BuildRoutes(_startupContext, InstanceArgs);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)
@@ -357,7 +333,7 @@ namespace Beamable.Server
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
-            if (!_args.DisableCustomInitializationHooks)
+            if (!InstanceArgs.DisableCustomInitializationHooks)
             {
                 // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
                 // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
@@ -373,7 +349,7 @@ namespace Beamable.Server
                 }
             }
 
-            var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
+            var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
             await realmService.GetRealmConfigSettings();
             
             await ProvideService();
@@ -386,7 +362,7 @@ namespace Beamable.Server
 	            portalUrlLogline = $"portalURL={url}";
             }
             
-            Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, InstanceArgs.SdkVersionBaseBuild, InstanceArgs.SdkVersionExecution);
             realmService.UpdateLogLevel();
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
@@ -402,10 +378,10 @@ namespace Beamable.Server
       
       private bool TryBuildPortalUrl(out string portalUrl)
       {
-	      var cid = _args.CustomerID;
-	      var pid = _args.ProjectName;
+	      var cid = InstanceArgs.CustomerID;
+	      var pid = InstanceArgs.ProjectName;
 	      var microName = QualifiedName;
-	      var refreshToken = _args.RefreshToken;
+	      var refreshToken = InstanceArgs.RefreshToken;
 
 	      if (string.IsNullOrEmpty(refreshToken))
 	      {
@@ -417,10 +393,10 @@ namespace Beamable.Server
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
-		      $"routingKey={_args.NamePrefix}"
+		      $"routingKey={InstanceArgs.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
-	      var treatedHost = _args.Host.Replace("/socket", "")
+	      var treatedHost = InstanceArgs.Host.Replace("/socket", "")
 		      .Replace("wss", "https")
 		      .Replace("dev.", "dev-")
 		      .Replace("api", "portal");
@@ -444,7 +420,7 @@ namespace Beamable.Server
 	      // TODO: extract all this mumbo jumbo into startupContext.
 	      
          // Gets Service Initialization Methods
-         var serviceInitialization = _startupContext.microserviceTypes
+         var serviceInitialization = _startupContext.routeSources
 	         .SelectMany(t => t.InstanceType.GetMethods(BindingFlags.Static | BindingFlags.Public))
 	         .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
 	         .Select(method =>
@@ -464,7 +440,7 @@ namespace Beamable.Server
          });
 
          // Invokes each Service Initialization Method --- skips any that do not match the void(IServiceInitializer) signature.
-         var serviceInitializers = new DefaultServiceInitializer(_args.ServiceScope.Parent, _args);
+         var serviceInitializers = new DefaultServiceInitializer(InstanceArgs.ServiceScope.Parent, InstanceArgs);
          foreach (var (initializationMethod, _) in serviceInitialization)
          {
             // TODO: Add compile-time check for this signature so we can educate our users on this without them having to deep dive into docs
@@ -529,7 +505,7 @@ namespace Beamable.Server
 
          foreach (var initializer in _startupContext.initializers)
          {
-	         var task = initializer?.Invoke(_args.ServiceScope);
+	         var task = initializer?.Invoke(InstanceArgs.ServiceScope);
 	         if (task != null)
 	         {
 		         await task;
@@ -553,7 +529,7 @@ namespace Beamable.Server
          void Attempt()
          {
             Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = Provider.GetService<IConnectionProvider>().Create(Host, _args);
+            var ws = Provider.GetService<IConnectionProvider>().Create(Host, InstanceArgs);
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");
@@ -764,7 +740,7 @@ namespace Beamable.Server
 	      MicroserviceRequestContext ctx = null;
 	      using (var requestActivity = _activityProvider.Create(Otel.TRACE_CONSTRUCT_CTX, importance: TelemetryImportance.VERBOSE))
 	      {
-		      if (!document.TryBuildRequestContext(_args, out ctx))
+		      if (!document.TryBuildRequestContext(InstanceArgs, out ctx))
 		      {
 			      requestActivity.SetStatus(ActivityStatusCode.Error);
 			      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
@@ -785,17 +761,17 @@ namespace Beamable.Server
 	      ctx.ActivityContext = activity;
 	      
 
-		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(_args, ctx);
+		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx);
 	      activity.SetTags(extraOtelTags);
 
-	      var logger = BeamableZLoggerProvider.LogContext.Value = _args.ServiceScope.GetLogger<BeamableMicroService>();
+	      var logger = BeamableZLoggerProvider.LogContext.Value = InstanceArgs.ServiceScope.GetLogger<BeamableMicroService>();
 	      using var scope = logger.BeginScope(extraOtelTags);
 	      
 	      try
 	      {
 		      using var tokenSource = new CancellationTokenSource();
 		      ctx.CancellationToken = tokenSource.Token;
-		      tokenSource.CancelAfter(TimeSpan.FromSeconds(_args.RequestCancellationTimeoutSeconds));
+		      tokenSource.CancelAfter(TimeSpan.FromSeconds(InstanceArgs.RequestCancellationTimeoutSeconds));
 		      if (_socketRequesterContext.IsPlatformMessage(ctx))
 		      {
 			      // the request is a platform request.
@@ -843,14 +819,14 @@ namespace Beamable.Server
 		      name = QualifiedName,
 		      beamoName = MicroserviceName,
 	      };
-	      if (_args.TryGetRoutingKey(out var routingKey))
+	      if (InstanceArgs.TryGetRoutingKey(out var routingKey))
 	      {
 		      req.routingKey = routingKey;
 	      }
 
-	      if (_args.AccountId > 0)
+	      if (InstanceArgs.AccountId > 0)
 	      {
-		      req.startedById = _args.AccountId;
+		      req.startedById = InstanceArgs.AccountId;
 	      }
 
 	      var serviceProviderTask = _requester.Request<MicroserviceProviderResponse>(
@@ -873,7 +849,7 @@ namespace Beamable.Server
 
       private async Promise RegisterFederation(string routingKey)
       {
-	      if (_args.DisableCustomInitializationHooks) 
+	      if (InstanceArgs.DisableCustomInitializationHooks) 
 		      return; // if this is a health-check, then we aren't going to auto-register federation at all.
 	      
 	      

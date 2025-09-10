@@ -52,7 +52,7 @@ public class ServiceDocGenerator
 	
 	public OpenApiDocument Generate(StartupContext startupCtx)
 	{
-		var uniqueAssemblies = startupCtx.microserviceTypes
+		var uniqueAssemblies = startupCtx.routeSources
 			.Select(t => t.InstanceType.Assembly)
 			.Distinct()
 			.ToList();
@@ -84,7 +84,7 @@ public class ServiceDocGenerator
 		};
 		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
 
-		var interfaces = startupCtx.microserviceTypes
+		var interfaces = startupCtx.routeSources
 			.Select(t => t.InstanceType)
 			.SelectMany(t => t.GetInterfaces())
 			.ToList();
@@ -93,7 +93,7 @@ public class ServiceDocGenerator
 		var v2ApiComponents = new OpenApiArray();
 		
 		var routeSources = new OpenApiArray();
-		foreach (var routeSource in startupCtx.microserviceTypes)
+		foreach (var routeSource in startupCtx.routeSources)
 		{
 			routeSources.Add(new OpenApiObject
 			{
@@ -423,7 +423,7 @@ public static class DocGenExtensions
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
 		var startupContext = new StartupContext
 		{
-			microserviceTypes = new BeamRouteSource[]
+			routeSources = new BeamRouteSource[]
 			{
 				new BeamRouteSource
 				{

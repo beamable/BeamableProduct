@@ -21,13 +21,11 @@ public class StartupContext
     /// <summary>
     /// An array of types to use to find client callables
     /// </summary>
-    public BeamRouteSource[] microserviceTypes;
+    public BeamRouteSource[] routeSources;
 
     public IMicroserviceAttributes attributes;
 
     public string localEnvArgs;
-
-    public BuiltSettings buildSettings;
 
     public List<Func<IDependencyProviderScope, Task>> initializers = new List<Func<IDependencyProviderScope, Task>>();
 
@@ -36,12 +34,15 @@ public class StartupContext
     public string otlpEndpoint = null;
     public ILogger logger;
     public ILoggerFactory logFactory;
-    
     public IActivityProvider activityProvider;
     public ResourceBuilder resourceProvider;
-    public readonly BeamStandardTelemetryAttributeProvider standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
-
+    public DebugLogProcessor debugLogProcessor;
+    public MicroserviceResult result = new MicroserviceResult();
     
+    public readonly BeamStandardTelemetryAttributeProvider standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
+    public IDependencyBuilder serviceBuilder;
+
+
     // public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
 
     /// <summary>
@@ -56,6 +57,15 @@ public class StartupContext
     public bool IsGeneratingOapi => args.ISGeneratingOapi();
 }
 
+public class MicroserviceResult
+{
+    public bool GeneratedClient { get; set; }
+    
+    // TODO: should we actually return all the instances? 
+    //  expose as much info as possible on this interface, make stuff public. 
+    public List<IBeamableService> Services { get; set; } = new List<IBeamableService>();
+}
+
 public delegate ServiceMethodInstanceData BeamRouteTypeActivator(
     IMicroserviceArgs instanceArgs, 
     MicroserviceRequestContext requestContext);
@@ -68,8 +78,7 @@ public delegate ServiceMethodInstanceData<T> BeamRouteTypeActivator<T>(
 public class BeamRouteSource
 {
     public BeamRouteTypeActivator Activator { get; set; }
-    
-    
+
     public Type InstanceType { get; set; }
     
     /// <summary>

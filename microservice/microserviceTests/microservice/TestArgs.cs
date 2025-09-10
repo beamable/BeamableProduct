@@ -16,11 +16,11 @@ namespace microserviceTests.microservice
 	public class TestSetup
 	{
 		private readonly IConnectionProvider _provider;
-		public BeamableMicroService Service => _instances.Instances[0];
+		public IBeamableService Service => _instances.Services[0];
 		private IContentResolver _resolver;
 		private MicroserviceResult _instances;
 
-		public bool HasInitialized => _instances.Instances.All(i => i.HasInitialized);
+		public bool HasInitialized => _instances.Services.All(i => i.HasInitialized);
 		public TestSetup(IConnectionProvider provider, IContentResolver resolver=null)
 		{
 			_resolver = resolver;
@@ -73,12 +73,12 @@ namespace microserviceTests.microservice
 					builder.AddSingleton(_resolver);
 
 				})
-				.Override(c =>
+				.OverrideConfig(c =>
 				{
 					c.Args = args;
 					c.LogFactory = () => LoggingUtil.testLogger;
 				})
-				.Start();
+				.Run();
 
 			
 			
@@ -114,7 +114,7 @@ namespace microserviceTests.microservice
 
 		public async Task OnShutdown(object sender, EventArgs args)
 		{
-			foreach (var instance in _instances.Instances)
+			foreach (var instance in _instances.Services)
 			{
 				await instance.OnShutdown(sender, args);
 			}

@@ -31,7 +31,7 @@ public static class FederatedComponentGenerator
 	public static List<FederationComponent> FindFederatedComponents(StartupContext startupContext)
 	{
 		var components = new List<FederationComponent>();
-		foreach (var route in startupContext.microserviceTypes)
+		foreach (var route in startupContext.routeSources)
 		{
 			var serviceType = route.InstanceType;
 			var interfaces = serviceType.GetInterfaces();

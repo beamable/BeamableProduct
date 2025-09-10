@@ -59,7 +59,7 @@ public class DebugLogProcessor : IAsyncLogProcessor
 	
 	public ValueTask DisposeAsync()
 	{
-		return ValueTask.CompletedTask;
+		return new ValueTask();
 	}
 
 	public void Post(IZLoggerEntry log)
