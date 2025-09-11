@@ -2,7 +2,7 @@
 
 namespace cli.OtelCommands;
 
-public class OtelStatusCommand : AtomicCommand<OtelStatusCommandArgs, OtelStatusResult>
+public class OtelStatusCommand : AtomicCommand<OtelStatusCommandArgs, OtelStatusResult>, ISkipManifest
 {
 	public OtelStatusCommand() : base("status", "Get the Otel Logs status on current local machine")
 	{
