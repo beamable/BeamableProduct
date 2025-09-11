@@ -16,19 +16,11 @@ public class CleanupResult
 
 public static class FolderManagementHelper
 {
-	public static void EnsureDestinationFolderExists(string path)
-	{
-		if (!Directory.Exists(path))
-		{
-			Directory.CreateDirectory(path);
-		}
-	}
-
 	public static string GetDestinationFilePath(string telemetryBasePath)
 	{
 		var nowTime = DateTime.UtcNow;
 
-		var currentDay = nowTime.ToString("ddMMyyyy");
+		var currentDay = nowTime.ToString("yyyyMMdd");
 		var currentTime = $"{nowTime:HHmmss}_{nowTime:ffff}";
 		var datedPath = Path.Combine(telemetryBasePath, currentDay);
 
@@ -139,7 +131,7 @@ public static class FolderManagementHelper
 
 	public static bool IsValidDateFolderName(string folderName)
 	{
-		// Check if folder name matches "DDMMAAAA" pattern
+		// Check if folder name matches "AAAAMMDD" pattern
 		if (folderName.Length != 8 || !folderName.All(char.IsDigit))
 		{
 			return false;
@@ -158,9 +150,9 @@ public static class FolderManagementHelper
 
 	private static DateTime ParseFolderDate(string folderName)
 	{
-		var day = int.Parse(folderName.Substring(0, 2));
-		var month = int.Parse(folderName.Substring(2, 2));
-		var year = int.Parse(folderName.Substring(4, 4));
+		var year = int.Parse(folderName.Substring(0, 4));
+		var month = int.Parse(folderName.Substring(4, 2));
+		var day = int.Parse(folderName.Substring(6, 2));
 
 		return new DateTime(year, month, day);
 	}

@@ -22,7 +22,7 @@ public class CollectorStatusResult
 
 public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>
 {
-	public CollectorStatusCommand() : base("status", "Starts a stream of messages containing the status of the collector")
+	public CollectorStatusCommand() : base("ps", "Starts a stream of messages containing the status of the collector")
 	{
 	}
 
@@ -46,8 +46,7 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		CollectorStatusResult result = new CollectorStatusResult();
 
 		// First take ~1s to check all running collectors 
-		result.collectorsStatus = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
-			BeamableZLoggerProvider.LogContext.Value, attemptsAmountOverride: 10);
+		result.collectorsStatus = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 
 		if (args.watch)
 		{

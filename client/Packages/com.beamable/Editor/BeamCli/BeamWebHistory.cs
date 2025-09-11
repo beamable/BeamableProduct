@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -92,9 +93,14 @@ namespace Beamable.Editor.BeamCli
 		[NonSerialized]
 		private BeamWebCommandFactoryOptions _options;
 
-		public BeamWebCliCommandHistory(BeamWebCommandFactoryOptions options)
+		private readonly IDependencyProvider _provider;
+
+		private UnityOtelManager OtelManager => _provider.GetService<UnityOtelManager>();
+
+		public BeamWebCliCommandHistory(BeamWebCommandFactoryOptions options, IDependencyProvider provider)
 		{
 			_options = options;
+			_provider = provider;
 		}
 		
 		public void AddCommand(BeamWebCommand command)
@@ -198,6 +204,7 @@ namespace Beamable.Editor.BeamCli
 				logLevel = level,
 				message = message
 			});
+			OtelManager.AddLog(message, System.Environment.StackTrace, level);
 		}
 		
 		public void HandleMessage(string id, ReportDataPointDescription res)

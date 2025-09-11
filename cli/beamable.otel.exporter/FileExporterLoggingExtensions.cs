@@ -46,7 +46,7 @@ public static class FileExporterLoggingExtensions
 		=> AddFileExporter(loggerProviderBuilder, name: null, configure: null);
 
 	/// <summary>
-	/// Adds Console exporter with LoggerProviderBuilder.
+	/// Adds Beamable exporter with LoggerProviderBuilder.
 	/// </summary>
 	/// <param name="loggerProviderBuilder"><see cref="LoggerProviderBuilder"/>.</param>
 	/// <param name="configure">Callback action for configuring <see cref="FileExporterOptions"/>.</param>
@@ -58,7 +58,7 @@ public static class FileExporterLoggingExtensions
 
 
 	/// <summary>
-	/// Adds Console exporter with LoggerProviderBuilder.
+	/// Adds Beamable exporter with LoggerProviderBuilder.
 	/// </summary>
 	/// <param name="loggerProviderBuilder"><see cref="LoggerProviderBuilder"/>.</param>
 	/// <param name="name">Optional name which is used when retrieving options.</param>

@@ -46,6 +46,12 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
     </ItemGroup>
     
+    <ItemGroup>
+      <Compile Remove="Runtime\OpenApi\BeamServiceplan.gs.cs" />
+      <Compile Remove="Runtime\OpenApi\BeamCustomerCommon.gs.cs" />
+      <Compile Remove="Runtime\OpenApi\BeamCustomer.gs.cs" />
+    </ItemGroup>
+    
     <Target Name="CopyCodeToUnity" 
             Condition="'$(BEAM_COPY_CODE_TO_UNITY)' == 'true' AND Exists('../../client/Packages/com.beamable') AND '$(TargetFramework)'=='net8.0'"
     >

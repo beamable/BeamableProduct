@@ -54,6 +54,7 @@
   
   <ItemGroup Label="Public Beamable References">
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj"/>
+    <ProjectReference Include="..\..\cli\beamable.microservice.otel.exporter\beamable.microservice.otel.exporter.csproj" />
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj"/>
     <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj"/>
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj"/>

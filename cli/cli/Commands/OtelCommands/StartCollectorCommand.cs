@@ -1,7 +1,6 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Server;
-using cli.Services;
-using System.Net;
 
 namespace cli.OtelCommands;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -9,13 +8,6 @@ using Otel = Beamable.Common.Constants.Features.Otel;
 [Serializable]
 public class StartCollectorCommandArgs : CommandArgs
 {
-}
-
-public class CollectorItemToDownload
-{
-	public string fileName;
-	public string downloadUrl;
-	public string filePath;
 }
 
 public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
@@ -30,15 +22,15 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 
 	public override async Task Handle(StartCollectorCommandArgs args)
 	{
-		AssertEnvironmentVars();//TODO this requirement is just while we don't have a way to get credentials from beamo
+		await AssertEnvironmentVars(args);
 
 		var basePath = CollectorManager.GetCollectorBasePathForCli();
-		var processId = await CollectorManager.StartCollector(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
+		var status = await CollectorManager.StartCollectorAndWait(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
-		Log.Information($"Collector with process id [{processId}] started successfully");
+		Log.Information($"Collector with process id [{status.pid}] started successfully");
 	}
 
-	private void AssertEnvironmentVars()
+	private async Promise AssertEnvironmentVars(StartCollectorCommandArgs args)
 	{
 		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
@@ -52,22 +44,15 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			throw new Exception("Invalid value for port");
 		}
 
-		var user = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
-		if(string.IsNullOrEmpty(user))
+		try
 		{
-			throw new Exception("There is no user configured for the collector startup");
+			var res = await args.OtelApi.GetOtelAuthWriterConfig();
+			CollectorManager.AddAuthEnvironmentVars(res);
 		}
-
-		var passd = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
-		if(string.IsNullOrEmpty(passd))
+		catch (RequesterException ex)
 		{
-			throw new Exception("There is no password configured for the collector startup");
-		}
-		
-		var chHost = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
-		if(string.IsNullOrEmpty(chHost))
-		{
-			throw new Exception("There is no clickhouse endpoint configured for the collector startup");
+			throw new CliException(
+				message: $"An error happened while trying to get otel credentials from Beamo. Message=[{ex.Message}] StackTrace=[{ex.StackTrace}]");
 		}
 	}
 }

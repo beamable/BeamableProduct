@@ -23,6 +23,8 @@ public static class DirectoryUtils
 		{
 			try
 			{
+				if(!File.Exists(file))
+					continue;
 				var fileInfo = new FileInfo(file);
 				result.Size += fileInfo.Length;
 				result.FileCount++;
