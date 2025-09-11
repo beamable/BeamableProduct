@@ -398,6 +398,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
+	public const string ENV_VAR_JAVA_EXE = "BEAM_JAVA_EXE";
 
 	public const string CONFIG_FILE_PROJECT_PATH_ROOT = "project-root-path.json";
 	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
@@ -416,6 +417,11 @@ public class ConfigService
 	/// will make a guess where Docker's exe is, but it can be specified and overwritten with this env var
 	/// </summary>
 	public static string CustomDockerExe => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_EXE);
+	
+	/// <summary>
+	/// When managing the BeamableBackend, java needs to be used to run programs. 
+	/// </summary>
+	public static string CustomJavaExe => Environment.GetEnvironmentVariable(ENV_VAR_JAVA_EXE);
 
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.

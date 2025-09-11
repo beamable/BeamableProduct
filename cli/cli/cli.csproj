@@ -56,6 +56,8 @@
        develop a dependency on it. 
    -->
   <ItemGroup>
+    <PackageReference Include="Hocon.Configuration" Version="2.0.4" />
+    <PackageReference Include="MongoDB.Driver" Version="3.4.3" />
     <PackageReference Include="NBomber" Version="4.1.0" />
     <PackageReference Include="NBomber.Http" Version="4.1.0" />
     <PackageReference Include="Serilog" Version="2.10.0" Condition="'$(BeamBuild)'!='true'">
@@ -87,6 +89,7 @@
     <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
     <PackageReference Include="ZLogger" Version="2.5.10" />
 
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />

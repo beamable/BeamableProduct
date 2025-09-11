@@ -50,6 +50,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Beamable.Server.Common;
 using Beamable.Tooling.Common;
+using cli.BackendCommands;
 using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
@@ -430,6 +431,7 @@ public class App
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
 		Commands.AddSingleton(DockerPathOption.Instance);
+		Commands.AddSingleton(JavaPathOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -448,6 +450,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(JavaPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
@@ -667,6 +670,19 @@ public class App
 		Commands.AddSubCommandWithHandler<ShowCurrentBeamoStatusCommand, ShowCurrentBeamoStatusCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
+		
+		Commands.AddRootCommand<BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<CheckDepsCommand, CheckDepsCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendPsCommand, BackendPsCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendSetLocalVarsCommand, BackendSetLocalVarsCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendCompileCommand, BackendCompileCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendRunCommand, BackendRunToolCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendStopCommand, BackendStopCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendListToolsCommand, BackendListToolsCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendLogCommand, BackendLogCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<BackendInspectToolCommand, BackendInspectToolCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<AuditRealmConfigCommand, AuditRealmConfigCommandArgs, BackendCommandGroup>();
+		
 		
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPsCommand, ContentPsCommandArgs, ContentCommand>();

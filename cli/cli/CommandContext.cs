@@ -174,14 +174,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 		}
 	}
 
-	protected virtual void LogResult(object result)
-	{
-		var json = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
-		AnsiConsole.Write(
-			new Panel(new JsonText(json))
-				.Collapse()
-				.NoBorder());
-	}
+
 
 	public abstract Task<TResult> GetResult(TArgs args);
 	public Type ResultType => typeof(TResult);
@@ -349,7 +342,15 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	}
 
 	public override string Description { get => IAppCommand.GetModifiedDescription(IsForInternalUse, _description); set => _description = value; }
-
+	
+	protected virtual void LogResult(object result)
+	{
+		var json = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
+		AnsiConsole.Write(
+			new Panel(new JsonText(json))
+				.Collapse()
+				.NoBorder());
+	}
 
 	protected Argument<T> AddArgument<T>(Argument<T> arg, Action<TArgs, T> binder)
 	{

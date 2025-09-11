@@ -2,6 +2,7 @@ using CliWrap;
 using System.CommandLine;
 using Beamable.Common.Dependencies;
 using cli.Services;
+using cli.Utils;
 
 namespace cli.DockerCommands;
 
@@ -77,6 +78,15 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 		
 	}
 
+	public static async Task RequireDocker(CommandArgs args)
+	{
+		var dockerStatus = await DockerStatusCommand.CheckDocker(args);
+		if (!dockerStatus.isDaemonRunning)
+		{
+			throw CliExceptions.DOCKER_NOT_RUNNING;
+		}
+	}
+	
 	public static Task<DockerStatusCommandOutput> CheckDocker(CommandArgs args)
 	{
 		return CheckDocker(args.AppContext, args.BeamoLocalSystem);
