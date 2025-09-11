@@ -37,6 +37,7 @@ public class StartupContext
     public IActivityProvider activityProvider;
     public ResourceBuilder resourceProvider;
     public DebugLogProcessor debugLogProcessor;
+    public SocketRequesterContext socketContext;
     public MicroserviceResult result = new MicroserviceResult();
     
     public readonly BeamStandardTelemetryAttributeProvider standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
@@ -60,10 +61,7 @@ public class StartupContext
 public class MicroserviceResult
 {
     public bool GeneratedClient { get; set; }
-    
-    // TODO: should we actually return all the instances? 
-    //  expose as much info as possible on this interface, make stuff public. 
-    public List<IBeamableService> Services { get; set; } = new List<IBeamableService>();
+    public bool Success { get; set; }
 }
 
 public delegate ServiceMethodInstanceData BeamRouteTypeActivator(

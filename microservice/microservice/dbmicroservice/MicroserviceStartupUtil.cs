@@ -166,8 +166,6 @@ public static class MicroserviceStartupUtil
 		{
 			var isFirstInstance = i == 0;
 			var beamableService = new BeamableMicroService();
-			startupCtx.result.Services.Add(beamableService);
-
 			var instanceArgs = args.Copy(conf =>
 			{
 				// only the first instance needs to run, if anything should run at all.
@@ -176,6 +174,8 @@ public static class MicroserviceStartupUtil
 
 			if (isFirstInstance)
 			{
+				startupCtx.socketContext = beamableService.SocketContext;
+
 				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor);
 				var runningDebugTask = localDebug.Run();
 			}
@@ -222,8 +222,8 @@ public static class MicroserviceStartupUtil
 			var _ = beamableService.RunForever();
 		}
 
+		startupCtx.result.Success = true;
 		return startupCtx.result;
-		// await Task.Delay(-1);
 
 	}
 
@@ -579,7 +579,7 @@ public static class MicroserviceStartupUtil
 					return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
 				})
 				.AddSingleton<IMicroserviceArgs>(envArgs)
-				.AddSingleton<SocketRequesterContext>(_ => { return startupContext.result.Services[0].SocketContext; })
+				.AddSingleton<SocketRequesterContext>(_ => { return startupContext.socketContext; })
 				.AddScoped<MicroserviceRequester>(provider =>
 					new MicroserviceRequester(
 						provider.GetService<IMicroserviceArgs>(),
