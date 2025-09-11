@@ -171,11 +171,11 @@ public static class MicroserviceStartupUtil
 				// only the first instance needs to run, if anything should run at all.
 				conf.DisableCustomInitializationHooks |= !isFirstInstance;
 			});
+			startupCtx.services.Add(beamableService);
 
 			if (isFirstInstance)
 			{
-				startupCtx.socketContext = beamableService.SocketContext;
-
+				configurator.FirstConnectionHandler?.Invoke(beamableService);
 				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor);
 				var runningDebugTask = localDebug.Run();
 			}
@@ -579,7 +579,7 @@ public static class MicroserviceStartupUtil
 					return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
 				})
 				.AddSingleton<IMicroserviceArgs>(envArgs)
-				.AddSingleton<SocketRequesterContext>(_ => { return startupContext.socketContext; })
+				.AddSingleton<SocketRequesterContext>(_ => { return startupContext.services[0].SocketContext; })
 				.AddScoped<MicroserviceRequester>(provider =>
 					new MicroserviceRequester(
 						provider.GetService<IMicroserviceArgs>(),
@@ -1075,26 +1075,26 @@ public static class MicroserviceStartupUtil
 				.AddSource(Constants.Features.Otel.METER_SERVICE_NAME)
 				.AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 				.SetSampler<TraceSampler>()
-				// .AddMicroserviceExporter(option =>
-				// {
-				//  if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
-				//  {
-				//   option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
-				//   option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
-				//  }
-				//  else if(ctx.args.OtelExporterStandardEnabled)
-				//  {
-				//   option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				//   option.OtlpEndpoint = ctx.otlpEndpoint;
-				//  }
-				//
-				//  option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
-				//
-				//  if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
-				//  {
-				//   option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
-				//  }
-				// })
+				.AddMicroserviceExporter(option =>
+				{
+				 if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
+				 {
+				  option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+				  option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
+				 }
+				 else if(ctx.args.OtelExporterStandardEnabled)
+				 {
+				  option.Protocol = OtlpExportProtocol.HttpProtobuf;
+				  option.OtlpEndpoint = ctx.otlpEndpoint;
+				 }
+				
+				 option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
+				
+				 if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
+				 {
+				  option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
+				 }
+				})
 				.Build()
 			;
 	}

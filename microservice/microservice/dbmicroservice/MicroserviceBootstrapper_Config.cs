@@ -30,6 +30,7 @@ public class BeamServiceConfig : IBeamServiceConfig
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
     Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
+    Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
 }
 
 public static class BeamServiceConfigExtensions
@@ -128,6 +129,7 @@ public interface IBeamServiceConfig
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
     Func<ILogger> LogFactory { get; set; }
+    Action<IBeamableService> FirstConnectionHandler { get; set; }
 }
 
 public static class BeamServer

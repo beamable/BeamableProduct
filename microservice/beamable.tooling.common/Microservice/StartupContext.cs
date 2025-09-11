@@ -37,9 +37,8 @@ public class StartupContext
     public IActivityProvider activityProvider;
     public ResourceBuilder resourceProvider;
     public DebugLogProcessor debugLogProcessor;
-    public SocketRequesterContext socketContext;
     public MicroserviceResult result = new MicroserviceResult();
-    
+    public List<IBeamableService> services = new List<IBeamableService>();
     public readonly BeamStandardTelemetryAttributeProvider standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
     public IDependencyBuilder serviceBuilder;
 
