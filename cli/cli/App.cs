@@ -681,6 +681,7 @@ public class App
 		Commands.AddSubCommandWithHandler<BackendListToolsCommand, BackendListToolsCommandArgs, BackendCommandGroup>();
 		Commands.AddSubCommandWithHandler<BackendLogCommand, BackendLogCommandArgs, BackendCommandGroup>();
 		Commands.AddSubCommandWithHandler<BackendInspectToolCommand, BackendInspectToolCommandArgs, BackendCommandGroup>();
+		Commands.AddSubCommandWithHandler<AuditRealmConfigCommand, AuditRealmConfigCommandArgs, BackendCommandGroup>();
 		
 		
 		Commands.AddRootCommand<ContentCommand>();
