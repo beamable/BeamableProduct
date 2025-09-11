@@ -30,6 +30,8 @@ namespace Beamable.Common
 				public const string REALM_CONFIG_UPDATE_EVENT = "realm-config.refresh";
 
 				public const string REALM_CONFIG_SERVICE_LOG_NAMESPACE = "service_logs";
+				public const string REALM_CONFIG_SERVICE_LOG_CTX_USER_ID_KEY = "user_id";
+				public const string REALM_CONFIG_SERVICE_LOG_CTX_CALLABLE_PATH = "callable_path";
 
 				public const int HEALTH_PORT = 6565;
 				public const int DISCOVERY_PORT = 8624;

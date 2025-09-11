@@ -10,7 +10,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string manifestId;
         /// <summary>Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots' than from the local only under '.beamable/temp/content-snapshots'. If a path is passed, it is going to try get the json file from the path</summary>
         public string name;
-        /// <summary>Defines if the snapshot file should be deleted after restoring.</summary>
+        /// <summary>Defines if the snapshot file should be deleted after restoring</summary>
         public bool deleteAfterRestore;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
