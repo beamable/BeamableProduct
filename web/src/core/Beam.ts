@@ -144,13 +144,6 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   }
 
   private async setupRealtimeConnection() {
-    if (['dev', 'stg'].includes(this.getConfigEnvironment(this.beamConfig))) {
-      console.warn(
-        'WebSocket connection is disabled in development or staging environment.',
-      );
-      return;
-    }
-
     const { refreshToken } = await this.tokenStorage.getTokenData();
     if (!refreshToken) throw new BeamWebSocketError('No refresh token found');
 

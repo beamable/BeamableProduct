@@ -28,15 +28,15 @@ import { isBrowserEnv } from '@/utils/isBrowserEnv';
 
 /** The main class for interacting with the Beam Server SDK. */
 export class BeamServer extends ServerServicesMixin(BeamBase) {
-  private static serverEventsConfig?: ServerEventsConfig;
+  private serverEventsConfig?: ServerEventsConfig;
   private ws: BeamServerWebSocket;
   private subscriptions: Partial<ServerSubscriptionMap> = {};
 
   /** Initialize a new Beam server instance. */
   static async init(config: BeamServerConfig) {
     const beamServer = new this(config);
-    this.serverEventsConfig = config.serverEvents;
-    if (this.serverEventsConfig?.enabled ?? false) await beamServer.connect();
+    beamServer.serverEventsConfig = config.serverEvents;
+    if (beamServer.isServerEventEnabled) await beamServer.connect();
     beamServer.isInitialized = true;
     return beamServer;
   }
@@ -92,7 +92,7 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
       apiUrl: this.envConfig.apiUrl,
       cid: this.cid,
       pid: this.pid,
-      eventWhitelist: BeamServer.serverEventsConfig?.eventWhitelist,
+      eventWhitelist: this.serverEventsConfig?.eventWhitelist,
       accessToken,
     });
   }
@@ -170,6 +170,10 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
         `Call \`await BeamServer.init({...})\` to initialize the Beam server SDK.`,
       );
     }
+  }
+
+  private get isServerEventEnabled() {
+    return this.serverEventsConfig?.enabled ?? false;
   }
 }
 

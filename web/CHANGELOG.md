@@ -10,7 +10,6 @@
 - Added `externalUserId` field (required) to `getExternalIdentityStatus` and `removeExternalIdentity`.
 - Improved code structure in `Beam`, `BeamServer`, `BeamRequester`, and `BeamUtils`.
 - Changed `TokenStorage` implementation.
-- Updated logic to skip `Beam` WebSocket connection when environment is set to `dev` or `stg`. 
 - Fixed issue where new tokens were not being added to the authorization header after a 401 refresh.
 
 ## 0.5.1
