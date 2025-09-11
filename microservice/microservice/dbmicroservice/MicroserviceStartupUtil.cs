@@ -1041,7 +1041,6 @@ public static class MicroserviceStartupUtil
 
 	public static void ConfigureTelemetry(StartupContext ctx)
 	{
-
 		var metricProvider = Sdk.CreateMeterProviderBuilder()
 				.AddMeter(Constants.Features.Otel.METER_SERVICE_NAME)
 				.AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
@@ -1070,33 +1069,39 @@ public static class MicroserviceStartupUtil
 			;
 
 		// TODO: keep references to providers so that we can force flush them at the shutdown
-		var traceProvider = Sdk.CreateTracerProviderBuilder()
-				.SetResourceBuilder(ctx.resourceProvider)
-				.AddSource(Constants.Features.Otel.METER_SERVICE_NAME)
-				.AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
-				.SetSampler<TraceSampler>()
-				.AddMicroserviceExporter(option =>
+		var traceBuilder = Sdk.CreateTracerProviderBuilder()
+			.SetResourceBuilder(ctx.resourceProvider)
+			.AddSource(Constants.Features.Otel.METER_SERVICE_NAME)
+			.AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
+			.SetSampler<TraceSampler>();
+
+		if (ctx.args.OtelExporterStandardEnabled)
+		{
+			traceBuilder = traceBuilder.AddMicroserviceExporter(option =>
+			{
+				if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) &&
+				    !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
 				{
-				 if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) && !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
-				 {
-				  option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
-				  option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
-				 }
-				 else if(ctx.args.OtelExporterStandardEnabled)
-				 {
-				  option.Protocol = OtlpExportProtocol.HttpProtobuf;
-				  option.OtlpEndpoint = ctx.otlpEndpoint;
-				 }
-				
-				 option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
-				
-				 if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
-				 {
-				  option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
-				 }
-				})
-				.Build()
-			;
+					option.Protocol =
+						(OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+					option.OtlpEndpoint = ctx.args.OtelExporterOtlpEndpoint;
+				}
+				else if (ctx.args.OtelExporterStandardEnabled)
+				{
+					option.Protocol = OtlpExportProtocol.HttpProtobuf;
+					option.OtlpEndpoint = ctx.otlpEndpoint;
+				}
+
+				option.ShouldRetry = ctx.args.OtelExporterShouldRetry;
+
+				if (!string.IsNullOrEmpty(ctx.args.OtelExporterRetryMaxSize))
+				{
+					option.RetryQueueMaxSize = int.Parse(ctx.args.OtelExporterRetryMaxSize);
+				}
+			});
+		}
+
+		traceBuilder.Build();
 	}
 
 }
