@@ -51,6 +51,10 @@ namespace Beamable.Server
 		public string OtelExporterOtlpProtocol { get; set; }
 		public string OtelExporterOtlpEndpoint { get; set; }
 		public string OtelExporterOtlpHeaders { get; set; }
+		public bool OtelExporterShouldRetry { get; set; }
+		public bool OtelExporterStandardEnabled { get; set; }
+		public string OtelExporterRetryMaxSize { get; set; }
+
 		public void SetResolvedCid(string resolvedCid)
 		{
 			throw new NotImplementedException();
@@ -101,7 +105,9 @@ namespace Beamable.Server
 				RequireProcessId = args.RequireProcessId,
 				OtelExporterOtlpEndpoint = args.OtelExporterOtlpEndpoint,
 				OtelExporterOtlpHeaders = args.OtelExporterOtlpHeaders,
-				OtelExporterOtlpProtocol = args.OtelExporterOtlpProtocol
+				OtelExporterOtlpProtocol = args.OtelExporterOtlpProtocol,
+				OtelExporterShouldRetry = args.OtelExporterShouldRetry,
+				OtelExporterStandardEnabled = args.OtelExporterStandardEnabled
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -173,10 +179,27 @@ namespace Beamable.Server
 		public int RequireProcessId =>
 			GetIntFromEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, 0);
 
-		
-		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL");
-		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
+
+		/// <summary>
+		/// Sets the protocol in which the Otlp exporter will try sending telemetry data
+		/// </summary>
+		public string OtelExporterOtlpProtocol => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_PROTOCOL");
+
+		/// <summary>
+		/// Sets the endpoint in which the Otlp exporter will try sending telemetry data.
+		/// In case the protocol is Http, then it should look like this: http://127.0.0.1:4348
+		/// In case the protocol is Grpc, then it should look like this: 127.0.0.1:4348
+		/// </summary>
+		public string OtelExporterOtlpEndpoint => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_ENDPOINT");
+
+		public bool OtelExporterShouldRetry =>
+			string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_RETRY_OTEL"));
+
+		public bool OtelExporterStandardEnabled => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
+
+		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
+
+		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
 		{
 			//CustomerID = resolvedCid;

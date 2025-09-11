@@ -1,14 +1,14 @@
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 
-namespace beamable.otel.exporter.Utils;
+namespace beamable.otel.common;
 
-internal static class PeriodicExportingMetricReaderHelper
+public static class PeriodicExportingMetricReaderHelper
 {
-	internal const int DefaultExportIntervalMilliseconds = 60000;
-	internal const int DefaultExportTimeoutMilliseconds = 30000;
+	public const int DefaultExportIntervalMilliseconds = 60000;
+	public const int DefaultExportTimeoutMilliseconds = 30000;
 
-	internal static PeriodicExportingMetricReader CreatePeriodicExportingMetricReader(
+	public static PeriodicExportingMetricReader CreatePeriodicExportingMetricReader(
 		BaseExporter<Metric> exporter,
 		MetricReaderOptions options,
 		int defaultExportIntervalMilliseconds = DefaultExportIntervalMilliseconds,

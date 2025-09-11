@@ -150,6 +150,10 @@ namespace microserviceTests.microservice
 	  public string OtelExporterOtlpProtocol { get; }
 	  public string OtelExporterOtlpEndpoint { get; }
 	  public string OtelExporterOtlpHeaders { get; }
+	  public bool OtelExporterShouldRetry { get; }
+	  public bool OtelExporterStandardEnabled { get; }
+	  public string OtelExporterRetryMaxSize { get; }
+
 	  public void SetResolvedCid(string resolvedCid)
 	  {
 		  throw new NotImplementedException();
