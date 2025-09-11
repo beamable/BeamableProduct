@@ -224,7 +224,6 @@ public class CollectorManager
 		var collectorName = GetCollectorName(platform, arch);
 		var collectorPath = Path.Combine(absBasePath, collectorName);
 		var configPath = Path.Combine(absBasePath, configFileName);
-
 		var itemsToDownload = new List<(string url, string filePath, bool makeExecutable)>();
 		
 		if (!File.Exists(collectorPath) && allowDownload)
@@ -764,11 +763,11 @@ public class CollectorManager
 
 		process.OutputDataReceived += (_, args) =>
 		{
-			logger.ZLogInformation($"(collector) {args.Data}");
+			logger.ZLogDebug($"(collector) {args.Data}");
 		};
 		process.ErrorDataReceived += (_, args) =>
 		{
-			logger.ZLogInformation($"(collector err) {args.Data}");
+			logger.ZLogDebug($"(collector err) {args.Data}");
 		};
 		var started = process.Start();
 		if (!started)
