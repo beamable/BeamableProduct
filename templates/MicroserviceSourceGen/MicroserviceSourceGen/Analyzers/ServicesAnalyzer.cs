@@ -181,7 +181,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				symbolContext.Compilation));
 			
 
-			if (namedSymbol.TypeKind != TypeKind.Class || !allBaseClasses.Any(name => name.StartsWith(MicroserviceClassName, StringComparison.OrdinalIgnoreCase)))
+			if (namedSymbol.TypeKind != TypeKind.Class || !allBaseClasses.Any(name => name.Equals(MicroserviceClassName, StringComparison.OrdinalIgnoreCase)))
 			{
 				return null;
 			}

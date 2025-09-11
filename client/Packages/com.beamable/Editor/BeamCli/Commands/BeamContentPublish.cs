@@ -10,8 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] manifestIds;
         /// <summary>Defines if after publish the Content System should take snapshots of the content.
         ///None => Will not save any snapshot after publishing
-        ///LocalOnly => Will save the snapshot under `.beamable/temp/content-snapshots` folder
-        ///SharedOnly => Will save the snapshot under `.beamable/content-snapshots` folder
+        ///LocalOnly => Will save the snapshot under `.beamable/temp/content-snapshots/[PID]` folder
+        ///SharedOnly => Will save the snapshot under `.beamable/content-snapshots/[PID]` folder
         ///Both => Will save two snapshots, under local and shared folders</summary>
         public Beamable.Common.BeamCli.Contracts.AutoSnapshotType autoSnapshotType;
         /// <summary>Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot</summary>

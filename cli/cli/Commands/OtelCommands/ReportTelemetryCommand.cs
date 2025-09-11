@@ -20,7 +20,6 @@ public class ReportTelemetryCommandArgs : CommandArgs
 	public string[] Paths;
 }
 
-[Serializable]
 public class ReportTelemetryResult
 {
 	public List<TelemetryReportStatus> AllStatus;

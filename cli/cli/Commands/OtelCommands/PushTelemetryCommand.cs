@@ -13,7 +13,7 @@ public class PushTelemetryCommandArgs : CommandArgs
 	public string ProcessId;
 }
 
-public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult
+public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmptyResult, ISkipManifest
 {
 	public const string LAST_PUBLISH_OTEL_FILE_NAME = "last-publish.txt";
 
@@ -101,14 +101,15 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 					                       $"Error=[{tracesErrorMessage}]");
 				}
 
-				Log.Verbose($"Exporting metrics to endpoint: {endpointToUse}");
-				(ExportResult exportResult, string metricsErrorMessage) = await FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, endpointToUse);
-
-				if (exportResult == ExportResult.Failure)
-				{
-					throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data." +
-					                       $"Error=[{metricsErrorMessage}]");
-				}
+				//TODO: re-enable this once we have the CLI Metrics issue fixed
+				// Log.Verbose($"Exporting metrics to endpoint: {endpointToUse}");
+				// (ExportResult exportResult, string metricsErrorMessage) = await FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, endpointToUse);
+				//
+				// if (exportResult == ExportResult.Failure)
+				// {
+				// 	throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data." +
+				// 	                       $"Error=[{metricsErrorMessage}]");
+				// }
 				await File.WriteAllTextAsync(Path.Join(args.ConfigService.ConfigTempOtelDirectoryPath, LAST_PUBLISH_OTEL_FILE_NAME), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 				Log.Information("Telemetry data was successfully exported!");
 				
