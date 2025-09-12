@@ -3,7 +3,7 @@
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
         <BeamableTool>beam</BeamableTool>
-
+        <BeamProjectType>service</BeamProjectType>
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
