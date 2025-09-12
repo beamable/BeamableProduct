@@ -1,6 +1,5 @@
-<<<<<<<< HEAD:client/Packages/com.beamable/Editor/BeamCli/Commands/BeamOtelStatusResult.cs.meta
 fileFormatVersion: 2
-guid: 4dd907f4c0127a5402dbe701d1724e92
+guid: 61e0d9fccaed494b30432ab96adf7874
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -10,16 +9,3 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-========
-fileFormatVersion: 2
-guid: 66fbcf5df0c26fb71e06f22c02ad2dba
-MonoImporter:
-  externalObjects: {}
-  serializedVersion: 2
-  defaultReferences: []
-  executionOrder: 0
-  icon: {instanceID: 0}
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
->>>>>>>> main:client/Packages/com.beamable/Common/Runtime/BeamCli/CliOtelData.cs.meta
