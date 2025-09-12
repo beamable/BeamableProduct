@@ -29,12 +29,7 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
 
     public override async Task<StartGrafanaCommandResults> GetResult(StartGrafanaCommandArgs args)
     {
-        var env = new ClickhouseConnectionStrings
-        {
-            Host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_HOST),
-            UserName = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME),
-            Password = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD),
-        };
+	    var env = await GetClickhouseConnectionStrings(args);
         
         await StartGrafanaContainer(args.DependencyProvider, env);
 
@@ -59,9 +54,11 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
                         $"-p 127.0.0.1:{GrafanaCommand.GetGrafanaPort(app)}:3000 " +
                         $"-e GF_SECURITY_ADMIN_USER=beamable " +
                         $"-e GF_SECURITY_ADMIN_PASSWORD=beamable " +
-                        $"-e BEAM_CLICKHOUSE_HOST={connection.Host} " +
+                        $"-e BEAM_CLICKHOUSE_ENDPOINT={connection.Endpoint} " +
                         $"-e BEAM_CLICKHOUSE_USERNAME={connection.UserName} " +
                         $"-e BEAM_CLICKHOUSE_PASSWORD={connection.Password} " +
+                        $"-e BEAM_CLICKHOUSE_HOST={connection.Host} " +
+                        $"-e BEAM_CLICKHOUSE_PORT={connection.Port} " +
                         $"-e GF_INSTALL_PLUGINS=grafana-clickhouse-datasource " +
                         $"-v {GrafanaCommand.GetAbsoluteFilePath_ProvisioningFolder()}:/etc/grafana/provisioning " + 
                         $"-v {GrafanaCommand.GetAbsoluteFilePath_GrafanaIni()}:/etc/grafana/grafana.ini " +
@@ -90,5 +87,38 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
             MachineHelper.OpenBrowser(GrafanaCommand.GetGrafanaUrl(app));
         }
         // get the logs and wait for the magic number... 
+    }
+
+    private static async Task<ClickhouseConnectionStrings> GetClickhouseConnectionStrings(StartGrafanaCommandArgs args)
+    {
+	    var endpoint = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
+	    var userName = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
+	    var passd = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
+
+	    bool envVarsExist = !string.IsNullOrEmpty(endpoint) &&
+	                        !string.IsNullOrEmpty(userName) &&
+	                        !string.IsNullOrEmpty(passd);
+
+	    if (!envVarsExist)
+	    {
+		    var res = await args.OtelApi.GetOtelAuthReaderConfig();
+		    endpoint = res.endpoint;
+		    userName = res.username;
+		    passd = res.password;
+	    }
+
+	    string uriString = endpoint;
+	    if (!endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+	        !endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+	    {
+		    uriString = "http://" + endpoint;
+	    }
+
+	    var uri = new Uri(uriString);
+
+	    var host = uri.Host;
+	    var port = uri.Port.ToString();
+
+	    return new ClickhouseConnectionStrings() { Host = host, Port = port, UserName = userName, Password = passd, Endpoint = endpoint};
     }
 }
