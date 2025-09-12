@@ -68,7 +68,7 @@ jobs:
           
           echo "starting service"
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE=1 ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..

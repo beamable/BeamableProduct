@@ -147,7 +147,7 @@ public class BeamServiceConfigBuilder
 	    var conf = Config as IBeamServiceConfig;
 	    conf.Args = new EnvironmentArgs();
 
-	    conf.Attributes = attributes ?? BuiltSettings.ReadServiceAttributes();
+	    conf.Attributes = attributes ?? BuiltSettings.ReadServiceAttributes(conf.Args);
 	    conf.WithAdminRoutes();
     }
 

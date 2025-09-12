@@ -75,14 +75,21 @@ namespace Beamable.Server.Common
 			return TryGetSettingFromJson(key, out value);
 		}
 
-		public static IMicroserviceAttributes ReadServiceAttributes()
+		public static IMicroserviceAttributes ReadServiceAttributes(IMicroserviceArgs args)
 		{
 			var settings = new Dictionary<string, string>();
 			var assembly = Assembly.GetEntryAssembly();
 
 			using var stream =
 				assembly.GetManifestResourceStream(Constants.Features.Config.BEAMABLE_REQUIRED_SETTINGS_RESOURCE_NAME);
-			if (stream == null) throw new InvalidOperationException($"Cannot start without {Constants.Features.Config.BEAMABLE_REQUIRED_SETTINGS_RESOURCE_NAME} resource");
+			if (stream == null)
+			{
+				if (args.AllowStartupWithoutBeamableSettings)
+				{
+					return null;
+				}
+				throw new InvalidOperationException($"Cannot start without {Constants.Features.Config.BEAMABLE_REQUIRED_SETTINGS_RESOURCE_NAME} resource");
+			}
 
 			var attributes = new DefaultMicroserviceAttributes();
 			

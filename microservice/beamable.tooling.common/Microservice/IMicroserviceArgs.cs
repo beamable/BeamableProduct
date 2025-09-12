@@ -52,6 +52,6 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool OtelExporterShouldRetry { get; }
     public bool OtelExporterStandardEnabled { get; }
     public string OtelExporterRetryMaxSize { get; }
-
+    public bool AllowStartupWithoutBeamableSettings { get; }
     void SetResolvedCid(string resolvedCid);
 }
