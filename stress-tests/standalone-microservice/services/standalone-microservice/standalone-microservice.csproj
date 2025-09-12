@@ -29,6 +29,7 @@
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <BeamableVersion>0.0.123.1</BeamableVersion>
+        <BeamEnableCollectorResolution>false</BeamEnableCollectorResolution>
     </PropertyGroup>
     
     <ItemGroup Label="Nuget References">
