@@ -47,6 +47,23 @@
             <EmbeddedResource Include="$(BeamPropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
         </ItemGroup>
     </Target>
+    
+    <Target Name="BeamableSettings" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service'">
+        <Message Importance="high" Text="Bundling Beamable Settings..."/>
+        <PropertyGroup>
+            <BeamSettingsFile>$(IntermediateOutputPath)/beamableSettings.txt</BeamSettingsFile>
+            
+        </PropertyGroup>
+        <Delete Files="$(BeamSettingsFile)"/>
+
+        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>
+<!--        TODO: add more settings?   -->
+<!--        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>-->
+        
+        <ItemGroup>
+            <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
+        </ItemGroup>
+    </Target>
 
     <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamDisableCollectorResolution)'!='true'">
 
@@ -56,11 +73,11 @@
         </PropertyGroup>
 
         <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
-        <Message Condition="'$(BeamCollectorExists)'!='true'"
+        <Message Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamEnableCollectorResolution)'=='true'"
                  Importance="high"
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
-        <Exec   Condition="'$(BeamCollectorExists)'!='true'"
+        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamEnableCollectorResolution)'=='true'"
                 Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
                 EnvironmentVariables=""/>
 
@@ -68,7 +85,7 @@
                 Importance="high"
                 Text="Copying collector to output folder from path = [$(BeamCollectorFolder)] "
         />
-        <Copy
+        <Copy   Condition="'$(BeamEnableCollectorResolution)'=='true'"
                 SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
                 DestinationFolder="$(ActualOutputDir)"
                 SkipUnchangedFiles="true"

@@ -20,12 +20,13 @@ namespace microservice.Common
 	   /// <summary>
 	   /// Microservice associated with the administrative routes.
 	   /// </summary>
+	   [Obsolete("This type is no longer bound")]
 	   public Type MicroserviceType { get; set; }
 
 	   /// <summary>
 	   /// MicroserviceAttribute associated with the administrative routes.
 	   /// </summary>
-	   public MicroserviceAttribute MicroserviceAttribute { get; set; }
+	   public IMicroserviceAttributes MicroserviceAttribute { get; set; }
 	   
 	   /// <summary>
 	   /// List of pre-generated federation component data
@@ -83,13 +84,14 @@ namespace microservice.Common
       public string Docs()
       {
 	      var docs = new ServiceDocGenerator();
-	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this);
-
+	      var ctx = GlobalProvider.GetService<StartupContext>();
+	      var doc = docs.Generate(ctx);
+	     
 	      if (!string.IsNullOrEmpty(PublicHost))
 	      {
 		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
 	      }
-	      
+
 	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 
 	      return outputString;

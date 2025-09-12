@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Beamable.Common.Dependencies;
 using beamable.tooling.common.Microservice;
 
 namespace Beamable.Server

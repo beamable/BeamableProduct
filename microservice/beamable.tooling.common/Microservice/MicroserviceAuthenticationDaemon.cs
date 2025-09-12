@@ -32,12 +32,12 @@ public class MicroserviceAuthenticationDaemon
 	/// <summary>
 	/// The total number of outgoing requests that actually go out through <see cref="MicroserviceRequester.Request{T}"/>.
 	/// </summary>
-	private ulong _OutgoingRequestCounter = 0;
+	private long _OutgoingRequestCounter = 0;
 
 	/// <summary>
 	/// The total number of outgoing requests that went out through <see cref="MicroserviceRequester.Request{T}"/> and whose promise handlers (for error or success) have run.
 	/// </summary>
-	private ulong _OutgoingRequestProcessedCounter = 0;
+	private long _OutgoingRequestProcessedCounter = 0;
 
 	/// <summary>
 	/// A non thread safe utility boolean that tells us if the auth daemon is currently performing auth, or SHOULD perform auth.
@@ -126,12 +126,11 @@ public class MicroserviceAuthenticationDaemon
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
-
 			// Gets the number of requests that have been made by the service AND that have had their promise handlers run (for errors or success)
 			var outgoingReqsProcessedAtStart = Interlocked.Read(ref _OutgoingRequestProcessedCounter);
 
 			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate.
-			ulong outgoingReqsCountAtEnd;
+			long outgoingReqsCountAtEnd;
 			
 			// Declare a variable we'll use to track if the auth actually completed.
 			var authHappened = false;
