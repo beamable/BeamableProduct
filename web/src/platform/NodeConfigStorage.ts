@@ -3,16 +3,14 @@ import os from 'node:os';
 import fs from 'node:fs';
 import { BEAM_NODE_DIR } from '@/constants';
 
-interface Config {
-  cid: string;
-  pid: string;
-}
-
 /**
  * Reads the Beamable configuration from storage.
  * In Node.js environments, it reads from a JSON file in the user's home directory.
  */
-export async function readConfigNode(): Promise<Config> {
+export async function readConfigNode(): Promise<{
+  cid: string;
+  pid: string;
+}> {
   const directory = path.join(os.homedir(), BEAM_NODE_DIR);
   const filePath = path.join(directory, 'beam_config.json');
 
@@ -36,7 +34,10 @@ export async function readConfigNode(): Promise<Config> {
  * Saves the Beamable configuration to storage.
  * In Node.js environments, it saves it to a JSON file in the user's home directory.
  */
-export async function saveConfigNode({ cid, pid }: Config): Promise<void> {
+export async function saveConfigNode(cfg: {
+  cid: string;
+  pid: string;
+}): Promise<void> {
   const directory = path.join(os.homedir(), BEAM_NODE_DIR);
   const filePath = path.join(directory, 'beam_config.json');
 
@@ -51,7 +52,7 @@ export async function saveConfigNode({ cid, pid }: Config): Promise<void> {
     }
 
     // Merge and write new config
-    const data = { ...current, cid, pid };
+    const data = { ...current, cid: cfg.cid, pid: cfg.pid };
     await fs.promises.mkdir(directory, { recursive: true });
     await fs.promises.writeFile(
       filePath,

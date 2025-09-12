@@ -1,5 +1,17 @@
 # beamable-sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- Added thorium socket support.
+- Added `BeamServerWebSocket` implementation for connecting to thorium sockets.
+- Added Beamable server event types, with support for custom server event types.
+- Added `externalUserId` field (required) to `getExternalIdentityStatus` and `removeExternalIdentity`.
+- Improved code structure in `Beam`, `BeamServer`, `BeamRequester`, and `BeamUtils`.
+- Changed `TokenStorage` implementation.
+- Fixed issue where new tokens were not being added to the authorization header after a 401 refresh.
+
 ## 0.5.1
 
 ### Patch Changes
