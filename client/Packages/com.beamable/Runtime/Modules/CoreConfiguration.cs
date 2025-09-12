@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using UnityEditor.PackageManager;
 using UnityEngine;
-using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable

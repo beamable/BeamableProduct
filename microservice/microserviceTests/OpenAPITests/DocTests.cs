@@ -24,7 +24,7 @@ public class DocTests
 	{
 		LoggingUtil.InitTestCorrelator();
 		var gen = new ServiceDocGenerator();
-		var doc = gen.Generate<DocService>(null);
+		var doc = gen.Generate<DocService>();
 		
 		// Assert.AreEqual("docs", doc.Info.Title);
 		// Assert.AreEqual(1, doc.Paths.Count);

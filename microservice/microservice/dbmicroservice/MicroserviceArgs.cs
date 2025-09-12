@@ -5,6 +5,7 @@ using Beamable.Common.Util;
 using Beamable.Server.Common;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Beamable.Server
 {
@@ -54,6 +55,9 @@ namespace Beamable.Server
 		public bool OtelExporterShouldRetry { get; set; }
 		public bool OtelExporterStandardEnabled { get; set; }
 		public string OtelExporterRetryMaxSize { get; set; }
+		public bool AllowStartupWithoutBeamableSettings { get; set; }
+		public bool SkipLocalEnv { get; set; }
+		public bool SkipAliasResolve { get; set; }
 
 		public void SetResolvedCid(string resolvedCid)
 		{
@@ -63,7 +67,7 @@ namespace Beamable.Server
 
 	public static class MicroserviceArgsExtensions
 	{
-		public static IMicroserviceArgs Copy(this IMicroserviceArgs args, Action<MicroserviceArgs> configurator = null)
+		public static MicroserviceArgs Copy(this IMicroserviceArgs args, Action<MicroserviceArgs> configurator = null)
 		{
 			var next = new MicroserviceArgs
 			{
@@ -107,7 +111,11 @@ namespace Beamable.Server
 				OtelExporterOtlpHeaders = args.OtelExporterOtlpHeaders,
 				OtelExporterOtlpProtocol = args.OtelExporterOtlpProtocol,
 				OtelExporterShouldRetry = args.OtelExporterShouldRetry,
-				OtelExporterStandardEnabled = args.OtelExporterStandardEnabled
+				OtelExporterStandardEnabled = args.OtelExporterStandardEnabled,
+				OtelExporterRetryMaxSize = args.OtelExporterRetryMaxSize,
+				SkipLocalEnv = args.SkipLocalEnv,
+				SkipAliasResolve = args.SkipAliasResolve,
+				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -198,6 +206,7 @@ namespace Beamable.Server
 		public bool OtelExporterStandardEnabled => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
 
 		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
+		public bool AllowStartupWithoutBeamableSettings => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
 
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
@@ -286,6 +295,9 @@ namespace Beamable.Server
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
+		
+		public bool SkipLocalEnv => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_LOCAL_ENV"));
+		public bool SkipAliasResolve => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_ALIAS_RESOLVE"));
 	}
 
 	public static class ArgExtensions

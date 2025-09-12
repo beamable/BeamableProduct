@@ -143,7 +143,7 @@ public class Tests : CLITest
 		}).CreateLogger<Tests>();
 		
 		var gen = new ServiceDocGenerator();
-		var doc = gen.Generate<TroublesomeService>(null);
+		var doc = gen.Generate<TroublesomeService>();
 
 		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
 		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";
