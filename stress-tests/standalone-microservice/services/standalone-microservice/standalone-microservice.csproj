@@ -28,8 +28,14 @@
              API descriptions. The OpenAPI page will break if there is no `serviceDocs.xml` file. -->
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <BeamableVersion>0.0.123.1</BeamableVersion>
     </PropertyGroup>
     
+    <ItemGroup Label="Nuget References">
+        <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+        <PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />
+    </ItemGroup>
+
     <!-- Nuget references -->
     <!-- <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.*" />
@@ -45,11 +51,11 @@
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
     </ItemGroup> -->
-    <ItemGroup>
+    <!-- <ItemGroup>
       <ProjectReference Include="..\..\..\..\cli\beamable.common\beamable.common.csproj" />
       <ProjectReference Include="..\..\..\..\cli\beamable.server.common\beamable.server.common.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\microservice\microservice.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
-    </ItemGroup>
+    </ItemGroup> -->
 
 </Project>
