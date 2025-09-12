@@ -40,11 +40,11 @@ public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, Chec
 
 		// process data into separate categories
 		var dataGroups = data.Events.GroupBy(evt => evt.name).ToDictionary(group => group.Key, group => group.ToArray());
-		if (!dataGroups.TryGetValue("dotnet.process.cpu.time", out var cpuData))
+		if (!dataGroups.TryGetValue("dotnet.process.cpu.count ({cpu})", out var cpuData))
 		{
 			throw new CliException("File does not contain CPU data");
 		}
-		if (!dataGroups.TryGetValue("dotnet.process.memory.working_set", out var memData))
+		if (!dataGroups.TryGetValue("dotnet.process.memory.working_set (By)", out var memData))
 		{
 			throw new CliException("File does not contain memory data");
 		}
