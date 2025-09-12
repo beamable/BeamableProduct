@@ -1,4 +1,5 @@
 export * from './RefreshableServiceMap';
 export * from './ServiceMap';
 export { Subscription } from './Subscription';
-export { SubscriptionMap } from './SubscriptionMap';
+export * from './SubscriptionMap';
+export * from './ServerEventType';
