@@ -206,7 +206,7 @@ namespace Beamable.Server
 		public bool OtelExporterStandardEnabled => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
 
 		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
-		public bool AllowStartupWithoutBeamableSettings => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
+		public bool AllowStartupWithoutBeamableSettings => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
 
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
