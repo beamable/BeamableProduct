@@ -6,13 +6,6 @@ using System.Collections.Generic;
 
 namespace Beamable.Common.BeamCli.Contracts
 {
-	[Serializable]
-	public class TelemetryReportStatus
-	{
-		public string FilePath;
-		public bool Success;
-		public string ErrorMessage;
-	}
 
 	[Serializable]
 	public class CliOtelMessage

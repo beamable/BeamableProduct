@@ -10,7 +10,6 @@ namespace Beamable.Common
             public static partial class Otel
             {
                 public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
-                public const string ENV_CLI_ENABLE_TELEMETRY = "BEAM_TELEMETRY";
 
                 public static bool CliTracesEnabled() =>
                     // if the disable env var is set, we don't setup otel

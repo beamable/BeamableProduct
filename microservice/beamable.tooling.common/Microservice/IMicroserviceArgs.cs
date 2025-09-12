@@ -47,9 +47,11 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public string OtelExporterOtlpProtocol { get; }
     public string OtelExporterOtlpEndpoint { get; }
     public string OtelExporterOtlpHeaders { get; }
+    public bool SkipLocalEnv { get; }
+    public bool SkipAliasResolve { get; }
     public bool OtelExporterShouldRetry { get; }
     public bool OtelExporterStandardEnabled { get; }
     public string OtelExporterRetryMaxSize { get; }
-
+    public bool AllowStartupWithoutBeamableSettings { get; }
     void SetResolvedCid(string resolvedCid);
 }
