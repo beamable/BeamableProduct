@@ -1044,7 +1044,6 @@ public static class MicroserviceStartupUtil
 		var metricProvider = Sdk.CreateMeterProviderBuilder()
 				.AddMeter(Constants.Features.Otel.METER_SERVICE_NAME)
 				.AddMeter("MongoDB.Driver.Core.Extensions.DiagnosticSources")
-				.AddMeter("System.Diagnostics.Metrics")
 				.AddProcessInstrumentation()
 				.AddRuntimeInstrumentation()
 				.SetResourceBuilder(ctx.resourceProvider)
