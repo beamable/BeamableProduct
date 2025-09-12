@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:client/Packages/com.beamable/Common/Runtime/BeamCli/CliOtelData.cs.meta
-guid: 66fbcf5df0c26fb71e06f22c02ad2dba
-========
 guid: 484d7da82c4a48a7b3644e4377cb0866
->>>>>>>> main:client/Packages/com.beamable/Editor/BeamCli/Commands/BeamFetchTelemetryLogsResult.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
