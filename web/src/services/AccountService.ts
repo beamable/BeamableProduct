@@ -282,9 +282,6 @@ export class AccountService extends ApiService {
   async removeExternalIdentity(
     params: ExternalIdentityParams,
   ): Promise<AccountPlayerView> {
-    const playerAccount = this.player
-      ? this.player.account
-      : await this.current();
     await accountsDeleteExternalIdentityBasic(
       this.requester,
       {
@@ -391,9 +388,6 @@ export class AccountService extends ApiService {
     params: ExternalIdentityParams,
   ): Promise<CredentialStatus> {
     try {
-      const playerAccount = this.player
-        ? this.player.account
-        : await this.current();
       const { body } = await accountsGetAvailableExternalIdentityBasic(
         this.requester,
         params.providerService,
