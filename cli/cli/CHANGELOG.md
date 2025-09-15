@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Change `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
+- Event subscriptions use the developer's access token for authentication instead of the realm secret. 
 
 ## [5.4.1] - 2025-08-29
 ### Fixed

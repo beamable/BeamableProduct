@@ -9,6 +9,10 @@ public class MicroserviceAuthRequest
 {
     public string cid, pid, signature;
 }
+public class MicroserviceAuthRequestWithToken
+{
+    public string cid, pid, token;
+}
 
 public class MicroserviceAuthResponse
 {

@@ -271,12 +271,20 @@ public static class MicroserviceStartupUtil
 
 			if (!status.isRunning)
 			{
-				ctx.logger.ZLogInformation($"Sending request to get clickhouse credentials...");
-				var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
-				var otelApi = new BeamBeamootelApi(requester);
-				var res = await otelApi.GetOtelAuthWriterConfig();
+				var existing = CollectorManager.GetAuthFromEnvironment();
+				if (!existing.HasAll)
+				{
+					ctx.logger.ZLogInformation($"Sending request to get clickhouse credentials...");
+					var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
+					var otelApi = new BeamBeamootelApi(requester);
+					var res = await otelApi.GetOtelAuthWriterConfig();
 
-				CollectorManager.AddAuthEnvironmentVars(res);
+					CollectorManager.AddAuthEnvironmentVars(res);
+				}
+				else
+				{
+					ctx.logger.ZLogInformation($"Reading environment to get clickhouse credentials...");
+				}
 			}
 
 			ctx.logger.ZLogInformation($"Starting otel collector discovery event...");
