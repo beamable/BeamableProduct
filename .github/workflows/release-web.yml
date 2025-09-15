@@ -85,6 +85,8 @@ jobs:
         if: ${{ inputs.dryRun == false }} 
         run: sh ./../build/bin/upload-changelogs.sh
         env:
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'false'
           COPY_WEB_SDK: 'true'
           VERSION: >-
             ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}
