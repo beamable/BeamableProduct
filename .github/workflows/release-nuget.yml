@@ -191,6 +191,7 @@ jobs:
         env:
           COPY_UNITY_SDK: 'false'
           COPY_CLI: 'true'
+          COPY_WEB_SDK: 'false'
           VERSION: ${{ steps.version.outputs.VERSION }}
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
