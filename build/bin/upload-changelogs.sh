@@ -48,7 +48,7 @@ fi
 
 if [ "$COPY_WEB_SDK" = "true" ]
 then 
-cp -f ../BeamableProduct/BeamableProduct/web/CHANGELOG.md ./beamable-web-sdk-changelog.md || true
+cp -f ../../BeamableProduct/BeamableProduct/web/CHANGELOG.md ./beamable-web-sdk-changelog.md || true
 fi
 
 git add .
