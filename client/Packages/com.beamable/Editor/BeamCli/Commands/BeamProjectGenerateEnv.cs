@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string output;
         /// <summary>If true, the generated .env file will include the local machine name as prefix</summary>
         public bool includePrefix;
+        /// <summary>If true, do not ask for otel auth credentials to be put in the env</summary>
+        public bool excludeOtelCreds;
         /// <summary>How many virtual websocket connections the server will open</summary>
         public int instanceCount;
         /// <summary>When enabled, automatically deploy dependencies that aren't running</summary>
@@ -33,6 +35,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.includePrefix != default(bool)))
             {
                 genBeamCommandArgs.Add(("--include-prefix=" + this.includePrefix));
+            }
+            // If the excludeOtelCreds value was not default, then add it to the list of args.
+            if ((this.excludeOtelCreds != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--exclude-otel-creds=" + this.excludeOtelCreds));
             }
             // If the instanceCount value was not default, then add it to the list of args.
             if ((this.instanceCount != default(int)))
