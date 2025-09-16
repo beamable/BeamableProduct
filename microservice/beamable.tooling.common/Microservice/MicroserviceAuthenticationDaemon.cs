@@ -241,8 +241,6 @@ public class MicroserviceAuthenticationDaemon
 	
 	private async Task Authenticate()
 	{
-		
-		
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 
 		MicroserviceAuthResponse authRes = null;

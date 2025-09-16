@@ -25,7 +25,7 @@ public class BeamServiceConfig : IBeamServiceConfig
     IMicroserviceAttributes IBeamServiceConfig.Attributes { get; set; }
     List<BeamRouteSource> IBeamServiceConfig.RouteSources { get; set; } = new List<BeamRouteSource>();
     
-    string IBeamServiceConfig.LocalEnvCustomArgs { get; set; }
+    string IBeamServiceConfig.LocalEnvCustomArgs { get; set; } = "";
     List<Action<IDependencyBuilder>> IBeamServiceConfig.ServiceConfigurations { get; set; } = new List<Action<IDependencyBuilder>>();
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
@@ -238,6 +238,13 @@ public static class MicroserviceResultExtensions
 
 public static class IBeamServiceConfigExtensions
 {
+	public static BeamServiceConfigBuilder UseRealmSecretAuth(this BeamServiceConfigBuilder builder)
+	{
+		var conf = builder.Config as IBeamServiceConfig;
+		conf.LocalEnvCustomArgs += " --include-prefix ";
+		return builder;
+	}
+	
     public static BeamServiceConfigBuilder DisableEagerContentLoading(this BeamServiceConfigBuilder builder)
     {
 	    var conf = builder.Config as IBeamServiceConfig;

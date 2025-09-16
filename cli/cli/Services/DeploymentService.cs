@@ -249,7 +249,6 @@ public partial class DeployUtil
 				sb.AppendLine($"    environment:");
 				sb.AppendLine($"      MONGO_INITDB_ROOT_USERNAME: 'beamable'");
 				sb.AppendLine($"      MONGO_INITDB_ROOT_PASSWORD: 'beamable'");
-				// TODO: add volume support?
 			}
 		}
 

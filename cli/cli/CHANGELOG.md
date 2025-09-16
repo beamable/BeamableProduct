@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
+- `beam deploy plan` includes new `--docker-compose-directory` option to generate a docker compose project that can be used to run services locally
+- `beam project generate-env` no longer includes realm secret by default. Pass `--include-secret` to opt into realm secret. 
+- `beam project generate-env` can write a `.env` file of required environment variables by passing a `.env` file path to the command. 
 
 ### Changed
 - Change `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
 - Event subscriptions use the developer's access token for authentication instead of the realm secret. 
+- `beam services` command suite is marked as internal
 
 ## [5.4.1] - 2025-08-29
 ### Fixed
