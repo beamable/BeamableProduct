@@ -11,6 +11,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using Beamable.Tooling.Common;
+using HdrHistogram.Utilities;
 using Newtonsoft.Json;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
@@ -169,15 +170,18 @@ public struct DeveloperUser
 		AccessToken = tokenResponse.access_token;
 		RefreshToken = tokenResponse.refresh_token;
 		ExpiresIn = tokenResponse.expires_in;
-		IssuedAt = DateTime.UtcNow.Ticks;
+		IssuedAt = (long)DateTime.Now.SecondsSinceUnixEpoch();
 	}
 
-	public void UpdateToken(DeveloperUser developerUser)
+	public void UpdateUserInfo(DeveloperUser developerUser)
 	{
+		Alias = developerUser.Alias;
+		Description = developerUser.Description;
+		Tags = developerUser.Tags;
 		AccessToken = developerUser.AccessToken;
 		RefreshToken = developerUser.RefreshToken;
 		ExpiresIn = developerUser.ExpiresIn;
-		IssuedAt = DateTime.UtcNow.Ticks;
+		IssuedAt = (long)DateTime.Now.SecondsSinceUnixEpoch();
 	}
 	public void UpdateUserInfo(string alias, string description)
 	{
@@ -457,7 +461,7 @@ public class DeveloperUserManagerService
 			// If there's a cached developer user we just update the token information.
 			if (TryLoadCachedDeveloperUser(developerUser.GamerTag.ToString(), out developerUserCopy))
 			{
-				developerUserCopy.UpdateToken(developerUser);
+				developerUserCopy.UpdateUserInfo(developerUser);
 			}
 			else
 			{
@@ -466,7 +470,7 @@ public class DeveloperUserManagerService
 				// Making sure that we are saving the developer user with the correct properties
 				developerUserCopy.DeveloperUserType = (int)developerUserType;
 				
-				developerUserCopy.IssuedAt = DateTime.UtcNow.Ticks;
+				developerUserCopy.IssuedAt = (long)DateTime.Now.SecondsSinceUnixEpoch();
 			}
 			
 			string developerUserJson = JsonConvert.SerializeObject(developerUserCopy, Formatting.Indented);

@@ -62,6 +62,10 @@ namespace Beamable.Common
 				public const int MAX_ROW = 4;
 				public const float ROW_HEIGHT = 50;
 
+				public const string MICROSERVICE_ROUTE_SOURCES_KEY = "x-beamable-route-sources";
+				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_ROUTE_PREFIX = "routePrefix";
+				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_CLIENT_PREFIX = "clientPrefix";
+				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-beamable-federated-components-v2";
 				public const string MICROSERVICE_CLASS_TYPE_KEY = "x-beamable-microservice-class-type";
@@ -71,6 +75,7 @@ namespace Beamable.Common
 				public const string SCHEMA_OPTIONAL_TYPE_NAME_KEY = "x-beamable-optional-type";
 				public const string OPERATION_CALLABLE_METHOD_TYPE_KEY = "x-beamable-operation-method-type";
 				public const string PATH_CALLABLE_METHOD_NAME_KEY = "x-beamable-callable-method-name";
+				public const string PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY = "x-beamable-route-source-client-prefix";
 				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";

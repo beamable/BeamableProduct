@@ -11,6 +11,8 @@ export const queryIdPlaceholder = "{queryId}";
 
 export const storageObjectNamePlaceholder = "{storageObjectName}";
 
+export const viewIdPlaceholder = "{viewId}";
+
 export const idPlaceholder = "{id}";
 
 export const playerIdPlaceholder = "{playerId}";

@@ -1139,12 +1139,12 @@ public class ContentService
 	}
 
 
-	public string[] GetContentSnapshots(bool local)
+	public string[] GetContentSnapshots(bool local, string pid = "")
 	{
-		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, local);
+		var contentPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, pid, local);
 		// Ensure that the snapshot folder path exists
         Directory.CreateDirectory(contentPath);
-		return Directory.GetFiles(contentPath, "*.json", SearchOption.TopDirectoryOnly);
+		return Directory.GetFiles(contentPath, "*.json", SearchOption.AllDirectories);
 	}
 	
 	public async Task TakeAutoSnapshot(AutoSnapshotType autoSnapshotType, AutoSnapshotActionType snapshotActionType, int maxAutoSavedTempSnapshots, string manifestId = "global")
@@ -1152,7 +1152,7 @@ public class ContentService
 		if (autoSnapshotType is AutoSnapshotType.LocalOnly or AutoSnapshotType.Both)
 		{
 			string autoSnapshotTempBaseName = $"AutoSnapshot-{manifestId}-On{snapshotActionType.ToString()}-";
-			string tempFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, true);
+			string tempFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, _requester.Pid, true);
 
 			if (Path.Exists(tempFolder))
 			{
@@ -1171,7 +1171,7 @@ public class ContentService
 
 		if (autoSnapshotType is AutoSnapshotType.SharedOnly or AutoSnapshotType.Both)
 		{
-			string sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, false);
+			string sharedFolder = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, _requester.Pid, false);
 			string autoSnapshotSharedName = $"LastPublished-{manifestId}.json";
 			string lastPublishedSnapshotFullPath = Path.Combine(sharedFolder, autoSnapshotSharedName);
 			// Make sure to delete the old published snapshot
@@ -1195,7 +1195,7 @@ public class ContentService
 		long snapshotTimestamp = snapshotDate?.ToUnixTimeMilliseconds() ?? DateTimeOffset.Now.ToUnixTimeMilliseconds();
 		
 		// Get Folder to save the snapshot
-		string folderPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, saveLocal);
+		string folderPath = GetContentSnapshotDirectoryPath(_config.ConfigDirectoryPath, _requester.Pid, saveLocal);
 
 		// Ensure that the snapshot folder path exists
 		Directory.CreateDirectory(folderPath);
@@ -1251,8 +1251,8 @@ public class ContentService
 		try
 		{
 			var contentFiles = await Task.WhenAll(parseContentFiles);
+			var currentUser = await _accountsApi.GetAdminMe();
 			var currentRealm = await _realmsApi.GetRealm();
-			var currentUser = await _authApi.GetUser();
 			var contentSnapshot = new ManifestSnapshot()
 			{
 				ContentFiles = contentFiles.ToDictionary(item => item.id, item => item.contentFile),
@@ -1273,11 +1273,11 @@ public class ContentService
 		return snapshotFilePath;
 	}
 
-	public static string GetContentSnapshotDirectoryPath(string configDirPath, bool useLocal)
+	public static string GetContentSnapshotDirectoryPath(string configDirPath, string pid, bool useLocal)
 	{
 		return useLocal
-			? Path.Combine(configDirPath, Constants.TEMP_FOLDER, Constants.CONTENT_SNAPSHOTS_DIRECTORY)
-			: Path.Combine(configDirPath, Constants.CONTENT_SNAPSHOTS_DIRECTORY);
+			? Path.Combine(configDirPath, Constants.TEMP_FOLDER, Constants.CONTENT_SNAPSHOTS_DIRECTORY, pid)
+			: Path.Combine(configDirPath, Constants.CONTENT_SNAPSHOTS_DIRECTORY, pid);
 	}
 
 	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, string manifestId = "global")

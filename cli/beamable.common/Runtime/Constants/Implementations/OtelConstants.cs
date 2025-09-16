@@ -7,14 +7,10 @@ namespace Beamable.Common
             public static partial class Otel
             {
                 public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
-                public const string ENV_CLI_ENABLE_TELEMETRY = "BEAM_TELEMETRY";
 
                 public static bool CliTracesEnabled() =>
-                    // need to opt in
-                    !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_ENABLE_TELEMETRY))
-                 
-                    // and the NO option needs to be left empty
-                    && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+                    // if the disable env var is set, we don't setup otel
+                    string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
 
                 public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 50; // Equivalent to 50mb worth of space
                 
@@ -55,11 +51,25 @@ namespace Beamable.Common
                 
                 /// <summary>
                 /// A tag used to identify the type of source providing data,
-                ///  for now, always "microservice".
-                /// But in the future, could be "UnityEditor" or "UnityRuntime" for example.
+                ///  for now, it's either "microservice" or "cli".
                 /// </summary>
                 public const string ATTR_SOURCE = "beam.source";
-                
+
+                /// <summary>
+                /// A tag used to identify which engine is using the CLI, either "unity" or "unreal"
+                /// </summary>
+                public const string ATTR_ENGINE_SOURCE = "beam.engine.source";
+
+                /// <summary>
+                /// A tag used tp identify the version of Beamable SDK calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_SDK_VERSION = "beam.engine.source.sdk_version";
+
+                /// <summary>
+                /// A tag used to identify the engine version that is running and calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_VERSION = "beam.engine.source.engine_version";
+
                 /// <summary>
                 /// A UUID to identify the individual connection within an application.
                 /// </summary>
@@ -91,8 +101,6 @@ namespace Beamable.Common
                 /// The SDK version publishing the data
                 /// </summary>
                 public const string ATTR_SDK_VERSION = "beam.sdk_version";
-                
-                
                 
                 
                 public const string METER_SERVICE_NAME = "Beamable.Service.Core";

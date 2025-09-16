@@ -1,3 +1,4 @@
+using beamable.otel.common;
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
 using OpenTelemetry;
@@ -5,37 +6,43 @@ using Newtonsoft.Json;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace beamable.otel.exporter;
 
 public class FileOtlpExporter
 {
-	public static ExportResult ExportLogs(string filesPath, string endpoint, out string errorMessage)
+	public static async Task<(ExportResult resultStatus, string errorMessage)> ExportLogs(string filesPath, string endpoint)
 	{
+		string errorMessage = string.Empty;
 		var allLogsFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
 		var logExporterOptions = new OtlpExporterOptions
 		{
 			Endpoint = new Uri($"{endpoint}/v1/logs"),
-			Protocol = OtlpExportProtocol.HttpProtobuf,
+			Protocol = OtlpExportProtocol.HttpProtobuf
 		};
 
 		OtlpLogExporter otlpLogExporter = new OtlpLogExporter(logExporterOptions);
 
 		var result = ExportResult.Success;
-
-		foreach (string file in allLogsFiles)
+		
+		List<(string, LogsBatch?)> allBatches;
+		
+		try
 		{
-			var content = File.ReadAllText(file);
+			allBatches = await ReadAndDeserializeFileAsync<LogsBatch>(allLogsFiles);
+		}
+		catch (Exception e)
+		{
+			return (ExportResult.Failure, e.Message);
+		}
 
-			if (string.IsNullOrEmpty(content))
-			{
-				continue; //ignore this file for now, it will be deleted in the deletion part of this
-			}
-
-			var deserializedBatch = JsonConvert.DeserializeObject<LogsBatch>(content);
-
+		foreach ((string path, LogsBatch? deserializedBatch) in allBatches)
+		{
+			if(deserializedBatch == null)
+				continue;
 			var logRecords = deserializedBatch.AllRecords.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
 			var logsBatch = new Batch<LogRecord>(logRecords, logRecords.Length);
 
@@ -46,7 +53,7 @@ public class FileOtlpExporter
 
 			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpLogExporter>(otlpLogExporter, objectDict, out errorMessage))
 			{
-				return ExportResult.Failure;
+				return (ExportResult.Failure, errorMessage);
 			}
 
 			result = otlpLogExporter.Export(logsBatch);
@@ -54,20 +61,18 @@ public class FileOtlpExporter
 			if (result == ExportResult.Failure)
 			{
 				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
-				return result;
+				return (result, errorMessage);
 			}
-			else
-			{
-				FolderManagementHelper.DeleteFileInPath(file);
-			}
-		}
 
-		errorMessage = string.Empty;
-		return result;
+			FolderManagementHelper.DeleteFileInPath(path);
+		}
+		
+		return (result, errorMessage);
 	}
 
-	public static ExportResult ExportTraces(string filesPath, string endpoint, out string errorMessage)
+	public static async Task<(ExportResult resultStatus, string errorMessage)> ExportTraces(string filesPath, string endpoint)
 	{
+		string errorMessage = string.Empty;
 		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
 		var options = new OtlpExporterOptions
@@ -79,18 +84,22 @@ public class FileOtlpExporter
 		OtlpTraceExporter otlpTraceExporter = new OtlpTraceExporter(options);
 
 		var result = ExportResult.Success;
-
-		foreach (string file in allFiles)
+		List<(string, ActivityBatch?)> allBatches;
+		
+		try
 		{
-			var content = File.ReadAllText(file);
+			allBatches = await ReadAndDeserializeFileAsync<ActivityBatch>(allFiles);
+		}
+		catch (Exception e)
+		{
+			return (ExportResult.Failure, e.Message);
+		}
 
-			if (string.IsNullOrEmpty(content))
-			{
-				continue; //ignore this file for now, it will be deleted in the deletion part of this
-			}
-
-			var deserializedBatch = JsonConvert.DeserializeObject<ActivityBatch>(content);
-
+		foreach ((string path, ActivityBatch? deserializedBatch) in allBatches)
+		{
+			if(deserializedBatch == null)
+				continue;
+			
 			var activities = deserializedBatch.AllTraces.Select(ActivitySerializer.DeserializeActivity).ToArray();
 			var activitiesBatch = new Batch<Activity>(activities, activities.Length);
 
@@ -101,7 +110,7 @@ public class FileOtlpExporter
 
 			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpTraceExporter>(otlpTraceExporter, objectDict, out errorMessage))
 			{
-				return ExportResult.Failure;
+				return (ExportResult.Failure, errorMessage);
 			}
 
 			result = otlpTraceExporter.Export(activitiesBatch);
@@ -109,20 +118,19 @@ public class FileOtlpExporter
 			if (result == ExportResult.Failure)
 			{
 				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
-				return result;
+				return (result, errorMessage);
 			}
-			else
-			{
-				FolderManagementHelper.DeleteFileInPath(file);
-			}
+
+			FolderManagementHelper.DeleteFileInPath(path);
 		}
 
-		errorMessage = string.Empty;
-		return result;
+		
+		return (result, errorMessage);
 	}
 
-	public static ExportResult ExportMetrics(string filesPath, string endpoint, out string errorMessage)
+	public static async Task<(ExportResult resultStatus, string errorMessage)> ExportMetrics(string filesPath, string endpoint)
 	{
+		string errorMessage = string.Empty;
 		var allFiles = FolderManagementHelper.GetAllFiles(filesPath);
 
 		var options = new OtlpExporterOptions
@@ -134,18 +142,22 @@ public class FileOtlpExporter
 		OtlpMetricExporter otlpMetricsExporter = new OtlpMetricExporter(options);
 
 		var result = ExportResult.Success;
-
-		foreach (string file in allFiles)
+		
+		List<(string, MetricsBatch?)> allBatches;
+		
+		try
 		{
-			var content = File.ReadAllText(file);
+			allBatches = await ReadAndDeserializeFileAsync<MetricsBatch>(allFiles);
+		}
+		catch (Exception e)
+		{
+			return (ExportResult.Failure, e.Message);
+		}
 
-			if (string.IsNullOrEmpty(content))
-			{
-				continue; //ignore this file for now, it will be deleted in the deletion part of this
-			}
-
-			var deserializedBatch = JsonConvert.DeserializeObject<MetricsBatch>(content);
-
+		foreach ((string path, MetricsBatch? deserializedBatch) in allBatches)
+		{
+			if(deserializedBatch == null)
+				continue;
 			var metrics = deserializedBatch.AllMetrics.Select(MetricsSerializer.DeserializeMetric).ToArray();
 			var metricsBatch = new Batch<Metric>(metrics, metrics.Length);
 
@@ -156,7 +168,7 @@ public class FileOtlpExporter
 
 			if (!OtlpExporterResourceInjector.TrySetResourceField<OtlpMetricExporter>(otlpMetricsExporter, objectDict, out errorMessage))
 			{
-				return ExportResult.Failure;
+				return (ExportResult.Failure, errorMessage);
 			}
 
 			result = otlpMetricsExporter.Export(metricsBatch);
@@ -165,15 +177,41 @@ public class FileOtlpExporter
 			if (result == ExportResult.Failure)
 			{
 				errorMessage = "Error while using OtlpExporter from OpenTelemetry to send data to collector";
-				return result;
+				return (result, errorMessage);
 			}
-			else
-			{
-				FolderManagementHelper.DeleteFileInPath(file);
-			}
+
+			FolderManagementHelper.DeleteFileInPath(path);
 		}
 
-		errorMessage = string.Empty;
-		return result;
+		
+		return (result, errorMessage);
+	}
+
+	private static async Task<List<(string,T?)>> ReadAndDeserializeFileAsync<T>(List<string> paths)
+	{
+		using var cts = new CancellationTokenSource();
+		var results = new ConcurrentBag<(string, T?)>();
+
+		
+		
+		await Parallel.ForEachAsync(paths, cts.Token, async (path, cancellationToken) =>
+		{
+			try
+			{
+				string fileContent = await File.ReadAllTextAsync(path, cancellationToken);
+				if (!string.IsNullOrEmpty(fileContent))
+				{
+					var deserialized = JsonConvert.DeserializeObject<T>(fileContent);
+					results.Add((path, deserialized));
+				}
+			}
+			catch (Exception ex)
+			{
+				await cts.CancelAsync();
+				throw new InvalidOperationException($"Failed to process file {path}", ex);
+			}
+		});
+
+		return results.ToList();
 	}
 }

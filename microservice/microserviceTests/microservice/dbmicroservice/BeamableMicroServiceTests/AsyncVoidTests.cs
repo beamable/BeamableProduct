@@ -19,7 +19,7 @@ public class AsyncVoidTests : CommonTest
 			testSocket = socket;
 			socket.AddStandardMessageHandlers();
 		}));
-
+		allowErrorLogs = true;
 		Assert.ThrowsAsync<BeamableMicroserviceException>(async () =>
 		{
 			await ms.Start<InvalidService_AsyncVoids>(new TestArgs());

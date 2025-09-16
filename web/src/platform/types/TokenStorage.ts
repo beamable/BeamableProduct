@@ -1,3 +1,9 @@
+export interface TokenData {
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresIn: number | null;
+}
+
 /**
  * Abstraction for managing a persisted authentication token.
  */
@@ -6,32 +12,15 @@ export abstract class TokenStorage {
   protected refreshToken: string | null = null;
   protected expiresIn: number | null = null;
 
-  /** Retrieves the stored access token, or `null` if none. */
-  abstract getAccessToken(): Promise<string | null>;
+  /** Retrieves the stored token data. */
+  abstract getTokenData(): Promise<TokenData>;
 
-  /** Persists the provided access token. */
-  abstract setAccessToken(token: string): Promise<void>;
-
-  /** Removes any stored access token. */
-  abstract removeAccessToken(): Promise<void>;
-
-  /** Retrieves the stored refresh token, or `null` if none. */
-  abstract getRefreshToken(): Promise<string | null>;
-
-  /** Persists the provided refresh token. */
-  abstract setRefreshToken(token: string): Promise<void>;
-
-  /** Removes any stored refresh token. */
-  abstract removeRefreshToken(): Promise<void>;
-
-  /** Retrieves the stored expiresIn, or `null` if none. */
-  abstract getExpiresIn(): Promise<number | null>;
-
-  /** Persists the provided expiresIn. */
-  abstract setExpiresIn(expiresIn: number): Promise<void>;
-
-  /** Removes any stored expiresIn. */
-  abstract removeExpiresIn(): Promise<void>;
+  /**
+   * Updates the stored token data. Fields not provided are left unchanged.
+   * Set a field to `null` to clear it.
+   * @remarks When setting the `expiresIn`, use the raw `expires_in` from the token response plus Date.now() to compute the absolute expiry time.
+   */
+  abstract setTokenData(data: Partial<TokenData>): Promise<this>;
 
   /** Clears all stored tokens and expiry information. */
   abstract clear(): void;
