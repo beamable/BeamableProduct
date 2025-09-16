@@ -266,7 +266,7 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
-		private CustomerActorRealmConfiguration _realmConfig;
+		private RealmsBasicRealmConfiguration _realmConfig;
 
 		
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
@@ -663,7 +663,7 @@ namespace Beamable
 			}
 			
 
-			async Promise SetupBeamableNotificationChannel(CustomerActorRealmConfiguration config)
+			async Promise SetupBeamableNotificationChannel(RealmsBasicRealmConfiguration config)
 			{
 				if (config.IsUsingBeamableNotifications())
 				{
@@ -683,7 +683,7 @@ namespace Beamable
 				AuthorizedUser.Value = user;
 			}
 
-			async Promise SetupNewSession(CustomerActorRealmConfiguration config)
+			async Promise SetupNewSession(RealmsBasicRealmConfiguration config)
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
 				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
@@ -777,7 +777,7 @@ namespace Beamable
 
 				await SetupGetUser();
 				
-				_realmConfig = await ServiceProvider.GetService<IBeamCustomerApi>().GetRealmsClientDefaults(Cid, Pid);
+				_realmConfig = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults();
 
 				
 				var connection = SetupBeamableNotificationChannel(_realmConfig);
