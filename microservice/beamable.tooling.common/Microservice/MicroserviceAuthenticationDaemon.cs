@@ -203,38 +203,27 @@ public class MicroserviceAuthenticationDaemon
 	}
 
 	
-	private async Task Authenticate()
+	
+	async Task<MicroserviceAuthResponse> AuthWithRefreshToken()
 	{
-		async Task<MicroserviceAuthResponse> AuthWithRefreshToken()
+		var tempRequester = new MicroserviceHttpRequester(_env, new HttpClient())
 		{
-			var tempRequester = new MicroserviceHttpRequester(_env, new HttpClient())
-			{
-				ScopeHeader = _env.CustomerID + "." + _env.ProjectName
-			};
-			var authApi = new AuthApi(tempRequester);
-			Log.Information($"TRYING TO AUTH WITH THE JAZZ. cid=[{_env.CustomerID}] pid=[{_env.ProjectName}] refresh=[{_env.RefreshToken}]");
-			var  res = await authApi.PostToken(new TokenRequestWrapper
-			{
-				grant_type = "refresh_token", 
-				refresh_token = _env.RefreshToken
-			});
-			var accessToken = res.access_token.GetOrThrow();
-			Log.Information($"TRYING ACCESS cid=[{_env.CustomerID}] pid=[{_env.ProjectName}] access=[{accessToken}]");
-
-			var req = new MicroserviceAuthRequestWithToken { cid = _env.CustomerID, pid = _env.ProjectName, token = accessToken };
-			return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
-		}
-
-		async Task<MicroserviceAuthResponse> AuthWithRealmSecret()
+			ScopeHeader = _env.CustomerID + "." + _env.ProjectName
+		};
+		var authApi = new AuthApi(tempRequester);
+		var  res = await authApi.PostToken(new TokenRequestWrapper
 		{
-			var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
-			var sig = CalculateSignature(_env.Secret + res.nonce);
-			var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
-			return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
-		}
+			grant_type = "refresh_token", 
+			refresh_token = _env.RefreshToken
+		});
+		var accessToken = res.access_token.GetOrThrow();
 		
-		
+		var req = new MicroserviceAuthRequestWithToken { cid = _env.CustomerID, pid = _env.ProjectName, token = accessToken };
+		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
+	}
+
+	async Task<MicroserviceAuthResponse> AuthWithRealmSecret()
+	{
 		string CalculateSignature(string text)
 		{
 			System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
@@ -243,6 +232,17 @@ public class MicroserviceAuthenticationDaemon
 			return Convert.ToBase64String(hash);
 		}
 
+		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
+		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
+		var sig = CalculateSignature(_env.Secret + res.nonce);
+		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
+		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
+	}
+	
+	private async Task Authenticate()
+	{
+		
+		
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 
 		MicroserviceAuthResponse authRes = null;
