@@ -54,6 +54,7 @@ using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Beamable.Common.Util;
+using Beamable.Server.Api.Logs;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
@@ -376,6 +377,7 @@ namespace Beamable.Server
 			        //  _INCLUDING_ the standard Beamable one, which should be registered _LAST_
 			        .AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
 			        .AddSingleton<IBeamBeamoApi, BeamBeamoApi>()
+			        .AddSingleton<ILoggingContextService, LoggingContextService>()
 			        ;
 		        OpenApiRegistration.RegisterOpenApis(collection);
 		        

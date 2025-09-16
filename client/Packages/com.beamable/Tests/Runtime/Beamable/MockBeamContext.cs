@@ -121,18 +121,18 @@ namespace Beamable.Tests.Runtime
 					 .WithResponse(new EmptyResponse())
 					 .WithToken(ACCESS_TOKEN);
 
-			Requester.MockRequest<RealmsBasicRealmConfiguration>(Method.GET, "/basic/realms/client/defaults")
-					 .WithRawResponse(JsonUtility.ToJson(new RealmsBasicRealmConfiguration
+			Requester.MockRequest<CustomerActorRealmConfiguration>(Method.GET, "/basic/realms/client/defaults")
+					 .WithRawResponse(JsonUtility.ToJson(new CustomerActorRealmConfiguration
 					 {
 						 environment = "test",
-						 microserviceURI = "",
-						 websocketConfig = new RealmsBasicWebSocketConfiguration
+						 microserviceUri = "",
+						 websocketConfig = new CustomerActorWebSocketConfiguration
 						 {
 							 uri = new OptionalString(""),
 							 provider = "pubnub"
 						 },
-						 portalURI = "",
-						 storageBrowserURI = ""
+						 portalUri = "",
+						 storageBrowserUri = ""
 					 }))
 					 .WithToken(ACCESS_TOKEN);
 			return this;
