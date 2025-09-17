@@ -38,6 +38,7 @@ using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
 using Beamable.Server.Api.Leaderboards;
+using Beamable.Server.Api.Logs;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
@@ -371,10 +372,12 @@ public static class MicroserviceStartupUtil
 			return;
 		}
 
-		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out MicroserviceBootstrapper.LogLevel))
+		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out var defaultLogLevel))
 		{
-			MicroserviceBootstrapper.LogLevel = LogLevel.Warning;
+			defaultLogLevel = LogLevel.Warning;
 		}
+
+		MicroserviceBootstrapper.ContextLogLevel.Value = defaultLogLevel;
 
 		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
 		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
@@ -386,7 +389,7 @@ public static class MicroserviceStartupUtil
 			// all logs are valid, but may not pass the filter. 
 			builder.SetMinimumLevel(LogLevel.Trace);
 
-			builder.AddFilter(level => level >= MicroserviceBootstrapper.LogLevel);
+			builder.AddFilter(level => level >= MicroserviceBootstrapper.ContextLogLevel.Value);
 			if (!ctx.InDocker)
 			{
 				builder.AddZLoggerLogProcessor(ctx.debugLogProcessor);
@@ -669,6 +672,7 @@ public static class MicroserviceStartupUtil
 				// allow the DI system to get a list of all telemetry attribute providers...
 				//  _INCLUDING_ the standard Beamable one, which should be registered _LAST_
 				.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
+				.AddSingleton<ILoggingContextService, LoggingContextService>()
 				;
 			OpenApiRegistration.RegisterOpenApis(collection);
 
