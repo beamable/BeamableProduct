@@ -24,9 +24,11 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Reflection;
 using Beamable.Serialization;
+using Beamable.Server.Api.Logs;
 using Beamable.Server.Common;
 using Beamable.Server.Editor;
 using microservice.Common;
+using microservice.dbmicroservice;
 using Newtonsoft.Json;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
@@ -73,7 +75,8 @@ namespace Beamable.Server
 
    public class BeamableMicroService : IBeamableService
    {
-      public string MicroserviceName => _serviceAttribute.MicroserviceName;	  public static string MicroserviceID => _microServiceId;
+      public string MicroserviceName => _serviceAttribute.MicroserviceName;
+	  public static string MicroserviceID => _microServiceId;
 
       public string QualifiedName => _serviceAttribute.GetQualifiedName();
       
@@ -352,8 +355,11 @@ namespace Beamable.Server
             }
 
             var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            await realmService.GetRealmConfigSettings();
             
+            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            
+            await realmService.GetRealmConfigSettings();
+            await loggingContextService.GetAllLoggingContexts();
             await ProvideService();
 
             HasInitialized = true;
@@ -766,7 +772,88 @@ namespace Beamable.Server
 		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx);
 	      activity.SetTags(extraOtelTags);
 
-	      var logger = BeamableZLoggerProvider.LogContext.Value = InstanceArgs.ServiceScope.GetLogger<BeamableMicroService>();
+
+	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
+	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+	      configService.UpdateLogLevel();
+
+	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
+	      try
+	      {
+		      var loggingContextService = Provider.GetService<ILoggingContextService>();
+		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
+		      if (loglevelContext != null)
+		      {
+			      LogLevel? contextLogLevel = null;
+			      BeamoV2LogContextRule[] rules = loglevelContext.rules.GetOrElse(Array.Empty<BeamoV2LogContextRule>());
+			      foreach (BeamoV2LogContextRule contextRule in rules)
+			      { 
+				      if (contextRule.expiresAt.HasValue)
+				      {
+					      var expiresAtDate = DateTimeOffset.FromUnixTimeMilliseconds(contextRule.expiresAt.Value).ToUniversalTime();
+					      if (expiresAtDate <= DateTimeOffset.UtcNow)
+					      {
+						      // This rule is expired, continue to the next one
+						      continue;
+					      }
+				      }
+				      
+				      LogLevel contextRuleLogLevel = contextRule.logLevel.ToMicrosoftLogLevel();
+				      if (contextRule.ruleFilters.Length == 0)
+				      {
+					      // We're using Try To Set new Log Level to use always the minimum possible log level from each rule.
+					      TryToSetNewLogLevel(contextRuleLogLevel);
+					      continue;
+				      }
+
+				      bool hasValidFilter = false;
+				      foreach (BeamoV2ContextRuleFilter ruleFilter in contextRule.ruleFilters)
+				      {
+					      // For each rule filter we need to check if the Path filter and User filter matches, both needs to be true for the filter to be valid
+					      // if the filter for any is not set we consider it as true as well.
+
+					      bool isPathFilterNotSet = !ruleFilter.paths.HasValue || !ruleFilter.pathsOperationType.HasValue;
+					      bool isPathFilterValid = isPathFilterNotSet || CheckRule(ruleFilter.paths, ruleFilter.pathsOperationType, ctx.Path);
+
+					      bool isUserFilterNotSet = !ruleFilter.playerIds.HasValue || !ruleFilter.playerIdOperationType.HasValue;
+					      bool isPlayerFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.UserId);
+
+					     hasValidFilter |= isPathFilterValid && isPlayerFilterValid;
+				      }
+
+				      if (hasValidFilter)
+				      {
+					      TryToSetNewLogLevel(contextRule.logLevel.ToMicrosoftLogLevel());
+				      }
+			      }
+
+			      contextLogLevel ??= loglevelContext.defaultLogLevel.ToMicrosoftLogLevel();
+
+			      MicroserviceBootstrapper.ContextLogLevel.Value = contextLogLevel.Value;
+
+			      void TryToSetNewLogLevel(LogLevel newLogLevel)
+			      {
+				      if (contextLogLevel > newLogLevel)
+				      {
+					      contextLogLevel = newLogLevel;
+				      }
+			      }
+
+			      bool CheckRule<T>(T[] values, BeamoV2RuleOperationType operationType, T valueToCheck)
+			      {
+				      bool containsInValues = values.Contains(valueToCheck);
+				      return (containsInValues && operationType is BeamoV2RuleOperationType.Contain) ||
+				             (!containsInValues && operationType is BeamoV2RuleOperationType.NotContain);
+			      }
+		      }
+	      }
+	      catch (Exception ex)
+	      {
+		      BeamableZLoggerProvider.Instance.Error(ex);
+	      }
+
+	      
+		  var logger = BeamableZLoggerProvider.LogContext.Value = InstanceArgs.ServiceScope.GetLogger<BeamableMicroService>();
 	      using var scope = logger.BeginScope(extraOtelTags);
 	      
 	      try

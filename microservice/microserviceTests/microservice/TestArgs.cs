@@ -2,6 +2,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Api.Logs;
 using Beamable.Server.Api.RealmConfig;
 using System;
 using System.Linq;
@@ -60,10 +61,11 @@ namespace microserviceTests.microservice
 					builder.RemoveIfExists<IRealmConfigService>();
 					builder.RemoveIfExists<IMicroserviceRealmConfigService>();
 					builder.RemoveIfExists<RealmConfigService>();
+					builder.RemoveIfExists<ILoggingContextService>();
 					builder.AddSingleton<MockRealmConfig>();
 					builder.AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<MockRealmConfig>());
 					builder.AddSingleton<IRealmConfigService>(p => p.GetService<MockRealmConfig>());
-					
+					builder.AddSingleton<ILoggingContextService>(_ => new MockLoggingContextService());
 					builder.RemoveIfExists<IConnectionProvider>();
 					builder.AddSingleton(_provider);
 					

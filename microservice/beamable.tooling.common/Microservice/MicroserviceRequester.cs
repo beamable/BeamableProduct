@@ -567,7 +567,8 @@ namespace Beamable.Server
             evtWhitelist = new []
             {
 	            Constants.Features.Services.CONTENT_UPDATE_EVENT,
-	            Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT
+	            Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
+				Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT,
             }
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
