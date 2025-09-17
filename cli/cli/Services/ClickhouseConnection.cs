@@ -5,13 +5,14 @@ using Beamable.Server;
 using cli.OtelCommands;
 using ClickHouse.Client.ADO;
 using Dapper;
+using System.Globalization;
 
 namespace cli.Services;
 
 public static class ClickhouseConnection
 {
 
-	public static string ConnectionString(OtelAuthConfig config) //TODO this should not be necessary, the beamo api should send back a connection string
+	public static string ConnectionString(OtelAuthConfig config)
 	{
 		string uriString = config.endpoint;
 		if (!config.endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
@@ -37,7 +38,7 @@ public static class ClickhouseConnection
 		return builder.ConnectionString;
 	}
 
-	public static async Task<List<CliOtelLogRecord>> FetchLogs(OtelAuthConfig config, FetchTelemetryLogsCommandArgs args)
+	public static async Task<List<FetchCommandLogRecord>> FetchLogs(OtelAuthConfig config, FetchTelemetryLogsCommandArgs args)
 	{
 		var connectionString = ConnectionString(config);
 
@@ -77,12 +78,15 @@ public static class ClickhouseConnection
 				case "M":
 					allFilters.Add(string.Format(ClickhouseQueries.WITHIN_MINUTES, value));
 					break;
+				default:
+					throw new InvalidArgumentException("--from", $"The from option needs to end with either d, h or m. Got :[{time}]. Full time: [{args.FromTime}]");
 			}
 		}
 
 		if (!string.IsNullOrEmpty(args.ServiceName))
 		{
-			allFilters.Add(string.Format(ClickhouseQueries.SERVICE_NAME_MATCH, args.ServiceName));
+			var query = args.FullMatch ? ClickhouseQueries.SERVICE_NAME_FULL_MATCH : ClickhouseQueries.SERVICE_NAME_PARTIAL_MATCH;
+			allFilters.Add(string.Format(query, args.ServiceName));
 		}
 
 		if (!string.IsNullOrEmpty(args.LogLevel))
@@ -110,24 +114,28 @@ public static class ClickhouseConnection
 		return queryFinal;
 	}
 
-	private static async Task<List<CliOtelLogRecord>> ExecuteQuery(string connectionString, string query)
+	private static async Task<List<FetchCommandLogRecord>> ExecuteQuery(string connectionString, string query)
 	{
 		await using var connection = new ClickHouseConnection(connectionString);
 
 		Log.Verbose($"Running query: [{query}] in clickhouse");
 		var allRows = await connection.QueryAsync(query);
 
-		List<CliOtelLogRecord> result = new List<CliOtelLogRecord>();
+		List<FetchCommandLogRecord> result = new List<FetchCommandLogRecord>();
 
 		foreach (var row in allRows)
 		{
 			if (row != null)
 			{
-				result.Add(new CliOtelLogRecord()
+				DateTime convertedDate = DateTime.SpecifyKind(
+					DateTime.Parse(row.Timestamp.ToString()),
+					DateTimeKind.Utc);
+				result.Add(new FetchCommandLogRecord()
 				{
-					Timestamp = row.Timestamp.ToString(),
+					Timestamp = convertedDate.ToLocalTime().ToString(CultureInfo.InvariantCulture),
 					LogLevel = row.SeverityText,
-					Body = row.Body
+					Message = row.Body,
+					ServiceName = row.ServiceName
 				});
 			}
 
