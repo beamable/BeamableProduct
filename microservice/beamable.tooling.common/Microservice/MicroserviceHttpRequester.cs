@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using Beamable.Common.Content;
 using NotImplementedException = System.NotImplementedException;
 
 namespace Beamable.Server;
@@ -15,6 +16,7 @@ public class MicroserviceHttpRequester : IHttpRequester, IRequester
 {
 	private readonly HttpClient _client;
 	private readonly string _baseAddr;
+	public OptionalString ScopeHeader = new OptionalString();
 
 	public MicroserviceHttpRequester(IMicroserviceArgs args, HttpClient client)
 	{
@@ -26,7 +28,7 @@ public class MicroserviceHttpRequester : IHttpRequester, IRequester
 			.Replace("/socket", "");
 	}
 	
-	public async Promise<T> ManualRequest<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null,
+	public virtual async Promise<T> ManualRequest<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null,
 		string contentType = "application/json", Func<string, T> parser = null)
 	{
 		var req = new HttpRequestMessage();
@@ -46,6 +48,11 @@ public class MicroserviceHttpRequester : IHttpRequester, IRequester
 			{
 				req.Headers.Add(header.Key, header.Value);
 			}
+		}
+
+		if (ScopeHeader.TryGet(out var scope))
+		{
+			req.Headers.Add("X-BEAM-SCOPE", scope);
 		}
 
 		if (body is string bodyStr)
@@ -122,7 +129,7 @@ public class MicroserviceHttpRequester : IHttpRequester, IRequester
 		return System.Web.HttpUtility.UrlEncode(url);
 	}
 
-	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+	public virtual Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 	{
 		var uri = _baseAddr + req.uri;
 		return ManualRequest<T>(req.method, uri, req.body);
