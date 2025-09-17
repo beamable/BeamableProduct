@@ -32,7 +32,7 @@ public class FetchCommandLogRecord
 	public string Message;
 }
 
-public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommandArgs, FetchTelemetryLogsResult>
+public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommandArgs, FetchTelemetryLogsResult>, ISkipManifest
 {
 	public FetchTelemetryLogsCommand() : base("logs", "Fetch logs from Clickhouse")
 	{
@@ -59,8 +59,13 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 
 	public override async Task<FetchTelemetryLogsResult> GetResult(FetchTelemetryLogsCommandArgs args)
 	{
-		OtelAuthConfig res = await args.OtelApi.GetOtelAuthReaderConfig();
-		var result = await ClickhouseConnection.FetchLogs(res, args);
+		OtelAuthConfig config;
+		if (!ClickhouseConnection.GetClickhouseAuthOverrides(out config))
+		{
+			config = await args.OtelApi.GetOtelAuthReaderConfig();
+		}
+
+		var result = await ClickhouseConnection.FetchLogs(config, args);
 
 		var columnNameStyle = new Style(Color.SlateBlue1);
 

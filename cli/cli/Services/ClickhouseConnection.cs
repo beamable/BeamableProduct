@@ -143,6 +143,31 @@ public static class ClickhouseConnection
 
 		return result;
 	}
+
+	public static bool GetClickhouseAuthOverrides(out OtelAuthConfig config)
+	{
+		var endpoint = Environment.GetEnvironmentVariable(Beamable.Common.Constants.Features.Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
+		var userName = Environment.GetEnvironmentVariable(Beamable.Common.Constants.Features.Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
+		var passd = Environment.GetEnvironmentVariable(Beamable.Common.Constants.Features.Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
+
+		bool envVarsExist = !string.IsNullOrEmpty(endpoint) &&
+		                    !string.IsNullOrEmpty(userName) &&
+		                    !string.IsNullOrEmpty(passd);
+
+		if (envVarsExist)
+		{
+			config = new OtelAuthConfig()
+			{
+				endpoint = endpoint,
+				username = userName,
+				password = passd
+			};
+			return true;
+		}
+
+		config = null;
+		return false;
+	}
 }
 
 [Serializable]
