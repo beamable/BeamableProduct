@@ -10,12 +10,12 @@ namespace cli.OtelCommands;
 [Serializable]
 public class FetchTelemetryLogsCommandArgs : CommandArgs
 {
-	public string ServiceName; // --service-name, does a full match with the service name
-	public string LogLevel; // --log-level, does a full match with the log level
-	public int LimitRows; // --limit-rows, limits the amount of rows fetched
-	public string BodyMatch; // --body, string value to be matched with the log body message
-	public bool FullMatch; // --full-match, partial match by default
-	public string FromTime; // --from
+	public string ServiceName;
+	public string LogLevel;
+	public int LimitRows;
+	public string BodyMatch;
+	public bool FullMatch;
+	public string FromTime;
 	public bool AscendingOrder;
 }
 
