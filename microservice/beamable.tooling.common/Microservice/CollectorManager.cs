@@ -477,10 +477,35 @@ public class CollectorManager
 		}
 	}
 
-	public static void AddAuthEnvironmentVars(OtelAuthConfig authConfig)
+	public static ClickhouseEnvAuth GetAuthFromEnvironment()
 	{
 		var user = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
-		if(string.IsNullOrEmpty(user))
+		var password = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
+		var endpoint = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
+
+		return new ClickhouseEnvAuth
+		{
+			user = user,
+			password = password,
+			endpoint = endpoint,
+			hasUser = !string.IsNullOrEmpty(user),
+			hasEndpoint = !string.IsNullOrEmpty(endpoint),
+			hasPassword = !string.IsNullOrEmpty(password),
+		};
+	}
+
+	public struct ClickhouseEnvAuth
+	{
+		public string user, password, endpoint;
+		public bool hasUser, hasPassword, hasEndpoint;
+
+		public bool HasAll => hasUser && hasPassword && hasEndpoint;
+	}
+
+	public static void AddAuthEnvironmentVars(OtelAuthConfig authConfig)
+	{
+		var existing = GetAuthFromEnvironment();
+		if(!existing.hasUser)
 		{
 			if (string.IsNullOrEmpty(authConfig.username))
 			{
@@ -489,8 +514,7 @@ public class CollectorManager
 			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME, authConfig.username);
 		}
 
-		var passd = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
-		if(string.IsNullOrEmpty(passd))
+		if(!existing.hasPassword)
 		{
 			if (string.IsNullOrEmpty(authConfig.password))
 			{
@@ -499,8 +523,7 @@ public class CollectorManager
 			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD, authConfig.password);
 		}
 
-		var chHost = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
-		if(string.IsNullOrEmpty(chHost))
+		if(!existing.hasEndpoint)
 		{
 			if (string.IsNullOrEmpty(authConfig.endpoint))
 			{

@@ -21,7 +21,12 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	bool UseSequentialBuild { get; set; }
 }
 
-public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
+public interface IHasDockerComposeArgs
+{
+	public string DockerComposeDirectoryPath { get; set; }
+}
+
+public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDockerComposeArgs
 {
 	public string toFile;
 	public string Comment { get; set; }
@@ -40,6 +45,8 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 		get => SlnFilePath;
 		set => SlnFilePath = value;
 	}
+
+	public string DockerComposeDirectoryPath { get; set; }
 }
 
 public class PlanReleaseProgressChannel : IResultChannel
@@ -204,6 +211,7 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddDockerComposeOutputOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 
 		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "A file path to save the plan"),
@@ -222,6 +230,16 @@ public class PlanDeploymentCommand
 		DeployUtil.PrintPlanNextSteps(args.toFile ?? planPath, hasChanges);
 		await DeployArgs.MaybeSaveToFile(args.toFile, plan);
 		Log.Information("Saved plan: " + planPath);
+
+		if (!string.IsNullOrEmpty(args.DockerComposeDirectoryPath))
+		{
+			var secret = await ConfigGetSecret.GetSecret(args);
+			await DeployUtil.CreateDockerComposeFile(plan, secret, args);
+			Log.Information("Docker Compose Project: " + args.DockerComposeDirectoryPath);
+			Log.Information("  To run the project, use `docker compose`");
+			Log.Information($"   > cd {args.DockerComposeDirectoryPath}");
+			Log.Information($"   > docker compose up");
+		}
 
 		var results = new DeploymentPlanMetadata
 		{

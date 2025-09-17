@@ -104,7 +104,7 @@ public static class MicroserviceStartupUtil
 
 		startupCtx.logger.LogInformation($"Starting Prepare");
 
-		if (!startupCtx.args.SkipLocalEnv)
+		if (!startupCtx.args.SkipLocalEnv && !startupCtx.InDocker)
 		{
 			await GetLocalEnvironment(startupCtx);
 			var freshEnvArgs = new EnvironmentArgs();
@@ -272,12 +272,20 @@ public static class MicroserviceStartupUtil
 
 			if (!status.isRunning)
 			{
-				ctx.logger.ZLogInformation($"Sending request to get clickhouse credentials...");
-				var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
-				var otelApi = new BeamBeamootelApi(requester);
-				var res = await otelApi.GetOtelAuthWriterConfig();
+				var existing = CollectorManager.GetAuthFromEnvironment();
+				if (!existing.HasAll)
+				{
+					ctx.logger.ZLogInformation($"Sending request to get clickhouse credentials...");
+					var requester = GenerateTemporarySignedRequester(new EnvironmentArgs());
+					var otelApi = new BeamBeamootelApi(requester);
+					var res = await otelApi.GetOtelAuthWriterConfig();
 
-				CollectorManager.AddAuthEnvironmentVars(res);
+					CollectorManager.AddAuthEnvironmentVars(res);
+				}
+				else
+				{
+					ctx.logger.ZLogInformation($"Reading environment to get clickhouse credentials...");
+				}
 			}
 
 			ctx.logger.ZLogInformation($"Starting otel collector discovery event...");
@@ -516,13 +524,24 @@ public static class MicroserviceStartupUtil
 		reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
 		reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
 
-		var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm =>
-				!asm.GetName().Name.StartsWith("System.") &&
-				!asm.GetName().Name.StartsWith("nunit.") &&
-				!asm.GetName().Name.StartsWith("JetBrains.") &&
-				!asm.GetName().Name.StartsWith("Microsoft.") &&
-				!asm.GetName().Name.StartsWith("Serilog."))
+		var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies()
 			.Select(asm => asm.GetName().Name)
+			.Where(asmName =>
+			{
+				if (string.IsNullOrEmpty(asmName))
+				{
+					return false;
+				}
+
+				return !asmName.StartsWith("System.") &&
+				       !asmName.StartsWith("nunit.") &&
+				       !asmName.StartsWith("JetBrains.") &&
+				       !asmName.StartsWith("Microsoft.") &&
+				       !asmName.StartsWith("MongoDB.") &&
+				       !asmName.StartsWith("Serilog.")
+				       ;
+			})
+				
 			.ToList();
 		ctx.logger.ZLogDebug(
 			$"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");

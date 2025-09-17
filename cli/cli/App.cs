@@ -203,7 +203,6 @@ public class App
 		services.AddSingleton<IRequesterInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
-		services.AddSingleton<IBeamBeamootelApi, BeamBeamootelApi>();
 		services.AddSingleton<NoAuthHttpRequester>();
 		services.AddSingleton<IAliasService, AliasService>(p => new AliasService(p.GetService<NoAuthHttpRequester>()));
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
