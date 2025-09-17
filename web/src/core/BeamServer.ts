@@ -1,22 +1,42 @@
-import { BeamServerConfig } from '@/configs/BeamServerConfig';
+import type {
+  BeamServerConfig,
+  ServerEventsConfig,
+} from '@/configs/BeamServerConfig';
 import { BaseRequester } from '@/network/http/BaseRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
 import { BeamBase, type BeamEnvVars } from '@/core/BeamBase';
 import { HEADERS } from '@/constants';
 import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
-import { BeamConfig } from '@/configs/BeamConfig';
 import { ServerServicesMixin } from '@/core/mixins';
-import { BeamServerServiceType } from '@/core/types';
+import type {
+  BeamServerServiceType,
+  ServerSubscriptionMap,
+  Subscription,
+} from '@/core/types';
 import {
   BeamMicroServiceClient,
   type BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
+import {
+  BeamServerWebSocket,
+  Message,
+  NotificationMessage,
+} from '@/network/websocket/BeamServerWebSocket';
+import { ServerEventType } from '@/core/types/ServerEventType';
+import { BeamError } from '@/constants/Errors';
+import { isBrowserEnv } from '@/utils/isBrowserEnv';
 
 /** The main class for interacting with the Beam Server SDK. */
 export class BeamServer extends ServerServicesMixin(BeamBase) {
+  private serverEventsConfig?: ServerEventsConfig;
+  private ws: BeamServerWebSocket;
+  private subscriptions: Partial<ServerSubscriptionMap> = {};
+
   /** Initialize a new Beam server instance. */
-  static init(config: BeamConfig): BeamServer {
+  static async init(config: BeamServerConfig) {
     const beamServer = new this(config);
+    beamServer.serverEventsConfig = config.serverEvents;
+    if (beamServer.isServerEventEnabled) await beamServer.connect();
     beamServer.isInitialized = true;
     return beamServer;
   }
@@ -25,13 +45,14 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
     super(config);
     this.addOptionalDefaultHeader(HEADERS.UA, config.engine);
     this.addOptionalDefaultHeader(HEADERS.UA_VERSION, config.engineVersion);
+    this.ws = new BeamServerWebSocket();
   }
 
   protected createBeamRequester(config: BeamServerConfig): BeamRequester {
-    const baseRequester = config.requester ?? new BaseRequester();
     return new BeamRequester({
-      inner: baseRequester,
-      useSignedRequest: true,
+      inner: config.requester ?? new BaseRequester(),
+      tokenStorage: this.tokenStorage,
+      useSignedRequest: !isBrowserEnv() && (config.useSignedRequest ?? false),
       pid: this.pid,
     });
   }
@@ -61,6 +82,98 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
     }
 
     return this;
+  }
+
+  /** Connects the server SDK to the Beamable gateway to listen for server-events. This method is called automatically during `BeamServer.init()` if `enableServerEvents` is set to `true`. */
+  private async connect() {
+    const tokenData = await this.tokenStorage.getTokenData();
+    const accessToken = tokenData.accessToken ?? undefined;
+    await this.ws.connect({
+      apiUrl: this.envConfig.apiUrl,
+      cid: this.cid,
+      pid: this.pid,
+      eventWhitelist: this.serverEventsConfig?.eventWhitelist,
+      accessToken,
+    });
+  }
+
+  /**
+   * Subscribes to a server-event and listens for messages.
+   * @template {ServerEventType} K
+   * @param eventType The server-event to subscribe to, e.g., 'content.manifest'.
+   * @param handler The callback to process the data when a message is received.
+   * @example
+   * ```ts
+   * const handler = (data) => {
+   *   console.log('Content manifest received:', data);
+   * };
+   * beamServer.on('content.manifest', handler);
+   * ```
+   */
+  on<K extends ServerEventType>(eventType: K, handler: (data: any) => void) {
+    this.checkIfInit();
+    const listener = (e: MessageEvent) => {
+      const message = JSON.parse(e.data) as Message;
+      if (!('path' in message)) return;
+
+      const notificationMessage = message as NotificationMessage;
+      const notificationEventType = notificationMessage.path.split('/')[1];
+      if (notificationEventType === eventType) {
+        handler(notificationMessage.body);
+      }
+    };
+
+    this.ws.rawSocket?.addEventListener('message', listener);
+    const subs: Subscription[] = this.subscriptions[eventType] ?? [];
+    subs.push({ handler, listener });
+    this.subscriptions[eventType] = subs;
+  }
+
+  /**
+   * Unsubscribes from a specific server-event or removes all subscriptions if no handler is provided.
+   * @template {ServerEventType} K
+   * @param eventType The server-event to unsubscribe from, e.g., 'content.manifest'.
+   * @param handler The callback to remove. If not provided, all handlers for the server-event are removed.
+   * @example
+   * ```ts
+   * beamServer.off('content.manifest', handler);
+   * // or to remove all handlers for the server-event
+   * beamServer.off('content.manifest');
+   * ```
+   */
+  off<K extends ServerEventType>(eventType: K, handler?: (data: any) => void) {
+    this.checkIfInit();
+    const subs = this.subscriptions[eventType];
+    if (!subs) return;
+
+    if (!handler) {
+      // if no handler is supplied, remove them all
+      subs.forEach(({ listener }) => {
+        this.ws.rawSocket?.removeEventListener('message', listener);
+      });
+      delete this.subscriptions[eventType];
+      return;
+    }
+
+    const index = subs.findIndex((s) => s.handler === handler);
+    if (index === -1) return;
+
+    const { listener } = subs[index];
+    this.ws.rawSocket?.removeEventListener('message', listener);
+    subs.splice(index, 1);
+    if (subs.length === 0) delete this.subscriptions[eventType];
+  }
+
+  private checkIfInit() {
+    if (!this.isInitialized) {
+      throw new BeamError(
+        `Call \`await BeamServer.init({...})\` to initialize the Beam server SDK.`,
+      );
+    }
+  }
+
+  private get isServerEventEnabled() {
+    return this.serverEventsConfig?.enabled ?? false;
   }
 }
 

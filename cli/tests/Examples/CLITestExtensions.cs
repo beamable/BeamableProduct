@@ -8,6 +8,7 @@ using Moq;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using tests.MoqExtensions;
+using RealmView = Beamable.Common.Api.Realms.RealmView;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace tests.Examples;

@@ -48,6 +48,7 @@ export interface ExternalIdentityCredentialParams {
 export interface ExternalIdentityParams {
   providerService: string;
   providerNamespace: string;
+  externalUserId: string;
 }
 
 export class AccountService extends ApiService {
@@ -273,6 +274,7 @@ export class AccountService extends ApiService {
    * const playerAccount = await account.removeExternalIdentity({
    *   providerService: acmeServiceClient.serviceName,
    *   providerNamespace: acmeServiceClient.federationIds.acme,
+   *   externalUserId: 'acme-user-id',
    * });
    * ```
    * @throws {BeamError} If the disassociation fails (e.g., invalid token, account not linked).
@@ -280,24 +282,12 @@ export class AccountService extends ApiService {
   async removeExternalIdentity(
     params: ExternalIdentityParams,
   ): Promise<AccountPlayerView> {
-    const playerAccount = this.player
-      ? this.player.account
-      : await this.current();
-    const externalIdentity = playerAccount.external?.find(
-      (externalIdentity) => {
-        const { providerService, providerNamespace } = externalIdentity;
-        return (
-          providerService === params.providerService &&
-          providerNamespace === params.providerNamespace
-        );
-      },
-    );
     await accountsDeleteExternalIdentityBasic(
       this.requester,
       {
         provider_namespace: params.providerNamespace,
         provider_service: params.providerService,
-        user_id: externalIdentity?.userId ?? '',
+        user_id: params.externalUserId,
       },
       this.accountId,
     );
@@ -387,6 +377,7 @@ export class AccountService extends ApiService {
    * const status = await account.getExternalIdentityStatus({
    *   providerService: acmeServiceClient.serviceName,
    *   providerNamespace: acmeServiceClient.federationIds.acme,
+   *   externalUserId: 'acme-user-id',
    * });
    * if (status === CredentialStatus.NotAssigned) {
    *   console.log('External identity credential not assigned.');
@@ -397,22 +388,10 @@ export class AccountService extends ApiService {
     params: ExternalIdentityParams,
   ): Promise<CredentialStatus> {
     try {
-      const playerAccount = this.player
-        ? this.player.account
-        : await this.current();
-      const externalIdentity = playerAccount.external?.find(
-        (externalIdentity) => {
-          const { providerService, providerNamespace } = externalIdentity;
-          return (
-            providerService === params.providerService &&
-            providerNamespace === params.providerNamespace
-          );
-        },
-      );
       const { body } = await accountsGetAvailableExternalIdentityBasic(
         this.requester,
         params.providerService,
-        externalIdentity?.userId ?? '',
+        params.externalUserId,
         params.providerNamespace,
         this.accountId,
       );
