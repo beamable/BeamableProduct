@@ -121,6 +121,8 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> disabledStorages = new List<string>();
 	public List<string> enabledStorages = new List<string>();
 
+	public List<string> servicesUpgradedLogFormat = new List<string>();
+
 	public List<ServiceFederationChange> addedFederations = new List<ServiceFederationChange>();
 	public List<ServiceFederationChange> removedFederations = new List<ServiceFederationChange>();
 	public List<ServiceImageIdChange> serviceImageIdChanges = new List<ServiceImageIdChange>();
@@ -139,6 +141,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 		s.SerializeList(nameof(serviceImageIdChanges), ref serviceImageIdChanges);
 		s.SerializeList(nameof(addedFederations), ref addedFederations);
 		s.SerializeList(nameof(removedFederations), ref removedFederations);
+		s.SerializeList(nameof(servicesUpgradedLogFormat), ref servicesUpgradedLogFormat);
 	}
 }
 
@@ -866,6 +869,7 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
+		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.servicesUpgradedLogFormat, "Upgrading LogFormat", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
 
 		hasChanges = plan.diff.jsonChanges.Count > 0;
@@ -984,6 +988,7 @@ public partial class DeployUtil
 		
 		var api = provider.GetService<IBeamoApi>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
+		var beamoApi = provider.GetService<IBeamBeamoApi>();
 
 		var isLoadingManifestFile = !string.IsNullOrEmpty(args.FromManifestFile);
 		var isLoadingManifestId = !string.IsNullOrEmpty(args.ManifestId);
@@ -1019,6 +1024,7 @@ public partial class DeployUtil
 		
 		progressHandler?.Invoke(FetchManifestProgressName, 0);
 		var remoteTask = CreateReleaseManifestFromRealm(api);
+		var beamoV2ManifestTask = beamoApi.GetManifestsCurrent();
 
 		// TODO: scope better; explain how to resolve remote and local manifest
 		if (isLoadingManifestFile)
@@ -1042,7 +1048,6 @@ public partial class DeployUtil
 			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
-		
 		remote = await remoteTask;
 		progressHandler?.Invoke(FetchManifestProgressName, 1);
 		
@@ -1108,7 +1113,7 @@ public partial class DeployUtil
 
 		progressHandler?.Invoke(MergingManifestProgressName, .5f);
 		diff = FindChanges(remote, next);
-
+		
 		if (!TryValidate(next, out var validationErrors))
 		{
 			throw new CliException($"The plan is invalid.\n{string.Join("\n -", validationErrors)}");
@@ -1129,6 +1134,31 @@ public partial class DeployUtil
 				if ((serviceInManifest.enabled && remoteService == null) || (remoteService != null && serviceInManifest.imageId != remoteService.imageId)) 
 					servicesToUpload.Add(serviceInManifest.serviceName);
 			}
+		}
+		
+		BeamoV2Manifest beamoV2Manifest;
+		try
+		{
+			beamoV2Manifest = await beamoV2ManifestTask;
+		}
+		catch (RequesterException requesterException)
+		{
+			if (requesterException.Status != 404)
+				throw;
+			beamoV2Manifest = new BeamoV2Manifest();
+		}
+		
+		BeamoV2ServiceReference[] beamoV2ServiceReferences = beamoV2Manifest.serviceReferences.GetOrElse(Array.Empty<BeamoV2ServiceReference>());
+		// Get Which services are going to upgrade to the new version
+		if (beamoV2Manifest != null)
+		{
+			List<string> upgradingServices = beamoV2ServiceReferences
+				.Where(serviceRef => 
+					serviceRef.serviceName.HasValue && servicesToUpload.Contains(serviceRef.serviceName) && 
+					serviceRef.logProvider != BeamoV2LogProvider.Clickhouse)
+				.Select(serviceRef => serviceRef.serviceName.Value).ToList();
+			upgradingServices.AddRange(servicesToUpload.Where(item => beamoV2ServiceReferences.All(remoteRef => remoteRef.serviceName != item)));
+			diff.servicesUpgradedLogFormat = upgradingServices;
 		}
 
 
@@ -1265,10 +1295,24 @@ public partial class DeployUtil
 		Task<ManifestView> remoteManifestTask=null)
 	{
 		var api = provider.GetService<IBeamoApi>();
+		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
 
 		var gamePidPromise = provider.GetService<IRealmsApi>().GetRealm();
 		var dockerRegistryUrlPromise = beamoService.GetDockerImageRegistryUri();
+
+		BeamoV2Manifest beamoV2Manifest;
+
+		try
+		{
+			beamoV2Manifest = await beamoApi.GetManifestsCurrent();
+		}
+		catch (RequesterException requesterException)
+		{
+			if (requesterException.Status != 404)
+				throw;
+			beamoV2Manifest = new();
+		}
 		
 		var remote = await (remoteManifestTask ?? CreateReleaseManifestFromRealm(api));
 		var gamePid = (await gamePidPromise).FindRoot().Pid; // TODO I really think we should move this to _ctx/ConfigService and grab it during init...
@@ -1282,6 +1326,7 @@ public partial class DeployUtil
 		
 		// identity the services we need to upload.
 		var uploadTasks = new List<Task>();
+		
 		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
 
 		if (servicesToUpload.Count > 0)
@@ -1322,16 +1367,38 @@ public partial class DeployUtil
 		cts.Token.ThrowIfCancellationRequested();
 		
 		// publish manifest. 
-		var manifest = new PostManifestRequest
+		// Needs to convert Legacy data to Beamo V2 DTO
+		BeamoV2ServiceReference[] beamoV2ServiceReferences = plan.manifest.manifest.ToBeamoV2();
+		// After that we set the logProvider to Clickhouse if the service is going to be uploaded, or if it is already using the new Clickhouse logProvider
+		// if neither, we set it to Cloudwatch
+		foreach (BeamoV2ServiceReference reference in beamoV2ServiceReferences)
 		{
-			manifest = plan.manifest.manifest,
-			storageReferences = plan.manifest.storageReference,
+			bool serviceWillBeUploaded = reference.serviceName.HasValue && servicesToUpload.Contains(reference.serviceName.Value);
+			
+			bool isServiceAlreadyUpgraded = beamoV2Manifest != null && beamoV2Manifest.serviceReferences.HasValue && 
+			                                beamoV2Manifest.serviceReferences.Value.Any(item => 
+				                                item.serviceName == reference.serviceName && item.logProvider.Value == BeamoV2LogProvider.Clickhouse);
+			BeamoV2LogProvider logProvider = serviceWillBeUploaded || isServiceAlreadyUpgraded
+				? BeamoV2LogProvider.Clickhouse
+				: BeamoV2LogProvider.Cloudwatch;
+			
+			reference.logProvider = new OptionalBeamoV2LogProvider(logProvider);
+		}
+		var beamoV2PostManifestRequest = new BeamoV2PostManifestRequest
+		{
+			manifest = new OptionalArrayOfBeamoV2ServiceReference(beamoV2ServiceReferences),
+			storageReferences = new OptionalArrayOfBeamoV2ServiceStorageReference()
+			{
+				HasValue = plan.manifest.storageReference.HasValue, Value = plan.manifest.storageReference.Value.ToBeamoV2(),
+			},
 			autoDeploy = true,
-			comments = plan.manifest.comments
+			comments = plan.manifest.comments,
 		};
+		
 		progressHandler?.Invoke("publish", .1f, false);
-
-		await api.PostManifest(manifest);
+		
+		await beamoApi.PostManifests(beamoV2PostManifestRequest);
+		
 		progressHandler?.Invoke("publish", 1, false);
 
 	}
