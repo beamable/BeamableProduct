@@ -6,6 +6,7 @@
         <BeamProjectType>service</BeamProjectType>
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>false</GenerateClientCode>
+        <BeamDisableCollectorResolution>true</BeamDisableCollectorResolution>
     </PropertyGroup>
 
     <!-- Standard dotnet settings-->
