@@ -107,6 +107,16 @@ public class ConfigService
 	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/> that lives inside the <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
 	/// </summary>
 	private Dictionary<string, string> _configLocalOverrides;
+	
+	/// <summary>
+	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_SETTINGS"/> that defines the default settings for CLI.
+	/// </summary>
+	private Dictionary<string, string> _configDefaultSettings;
+	
+	/// <summary>
+	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_SETTINGS"/> that lives inside the <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
+	/// </summary>
+	private Dictionary<string, string> _configDefaultSettingsOverrides;
 
 	private string _workingDirectory;
 
@@ -121,6 +131,9 @@ public class ConfigService
 
 		_config = new();
 		_configLocalOverrides = new();
+		
+		_configDefaultSettings = new();
+		_configDefaultSettingsOverrides = new();
 	}
 
 	/// <summary>
@@ -177,8 +190,12 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 
-			_ = ReadConfigFile(ConfigDirectoryPath, false, true, out _config);
-			_ = ReadConfigFile(ConfigLocalOverridesDirectoryPath, true, false, out _configLocalOverrides);
+			_ = ReadConfigFile(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME, false, true, out _config);
+			_ = ReadConfigFile(ConfigLocalOverridesDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME, true, false, out _configLocalOverrides);
+			
+			_ = ReadConfigFile(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_SETTINGS, false, false, out _configDefaultSettings);
+			_ = ReadConfigFile(ConfigLocalOverridesDirectoryPath, Constants.CONFIG_DEFAULTS_SETTINGS, true, false, out _configDefaultSettingsOverrides);
+
 		}
 	}
 
@@ -548,6 +565,22 @@ public class ConfigService
 	}
 	
 	[CanBeNull]
+	public string GetDefaultConfigString(string key, [CanBeNull] string defaultValue = null)
+	{
+		if (_configDefaultSettingsOverrides?.TryGetValue(key, out var overrideValue) ?? false)
+		{
+			return overrideValue;
+		}
+
+		if (_configDefaultSettings?.TryGetValue(key, out var configValue) ?? false)
+		{
+			return configValue;
+		}
+
+		return defaultValue;
+	}
+	
+	[CanBeNull]
 	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null)
 	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
@@ -583,6 +616,23 @@ public class ConfigService
 		if (_config != null) _config[key] = value;
 		return _config[key];
 	}
+	
+	/// <summary>
+	/// Use this along with <see cref="FlushDefaultConfigOverrides"/> to remove a local override with the given key. 
+	/// </summary>
+	public bool DeleteDefaultConfigOverride(string key)
+	{
+		return _configDefaultSettingsOverrides.Remove(key);
+	}
+	
+	/// <summary>
+	/// Use this along with <see cref="FlushDefaultConfig"/> to flush a configuration setting that WILL be Version Controlled.
+	/// </summary>
+	public string SetDefaultConfigString(string key, string value)
+	{
+		if (_configDefaultSettings != null) _configDefaultSettings[key] = value;
+		return _configDefaultSettings[key];
+	}
 
 	public void FlushConfig()
 	{
@@ -612,7 +662,33 @@ public class ConfigService
 		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
 	}
+	
+	/// <summary>
+	/// Calling this function allows you to set the local default config.
+	/// </summary>
+	public void FlushDefaultConfig()
+	{
+		if (string.IsNullOrEmpty(ConfigDirectoryPath))
+			throw new CliException("No beamable project exists. Please use beam init");
 
+		// Flush the config
+		var json = JsonConvert.SerializeObject(_configDefaultSettings, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+
+		if (!Directory.Exists(ConfigDirectoryPath))
+		{
+			Directory.CreateDirectory(ConfigDirectoryPath);
+		}
+		
+		if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+		{
+			Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
+		}
+
+		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_SETTINGS);
+		File.WriteAllText(fullPath, json);
+	}
+
+	
 	/// <summary>
 	/// Calling this function allows you to set the local config overrides.
 	/// </summary>
@@ -635,6 +711,29 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
+	/// <summary>
+	/// Calling this function allows you to set the local config overrides.
+	/// </summary>
+	public void FlushDefaultConfigOverrides()
+	{
+		if (string.IsNullOrEmpty(ConfigLocalOverridesDirectoryPath))
+			throw new CliException("No beamable project exists. Please use beam init");
+
+		// Flush the overrides
+		var json = JsonConvert.SerializeObject(_configDefaultSettingsOverrides, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+		if (!IsConfigValid(_configDefaultSettingsOverrides, false, out _))
+			throw new CliException($"Config overrides are not valid. Overrides:\n{json}");
+
+		if (!Directory.Exists(ConfigLocalOverridesDirectoryPath))
+		{
+			Directory.CreateDirectory(ConfigLocalOverridesDirectoryPath);
+		}
+
+		string fullPath = Path.Combine(ConfigLocalOverridesDirectoryPath, Constants.CONFIG_DEFAULTS_SETTINGS);
+		File.WriteAllText(fullPath, json);
+	}
+
+	
 	/// <summary>
 	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
 	/// </summary>
@@ -903,9 +1002,9 @@ public class ConfigService
 	/// <param name="folderPath"></param>
 	/// <param name="result"></param>
 	/// <exception cref="CliException"></exception>
-	private static bool ReadConfigFile(string folderPath, bool isOptional, bool enforceRequiredFields, out Dictionary<string, string> result)
+	private static bool ReadConfigFile(string folderPath, string file, bool isOptional, bool enforceRequiredFields, out Dictionary<string, string> result)
 	{
-		string fullPath = Path.Combine(folderPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		string fullPath = Path.Combine(folderPath, file);
 		result = new Dictionary<string, string>();
 		if (!File.Exists(fullPath))
 		{

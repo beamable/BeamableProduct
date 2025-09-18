@@ -1082,7 +1082,35 @@ public class App
 			{
 				var configService = provider.GetService<ConfigService>();
 				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
+		
+				// Check if the .beamable folder exists
+				string beamableDirectory = Path.Combine(configService.BaseDirectory, ".beamable");
+		
+				bool hasAllOtelFolders = OtelUtils.HasAllOtelFolders(configService);
 
+				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
+
+				bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
+				
+				shouldTryToCreateFolders &= !hasAllOtelFolders;
+				
+				// If the user didn't have the config for the otel config or if it's true (so it can be modified later)
+				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService) || OtelUtils.GetOtelConfig(configService);
+				
+				if (shouldTryToCreateFolders)
+				{
+					var shouldContinue = quiet || AnsiConsole.Prompt(
+						new ConfirmationPrompt($"Do you want to setup the default folders for telemetry?")
+							.ShowChoices());
+
+					OtelUtils.SetOtelConfig(shouldContinue, configService);
+					
+					if (shouldContinue)
+					{
+						OtelUtils.CreateOtelFolders(configService);
+					}
+				}
+				
 				if (Directory.Exists(otelDirectory))
 				{
 					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
