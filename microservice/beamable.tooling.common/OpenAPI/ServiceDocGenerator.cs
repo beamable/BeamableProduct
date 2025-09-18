@@ -1,12 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Common.Reflection;
-using Beamable.Common.Runtime;
 using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
-using microservice.Common;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
@@ -14,9 +11,11 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.Reflection;
+using Beamable.Common.Dependencies;
 using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
+
 
 /// <summary>
 /// Generates OpenAPI documentation for a microservice.
@@ -50,8 +49,34 @@ public class ServiceDocGenerator
 	private static OpenApiSecurityScheme _userSecuritySchemeReference = new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = USER } };
 	private static OpenApiSecurityScheme _scopeSecuritySchemeReference = new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = SCOPE } };
 	
-	public OpenApiDocument Generate(StartupContext startupCtx)
+	
+	
+	
+	public OpenApiDocument Generate(StartupContext startupCtx, IDependencyProvider rootProvider)
 	{
+
+		var telemetryAttributes = new List<TelemetryAttributeDescriptor>();
+		if (rootProvider.CanBuildService<SingletonDependencyList<ITelemetryAttributeProvider>>())
+		{
+			var attributeProviders = rootProvider.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
+			foreach (var provider in attributeProviders.Elements)
+			{
+				telemetryAttributes.AddRange(provider.GetDescriptors());
+			}
+			telemetryAttributes = telemetryAttributes.GroupBy(a => a.name, a => a).Select(g =>
+			{
+				var first = g.First();
+				return new TelemetryAttributeDescriptor
+				{
+					name = g.Key,
+					description = first.description,
+					type = first.type,
+					level = first.level,
+					source = g.Aggregate(TelemetryAttributeSource.NONE, (source, desc) => source | desc.source)
+				};
+			}).ToList();
+		}
+		
 		var uniqueAssemblies = startupCtx.routeSources
 			.Select(t => t.InstanceType.Assembly)
 			.Distinct()
@@ -84,6 +109,33 @@ public class ServiceDocGenerator
 		};
 		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
 
+
+		var oapiTelemetryAttributes = new OpenApiArray();
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_TELEMETRY_ATTRIBUTES_KEY, oapiTelemetryAttributes);
+		foreach (var attr in telemetryAttributes)
+		{
+			var sources = new OpenApiArray();
+			var attrSourceArray = Enum.GetValues(typeof(TelemetryAttributeSource))
+				.Cast<TelemetryAttributeSource>()
+				.Where(flag => flag != TelemetryAttributeSource.NONE && attr.source.HasFlag(flag))
+				.Select(flag => flag.ToString())
+				.ToArray();
+			foreach (var source in attrSourceArray)
+			{
+				sources.Add(new OpenApiString(source));
+			}
+			var oapiAttr = new OpenApiObject
+			{
+				["name"] = new OpenApiString(attr.name),
+				["description"] = new OpenApiString(attr.description),
+				["type"] = new OpenApiString(attr.type.GetDisplayName()),
+				["sources"] = sources,
+				["level"] = new OpenApiInteger((int)attr.level),
+			};
+			oapiTelemetryAttributes.Add(oapiAttr);
+		}
+		
+		
 		var interfaces = startupCtx.routeSources
 			.Select(t => t.InstanceType)
 			.SelectMany(t => t.GetInterfaces())
@@ -418,7 +470,7 @@ public static class DocGenExtensions
 	/// <typeparam name="TMicroservice">The type of the microservice to generate documentation for.</typeparam>
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
 	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public static OpenApiDocument Generate<TMicroservice>(this ServiceDocGenerator generator) where TMicroservice : Microservice
+	public static OpenApiDocument Generate<TMicroservice>(this ServiceDocGenerator generator, IDependencyProvider provider) where TMicroservice : Microservice
 	{
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
 		var startupContext = new StartupContext
@@ -430,8 +482,9 @@ public static class DocGenExtensions
 					InstanceType = typeof(TMicroservice)
 				}
 			},
-			attributes = attr
+			attributes = attr,
+			args = provider.GetService<IMicroserviceArgs>()
 		};
-		return generator.Generate(startupContext);
+		return generator.Generate(startupContext, provider);
 	}
 }

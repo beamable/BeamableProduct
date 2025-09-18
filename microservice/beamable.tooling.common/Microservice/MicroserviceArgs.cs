@@ -300,23 +300,4 @@ namespace Beamable.Server
 		public bool SkipAliasResolve => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_ALIAS_RESOLVE"));
 	}
 
-	public static class ArgExtensions
-	{
-		/// <summary>
-		/// The routing key is the old name prefix.
-		/// There is no routing key when the service is deployed.
-		/// </summary>
-		/// <returns>false if there is no routing key</returns>
-		public static bool TryGetRoutingKey(this IMicroserviceArgs args, out string routingKey)
-		{
-			routingKey = args.NamePrefix;
-			return !string.IsNullOrEmpty(routingKey);
-		}
-
-		public static OptionalString GetRoutingKey(this IMicroserviceArgs args)
-		{
-			return OptionalString.FromString(args.NamePrefix);
-		}
-		
-	}
 }

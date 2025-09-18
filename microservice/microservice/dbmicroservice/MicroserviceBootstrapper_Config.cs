@@ -245,6 +245,16 @@ public static class IBeamServiceConfigExtensions
 		return builder;
 	}
 	
+	public static BeamServiceConfigBuilder AddTelemetryAttributes<T>(this BeamServiceConfigBuilder builder)
+		where T : ITelemetryAttributeProvider
+	{
+		builder.ConfigureServices(b =>
+		{
+			b.AddSingleton<T>();
+		});
+		return builder;
+	}
+	
     public static BeamServiceConfigBuilder DisableEagerContentLoading(this BeamServiceConfigBuilder builder)
     {
 	    var conf = builder.Config as IBeamServiceConfig;
