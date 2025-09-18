@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 using cli.OtelCommands;
+using cli.Utils;
 using microservice.Extensions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -85,7 +86,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServicesBuildCommandOutput>
 	, IResultSteam<ProgressStream, ServicesBuiltProgress>
 {
-	public ServicesBuildCommand() : base("build", "Build a set of services into docker images")
+	public ServicesBuildCommand() : base("build", ServicesDeletionNotice.REMOVED_PREFIX + "Build a set of services into docker images")
 	{
 	}
 
@@ -213,100 +214,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		bool forDeployment=true
 	)
 	{
-		var beamoLocal = provider.GetService<BeamoLocalSystem>();
-		var app = provider.GetService<IAppContext>();
-		var config = provider.GetService<ConfigService>();
-
-		var dotnetPath = app.DotnetPath;
-		
-		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
-		{
-			logMessage?.Invoke(new ServicesBuildCommandOutput
-			{
-				message = "no service protocol exists for the name",
-				isFailure = true
-			});
-			return new BuildImageSourceOutput
-			{
-				service = id
-			};
-		}
-
-		if (!beamoLocal.BeamoManifest.TryGetDefinition(id, out var definition))
-		{
-			logMessage?.Invoke(new ServicesBuildCommandOutput
-			{
-				message = "no service definition exists for the name",
-				isFailure = true
-			});
-			return new BuildImageSourceOutput
-			{
-				service = id
-			};
-		}
-
-		var buildDirRoot = Path.Combine(definition.AbsoluteProjectDirectory, "bin", "beamApp");
-		if (Directory.Exists(buildDirRoot))
-		{
-			Directory.Delete(buildDirRoot, true);
-		}
-		
-		// TODO: introduce more comments explaining why support/app are different, regarding docker layers.
-		var buildDirSupport = Path.Combine(buildDirRoot, "support");
-		var buildDirApp = Path.Combine(buildDirRoot, "app");
-		Directory.CreateDirectory(buildDirRoot);
-		Directory.CreateDirectory(buildDirSupport);
-		Directory.CreateDirectory(buildDirApp);
-
-		var errorPath = Path.Combine(config.ConfigDirectoryPath, "temp", "buildLogs", $"{id}.json");
-		var errorPathDir = Path.GetDirectoryName(errorPath);
-		Directory.CreateDirectory(errorPathDir);
-		
-		var productionArgs = forDeployment
-			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
-			: "";
-		var runtimeArg = forceCpu
-			? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamPublish=\"true\" -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
-			: $"--use-current-runtime ";
-		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
-		Log.Verbose($"Running dotnet publish {buildArgs}");
-		using var cts = new CancellationTokenSource();
-
-		var command = CliExtensions.GetDotnetCommand(dotnetPath, buildArgs)
-			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
-			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
-			{
-				if (line == null) return;
-				logMessage?.Invoke(new ServicesBuildCommandOutput
-				{
-					message = line
-				});
-			}))
-			.WithValidation(CommandResultValidation.None)
-			.ExecuteAsync(cts.Token);
-		
-		await command;
-
-		// move some files from the build output into a different folder,
-		// so they can be copied in as separate docker copy instructions
-		{
-			var filesToMove = Directory.GetFiles(buildDirSupport, id + ".*", SearchOption.TopDirectoryOnly);
-			foreach (var fileToMove in filesToMove)
-			{
-				var target = Path.Combine(buildDirApp, Path.GetFileName(fileToMove));
-				File.Move(fileToMove, target);
-			}
-		}
-		
-		var report = ProjectService.ReadErrorReport(errorPath);
-		return new BuildImageSourceOutput
-		{
-			service = id,
-			outputDirRoot = buildDirRoot,
-			outputDirApp = buildDirApp,
-			outputDirSupport = buildDirSupport,
-			report = report
-		};
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.BUILD_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 
 	public static bool TryExtractAllMessages(StringBuilder buffer, out List<BuildkitMessage> messages)

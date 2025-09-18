@@ -21,7 +21,7 @@ public class ServicesMetricsUrlCommand : AtomicCommand<ServicesMetricsUrlCommand
 
 	public ServicesMetricsUrlCommand() :
 		base("service-metrics",
-			"Gets the URL that we can use to see the metrics for our services")
+			ServicesDeletionNotice.REMOVED_PREFIX + "Gets the URL that we can use to see the metrics for our services")
 	{
 	}
 
@@ -34,28 +34,8 @@ public class ServicesMetricsUrlCommand : AtomicCommand<ServicesMetricsUrlCommand
 
 	public override async Task<GetSignedUrlResponse> GetResult(ServicesMetricsUrlCommandArgs args)
 	{
-		_localBeamo = args.BeamoLocalSystem;
-		_remoteBeamo = args.BeamoService;
-		// Make sure we are up-to-date with the remote manifest
-		var currentRemoteManifest = await _remoteBeamo.GetCurrentManifest();
-		// Only allow selecting from services we know are enabled remotely (serviceName maps to Beamo Ids)
-		var existingBeamoIds = currentRemoteManifest.manifest.Select(c => c.serviceName).ToList();
-		// If we don't have a given BeamoId or if the given one is not currently remotely deployed ask for one.
-		if (string.IsNullOrEmpty(args.BeamoId) || currentRemoteManifest.manifest.FindIndex(c => c.serviceName == args.BeamoId) == -1)
-			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
-				.AddChoices(existingBeamoIds)
-				.AddBeamHightlight());
-
-		// If we don't have a metric, default to CPU
-		if (string.IsNullOrEmpty(args.MetricName))
-			args.MetricName = "cpu";
-
-		GetSignedUrlResponse response = await AnsiConsole.Status()
-			.Spinner(Spinner.Known.Default)
-			.StartAsync("Sending Request...", async ctx =>
-				await _remoteBeamo.GetMetricsUrl(args.BeamoId, args.MetricName)
-			);
-
-		return response;
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.UNSUPPORTED_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using cli.Services;
+using cli.Utils;
 using Spectre.Console;
 
 namespace cli;
@@ -19,7 +20,7 @@ public class ServicesTemplatesCommand : AtomicCommand<ServicesTemplatesCommandAr
 
 	public ServicesTemplatesCommand() :
 		base("templates",
-			"Gets all the template types available in this realm")
+			ServicesDeletionNotice.REMOVED_PREFIX + "Gets all the template types available in this realm")
 	{
 	}
 
@@ -29,14 +30,8 @@ public class ServicesTemplatesCommand : AtomicCommand<ServicesTemplatesCommandAr
 
 	public override async Task<ServicesTemplatesCommandOutput> GetResult(ServicesTemplatesCommandArgs args)
 	{
-		_remoteBeamo = args.BeamoService;
-		List<ServiceTemplate> response = await AnsiConsole.Status()
-			.Spinner(Spinner.Known.Default)
-			.StartAsync("Sending Request...", async ctx =>
-				await _remoteBeamo.GetTemplates()
-			);
-
-		var result = new ServicesTemplatesCommandOutput { templates = response };
-		return result;
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.UNSUPPORTED_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }

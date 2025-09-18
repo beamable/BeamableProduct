@@ -222,10 +222,12 @@ ENTRYPOINT "dotnet" $BEAM_APP
 ### Local Docker Testing & Debugging
 The recommended developer workflow is to run your micro services using Dotnet. However, because deployments are running within a container, it may be beneficial to validate that your services work in Docker before deploying them (especially if you've made changes to the default `Dockerfile`). 
 
-The [services run](doc:cli-services-run) command will run your services on your local machine with Docker. It will build the `Dockerfile` into an image, and run a container for you. Remember that the [project run](doc:cli-project-run) command runs services locally as dotnet processes, where-as this command will start a Docker container. 
+To validate your Docker services, use the `--docker-compose-dir` option for the `beam deploy plan` command. The `plan` command will generate a [docker compose](https://docs.docker.com/compose/) project directory at the given path. The project will have all of your enabled services and storages.
 
 ```sh
-dotnet beam services run --ids HelloWorld
+dotnet beam deploy plan --docker-compose-dir example
+cd example
+docker compose up
 ```
 
 You can validate that your services are running in docker using [project ps](doc:cli-project-ps) or by using Docker directly.
@@ -235,11 +237,15 @@ dotnet beam project ps
 docker ps
 ```
 
-After you are done testing, you can use Docker directly to stop all the containers, or your can use [services stop](doc:cli-services-stop) command. 
+After you are done testing, you can use Docker directly to stop all the containers, or your can use `docker compose down`. 
 
 ```sh
-dotnet beam services stop
+docker compose down
 ```
+
+Please note that when validating docker containers this way, the resulting docker compose project is built to mirror the deployed environment, so your services will start up 10 connections to Beamable. 
+
+You have full control over the docker-compose file, so if you want to set up persistent storage objects via docker volumes, or set up mongo-express, please reference the Mongo [documentation](https://hub.docker.com/_/mongo). 
 
 #### Useful Debugging Practices
 **Running the Docker Container Manually**: If you have a customized Dockerfile or encounter some problems when building/running the image/container, it can be sometimes useful to run the container via docker's CLI directly. 
