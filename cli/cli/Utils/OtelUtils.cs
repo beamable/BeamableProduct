@@ -2,25 +2,23 @@
 
 public static class OtelUtils
 {
-	public static void SetOtelConfig(bool UseOtel, ConfigService configService)
+	public static void SetAllowOtelConfig(bool AllowOtel, ConfigService configService)
 	{
-		configService.SetDefaultConfigString(Constants.CONFIG_OTEL, UseOtel.ToString());
-		configService.FlushDefaultConfig();
+		var otelConfig = configService.LoadOtelConfigFromFile();
+
+		otelConfig.BeamCliAllowTelemetry = AllowOtel;
+		
+		configService.SaveOtelConfigToFile(otelConfig);
 	}
 	
-	public static bool GetOtelConfig(ConfigService configService)
+	public static bool GetAllowOtelConfig(ConfigService configService)
 	{
-		if (bool.TryParse(configService.GetDefaultConfigString(Constants.CONFIG_OTEL), out bool result))
-		{
-			return result;
-		}
-
-		return false;
+		return configService.LoadOtelConfigFromFile().BeamCliAllowTelemetry;
 	}
 
 	public static bool HasOtelConfig(ConfigService configService)
 	{
-		return !string.IsNullOrEmpty(configService.GetDefaultConfigString(Constants.CONFIG_OTEL));
+		return configService.ExistsOtelConfig();
 	}
 	
 	public static void CreateOtelFolders(ConfigService configService)
@@ -33,6 +31,46 @@ public static class OtelUtils
 			{
 				Directory.CreateDirectory(folder);
 			}
+		}
+	}
+	
+	public static void DeleteOtelFolders(ConfigService configService)
+	{
+		if (Directory.Exists(configService.ConfigTempOtelDirectoryPath))
+		{
+			DeleteFolder(configService.ConfigTempOtelDirectoryPath);
+		}
+	}
+
+	private static void DeleteFolder(string path)
+	{
+		// Delete all files
+		foreach (string file in Directory.GetFiles(path))
+		{
+			try
+			{
+				File.Delete(file);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to delete file: {file}. Reason: {ex.Message}");
+			}
+		}
+
+		// Recurse into subdirectories
+		foreach (string dir in Directory.GetDirectories(path))
+		{
+			DeleteFolder(dir);
+		}
+
+		// Now delete the empty directory
+		try
+		{
+			Directory.Delete(path);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Failed to delete directory: {path}. Reason: {ex.Message}");
 		}
 	}
 

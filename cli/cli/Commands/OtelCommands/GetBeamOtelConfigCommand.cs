@@ -10,6 +10,7 @@ public class GetBeamOtelConfigCommandResult
 {
 	public string BeamCliTelemetryLogLevel;
 	public long BeamCliTelemetryMaxSize;
+	public bool BeamCliAllowTelemetry;
 }
 
 public class GetBeamOtelConfigCommand : AtomicCommand<GetBeamOtelConfigCommandArgs, GetBeamOtelConfigCommandResult>, ISkipManifest
@@ -29,7 +30,8 @@ public class GetBeamOtelConfigCommand : AtomicCommand<GetBeamOtelConfigCommandAr
 		return Task.FromResult(new GetBeamOtelConfigCommandResult()
 		{
 			BeamCliTelemetryLogLevel = otelConfig.BeamCliTelemetryLogLevel,
-			BeamCliTelemetryMaxSize = otelConfig.BeamCliTelemetryMaxSize
+			BeamCliTelemetryMaxSize = otelConfig.BeamCliTelemetryMaxSize,
+			BeamCliAllowTelemetry = otelConfig.BeamCliAllowTelemetry
 		});
 	}
 }

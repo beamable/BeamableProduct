@@ -9,7 +9,6 @@ public static class Constants
 	public const string CONTENT_SNAPSHOTS_DIRECTORY = "content-snapshots";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
 	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
-	public const string CONFIG_DEFAULTS_SETTINGS = "default-settings.json";
 	
 	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
 	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
@@ -56,7 +55,6 @@ public static class Constants
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";
 	public const string CONFIG_DIR = "dir";
-	public const string CONFIG_OTEL = "use_otel";
 	public const string CONFIG_PLATFORM = "host";
 	public const string CONFIG_ACCESS_TOKEN = "access-token";
 	public const string CONFIG_REFRESH_TOKEN = "refresh-token";
