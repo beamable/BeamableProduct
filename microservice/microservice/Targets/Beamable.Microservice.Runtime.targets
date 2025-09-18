@@ -77,15 +77,15 @@
                  Importance="high"
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
-        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamEnableCollectorResolution)'=='true'"
+        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
                 Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
                 EnvironmentVariables=""/>
 
         <Message
                 Importance="high"
-                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)] "
+                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)]"
         />
-        <Copy   Condition="'$(BeamEnableCollectorResolution)'=='true'"
+        <Copy   Condition="'$(BeamDisableCollectorResolution)'!='true'"
                 SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
                 DestinationFolder="$(ActualOutputDir)"
                 SkipUnchangedFiles="true"
