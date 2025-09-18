@@ -26,7 +26,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public ServicesRunCommand() :
 		base("run",
-			"Run services locally in Docker. Will fail if no docker instance is running in the local machine")
+			ServicesDeletionNotice.REMOVED_PREFIX + "Run services locally in Docker. Will fail if no docker instance is running in the local machine")
 	{
 	}
 
@@ -61,120 +61,9 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public override async Task Handle(ServicesRunCommandArgs args)
 	{
-		if (args.forceAmdCpuArchitecture)
-		{
-			throw new CliException("Error: The option [--force-amd-cpu-arch, -fcpu] is obsolete. Amd CPU architecture is already being enforced by default");
-		}
-
-		_localBeamo = args.BeamoLocalSystem;
-
-		var isDockerRunning = await _localBeamo.CheckIsRunning();
-		if (!isDockerRunning)
-		{
-			throw CliExceptions.DOCKER_NOT_RUNNING;
-		}
-
-		try
-		{
-			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
-				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
-			await _localBeamo.StartListeningToDocker();
-		}
-		catch (Exception ex)
-		{
-			Log.Error($"Failed to communicate with docker. message=[{ex.Message}]");
-			throw;
-			//throw new CliException($"Failed to communicate with docker. message=[{ex.Message}]");
-		}
-
-		// If no ids were given, run all registered services in docker 
-		args.BeamoIdsToDeploy ??= _localBeamo.BeamoManifest.LocalBeamoIds;
-
-		var failedId = args.BeamoIdsToDeploy.Where(id => !_localBeamo.VerifyCanBeBuiltLocally(id)).ToList();
-		if (failedId.Any())
-		{
-			var diagnostics = new List<Diagnostic>();
-			foreach (string id in failedId)
-			{
-				if (_localBeamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var microservice))
-				{
-					var path = args.ConfigService.GetRelativeToBeamableFolderPath(microservice.DockerBuildContextPath);
-					if (!Directory.Exists(path))
-						diagnostics.Add(new Diagnostic($"[{id}] DockerBuildContext doesn't exist: [{path}]"));
-					var dockerfilePath = microservice.AbsoluteDockerfilePath;
-					if (!File.Exists(dockerfilePath))
-						diagnostics.Add(new Diagnostic($"[{id}] No Dockerfile found at path: [{dockerfilePath}]"));
-				}
-				else if (_localBeamo.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(id, out var storage))
-				{
-					if ((bool)!storage.BaseImage?.Contains("mongo:"))
-						diagnostics.Add(new Diagnostic($"[{id}] Base Image [{storage.BaseImage}] must be a version of mongo."));
-				}
-			}
-
-			throw new CliException($"Some of the services could not be run locally: {string.Join(',', failedId)}", 555, true, null, diagnostics);
-		}
-
-		await AnsiConsole
-			.Progress()
-			.StartAsync(async ctx =>
-			{
-				var allProgressTasks = args.BeamoIdsToDeploy.Where(id => _localBeamo.VerifyCanBeBuiltLocally(id)).Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
-				try
-				{
-					List<string> idsToDeploy = new List<string>();
-					idsToDeploy.AddRange(args.BeamoIdsToDeploy);
-					foreach (string id in args.BeamoIdsToDeploy)
-					{
-						var dependencies = _localBeamo.GetDependencies(id);
-						idsToDeploy.AddRange(dependencies.Select(d => d.name));
-					}
-
-					var uniqueIds = idsToDeploy.Distinct().ToArray();
-					List<BeamoServiceDefinition> definitions = uniqueIds.Select(id =>
-						args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
-							.FirstOrDefault(def => def.BeamoId == id)).ToList();
-
-					List<Promise<Unit>> promises = new List<Promise<Unit>>();
-					foreach (var definition in definitions)
-					{
-						promises.Add(args.BeamoLocalSystem.UpdateDockerFile(definition));
-					}
-
-					var sequence = Promise.Sequence(promises);
-					await sequence;
-
-					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, !args.forceLocalCpu,
-						autoDeleteContainers: args.autoDeleteContainers, 
-						buildPullImageProgress: (beamoId, progress) =>
-					{
-						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-						progressTask?.Increment((progress * 80) - progressTask.Value);
-						this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
-					}, onServiceDeployCompleted: beamoId =>
-					{
-						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-						progressTask?.Increment(20);
-						this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
-					});
-				}
-				catch (CliException e)
-				{
-					if (e.Message.Contains("cyclical", StringComparison.InvariantCultureIgnoreCase))
-						AnsiConsole.MarkupLine($"[red]{e.Message}[/]");
-					else
-					{
-						this.SendResults<DefaultStreamResultChannel, ServiceRunReportResult>(new ServiceRunReportResult() { Success = false, FailureReason = e.ToString() });
-						throw;
-					}
-				}
-			});
-
-		this.SendResults<DefaultStreamResultChannel, ServiceRunReportResult>(new ServiceRunReportResult() { Success = true, FailureReason = "" });
-
-		_localBeamo.SaveBeamoLocalRuntime();
-
-		await _localBeamo.StopListeningToDocker();
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.RUN_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }
 
