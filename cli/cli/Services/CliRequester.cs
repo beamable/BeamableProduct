@@ -7,7 +7,7 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
 using Beamable.Server;
-
+using System.Net.Http.Headers;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
@@ -166,6 +166,7 @@ public class CliRequester : IRequester
 		{
 			byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
 			request.Content = new ByteArrayContent(bodyBytes);
+			request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 		}
 		else
 		{
