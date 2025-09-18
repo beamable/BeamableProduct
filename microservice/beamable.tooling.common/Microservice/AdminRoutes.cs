@@ -41,7 +41,7 @@ namespace microservice.Common
 	   /// <summary>
 	   /// The dependency provider for the entire service
 	   /// </summary>
-	   public IServiceProvider GlobalProvider { get; set; }
+	   public IDependencyProvider GlobalProvider { get; set; }
 	   
 	   public string sdkVersionBaseBuild { get; set; }
 	   public string sdkVersionExecution { get; set; }
@@ -85,7 +85,7 @@ namespace microservice.Common
       {
 	      var docs = new ServiceDocGenerator();
 	      var ctx = GlobalProvider.GetService<StartupContext>();
-	      var doc = docs.Generate(ctx);
+	      var doc = docs.Generate(ctx, GlobalProvider);
 	     
 	      if (!string.IsNullOrEmpty(PublicHost))
 	      {
