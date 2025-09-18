@@ -91,15 +91,17 @@ public static class MicroserviceStartupUtil
 			initializers = configurator.ServiceInitializers.ToList()
 		};
 
+		ConfigureLogging(configurator, startupCtx, includeOtel: false, string.Empty);
+
 		if (startupCtx.IsGeneratingOapi)
 		{
-			await GenerateOpenApiSpecification(startupCtx);
+			LogUtil.TryParseSystemLogLevel(configuredArgs.OapiGenLogLevel, out var defaultLevel, LogLevel.Information);
+			MicroserviceBootstrapper.ContextLogLevel.Value = defaultLevel;
+			await GenerateOpenApiSpecification(startupCtx, configurator);
 			startupCtx.result.GeneratedClient = true;
 			return startupCtx.result;
 		}
-
-		ConfigureLogging(configurator, startupCtx, includeOtel: false, string.Empty);
-
+		
 		// TODO: Insert Break
 
 		startupCtx.logger.LogInformation($"Starting Prepare");
@@ -135,11 +137,8 @@ public static class MicroserviceStartupUtil
 		startupCtx.reflectionCache = ConfigureReflectionCache(startupCtx);
 
 		// configure the root service scope, and then build the root service provider.
-		var serviceBuilder = ConfigureServices(startupCtx);
-		foreach (var serviceConfiguration in configurator.ServiceConfigurations)
-		{
-			serviceConfiguration(serviceBuilder);
-		}
+		var serviceBuilder = ConfigureServices(startupCtx, configurator);
+
 
 		// TODO: Insert Break
 
@@ -229,10 +228,16 @@ public static class MicroserviceStartupUtil
 	}
 
 
-	private static async Task GenerateOpenApiSpecification(StartupContext startupCtx)
+	private static async Task GenerateOpenApiSpecification(StartupContext startupCtx, IBeamServiceConfig configurator)
 	{
+		var builder = ConfigureServices(startupCtx, configurator);
+		var provider = builder.Build(new BuildOptions
+		{
+			allowHydration = false
+		});
+		
 		var generator = new ServiceDocGenerator();
-		var doc = generator.Generate(startupCtx);
+		var doc = generator.Generate(startupCtx, provider);
 
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 
@@ -240,7 +245,7 @@ public static class MicroserviceStartupUtil
 		                         ?? throw new InvalidOperationException(
 			                         "OPEN_API_OUTPUT_PATH environment variable not set");
 
-		Console.WriteLine($"GENERATE OPEN API >> Beam Folder Path: {beamableFolderPath}");
+		Log.Information($"Generating Open API document. beam-path=[{beamableFolderPath}]");
 
 		string directoryPath = Path.GetFullPath(beamableFolderPath);
 		if (!Directory.Exists(directoryPath))
@@ -248,9 +253,7 @@ public static class MicroserviceStartupUtil
 			Directory.CreateDirectory(directoryPath);
 		}
 
-		Console.WriteLine($"GENERATE OPEN API >> Path: {directoryPath}");
-
-
+		Log.Information($"Generating Open API document at path=[{directoryPath}]");
 		await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
 	}
 
@@ -550,7 +553,7 @@ public static class MicroserviceStartupUtil
 		return reflectionCache;
 	}
 
-	public static IDependencyBuilder ConfigureServices(StartupContext startupContext)
+	public static IDependencyBuilder ConfigureServices(StartupContext startupContext, IBeamServiceConfig configurator)
 	{
 		startupContext.logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
 		var attribute = startupContext.attributes;
@@ -729,7 +732,10 @@ public static class MicroserviceStartupUtil
 			//  these services are ones that we do not want the user to be able to override. 
 			collection.AddSingleton(startupContext.standardBeamTelemetryAttributes);
 
-
+			foreach (var serviceConfiguration in configurator.ServiceConfigurations)
+			{
+				serviceConfiguration(collection);
+			}
 			return collection;
 		}
 		catch (Exception ex)

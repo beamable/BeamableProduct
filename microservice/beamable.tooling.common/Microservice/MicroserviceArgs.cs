@@ -25,6 +25,7 @@ namespace Beamable.Server
 		public bool WatchToken { get; set; }
 		public bool DisableCustomInitializationHooks { get; set; }
 		public string LogLevel { get; set; }
+		public string OapiGenLogLevel { get; set; }
 		public bool DisableLogTruncate { get; set; }
 		public int LogTruncateLimit { get; set; }
 		public int LogMaxCollectionSize { get; set; }
@@ -83,6 +84,7 @@ namespace Beamable.Server
 				WatchToken = args.WatchToken,
 				DisableCustomInitializationHooks = args.DisableCustomInitializationHooks,
 				LogLevel = args.LogLevel,
+				OapiGenLogLevel = args.OapiGenLogLevel,
 				LogMaxDepth = args.LogMaxDepth,
 				LogTruncateLimit = args.LogTruncateLimit,
 				LogDestructureMaxLength = args.LogDestructureMaxLength,
@@ -262,6 +264,7 @@ namespace Beamable.Server
 
 		public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
 		public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+		public string OapiGenLogLevel => Environment.GetEnvironmentVariable("BEAM_OAPI_LOG_LEVEL") ?? "info";
 		public bool DisableLogTruncate => IsEnvironmentVariableTrue("DISABLE_LOG_TRUNCATE");
 		public int LogTruncateLimit => GetIntFromEnvironmentVariable("LOG_TRUNCATE_LIMIT", 1000);
 		public int LogMaxCollectionSize => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE", 15);
@@ -300,23 +303,4 @@ namespace Beamable.Server
 		public bool SkipAliasResolve => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_ALIAS_RESOLVE"));
 	}
 
-	public static class ArgExtensions
-	{
-		/// <summary>
-		/// The routing key is the old name prefix.
-		/// There is no routing key when the service is deployed.
-		/// </summary>
-		/// <returns>false if there is no routing key</returns>
-		public static bool TryGetRoutingKey(this IMicroserviceArgs args, out string routingKey)
-		{
-			routingKey = args.NamePrefix;
-			return !string.IsNullOrEmpty(routingKey);
-		}
-
-		public static OptionalString GetRoutingKey(this IMicroserviceArgs args)
-		{
-			return OptionalString.FromString(args.NamePrefix);
-		}
-		
-	}
 }

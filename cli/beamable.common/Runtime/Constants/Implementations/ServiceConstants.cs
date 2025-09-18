@@ -66,6 +66,7 @@ namespace Beamable.Common
 				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_ROUTE_PREFIX = "routePrefix";
 				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_CLIENT_PREFIX = "clientPrefix";
 				
+				public const string MICROSERVICE_TELEMETRY_ATTRIBUTES_KEY = "x-telemetry-attributes";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-beamable-federated-components-v2";
 				public const string MICROSERVICE_CLASS_TYPE_KEY = "x-beamable-microservice-class-type";
