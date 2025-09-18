@@ -87,19 +87,22 @@
         </PropertyGroup>
 
         <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
-        <Message Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamEnableCollectorResolution)'=='true'"
+        <Message Importance="normal" Text="collector exists=[$(BeamCollectorExists)]"/>
+        <Message Importance="normal" Text="disable collector resolution=[$(BeamDisableCollectorResolution)]"/>
+        <Message Importance="normal" Text="collector bin path=[$(BeamCollectorBinaryFilepath)]"/>
+        <Message Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
                  Importance="high"
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
-        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamEnableCollectorResolution)'=='true'"
-                Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
+        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
+                Command="$(BeamableDotnetPath) $(BeamableTool) telemetry collector get $(BeamCollectorPlatformArchArg)"
                 EnvironmentVariables=""/>
 
         <Message
                 Importance="high"
-                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)] "
+                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)]"
         />
-        <Copy   Condition="'$(BeamEnableCollectorResolution)'=='true'"
+        <Copy   Condition="'$(BeamDisableCollectorResolution)'!='true'"
                 SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
                 DestinationFolder="$(ActualOutputDir)"
                 SkipUnchangedFiles="true"
