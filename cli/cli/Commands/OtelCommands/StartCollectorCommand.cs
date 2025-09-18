@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server;
+using System.CommandLine;
 
 namespace cli.OtelCommands;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -8,6 +9,7 @@ using Otel = Beamable.Common.Constants.Features.Otel;
 [Serializable]
 public class StartCollectorCommandArgs : CommandArgs
 {
+	public bool Detach;
 }
 
 public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
@@ -18,16 +20,33 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 
 	public override void Configure()
 	{
+		AddOption(new Option<bool>("--detach", () => true, "If it is false the collector process will run indefinitely"),
+			(arg, b) => arg.Detach = b);
 	}
 
 	public override async Task Handle(StartCollectorCommandArgs args)
 	{
 		await AssertEnvironmentVars(args);
+		
+		var CollectorStatus = await CollectorManager.IsCollectorRunning( args.Lifecycle.CancellationToken , BeamableZLoggerProvider.LogContext.Value);
 
-		var basePath = CollectorManager.GetCollectorBasePathForCli();
-		var status = await CollectorManager.StartCollectorAndWait(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
+		if (!CollectorStatus.isRunning)
+		{
+			var basePath = CollectorManager.GetCollectorBasePathForCli();
+			var status = await CollectorManager.StartCollectorAndWait(basePath, true, args.Detach, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
-		Log.Information($"Collector with process id [{status.pid}] started successfully");
+			Log.Information($"Collector with process id [{status.pid}] started successfully");
+
+			
+			if (!args.Detach)
+			{
+				await Task.Delay(-1);
+			}
+		}
+		else
+		{
+			Log.Information($"The collector process is already running. Please stop the collector process and try again.");
+		}
 	}
 
 	private async Promise AssertEnvironmentVars(StartCollectorCommandArgs args)
