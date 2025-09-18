@@ -20,6 +20,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     bool WatchToken { get; }
     public bool DisableCustomInitializationHooks { get; }
     public string LogLevel { get; }
+    public string OapiGenLogLevel { get; }
     public bool DisableLogTruncate { get; }
     public int LogTruncateLimit { get; }
     public int LogMaxCollectionSize { get; }

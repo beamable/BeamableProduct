@@ -128,6 +128,7 @@ namespace microserviceTests.microservice
       public bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
       public string LogLevel { get; } = "debug";
+      public string OapiGenLogLevel => "debug";
       public bool DisableLogTruncate { get; } = false;
       public int LogTruncateLimit { get; } = 1000;
       public int LogMaxCollectionSize { get; } = 5;

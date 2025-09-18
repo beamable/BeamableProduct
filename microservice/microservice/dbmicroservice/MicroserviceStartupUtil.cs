@@ -95,6 +95,8 @@ public static class MicroserviceStartupUtil
 
 		if (startupCtx.IsGeneratingOapi)
 		{
+			LogUtil.TryParseSystemLogLevel(configuredArgs.OapiGenLogLevel, out var defaultLevel, LogLevel.Information);
+			MicroserviceBootstrapper.ContextLogLevel.Value = defaultLevel;
 			await GenerateOpenApiSpecification(startupCtx, configurator);
 			startupCtx.result.GeneratedClient = true;
 			return startupCtx.result;
@@ -244,7 +246,6 @@ public static class MicroserviceStartupUtil
 			                         "OPEN_API_OUTPUT_PATH environment variable not set");
 
 		Log.Information($"Generating Open API document. beam-path=[{beamableFolderPath}]");
-		// Console.WriteLine($"GENERATE OPEN API >> Beam Folder Path: {beamableFolderPath}");
 
 		string directoryPath = Path.GetFullPath(beamableFolderPath);
 		if (!Directory.Exists(directoryPath))
@@ -252,10 +253,7 @@ public static class MicroserviceStartupUtil
 			Directory.CreateDirectory(directoryPath);
 		}
 
-		// Console.WriteLine($"GENERATE OPEN API >> Path: {directoryPath}");
 		Log.Information($"Generating Open API document at path=[{directoryPath}]");
-
-
 		await File.WriteAllTextAsync(Path.Combine(directoryPath, Constants.OPEN_API_FILE_NAME), outputString);
 	}
 

@@ -59,9 +59,9 @@ public class ServiceDocGenerator
 		if (rootProvider.CanBuildService<SingletonDependencyList<ITelemetryAttributeProvider>>())
 		{
 			var attributeProviders = rootProvider.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
-			foreach (var provider in attributeProviders.Elements)
+			for (var i = attributeProviders.Elements.Length - 1; i >= 0; i --)
 			{
-				telemetryAttributes.AddRange(provider.GetDescriptors());
+				telemetryAttributes.AddRange(attributeProviders.Elements[i].GetDescriptors());
 			}
 			telemetryAttributes = telemetryAttributes.GroupBy(a => a.name, a => a).Select(g =>
 			{
@@ -112,11 +112,13 @@ public class ServiceDocGenerator
 
 		var oapiTelemetryAttributes = new OpenApiArray();
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_TELEMETRY_ATTRIBUTES_KEY, oapiTelemetryAttributes);
+		var enumSourceValues = Enum.GetValues(typeof(TelemetryAttributeSource))
+			.Cast<TelemetryAttributeSource>()
+			.ToList();
 		foreach (var attr in telemetryAttributes)
 		{
 			var sources = new OpenApiArray();
-			var attrSourceArray = Enum.GetValues(typeof(TelemetryAttributeSource))
-				.Cast<TelemetryAttributeSource>()
+			var attrSourceArray = enumSourceValues
 				.Where(flag => flag != TelemetryAttributeSource.NONE && attr.source.HasFlag(flag))
 				.Select(flag => flag.ToString())
 				.ToArray();
