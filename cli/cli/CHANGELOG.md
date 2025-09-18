@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
 - Event subscriptions use the developer's access token for authentication instead of the realm secret. 
 - `beam services` command suite is marked as internal
+- Rider IDE will be forced to re-run Beamable targets on project builds
+
 
 ## [5.4.1] - 2025-08-29
 ### Fixed
