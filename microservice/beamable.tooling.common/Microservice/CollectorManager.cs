@@ -538,11 +538,13 @@ public class CollectorManager
 		int alarmCounter = 0;
 
 		CollectorStatus = await IsCollectorRunning(socket, cts.Token, logger);
+		
 		if (!CollectorStatus.isRunning)
 		{
 			logger.ZLogInformation($"Starting local process for collector");
 			StartCollectorProcess(collectorExecutablePath, detach, logger, cts, otlpEndpoint);
 		}
+		
 		
 		while (!cts.IsCancellationRequested) // Should we stop this after a number of attempts to find the collector?
 		{
@@ -663,8 +665,6 @@ public class CollectorManager
 		{
 			throw new Exception("Invalid value for port");
 		}
-
-		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
 
 		Socket socket = GetSocket(portNumber, logger);
 
