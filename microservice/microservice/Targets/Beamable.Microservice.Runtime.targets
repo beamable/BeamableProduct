@@ -89,7 +89,7 @@
         <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
         <Message Importance="high" Text="collector exists=[$(BeamCollectorExists)]"/>
         <Message Importance="high" Text="disable collector resolution=[$(BeamDisableCollectorResolution)]"/>
-        <Message Importance="high" Text="collector bin path=[$($(BeamCollectorBinaryFilepath))]"/>
+        <Message Importance="high" Text="collector bin path=[$(BeamCollectorBinaryFilepath)]"/>
         <Message Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
                  Importance="high"
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
