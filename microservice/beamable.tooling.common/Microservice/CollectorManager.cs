@@ -469,12 +469,6 @@ public class CollectorManager
 		{
 			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT, Otel.ENV_COLLECTOR_PORT_DEFAULT_VALUE);
 		}
-
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-		if(string.IsNullOrEmpty(host))
-		{
-			Environment.SetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST, Otel.ENV_COLLECTOR_HOST_DEFAULT_VALUE);
-		}
 	}
 
 	public static ClickhouseEnvAuth GetAuthFromEnvironment()
