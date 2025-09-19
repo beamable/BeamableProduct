@@ -4,6 +4,7 @@ using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
 using Beamable.Server;
+using cli.Utils;
 
 namespace cli;
 
@@ -20,7 +21,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 	public ServicesListCommand() :
 		base("ps",
-			"Lists the current local or remote service manifest and status (as summary table or json)")
+			ServicesDeletionNotice.REMOVED_PREFIX + "Lists the current local or remote service manifest and status (as summary table or json)")
 	{
 	}
 
@@ -32,133 +33,9 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 	public override async Task Handle(ServicesListCommandArgs args)
 	{
-		_ctx = args.AppContext;
-		_localBeamo = args.BeamoLocalSystem;
-		_remoteBeamo = args.BeamoService;
-
-		var titleText = "Services Status";
-		AnsiConsole.MarkupLine($"[lightskyblue1]{titleText}[/]");
-
-
-		// Declare style for column headers
-		var columnNameStyle = new Style(Color.SlateBlue1);
-
-		var isDockerRunning = await _localBeamo.CheckIsRunning();
-		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
-		var dependenciesDict = _localBeamo.GetAllBeamoIdsDependencies(getAll: true);
-		var localServiceListResult = new ServiceListResult(isDockerRunning, serviceDefinitions.Count);
-		if (isDockerRunning)
-		{
-			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
-			_localBeamo.SaveBeamoLocalRuntime();
-		}
-
-		var response = await AnsiConsole.Status()
-			.Spinner(Spinner.Known.Default)
-			.StartAsync("Sending Request...", async ctx =>
-				await _remoteBeamo.GetStatus()
-			);
-
-		Log.Verbose($"Got status=[{JsonConvert.SerializeObject(response)}]");
-
-		if (!args.AsJson)
-		{
-			var runningServiceInstances = _localBeamo.BeamoRuntime.ExistingLocalServiceInstances;
-
-			var table = new Table();
-			// Beam-O Id (Markup) | Image Id (markup) | Should Be Enabled on Deployed | Containers (borderless 2 column table with all containers -- markup | emoji (for status))
-			var beamoIdColumn = new TableColumn(new Markup("Beam-O Id", columnNameStyle));
-			var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
-			var containersColumn = new TableColumn(new Markup("Local Running Containers", columnNameStyle));
-			var runningRemoteColumn = new TableColumn(new Markup("Is Running Remotely", columnNameStyle));
-
-			var shouldEnableOnRemoteDeployColumn = new TableColumn(new Markup("Should Enable On Remote Deploy", columnNameStyle));
-			var canBeBuiltLocally = new TableColumn(new Markup("Can be Built Locally", columnNameStyle));
-
-			table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn).AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally).AddColumn(runningRemoteColumn);
-			foreach (var sd in serviceDefinitions)
-			{
-				var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
-				var imageIdMarkup = new Markup($"{sd.TruncImageId}");
-				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
-				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
-
-				IRenderable containersRenderable;
-				var existingServiceInstances = runningServiceInstances.Where(si => si.BeamoId == sd.BeamoId).ToList();
-				var hasNoRunningInstances = existingServiceInstances.Count == 0;
-				if (hasNoRunningInstances)
-				{
-					containersRenderable = new Markup("[yellow]-------------------[/]");
-				}
-				else
-				{
-					var containersTable = new Table();
-					var containerNameColumn = new TableColumn("Container Name");
-					var containerStatusColumn = new TableColumn("Container Status");
-					var containerPortMappingsColumn = new TableColumn("Container Port Mappings");
-					containersTable.AddColumn(containerNameColumn);
-					containersTable.AddColumn(containerStatusColumn);
-					containersTable.AddColumn(containerPortMappingsColumn);
-					foreach (var existingServiceInstance in existingServiceInstances)
-					{
-						var containerNameMarkup = new Markup(existingServiceInstance.ContainerName);
-						var containerStatusMarkup = new Markup(existingServiceInstance.IsRunning ? "[green]On[/]" : "[red]Off[/]");
-
-						var portMappings = existingServiceInstance.ActivePortBindings.Select(p => $"{p.LocalPort}:{p.InContainerPort}");
-						var containerPortMappingMarkup = new Markup(string.Join(", ", portMappings));
-						containersTable.AddRow(containerNameMarkup, containerStatusMarkup, containerPortMappingMarkup);
-					}
-
-					containersRenderable = containersTable;
-				}
-
-				var remoteService = response.services.FirstOrDefault(s => s.serviceName == sd.BeamoId);
-				var isRunningOnRemote = remoteService != null && response.services.First(s => s.serviceName == sd.BeamoId).running;
-				var isRunningRemotelyMark = new Markup(isRunningOnRemote ? "[green]True[/]" : "[red]False[/]");
-
-				localServiceListResult.AddService(sd.BeamoId,
-					sd.ShouldBeEnabledOnRemote,
-					!hasNoRunningInstances,
-					sd.Protocol.ToString(),
-					sd.ImageId,
-					"",
-					"",
-					new[] { "" },
-					new[] { "" },
-					dependenciesDict[sd].Where(d => d.type.Equals("storage")).Select(dep => dep.name),
-					dependenciesDict[sd].Where(d => d.type.Equals("unity-asmdef")).Select(dep => dep.dllName),
-					sd.ProjectDirectory,
-					sd.IsLocal,
-					sd.IsInRemote,
-					isRunningOnRemote);
-				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, isRunningRemotelyMark}));
-			}
-
-			this.SendResults(localServiceListResult);
-			if (serviceDefinitions.Count > 0)
-			{
-				AnsiConsole.Write(table);
-			}
-			else
-			{
-				AnsiConsole.WriteLine("No services found");
-			}
-		}
-		else
-		{
-			AnsiConsole.MarkupLine($"[green]Current Manifest[/]");
-			AnsiConsole.WriteLine(JsonConvert.SerializeObject(_localBeamo.BeamoManifest, Formatting.Indented));
-			AnsiConsole.MarkupLine($"[green]Current Status[/]");
-			AnsiConsole.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
-		}
-
-		_localBeamo.SaveBeamoLocalRuntime();
-		if (!isDockerRunning)
-		{
-			var warning = new Panel("No docker running --- the running information here is not up-to-date!") { Header = new PanelHeader("NO DOCKER RUNNING") };
-			AnsiConsole.Write(warning);
-			await _localBeamo.StopListeningToDocker();
-		}
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.LIST_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }
 

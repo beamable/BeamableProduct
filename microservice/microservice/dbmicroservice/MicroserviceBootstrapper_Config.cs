@@ -238,6 +238,23 @@ public static class MicroserviceResultExtensions
 
 public static class IBeamServiceConfigExtensions
 {
+	public static BeamServiceConfigBuilder UseRealmSecretAuth(this BeamServiceConfigBuilder builder)
+	{
+		var conf = builder.Config as IBeamServiceConfig;
+		conf.LocalEnvCustomArgs = " . --auto-deploy --include-prefix ";
+		return builder;
+	}
+	
+	public static BeamServiceConfigBuilder AddTelemetryAttributes<T>(this BeamServiceConfigBuilder builder)
+		where T : ITelemetryAttributeProvider
+	{
+		builder.ConfigureServices(b =>
+		{
+			b.AddSingleton<T>();
+		});
+		return builder;
+	}
+	
     public static BeamServiceConfigBuilder DisableEagerContentLoading(this BeamServiceConfigBuilder builder)
     {
 	    var conf = builder.Config as IBeamServiceConfig;

@@ -53,6 +53,7 @@ namespace Beamable.Common
 
 				public const int CMD_RESULT_CODE_CONFIG_DOES_NOT_EXISTS = 404;
 				public const int CMD_RESULT_CODE_DOCKER_NOT_RUNNING = 500;
+				public const int CMD_RESULT_CODE_COMMAND_NO_LONGER_SUPPORTED = 300;
 				public const int CMD_RESULT_CODE_CONTAINER_NOT_RUNNING = 501;
 				public const int CMD_RESULT_CODE_SOLUTION_NOT_FOUND = 502;
 				public const int CMD_RESULT_CODE_NO_SERVICE_EXISTS = 503;
@@ -66,6 +67,7 @@ namespace Beamable.Common
 				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_ROUTE_PREFIX = "routePrefix";
 				public const string MICROSERVICE_ROUTE_SOURCE_FIELD_CLIENT_PREFIX = "clientPrefix";
 				
+				public const string MICROSERVICE_TELEMETRY_ATTRIBUTES_KEY = "x-telemetry-attributes";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY = "x-beamable-federated-components-v2";
 				public const string MICROSERVICE_CLASS_TYPE_KEY = "x-beamable-microservice-class-type";
