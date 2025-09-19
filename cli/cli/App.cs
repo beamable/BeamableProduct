@@ -511,6 +511,7 @@ public class App
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 
 		Commands.AddRootCommand<OtelCommand>();
+		Commands.AddSubCommandWithHandler<GetClickhouseCredentials, GetClickhouseCredentialsArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PruneTelemetryCommand, PruneTelemetryCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<ReportTelemetryCommand, ReportTelemetryCommandArgs, OtelCommand>();
