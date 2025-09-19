@@ -47,41 +47,53 @@ public class PruneTelemetryCommand : AppCommand<PruneTelemetryCommandArgs>, IEmp
 		
 		try
 		{
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelLogsDirectoryPath))
+			string otelLogsFolderPath = args.ConfigService.ConfigTempOtelLogsDirectoryPath;
+			string otelTracesFolderPath = args.ConfigService.ConfigTempOtelTracesDirectoryPath;
+			string otelMetricsFolderPath = args.ConfigService.ConfigTempOtelMetricsDirectoryPath;
+			
+			if (string.IsNullOrEmpty(otelLogsFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry logs path");
 			}
 
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelTracesDirectoryPath))
+			if (string.IsNullOrEmpty(otelTracesFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry traces path");
 			}
 
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelMetricsDirectoryPath))
+			if (string.IsNullOrEmpty(otelMetricsFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry metrics path");
 			}
 
 			var result = new CleanupResult();
 			result.Success = true;
+			if (Directory.Exists(otelLogsFolderPath))
+			{
+				BeamableLogger.Log($"Clearing logs on path: {otelLogsFolderPath}");
+				var logsResult = FolderManagementHelper.ClearOldTelemetryFiles(otelLogsFolderPath,
+					args.MaxDaysToStore, args.ClearEverything);
+				result.Merge(logsResult);
+				result.Success = result.Success && logsResult.Success;
+			}
 
-			BeamableLogger.Log($"Clearing logs on path: {args.ConfigService.ConfigTempOtelLogsDirectoryPath}");
-			var logsResult = FolderManagementHelper.ClearOldTelemetryFiles(args.ConfigService.ConfigTempOtelLogsDirectoryPath,
-				args.MaxDaysToStore, args.ClearEverything);
-			result.Merge(logsResult);
-			result.Success = result.Success && logsResult.Success;
+			if (Directory.Exists(otelTracesFolderPath))
+			{
+				BeamableLogger.Log($"Clearing traces on path: {otelTracesFolderPath}");
+				var tracesResult = FolderManagementHelper.ClearOldTelemetryFiles(otelTracesFolderPath,
+					args.MaxDaysToStore, args.ClearEverything);
+				result.Merge(tracesResult);
+				result.Success = result.Success && tracesResult.Success;
+			}
 
-			BeamableLogger.Log($"Clearing traces on path: {args.ConfigService.ConfigTempOtelTracesDirectoryPath}");
-			var tracesResult = FolderManagementHelper.ClearOldTelemetryFiles(args.ConfigService.ConfigTempOtelTracesDirectoryPath,
-				args.MaxDaysToStore, args.ClearEverything);
-			result.Merge(tracesResult);
-			result.Success = result.Success && tracesResult.Success;
-
-			BeamableLogger.Log($"Clearing metrics on path: {args.ConfigService.ConfigTempOtelMetricsDirectoryPath}");
-			var metricsResult = FolderManagementHelper.ClearOldTelemetryFiles(args.ConfigService.ConfigTempOtelMetricsDirectoryPath,
-				args.MaxDaysToStore, args.ClearEverything);
-			result.Merge(metricsResult);
-			result.Success = result.Success && metricsResult.Success;
+			if (Directory.Exists(otelMetricsFolderPath))
+			{
+				BeamableLogger.Log($"Clearing metrics on path: {otelMetricsFolderPath}");
+				var metricsResult = FolderManagementHelper.ClearOldTelemetryFiles(otelMetricsFolderPath,
+					args.MaxDaysToStore, args.ClearEverything);
+				result.Merge(metricsResult);
+				result.Success = result.Success && metricsResult.Success;
+			}
 
 			if (!result.Success)
 			{
