@@ -1113,7 +1113,7 @@ public class App
 				
 				// If the it's not allowed to use telemetry we enforce the deletion of the folders
 				// The folders existence is basically what defines the usage of telemetry
-				if (!OtelUtils.GetAllowOtelConfig(configService) && !quiet)
+				if (Directory.Exists(beamableDirectory) && !OtelUtils.GetAllowOtelConfig(configService) && !quiet)
 				{
 					OtelUtils.DeleteOtelFolders(configService);
 				}
