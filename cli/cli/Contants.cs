@@ -9,6 +9,7 @@ public static class Constants
 	public const string CONTENT_SNAPSHOTS_DIRECTORY = "content-snapshots";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
 	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
+	
 	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
 	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
 	public const string CONFIG_P4_IGNORE_FILE_NAME = ".p4ignore";

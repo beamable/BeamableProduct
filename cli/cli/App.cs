@@ -1079,9 +1079,44 @@ public class App
 			//in case otel is enabled, check if otel data stored in files is too large
 			if (Otel.CliTracesEnabled())
 			{
+				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
+				
 				var configService = provider.GetService<ConfigService>();
 				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
+		
+				// Check if the .beamable folder exists
+				string beamableDirectory = Path.Combine(configService.BaseDirectory, ".beamable");
+				
+				bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
+				
+				shouldTryToCreateFolders &= !OtelUtils.HasAllOtelFolders(configService);
+				
+				// If the user didn't have the config for the otel config or if it's true (so it can be modified later)
+				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService) || OtelUtils.GetAllowOtelConfig(configService);
 
+				shouldTryToCreateFolders |= quiet; // If it is running silent we should create the folder for the user.
+				
+				if (shouldTryToCreateFolders)
+				{
+					var shouldContinue = quiet || AnsiConsole.Prompt(
+						new ConfirmationPrompt($"Do you allow the usage of telemetry to capture CLI logs?")
+							.ShowChoices());
+
+					OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
+					
+					if (shouldContinue)
+					{
+						OtelUtils.CreateOtelFolders(configService);
+					}
+				}
+				
+				// If the it's not allowed to use telemetry we enforce the deletion of the folders
+				// The folders existence is basically what defines the usage of telemetry
+				if (Directory.Exists(beamableDirectory) && !OtelUtils.GetAllowOtelConfig(configService) && !quiet)
+				{
+					OtelUtils.DeleteOtelFolders(configService);
+				}
+				
 				if (Directory.Exists(otelDirectory))
 				{
 					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);

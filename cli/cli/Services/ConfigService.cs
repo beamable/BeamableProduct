@@ -29,6 +29,8 @@ public enum Vcs
 [Serializable]
 public class OtelConfig
 {
+	// The default value needs to be true, so we can ask him to allow it if the folders for telemetry don't exists
+	public bool BeamCliAllowTelemetry;
 	public string BeamCliTelemetryLogLevel;
 	public long BeamCliTelemetryMaxSize;
 }
@@ -107,6 +109,7 @@ public class ConfigService
 	/// Data from the <see cref="Constants.CONFIG_DEFAULTS_FILE_NAME"/> that lives inside the <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
 	/// </summary>
 	private Dictionary<string, string> _configLocalOverrides;
+	
 
 	private string _workingDirectory;
 
@@ -371,6 +374,11 @@ public class ConfigService
 		SaveDataFile<OtelConfig>(CONFIG_FILE_OTEL, config);
 	}
 
+	public bool ExistsOtelConfig()
+	{
+		return File.Exists(GetConfigPath(CONFIG_FILE_OTEL));
+	} 
+
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
 
 	public List<string> LoadPathsToIgnoreFromFile()
@@ -546,6 +554,7 @@ public class ConfigService
 
 		return GetConfigStringIgnoreOverride(key, defaultValue);
 	}
+
 	
 	[CanBeNull]
 	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null)
@@ -613,6 +622,7 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
+	
 	/// <summary>
 	/// Calling this function allows you to set the local config overrides.
 	/// </summary>
@@ -634,7 +644,7 @@ public class ConfigService
 		string fullPath = Path.Combine(ConfigLocalOverridesDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
 	}
-
+	
 	/// <summary>
 	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
 	/// </summary>
