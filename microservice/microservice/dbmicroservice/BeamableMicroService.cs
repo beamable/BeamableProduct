@@ -769,7 +769,7 @@ namespace Beamable.Server
 	      ctx.ActivityContext = activity;
 	      
 
-		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx);
+		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx, ConnectionId);
 	      activity.SetTags(extraOtelTags);
 
 
