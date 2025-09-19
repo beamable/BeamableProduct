@@ -147,7 +147,15 @@ public class App
 						opts.ExportPath = configPath ?? ".";
 
 						var otelConfig = configService.LoadOtelConfigFromFile();
-						opts.MinimalLogLevel = (LogLevel)otelConfig.BeamCliTelemetryMaxSize;
+						
+						if (Enum.TryParse(otelConfig.BeamCliTelemetryLogLevel, out LogLevel logLevel))
+						{
+							opts.MinimalLogLevel = logLevel;
+						}
+						else
+						{
+							opts.MinimalLogLevel = LogLevel.Warning;
+						}
 					});
 				});
 			}
@@ -1088,25 +1096,24 @@ public class App
 				
 				bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
 				
-				shouldTryToCreateFolders &= !OtelUtils.HasAllOtelFolders(configService);
+				// If the user didn't have the otel config in the files
+				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService);
 				
-				// If the user didn't have the config for the otel config or if it's true (so it can be modified later)
-				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService) || OtelUtils.GetAllowOtelConfig(configService);
-
-				shouldTryToCreateFolders |= quiet; // If it is running silent we should create the folder for the user.
-				
-				if (shouldTryToCreateFolders)
+				if (shouldTryToCreateFolders && !quiet)
 				{
-					var shouldContinue = quiet || AnsiConsole.Prompt(
-						new ConfirmationPrompt($"Do you allow the usage of telemetry to capture CLI logs?")
+					var shouldContinue = AnsiConsole.Prompt(
+						new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
 							.ShowChoices());
 
 					OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
-					
-					if (shouldContinue)
-					{
-						OtelUtils.CreateOtelFolders(configService);
-					}
+				}
+				
+				// If it is running silent we should create the folder for the user.
+				// or If all otel folders wasn't created and otel was allowed
+				// we create all the folders for otel
+				if (quiet || (!OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService)))
+				{
+					OtelUtils.CreateOtelFolders(configService);
 				}
 				
 				// If the it's not allowed to use telemetry we enforce the deletion of the folders
