@@ -899,7 +899,7 @@ public static class MicroserviceStartupUtil
 		var beamProgram = GetBeamProgram();
 
 		string arguments =
-			$"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty --no-log-file --remove-all-except-pid {Process.GetCurrentProcess().Id}";
+			$"{beamProgram} project generate-env {serviceName} {customArgs} --quiet --logs v --pretty --no-log-file --remove-all-except-pid {Process.GetCurrentProcess().Id}";
 		string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 
 		process.StartInfo.FileName = fileName;
