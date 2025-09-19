@@ -45,12 +45,12 @@ jobs:
       - name: Check BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet beam config --logs v
+          dotnet beam config --logs v --q
       
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
+          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v --q
       
       - name: Update Nuget
         working-directory: ./stress-tests/standalone-microservice
