@@ -186,22 +186,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
 	}
 
-	public void CreateOtelFolders()
-	{
-		var otelFolders = new string[]
-		{
-			_configService.ConfigTempOtelLogsDirectoryPath, _configService.ConfigTempOtelMetricsDirectoryPath,
-			_configService.ConfigTempOtelTracesDirectoryPath
-		};
-
-		foreach (var folder in otelFolders)
-		{
-			if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
-			{
-				Directory.CreateDirectory(folder);
-			}
-		}
-	}
 
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
@@ -244,8 +228,6 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		SaveExtraPathFiles(args);
-
-		CreateOtelFolders();
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
