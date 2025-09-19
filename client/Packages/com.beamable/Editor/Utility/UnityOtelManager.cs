@@ -305,14 +305,11 @@ namespace Beamable.Editor.Utility
 
 					if (containsCrashMarker && containsBeamableReference)
 					{
+						reader.Close();
+						string allText = await File.ReadAllTextAsync(lastEditorSessionsLogs);
+						AddLog($"Unity Editor Crash - Project: {Application.companyName}.{Application.productName}", allText, nameof(OtelLogLevel.Critical));
 						break;
 					}
-				}
-				
-				if (containsBeamableReference)
-				{
-					string allText = await File.ReadAllTextAsync(lastEditorSessionsLogs);
-					AddLog($"Unity Editor Crash - Project: {Application.companyName}.{Application.productName}", allText, nameof(OtelLogLevel.Critical));
 				}
 			}
 #if UNITY_EDITOR_WIN
