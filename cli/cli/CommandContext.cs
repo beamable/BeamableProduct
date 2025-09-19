@@ -65,6 +65,11 @@ public class ProgressStreamResultChannel : IResultChannel
 	public string ChannelName { get; } = "progressStream";
 }
 
+public class ExtraStreamResultChannel : IResultChannel
+{
+	public string ChannelName { get; } = "extraStream";
+}
+
 public static class ResultStreamExtensions
 {
 	public static void SendResults<TChannel, TData>(this IResultSteam<TChannel, TData> self, TData data)

@@ -41,17 +41,21 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 
 		try
 		{
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelLogsDirectoryPath))
+			string otelLogsFolderPath = args.ConfigService.ConfigTempOtelLogsDirectoryPath;
+			string otelTracesFolderPath = args.ConfigService.ConfigTempOtelTracesDirectoryPath;
+			string otelMetricsFolderPath = args.ConfigService.ConfigTempOtelMetricsDirectoryPath;
+			
+			if (string.IsNullOrEmpty(otelLogsFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry logs path");
 			}
 
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelTracesDirectoryPath))
+			if (string.IsNullOrEmpty(otelTracesFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry traces path");
 			}
 
-			if (string.IsNullOrEmpty(args.ConfigService.ConfigTempOtelMetricsDirectoryPath))
+			if (string.IsNullOrEmpty(otelMetricsFolderPath))
 			{
 				throw new CliException("Couldn't resolve telemetry metrics path");
 			}
@@ -82,34 +86,49 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 			}
 
 			{ // Sending deserialized telemetry data through Otlp exporter
-				Log.Verbose($"Exporting logs to endpoint: {endpointToUse}");
-				(ExportResult exportResult1, string logsErrorMessage) = await FileOtlpExporter.ExportLogs(args.ConfigService.ConfigTempOtelLogsDirectoryPath, endpointToUse);
-
-				if (exportResult1 == ExportResult.Failure)
+				if (Directory.Exists(otelLogsFolderPath))
 				{
-					throw new CliException(
-						"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint." +
-						$"Error=[{logsErrorMessage}]");
+					Log.Verbose($"Exporting logs to endpoint: {endpointToUse}");
+					(ExportResult exportResult1, string logsErrorMessage) =
+						await FileOtlpExporter.ExportLogs(otelLogsFolderPath, endpointToUse);
+
+					if (exportResult1 == ExportResult.Failure)
+					{
+						throw new CliException(
+							"Failed to export logs. Make sure there is a collector receiving data in the correct endpoint." +
+							$"Error=[{logsErrorMessage}]");
+					}
 				}
 
-				Log.Verbose($"Exporting traces to endpoint: {endpointToUse}");
-				(ExportResult resultStatus, string tracesErrorMessage) = await FileOtlpExporter.ExportTraces(args.ConfigService.ConfigTempOtelTracesDirectoryPath, endpointToUse);
-
-				if (resultStatus == ExportResult.Failure)
+				if (Directory.Exists(otelTracesFolderPath))
 				{
-					throw new CliException("Error while trying to export traces to collector. Make sure you have a collector running and expecting data." +
-					                       $"Error=[{tracesErrorMessage}]");
+					Log.Verbose($"Exporting traces to endpoint: {endpointToUse}");
+					(ExportResult resultStatus, string tracesErrorMessage) =
+						await FileOtlpExporter.ExportTraces(otelTracesFolderPath, endpointToUse);
+
+					if (resultStatus == ExportResult.Failure)
+					{
+						throw new CliException(
+							"Error while trying to export traces to collector. Make sure you have a collector running and expecting data." +
+							$"Error=[{tracesErrorMessage}]");
+					}
 				}
 
 				//TODO: re-enable this once we have the CLI Metrics issue fixed
-				// Log.Verbose($"Exporting metrics to endpoint: {endpointToUse}");
-				// (ExportResult exportResult, string metricsErrorMessage) = await FileOtlpExporter.ExportMetrics(args.ConfigService.ConfigTempOtelMetricsDirectoryPath, endpointToUse);
-				//
-				// if (exportResult == ExportResult.Failure)
-				// {
-				// 	throw new CliException("Error while trying to export metrics to collector. Make sure you have a collector running and expecting data." +
-				// 	                       $"Error=[{metricsErrorMessage}]");
-				// }
+				if (Directory.Exists(otelMetricsFolderPath))
+				{
+					Log.Verbose($"Exporting metrics to endpoint: {endpointToUse}");
+					(ExportResult exportResult, string metricsErrorMessage) =
+						await FileOtlpExporter.ExportMetrics(otelMetricsFolderPath, endpointToUse);
+
+					if (exportResult == ExportResult.Failure)
+					{
+						throw new CliException(
+							"Error while trying to export metrics to collector. Make sure you have a collector running and expecting data." +
+							$"Error=[{metricsErrorMessage}]");
+					}
+				}
+
 				await File.WriteAllTextAsync(Path.Join(args.ConfigService.ConfigTempOtelDirectoryPath, LAST_PUBLISH_OTEL_FILE_NAME), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 				Log.Information("Telemetry data was successfully exported!");
 				

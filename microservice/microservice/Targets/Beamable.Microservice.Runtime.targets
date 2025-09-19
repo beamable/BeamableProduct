@@ -95,7 +95,7 @@
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
         <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
-                Command="$(BeamableDotnetPath) $(BeamableTool) telemetry collector get $(BeamCollectorPlatformArchArg)"
+                Command="$(BeamableDotnetPath) $(BeamableTool) telemetry collector get $(BeamCollectorPlatformArchArg) --quiet"
                 EnvironmentVariables=""/>
 
         <Message

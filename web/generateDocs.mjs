@@ -63,13 +63,16 @@ async function generateDocs() {
     typedoc ${entryPointsString} \
       --out ${outDir} \
       --tsconfig ${tsconfig} \
-      --plugin typedoc-github-theme \
+      --plugin typedoc-plugin-markdown \
+      --plugin ./typedoc-plugin-markdown-fix.mjs \
       --intentionallyNotExported ExtractPrefixes \
       --exclude [${excludePatterns}] \
       --excludePrivate \
       --excludeProtected \
       --excludeInternal \
-      --excludeReferences
+      --excludeReferences \
+      --hideGenerator \
+      --hidePageHeader
   `;
 
   console.log('Executing TypeDoc...');
