@@ -854,7 +854,7 @@ namespace Beamable.Server
 
 	      
 		  var logger = BeamableZLoggerProvider.LogContext.Value = InstanceArgs.ServiceScope.GetLogger<BeamableMicroService>();
-	      using var scope = logger.BeginScope(extraOtelTags);
+	      using var scope = logger.BeginScope(extraOtelTags.ToDictionary());
 	      
 	      try
 	      {
