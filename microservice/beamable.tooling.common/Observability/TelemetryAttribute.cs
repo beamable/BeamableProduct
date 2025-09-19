@@ -281,13 +281,14 @@ namespace Beamable.Server
             return telemetryCtx.Attributes.ToDictionary();
         }
         
-        public static TelemetryAttributeCollection CreateRequestAttributes(this SingletonDependencyList<ITelemetryAttributeProvider> providers, IMicroserviceArgs args, RequestContext ctx)
+        public static TelemetryAttributeCollection CreateRequestAttributes(this SingletonDependencyList<ITelemetryAttributeProvider> providers, IMicroserviceArgs args, RequestContext ctx, string connectionId)
         {
             var requestTelemetryContext = new RequestAttributeContext
             {
                 Attributes = new TelemetryAttributeCollection(),
                 Args = args,
-                Request = ctx
+                Request = ctx,
+                ConnectionId = connectionId
             };
             foreach (var provider in providers.Elements)
             {
