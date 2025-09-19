@@ -788,6 +788,9 @@ namespace Beamable.Server
 			      BeamoV2LogContextRule[] rules = loglevelContext.rules.GetOrElse(Array.Empty<BeamoV2LogContextRule>());
 			      foreach (BeamoV2LogContextRule contextRule in rules)
 			      { 
+				      if(!contextRule.enabled)
+					      continue;
+				      
 				      if (contextRule.expiresAt.HasValue)
 				      {
 					      var expiresAtDate = DateTimeOffset.FromUnixTimeMilliseconds(contextRule.expiresAt.Value).ToUniversalTime();
@@ -839,12 +842,7 @@ namespace Beamable.Server
 				      }
 			      }
 
-			      bool CheckRule<T>(T[] values, BeamoV2RuleOperationType operationType, T valueToCheck)
-			      {
-				      bool containsInValues = values.Contains(valueToCheck);
-				      return (containsInValues && operationType is BeamoV2RuleOperationType.Contain) ||
-				             (!containsInValues && operationType is BeamoV2RuleOperationType.NotContain);
-			      }
+			      
 		      }
 	      }
 	      catch (Exception ex)
@@ -877,6 +875,40 @@ namespace Beamable.Server
 	      finally
 	      {
 		      // empty block?
+	      }
+      }
+      
+      private bool CheckRule(string[] values, BeamoV2PathRuleOperationType operationType, string valueToCheck)
+      {
+	      switch (operationType)
+	      {
+		      case BeamoV2PathRuleOperationType.Contain:
+			      return values.Contains(valueToCheck) || values.Any(item => item.Contains(valueToCheck));
+		      case BeamoV2PathRuleOperationType.NotContain:
+			      return !values.Contains(valueToCheck) && !values.Any(item => item.Contains(valueToCheck));
+		      case BeamoV2PathRuleOperationType.StartsWith:
+			      return values.Any(item => item.StartsWith(valueToCheck));
+		      case BeamoV2PathRuleOperationType.EndsWith:
+			      return values.Any(item => item.EndsWith(valueToCheck));
+		      default:
+			      return false;
+	      }
+      }
+      
+      private bool CheckRule(long[] values, BeamoV2PlayerRuleOperationType operationType, long valueToCheck)
+      {
+	      switch (operationType)
+	      {
+		      case BeamoV2PlayerRuleOperationType.Contain:
+			      return values.Contains(valueToCheck);
+		      case BeamoV2PlayerRuleOperationType.NotContain:
+			      return !values.Contains(valueToCheck);
+		      case BeamoV2PlayerRuleOperationType.GreaterThan:
+			      return values.Any(item => valueToCheck > item);
+		      case BeamoV2PlayerRuleOperationType.LesserThan:
+			      return values.Any(item => valueToCheck < item);
+		      default:
+			      return false;
 	      }
       }
 
