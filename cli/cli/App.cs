@@ -510,7 +510,6 @@ public class App
 		Commands.AddSubCommandWithHandler<FetchTelemetryLogsCommand, FetchTelemetryLogsCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<SetBeamOtelConfigCommand, SetBeamOtelConfigCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<GetBeamOtelConfigCommand, GetBeamOtelConfigCommandArgs, OtelCommand>();
-		Commands.AddSubCommandWithHandler<OtelStatusCommand, OtelStatusCommandArgs, OtelCommand>();
 
 		Commands.AddSubCommandWithHandler<CollectorCommand, CollectorCommandArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<StartCollectorCommand, StartCollectorCommandArgs, CollectorCommand>();

@@ -12,12 +12,10 @@ namespace Beamable.Common
                     // if the disable env var is set, we don't setup otel
                     string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
 
-                public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 50; // Equivalent to 50mb worth of space
-                
-                public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
+                public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 500; // Equivalent to 500mb worth of space
+
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";
                 public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
-                public const string ENV_COLLECTOR_HOST_DEFAULT_VALUE = "127.0.0.1"; // loopback
 
                 public const string ENV_COLLECTOR_CLICKHOUSE_HOST = "BEAM_CLICKHOUSE_HOST";
                 public const string ENV_COLLECTOR_CLICKHOUSE_ENDPOINT = "BEAM_CLICKHOUSE_ENDPOINT";

@@ -55,5 +55,10 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
+        public virtual TelemetryCollectorPsWrapper OnExtraStreamOtelFileStatus(System.Action<ReportDataPoint<Beamable.Common.BeamCli.Contracts.OtelFileStatus>> cb)
+        {
+            this.Command.On("extraStream", cb);
+            return this;
+        }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
-using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Serialization.SmallerJSON;
@@ -17,21 +16,20 @@ using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+
 namespace Beamable.Editor.Utility
 {
 	public class UnityOtelManager : IBeamableDisposable
 	{
 		private const double DEFAULT_PUSH_TIME_INTERVAL = 120; // 2 minutes 
 		private const double SECONDS_TO_AUTO_FLUSH = 60; // 5 minutes
-		private const double OTEL_DATA_CHECK_DELAY = 30;
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
 		public const string SKIP_OTEL_LOG_KEY = "[SKIP_OTEL]";
 
 		private double _lastTimePublished;
 		private double _lastTimeFlush;
-		private double _lastOtelDataRefresh;
-		BeamOtelStatusResult _otelStatus;
+		OtelFileStatus _otelFileStatus;
 		
 		private ConcurrentDictionary<string, CliOtelLogRecord> _cachedLogs = new();
 		private ConcurrentDictionary<string, List<string>> _cachedTimestamps = new();
@@ -45,6 +43,14 @@ namespace Beamable.Editor.Utility
 			"Beamable.Runtime",
 			"com.Beamable"
 		};
+		
+		private List<string> CrashMarkers = new()
+		{
+			"Crash!!!",
+			"Fatal Error",
+			"Segmentation fault",
+			"Unhandled exception"
+		};
 
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
@@ -53,7 +59,7 @@ namespace Beamable.Editor.Utility
 
 		private CoreConfiguration CoreConfig => CoreConfiguration.Instance;
 
-		public BeamOtelStatusResult OtelStatus => _otelStatus;
+		public OtelFileStatus OtelFileStatus => _otelFileStatus;
 
 		public BeamCollectorStatusResult CollectorStatus => _collectorStatus;
 
@@ -74,15 +80,11 @@ namespace Beamable.Editor.Utility
 			_ = FetchOtelConfig();
 			_ = GetUnparsedCrashLogs();
 			
+			
 			// Make sure to Publish on Init so we make sure that all missing logs that weren't published on last session
-			// If disabled we only gather the OtelStatus
 			if (CoreConfig.EnableOtelAutoPublish)
 			{
 				_ = PublishLogs();
-			}
-			else
-			{
-				_ = FetchOtelStatus(false);
 			}
 
 			_collectorCommandWatcher = _cli.TelemetryCollectorPs(new TelemetryCollectorPsArgs() {watch = true});
@@ -90,7 +92,12 @@ namespace Beamable.Editor.Utility
 			{
 				_collectorStatus = report.data;
 			});
+			_collectorCommandWatcher.OnExtraStreamOtelFileStatus(report =>
+			{
+				_otelFileStatus = report.data;
+			});
 			_collectorCommandWatcher.Run();
+			
 		}
 
 		public Promise OnDispose()
@@ -158,8 +165,6 @@ namespace Beamable.Editor.Utility
 				}
 
 				await _cli.TelemetryPush(new TelemetryPushArgs(){ processId = Process.GetCurrentProcess().Id.ToString()}).Run();
-
-				await FetchOtelStatus(false);
 			}
 			catch (Exception e)
 			{
@@ -188,8 +193,6 @@ namespace Beamable.Editor.Utility
 						File.Delete(filePath);
 					}
 				});
-
-				await FetchOtelStatus(false);
 			}
 			catch (Exception e)
 			{
@@ -197,17 +200,7 @@ namespace Beamable.Editor.Utility
 			}
 		}
 
-		public async Promise FetchOtelStatus(bool autoUpdatePush = true)
-		{
-			_lastOtelDataRefresh = EditorApplication.timeSinceStartup;
-			TelemetryStatusWrapper wrapper = _cli.TelemetryStatus();
-			wrapper.OnStreamOtelStatusResult(rb => _otelStatus = rb.data);
-			await wrapper.Run();
-			if (autoUpdatePush && _otelStatus.FolderSize > _telemetryMaxSize && CoreConfig.EnableOtelAutoPublish)
-			{
-				await PublishLogs();
-			}
-		}
+		
 
 		private async Promise FetchOtelConfig()
 		{
@@ -222,13 +215,6 @@ namespace Beamable.Editor.Utility
 		{
 			TryToFlushUnityLogs();
 			double now = EditorApplication.timeSinceStartup;
-			
-			double timeSinceLastRefresh = now - _lastOtelDataRefresh;
-			if (timeSinceLastRefresh > OTEL_DATA_CHECK_DELAY)
-			{
-				_ = FetchOtelStatus();
-			}
-
 			if(!CoreConfiguration.Instance.EnableOtelAutoPublish)
 				return;
 
@@ -295,11 +281,65 @@ namespace Beamable.Editor.Utility
 			FlushUnityLogs();
 			return true;
 		}
-
+		
+		
 		private async Task GetUnparsedCrashLogs()
 		{
-			
-			string crashFolder = GetCrashFolder();
+			string lastEditorSessionsLogs = GetEditorPrevLogPath();
+			if (File.Exists(lastEditorSessionsLogs))
+			{
+				bool containsBeamableReference = false;
+				bool containsCrashMarker = false;
+				using var reader = new StreamReader(lastEditorSessionsLogs);
+				while (await reader.ReadLineAsync() is { } line)
+				{
+					if (BeamableNamespaces.Any(line.Contains))
+					{
+						containsBeamableReference = true;
+					}
+
+					if (CrashMarkers.Any(line.Contains))
+					{
+						containsCrashMarker = true;
+					}
+
+					if (containsCrashMarker && containsBeamableReference)
+					{
+						reader.Close();
+						string allText = await File.ReadAllTextAsync(lastEditorSessionsLogs);
+						AddLog($"Unity Editor Crash - Project: {Application.companyName}.{Application.productName}", allText, nameof(OtelLogLevel.Critical));
+						break;
+					}
+				}
+			}
+#if UNITY_EDITOR_WIN
+			await TryGetWindowsCrashes();
+#endif
+		}
+		
+		private static string GetEditorPrevLogPath()
+		{
+#if UNITY_EDITOR_WIN
+			string appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+			return Path.Combine(appData, "Unity", "Editor", "Editor-prev.log");
+#elif UNITY_EDITOR_OSX
+        string home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+        return Path.Combine(home, "Library", "Logs", "Unity", "Editor-prev.log");
+#else
+        string home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+        return Path.Combine(home, ".config", "unity3d", "Editor-prev.log");
+#endif
+		}
+		
+		#if UNITY_EDITOR_WIN
+		private async Task TryGetWindowsCrashes()
+		{
+			string localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+			string crashFolder = Path.Combine(localAppData, "Unity", "Editor", "Crashes");
+			if (!Directory.Exists(crashFolder))
+			{
+				crashFolder = Path.Combine(localAppData, "Temp", "Unity", "Crashes");
+			}
 			if (!Directory.Exists(crashFolder))
 			{
 				throw new Exception($"Could not find Crash Folder {crashFolder}");
@@ -348,7 +388,7 @@ namespace Beamable.Editor.Utility
 					if (containsBeamableReference)
 					{
 						string allText = await File.ReadAllTextAsync(crashPath);
-						AddLog($"Unity Editor Crash Project: {Application.companyName}.{Application.productName}", allText, nameof(OtelLogLevel.Critical));
+						AddLog($"Unity Editor Crash - Project: {Application.companyName}.{Application.productName}", allText, nameof(OtelLogLevel.Critical));
 					}
 				}
 				catch (Exception e)
@@ -358,38 +398,8 @@ namespace Beamable.Editor.Utility
 				}
 			}
 		}
-
-		private static string GetCrashFolder()
-		{
-			#if UNITY_EDITOR_WIN
-			string localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-			string crashFolder = Path.Combine(localAppData, "Unity", "Editor", "Crashes");
-			if (!Directory.Exists(crashFolder))
-			{
-				crashFolder = Path.Combine(localAppData, "Temp", "Unity", "Crashes");
-			}
-			return crashFolder;
-			#elif UNITY_EDITOR_OSX
-			string userHome = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
-            string crashFolder = Path.Combine(userHome, "Library", "Logs", "Unity", "Crashes");
-            if (!Directory.Exists(crashFolder))
-            {
-            	crashFolder = Path.Combine(userHome, "Library", "Application Support", "Unity", "Crashes");
-            }
-
-            return crashFolder;
-			#elif UNITY_EDITOR_LINUX
-			string configFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
-			string crashFolder = Path.Combine(configFolder, "unity3d", "Crashes");
-			if (!Directory.Exists(crashFolder))
-			{
-				crashFolder = Path.Combine(Path.GetTempPath(), "Unity", "Crashes");
-			}
-
-			return crashFolder;
-			#endif
-			
-		}
+		
+		#endif
 		
 		private void TryToFlushUnityLogs()
 		{
