@@ -31,6 +31,15 @@ namespace Beamable.Server.Editor.Usam
 			//  been flushed yet. 
 			// await _ctx.BeamCli.OnReady;
 
+			Promise updatePromise = UpdateUnityManifest(taskId);
+			ListenForStatus();
+			ListenForDocker();
+			ListenForBuildChanges();
+			await updatePromise;
+		}
+
+		private Promise UpdateUnityManifest(int taskId)
+		{
 			var command = _cli.UnityManifest();
 
 			if (!_config.DisableAutoChecks)
@@ -80,10 +89,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			
 			var p = command.Run();
-			ListenForStatus();
-			ListenForDocker();
-			ListenForBuildChanges();
-			await p;
+			return p;
 		}
 
 		private void OnBeamEditorRealmChanged(RealmView realm)
