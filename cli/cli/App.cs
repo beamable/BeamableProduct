@@ -1099,20 +1099,36 @@ public class App
 				
 				// If the user didn't have the otel config in the files
 				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService);
+
+				bool autoAcceptTelemetry = quiet || Otel.CliAutoSetupTelemetryEnabled() || Otel.CliRunningOnDockerContainer();
 				
-				if (shouldTryToCreateFolders && !quiet)
+				// If it is quiet or autosetup we should create the otel settings as true anyway
+				if (shouldTryToCreateFolders || autoAcceptTelemetry)
 				{
-					var shouldContinue = AnsiConsole.Prompt(
-						new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
-							.ShowChoices());
+					bool shouldContinue = true;
+					
+					// If we have the auto setup telemetry env var setup we get the value to accept/reject
+					if (Otel.CliAutoSetupTelemetryEnabled())
+					{
+						shouldContinue = Otel.CliAutoSetupTelemetryAccept();
+					}else if (Otel.CliRunningOnDockerContainer()) // If it is running on a docker and wasn't overrided by the Otel.CliAutoSetupTelemetryEnabled() shouldn't use the telemetry
+					{
+						shouldContinue = false;
+					}
+					else // if we don't have the auto setup set we will check if we should auto accept or show the prompt
+					{
+						shouldContinue = autoAcceptTelemetry || AnsiConsole.Prompt(
+							new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
+								.ShowChoices());
+					}
 
 					OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
 				}
-				
+	
 				// If it is running silent we should create the folder for the user.
 				// or If all otel folders wasn't created and otel was allowed
 				// we create all the folders for otel
-				if (quiet || (!OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService)))
+				if (!OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService))
 				{
 					OtelUtils.CreateOtelFolders(configService);
 				}

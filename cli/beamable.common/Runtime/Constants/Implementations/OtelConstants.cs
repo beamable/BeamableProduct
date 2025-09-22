@@ -7,10 +7,25 @@ namespace Beamable.Common
             public static partial class Otel
             {
                 public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
+                public const string ENV_CLI_AUTO_SETUP_TELEMETRY = "BEAM_AUTO_SETUP_TELEMETRY";
+                public const string ENV_CLI_RUNNING_ON_DOCKER = "DOTNET_RUNNING_IN_CONTAINER";
 
                 public static bool CliTracesEnabled() =>
                     // if the disable env var is set, we don't setup otel
                     string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
+                
+                public static bool CliAutoSetupTelemetryEnabled() =>
+	                // if the env var is set it auto setup telemetry
+	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY));
+                
+                public static bool CliAutoSetupTelemetryAccept() =>
+	                // if the env var is set it auto setup telemetry
+	                System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY) == "ACCEPT";
+                
+                public static bool CliRunningOnDockerContainer() =>
+	                // if the env var is set it auto setup telemetry
+	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_RUNNING_ON_DOCKER));
+                
 
                 public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 500; // Equivalent to 500mb worth of space
 
