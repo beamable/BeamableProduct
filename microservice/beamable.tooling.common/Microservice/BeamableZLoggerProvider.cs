@@ -12,7 +12,12 @@ namespace Beamable.Server
 
     public static class Log
     {
-        
+	    /// <summary>
+	    /// The IGNORE_TELEMETRY_ATTRIBUTE is used to filter logs from telemetry
+	    /// If you would like to change the name of the variable, please make sure to change on
+	    /// beamable.otel.exporter.Constants.IGNORE_TELEMETRY_ATTRIBUTE as well. 
+	    /// </summary>
+	    public const string IGNORE_TELEMETRY_ATTRIBUTE = "";
         public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
         public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
         
@@ -92,6 +97,13 @@ namespace Beamable.Server
         public static void Write(LogLevel level, string message)
         {
             Default.Log(level, message);
+        }
+        
+        public static void WriteSkippingTelemetry(LogLevel level, string message)
+        {
+	        // The ignore attribute will be used later to filter the log record by using the attributes dictionary
+	        // And DON'T send it to OTEL
+	        Default.ZLog(level, $"{IGNORE_TELEMETRY_ATTRIBUTE}{message}");
         }
     }
     
