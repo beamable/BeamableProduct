@@ -234,7 +234,7 @@ namespace Beamable.Server.Editor.Usam
 							var writeTime = File.GetLastWriteTime(path).ToFileTime();
 							beamoIdToWriteTime[service.beamoId] = writeTime;
 						}
-						Reload();
+						UpdateUnityManifest(taskId);
 					}
 				}
 			}

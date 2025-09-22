@@ -379,7 +379,7 @@ namespace Beamable.Common.Content
 
 				case ArrayDict dict:
 
-					var fields = GetFieldInfos(type);
+					var fields = GetFieldInfos(type, true);
 					var instance = Activator.CreateInstance(type);
 					foreach (var field in fields)
 					{
@@ -423,7 +423,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		private List<FieldInfoWrapper> GetFieldInfos(Type type)
+		private List<FieldInfoWrapper> GetFieldInfos(Type type, bool useIgnoreField = false)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
 			{
@@ -486,10 +486,10 @@ namespace Beamable.Common.Content
 				return field.GetCustomAttributes<SerializeField>() != null || field.GetCustomAttribute<ContentFieldAttribute>() != null;
 			});
 
-			var serializableFields = listOfPublicFields.Union(listOfPrivateFields);
+			var serializableFields = listOfPublicFields.Union(listOfPrivateFields).ToList();
 			var notIgnoredFields = serializableFields.Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null);
 
-			var ll = notIgnoredFields.Select(CreateFieldWrapper);
+			var ll = useIgnoreField ? serializableFields.Select(CreateFieldWrapper) : notIgnoredFields.Select(CreateFieldWrapper);
 
 
 			ll = ll.OrderBy(n => n.SerializedName);
@@ -668,7 +668,7 @@ namespace Beamable.Common.Content
 
 		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, string itemId = null)
 		{
-			var fields = GetFieldInfos(instance.GetType());
+			var fields = GetFieldInfos(instance.GetType(), true);
 
 			var id = itemId ?? root["id"].ToString();
 
