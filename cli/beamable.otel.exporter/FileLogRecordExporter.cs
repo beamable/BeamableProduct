@@ -1,3 +1,4 @@
+using Beamable.Common;
 using beamable.otel.common;
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
@@ -77,7 +78,7 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 		
 		if (record.Attributes != null)
 		{
-			isValid &= !record.Attributes.Any(item => item.Key == nameof(Constants.IGNORE_TELEMETRY_ATTRIBUTE));
+			isValid &= !record.Attributes.Any(item => item.Key.Contains(nameof(Constants.IGNORE_TELEMETRY_ATTRIBUTE)));
 		}
 		
 		return isValid;
