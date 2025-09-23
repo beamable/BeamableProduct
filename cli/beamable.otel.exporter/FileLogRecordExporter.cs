@@ -59,7 +59,7 @@ public class FileLogRecordExporter : FileExporter<LogRecord>
 			SchemaVersion = ExporterConstants.SchemaVersion
 		};
 
-		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = true });
+		var json = JsonSerializer.Serialize(serializedBatch, new JsonSerializerOptions() { WriteIndented = false });
 
 		File.WriteAllText(filePath, json + Environment.NewLine);
 
