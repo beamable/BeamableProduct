@@ -882,10 +882,10 @@ namespace Beamable.Server
       {
 	      switch (operationType)
 	      {
+		      case BeamoV2PathRuleOperationType.Include:
+			      return values.Contains(valueToCheck);
 		      case BeamoV2PathRuleOperationType.Contain:
-			      return values.Contains(valueToCheck) || values.Any(item => item.Contains(valueToCheck));
-		      case BeamoV2PathRuleOperationType.NotContain:
-			      return !values.Contains(valueToCheck) && !values.Any(item => item.Contains(valueToCheck));
+			      return values.Any(valueToCheck.Contains);
 		      case BeamoV2PathRuleOperationType.StartsWith:
 			      return values.Any(item => item.StartsWith(valueToCheck));
 		      case BeamoV2PathRuleOperationType.EndsWith:
@@ -899,10 +899,8 @@ namespace Beamable.Server
       {
 	      switch (operationType)
 	      {
-		      case BeamoV2PlayerRuleOperationType.Contain:
+		      case BeamoV2PlayerRuleOperationType.Include:
 			      return values.Contains(valueToCheck);
-		      case BeamoV2PlayerRuleOperationType.NotContain:
-			      return !values.Contains(valueToCheck);
 		      case BeamoV2PlayerRuleOperationType.GreaterThan:
 			      return values.Any(item => valueToCheck > item);
 		      case BeamoV2PlayerRuleOperationType.LesserThan:
