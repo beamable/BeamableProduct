@@ -71,7 +71,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		#region Act
 
 
-		Run("project", "generate-env", serviceName, ".", "--auto-deploy", "--include-secret", "--exclude-otel-creds");
+		Run("project", "generate-env", serviceName, ".", "--auto-deploy", "--include-secret", "--exclude-otel-creds", "--quiet");
 
 		#endregion
 
@@ -151,7 +151,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "generate-env", serviceName, ".", "--auto-deploy", "--include-secret", "--exclude-otel-creds");
+		Run("project", "generate-env", serviceName, ".", "--auto-deploy", "--include-secret", "--exclude-otel-creds", "--quiet");
 
 		#endregion
 
