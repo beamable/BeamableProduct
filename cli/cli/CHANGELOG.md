@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Event subscriptions use the developer's access token for authentication instead of the realm secret. 
 - `beam services` command suite is marked as internal
 - Rider IDE will be forced to re-run Beamable targets on project builds
+- `EnableUnrealBlueprintCompatibility` property is now added automatically to any `csproj` created in a Beamable project that is linked to an Unreal project.
+
+### Fixed
+- Fixed issue that would cause `content ps` if you had any non-`.json` files in any of your content folders.
+- Fixed issue in `beam unreal init` command that would cause it to fail if the provided path to the Unreal Sdk had a `.` in it.
+- Fixed issue with C#MS Static Analyzer that caused the `EnableUnrealBlueprintCompatibility` flag to be applied incorrectly.
+- Fixed issue with C#MS Static Analyzer when using the `EnableUnrealBlueprintCompatibility` flag that would incorrectly flag certain uses of generic types (`Promises`) as an error.  
 
 
 ## [5.4.1] - 2025-08-29

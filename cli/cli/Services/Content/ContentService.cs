@@ -504,6 +504,8 @@ public class ContentService
 		var tasks =
 			// For each existing file inside the content folder we care about, we'll have one entry.
 			Directory.EnumerateFiles(contentFolder)
+				// Only get the JSON files
+				.Where(fp => Path.GetExtension(fp).EndsWith("json"))
 				// Filter all content to only match the ones we care about.
 				.Where(fp => filterFunc(new ContentFile() { Id = Path.GetFileNameWithoutExtension(fp) }))
 				// Load the files that passed the filter into memory
