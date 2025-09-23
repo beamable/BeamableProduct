@@ -23,7 +23,7 @@ namespace Beamable.Common
 	                System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY) == "ACCEPT";
                 
                 public static bool CliRunningOnDockerContainer() =>
-	                // if the env var is set it auto setup telemetry
+	                // if the env var is set it is running on a docker container.
 	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_RUNNING_ON_DOCKER));
                 
 
