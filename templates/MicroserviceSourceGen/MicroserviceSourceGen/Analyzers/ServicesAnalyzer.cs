@@ -26,7 +26,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private string _beamId;
 
 	private const string VALIDATE_CALLABLE_TYPES_PROPERTY_NAME = "build_property.beamvalidatecallabletypesexistinsharedlibraries";
-	private const string ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME = "build_property.enableunrealblueprintcompability";
+	private const string ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME = "build_property.enableunrealblueprintcompatibility";
 	private const string BEAM_ID_PROPERTY_NAME = "build_property.beamid";
 	private const string DICTIONARY_CLASS_FULLNAME = "System.Collections.Generic.Dictionary";
 	private const string LIST_CLASS_FULLNAME = "System.Collections.Generic.List";
@@ -453,7 +453,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private static bool IsBlueprintCompatible(AnalyzerConfigOptions options)
 	{
 		return options.TryGetValue(ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME, out string value) &&
-		       value.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+		       value.Equals("true", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static void ValidateParameters(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol)
@@ -963,7 +963,14 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		{
 			string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
 			
-			if(isBlueprintCompatible && !AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
+			var allGenericTypeSymbol = genericTypeSymbol.GetAllBaseTypes();
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateGenericTypes), 
+				$"Reference {reference} - IsReturn: {isReturnType}, has base types: {allBaseTypesString} - " +
+				$"TypeName: {typeName}, IsCompatible: {isBlueprintCompatible}, genericTypes:{string.Join(",", allGenericTypeSymbol)}, AllowedTypes:{string.Join(",", AllowedGenericTypes)}", 
+				location, 
+				compilation));
+			if(isBlueprintCompatible && !AllowedGenericTypes.Any(allowed => allGenericTypeSymbol.Any(baseName => baseName.StartsWith(allowed))))
 			{
 				var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, location, messageParam, methodName);
 				reportDiagnostic.Invoke(genericTypeFoundDiagnostic);

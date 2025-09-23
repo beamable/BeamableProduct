@@ -27,8 +27,8 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 	{
 		AddArgument(new Argument<string>("unrealSdkRepoPath", "Path to your clone of Beamable's UnrealSDK repo in your machine"), (args, unrealSdkRepoPath) =>
 		{
-			if (Path.HasExtension(unrealSdkRepoPath)) throw new CliException($"given ´unrealSdkRepoPath´ must be a directory, unrealSdkRepoPath=[${unrealSdkRepoPath}]");
 			if (!Path.Exists(unrealSdkRepoPath)) throw new CliException($"given ´unrealSdkRepoPath´ does not exist, unrealSdkRepoPath=[${unrealSdkRepoPath}]");
+			if (!File.GetAttributes(unrealSdkRepoPath).HasFlag(FileAttributes.Directory)) throw new CliException($"given ´unrealSdkRepoPath´ must be a directory, unrealSdkRepoPath=[${unrealSdkRepoPath}]");
 
 			args.BeamableUnrealSdkRepoPath = unrealSdkRepoPath;
 		});
