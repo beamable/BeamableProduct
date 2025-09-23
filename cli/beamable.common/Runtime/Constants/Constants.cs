@@ -17,6 +17,11 @@
 		public const string OPEN_API_FILE_NAME = "beam_openApi.json";
 		public const string OPEN_API_DIR_PROPERTY_KEY = "OutDir";
 
+		/// <summary>
+		/// The IGNORE_TELEMETRY_ATTRIBUTE is used to filter logs from telemetry
+		/// </summary>
+		public const string IGNORE_TELEMETRY_ATTRIBUTE = "";
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";

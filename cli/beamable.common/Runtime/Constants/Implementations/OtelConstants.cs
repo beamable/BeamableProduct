@@ -17,10 +17,21 @@ namespace Beamable.Common
                 public static bool CliAutoSetupTelemetryEnabled() =>
 	                // if the env var is set it auto setup telemetry
 	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY));
-                
-                public static bool CliAutoSetupTelemetryAccept() =>
+
+                public static bool CliAutoSetupTelemetryAccept()
+                {
 	                // if the env var is set it auto setup telemetry
-	                System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY) == "ACCEPT";
+	                // true will accept
+	                // false will reject
+	                string autoSetupTelemetry =  System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY);
+	                if (bool.TryParse(autoSetupTelemetry, out bool result))
+	                {
+		                return result;
+	                }
+
+	                return false;
+                }
+	              
                 
                 public static bool CliRunningOnDockerContainer() =>
 	                // if the env var is set it is running on a docker container.
