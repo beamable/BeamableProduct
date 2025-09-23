@@ -67,7 +67,7 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 
 		string globalConfig = @"
 is_global = true 
-build_property.EnableUnrealBlueprintCompability = true";
+build_property.EnableUnrealBlueprintCompatibility = true";
 		if (extraGlobalConfigs != null)
 		{
 			foreach (string extraGlobalConfig in extraGlobalConfigs)
