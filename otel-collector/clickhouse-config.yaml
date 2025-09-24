@@ -73,7 +73,7 @@ service:
         - pull:
             exporter:
               prometheus:
-                host: 0.0.0.0 # test if localhost works here, 127.0.0.1
+                host: 127.0.0.1
                 port: ${env:BEAM_COLLECTOR_PROMETHEUS_PORT} # This is to disable Prometheus from binds to a port and not enable multiple running collectors
     # logs:
     #   level: "debug" #Uncomment this to test collector with more verbose logs
