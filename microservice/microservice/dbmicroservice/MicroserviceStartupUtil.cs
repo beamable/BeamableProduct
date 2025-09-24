@@ -289,6 +289,7 @@ public static class MicroserviceStartupUtil
 				{
 					ctx.logger.ZLogInformation($"Reading environment to get clickhouse credentials...");
 				}
+				CollectorManager.AddCollectorConfigurationToEnvironment();
 			}
 
 			ctx.logger.ZLogInformation($"Starting otel collector discovery event...");

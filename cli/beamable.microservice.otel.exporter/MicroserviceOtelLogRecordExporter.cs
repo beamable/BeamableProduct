@@ -2,6 +2,8 @@ using beamable.otel.common;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace beamable.microservice.otel.exporter;
 
@@ -27,6 +29,56 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		_shouldRetry = options.ShouldRetry;
 	}
 
+	public class LogRecordAccessors
+	{
+		private static readonly Type LogRecordSharedPoolType =
+			typeof(LogRecord).Assembly.GetType("OpenTelemetry.Logs.LogRecordSharedPool");
+
+		private static readonly Type LogRecordType =
+			typeof(LogRecord).Assembly.GetType("OpenTelemetry.Logs.LogRecord");
+
+		private static readonly MethodInfo ReturnMethod =
+			LogRecordSharedPoolType?.GetMethod("Return", BindingFlags.Instance | BindingFlags.NonPublic);
+
+		public static object GetCurrentPool()
+		{
+			var currentField = LogRecordSharedPoolType?.GetField("Current",
+				BindingFlags.Instance | BindingFlags.NonPublic);
+			return currentField?.GetValue(null);
+		}
+
+		public static object GetSource(LogRecord record)
+		{
+			var sourceField = LogRecordType?.GetField("Source",
+				BindingFlags.Instance | BindingFlags.NonPublic);
+			return sourceField?.GetValue(record) ?? "";
+		}
+
+		public static void Return(LogRecord logRecord)
+		{
+			var pool = GetCurrentPool();
+			if (pool != null)
+			{
+				ReturnMethod?.Invoke(pool, new[] { logRecord });
+			}
+		}
+
+		[UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(AddReference))]
+		public static extern void AddReference(LogRecord c);
+	}
+
+
+	private void FreeRecords(List<LogRecord> allRecords)
+	{
+		foreach (var logRecord in allRecords)
+		{
+			if (LogRecordAccessors.GetSource(logRecord).ToString() == "FromSharedPool")
+			{
+				LogRecordAccessors.Return(logRecord);
+			}
+		}
+	}
+
 	public override ExportResult Export(in Batch<LogRecord> batch)
 	{
 		var resource = this.ParentProvider.GetResource();
@@ -40,10 +92,9 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		List<LogRecord> records = new List<LogRecord>();
 		foreach (var record in batch)
 		{
+			LogRecordAccessors.AddReference(record);
 			records.Add(record);
 		}
-
-		//TODO have an environment variable to disable the retry, just try sending once
 
 		var copyBatch = new Batch<LogRecord>(records.ToArray(), records.Count); // We do this because iterating over the circular buffer inside the Batch<LogRecord> actually removes the entries from the Batch
 
@@ -51,11 +102,13 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 		if (!_shouldRetry)
 		{
+			FreeRecords(records.ToList());
 			return result;
 		}
 
 		if (result == ExportResult.Success)
 		{
+			FreeRecords(records.ToList());
 			while (_logRecordsToFlush.Count > 0)
 			{
 				var record = _logRecordsToFlush.Dequeue();
@@ -66,6 +119,10 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 				{
 					_logRecordsToFlush.Enqueue(record);
 					return ExportResult.Failure;
+				}
+				else
+				{
+					FreeRecords(record.Batch.ToList());
 				}
 			}
 		}

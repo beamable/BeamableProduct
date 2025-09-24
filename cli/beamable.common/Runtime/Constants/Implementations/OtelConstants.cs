@@ -43,10 +43,34 @@ namespace Beamable.Common
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";
                 public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
 
-                public const string ENV_COLLECTOR_CLICKHOUSE_HOST = "BEAM_CLICKHOUSE_HOST";
                 public const string ENV_COLLECTOR_CLICKHOUSE_ENDPOINT = "BEAM_CLICKHOUSE_ENDPOINT";
                 public const string ENV_COLLECTOR_CLICKHOUSE_USERNAME = "BEAM_CLICKHOUSE_USERNAME";
                 public const string ENV_COLLECTOR_CLICKHOUSE_PASSWORD = "BEAM_CLICKHOUSE_PASSWORD";
+
+                public const string ENV_BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT = "BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT";
+                public const string BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE = "BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE";
+                public const string BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE = "5000";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_TIMEOUT = "BEAM_CLICKHOUSE_EXPORTER_TIMEOUT";
+                public const string BEAM_CLICKHOUSE_EXPORTER_TIMEOUT = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE = "BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE";
+                public const string BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE = "1000";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED = "BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED = "true";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL = "BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL = "BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL = "30s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME = "BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME = "300s";
+
                 
                 
                 public const string DATADOG_PARENT_TRACE_ID_HEADER = "x-datadog-parent-id";

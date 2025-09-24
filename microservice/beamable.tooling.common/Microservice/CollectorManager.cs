@@ -527,6 +527,30 @@ public class CollectorManager
 		}
 	}
 
+	public static void AddCollectorConfigurationToEnvironment()
+	{
+		var allEnvVars = new Dictionary<string, string>()
+		{
+			{Otel.ENV_BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT, Otel.BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT},
+			{Otel.ENV_BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE, Otel.BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_TIMEOUT, Otel.BEAM_CLICKHOUSE_EXPORTER_TIMEOUT},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE, Otel.BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED, Otel.BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL, Otel.BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL, Otel.BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL},
+			{Otel.ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME, Otel.BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME},
+		};
+
+		foreach (var pair in allEnvVars)
+		{
+			var envValue = Environment.GetEnvironmentVariable(pair.Key);
+			if (string.IsNullOrEmpty(envValue))
+			{
+				Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+			}
+		}
+	}
+
 	private static async Task CollectorDiscovery(string collectorExecutablePath, Socket socket, bool detach, CancellationTokenSource cts, Promise<CollectorStatus> connectedPromise, ILogger logger, string otlpEndpoint = null)
 	{
 		int alarmCounter = 0;
