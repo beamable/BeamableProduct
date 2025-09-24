@@ -73,6 +73,7 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 				{
 					var res = await args.OtelApi.GetOtelAuthWriterConfig();
 					CollectorManager.AddAuthEnvironmentVars(res);
+					CollectorManager.AddCollectorConfigurationToEnvironment();
 				}
 				catch (RequesterException ex)
 				{
