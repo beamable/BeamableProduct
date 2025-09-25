@@ -831,7 +831,7 @@ namespace Beamable.Server
 					      bool isPathFilterValid = isPathFilterNotSet || CheckRule(ruleFilter.paths, ruleFilter.pathsOperationType, ctx.Path);
 
 					      bool isUserFilterNotSet = !ruleFilter.playerIds.HasValue || !ruleFilter.playerIdOperationType.HasValue;
-					      bool isPlayerFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.UserId);
+					      bool isPlayerFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.AccountId);
 
 					     hasValidFilter |= isPathFilterValid && isPlayerFilterValid;
 				      }
