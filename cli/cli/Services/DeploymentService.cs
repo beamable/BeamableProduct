@@ -224,7 +224,7 @@ public partial class DeployUtil
 			sb.AppendLine($"    env_file:");
 			sb.AppendLine($"      - {Path.Combine("env", envFileName)}");
 
-			if (service.dependencies.TryGet(out var deps))
+			if (service.dependencies.TryGet(out var deps) && deps.Length > 0)
 			{
 				sb.AppendLine($"    environment:");
 				for (var s = 0; s < deps.Length; s++)

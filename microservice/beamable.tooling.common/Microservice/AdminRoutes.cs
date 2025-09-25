@@ -60,9 +60,6 @@ namespace microservice.Common
 	   /// In a deployed environment, this value should be empty (0)
 	   /// </summary>
 	   public long executorPlayerId { get; set; }
-
-
-	   public AsyncLocal<LogLevel> ContextAsyncLogLevelReference { get; set; }
 	   
       /// <summary>
       /// A simple method to check if the microservice can send and receive network traffic.
@@ -87,13 +84,6 @@ namespace microservice.Common
       [CustomResponseSerializationAttribute]
       public string Docs()
       {
-	      // We're changing the LogLevel to Warning when calling admin/Docs endpoint so we don't add a lot of OpenApi generation logs
-	      // This is a temporary fix, the proper solution would be to not generate the OpenAPI docs everytime that the endpoint is called
-	      //  Option 1. Use the OpenApiDocs from Build time
-	      //  Option 2. Generates the OpenAPI Docs the first time the endpoint is called, save it on memory, and reuse it for every next call
-	      ContextAsyncLogLevelReference.Value = LogLevel.Warning;
-	      
-	      
 	      var docs = new ServiceDocGenerator();
 	      var ctx = GlobalProvider.GetService<StartupContext>();
 	      var doc = docs.Generate(ctx, GlobalProvider);

@@ -111,6 +111,7 @@ public static class MicroserviceStartupUtil
 			await GetLocalEnvironment(startupCtx);
 			var freshEnvArgs = new EnvironmentArgs();
 			configuredArgs.Host = freshEnvArgs.Host;
+			configuredArgs.LogLevel = freshEnvArgs.LogLevel;
 			configuredArgs.CustomerID = freshEnvArgs.CustomerID;
 			configuredArgs.ProjectName = freshEnvArgs.ProjectName;
 			configuredArgs.Secret = freshEnvArgs.Secret;

@@ -156,6 +156,12 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		await manifestTask;
 
 		var accountId = user.id; //note; the admin/me call returns an accountId; but the /me returns a gamerTag
+
+		var logLevel = Environment.GetEnvironmentVariable("LOG_LEVEL");
+		if (string.IsNullOrEmpty(logLevel))
+		{
+			logLevel = "debug";
+		}
 		
 		var output = new GenerateEnvFileOutput
 		{
@@ -163,6 +169,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			{
 				EnvVarOutput.Create("HOST", args.AppContext.Host.Replace("http", "ws") + "/socket"),
 				EnvVarOutput.Create("CID", args.AppContext.Cid),
+				EnvVarOutput.Create("LOG_LEVEL", logLevel),
 				EnvVarOutput.Create("PID", args.AppContext.Pid),
 				EnvVarOutput.Create("NAME_PREFIX", args.includePrefix ? ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() : ""),
 				EnvVarOutput.Create("BEAM_INSTANCE_COUNT", args.instanceCount.ToString()),
