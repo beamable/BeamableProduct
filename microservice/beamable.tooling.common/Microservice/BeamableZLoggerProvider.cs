@@ -41,27 +41,55 @@ namespace Beamable.Server
             Default.LogError(ex, message);
         }
 
-        
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(string message)
         {
             Default.LogCritical(message);
         }
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(Exception ex, string message)
         {
             Default.LogCritical(ex, message);
         }
-        
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(string message, params object[] args)
+        {
+            Default.LogCritical(message, args);
+        }
+        [Obsolete("Use Critical Instead")]
+        public static void Critical(string message)
+        {
+            Default.LogCritical(message);
+        }
+        [Obsolete("Use Critical Instead")]
+        public static void Critical(Exception ex, string message)
+        {
+            Default.LogCritical(ex, message);
+        }
+        [Obsolete("Use Critical Instead")]
+        public static void Critical(string message, params object[] args)
         {
             Default.LogCritical(message, args);
         }
 
         
+        public static void Trace(string message)
+        {
+            Default.LogTrace(message);
+        }
+        
+        public static void Trace(string message, params object[] args)
+        {
+            Default.LogTrace(message, args);
+        }
+        
+        [Obsolete("Use Trace Instead")]
         public static void Verbose(string message)
         {
             Default.LogTrace(message);
         }
         
+        [Obsolete("Use Trace Instead")]
         public static void Verbose(string message, params object[] args)
         {
             Default.LogTrace(message, args);
