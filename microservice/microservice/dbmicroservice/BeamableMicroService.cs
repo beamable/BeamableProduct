@@ -154,12 +154,15 @@ namespace Beamable.Server
       private SingletonDependencyList<ITelemetryAttributeProvider> _telemetryProviders;
       private StartupContext _startupContext;
 
+      private string _adminPrefix;
+
       public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
 	      _startupContext = startupContext;
 	      if (HasInitialized) return;
          
          _serviceAttribute = startupContext.attributes;
+         _adminPrefix = _serviceAttribute.GetQualifiedName() + "/admin/";
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          InstanceArgs = args.Copy(conf =>
@@ -775,7 +778,16 @@ namespace Beamable.Server
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
 	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-	      configService.UpdateLogLevel();
+	      if (ctx.Path.StartsWith(_adminPrefix))
+	      {
+		      // when the path starts with admin, use warning.
+		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
+	      }
+	      else
+	      {
+		      // otherwise, allow default behaviour.
+		      configService.UpdateLogLevel();
+	      }
 
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try

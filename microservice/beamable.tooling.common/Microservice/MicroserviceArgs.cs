@@ -263,7 +263,7 @@ namespace Beamable.Server
 		}
 
 		public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
-		public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+		public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "info";
 		public string OapiGenLogLevel => Environment.GetEnvironmentVariable("BEAM_OAPI_LOG_LEVEL") ?? "info";
 		public bool DisableLogTruncate => IsEnvironmentVariableTrue("DISABLE_LOG_TRUNCATE");
 		public int LogTruncateLimit => GetIntFromEnvironmentVariable("LOG_TRUNCATE_LIMIT", 1000);
