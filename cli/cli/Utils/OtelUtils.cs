@@ -11,9 +11,15 @@ public static class OtelUtils
 	{
 		var otelConfig = configService.LoadOtelConfigFromFile();
 
-		otelConfig.BeamCliAllowTelemetry = AllowOtel;
+		// We just save the otel if the config is different or there's no configuration at all
+		bool shouldSaveOtelFile = AllowOtel != otelConfig.BeamCliAllowTelemetry || !HasOtelConfig(configService);
 		
-		configService.SaveOtelConfigToFile(otelConfig);
+		otelConfig.BeamCliAllowTelemetry = AllowOtel;
+
+		if (shouldSaveOtelFile)
+		{
+			configService.SaveOtelConfigToFile(otelConfig);
+		}
 	}
 	
 	/// <summary>
