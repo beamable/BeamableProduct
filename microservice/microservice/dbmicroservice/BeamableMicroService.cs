@@ -669,9 +669,13 @@ namespace Beamable.Server
 			      body = ex.GetErrorResponse(_serviceAttribute.MicroserviceName)
 		      };
 		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
-		      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {type}: {message} - {source} {json} \n {stack}",
-			      ex.GetType().Name, ex.Message,
-			      ex.Source, failResponseJson, ex.StackTrace);
+		      // BeamableZLoggerProvider.Instance.(ex);
+
+		      BeamableZLoggerProvider.Instance.Error(ex);
+
+		      // BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}",
+			     //  ex.GetType().Name, ex.Message,
+			     //  ex.Source, failResponseJson, ex.StackTrace);
 		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
 	      }
 	      catch (TargetInvocationException ex)
@@ -690,10 +694,11 @@ namespace Beamable.Server
 			      failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
 
 			      failResponseJson = JsonConvert.SerializeObject(failResponse);
-			      BeamableZLoggerProvider.LogContext.Value.LogError(
-				      "Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name,
-				      msException.Message,
-				      msException.Source, failResponseJson, msException.StackTrace);
+			      BeamableZLoggerProvider.Instance.Error(msException);
+			      // BeamableZLoggerProvider.LogContext.Value.LogError(
+				     //  "Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}", msException.GetType().Name,
+				     //  msException.Message,
+				     //  msException.Source, failResponseJson, msException.StackTrace);
 		      }
 		      else
 		      {
@@ -708,19 +713,19 @@ namespace Beamable.Server
 			      };
 
 			      failResponseJson = JsonConvert.SerializeObject(failResponse);
-			      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {type}: {message} - {source} \n {stack}",
-				      inner.GetType().Name,
-				      inner.Message,
-				      inner.Source, inner.StackTrace);
+			      BeamableZLoggerProvider.Instance.Error(inner);
+
+			      // BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} \n {exception.stacktrace}",
+				     //  inner.GetType().Name,
+				     //  inner.Message,
+				     //  inner.Source, inner.StackTrace);
 		      }
 
 		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
 	      }
 	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
 	      {
-		      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {type}: {message} - {source} \n {stack}",
-			      ex.GetType().Name, ex.Message,
-			      ex.Source, ex.StackTrace);
+		      BeamableZLoggerProvider.Instance.Error(ex);
 		      // var failResponse = new GatewayErrorResponse
 		      // {
 		      //    id = ctx.Id,
@@ -794,9 +799,10 @@ namespace Beamable.Server
 	      {
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
+		      
 		      if (loglevelContext != null)
 		      {
-			      LogLevel? contextLogLevel = null;
+			      LogLevel contextLogLevel = loglevelContext.defaultLogLevel.ToMicrosoftLogLevel();
 			      BeamoV2LogContextRule[] rules = loglevelContext.rules.GetOrElse(Array.Empty<BeamoV2LogContextRule>());
 			      foreach (BeamoV2LogContextRule contextRule in rules)
 			      { 
@@ -827,13 +833,14 @@ namespace Beamable.Server
 					      // For each rule filter we need to check if the Path filter and User filter matches, both needs to be true for the filter to be valid
 					      // if the filter for any is not set we consider it as true as well.
 
-					      bool isPathFilterNotSet = !ruleFilter.paths.HasValue || !ruleFilter.pathsOperationType.HasValue;
+					      bool isPathFilterNotSet = !ruleFilter.paths.HasValue || !ruleFilter.pathsOperationType.HasValue || ruleFilter.paths.Value.Length == 0;
 					      bool isPathFilterValid = isPathFilterNotSet || CheckRule(ruleFilter.paths, ruleFilter.pathsOperationType, ctx.Path);
 
-					      bool isUserFilterNotSet = !ruleFilter.playerIds.HasValue || !ruleFilter.playerIdOperationType.HasValue;
-					      bool isPlayerFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.AccountId);
+					      bool isUserFilterNotSet = !ruleFilter.playerIds.HasValue || !ruleFilter.playerIdOperationType.HasValue  || ruleFilter.playerIds.Value.Length == 0;
+					      bool isAccountFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.AccountId);
+					      bool isGamerTagFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.UserId);
 
-					     hasValidFilter |= isPathFilterValid && isPlayerFilterValid;
+					     hasValidFilter |= isPathFilterValid && (isAccountFilterValid || isGamerTagFilterValid);
 				      }
 
 				      if (hasValidFilter)
@@ -842,9 +849,8 @@ namespace Beamable.Server
 				      }
 			      }
 
-			      contextLogLevel ??= loglevelContext.defaultLogLevel.ToMicrosoftLogLevel();
-
-			      MicroserviceBootstrapper.ContextLogLevel.Value = contextLogLevel.Value;
+			   
+			      MicroserviceBootstrapper.ContextLogLevel.Value = contextLogLevel;
 
 			      void TryToSetNewLogLevel(LogLevel newLogLevel)
 			      {

@@ -27,6 +27,7 @@ public class LoggingContextService : ILoggingContextService
 			Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT,
 			cb =>
 			{
+				Log.Trace("Received event, " + Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT);
 				_ = GetAllLoggingContexts();
 			});
 	}
