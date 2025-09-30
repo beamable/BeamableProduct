@@ -12,7 +12,7 @@ namespace Beamable.BeamService
 		{
 			await BeamServer
 				.Create()
-				.IncludeRoutes<BeamService>()
+				.IncludeRoutes<BeamService>(routePrefix: "")
 				.RunForever();
 		}
 	}

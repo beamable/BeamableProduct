@@ -363,7 +363,13 @@ namespace Beamable.Server
             ctx.Attributes.Add(TelemetryAttributes.RequestPlayerId(ctx.Request.UnsafeUserId));
             ctx.Attributes.Add(TelemetryAttributes.RequestId(Guid.NewGuid().ToString()));
             ctx.Attributes.Add(TelemetryAttributes.ConnectionRequestId(ctx.Request.Id));
-            ctx.Attributes.Add(TelemetryAttributes.RequestPath(ctx.Request.Path));
+
+            var path = ctx.Request.Path;
+            if (path.StartsWith("micro_"))
+            {
+                path = path.Substring("micro_".Length);
+            }
+            ctx.Attributes.Add(TelemetryAttributes.RequestPath(path));
 
             if (!ctx.Request.Headers.TryGetClientType(out var clientType))
             {
