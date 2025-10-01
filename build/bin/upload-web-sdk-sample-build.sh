@@ -1,49 +1,69 @@
 #!/bin/bash
 
-set -euo pipefail
+# Exit immediately if any command fails
+set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-WORKSPACE_DIR="${GITHUB_WORKSPACE:-$REPO_ROOT}"
+# Use GitHub workspace if available, otherwise use current directory
+workspace="${GITHUB_WORKSPACE:-.}"
 
-: "${SAMPLE_DIR:?SAMPLE_DIR environment variable is required}"
-: "${GITHUB_USERNAME:?GITHUB_USERNAME environment variable is required}"
-: "${GITHUB_PASSWORD:?GITHUB_PASSWORD environment variable is required}"
+# Set Up Paths
+build_directory="$workspace/web-sdk-sample-build"
+github_repo_url="https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git"
+source_dist_folder="$workspace/$SAMPLE_DIR/dist"
 
-WEB_SDK_SAMPLE_BUILD_DIR="$WORKSPACE_DIR/web-sdk-sample-build"
-REMOTE_URL="https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git"
-DIST_SOURCE="$WORKSPACE_DIR/$SAMPLE_DIR/dist"
-
-if [[ ! -d "$DIST_SOURCE" ]]; then
-  echo "Expected dist folder not found at $DIST_SOURCE" >&2
+# Validate Source Files Exist
+if [[ ! -d "$source_dist_folder" ]]; then
+  echo "Error: Expected dist folder not found at $source_dist_folder" >&2
   exit 1
 fi
 
-rm -rf "$WEB_SDK_SAMPLE_BUILD_DIR"
-mkdir -p "$WEB_SDK_SAMPLE_BUILD_DIR"
-cd "$WEB_SDK_SAMPLE_BUILD_DIR"
+echo "Preparing build directory..."
+
+# Create fresh build directory
+mkdir -p "$build_directory"
+
+# Move into build directory
+cd "$build_directory"
+
+echo "Setting up git repository..."
 
 git init
+git config init.defaultBranch main
 git config user.email "github-actions[bot]@users.noreply.github.com"
 git config user.name "github-actions[bot]"
-git remote add origin "$REMOTE_URL"
+git remote add origin "$github_repo_url"
 
-if git ls-remote --exit-code origin main >/dev/null 2>&1; then
+# Fetch existing main branch or create new one
+echo "Checking for existing repository..."
+if git ls-remote --exit-code origin main &>/dev/null; then
+  echo "Found existing main branch, fetching..."
   git fetch origin main --depth=1
   git checkout -B main origin/main
 else
+  echo "No existing main branch found, creating new one..."
   git checkout -B main
 fi
 
-find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+echo "Copying new files..."
 
-cp -a "$DIST_SOURCE"/. "$WEB_SDK_SAMPLE_BUILD_DIR"
+# Remove all files except .git directory, then copy new files
+find . -mindepth 1 -maxdepth 1 ! -name '.git' -delete
+cp -a "$source_dist_folder"/. .
 
+echo "Checking for changes..."
+
+# Stage all changes
 git add --all
+git status
 
+# Check if there are any changes to commit
 if git diff --cached --quiet; then
-  echo "No changes to commit"
+  echo "No changes detected - nothing to commit"
 else
+  echo "Changes detected, committing and pushing..."
   git commit -m "Update web sdk sample build"
-  git push --force-with-lease origin main
+  git push --set-upstream --force origin main
+  echo "Successfully deployed changes"
 fi
+
+echo "Done!"
