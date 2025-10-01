@@ -47,7 +47,7 @@ for platform in "${platforms[@]}"; do
     fi
     
     echo "Building Otel Collector for $OS/$ARCH..."
-    GOOS=$OS GOARCH=$ARCH go build  -ldflags "-X 'github.com/beamable/BeamableProduct/servicediscovery.Version=$VERSION'" -o "$OUTPUT_DIRECTORY/$output"
+    CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCH go build  -ldflags "-X 'github.com/beamable/BeamableProduct/servicediscovery.Version=$VERSION' -extldflags '-static' -s -w" -o "$OUTPUT_DIRECTORY/$output"
 done
 
 cd ..

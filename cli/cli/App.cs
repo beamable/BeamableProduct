@@ -1100,11 +1100,10 @@ public class App
 				// If the user didn't have the otel config in the files
 				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService);
 
-				bool autoAcceptTelemetry = quiet || Otel.CliAutoSetupTelemetryEnabled() || Otel.CliRunningOnDockerContainer();
-				
 				// If it is quiet or autosetup we should create the otel settings as true anyway
-				if (shouldTryToCreateFolders || autoAcceptTelemetry)
+				if (shouldTryToCreateFolders)
 				{
+					// default value
 					bool shouldContinue = true;
 					
 					// If we have the auto setup telemetry env var setup we get the value to accept/reject
@@ -1115,27 +1114,29 @@ public class App
 					{
 						shouldContinue = false;
 					}
-					else // if we don't have the auto setup set we will check if we should auto accept or show the prompt
+					else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
 					{
-						shouldContinue = autoAcceptTelemetry || AnsiConsole.Prompt(
+						shouldContinue = AnsiConsole.Prompt(
 							new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
 								.ShowChoices());
 					}
 
 					OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
 				}
-	
+				
+				bool hasOtelConfig = Directory.Exists(beamableDirectory) && OtelUtils.HasOtelConfig(configService);
+				
 				// If it is running silent we should create the folder for the user.
 				// or If all otel folders wasn't created and otel was allowed
 				// we create all the folders for otel
-				if (!OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService))
+				if (hasOtelConfig && !OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService))
 				{
 					OtelUtils.CreateOtelFolders(configService);
 				}
 				
 				// If the it's not allowed to use telemetry we enforce the deletion of the folders
 				// The folders existence is basically what defines the usage of telemetry
-				if (Directory.Exists(beamableDirectory) && !OtelUtils.GetAllowOtelConfig(configService) && !quiet)
+				if (hasOtelConfig && !OtelUtils.GetAllowOtelConfig(configService))
 				{
 					OtelUtils.DeleteOtelFolders(configService);
 				}
