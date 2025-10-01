@@ -18,6 +18,12 @@ public static class BeamZLogFormatterExtensions
     
 }
 
+public class BeamMasker
+{
+    public Regex matcher;
+    public MatchEvaluator maskerFunction;
+} 
+
 public partial class BeamZLogFormatter : IZLoggerFormatter
 {
     private readonly IAppContext _context;
@@ -25,6 +31,23 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
 
     [GeneratedRegex("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............", RegexOptions.None, "en-US")]
     public static partial Regex TokenRegex();
+
+    [GeneratedRegex(@"""password""\s*:\s*""([^""]*)""", RegexOptions.None, "en-US")]
+    public static partial Regex PasswordFieldRegex();
+
+    public static List<BeamMasker> customMasks = new List<BeamMasker>
+    {
+        new BeamMasker
+        {
+            matcher = TokenRegex(),
+            maskerFunction = ProcessToken
+        },
+        new BeamMasker
+        {
+            matcher = PasswordFieldRegex(),
+            maskerFunction = ProcessPassword
+        }
+    };
     
     public BeamZLogFormatter(IAppContext context, IZLoggerFormatter innerFormatter)
     {
@@ -48,8 +71,11 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
         var result = Encoding.UTF8.GetString(buffer.WrittenMemory.Span);
 
         // do masking operations to takeout sensitive data
-        result = TokenRegex().Replace(result, PreprocessMask);
-
+        foreach (var mask in customMasks)
+        {
+            result = mask.matcher.Replace(result, mask.maskerFunction);
+        }
+        
         // and finally write the masked result to the destination
         var value = Encoding.UTF8.GetBytes(result);
         writer.BeamWrite(value);
@@ -57,8 +83,13 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
 
     public bool WithLineBreak => _innerFormatter.WithLineBreak;
     
-    protected string PreprocessMask(Match match)
+    static string ProcessToken(Match match)
     {
         return $"{match.Groups[1].Value}\"<hidden_token last4=({match.Value.Substring(match.Value.Length - 4)})>";
+    }
+
+    static string ProcessPassword(Match _)
+    {
+        return "\"password\":\"<hidden_password>\"";
     }
 }

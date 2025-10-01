@@ -342,8 +342,14 @@ namespace Beamable.Editor.Utility
 			}
 			if (!Directory.Exists(crashFolder))
 			{
-				throw new Exception($"Could not find Crash Folder {crashFolder}");
+				crashFolder = Path.Combine(Path.GetTempPath(), "Unity", "Editor", "Crashes");
 			}
+
+			if (!Directory.Exists(crashFolder))
+			{
+				throw new Exception($"Could not find Crash Folders");
+			}
+			
 			string lastParseFullPath = Path.Join(Application.temporaryCachePath, LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME);
 			if (!File.Exists(lastParseFullPath))
 			{

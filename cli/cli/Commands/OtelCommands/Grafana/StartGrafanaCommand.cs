@@ -4,6 +4,7 @@ using Beamable.Server;
 using cli.OtelCommands.Grafana;
 using cli.Services;
 using cli.Utils;
+using ClickHouse.Client.Utility;
 using CliWrap;
 
 namespace cli.OtelCommands;
@@ -51,6 +52,11 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
             MachineHelper.OpenBrowser(GrafanaCommand.GetGrafanaUrl(app));
             return;
         }
+
+        string proviosingPath = $"{GrafanaCommand.GetAbsoluteFilePath_ProvisioningFolder()}:/etc/grafana/provisioning";
+        string grafanaIniPath = $"{GrafanaCommand.GetAbsoluteFilePath_GrafanaIni()}:/etc/grafana/grafana.ini";
+        string dashboardPath = $"{GrafanaCommand.GetAbsoluteFilePath_DefaultDashboard()}:/etc/grafana/default-dashboard.json";
+        
         var argString = $"run -d --rm " +
                         $"--name={GrafanaCommand.GetGrafanaContainerName(app)} " +
                         $"-p 127.0.0.1:{GrafanaCommand.GetGrafanaPort(app)}:3000 " +
@@ -62,9 +68,9 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
                         $"-e BEAM_CLICKHOUSE_HOST={connection.Host} " +
                         $"-e BEAM_CLICKHOUSE_PORT={connection.Port} " +
                         $"-e GF_INSTALL_PLUGINS=grafana-clickhouse-datasource " +
-                        $"-v {GrafanaCommand.GetAbsoluteFilePath_ProvisioningFolder()}:/etc/grafana/provisioning " + 
-                        $"-v {GrafanaCommand.GetAbsoluteFilePath_GrafanaIni()}:/etc/grafana/grafana.ini " +
-                        $"-v {GrafanaCommand.GetAbsoluteFilePath_DefaultDashboard()}:/etc/grafana/default-dashboard.json " +
+                        $"-v {proviosingPath.QuoteDouble()} " + 
+                        $"-v {grafanaIniPath.QuoteDouble()} " +
+                        $"-v {dashboardPath.QuoteDouble()} " +
                         $"-v {GrafanaCommand.GetGrafanaVolumeName(app)}:/var/lib/grafana " +
                         $"grafana/grafana:11.6.1";
         

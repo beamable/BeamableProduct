@@ -102,6 +102,11 @@ namespace Beamable.Server
             description: "The player id of the user that started the service, or 0 if remote. ",
             playerId);
         
+        public static TelemetryAttribute OwnerPlayerEmail(string email) => TelemetryAttribute.String(
+            name: Otel.ATTR_AUTHOR_EMAIL, 
+            description: "The player email of the user that started the service, or blank if remote. ",
+            email);
+        
         public static TelemetryAttribute RequestPlayerId(long playerId) => TelemetryAttribute.Long(
             name: Otel.ATTR_REQ_PLAYER_ID, 
             description: "The player id of the user that started the request, or 0 if no user started the request. ",
@@ -306,6 +311,7 @@ namespace Beamable.Server
             var resourceBased = new List<TelemetryAttribute>()
             {
                 TelemetryAttributes.OwnerPlayerId(0),
+                TelemetryAttributes.OwnerPlayerEmail(""),
                 TelemetryAttributes.Pid(null),
                 TelemetryAttributes.SdkVersion(),
                 TelemetryAttributes.RoutingKey(null),
@@ -344,6 +350,7 @@ namespace Beamable.Server
         public void CreateDefaultAttributes(IDefaultAttributeContext ctx)
         {
             ctx.Attributes.Add(TelemetryAttributes.OwnerPlayerId(ctx.Args.AccountId));
+            ctx.Attributes.Add(TelemetryAttributes.OwnerPlayerEmail(ctx.Args.AccountEmail));
             
             ctx.Attributes.Add(TelemetryAttributes.Cid(ctx.Args.CustomerID));
             ctx.Attributes.Add(TelemetryAttributes.Pid(ctx.Args.ProjectName));
@@ -363,7 +370,13 @@ namespace Beamable.Server
             ctx.Attributes.Add(TelemetryAttributes.RequestPlayerId(ctx.Request.UnsafeUserId));
             ctx.Attributes.Add(TelemetryAttributes.RequestId(Guid.NewGuid().ToString()));
             ctx.Attributes.Add(TelemetryAttributes.ConnectionRequestId(ctx.Request.Id));
-            ctx.Attributes.Add(TelemetryAttributes.RequestPath(ctx.Request.Path));
+
+            var path = ctx.Request.Path;
+            if (path.StartsWith("micro_"))
+            {
+                path = path.Substring("micro_".Length);
+            }
+            ctx.Attributes.Add(TelemetryAttributes.RequestPath(path));
 
             if (!ctx.Request.Headers.TryGetClientType(out var clientType))
             {
