@@ -1,37 +1,49 @@
 #!/bin/bash
 
-echo "--PWD---"
-pwd
-ls
+set -euo pipefail
 
-echo "moving up"
-cd ../..
-pwd
-ls
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+WORKSPACE_DIR="${GITHUB_WORKSPACE:-$REPO_ROOT}"
 
-WEB_SDK_SAMPLE_BUILD_DIR="web-sdk-sample-build"
-echo "creating new dir"
-mkdir -p $WEB_SDK_SAMPLE_BUILD_DIR
+: "${SAMPLE_DIR:?SAMPLE_DIR environment variable is required}"
+: "${GITHUB_USERNAME:?GITHUB_USERNAME environment variable is required}"
+: "${GITHUB_PASSWORD:?GITHUB_PASSWORD environment variable is required}"
 
-echo "listing"
-ls
+WEB_SDK_SAMPLE_BUILD_DIR="$WORKSPACE_DIR/web-sdk-sample-build"
+REMOTE_URL="https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git"
+DIST_SOURCE="$WORKSPACE_DIR/$SAMPLE_DIR/dist"
 
-cd $WEB_SDK_SAMPLE_BUILD_DIR
-echo "moving into dir"
-pwd
+if [[ ! -d "$DIST_SOURCE" ]]; then
+  echo "Expected dist folder not found at $DIST_SOURCE" >&2
+  exit 1
+fi
 
-git --version
+rm -rf "$WEB_SDK_SAMPLE_BUILD_DIR"
+mkdir -p "$WEB_SDK_SAMPLE_BUILD_DIR"
+cd "$WEB_SDK_SAMPLE_BUILD_DIR"
+
 git init
-git config user.email "chris@beamable.com"
-git config user.name "gh-actions"
-git remote add --fetch origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git
-git remote set-url origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git
-git checkout main
-git status
+git config user.email "github-actions[bot]@users.noreply.github.com"
+git config user.name "github-actions[bot]"
+git remote add origin "$REMOTE_URL"
 
-cp -f ../../BeamableProduct/BeamableProduct/web/samples/WordWiz/dist ./dist || true
+if git ls-remote --exit-code origin main >/dev/null 2>&1; then
+  git fetch origin main --depth=1
+  git checkout -B main origin/main
+else
+  git checkout -B main
+fi
 
-git add .
-git status
-git diff-index --quiet HEAD || git commit -m "updating web sdk sample build"
-git push --set-upstream --force origin main
+find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+cp -a "$DIST_SOURCE"/. "$WEB_SDK_SAMPLE_BUILD_DIR"
+
+git add --all
+
+if git diff --cached --quiet; then
+  echo "No changes to commit"
+else
+  git commit -m "Update web sdk sample build"
+  git push --force-with-lease origin main
+fi

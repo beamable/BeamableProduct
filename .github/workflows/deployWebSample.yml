@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SAMPLE_DIR: web/samples/WordWiz
-      SAMPLE_SLUG: WordWiz
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,7 +47,8 @@ jobs:
         working-directory: ${{ env.SAMPLE_DIR }}
 
       - name: Publish Web SDK Sample Build
-        run: sh ./../build/bin/upload-changelogs.sh
+        run: ./build/bin/upload-web-sdk-sample-build.sh
         env:
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          SAMPLE_DIR: ${{ env.SAMPLE_DIR }}
