@@ -49,6 +49,7 @@ namespace Beamable.Server
 		public string MetadataUrl { get; set; }
 		public string RefreshToken { get; set; }
 		public long AccountId { get; set; }
+		public string AccountEmail { get; set; }
 		public int RequireProcessId { get; set; }
 		public string OtelExporterOtlpProtocol { get; set; }
 		public string OtelExporterOtlpEndpoint { get; set; }
@@ -108,6 +109,7 @@ namespace Beamable.Server
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
 				MetadataUrl = args.MetadataUrl,
 				AccountId = args.AccountId,
+				AccountEmail = args.AccountEmail,
 				RequireProcessId = args.RequireProcessId,
 				OtelExporterOtlpEndpoint = args.OtelExporterOtlpEndpoint,
 				OtelExporterOtlpHeaders = args.OtelExporterOtlpHeaders,
@@ -185,6 +187,7 @@ namespace Beamable.Server
 		}
 
 		public long AccountId => GetLongFromEnvironmentVariable("USER_ACCOUNT_ID", 0);
+		public string AccountEmail => Environment.GetEnvironmentVariable("USER_EMAIL");
 
 		public int RequireProcessId =>
 			GetIntFromEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, 0);
