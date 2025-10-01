@@ -10,11 +10,9 @@ const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, '..', '..');
 const sdkSource = resolve(projectRoot, 'src');
 const sampleSource = resolve(__dirname, 'src');
-const basePath = process.env.BASE_PATH ?? '/';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: basePath,
   css: {
     preprocessorOptions: {
       scss: {

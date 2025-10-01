@@ -12,8 +12,6 @@ on:
 # Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Allow one concurrent deployment
 concurrency:
@@ -22,15 +20,11 @@ concurrency:
 
 jobs:
   # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  web-sdk-sample-deploy:
     runs-on: ubuntu-latest
     env:
       SAMPLE_DIR: web/samples/WordWiz
       SAMPLE_SLUG: WordWiz
-      ARTIFACT_DIR: pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,39 +32,23 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '22.14.0'
 
       - name: Enable pnpm
         run: |
           corepack enable
           corepack use pnpm@10.8.0
 
-      - name: Install deps
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: ${{ env.SAMPLE_DIR }}
 
       - name: Build
         run: pnpm run build
         working-directory: ${{ env.SAMPLE_DIR }}
+
+      - name: Publish Web SDK Sample Build
+        run: sh ./../build/bin/upload-changelogs.sh
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/${{ env.SAMPLE_SLUG }}/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Prepare artifact
-        run: |
-          rm -rf "$ARTIFACT_DIR"
-          mkdir -p "$ARTIFACT_DIR/$SAMPLE_SLUG"
-          cp -R "$SAMPLE_DIR/dist/." "$ARTIFACT_DIR/$SAMPLE_SLUG/"
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload the prepared Pages content
-          path: './${{ env.ARTIFACT_DIR }}'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
