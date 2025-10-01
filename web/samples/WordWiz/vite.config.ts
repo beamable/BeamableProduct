@@ -12,7 +12,8 @@ const sdkSource = resolve(projectRoot, 'src');
 const sampleSource = resolve(__dirname, 'src');
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? './' : '/',
   css: {
     preprocessorOptions: {
       scss: {
@@ -52,4 +53,4 @@ export default defineConfig({
       allow: [projectRoot],
     },
   },
-});
+}));
