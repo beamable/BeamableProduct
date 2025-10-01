@@ -49,6 +49,6 @@ jobs:
       - name: Publish Web SDK Sample Build
         run: ./build/bin/upload-web-sdk-sample-build.sh
         env:
-          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
-          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          GITHUB_USERNAME: ${{ secrets.GIT_WEB_SDK_SAMPLE_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_WEB_SDK_SAMPLE_PASSWORD }}
           SAMPLE_DIR: ${{ env.SAMPLE_DIR }}
