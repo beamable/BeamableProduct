@@ -28,7 +28,6 @@ cd "$build_directory"
 echo "Setting up git repository..."
 
 git init
-git config init.defaultBranch main
 git config user.email "github-actions[bot]@users.noreply.github.com"
 git config user.name "github-actions[bot]"
 git remote add origin "$github_repo_url"
@@ -46,8 +45,6 @@ fi
 
 echo "Copying new files..."
 
-# Remove all files except .git directory, then copy new files
-find . -mindepth 1 -maxdepth 1 ! -name '.git' -delete
 cp -a "$source_dist_folder"/. .
 
 echo "Checking for changes..."
