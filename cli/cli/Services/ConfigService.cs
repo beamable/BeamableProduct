@@ -29,7 +29,6 @@ public enum Vcs
 [Serializable]
 public class OtelConfig
 {
-	// The default value needs to be true, so we can ask him to allow it if the folders for telemetry don't exists
 	public bool BeamCliAllowTelemetry;
 	public string BeamCliTelemetryLogLevel;
 	public long BeamCliTelemetryMaxSize;
