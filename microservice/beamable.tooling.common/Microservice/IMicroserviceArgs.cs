@@ -43,6 +43,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool EnableDangerousDeflateOptions { get; }
     public string MetadataUrl { get; }
     public string RefreshToken { get; }
+    public string AccountEmail { get; }
     public long AccountId { get; }
     public int RequireProcessId { get; }
     public string OtelExporterOtlpProtocol { get; }

@@ -141,6 +141,11 @@ namespace Beamable.Common
                 public const string ATTR_AUTHOR = "beam.owner_id";
                 
                 /// <summary>
+                /// The player email of the user that started the service, or blank if remote. 
+                /// </summary>
+                public const string ATTR_AUTHOR_EMAIL = "beam.owner_email";
+                
+                /// <summary>
                 /// The routing key the Microservice used to register itself
                 /// </summary>
                 public const string ATTR_ROUTING_KEY = "beam.routing_key";
