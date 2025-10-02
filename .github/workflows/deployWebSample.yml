@@ -2,9 +2,13 @@
 name: Deploy Web SDK Sample to Github Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ['main']
+  pull_request:
+    branches:
+      - 'main'
+    paths-ignore:
+      - 'rfc/**'
+      - '.github/**'
+      - 'client_installer/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -52,3 +56,9 @@ jobs:
           GITHUB_USERNAME: ${{ secrets.GIT_WEB_SDK_SAMPLE_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_WEB_SDK_SAMPLE_PASSWORD }}
           SAMPLE_DIR: ${{ env.SAMPLE_DIR }}
+          
+      - uses: github-actions-up-and-running/pr-comment@v1.0.1
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          message: Web SDK Sample Build [link](https://beamable.github.io/web-sdk-sample/)
