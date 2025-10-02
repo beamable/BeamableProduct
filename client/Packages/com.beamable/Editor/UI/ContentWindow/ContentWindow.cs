@@ -85,6 +85,28 @@ namespace Beamable.Editor.UI.ContentWindow
 			Repaint();
 		}
 
+		public override void OnEnable()
+		{
+			base.OnEnable();
+			EditorApplication.update += OnEditorUpdate;
+		}
+
+		private void OnDisable()
+		{
+			EditorApplication.update -= OnEditorUpdate;
+		}
+
+		private void OnEditorUpdate()
+		{
+			// We can use this to force Unity to repaint the window even if it isn't focused, making the Content Window more smoother when renaming and changing contents in the Inspector
+			if (_contentService != null && _contentService.ManifestChangedCount != _lastManifestChangedCount)
+			{
+				_lastManifestChangedCount = _contentService.ManifestChangedCount;
+				ReloadData();
+				Repaint(); 
+			}
+		}
+
 		private void ReloadData()
 		{
 			ClearCaches();
@@ -291,7 +313,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					}
 					else
 					{
-						if (currentIndex >= 0 && isUp)
+						if (currentIndex > 0 && isUp)
 						{
 							SetEntryIdAsSelected(_frameRenderedItems[currentIndex - 1].FullId);
 							e.Use();
