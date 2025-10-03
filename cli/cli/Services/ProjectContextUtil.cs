@@ -12,6 +12,7 @@ using microservice.Extensions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Readers;
+using MongoDB.Driver.Linq;
 using ServiceConstants = Beamable.Common.Constants.Features.Services;
 
 namespace cli.Services;
@@ -89,7 +90,8 @@ public static class ProjectContextUtil
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
-		var fileNameToProject = allProjects.ToDictionary(kvp => kvp.fileNameWithoutExtension);
+		Dictionary<string, CsharpProjectMetadata> fileNameToProject = allProjects.ToDictionary(kvp => kvp.absolutePath);
+		
 		var manifest = new BeamoLocalManifest
 		{
 			LocallyIgnoredBeamoIds = ignoreIds,
@@ -119,14 +121,28 @@ public static class ProjectContextUtil
 			
 			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, fileNameToProject);
 			manifest.ServiceDefinitions.Add(definition);
-			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
+			try
+			{
+				manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
+				manifest.HttpMicroserviceRemoteProtocols.Add(definition.BeamoId, new HttpMicroserviceRemoteProtocol());
+			}
+			catch (ArgumentException e)
+			{
+				var projectsWithSameBeamoId = serviceProjects
+					.GroupBy(item => ConvertProjectToServiceDefinition(item).BeamoId, item => item.absolutePath)
+					.Where(group => group.Count() > 1) .ToList();
+				foreach (IGrouping<string, string> group in projectsWithSameBeamoId)
+				{
+					Log.Error($"Found Microservices with the same BeamID: {group.Key}. Please check the <BeamId> property of the projects: {string.Join(", ", group)}, you cannot have two projects with the same ID (if the BeamId is not set it is going to use the same name of the .csproj).");
+				}
 
-			manifest.HttpMicroserviceRemoteProtocols.Add(definition.BeamoId, new HttpMicroserviceRemoteProtocol());
+				throw new CliException("An error occurred when trying to parse microservice projects. Please look at the log for more details");
+			}
 		}
 
 		foreach (var storageProject in storageProjects)
 		{
-			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, fileNameToProject);
+			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject);
 			if (ignoreIds.Contains(definition.BeamoId)) continue;
 
 			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, fileNameToProject, configService);
@@ -651,7 +667,7 @@ public static class ProjectContextUtil
 		foreach (MsBuildProjectReference referencedProject in project.projectReferences)
 		{
 			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
-			if (!absPathToProject.TryGetValue(referencedName, out var knownProject))
+			if(!TryGetValueFromFileName(absPathToProject, referencedName, out var knownProject))
 			{
 				// Check if this is a Unity Assembly reference that does not have it's csproj generated yet
 				if (!string.IsNullOrEmpty(referencedProject.BeamUnityAssemblyName))
@@ -713,6 +729,27 @@ public static class ProjectContextUtil
 		
 		return protocol;
 	}
+
+
+	public static bool TryGetValueFromFileName(Dictionary<string, CsharpProjectMetadata> absPathToProject, string fileName,
+		out CsharpProjectMetadata projectMetadata)
+	{
+		foreach (var csharpProjectMetadata in absPathToProject)
+		{
+			if(csharpProjectMetadata.Key == null)
+			{
+				throw new CliException("Invalid CSharp Project Name found");
+			}
+			if (Path.GetFileNameWithoutExtension(csharpProjectMetadata.Key)!.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
+			{
+				projectMetadata = csharpProjectMetadata.Value;
+				return true;
+			}
+		}
+
+		projectMetadata = null;
+		return false;
+	}
 	
 	static string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 		? metadata.fileNameWithoutExtension
@@ -761,7 +798,7 @@ public static class ProjectContextUtil
 		return definition;
 	}
 	
-	public static BeamoServiceDefinition ConvertProjectToStorageDefinition(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+	public static BeamoServiceDefinition ConvertProjectToStorageDefinition(CsharpProjectMetadata project)
 	{
 		if (project.properties.ProjectType != "storage")
 		{
