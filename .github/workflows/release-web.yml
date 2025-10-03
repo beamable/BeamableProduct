@@ -71,7 +71,7 @@ jobs:
 
       # Install project dependencies using pnpm
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Run code linter
       - name: Lint

@@ -28,7 +28,7 @@ export class BeamJsonUtils {
    * Usage:
    *   `JSON.parse(jsonString, BeamJsonUtils.reviver)`
    */
-  static reviver(key: string, value: any): any {
+  static reviver(_key: string, value: any): any {
     if (typeof value === 'string') {
       if (BeamJsonUtils.ISO_DATE_REGEX.test(value)) return new Date(value);
 
