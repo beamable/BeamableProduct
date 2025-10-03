@@ -297,7 +297,15 @@ namespace Beamable.Server
             };
             foreach (var provider in providers.Elements)
             {
-                provider.CreateRequestAttributes(requestTelemetryContext);
+                try
+                {
+                    provider.CreateRequestAttributes(requestTelemetryContext);
+                }
+                catch (Exception ex)
+                {
+                    BeamableZLoggerProvider.Instance.Error("Failed to add request attributes");
+                    BeamableZLoggerProvider.Instance.Error(ex);
+                }
             }
 
             return requestTelemetryContext.Attributes;
@@ -372,11 +380,15 @@ namespace Beamable.Server
             ctx.Attributes.Add(TelemetryAttributes.ConnectionRequestId(ctx.Request.Id));
 
             var path = ctx.Request.Path;
-            if (path.StartsWith("micro_"))
+            if (!string.IsNullOrEmpty(path))
             {
-                path = path.Substring("micro_".Length);
+                if (path.StartsWith("micro_"))
+                {
+                    path = path.Substring("micro_".Length);
+                }
+
+                ctx.Attributes.Add(TelemetryAttributes.RequestPath(path));
             }
-            ctx.Attributes.Add(TelemetryAttributes.RequestPath(path));
 
             if (!ctx.Request.Headers.TryGetClientType(out var clientType))
             {

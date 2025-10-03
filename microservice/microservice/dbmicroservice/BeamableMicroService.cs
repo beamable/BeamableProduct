@@ -671,11 +671,9 @@ namespace Beamable.Server
 		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
 		      // BeamableZLoggerProvider.Instance.(ex);
 
-		      BeamableZLoggerProvider.Instance.Error(ex);
-
-		      // BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}",
-			     //  ex.GetType().Name, ex.Message,
-			     //  ex.Source, failResponseJson, ex.StackTrace);
+		      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}",
+			      ex.GetType().Name, ex.Message,
+			      ex.Source, failResponseJson, ex.StackTrace);
 		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
 	      }
 	      catch (TargetInvocationException ex)
@@ -694,11 +692,11 @@ namespace Beamable.Server
 			      failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
 
 			      failResponseJson = JsonConvert.SerializeObject(failResponse);
-			      BeamableZLoggerProvider.Instance.Error(msException);
-			      // BeamableZLoggerProvider.LogContext.Value.LogError(
-				     //  "Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}", msException.GetType().Name,
-				     //  msException.Message,
-				     //  msException.Source, failResponseJson, msException.StackTrace);
+			      
+			      BeamableZLoggerProvider.LogContext.Value.LogError(
+				      "Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}", msException.GetType().Name,
+				      msException.Message,
+				      msException.Source, failResponseJson, msException.StackTrace);
 		      }
 		      else
 		      {
@@ -713,12 +711,12 @@ namespace Beamable.Server
 			      };
 
 			      failResponseJson = JsonConvert.SerializeObject(failResponse);
-			      BeamableZLoggerProvider.Instance.Error(inner);
+			      // BeamableZLoggerProvider.Instance.Error(inner);
 
-			      // BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} \n {exception.stacktrace}",
-				     //  inner.GetType().Name,
-				     //  inner.Message,
-				     //  inner.Source, inner.StackTrace);
+			      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} \n {exception.stacktrace}",
+				      inner.GetType().Name,
+				      inner.Message,
+				      inner.Source, inner.StackTrace);
 		      }
 
 		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
@@ -783,7 +781,7 @@ namespace Beamable.Server
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
 	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-	      if (ctx.Path.StartsWith(_adminPrefix))
+	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
 	      {
 		      // when the path starts with admin, use warning.
 		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
