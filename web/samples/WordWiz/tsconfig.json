@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "paths": {
+      "@app/*": ["./src/*"],
+      "beamable-sdk": ["../../src/index.ts"],
+      "beamable-sdk/*": ["../../src/*"],
+      "@/defaults": ["../../src/defaults.browser.ts"],
+      "@/utils/createHash": ["../../src/utils/createHashStub.ts"],
+      "@/*": ["../../src/*"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
