@@ -60,7 +60,6 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _rowSelectedItemStyle;
 		private string _editItemId;
 		private string[] _editLabels;
-		private bool _needToFocusLabel;
 		
 		private readonly Color _tableSeparatorColor = new Color(0.13f, 0.13f, 0.13f);
 		
@@ -236,6 +235,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				isFilteringActive |= GetFilterTypeActiveItems(ContentSearchFilterType.Tag).Count > 0;
 				if (items.Count == 0 && isFilteringActive)
 				{
+					// We need to try to drawn subtype to check if any subtype content is matching the filter
+					DrawGroupNode(contentType, 0);
 					continue;
 				}
 
@@ -463,14 +464,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUI.Box(areaRect, GUIContent.none);
 				
 				
-				GUI.SetNextControlName(groupName);
-				
-				if (areaRect.Contains(Event.current.mousePosition))
-				{
-					GUI.FocusControl(groupName);
-				}
-				
 				Rect contentRect = new Rect(0, 0, totalWidth - 18, totalHeight); // -18 for scrollbar width
+
+				bool isEditingFieldOnGroup = !string.IsNullOrEmpty(_editItemId) && _editItemId.Contains(groupName);
 				
 				// Using this to prevent Unity from reusing ScrollID when there is multiple scrolls in screen
 				// causing the scroll move each other
@@ -479,7 +475,8 @@ namespace Beamable.Editor.UI.ContentWindow
 					scrollPos.y += Event.current.delta.y * 10f;
 					scrollPos.y = Mathf.Clamp(scrollPos.y, 0, totalHeight - visibleHeight);
 					_groupScrollPositions[groupName] = scrollPos;
-					Event.current.Use();
+					if(!isEditingFieldOnGroup)
+						Event.current.Use();
 				}
 				
 				// Begin scroll view
@@ -526,39 +523,48 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 
 		public SerializableDictionaryStringToInt _itemContentIdToRowRect = new SerializableDictionaryStringToInt();
-		
+
 		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
 		{
-			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId) 
-				? _rowSelectedItemStyle 
-				: index % 2 == 0 ? _rowEvenItemStyle : _rowOddItemStyle;
+			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId)
+				? _rowSelectedItemStyle
+				: index % 2 == 0
+					? _rowEvenItemStyle
+					: _rowOddItemStyle;
 
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
 
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
-			
+
 			string lastUpdateDate = DateTimeOffset.FromUnixTimeMilliseconds(entry.LatestUpdateAtDate).ToLocalTime().ToString("g");
-			
+
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
-								? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
-								: BeamGUI.iconStatusInvalid;
+				? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
+				: BeamGUI.iconStatusInvalid;
 			Texture[] icons = {iconForEntry};
-			
+
 			bool[] isEditable = {isEditingName};
-			
-			EditorGUI.BeginChangeCheck();
+			string[] editableId = {entry.FullId};
+
+		EditorGUI.BeginChangeCheck();
 			if (isEditingName)
 			{
-				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
+				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
 				
-				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == FOCUS_NAME;
+				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
 				    Event.current.keyCode is KeyCode.Return or KeyCode.KeypadEnter)
 				{
 					RenameEntry(entry.FullId, _editLabels[0]);
+				}
+				
+				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
+				    Event.current.keyCode is KeyCode.Escape)
+				{
+					_editItemId = string.Empty;
 				}
 				
 				if (Event.current.type == EventType.MouseDown && !rowRect.Contains(Event.current.mousePosition))
@@ -568,7 +574,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			else
 			{
-				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable);
+				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
@@ -740,7 +746,6 @@ namespace Beamable.Editor.UI.ContentWindow
 					{
 						_editItemId = entry.FullId;
 						_editLabels = new[] {entry.Name};
-						_needToFocusLabel = true;
 					});
 
 
@@ -847,7 +852,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                                 GUIStyle rowStyle,
 		                                 GUIStyle fieldStyle,
 		                                 Rect fullRect,
-		                                 Texture[] icons = null, bool[] isEditLabel = null)
+		                                 Texture[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -879,12 +884,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				                         fullRect.height);
 				if (isEditLabel!= null && isEditLabel.Length > i && isEditLabel[i])
 				{
-					GUI.SetNextControlName(FOCUS_NAME);
-					labels[i] = EditorGUI.DelayedTextField(nameRect, labels[i]);
-					if (_needToFocusLabel)
+					string controlName = fieldID != null && fieldID.Length > i ? fieldID[i] : FOCUS_NAME;
+					GUI.SetNextControlName(controlName);
+					// Had to change to EditorGUI.TextField as clicking outside the Window was not working with EditorGUI.DelayedTextField
+					labels[i] = EditorGUI.TextField(nameRect, labels[i]);
+					if (GUI.GetNameOfFocusedControl() != controlName && Event.current.type == EventType.Repaint)
 					{
-						EditorGUI.FocusTextInControl(FOCUS_NAME);
-						_needToFocusLabel = false;
+						GUI.FocusControl(controlName);
+						EditorGUI.FocusTextInControl(controlName);
 					}
 				}
 				else
