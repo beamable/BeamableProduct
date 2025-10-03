@@ -119,6 +119,7 @@ public static class MicroserviceStartupUtil
 			configuredArgs.BeamInstanceCount = freshEnvArgs.BeamInstanceCount;
 			configuredArgs.RefreshToken = freshEnvArgs.RefreshToken;
 			configuredArgs.AccountId = freshEnvArgs.AccountId;
+			configuredArgs.AccountEmail = freshEnvArgs.AccountEmail;
 		}
 
 		ConfigureRequiredProcessIdWatcher(startupCtx);

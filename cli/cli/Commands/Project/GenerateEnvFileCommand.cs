@@ -175,6 +175,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				EnvVarOutput.Create("BEAM_INSTANCE_COUNT", args.instanceCount.ToString()),
 				EnvVarOutput.Create("REFRESH_TOKEN", args.AppContext.RefreshToken),
 				EnvVarOutput.Create("USER_ACCOUNT_ID", accountId.ToString()),
+				EnvVarOutput.Create("USER_EMAIL", user.email),
 			}
 		};
 
