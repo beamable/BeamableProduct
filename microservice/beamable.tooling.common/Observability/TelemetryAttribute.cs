@@ -187,6 +187,7 @@ namespace Beamable.Server
 
         public void Add(TelemetryAttribute attr)
         {
+            if (attr.type == TelemetryAttributeType.STRING && attr.stringValue == null) return;
             attributes.Add(attr);
         }
 
