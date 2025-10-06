@@ -613,14 +613,24 @@ namespace Beamable.Editor.ContentService
 			return ValidationContext;
 		}
 
-		public List<LocalContentManifestEntry> GetContentsFromType(Type contentType)
+		public List<LocalContentManifestEntry> GetContentsFromType(Type contentType, bool getSubContent = false)
 		{
 			var contentTypeName = ContentTypeReflectionCache.GetContentTypeName(contentType);
-			return GetContentFromTypeName(contentTypeName);
+			return GetContentFromTypeName(contentTypeName, getSubContent);
 		}
 
-		public List<LocalContentManifestEntry> GetContentFromTypeName(string contentTypeName)
+		public List<LocalContentManifestEntry> GetContentFromTypeName(string contentTypeName, bool getSubContent = false)
 		{
+			if (getSubContent)
+			{
+				var contents = new List<LocalContentManifestEntry>();
+				foreach (var keyValuePair in TypeContentCache.Where(keyValuePair => keyValuePair.Key.StartsWith(contentTypeName)))
+				{
+					contents.AddRange(keyValuePair.Value);
+				}
+
+				return contents;
+			}
 			if (!TypeContentCache.TryGetValue(contentTypeName, out var typeContents))
 			{
 				return new List<LocalContentManifestEntry>();
