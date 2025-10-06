@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue with C#MS Static Analyzer that caused the `EnableUnrealBlueprintCompatibility` flag to be applied incorrectly.
 - Fixed issue with C#MS Static Analyzer when using the `EnableUnrealBlueprintCompatibility` flag that would incorrectly flag certain uses of generic types (`Promises`) as an error.  
 
+## [5.4.2] - 2025-09-24
+### Fixed
+ - Issue when deserializing content with any fields that have the Attribute `[IgnoreContentField]` 
 
 ## [5.4.1] - 2025-08-29
 ### Fixed
