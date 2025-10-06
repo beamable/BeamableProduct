@@ -628,8 +628,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 				if (!string.IsNullOrEmpty(searchData.searchText))
 				{
-					var tex = EditorGUIUtility.FindTexture("winbtn_win_close");
-					GUI.Button(searchClearRect, tex, GUIStyle.none);
+					GUI.Button(searchClearRect, GUIContent.none, "SearchCancelButton");
 
 					if (clearButtonClicked)
 					{
