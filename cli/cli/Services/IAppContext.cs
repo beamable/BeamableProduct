@@ -25,6 +25,9 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
 	public string Pid { get; }
+	public string EngineCalling { get; }
+	public string EngineSdkVersion { get; }
+	public string EngineVersion { get; }
 	public bool PreferRemoteFederation { get; }
 	public bool UsePipeOutput { get; }
 	public bool ShowRawOutput { get; }
@@ -74,6 +77,9 @@ public class DefaultAppContext : IAppContext
 	private readonly InvocationContext _consoleContext;
 	private readonly DryRunOption _dryRunOption;
 	private readonly CidOption _cidOption;
+	private readonly EngineCallerOption _engineOption;
+	private readonly EngineVersionOption _engineVersionOption;
+	private readonly EngineSdkVersionOption _engineSdkVersionOption;
 	private readonly PidOption _pidOption;
 	private readonly HostOption _hostOption;
 	private readonly AccessTokenOption _accessTokenOption;
@@ -152,17 +158,21 @@ public class DefaultAppContext : IAppContext
 	private CliToken _token;
 
 	private string _cid, _pid, _host;
+	private string _engine, _engineVersion, _engineSdkVersion;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
 	private IDependencyProvider _provider;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
+	public string EngineCalling => _engine;
+	public string EngineSdkVersion => _engineSdkVersion;
+	public string EngineVersion => _engineVersion;
 	public string RefreshToken => _refreshToken;
 	public string WorkingDirectory => _configService.WorkingDirectory;
 	public BeamLogSwitch LogSwitch => _logSwitch;
 
-	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
+	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, EngineCallerOption engineOption, EngineVersionOption engineVersionOption, EngineSdkVersionOption engineSdkVersionOption,PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
@@ -173,6 +183,9 @@ public class DefaultAppContext : IAppContext
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
+		_engineOption = engineOption;
+		_engineVersionOption = engineVersionOption;
+		_engineSdkVersionOption = engineSdkVersionOption;
 		_pidOption = pidOption;
 		_hostOption = hostOption;
 		_accessTokenOption = accessTokenOption;
@@ -307,6 +320,23 @@ public class DefaultAppContext : IAppContext
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
+		if (!_configService.TryGetSetting(out string engine, bindingContext, _engineOption))
+		{
+		}
+
+		if (!_configService.TryGetSetting(out string engineVersion, bindingContext, _engineVersionOption))
+		{
+
+		}
+
+		if (!_configService.TryGetSetting(out string engineSdkVersion, bindingContext, _engineSdkVersionOption))
+		{
+
+		}
+
+		_engine = engine;
+		_engineVersion = engineVersion;
+		_engineSdkVersion = engineSdkVersion;
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;

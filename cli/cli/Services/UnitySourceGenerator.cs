@@ -1014,10 +1014,12 @@ public static class UnityHelper
 	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateOptionalArrayDecl(string name, OpenApiSchema schema)
 	{
-		switch (schema.Type, schema.Format)
+		bool isEnum = schema.Enum.Count > 0;
+		switch (schema.Type, schema.Format, isEnum)
 		{
-			case ("array", _):
-			case ("object", _):
+			case ("array", _, _):
+			case ("object", _, _):
+			case (_, _, true):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"OptionalArrayOf{className}";
 				var type = new CodeTypeDeclaration();

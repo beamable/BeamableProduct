@@ -3,26 +3,65 @@ name: Web SDK Release
 on:
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'Branch to release from'
+      commit:
+        type: string
+        description: Commit hash to deploy
+        default: main
+      major:
+        type: number
+        description: Major version number, X.0.0
         required: true
-        default: 'wip/web-sdk'
+        default: 0
+      minor:
+        type: number
+        description: Minor version number, 0.X.0
+        required: true
+        default: 0
+      patch:
+        type: number
+        description: Patch version number, 0.0.X
+        required: true
+        default: 0
+      rcNumber:
+        type: number
+        description: Rc version number, if required, 0.0.0-PREVIEW.RCX
+        required: false
+        default: 0
+      releaseType:
+        type: choice
+        description: What type of release is this?
+        required: true
+        options:
+          - nightly
+          - rc
+          - exp
+          - production
+      dryRun:
+        type: boolean
+        description: When true, no publish will happen
+        required: true
+        default: false
+
+run-name: >-
+  Release Web SDK ${{ inputs.releaseType }}
+  ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}
+  ${{ inputs.releaseType == 'rc' && format('-rc.{0}', inputs.rcNumber) || '' }}
+  by @${{ github.actor }}
 
 jobs:
-  release:
+  web-sdk-release:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
     steps:
-      # Checkout the specified branch (default: wip/web-sdk)
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.commit }}
 
       # Setup Node.js LTS version 22.14.0
       - name: Use Node.js LTS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.14.0'
 
@@ -32,7 +71,7 @@ jobs:
 
       # Install project dependencies using pnpm
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Run code linter
       - name: Lint
@@ -41,23 +80,27 @@ jobs:
       # Run the test suite
       - name: Test
         run: pnpm test
-
-      # Run the release command that bumps the version, updates the changelog, and builds the project.
-      - name: Run Release
-        run: pnpm release
-
-      # Commit and push the changes made by the release command.
-      - name: Commit Release Changes
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add -A
-          if ! git diff-index --quiet HEAD; then
-            # Using [skip ci] to avoid triggering another build.
-            git commit -m "ci(release): bump version and update changelog [skip ci]"
-            git push origin ${{ github.event.inputs.branch }}
-          else
-            echo "No changes to commit."
-          fi
+        
+      - name: Publish Changelog
+        if: ${{ inputs.dryRun == false }} 
+        run: sh ./../build/bin/upload-changelogs.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'false'
+          COPY_WEB_SDK: 'true'
+          VERSION: >-
+            ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}
+            ${{ inputs.releaseType == 'rc' && format('-rc.{0}', inputs.rcNumber) || '' }}
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          BRANCH: >-
+            ${{ fromJson('{
+              "nightly": "daily",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "production"
+            }')[github.event.inputs.releaseType] }}
+
+      # # Run the release command that bumps the version, updates the changelog, and builds the project.
+      # - name: Run Release
+      #   run: pnpm release

@@ -12,6 +12,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Beamable.Common.Dependencies;
 using microserviceTests.microservice.Util;
 
 namespace microserviceTests.OpenAPITests;
@@ -19,12 +20,50 @@ namespace microserviceTests.OpenAPITests;
 [Serializable]
 public class DocTests
 {
+	public class ExampleAttrs : ITelemetryAttributeProvider
+	{
+		public List<TelemetryAttributeDescriptor> GetDescriptors()
+		{
+			return new List<TelemetryAttributeDescriptor>
+			{
+				new TelemetryAttributeDescriptor
+				{
+					name = "tuna",
+					description = "blah blah blah",
+					level = TelemetryImportance.ESSENTIAL,
+					type = TelemetryAttributeType.LONG,
+					source = TelemetryAttributeSource.RESOURCE
+				}
+			};
+		}
+
+		public void CreateDefaultAttributes(IDefaultAttributeContext ctx)
+		{
+		}
+
+		public void CreateConnectionAttributes(IConnectionAttributeContext ctx)
+		{
+		}
+
+		public void CreateRequestAttributes(IRequestAttributeContext ctx)
+		{
+		}
+	}
+	
 	[Test]
 	public void TestMethodScanning()
 	{
 		LoggingUtil.InitTestCorrelator();
 		var gen = new ServiceDocGenerator();
-		var doc = gen.Generate<DocService>(null);
+
+		var builder = new DependencyBuilder();
+		
+		builder.AddSingleton<BeamStandardTelemetryAttributeProvider>();
+		builder.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>();
+		builder.AddSingleton<IMicroserviceArgs, TestArgs>();
+		builder.AddSingleton<ExampleAttrs>();
+		var provider = builder.Build();
+		var doc = gen.Generate<DocService>(provider);
 		
 		// Assert.AreEqual("docs", doc.Info.Title);
 		// Assert.AreEqual(1, doc.Paths.Count);

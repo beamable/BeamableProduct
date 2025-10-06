@@ -203,6 +203,13 @@ namespace Beamable.Server.Generator
 					methodName = methodNameExtStr.Value;
 				}
 				
+				if (item.Extensions.TryGetValue(ServiceConstants.PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY, out var methodNamePrefix) 
+				    && methodNamePrefix is OpenApiString methodNamePrefixStr
+				    && !string.IsNullOrEmpty(methodNamePrefixStr.Value))
+				{
+					methodName = methodNamePrefixStr.Value + "_" + methodName;
+				}
+				
 				foreach ((OperationType _, OpenApiOperation operation) in item.Operations)
 				{
 					if (!operation.Extensions.TryGetValue(ServiceConstants.OPERATION_CALLABLE_METHOD_TYPE_KEY,

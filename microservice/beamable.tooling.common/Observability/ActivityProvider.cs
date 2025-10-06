@@ -216,7 +216,7 @@ public class DefaultActivityProvider : IActivityProvider
     public readonly string ServiceNamespace;
     public readonly string ServiceId;
 
-    public static DefaultActivityProvider CreateMicroServiceProvider(IActivityProviderArgs args, MicroserviceAttribute attribute)
+    public static DefaultActivityProvider CreateMicroServiceProvider(IActivityProviderArgs args, IMicroserviceAttributes attribute)
     {
         return new DefaultActivityProvider(Constants.Features.Otel.METER_SERVICE_NAME, 
             string.IsNullOrEmpty(args.NamePrefix) ? attribute.MicroserviceName : $"{attribute.MicroserviceName}.{args.NamePrefix}",

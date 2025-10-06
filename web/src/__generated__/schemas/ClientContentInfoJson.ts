@@ -12,4 +12,6 @@ export type ClientContentInfoJson = {
   uri: string; 
   version: string; 
   checksum?: string; 
+  createdAt?: bigint | string; 
+  updatedAt?: bigint | string; 
 };

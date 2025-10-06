@@ -25,6 +25,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool merge;
         /// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
         public bool replace;
+        /// <summary>Specify an output path where a new docker-compose project will be created. The compose file can be used to run services locally. (Note, existing files in this folder will be overwritten)</summary>
+        public string dockerComposeDir;
         /// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
         public string sln;
         /// <summary>A file path to save the plan</summary>
@@ -82,6 +84,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.replace != default(bool)))
             {
                 genBeamCommandArgs.Add(("--replace=" + this.replace));
+            }
+            // If the dockerComposeDir value was not default, then add it to the list of args.
+            if ((this.dockerComposeDir != default(string)))
+            {
+                genBeamCommandArgs.Add(("--docker-compose-dir=" + this.dockerComposeDir));
             }
             // If the sln value was not default, then add it to the list of args.
             if ((this.sln != default(string)))
