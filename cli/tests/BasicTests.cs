@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Beamable.Common.Dependencies;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 using tests.Examples;
@@ -143,7 +144,14 @@ public class Tests : CLITest
 		}).CreateLogger<Tests>();
 		
 		var gen = new ServiceDocGenerator();
-		var doc = gen.Generate<TroublesomeService>(null);
+		
+		var builder = new DependencyBuilder();
+		
+		builder.AddSingleton<BeamStandardTelemetryAttributeProvider>();
+		builder.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>();
+		builder.AddSingleton<IMicroserviceArgs>(new MicroserviceArgs());
+		var provider = builder.Build();
+		var doc = gen.Generate<TroublesomeService>(provider);
 
 		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
 		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";

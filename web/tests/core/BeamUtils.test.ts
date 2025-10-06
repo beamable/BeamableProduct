@@ -5,7 +5,7 @@ import type { TokenResponse } from '@/__generated__/schemas';
 
 describe('saveToken()', () => {
   describe('saveToken', () => {
-    it('calls setAccessToken, setRefreshToken, and setExpiresIn on storage', async () => {
+    it('calls setTokenData on storage with access, refresh, and expiresIn', async () => {
       const tokenResponse: TokenResponse = {
         expires_in: '123',
         token_type: 'Bearer',
@@ -14,16 +14,17 @@ describe('saveToken()', () => {
         scopes: [],
       };
       const storage: TokenStorage = {
-        setAccessToken: vi.fn().mockResolvedValue(undefined),
-        setRefreshToken: vi.fn().mockResolvedValue(undefined),
-        setExpiresIn: vi.fn().mockResolvedValue(undefined),
+        setTokenData: vi.fn().mockResolvedValue(undefined),
       } as unknown as TokenStorage;
 
       await saveToken(storage, tokenResponse);
 
-      expect(storage.setAccessToken).toHaveBeenCalledWith('access-token');
-      expect(storage.setRefreshToken).toHaveBeenCalledWith('refresh-token');
-      expect(storage.setExpiresIn).toHaveBeenCalled();
+      expect(storage.setTokenData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+        }),
+      );
     });
   });
 });

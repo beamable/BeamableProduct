@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 using cli.OtelCommands;
+using cli.Utils;
 using microservice.Extensions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -85,7 +86,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServicesBuildCommandOutput>
 	, IResultSteam<ProgressStream, ServicesBuiltProgress>
 {
-	public ServicesBuildCommand() : base("build", "Build a set of services into docker images")
+	public ServicesBuildCommand() : base("build", ServicesDeletionNotice.REMOVED_PREFIX + "Build a set of services into docker images")
 	{
 	}
 

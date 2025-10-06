@@ -7,16 +7,17 @@ import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 import { BeamError } from '@/constants/Errors';
 import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
-import {
+import type {
   BeamServerServiceType,
   BeamServiceType,
-  RefreshableServiceMap,
+  RefreshableRegistry,
 } from '@/core/types';
-import type { Refreshable } from '@/services';
 import {
   BeamMicroServiceClient,
   BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
+import { TokenStorage } from '@/platform/types/TokenStorage';
+import { defaultTokenStorage } from '@/defaults';
 
 export interface BeamEnvVars {
   /** The secret key for signing requests. */
@@ -29,20 +30,22 @@ export interface BeamEnvVars {
 export abstract class BeamBase {
   /** The HTTP requester instance used by the Beam SDK. */
   readonly requester: HttpRequester;
-
   /** The Beamable Customer ID. */
   cid: string;
   /** The Beamable Project ID. */
   pid: string;
+  /**
+   * The token storage instance used by the client SDK.
+   * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
+   * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
+   */
+  tokenStorage: TokenStorage;
 
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
   protected clientServices = {} as BeamServiceType;
   protected serverServices = {} as BeamServerServiceType;
-  protected refreshable = {} as Record<
-    keyof RefreshableServiceMap,
-    Refreshable<unknown>
-  >;
+  protected refreshableRegistry = {} as RefreshableRegistry;
   protected isInitialized = false;
 
   private static _env: BeamEnvVars = {
@@ -100,7 +103,10 @@ export abstract class BeamBase {
   protected constructor(config: BeamBaseConfig) {
     this.cid = config.cid;
     this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(config.environment ?? 'prod');
+    this.envConfig = BeamEnvironment.get(this.getConfigEnvironment(config));
+    this.tokenStorage =
+      config.tokenStorage ??
+      defaultTokenStorage({ pid: config.pid, tag: config.instanceTag });
     this.defaultHeaders = {
       [HEADERS.ACCEPT]: 'application/json',
       [HEADERS.CONTENT_TYPE]: 'application/json',
@@ -119,6 +125,10 @@ export abstract class BeamBase {
     if (value) {
       this.defaultHeaders[key] = value;
     }
+  }
+
+  protected getConfigEnvironment(config: BeamBaseConfig) {
+    return config.environment ?? 'prod'; // default to prod if not provided
   }
 
   protected isApiService(ctor: any): ctor is ApiServiceCtor<ApiService> {

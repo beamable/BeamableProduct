@@ -45,13 +45,18 @@ jobs:
       - name: Check BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet beam config --logs v
+          dotnet beam config -q --logs v 
       
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
           dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
       
+      - name: Update Nuget
+        working-directory: ./stress-tests/standalone-microservice
+        run: |
+          dotnet restore 
+
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
@@ -68,7 +73,7 @@ jobs:
           
           echo "starting service"
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
+          BEAM_DISABLE_STANDARD_OTEL=1 LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..

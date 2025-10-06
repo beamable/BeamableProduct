@@ -1,3 +1,14 @@
+# All environment variables here are coming from either the C#MS or the Beamable CLI. any changes in it's default values should be changed in those sources
+# Default values:
+# BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT=5s
+# BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE=5000
+# BEAM_CLICKHOUSE_EXPORTER_TIMEOUT=5s
+# BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE=1000
+# BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED=true
+# BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL=5s
+# BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL=30s
+# BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME=300s
+
 receivers:
   filelog:
     include:
@@ -14,8 +25,8 @@ receivers:
         endpoint: ${env:BEAM_OTLP_HTTP_ENDPOINT}
 processors:
   batch:
-    timeout: 5s
-    send_batch_size: 5000
+    timeout: ${env:BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT}
+    send_batch_size: ${env:BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE}
 exporters:
   # debug: Uncomment this if wanting to debug all values flowing to the collector, printing the information in the console
   #   verbosity: detailed
@@ -27,16 +38,16 @@ exporters:
     password: ${env:BEAM_CLICKHOUSE_PASSWORD}
     traces_table_name: otel_traces
     logs_table_name: otel_logs
-    timeout: 5s
+    timeout: ${env:BEAM_CLICKHOUSE_EXPORTER_TIMEOUT}
     database: default
     create_schema: false
     sending_queue:
-      queue_size: 1000
+      queue_size: ${env:BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE}
     retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 300s
+      enabled: ${env:BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED}
+      initial_interval: ${env:BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL}
+      max_interval: ${env:BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL}
+      max_elapsed_time: ${env:BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME}
     metrics_tables:
       gauge: 
         name: "otel_metrics_gauge"
@@ -51,7 +62,7 @@ exporters:
 extensions:
   servicediscovery:
     discovery_port: ${env:BEAM_COLLECTOR_DISCOVERY_PORT}
-    discovery_delay: 100
+    discovery_delay: 100 #this is in milliseconds
 
 service:
   extensions: [servicediscovery]
@@ -62,7 +73,7 @@ service:
         - pull:
             exporter:
               prometheus:
-                host: 0.0.0.0
+                host: 127.0.0.1
                 port: ${env:BEAM_COLLECTOR_PROMETHEUS_PORT} # This is to disable Prometheus from binds to a port and not enable multiple running collectors
     # logs:
     #   level: "debug" #Uncomment this to test collector with more verbose logs
