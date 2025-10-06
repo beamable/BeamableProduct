@@ -91,33 +91,39 @@ namespace Beamable.Common.Pooling
 		public PooledStringBuilder Spawn()
 		{
 			PooledStringBuilder builder = null;
-			if (mBuilderStack.Count == 0)
+			lock (mBuilderStack)
 			{
-				switch (mEmptyBehavior)
+				if (mBuilderStack.Count == 0)
 				{
-					case EmptyPoolBehavior.AllocateToPool:
-						builder = new PooledStringBuilder(this, mStartingCapacity);
-						break;
-					case EmptyPoolBehavior.AllocateToHeap:
-						// Without a pool reference, on dispose these will deactivate and remove their own pool
-						builder = new PooledStringBuilder(null, mStartingCapacity);
-						break;
+					switch (mEmptyBehavior)
+					{
+						case EmptyPoolBehavior.AllocateToPool:
+							builder = new PooledStringBuilder(this, mStartingCapacity);
+							break;
+						case EmptyPoolBehavior.AllocateToHeap:
+							// Without a pool reference, on dispose these will deactivate and remove their own pool
+							builder = new PooledStringBuilder(null, mStartingCapacity);
+							break;
+					}
 				}
+				else
+				{
+					builder = mBuilderStack.Pop();
+				}
+
+				builder.Active = true;
+				builder.Builder.Length = 0; // Clear the StringBuilder
+				return builder;
 			}
-			else
-			{
-				builder = mBuilderStack.Pop();
-			}
-			builder.Active = true;
-			builder.Builder.Length = 0; // Clear the StringBuilder
-			return builder;
 		}
 
 		private void Recycle(PooledStringBuilder poolChild)
 		{
-			mBuilderStack.Push(poolChild);
+			lock (mBuilderStack)
+			{
+				mBuilderStack.Push(poolChild);
+			}
 		}
-
 
 
 		// This is a wrapper around a string builder, which lets us use using
