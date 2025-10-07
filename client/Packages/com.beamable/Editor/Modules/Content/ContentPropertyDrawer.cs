@@ -55,7 +55,7 @@ namespace Beamable.Editor.Content
 				_typeToRefreshAt[referenceType] = time + 5; // every five seconds; rescan
 				
 				var allContent =
-				   new HashSet<string>(_beamable.CliContentService.GetContentsFromType(referenceType).Select(x => x.FullId));
+				   new HashSet<string>(_beamable.CliContentService.GetContentsFromType(referenceType, true).Select(x => x.FullId));
 				_typeToContent[referenceType] = allContent;
 			}
 
@@ -221,7 +221,7 @@ namespace Beamable.Editor.Content
 			var de = BeamEditorContext.Default;
 			await de.InitializePromise;
 			
-			var contentEntries = de.CliContentService.GetContentsFromType(referenceType);
+			var contentEntries = de.CliContentService.GetContentsFromType(referenceType, true);
 			_options = new List<Option>();
 			_idToOption = new Dictionary<string, Option>();
 			foreach (var content in contentEntries)
