@@ -251,9 +251,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				if (route.instances != null)
 				{
-					foreach (var instance in route.instances)
+					if (route.knownToBeRunning)
 					{
-						AddRow(service, route, instance);
+						foreach (var instance in route.instances)
+						{
+							AddRow(service, route, instance);
+						}
 					}
 				}
 			}
