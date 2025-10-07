@@ -22,6 +22,7 @@ public class VersionInstallCommandArgs : CommandArgs
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 	, IStandaloneCommand
 	, IHaveRedirectionConcerns<VersionInstallCommandArgs>
+	, IIgnoreLogin
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{

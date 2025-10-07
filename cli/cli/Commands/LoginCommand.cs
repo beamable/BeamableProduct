@@ -48,6 +48,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	, ISkipManifest
 	, IReportException<LoginFailedError>
 	, IResultSteam<DefaultStreamResultChannel, LoginResults>
+	, IIgnoreLogin
 {
 	public const int LOGIN_FAILED_ERROR_CODE = 100;
 	public bool Successful { get; private set; } = false;

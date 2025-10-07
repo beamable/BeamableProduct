@@ -36,7 +36,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	IHaveRedirectionConcerns<InitCommandArgs>,
 	IReportException<LoginFailedError>,
 	IReportException<InvalidCidError>,
-	ISkipManifest
+	ISkipManifest,
+	IIgnoreLogin
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;

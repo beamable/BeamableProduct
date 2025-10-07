@@ -18,7 +18,7 @@ public class ReleaseSharedUnityCodeCommandOutput
 	public string message;
 }
 
-public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCodeCommandArgs, ReleaseSharedUnityCodeCommandOutput>, IStandaloneCommand, ISkipManifest
+public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCodeCommandArgs, ReleaseSharedUnityCodeCommandOutput>, IStandaloneCommand, ISkipManifest, IIgnoreLogin
 {
 	public override bool IsForInternalUse => true;
 
