@@ -1236,16 +1236,6 @@ public class App
 
 				}
 
-				var ignoreLogin = ctx.ParseResult.CommandResult.Command is IIgnoreLogin;
-				if (!ignoreLogin)
-				{
-					if (string.IsNullOrEmpty(appContext.Token.Token))
-					{
-						throw new CliException(
-							"Not logged in! Please run [dotnet beam login] in order to use this command!");
-					}
-				}
-
 
 
 				Log.Verbose("command prep took " + sw.ElapsedMilliseconds);

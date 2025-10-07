@@ -78,6 +78,15 @@ public static class DependencyInjectionExtensions
 				{
 					throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 				}
+
+				if (command is not IIgnoreLogin)
+				{
+					if (string.IsNullOrEmpty(args.AppContext.Token.Token))
+					{
+						throw new CliException(
+							"Not logged in! Please run [dotnet beam login] in order to use this command!");
+					}
+				}
 				
 				if (ConfigService.IsRedirected && command is IHaveRedirectionConcerns<TArgs> redirectionValidation)
 				{

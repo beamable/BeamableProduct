@@ -15,7 +15,7 @@ public class GenerateDocsCommandArgs : CommandArgs
 
 
 
-public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand, ISkipManifest
+public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand, ISkipManifest, IIgnoreLogin
 {
 	public override bool IsForInternalUse => true;
 

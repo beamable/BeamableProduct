@@ -123,6 +123,9 @@ public class CliRequester : IRequester
 		{
 			switch (error)
 			{
+				case RequesterException e when e.Status == 401:
+					Log.Error("Unauthorized access with token: " + AccessToken.Token);
+					break;
 				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
@@ -149,7 +152,7 @@ public class CliRequester : IRequester
 			}
 
 			return Promise<T>.Failed(error);
-		});
+		}).SetInnerException();
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
