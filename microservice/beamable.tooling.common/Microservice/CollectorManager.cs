@@ -38,7 +38,7 @@ public class CollectorInfo
 	public string configFilePath;
 }
 
-public class CollectorManager
+public partial class CollectorManager
 {
 	public const int ReceiveTimeout = 100;
 	public const int ReceiveBufferSize = 4096;
@@ -810,7 +810,19 @@ public class CollectorManager
 		{
 			logger.ZLogDebug($"(collector err) {args.Data}");
 		};
-		var started = process.Start();
+
+		bool started;
+		if (!detach &&  RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			started = StartProcessAttachedWindows(process);
+		}
+		else
+		{
+			started = process.Start();	
+		}
+		
+		
+		
 		if (!started)
 		{
 			throw new Exception("Failed to start collector");
