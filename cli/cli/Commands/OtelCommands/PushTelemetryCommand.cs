@@ -130,9 +130,15 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 					}
 				}
 
-				await File.WriteAllTextAsync(Path.Join(args.ConfigService.ConfigTempOtelDirectoryPath, LAST_PUBLISH_OTEL_FILE_NAME), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+				if (Directory.Exists(args.ConfigService.ConfigTempOtelDirectoryPath))
+				{
+					await File.WriteAllTextAsync(Path.Join(args.ConfigService.ConfigTempOtelDirectoryPath, LAST_PUBLISH_OTEL_FILE_NAME),
+						DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+				}
+
 				Log.Information("Telemetry data was successfully exported!");
 				
+
 			}
 		}
 		finally

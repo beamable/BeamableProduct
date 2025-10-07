@@ -55,11 +55,24 @@ namespace Beamable.Editor.UI.ContentWindow
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
 				}
-				snapshotSplitter.BeginSplitView();
-				DrawSnapshots();
-				snapshotSplitter.Split(this);
-				DrawSnapshotContents();
-				snapshotSplitter.EndSplitView();
+
+				try
+				{
+					snapshotSplitter.BeginSplitView();
+					DrawSnapshots();
+					snapshotSplitter.Split(this);
+					DrawSnapshotContents();
+					snapshotSplitter.EndSplitView();
+				}
+				catch (Exception)
+				{
+					mainSplitter = null;
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.EndVertical();
+					
+					EditorApplication.delayCall += Repaint;
+					return;
+				}
 			}
 			EditorGUILayout.EndHorizontal();
 			

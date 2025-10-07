@@ -216,17 +216,32 @@ namespace Beamable.Editor.UI.ContentWindow
 					var windowWidth = this.position.width;
 					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
 					var normalizedWidth = startingWidthOfTypes / windowWidth;
+					
 					mainSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
 
 					// the first time the splitter gets created, the window needs to force redraw itself
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
 				}
-				mainSplitter.BeginSplitView();
-				DrawContentGroupPanel();
-				mainSplitter.Split(this);
-				DrawContentItemPanel();
-				mainSplitter.EndSplitView();
+
+				try
+				{
+					mainSplitter.BeginSplitView();
+					DrawContentGroupPanel();
+					mainSplitter.Split(this);
+					DrawContentItemPanel();
+					mainSplitter.EndSplitView();
+				}
+				catch (Exception)
+				{
+					mainSplitter = null;
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.EndScrollView();
+					EditorGUILayout.EndVertical();
+					
+					EditorApplication.delayCall += Repaint;
+					return;
+				}
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
