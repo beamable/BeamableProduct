@@ -100,20 +100,38 @@ namespace Beamable.Server
 		{
 			get
 			{
-				if (_beamContext != null) return _beamContext;
-
-				if (!Headers.TryGetValue(Constants.Requester.HEADER_BEAM_RC, out var base64))
-				{
-					throw new Exception(
-						$"Request did not include request context header, {Constants.Requester.HEADER_BEAM_RC}");
-				}
-				if (!BeamRequestContext.TryParse(base64, out _beamContext, out var ex))
+				if (!TryGetBeamContext(out var ctx, out var ex))
 				{
 					throw ex;
 				}
 
-				return _beamContext;
+				return ctx;
 			}
+		}
+
+		public bool TryGetBeamContext(out BeamRequestContext ctx, out Exception ex)
+		{
+			ctx = null;
+			ex = null;
+			if (_beamContext != null)
+			{
+				ctx = _beamContext;
+				return true;
+			}
+
+			if (!Headers.TryGetValue(Constants.Requester.HEADER_BEAM_RC, out var base64))
+			{
+				ex = new Exception( $"Request did not include request context header, {Constants.Requester.HEADER_BEAM_RC}");
+				return false;
+			}
+			if (!BeamRequestContext.TryParse(base64, out _beamContext, out var inner))
+			{
+				ex = inner;
+				return false;
+			}
+
+			ctx = _beamContext;
+			return true;
 		}
 
 		/// <summary>

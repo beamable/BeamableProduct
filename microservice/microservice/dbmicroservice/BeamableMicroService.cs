@@ -835,7 +835,14 @@ namespace Beamable.Server
 					      bool isPathFilterValid = isPathFilterNotSet || CheckRule(ruleFilter.paths, ruleFilter.pathsOperationType, ctx.Path);
 
 					      bool isUserFilterNotSet = !ruleFilter.playerIds.HasValue || !ruleFilter.playerIdOperationType.HasValue  || ruleFilter.playerIds.Value.Length == 0;
-					      bool isAccountFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.AccountId);
+
+					      // the account id is only available on some requests from beamable. 
+					      bool isAccountFilterValid = false;
+					      if (ctx.TryGetBeamContext(out var beamCtx, out _))
+					      {
+						      isAccountFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, beamCtx.accountId);
+					      }
+					      
 					      bool isGamerTagFilterValid = isUserFilterNotSet || CheckRule(ruleFilter.playerIds, ruleFilter.playerIdOperationType, ctx.UserId);
 
 					     hasValidFilter |= isPathFilterValid && (isAccountFilterValid || isGamerTagFilterValid);
