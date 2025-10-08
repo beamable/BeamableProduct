@@ -173,7 +173,7 @@ public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
 	public string projectDirectory;
 }
 
-public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandaloneCommand, IEmptyResult, IIgnoreLogin
+public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandaloneCommand, IEmptyResult
 {
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;

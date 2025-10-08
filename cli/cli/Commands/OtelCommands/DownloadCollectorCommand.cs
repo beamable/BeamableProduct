@@ -17,7 +17,7 @@ public class DownloadCollectorCommandResults
     public string configPath;
 }
 
-public class DownloadCollectorCommand : AtomicCommand<DownloadCollectorCommandArgs, DownloadCollectorCommandResults>, IIgnoreLogin
+public class DownloadCollectorCommand : AtomicCommand<DownloadCollectorCommandArgs, DownloadCollectorCommandResults>
 {
     public const string OS_LINUX = "lin";
     public const string ARCH_X64 = "x64";

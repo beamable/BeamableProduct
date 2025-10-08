@@ -28,7 +28,7 @@ public enum GenerateSdkConflictResolutionStrategy
 	RenameUncommonConflicts
 }
 
-public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand, ISkipManifest, IIgnoreLogin
+public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

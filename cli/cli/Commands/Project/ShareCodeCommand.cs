@@ -13,7 +13,7 @@ public class ShareCodeCommandArgs : CommandArgs
 	public string[] dependencyPrefixBlackList;
 
 }
-public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>, IIgnoreLogin
+public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 {
 	public ShareCodeCommand() : base("share-code", "Given a dll, copy the dll to the associated unity projects")
 	{

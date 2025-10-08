@@ -12,7 +12,7 @@ public class VersionResults
 }
 
 
-public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>, IStandaloneCommand, ISkipManifest, IIgnoreLogin
+public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>, IStandaloneCommand, ISkipManifest
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{

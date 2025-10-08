@@ -30,11 +30,6 @@ public interface ISkipManifest
 	
 }
 
-public interface IIgnoreLogin
-{
-
-}
-
 public interface IResultSteam<TChannel, TData> : IResultProvider
 	where TChannel : IResultChannel, new()
 {
