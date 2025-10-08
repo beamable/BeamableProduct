@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.5] - 2025-10-9
 ### Fixed
-- Fixed `IndexOutOfRangeException` when using Content Editor Window.
+- Fixed an `IndexOutOfRangeException` occurring when using the Content Editor Window.
+- Fixed an issue where button to create a new snapshot was not displayed when no snapshots existed.
 
 ## [3.1.4] - 2025-10-7
 ### Fixed

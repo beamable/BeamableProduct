@@ -104,8 +104,10 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawSnapshots()
 		{
 			BeamManifestSnapshotItem manifestWithBiggerName = _allSnapshots.Values.Where(FilterSnapshot).OrderByDescending(item => item.Name.Length).FirstOrDefault();
-			float biggerNameSize = EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName?.Name ?? string.Empty)).x;
 			float snapshotListAreaWidth = _snapshotSplitter.cellNormalizedSizes[0] * EditorGUIUtility.currentViewWidth;
+			float biggerNameSize = manifestWithBiggerName != null
+				? EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName.Name)).x
+				: snapshotListAreaWidth;
 			List<GUILayoutOption> scrollOptions = new List<GUILayoutOption>() {GUILayout.ExpandWidth(true)};
 			if (biggerNameSize > snapshotListAreaWidth)
 			{
