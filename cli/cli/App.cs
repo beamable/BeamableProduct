@@ -1237,6 +1237,7 @@ public class App
 				}
 
 
+
 				Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
 				await next(ctx);
 				_activity.SetStatus(ActivityStatusCode.Ok);

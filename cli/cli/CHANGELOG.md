@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue in `beam unreal init` command that would cause it to fail if the provided path to the Unreal Sdk had a `.` in it.
 - Fixed issue with C#MS Static Analyzer that caused the `EnableUnrealBlueprintCompatibility` flag to be applied incorrectly.
 - Fixed issue with C#MS Static Analyzer when using the `EnableUnrealBlueprintCompatibility` flag that would incorrectly flag certain uses of generic types (`Promises`) as an error.  
+- Fixed issue where should show warning/error if user is not logged in
 
 ## [5.4.2] - 2025-09-24
 ### Fixed

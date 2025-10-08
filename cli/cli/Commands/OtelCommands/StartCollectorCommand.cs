@@ -69,7 +69,7 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			CollectorManager.AddAuthEnvironmentVars(res);
 			CollectorManager.AddCollectorConfigurationToEnvironment();
 		}
-		catch (RequesterException ex)
+		catch (Exception ex)
 		{
 			throw new CliException(
 				message: $"An error happened while trying to get otel credentials from Beamo. Message=[{ex.Message}] StackTrace=[{ex.StackTrace}]");
