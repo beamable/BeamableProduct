@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
-		public EditorGUISplitView mainSplitter;
+		private EditorGUISplitView _mainSplitter;
 
 		static ContentWindow()
 		{
@@ -211,22 +211,26 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			EditorGUILayout.BeginHorizontal();
 			{
-				if (mainSplitter == null)
+				if (_mainSplitter == null || _mainSplitter.cellCount == 0)
 				{
 					var windowWidth = this.position.width;
 					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
 					var normalizedWidth = startingWidthOfTypes / windowWidth;
-					mainSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
+
+					_mainSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
 
 					// the first time the splitter gets created, the window needs to force redraw itself
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
 				}
-				mainSplitter.BeginSplitView();
+
+				
+				_mainSplitter.BeginSplitView();
 				DrawContentGroupPanel();
-				mainSplitter.Split(this);
+				_mainSplitter.Split(this);
 				DrawContentItemPanel();
-				mainSplitter.EndSplitView();
+				_mainSplitter.EndSplitView();
+
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndScrollView();
