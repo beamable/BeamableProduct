@@ -619,27 +619,29 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
 				var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);
 				var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
-
-				searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
-				if (EditorGUI.EndChangeCheck())
+				if (searchData != null)
 				{
-					searchData.onEndCheck?.Invoke();
-				}
-
-				if (!string.IsNullOrEmpty(searchData.searchText))
-				{
-					GUI.Button(searchClearRect, GUIContent.none, "SearchCancelButton");
-
-					if (clearButtonClicked)
+					searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
+					if (EditorGUI.EndChangeCheck())
 					{
-						window.AddDelayedAction(() =>
+						searchData.onEndCheck?.Invoke();
+					}
+
+					if (!string.IsNullOrEmpty(searchData.searchText))
+					{
+						GUI.Button(searchClearRect, GUIContent.none, "SearchCancelButton");
+
+						if (clearButtonClicked)
 						{
-							searchData.searchText = null;
-							GUIUtility.hotControl = 0;
-							GUIUtility.keyboardControl = 0;
-							searchData.onEndCheck?.Invoke();
-							window.Repaint();
-						});
+							window.AddDelayedAction(() =>
+							{
+								searchData.searchText = null;
+								GUIUtility.hotControl = 0;
+								GUIUtility.keyboardControl = 0;
+								searchData.onEndCheck?.Invoke();
+								window.Repaint();
+							});
+						}
 					}
 				}
 			}
