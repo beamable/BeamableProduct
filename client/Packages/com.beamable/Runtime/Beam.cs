@@ -112,8 +112,8 @@ namespace Beamable
 		/// However, this should not be used directly. Instead,
 		/// Use <see cref="SwitchToPid"/> to change the PID at runtime.
 		/// </summary>
-		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
-			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
+		public static IDefaultRuntimeConfigProvider RuntimeConfigProvider =>
+			GlobalScope.GetService<IDefaultRuntimeConfigProvider>();
 
 		public static ReflectionCache ReflectionCache;
 
@@ -151,6 +151,7 @@ namespace Beamable
 			GlobalDependencyBuilder.AddSingleton<ConfigDatabaseProvider>();
 			GlobalDependencyBuilder.AddSingleton<IPlatformRequesterHostResolver, ConfigPlatformHostResolver>();
 			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
+			GlobalDependencyBuilder.AddSingleton<IDefaultRuntimeConfigProvider>(p => p.GetService<DefaultRuntimeConfigProvider>());
 
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
