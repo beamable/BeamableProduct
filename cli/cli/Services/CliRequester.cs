@@ -124,7 +124,7 @@ public class CliRequester : IRequester
 			switch (error)
 			{
 				case RequesterException e when e.Status == 401:
-					Log.Error("Unauthorized access with token: " + AccessToken.Token);
+					Log.Warning($"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
 					break;
 				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
