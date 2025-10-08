@@ -1073,6 +1073,12 @@ namespace Beamable.Common
 			return result;
 		}
 
+		public static Promise<T> ReportInnerException<T>(this Promise<T> promise, bool raiseInnerException = true)
+		{
+			promise.RaiseInnerException = raiseInnerException;
+			return promise;
+		}
+
 #if !UNITY_WEBGL || UNITY_EDITOR // webgl does not support the system.threading library
 		/// <summary>
 		/// Convert <see cref="System.Threading.Tasks.Task"/> to <see cref="Promise{Unit}"/>.
