@@ -1073,9 +1073,9 @@ namespace Beamable.Common
 			return result;
 		}
 
-		public static Promise<T> SetInnerException<T>(this Promise<T> promise)
+		public static Promise<T> ReportInnerException<T>(this Promise<T> promise, bool raiseInnerException = true)
 		{
-			promise.RaiseInnerException = true;
+			promise.RaiseInnerException = raiseInnerException;
 			return promise;
 		}
 

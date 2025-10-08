@@ -152,7 +152,7 @@ public class CliRequester : IRequester
 			}
 
 			return Promise<T>.Failed(error);
-		}).SetInnerException();
+		}).ReportInnerException();
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
