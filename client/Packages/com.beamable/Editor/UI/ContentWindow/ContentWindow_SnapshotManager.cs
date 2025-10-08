@@ -18,7 +18,7 @@ namespace Beamable.Editor.UI.ContentWindow
 	public partial class ContentWindow
 	{
 		private const float SNAPSHOT_ICON_SIZE = 15f;
-		public EditorGUISplitView snapshotSplitter;
+		private EditorGUISplitView _snapshotSplitter;
 		private Dictionary<string, BeamManifestSnapshotItem> _allSnapshots = new();
 		private Dictionary<string, BeamManifestSnapshotItem> _sharedSnapshots = new();
 		private Dictionary<string, BeamManifestSnapshotItem> _localSnapshots = new();
@@ -44,35 +44,24 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal();
 			{
-				if (snapshotSplitter == null)
+				if (_snapshotSplitter == null || _snapshotSplitter.cellCount == 0)
 				{
 					var windowWidth = this.position.width;
 					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
 					var normalizedWidth = startingWidthOfTypes / windowWidth;
-					snapshotSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
+					_snapshotSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, normalizedWidth, 1f - normalizedWidth);
 
 					// the first time the splitter gets created, the window needs to force redraw itself
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
 				}
 
-				try
-				{
-					snapshotSplitter.BeginSplitView();
-					DrawSnapshots();
-					snapshotSplitter.Split(this);
-					DrawSnapshotContents();
-					snapshotSplitter.EndSplitView();
-				}
-				catch (Exception)
-				{
-					mainSplitter = null;
-					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
-					
-					EditorApplication.delayCall += Repaint;
-					return;
-				}
+				
+				_snapshotSplitter.BeginSplitView();
+				DrawSnapshots();
+				_snapshotSplitter.Split(this);
+				DrawSnapshotContents();
+				_snapshotSplitter.EndSplitView();
 			}
 			EditorGUILayout.EndHorizontal();
 			
@@ -116,7 +105,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			BeamManifestSnapshotItem manifestWithBiggerName = _allSnapshots.Values.Where(FilterSnapshot).OrderByDescending(item => item.Name.Length).FirstOrDefault();
 			float biggerNameSize = EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName?.Name ?? string.Empty)).x;
-			float snapshotListAreaWidth = snapshotSplitter.cellNormalizedSizes[0] * EditorGUIUtility.currentViewWidth;
+			float snapshotListAreaWidth = _snapshotSplitter.cellNormalizedSizes[0] * EditorGUIUtility.currentViewWidth;
 			List<GUILayoutOption> scrollOptions = new List<GUILayoutOption>() {GUILayout.ExpandWidth(true)};
 			if (biggerNameSize > snapshotListAreaWidth)
 			{
@@ -404,7 +393,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			float snapshotFullNameSize = boldLabel.CalcSize(new GUIContent($"Snapshot Name: {snapshot.Name}")).x + BASE_PADDING * 3;
 			var contentWithLongestName = snapshot.Contents.OrderByDescending(item => item.Name.Length).First();
 			float longestNameSize = EditorStyles.label.CalcSize(new GUIContent(contentWithLongestName.Name)).x + INDENT_WIDTH + SNAPSHOT_ICON_SIZE + BASE_PADDING * 4;
-			float contentMinSize = Mathf.Max(snapshotFullNameSize, longestNameSize, snapshotSplitter.cellNormalizedSizes[1]* EditorGUIUtility.currentViewWidth);
+			float contentMinSize = Mathf.Max(snapshotFullNameSize, longestNameSize, _snapshotSplitter.cellNormalizedSizes[1]* EditorGUIUtility.currentViewWidth);
 			
 			
 			EditorGUILayout.BeginHorizontal();
