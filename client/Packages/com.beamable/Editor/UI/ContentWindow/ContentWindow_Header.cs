@@ -558,7 +558,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private string GetNameSearchPartValue()
 		{
-			string searchText = _contentSearchData.searchText ?? string.Empty;
+			string searchText = _contentSearchData?.searchText ?? string.Empty;
 			string[] searchTextParts = searchText.Split(',');
 			foreach (string searchTextPart in searchTextParts)
 			{
