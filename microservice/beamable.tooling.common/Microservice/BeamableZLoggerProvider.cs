@@ -14,6 +14,11 @@ namespace Beamable.Server
     {
         public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
         public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
+
+        public static IDisposable BeginScope(Dictionary<string, string> scope)
+        {
+            return Default.BeginScope(scope);
+        }
         
         public static void Debug(string message)
         {
