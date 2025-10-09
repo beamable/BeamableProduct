@@ -21,6 +21,36 @@ The Beamable CLI may include changes between versions that require developer int
 
 These are ordered with the latest versions towards the top, and the older versions toward the bottom of the document. **When jumping multiple versions (A.A.A -> C.C.C), apply the migrations without skipping steps (A.A.A -> B.B.B -> C.C.C).**
 
+### From 5.4.x to 6.0.0
+There are no compile time breaking changes between 5.x and 6.0. However, there are a few major _workflow_ changes you should know.
+
+#### Microservice Logging Changes
+The 6.0 release completely changes the way that Microservices send and store log information. Previously, Microservices sent logs in a proprietary format to Amazon Cloud Watch. In the new release, logs are formatted as standard [open telemetry](https://opentelemetry.io/docs/specs/otel/logs/) data, and sent to a log warehouse via an [otel collector](https://opentelemetry.io/docs/collector/). The change is transparent to the Microservice layer, and you do not need to make any changes to enable the new logs.
+
+When you upgrade your service to 6.0, you will begin to see a new log workflow in the Portal. **Your old logs will not be available**. Only the new logs are available. Beamable only retains log data for 2 weeks anyway, but if you _must_ have access to your existing 2 weeks of log information, you will need Pro Support, and you must reach out directly to Beamable Support. 
+
+#### Telemetry Warning
+The 6.0 CLI will collect usage data and send it back to Beamable. By default, the CLI will ask you to opt into sending the usage information. The result of your selection is stored in the `.beamable/otel-config.json` file. You can change the `BeamCliAllowTelemetry` property to opt in or out of the usage collection. 
+
+Additionally, you can completely opt out of usage reporting by setting the `BEAM_NO_TELEMETRY` environment variable.  
+
+#### `services` command removed
+
+The `beam services` command suite has been removed in CLI 6.0. The `service` command group were about managing various _Docker_ related tasks, but most of the commands had fallen into disuse. There were two common use cases for the `service` commands,
+1. running Microservice projects locally, 
+2. building Microservice _Docker_ images and testing the containers. 
+
+To run a Microservice, please use the `dotnet beam project run` command, or simply run the service from your IDE, or with `dotnet run`. 
+
+To build and validate _Docker_ images locally, there is a new option on the `beam deploy plan` command that will generate a [docker compose](https://docs.docker.com/compose/) project out of the _Docker_ images. Use the `--docker-compose-dir` option to create a docker compose workspace, and then use docker compose directly to turn on and off the docker containers. 
+
+```sh
+dotnet beam deploy plan --docker-compose-dir Example
+cd Example
+docker compose up
+```
+
+
 ### From 4.3.x to 5.0.0
 The upgrade from 4.x to 5 has a few breaking changes. Once your project is using 
 CLI 5+, run the following command to automatically fix known compiler errors, 

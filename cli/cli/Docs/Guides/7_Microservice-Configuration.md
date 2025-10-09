@@ -89,16 +89,51 @@ This option can be set using the [project enable](doc:cli-project-enable) or the
 | Property Name   | Default Value |
 | --------------- | ------------- |
 | `<BeamEnabled>` | true          |
+#### BeamPreventOapiGen
+
+The `<BeamPreventOapiGen>` property is a boolean property, only valid on Microservice projects. When false, when the project is built, an open API document will be generated and placed in the `/bin` directory of the project. 
+
+| Property Name          | Default Value |
+| ---------------------- | ------------- |
+| `<BeamPreventOapiGen>` | false         |
+
+#### BeamCollectorVersion
+In version 6.0+, the Microservice uses an open telemetry collector process to send logs from the service to Beamable's log warehouse. The collector is versioned separately from the CLI and Microservice nuget packages. The version of the collector is embedded into the `BeamCollectorVersion` property, but it can be configured by hand. 
+
+| Property Name            | Default Value                                          |
+| ------------------------ | ------------------------------------------------------ |
+| `<BeamCollectorVersion>` | a semver value specific to the CLI version being used. |
+#### BeamDisableCollectorResolution
+In version 6.0+, the Microservice uses an open telemetry collector process to send logs from the service to Beamable's log warehouse. When the Microservice is built, the collector is automatically downloaded. This can be disabled by setting the property to `true`. 
+
+| Property Name                      | Default Value |
+| ---------------------------------- | ------------- |
+| `<BeamDisableCollectorResolution>` | false         |
+
+#### BeamPreventBuildCacheInvalidation
+
+The `<BeamPreventBuildCacheInvalidation>` property is a boolean, only valid on Microservice projects. In version 6+, anytime you build the service, there is a custom build step that will invalidate the file timestamp on the `.csproj` file, in order to break aggressive IDE cache optimizations. Specifically, the Rider IDE, has a cache that will prevent `msbuild` from running if it thinks your service has not changed. 
+
+You can disable the cache invalidation by setting this property to `true`. 
+
+| Property Name                         | Default Value |
+| ------------------------------------- | ------------- |
+| `<BeamPreventBuildCacheInvalidation>` | false         |
 
 #### GenerateClientCode 
 
 The `<GenerateClientCode>` property is boolean property, only valid on Standalone Microservice projects. When the project is built, if there are any linked Unity or Unreal projects, client code may be generated for the engine client and placed in the linked project folders. In order to link a project, use the [add-unity-project](doc:cli-add-unity-project) command, or the [add-unreal-project](doc:cli-add-unreal-project) command. 
 
-| Property Name          | Default Value |
-| ---------------------- | ------------- |
-| `<GenerateClientCode>` | true          |
+| Property Name          | Default Value | Note                                  |
+| ---------------------- | ------------- | ------------------------------------- |
+| `<GenerateClientCode>` | false         | In CLI 3.0, this was set to `true` .  |
 
+#### EnableUnrealBlueprintCompatibility
+The `<EnableUnrealBlueprintCompatibility>` property is a boolean property, only valid on Microservice projects. When it is enabled, the source generator will include validations on Microservice client generation that make Unreal Blueprint compatibility easier to maintain. 
 
+| Property Name                          | Default Value |
+| -------------------------------------- | ------------- |
+| `<EnableUnrealBlueprintCompatibility>` | false         |
 #### BeamValidateCallableTypesExistInSharedLibraries
 
 The `<BeamValidateCallableTypesExistInSharedLibraries>` property is a boolean property, only valid on Microservice projects. 
@@ -110,8 +145,8 @@ of the Microservice assembly.
 This is disabled by default, because Microservices being developed outside an engine integration likely
 do not need to worry about type accessibility. 
 
-| Property Name          | Default Value |
-| ---------------------- |---------------|
+| Property Name                                       | Default Value |
+| --------------------------------------------------- | ------------- |
 | `<BeamValidateCallableTypesExistInSharedLibraries>` | false         |
 
 #### BeamableTool
@@ -139,15 +174,22 @@ If you need to specify multiple values, use a `,` or a `;` to separate values. Y
 |----------------------|---------------|
 | `<BeamServiceGroup>` | empty         |
 
+
+### Telemetry Properties
+
+In CLI 6.0, the CLI will try to collect usage data and send it to Beamable. You can opt out of this by changing the `BeamCliAllowTelemetry` property to false in the `.beamable/otel-config.json` file. 
+
+Additionally, you can completely opt out of usage reporting by setting the `BEAM_NO_TELEMETRY` environment variable.  
+
 ### Dotnet Properties
 
 Common Dotnet properties may be explored through [Dotnet's Documentation](https://learn.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2022) . However, there are a few properties that are set automatically through the usage of the [Beamable Microservice Nuget Package](https://www.nuget.org/packages/Beamable.Microservice.Runtime). To view these default settings, you should view the package source code's `.props` file, located here, 
 
-[https://github.com/beamable/BeamableProduct/blob/cli-2.0.0/microservice/microservice/Targets/Beamable.Microservice.Runtime.props](https://github.com/beamable/BeamableProduct/blob/cli-2.0.0/microservice/microservice/Targets/Beamable.Microservice.Runtime.props)
+[https://github.com/beamable/BeamableProduct/blob/cli-6.0.0/microservice/microservice/Targets/Beamable.Microservice.Runtime.props](https://github.com/beamable/BeamableProduct/blob/cli-2.0.0/microservice/microservice/Targets/Beamable.Microservice.Runtime.props)
 
 > 📘 Make sure to reference the right version!
 >
-> The link above points to the cli-2.0.0 release tag version of the source code. Make sure that you are looking the same version as your `Beamable.Microservice.Runtime` nuget version is using in the `.csproj`. 
+> The link above points to the cli-6.0.0 release tag version of the source code. Make sure that you are looking the same version as your `Beamable.Microservice.Runtime` nuget version is using in the `.csproj`. 
  
 Other than the default properties set in the `.props` file, a major requirement of Beamable Standalone Microservices the `TargetFramework` property. If you are using CLI 3.0.0 and above, you may target `net8.0` . 
 
