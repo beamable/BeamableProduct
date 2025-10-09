@@ -39,6 +39,10 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		List<Activity> records = new List<Activity>();
 		foreach (var record in batch)
 		{
+			if (record.Status != ActivityStatusCode.Error)
+			{
+				continue;
+			}
 			records.Add(record);
 		}
 

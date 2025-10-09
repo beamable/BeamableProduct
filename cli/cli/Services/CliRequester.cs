@@ -147,8 +147,7 @@ public class CliRequester : IRequester
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException { Status: > 500 and < 510 }:
 					BeamableLogger.LogWarning($"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+					break;
 			}
 
 			return Promise<T>.Failed(error);

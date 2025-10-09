@@ -32,6 +32,10 @@ public class FileActivityExporter : FileExporter<Activity>
 
 		foreach (var activity in batch)
 		{
+			if (activity.Status != ActivityStatusCode.Error) // For now we only care about error traces
+			{
+				continue;
+			}
 			allActivitiesSerialized.Add(ActivitySerializer.SerializeActivity(activity));
 		}
 
