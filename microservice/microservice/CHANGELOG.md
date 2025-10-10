@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.0] - 2025-10-10
+## [6.0.0] - 2025-10-14
 
 ### Added
 - Microservices can source `[Callable]` methods from multiple base classes
@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Project references without assembly names no longer cause `NRE`
 - `StringBuilderPool` no longer throws rare concurrency exception in high traffic cases
+- new projects include `.gitignore` and `.dockerignore`
 
 ### Changed
 - Microservices use new Open Telemetry log system
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Log.Fatal` is obsolete. Please use `Log.Critical` instead.
 - Source generator no longer treats non-partial Microservice classes as an error.
 - Source generator no longer treats multiple Microservice classes as an error.
+- new projects no longer require `[Microservice]` attribute
 
 ## [5.4.0] - 2025-08-27
 no changes
