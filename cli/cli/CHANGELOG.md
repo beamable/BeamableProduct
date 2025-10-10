@@ -5,26 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [6.0.0] - 2025-10-10
 ### Added
-- Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
-- `beam deploy plan` includes new `--docker-compose-directory` option to generate a docker compose project that can be used to run services locally
+- CLI reports telemetry data to Beamable
+- `beam telemetry` command suite for managing Open Telemetry collectors, log data, and configuration
+- `beam deploy plan` includes new `--docker-compose-dir` option to generate a docker compose project that can be used to run services locally
 - `beam project generate-env` no longer includes realm secret by default. Pass `--include-secret` to opt into realm secret. 
 - `beam project generate-env` can write a `.env` file of required environment variables by passing a `.env` file path to the command. 
+- Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
 
 ### Changed
-- Change `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
+- `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
 - Event subscriptions use the developer's access token for authentication instead of the realm secret. 
 - `beam services` command suite is marked as internal
 - Rider IDE will be forced to re-run Beamable targets on project builds
-- `EnableUnrealBlueprintCompatibility` property is now added automatically to any `csproj` created in a Beamable project that is linked to an Unreal project.
+- `EnableUnrealBlueprintCompatibility` property is now added automatically to any `.csproj` created in a Beamable project that is linked to an Unreal project.
+- Default project template's `.gitignore` explicitly includes the `.csproj` and `.sln` files. 
+- CLI no longer indefinitely retries all HTTP requests that failed with a 50x response
 
 ### Fixed
-- Fixed issue that would cause `content ps` if you had any non-`.json` files in any of your content folders.
-- Fixed issue in `beam unreal init` command that would cause it to fail if the provided path to the Unreal Sdk had a `.` in it.
-- Fixed issue with C#MS Static Analyzer that caused the `EnableUnrealBlueprintCompatibility` flag to be applied incorrectly.
-- Fixed issue with C#MS Static Analyzer when using the `EnableUnrealBlueprintCompatibility` flag that would incorrectly flag certain uses of generic types (`Promises`) as an error.  
-- Fixed issue where should show warning/error if user is not logged in
+- `content ps` allows non-`.json` files in any of your content folders.
+- `beam unreal init` command allows path to the Unreal Sdk had a `.` in it.
+- C#MS Static Analyzer no longer adds `EnableUnrealBlueprintCompatibility` incorrectly.
+- C#MS Static Analyzer with `EnableUnrealBlueprintCompatibility` enabled allows generic types with (`Promises`).  
+- Improved error message when user is not logged into CLI.
+- `beam project ps` no longer reports remote storages incorrectly
 
 ## [5.4.2] - 2025-09-24
 ### Fixed
