@@ -15,9 +15,14 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 
 	public MicroserviceOtelActivityExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
+		var endpoint = $"{options.OtlpEndpoint}";
+		if (options.Protocol == OtlpExportProtocol.HttpProtobuf)
+		{
+			endpoint = $"{endpoint}/v1/traces";
+		}
 		_otlpOptions = new OtlpExporterOptions
 		{
-			Endpoint = new Uri($"{options.OtlpEndpoint}/v1/traces"),
+			Endpoint = new Uri(endpoint),
 			Protocol = options.Protocol,
 		};
 
