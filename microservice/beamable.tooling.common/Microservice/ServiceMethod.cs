@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
@@ -44,11 +45,16 @@ namespace Beamable.Server
 		/// The path associated with the service method.
 		/// </summary>
 		public string Path { get; set; }
+		
+		/// <summary>
+		/// A namespace associated with the service method.
+		/// </summary>
+		public string ClientNamespacePrefix { get; set; }
 
 		/// <summary>
 		/// Factory function to create an instance of the service method's target.
 		/// </summary>
-		public Func<MicroserviceRequestContext, object> InstanceFactory;
+		public ServiceMethodInstanceFactory InstanceFactory;
 
 		/// <summary>
 		/// The set of required scopes for accessing the service method.
@@ -86,6 +92,11 @@ namespace Beamable.Server
 		public Dictionary<string, ParameterDeserializer> ParameterDeserializers;
 
 		/// <summary>
+		/// A map from parameter name to the source of the parameter
+		/// </summary>
+		public Dictionary<string, ParameterSource> ParameterSources = new Dictionary<string, ParameterSource>();
+
+		/// <summary>
 		/// The method invocation delegate for the service method.
 		/// </summary>
 		public MethodInvocation Executor;
@@ -98,11 +109,11 @@ namespace Beamable.Server
 		/// <summary>
 		/// Gets the arguments for the method invocation from the provided parameter provider.
 		/// </summary>
-		private object[] GetArgs(RequestContext ctx, IParameterProvider parameterProvider)
+		private object[] GetArgs(RequestContext ctx, IParameterProvider parameterProvider, IDependencyProvider provider)
 		{
 			try
 			{
-				var args = parameterProvider.GetParameters(this);
+				var args = parameterProvider.GetParameters(this, provider);
 				return args;
 			}
 			catch (Exception ex ) when (ex is not MicroserviceException)
@@ -116,8 +127,10 @@ namespace Beamable.Server
 		/// </summary>
 		public async Task<object> Execute(MicroserviceRequestContext ctx, IParameterProvider parameterProvider)
 		{
-			var args = GetArgs(ctx, parameterProvider);
-			var target = InstanceFactory(ctx);
+			var instanceData = InstanceFactory(ctx);
+			var target = instanceData.instance;
+			var args = GetArgs(ctx, parameterProvider, instanceData.provider);
+			
 			try
 			{
 				var task = Executor(target, args);

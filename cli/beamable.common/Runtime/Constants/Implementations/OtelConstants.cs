@@ -7,26 +7,70 @@ namespace Beamable.Common
             public static partial class Otel
             {
                 public const string ENV_CLI_DISABLE_TELEMETRY = "BEAM_NO_TELEMETRY";
-                public const string ENV_CLI_ENABLE_TELEMETRY = "BEAM_TELEMETRY";
+                public const string ENV_CLI_AUTO_SETUP_TELEMETRY = "BEAM_AUTO_SETUP_TELEMETRY";
+                public const string ENV_CLI_RUNNING_ON_DOCKER = "DOTNET_RUNNING_IN_CONTAINER";
 
                 public static bool CliTracesEnabled() =>
-                    // need to opt in
-                    !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_ENABLE_TELEMETRY))
-                 
-                    // and the NO option needs to be left empty
-                    && string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
-
-                public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 50; // Equivalent to 50mb worth of space
+                    // if the disable env var is set, we don't setup otel
+                    string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_DISABLE_TELEMETRY));
                 
-                public const string ENV_COLLECTOR_HOST = "BEAM_COLLECTOR_DISCOVERY_HOST";
+                public static bool CliAutoSetupTelemetryEnabled() =>
+	                // if the env var is set it auto setup telemetry
+	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY));
+
+                public static bool CliAutoSetupTelemetryAccept()
+                {
+	                // if the env var is set it auto setup telemetry
+	                // true will accept
+	                // false will reject
+	                string autoSetupTelemetry =  System.Environment.GetEnvironmentVariable(ENV_CLI_AUTO_SETUP_TELEMETRY);
+	                if (bool.TryParse(autoSetupTelemetry, out bool result))
+	                {
+		                return result;
+	                }
+
+	                return false;
+                }
+	              
+                
+                public static bool CliRunningOnDockerContainer() =>
+	                // if the env var is set it is running on a docker container.
+	                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(ENV_CLI_RUNNING_ON_DOCKER));
+                
+
+                public const long MAX_OTEL_TEMP_DIR_SIZE = 1024 * 1024 * 500; // Equivalent to 500mb worth of space
+
                 public const string ENV_COLLECTOR_PORT = "BEAM_COLLECTOR_DISCOVERY_PORT";
                 public const string ENV_COLLECTOR_PORT_DEFAULT_VALUE = "8688"; // some random port number :shrug:
-                public const string ENV_COLLECTOR_HOST_DEFAULT_VALUE = "127.0.0.1"; // loopback
 
-                public const string ENV_COLLECTOR_CLICKHOUSE_HOST = "BEAM_CLICKHOUSE_HOST";
                 public const string ENV_COLLECTOR_CLICKHOUSE_ENDPOINT = "BEAM_CLICKHOUSE_ENDPOINT";
                 public const string ENV_COLLECTOR_CLICKHOUSE_USERNAME = "BEAM_CLICKHOUSE_USERNAME";
                 public const string ENV_COLLECTOR_CLICKHOUSE_PASSWORD = "BEAM_CLICKHOUSE_PASSWORD";
+
+                public const string ENV_BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT = "BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT";
+                public const string BEAM_CLICKHOUSE_PROCESSOR_TIMEOUT = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE = "BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE";
+                public const string BEAM_CLICKHOUSE_PROCESSOR_BATCH_SIZE = "5000";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_TIMEOUT = "BEAM_CLICKHOUSE_EXPORTER_TIMEOUT";
+                public const string BEAM_CLICKHOUSE_EXPORTER_TIMEOUT = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE = "BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE";
+                public const string BEAM_CLICKHOUSE_EXPORTER_QUEUE_SIZE = "1000";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED = "BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_ENABLED = "true";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL = "BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_INITIAL_INTERVAL = "5s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL = "BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_INTERVAL = "30s";
+
+                public const string ENV_BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME = "BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME";
+                public const string BEAM_CLICKHOUSE_EXPORTER_RETRY_MAX_ELAPSED_TIME = "300s";
+
                 
                 
                 public const string DATADOG_PARENT_TRACE_ID_HEADER = "x-datadog-parent-id";
@@ -55,11 +99,25 @@ namespace Beamable.Common
                 
                 /// <summary>
                 /// A tag used to identify the type of source providing data,
-                ///  for now, always "microservice".
-                /// But in the future, could be "UnityEditor" or "UnityRuntime" for example.
+                ///  for now, it's either "microservice" or "cli".
                 /// </summary>
                 public const string ATTR_SOURCE = "beam.source";
-                
+
+                /// <summary>
+                /// A tag used to identify which engine is using the CLI, either "unity" or "unreal"
+                /// </summary>
+                public const string ATTR_ENGINE_SOURCE = "beam.engine.source";
+
+                /// <summary>
+                /// A tag used tp identify the version of Beamable SDK calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_SDK_VERSION = "beam.engine.source.sdk_version";
+
+                /// <summary>
+                /// A tag used to identify the engine version that is running and calling the CLI
+                /// </summary>
+                public const string ATTR_ENGINE_VERSION = "beam.engine.source.engine_version";
+
                 /// <summary>
                 /// A UUID to identify the individual connection within an application.
                 /// </summary>
@@ -83,6 +141,11 @@ namespace Beamable.Common
                 public const string ATTR_AUTHOR = "beam.owner_id";
                 
                 /// <summary>
+                /// The player email of the user that started the service, or blank if remote. 
+                /// </summary>
+                public const string ATTR_AUTHOR_EMAIL = "beam.owner_email";
+                
+                /// <summary>
                 /// The routing key the Microservice used to register itself
                 /// </summary>
                 public const string ATTR_ROUTING_KEY = "beam.routing_key";
@@ -91,8 +154,6 @@ namespace Beamable.Common
                 /// The SDK version publishing the data
                 /// </summary>
                 public const string ATTR_SDK_VERSION = "beam.sdk_version";
-                
-                
                 
                 
                 public const string METER_SERVICE_NAME = "Beamable.Service.Core";

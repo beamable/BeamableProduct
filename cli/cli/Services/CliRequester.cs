@@ -7,7 +7,7 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
 using Beamable.Server;
-
+using System.Net.Http.Headers;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
@@ -123,6 +123,9 @@ public class CliRequester : IRequester
 		{
 			switch (error)
 			{
+				case RequesterException e when e.Status == 401:
+					Log.Warning($"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
+					break;
 				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
@@ -144,12 +147,11 @@ public class CliRequester : IRequester
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException { Status: > 500 and < 510 }:
 					BeamableLogger.LogWarning($"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+					break;
 			}
 
 			return Promise<T>.Failed(error);
-		});
+		}).ReportInnerException();
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
@@ -166,6 +168,7 @@ public class CliRequester : IRequester
 		{
 			byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
 			request.Content = new ByteArrayContent(bodyBytes);
+			request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 		}
 		else
 		{

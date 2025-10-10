@@ -6,6 +6,10 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class DeveloperUserManagerSaveUserArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
+        /// <summary>A alias (Name) of the user, which is not the same name as in the portal</summary>
+        public string[] alias;
+        /// <summary>A new description for this user</summary>
+        public string[] description;
         /// <summary>The user type of the user</summary>
         public int userType;
         /// <summary>The PID of the user</summary>
@@ -20,11 +24,31 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] refreshToken;
         /// <summary>The expires to be saved</summary>
         public string[] expiresIn;
+        /// <summary>The tags to set in the local user data splited by @@</summary>
+        public string[] tags;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
+            // If the alias value was not default, then add it to the list of args.
+            if ((this.alias != default(string[])))
+            {
+                for (int i = 0; (i < this.alias.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--alias=" + this.alias[i]));
+                }
+            }
+            // If the description value was not default, then add it to the list of args.
+            if ((this.description != default(string[])))
+            {
+                for (int i = 0; (i < this.description.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--description=" + this.description[i]));
+                }
+            }
             // If the userType value was not default, then add it to the list of args.
             if ((this.userType != default(int)))
             {
@@ -82,6 +106,15 @@ namespace Beamable.Editor.BeamCli.Commands
                 {
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--expires-in=" + this.expiresIn[i]));
+                }
+            }
+            // If the tags value was not default, then add it to the list of args.
+            if ((this.tags != default(string[])))
+            {
+                for (int i = 0; (i < this.tags.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--tags=" + this.tags[i]));
                 }
             }
             string genBeamCommandStr = "";

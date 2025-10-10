@@ -50,10 +50,10 @@ public static class Diagnostics
 
 	public static class Srv
 	{
-		public const string NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O001";
-		public const string MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O002";
-		public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";
-		public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";
+		// public const string NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O001"; // deprecated in CLI 6. Leave this here so ordering stays consistent. 
+		// public const string MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O002";  // deprecated in CLI 6. Leave this here so ordering stays consistent. 
+		// public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";  // deprecated in CLI 6. Leave this here so ordering stays consistent. 
+		// public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";  // deprecated in CLI 6. Leave this here so ordering stays consistent. 
 		// public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005"; This isn't being used anymore, but we kept it here to keep the Diagnostics IDs order.
 		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
 		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
@@ -77,41 +77,41 @@ public static class Diagnostics
 		public const string PROP_BEAM_ID = "BeamId";
 		public const string PROP_FIELD_NAME = "FieldName";
 
-		public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
-			= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
-				$"No {nameof(Server.Microservice)} classes detected",
-				$"No {nameof(Server.Microservice)} classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project.",
-				Category_Services,
-				DiagnosticSeverity.Error,
-				true);
-
-		public static readonly DiagnosticDescriptor MultipleMicroserviceClassesDetected
-			= new(MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID,
-				$"Multiple {nameof(Server.Microservice)} classes detected",
-				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project. ClassNames={{0}}.",
-				Category_Services,
-				DiagnosticSeverity.Error,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#multiple-microservice-classes-detected",
-				isEnabledByDefault: true);
-
-		public static readonly DiagnosticDescriptor NonPartialMicroserviceClassDetected
-			= new(NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID,
-				$"Non-Partial {nameof(Server.Microservice)} classes detected",
-				$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
-				Category_Services,
-				DiagnosticSeverity.Info,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#non-partial-microservice-class-detected",
-				isEnabledByDefault: true);
-		
-		public static readonly DiagnosticDescriptor MissingMicroserviceId
-			= new(MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
-				$"{nameof(Server.Microservice)} class is missing the microservice id",
-				$"{nameof(Server.Microservice)} class is missing the microservice id",
-				Category_Services,
-				DiagnosticSeverity.Error,
-				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#microservice-class-missing-microservice-id",
-				isEnabledByDefault: true);
-		
+		// public static readonly DiagnosticDescriptor NoMicroserviceClassesDetected
+		// 	= new(NO_MICROSERVICE_DETECTED_DIAGNOSTIC_ID,
+		// 		$"No {nameof(Server.Microservice)} classes detected",
+		// 		$"No {nameof(Server.Microservice)} classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project.",
+		// 		Category_Services,
+		// 		DiagnosticSeverity.Error,
+		// 		true);
+		//
+		// public static readonly DiagnosticDescriptor MultipleMicroserviceClassesDetected
+		// 	= new(MULTIPLE_MICROSERVICE_CLASSES_DETECTED_DIAGNOSTIC_ID,
+		// 		$"Multiple {nameof(Server.Microservice)} classes detected",
+		// 		$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Server.Microservice)} exists in each service project. ClassNames={{0}}.",
+		// 		Category_Services,
+		// 		DiagnosticSeverity.Error,
+		// 		helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#multiple-microservice-classes-detected",
+		// 		isEnabledByDefault: true);
+		//
+		// public static readonly DiagnosticDescriptor NonPartialMicroserviceClassDetected
+		// 	= new(NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID,
+		// 		$"Non-Partial {nameof(Server.Microservice)} classes detected",
+		// 		$"Non-Partial Microservice class detected. Make sure your {nameof(Server.Microservice)} class is marked as `partial`.",
+		// 		Category_Services,
+		// 		DiagnosticSeverity.Info,
+		// 		helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#non-partial-microservice-class-detected",
+		// 		isEnabledByDefault: true);
+		//
+		// public static readonly DiagnosticDescriptor MissingMicroserviceId
+		// 	= new(MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
+		// 		$"{nameof(Server.Microservice)} class is missing the microservice id",
+		// 		$"{nameof(Server.Microservice)} class is missing the microservice id",
+		// 		Category_Services,
+		// 		DiagnosticSeverity.Error,
+		// 		helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#microservice-class-missing-microservice-id",
+		// 		isEnabledByDefault: true);
+		//
 		
 		
 		public static readonly DiagnosticDescriptor InvalidAsyncVoidCallableMethod

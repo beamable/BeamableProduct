@@ -74,10 +74,81 @@ cat > $TEMPLATE_DOTNET_CONFIG_PATH << EOF
 }
 EOF
 
+
+
+GO_VERSION="1.24.1"
+CURRENT_OS="windows"
+
+GO_INSTALLED=0
+
+if command -v go &> /dev/null; then
+    INSTALLED_GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+    echo "Go is installed with version: $INSTALLED_GO_VERSION"
+    if [[ "$INSTALLED_GO_VERSION" == "$GO_VERSION" ]]; then
+        GO_INSTALLED=1
+        echo "Found GO installation with correct version!"
+    else
+        echo "This script needs GO with version $GO_VERSION, instead found $INSTALLED_GO_VERSION"
+        exit 1
+    fi
+fi
+
+
+#TODO This could be improved by actually running through a list of dependencies and check for all of them, better done once we actually have more deps
+# if the dependency is not installed by default, then we will need either Chocolatey or Homebrew
+if [[ "$GO_INSTALLED" == "0" ]]; then
+    # check for os type, if windows then we need chocolatey to be installed, otherwise we need homebrew
+    case "$OSTYPE" in
+      darwin*)  
+          CURRENT_OS="mac"
+          if command -v brew &> /dev/null; then
+            echo "Homebrew is installed"
+            echo "Version: $(brew --version | head -n 1)"
+          else
+              echo "Homebrew is not installed, please install it before running this script!"
+              exit 1
+          fi
+          ;;
+      msys*|cygwin*|win32)  
+          CURRENT_OS="windows"
+          if command -v choco &> /dev/null; then
+            echo "Chocolatey is installed with version: $(choco --version)"
+          else
+            echo "Chocolatey is not installed, please install it before running this script!"
+            exit 1
+          fi
+          ;;
+      *)        
+          echo "This message should never be printed, os: $OSTYPE"
+          exit 1
+          ;;
+    esac
+
+    if [[ "$CURRENT_OS" == "windows" ]]; then
+        if choco install golang --version=$GO_VERSION -y; then
+            echo "GO with version $GO_VERSION was successfully installed!"
+            export PATH="$PATH:/c/Go/bin" #This is the default case for chocolatey, it might not work depending on the user's setup
+        else
+            echo "Failed to install GO using Chocolatey!"
+            exit 1
+        fi
+    else
+        if brew install go@$GO_VERSION 2>/dev/null; then
+            echo "GO with version $GO_VERSION was successfully installed!"
+            export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" #This is the default case for homebrew, it might not work depending on the user's setup
+        else
+            echo "Failed to install GO using Homebrew!"
+        fi
+    fi
+fi
+
+
 # Builds all the otel collector binaries
 cd ./otel-collector/
 ./build.sh --version 0.0.123
 cd ..
+
+
 
 # TODO: Consider running this as part of a post-pull git action
 # TODO: Should this run the `sync-rider-run-settings.sh` script? (probably)

@@ -75,6 +75,45 @@ namespace Beamable.Server.Common
 			return TryGetSettingFromJson(key, out value);
 		}
 
+		public static IMicroserviceAttributes ReadServiceAttributes(IMicroserviceArgs args)
+		{
+			var settings = new Dictionary<string, string>();
+			var assembly = Assembly.GetEntryAssembly();
+
+			using var stream =
+				assembly.GetManifestResourceStream(Constants.Features.Config.BEAMABLE_REQUIRED_SETTINGS_RESOURCE_NAME);
+			if (stream == null)
+			{
+				if (args.AllowStartupWithoutBeamableSettings)
+				{
+					return null;
+				}
+				throw new InvalidOperationException($"Cannot start without {Constants.Features.Config.BEAMABLE_REQUIRED_SETTINGS_RESOURCE_NAME} resource");
+			}
+
+			var attributes = new DefaultMicroserviceAttributes();
+			
+			using var reader = new StreamReader(stream);
+			while (!reader.EndOfStream)
+			{
+				var line = reader.ReadLine();
+				if (string.IsNullOrEmpty(line)) continue;
+				var parts = line.Split('=', StringSplitOptions.RemoveEmptyEntries);
+				if (parts.Length != 2) continue;
+				var name = parts[0].ToLowerInvariant().Trim();
+				switch (name)
+				{
+					case "beamid":
+						attributes.MicroserviceName = parts[1].Trim();
+						break;
+					// TODO: add more?
+				}
+				
+			}
+
+			return attributes;
+		}
+		
 		/// <summary>
 		/// Reads the embedded resource, Beamable.properties, and returns a dictionary of the key value pairs.
 		/// 
