@@ -5,13 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [6.0.0] - 2025-10-10
+
+### Added
+- Microservices can source `[Callable]` methods from multiple base classes
+- Microservice initialization flow uses builder pattern
+- Microservice support dynamic log level configurations per request 
+- Microservices include Open Telemetry collector as part of the build process
 
 ### Fixed
 - Project references without assembly names no longer cause `NRE`
+- `StringBuilderPool` no longer throws rare concurrency exception in high traffic cases
 
 ### Changed
+- Microservices use new Open Telemetry log system
 - Local development uses the developer's access token to authenticate the Microservice
+- `Log.Verbose` is obsolete. Please use `Log.Trace` instead.
+- `Log.Fatal` is obsolete. Please use `Log.Critical` instead.
+- Source generator no longer treats non-partial Microservice classes as an error.
+- Source generator no longer treats multiple Microservice classes as an error.
 
 ## [5.4.0] - 2025-08-27
 no changes
