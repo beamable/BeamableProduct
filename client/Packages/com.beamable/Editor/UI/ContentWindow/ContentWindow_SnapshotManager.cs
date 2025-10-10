@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal();
 			{
-				if (_snapshotSplitter == null || _snapshotSplitter.cellCount == 0)
+				if (_snapshotSplitter == null)
 				{
 					var windowWidth = this.position.width;
 					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
@@ -54,6 +54,11 @@ namespace Beamable.Editor.UI.ContentWindow
 					// the first time the splitter gets created, the window needs to force redraw itself
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
+				}
+
+				if (_snapshotSplitter.cellCount < 2)
+				{
+					_snapshotSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, 2);
 				}
 
 				
@@ -104,8 +109,10 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawSnapshots()
 		{
 			BeamManifestSnapshotItem manifestWithBiggerName = _allSnapshots.Values.Where(FilterSnapshot).OrderByDescending(item => item.Name.Length).FirstOrDefault();
-			float biggerNameSize = EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName?.Name ?? string.Empty)).x;
 			float snapshotListAreaWidth = _snapshotSplitter.cellNormalizedSizes[0] * EditorGUIUtility.currentViewWidth;
+			float biggerNameSize = manifestWithBiggerName != null
+				? EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName.Name)).x
+				: snapshotListAreaWidth;
 			List<GUILayoutOption> scrollOptions = new List<GUILayoutOption>() {GUILayout.ExpandWidth(true)};
 			if (biggerNameSize > snapshotListAreaWidth)
 			{
