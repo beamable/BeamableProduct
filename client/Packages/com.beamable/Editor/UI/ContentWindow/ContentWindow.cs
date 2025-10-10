@@ -211,7 +211,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			EditorGUILayout.BeginHorizontal();
 			{
-				if (_mainSplitter == null || _mainSplitter.cellCount == 0)
+				if (_mainSplitter == null)
 				{
 					var windowWidth = this.position.width;
 					var startingWidthOfTypes = CONTENT_GROUP_PANEL_WIDTH;
@@ -222,6 +222,11 @@ namespace Beamable.Editor.UI.ContentWindow
 					// the first time the splitter gets created, the window needs to force redraw itself
 					//  so that the splitter can size itself correctly. 
 					EditorApplication.delayCall += Repaint;
+				}
+
+				if (_mainSplitter.cellCount < 2)
+				{
+					_mainSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, 2);
 				}
 
 				
