@@ -2,7 +2,6 @@ using Beamable.Server;
 
 namespace Beamable.BeamService
 {
-	[Microservice("BeamService")]
 	public partial class BeamService : Microservice
 	{
 		[ClientCallable]
