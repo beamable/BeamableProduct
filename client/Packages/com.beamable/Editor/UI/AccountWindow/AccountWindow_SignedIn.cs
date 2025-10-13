@@ -11,6 +11,8 @@ namespace Beamable.Editor.Accounts
 {
 	public partial class AccountWindow
 	{
+		private Vector2 _signedInScroll;
+
 		void Draw_SignedIn()
 		{
 			
@@ -32,6 +34,8 @@ namespace Beamable.Editor.Accounts
 			{
 				padding = new RectOffset(12, 12, 12, 12)
 			});
+			
+			_signedInScroll = EditorGUILayout.BeginScrollView(_signedInScroll);
 
 			BeamGUI.DrawLogoBanner();
 			
@@ -170,7 +174,7 @@ namespace Beamable.Editor.Accounts
 			EditorGUILayout.Space(1, true);
 
 			EditorGUILayout.EndHorizontal();
-
+			EditorGUILayout.EndScrollView();
 			EditorGUILayout.EndVertical();
 		}
 	}
