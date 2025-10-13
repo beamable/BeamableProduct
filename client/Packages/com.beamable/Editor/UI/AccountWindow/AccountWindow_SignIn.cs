@@ -14,6 +14,10 @@ namespace Beamable.Editor.Accounts
 		private const string BEAM_STAGE_ENDPOINT = "https://staging.api.beamable.com";
 		private const string BEAM_DEV_ENDPOINT = "https://dev.api.beamable.com";
 		
+		private const string BEAM_PROD_PORTAL_URI = "https://portal.beamable.com";
+		private const string BEAM_STAGE_PORTAL_URI = "https://staging-portal.beamable.com";
+		private const string BEAM_DEV_PORTAL_URI = "https://dev-portal.beamable.com";
+		
 		public enum Env
 		{
 			Unset,
@@ -52,6 +56,16 @@ namespace Beamable.Editor.Accounts
 				case Env.Dev: return BEAM_DEV_ENDPOINT;
 				case Env.Custom: return host;
 				default: throw new InvalidOperationException("unknown env");
+			}
+		}
+
+		public string GetPortalUriString()
+		{
+			switch (env)
+			{
+				case Env.Dev: return BEAM_DEV_PORTAL_URI;
+				case Env.Staging: return BEAM_STAGE_PORTAL_URI;
+				default: return BEAM_PROD_PORTAL_URI;
 			}
 		}
 		
@@ -179,7 +193,7 @@ namespace Beamable.Editor.Accounts
 					{
 						EditorApplication.delayCall += () =>
 						{
-							var url = $"{BeamableEnvironment.PortalUrl}/signup/registration?utm_source=unity-sdk";
+							var url = $"{GetPortalUriString()}/signup/registration?utm_source=unity-sdk";
 							Application.OpenURL(url);
 						};
 					}
@@ -212,7 +226,7 @@ namespace Beamable.Editor.Accounts
 					{
 						EditorApplication.delayCall += () =>
 						{
-							var url = $"{BeamableEnvironment.PortalUrl}/forgot-password?utm_source=unity-sdk";
+							var url = $"{GetPortalUriString()}/forgot-password?utm_source=unity-sdk";
 							Application.OpenURL(url);
 						};
 					}
