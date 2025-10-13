@@ -14,10 +14,6 @@ namespace Beamable.Editor.Accounts
 		private const string BEAM_STAGE_ENDPOINT = "https://staging.api.beamable.com";
 		private const string BEAM_DEV_ENDPOINT = "https://dev.api.beamable.com";
 		
-		private const string BEAM_PROD_PORTAL_URI = "https://portal.beamable.com";
-		private const string BEAM_STAGE_PORTAL_URI = "https://staging-portal.beamable.com";
-		private const string BEAM_DEV_PORTAL_URI = "https://dev-portal.beamable.com";
-		
 		public enum Env
 		{
 			Unset,
@@ -63,9 +59,9 @@ namespace Beamable.Editor.Accounts
 		{
 			switch (env)
 			{
-				case Env.Dev: return BEAM_DEV_PORTAL_URI;
-				case Env.Staging: return BEAM_STAGE_PORTAL_URI;
-				default: return BEAM_PROD_PORTAL_URI;
+				case Env.Dev: return Constants.BEAM_DEV_PORTAL_URI;
+				case Env.Staging: return Constants.BEAM_STAGE_PORTAL_URI;
+				default: return Constants.BEAM_PROD_PORTAL_URI;
 			}
 		}
 		
