@@ -61,17 +61,14 @@ namespace Beamable.Server
         {
             Default.LogCritical(message, args);
         }
-        [Obsolete("Use Critical Instead")]
         public static void Critical(string message)
         {
             Default.LogCritical(message);
         }
-        [Obsolete("Use Critical Instead")]
         public static void Critical(Exception ex, string message)
         {
             Default.LogCritical(ex, message);
         }
-        [Obsolete("Use Critical Instead")]
         public static void Critical(string message, params object[] args)
         {
             Default.LogCritical(message, args);
