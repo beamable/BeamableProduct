@@ -156,9 +156,18 @@ public class CliRequester : IRequester
 					}
 
 					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
-				case RequesterException { Status: > 500 and < 510 }:
+				case RequesterException e when e.Status == 502:
 					BeamableLogger.LogWarning(
-						$"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
+					if (retryCount > 5)
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
+				case RequesterException e when e.Status > 500 && e.Status < 510:
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
 					break;
 			}
 
