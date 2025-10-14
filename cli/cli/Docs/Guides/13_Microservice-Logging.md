@@ -40,7 +40,7 @@ public void SampleLog()
 }
 ```
 
-> [!NOTE]
+> 📘 Local Logs Do Not Appear In Portal By Default
 > Local microservice logs will not appear in Portal unless the `BEAM_LOCAL_OTEL` environment variable is set.
 
 ### Log Level
@@ -57,7 +57,7 @@ When you run a Microservice locally, you will see log messages at the _Debug_ le
 
 The `Log` type has methods for each type of log level.
 
-> [!NOTE]
+> 📘 Default Log Level
 > The default log level is `DEBUG` when you are running a service locally in development. However, deployed services use the `INFO` level by default. 
 
 #### Request Dynamic Log Levels
