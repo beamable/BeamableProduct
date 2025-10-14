@@ -55,6 +55,7 @@ namespace Beamable.Server
 		public string OtelExporterOtlpEndpoint { get; set; }
 		public string OtelExporterOtlpHeaders { get; set; }
 		public bool OtelExporterShouldRetry { get; set; }
+		public bool UseLocalOtel { get; set; }
 		public bool OtelExporterStandardEnabled { get; set; }
 		public string OtelExporterRetryMaxSize { get; set; }
 		public bool AllowStartupWithoutBeamableSettings { get; set; }
@@ -115,6 +116,7 @@ namespace Beamable.Server
 				OtelExporterOtlpHeaders = args.OtelExporterOtlpHeaders,
 				OtelExporterOtlpProtocol = args.OtelExporterOtlpProtocol,
 				OtelExporterShouldRetry = args.OtelExporterShouldRetry,
+				UseLocalOtel = args.UseLocalOtel,
 				OtelExporterStandardEnabled = args.OtelExporterStandardEnabled,
 				OtelExporterRetryMaxSize = args.OtelExporterRetryMaxSize,
 				SkipLocalEnv = args.SkipLocalEnv,
@@ -208,7 +210,7 @@ namespace Beamable.Server
 		public bool OtelExporterShouldRetry =>
 			string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_RETRY_OTEL"));
 
-		public bool OtelExporterStandardEnabled => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
+		public bool OtelExporterStandardEnabled => (this.InDocker() || UseLocalOtel) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_DISABLE_STANDARD_OTEL"));
 
 		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
 		public bool AllowStartupWithoutBeamableSettings => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
@@ -300,6 +302,7 @@ namespace Beamable.Server
 		public string SdkVersionBaseBuild => BeamAssemblyVersionUtil.GetVersion<MicroserviceArgs>();
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
+		public bool UseLocalOtel => IsEnvironmentVariableTrue("BEAM_LOCAL_OTEL");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
 		
 		public bool SkipLocalEnv => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_LOCAL_ENV"));
