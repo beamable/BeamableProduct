@@ -118,40 +118,65 @@ public class CliRequester : IRequester
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).
-		RecoverWith(error =>
+		return InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, 0);
+	}
+
+	private Promise<T> InternalRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+		Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).RecoverWith(error =>
 		{
 			switch (error)
 			{
 				case RequesterException e when e.Status == 401:
-					Log.Warning($"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
-					break;
-				case RequesterException e when e.RequestError.error is "TimeOutError":
+					Log.Warning(
+						$"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
+
+					if (retryCount > 0)
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
+				case RequesterException e when e.RequestError.error is "TimeOutError": //TODO should this also have a limited amount of retries??
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
-											   e.Status == 403 ||
-											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
-												AccessToken.ExpiresAt < DateTime.Now):
+				                               e.Status == 403 ||
+				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+				                                AccessToken.ExpiresAt < DateTime.Now):
 					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
-					var authService = new AuthApi(this);
-					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
-						{
-							Log.Debug(
-								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_requesterInfo.SetToken(rsp);
-							return PromiseBase.Unit;
-						})
-						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+
+					if (retryCount > 0)
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
 				case RequesterException { Status: > 500 and < 510 }:
-					BeamableLogger.LogWarning($"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
 					break;
 			}
 
 			return Promise<T>.Failed(error);
 		}).ReportInnerException();
+	}
+
+	private async Promise<T> GetTokenAndRetry<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		var authService = new AuthApi(this);
+
+		TokenResponse tokenResponse = await authService.LoginRefreshToken(AccessToken.RefreshToken);
+		Log.Debug(
+			$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
+		_requesterInfo.SetToken(tokenResponse);
+
+		return await InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, ++retryCount);
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
