@@ -381,12 +381,14 @@ Deploy the service
 dotnet beam deploy release 
 ```
 
-> [!tip]
+> 🚧 Larger Docker Image
+>
 > The Docker image size will be larger than normal, because you are including the collector application. This will increase the upload time, especially the first time.
 
 As you interact with the service, you should see logs appear in BetterStack.
 
-This section dealt with exporting logs to BetterStack, but the situation is similar for other log providers, like DataDog. The part that needs to change is how the collector is configured. 
+This section dealt with exporting logs to BetterStack, but the situation is similar for other log providers, like DataDog. The part that needs to change is how the collector is configured.
 
-> [!WARNING]
+> 👍 Replace Default Logs
+>
 > When you do this, you will not see logs in Beamable. This demonstration _replaces_ the Beamable logs for BetterStack. 
