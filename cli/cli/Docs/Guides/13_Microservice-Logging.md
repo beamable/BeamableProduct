@@ -40,6 +40,8 @@ public void SampleLog()
 }
 ```
 
+> [!NOTE]
+> Local microservice logs will not appear in Portal unless the `BEAM_LOCAL_OTEL` environment variable is set.
 
 ### Log Level
 
@@ -246,6 +248,9 @@ service:
 
 Prepare the following environment variables. 
 ```sh
+# Send local log data to Portal for debug purposes
+export BEAM_LOCAL_OTEL=true
+
 # Use the tokenSource from better stack instead of 123
 export BETTERSTACK_AUTH="Bearer 123"
 
