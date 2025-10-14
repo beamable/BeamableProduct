@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C#MS Static Analyzer with `EnableUnrealBlueprintCompatibility` enabled allows generic types with (`Promises`).  
 - Improved error message when user is not logged into CLI.
 - `beam project ps` no longer reports remote storages incorrectly
+- Issue that `beam project logs` were skipping logs
 
 ## [5.4.2] - 2025-09-24
 ### Fixed
