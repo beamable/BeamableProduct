@@ -172,7 +172,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			_releaseCommand = _ctx.Cli.DeploymentRelease(new DeploymentReleaseArgs
 			{
 				fromPlan = _planMetadata.planPath,
-				comment = manifestComment
+				comment = $"\"{manifestComment}\""
 			});
 
 			_releaseCommand.OnProgressPlanReleaseProgress(cb =>
