@@ -23,7 +23,7 @@ namespace Beamable.Editor.ToolbarExtender
 			{
 				case "dev": return Constants.BEAM_DEV_PORTAL_URI;
 				case "staging" : return Constants.BEAM_STAGE_PORTAL_URI;
-				default: return Constants.BEAM_PROD_PORTAL_URI;
+				default: return BeamableEnvironment.PortalUrl;
 			}
 		}
 	}
