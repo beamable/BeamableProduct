@@ -14,6 +14,8 @@ namespace cli;
 
 public class CliRequester : IRequester
 {
+
+	private readonly int ProgressiveDelayIncreaser = 5;
 	private readonly IRequesterInfo _requesterInfo;
 	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
@@ -133,15 +135,15 @@ public class CliRequester : IRequester
 					Log.Warning(
 						$"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
 
-					if (retryCount > 0)
+					if (retryCount >= 1)
 					{
 						break;
 					}
 
-					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
-				case RequesterException e when e.RequestError.error is "TimeOutError": //TODO should this also have a limited amount of retries??
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
+				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
+					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
 						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
 				                               e.Status == 403 ||
@@ -150,21 +152,21 @@ public class CliRequester : IRequester
 					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 
-					if (retryCount > 0)
+					if (retryCount >= 1)
 					{
 						break;
 					}
 
-					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
 				case RequesterException e when e.Status == 502:
 					BeamableLogger.LogWarning(
 						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
-					if (retryCount > 5)
+					if (retryCount >= 5)
 					{
 						break;
 					}
 
-					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache);
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
 				case RequesterException e when e.Status > 500 && e.Status < 510:
 					BeamableLogger.LogWarning(
 						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
