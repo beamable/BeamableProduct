@@ -601,7 +601,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				GUILayout.FlexibleSpace();
 			}
 
-			var searchRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField, GUILayout.ExpandWidth(true), GUILayout.MinWidth(30));
+			// note, in Unity 6.2, the height of `EditorStyles.textField` increased, so we need to manually specify line height here. 
+			var searchRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField, GUILayout.ExpandWidth(true), GUILayout.MinWidth(30), GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
 			if (isVerticallyCentered)
 			{
