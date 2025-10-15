@@ -591,7 +591,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 		public static void DrawSearchBar(this IDelayedActionWindow window,
 		                                 SearchData searchData,
-		                                 bool isVerticallyCentered = false)
+		                                 bool isVerticallyCentered = false,
+		                                 string textFieldName=null)
 		{
 			var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
 
@@ -622,6 +623,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
 				if (searchData != null)
 				{
+					if (textFieldName != null)
+						GUI.SetNextControlName(textFieldName);
 					searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
 					if (EditorGUI.EndChangeCheck())
 					{
