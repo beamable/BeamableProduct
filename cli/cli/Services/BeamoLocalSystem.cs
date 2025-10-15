@@ -11,7 +11,11 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using microservice.Extensions;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
+using ServiceConstants = Beamable.Common.Constants.Features.Services;
 
 namespace cli.Services;
 
@@ -567,8 +571,92 @@ public class BeamoServiceDefinition
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
 		= new MicroserviceFederationsConfig();
 
+	public static async Task<MicroserviceFederationsConfig> ReloadFederationsData(string openApiPath)
+	{
+		// string openApiPath = definition.OpenApiPath;
+		if (File.Exists(openApiPath))
+		{
+			var openApiStringReader = new OpenApiStringReader();
+			var fileContent = await File.ReadAllTextAsync(openApiPath);
+			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
+			foreach (var warning in diagnostic.Warnings)
+			{
+				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+					warning.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+			}
 
-	
+			foreach (var error in diagnostic.Errors)
+			{
+				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+					error.Pointer);
+				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+			}
+
+			if (!openApiDocument.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
+				    out var ext) ||
+			    ext is not OpenApiArray { Count: > 0 } federationIds)
+			{
+				return new MicroserviceFederationsConfig();
+			}
+
+			Dictionary<string, List<FederationInstanceConfig>> foundFederationsAndInterfaces = new();
+			foreach (IOpenApiAny openApiAny in federationIds)
+			{
+				// federationId: Is the Federation ID set in the FederationId attribute in the C# Federation Class. Ex: "default"
+				// interfaceFullname: Is the fullname of the Interface on which that federation uses
+
+				// We can skip this federation if there is an error when parsing or if the OpenApi is invalid
+				// If not an OpenApiObject OR
+				// federationId doesn't exist OR
+				// interfaceFullName doesn't exist
+				if (openApiAny is not OpenApiObject obj)
+					continue;
+				if (!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY,
+					    out var extId) ||
+				    extId is not OpenApiString { Value: var federationId })
+					continue;
+				if (!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY,
+					    out var extInterface) ||
+				    extInterface is not OpenApiString { Value: var interfaceFullName })
+					continue;
+				if (!obj.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY,
+					    out var extFedClassName) ||
+				    extFedClassName is not OpenApiString { Value: var federationClassName })
+					continue;
+
+				string interfaceNameOnly = interfaceFullName.Split('.').Last();
+				var federationInstanceConfig = new FederationInstanceConfig
+				{
+					Interface = interfaceNameOnly,
+					ClassName = federationClassName
+				};
+
+				if (foundFederationsAndInterfaces.TryGetValue(federationId, out var interfaces))
+				{
+
+					interfaces.Add(federationInstanceConfig);
+				}
+				else
+				{
+					foundFederationsAndInterfaces[federationId] = new List<FederationInstanceConfig>
+						{ federationInstanceConfig };
+				}
+			}
+
+			var federationsConfig =
+				new FederationsConfig(
+					foundFederationsAndInterfaces.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray()));
+
+			return new MicroserviceFederationsConfig() { Federations = federationsConfig };
+
+		}
+		else
+		{
+			return new MicroserviceFederationsConfig();
+		}
+	}
+
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
 	/// </summary>

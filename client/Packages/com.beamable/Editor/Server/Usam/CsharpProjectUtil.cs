@@ -202,12 +202,12 @@ Do not add them from the custom solution file that opens from Beam Services wind
 
 		public static List<string> GetValidDllReferences(Assembly assembly, out List<string> warnings)
 		{
-			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
+			var projectRoot = NormalizeSlashes(UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length));
 			warnings = new List<string>();
 			var outputDlls = new List<string>();
 			foreach (var dll in assembly.compiledAssemblyReferences)
 			{
-				var fullDllName = Path.GetFullPath(dll);
+				var fullDllName = NormalizeSlashes(Path.GetFullPath(dll));
 
 				var name = Path.GetFileName(dll);
 				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) && name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
@@ -224,6 +224,11 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			}
 
 			return outputDlls;
+		}
+		
+		public static string NormalizeSlashes(string value)
+		{
+			return value.Replace('\\', '/');
 		}
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)

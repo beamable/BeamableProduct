@@ -40,6 +40,8 @@ public void SampleLog()
 }
 ```
 
+> 📘 Local Logs Do Not Appear In Portal By Default
+> Local microservice logs will not appear in Portal unless the `BEAM_LOCAL_OTEL` environment variable is set.
 
 ### Log Level
 
@@ -55,9 +57,12 @@ When you run a Microservice locally, you will see log messages at the _Debug_ le
 
 The `Log` type has methods for each type of log level.
 
+> 📘 Default Log Level
+> The default log level is `DEBUG` when you are running a service locally in development. However, deployed services use the `INFO` level by default. 
+
 #### Request Dynamic Log Levels
 
-In version 6.0+, you can override the log level per request based on the player calling your Microservice, or the path being invoked on the service. By default, the log level for the entire service is _Information_, but if there was an error prone route, or a specific user was experiencing issues, you could set the log level to _Debug_ for that use case, without affecting the log level for anything else. 
+In version 6.0+, you can override the log level per request based on the player calling your Microservice, or the path being invoked on the service. By default, the log level for the entire service is _Information_, but if there was an error-prone route, or a specific user was experiencing issues, you could set the log level to _Debug_ for that use case, without affecting the log level for anything else. 
 
 To set a dynamic log level, go to the Portal's microservice page, and create a new _Log Config Rule_. Once you create a rule, the Microservice will automatically update to emit logs at the new level. It may take a few seconds for the log level to change. 
 
@@ -246,6 +251,9 @@ service:
 
 Prepare the following environment variables. 
 ```sh
+# Send local log data to Portal for debug purposes
+export BEAM_LOCAL_OTEL=true
+
 # Use the tokenSource from better stack instead of 123
 export BETTERSTACK_AUTH="Bearer 123"
 
@@ -373,12 +381,14 @@ Deploy the service
 dotnet beam deploy release 
 ```
 
-> [!tip]
+> 🚧 Larger Docker Image
+>
 > The Docker image size will be larger than normal, because you are including the collector application. This will increase the upload time, especially the first time.
 
 As you interact with the service, you should see logs appear in BetterStack.
 
-This section dealt with exporting logs to BetterStack, but the situation is similar for other log providers, like DataDog. The part that needs to change is how the collector is configured. 
+This section dealt with exporting logs to BetterStack, but the situation is similar for other log providers, like DataDog. The part that needs to change is how the collector is configured.
 
-> [!WARNING]
+> 👍 Replace Default Logs
+>
 > When you do this, you will not see logs in Beamable. This demonstration _replaces_ the Beamable logs for BetterStack. 

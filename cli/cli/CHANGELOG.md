@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.0] - 2025-10-10
+## [6.0.0] - 2025-10-14
 ### Added
 - CLI reports telemetry data to Beamable
 - `beam telemetry` command suite for managing Open Telemetry collectors, log data, and configuration
@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C#MS Static Analyzer with `EnableUnrealBlueprintCompatibility` enabled allows generic types with (`Promises`).  
 - Improved error message when user is not logged into CLI.
 - `beam project ps` no longer reports remote storages incorrectly
+- Issue that `beam project logs` were skipping logs
 
 ## [5.4.2] - 2025-09-24
 ### Fixed
