@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:client/Packages/com.beamable/Samples/LightBeamSamples/FriendsManager/Prefabs/HomePage/HomePage.cs.meta
 guid: 447285b65c34b492a99fd36fe907ddab
-========
-guid: 98ff6d683a9974225a424bea39c7f4e9
->>>>>>>> production-1-19-0:client/Packages/com.beamable/Common/Runtime/Util/BeamAssemblyVersionUtil.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
