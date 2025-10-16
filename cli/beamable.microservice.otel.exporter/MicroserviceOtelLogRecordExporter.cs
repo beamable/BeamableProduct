@@ -18,9 +18,15 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 	public MicroserviceOtelLogRecordExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
+		var endpoint = $"{options.OtlpEndpoint}";
+		if (options.Protocol == OtlpExportProtocol.HttpProtobuf)
+		{
+			endpoint = $"{endpoint}/v1/logs";
+		}
+
 		_otlpOptions = new OtlpExporterOptions
 		{
-			Endpoint = new Uri($"{options.OtlpEndpoint}/v1/logs"),
+			Endpoint = new Uri(endpoint),
 			Protocol = options.Protocol,
 		};
 

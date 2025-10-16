@@ -12,9 +12,15 @@ public class MicroserviceOtelMetricExporter : MicroserviceOtelExporter<Metric>
 
 	public MicroserviceOtelMetricExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
+		var endpoint = $"{options.OtlpEndpoint}";
+		if (options.Protocol == OtlpExportProtocol.HttpProtobuf)
+		{
+			endpoint = $"{endpoint}/v1/metrics";
+		}
+
 		_otlpOptions = new OtlpExporterOptions
 		{
-			Endpoint = new Uri($"{options.OtlpEndpoint}/v1/metrics"),
+			Endpoint = new Uri(endpoint),
 			Protocol = options.Protocol,
 		};
 

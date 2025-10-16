@@ -157,6 +157,7 @@ namespace microserviceTests.microservice
 	  public string OtelExporterOtlpProtocol { get; }
 	  public string OtelExporterOtlpEndpoint { get; }
 	  public string OtelExporterOtlpHeaders { get; }
+	  public bool UseLocalOtel => false;
 	  public bool OtelExporterShouldRetry { get; }
 	  public bool OtelExporterStandardEnabled => false;
 	  public string OtelExporterRetryMaxSize { get; }

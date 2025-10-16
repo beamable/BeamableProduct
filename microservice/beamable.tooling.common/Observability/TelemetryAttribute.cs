@@ -375,7 +375,6 @@ namespace Beamable.Server
 
         public void CreateRequestAttributes(IRequestAttributeContext ctx)
         {
-            ctx.Attributes.Add(TelemetryAttributes.ConnectionId(ctx.ConnectionId));
             ctx.Attributes.Add(TelemetryAttributes.RequestPlayerId(ctx.Request.UnsafeUserId));
             ctx.Attributes.Add(TelemetryAttributes.RequestId(Guid.NewGuid().ToString()));
             ctx.Attributes.Add(TelemetryAttributes.ConnectionRequestId(ctx.Request.Id));

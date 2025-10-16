@@ -13,6 +13,7 @@
   "sources": [
     {
       "modifiers": [
+        { "include": [ ".gitignore", ".dockerignore" ] },
         { "exclude": [ ".vs/**", ".template_config/**", "[Content_Types].xml" ,"_rels/**"] }
       ]
     }
