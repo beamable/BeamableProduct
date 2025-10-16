@@ -54,6 +54,16 @@ namespace Beamable.Editor.Accounts
 				default: throw new InvalidOperationException("unknown env");
 			}
 		}
+
+		public string GetPortalUriString()
+		{
+			switch (env)
+			{
+				case Env.Dev: return Constants.BEAM_DEV_PORTAL_URI;
+				case Env.Staging: return Constants.BEAM_STAGE_PORTAL_URI;
+				default: return Constants.BEAM_PROD_PORTAL_URI;
+			}
+		}
 		
 		// public static Dictionary<string, Env> envChoiceMap = envChoices.Select(choice => )
 		
@@ -179,7 +189,7 @@ namespace Beamable.Editor.Accounts
 					{
 						EditorApplication.delayCall += () =>
 						{
-							var url = $"{BeamableEnvironment.PortalUrl}/signup/registration?utm_source=unity-sdk";
+							var url = $"{GetPortalUriString()}/signup/registration?utm_source=unity-sdk";
 							Application.OpenURL(url);
 						};
 					}
@@ -212,7 +222,7 @@ namespace Beamable.Editor.Accounts
 					{
 						EditorApplication.delayCall += () =>
 						{
-							var url = $"{BeamableEnvironment.PortalUrl}/forgot-password?utm_source=unity-sdk";
+							var url = $"{GetPortalUriString()}/forgot-password?utm_source=unity-sdk";
 							Application.OpenURL(url);
 						};
 					}
