@@ -401,7 +401,9 @@ public static class MicroserviceStartupUtil
 				builder.AddZLoggerLogProcessor(ctx.debugLogProcessor);
 			}
 
-			if (includeOtel)
+			var shouldIncludeOtel = ctx.InDocker || ctx.args.UseLocalOtel;
+			
+			if (includeOtel && shouldIncludeOtel)
 			{
 				builder.AddOpenTelemetry(logging =>
 				{
