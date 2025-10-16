@@ -591,7 +591,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 		public static void DrawSearchBar(this IDelayedActionWindow window,
 		                                 SearchData searchData,
-		                                 bool isVerticallyCentered = false)
+		                                 bool isVerticallyCentered = false,
+		                                 string textFieldName=null)
 		{
 			var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
 
@@ -601,7 +602,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				GUILayout.FlexibleSpace();
 			}
 
-			var searchRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField, GUILayout.ExpandWidth(true), GUILayout.MinWidth(30));
+			// note, in Unity 6.2, the height of `EditorStyles.textField` increased, so we need to manually specify line height here. 
+			var searchRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField, GUILayout.ExpandWidth(true), GUILayout.MinWidth(30), GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
 			if (isVerticallyCentered)
 			{
@@ -621,6 +623,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
 				if (searchData != null)
 				{
+					if (textFieldName != null)
+						GUI.SetNextControlName(textFieldName);
 					searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
 					if (EditorGUI.EndChangeCheck())
 					{

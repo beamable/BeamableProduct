@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:client/Packages/com.beamable/Samples/LightBeamSamples/FriendsManager/Prefabs/FriendDisplay/FriendDisplayBehaviour.cs.meta
 guid: 51bda64aac5fc4bd2adcce6617651773
-========
-guid: 6043960d155c8e94eaf350ded6c25284
->>>>>>>> production-1-19-0:client/Packages/com.beamable/Common/Runtime/OpenApi/BeamMatchmaking.gs.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
