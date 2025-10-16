@@ -111,7 +111,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			BeamManifestSnapshotItem manifestWithBiggerName = _allSnapshots.Values.Where(FilterSnapshot).OrderByDescending(item => item.Name.Length).FirstOrDefault();
 			float snapshotListAreaWidth = _snapshotSplitter.cellNormalizedSizes[0] * EditorGUIUtility.currentViewWidth;
 			float biggerNameSize = manifestWithBiggerName != null
-				? EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName.Name)).x
+				? EditorStyles.label.CalcSize(new GUIContent(manifestWithBiggerName.Name)).x + BASE_PADDING * 2 + INDENT_WIDTH + SNAPSHOT_ICON_SIZE
 				: snapshotListAreaWidth;
 			List<GUILayoutOption> scrollOptions = new List<GUILayoutOption>() {GUILayout.ExpandWidth(true)};
 			if (biggerNameSize > snapshotListAreaWidth)
@@ -126,8 +126,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(BASE_PADDING, false);
 			EditorGUILayout.EndHorizontal();
 			
-			var minWidth = Mathf.Min(biggerNameSize, snapshotListAreaWidth);
-			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
+			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -144,7 +143,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawSnapshotsList(_localSnapshots.Values.ToList(), ContentSnapshotType.Local, true);
 			}
 
-			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
+			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
