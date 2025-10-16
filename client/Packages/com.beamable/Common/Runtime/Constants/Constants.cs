@@ -17,6 +17,10 @@ namespace Beamable.Common
 		public const string LINK_TERMS_OF_SERVICE = "https://beamable.com/tos";
 		public const string LINK_PRIVACY = "https://beamable.com/privacy";
 		
+		public const string BEAM_PROD_PORTAL_URI = "https://portal.beamable.com";
+		public const string BEAM_STAGE_PORTAL_URI = "https://staging-portal.beamable.com";
+		public const string BEAM_DEV_PORTAL_URI = "https://dev-portal.beamable.com";
+		
 		public const string OPEN_API_FILE_NAME = "beam_openApi.json";
 		public const string OPEN_API_DIR_PROPERTY_KEY = "OutDir";
 
