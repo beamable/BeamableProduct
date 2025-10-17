@@ -20,6 +20,10 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 			(args, s) => args.SnapshotNameOrPath = s, new[] { "-n" });
 		AddOption(new Option<string>("--pid", () => string.Empty, "An optional field to set the PID from where you would like to get the snapshot to be restored. The default will be the current PID the user are in"), (args, s) => args.Pid = s);
 		AddOption(new Option<bool>("--delete-after-restore", () => false, "Defines if the snapshot file should be deleted after restoring"), (args, b) => args.DeleteSnapshotAfterRestore = b, new[] { "-d" });
+		AddOption(
+			new Option<bool>("--additive-restore", () => false,
+				"Defines if the restore will additionally adds the contents without deleting current local contents"),
+			(args, b) => args.AdditiveRestore = b);
 	}
 
 	public override async Task<ContentRestoreResult> GetResult(ContentRestoreCommandArgs args)
@@ -75,7 +79,7 @@ public class ContentRestoreCommand : AtomicCommand<ContentRestoreCommandArgs, Co
 			}
 		}
 		
-		var restoredContents = await _contentService.RestoreSnapshot(fullPath, args.DeleteSnapshotAfterRestore, args.ManifestId);
+		var restoredContents = await _contentService.RestoreSnapshot(fullPath, args.DeleteSnapshotAfterRestore, args.AdditiveRestore, args.ManifestId);
 		return new ContentRestoreResult() { RestoredContents = restoredContents };
 	}
 
@@ -100,6 +104,7 @@ public class ContentRestoreCommandArgs : ContentCommandArgs
 	public string Pid;
 	public string SnapshotNameOrPath;
 	public bool DeleteSnapshotAfterRestore;
+	public bool AdditiveRestore;
 }
 
 [CliContractType, Serializable]

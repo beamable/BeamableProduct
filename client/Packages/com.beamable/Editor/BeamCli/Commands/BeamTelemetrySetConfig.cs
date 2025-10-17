@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string cliLogLevel;
         /// <summary>The maximum size in bytes for saved Otel data</summary>
         public string cliTelemetryMaxSize;
+        /// <summary>Define if the telemetry is allowed to push informations to beamable server</summary>
+        public bool cliAllowTelemetry;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -19,6 +21,8 @@ namespace Beamable.Editor.BeamCli.Commands
             genBeamCommandArgs.Add(this.cliLogLevel.ToString());
             // Add the cliTelemetryMaxSize value to the list of args.
             genBeamCommandArgs.Add(this.cliTelemetryMaxSize.ToString());
+            // Add the cliAllowTelemetry value to the list of args.
+            genBeamCommandArgs.Add(this.cliAllowTelemetry.ToString());
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
