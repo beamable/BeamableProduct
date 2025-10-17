@@ -1082,7 +1082,7 @@ public static class MicroserviceStartupUtil
 				.AddRuntimeInstrumentation()
 				.SetResourceBuilder(ctx.resourceProvider)
 				// We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
-				.AddOtlpExporter(option =>
+				.AddOtlpExporter((option, reader) =>
 				{
 					if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) &&
 					    !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
@@ -1095,9 +1095,9 @@ public static class MicroserviceStartupUtil
 					{
 						option.Protocol = OtlpExportProtocol.HttpProtobuf;
 						option.Endpoint = new Uri($"{ctx.otlpEndpoint}/v1/metrics");
-						;
 					}
 
+					reader.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
 				})
 				.Build()
 			;
