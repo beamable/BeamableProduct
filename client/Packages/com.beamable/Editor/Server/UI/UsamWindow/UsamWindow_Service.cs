@@ -254,6 +254,10 @@ namespace Beamable.Editor.Microservice.UI2
 				             {
 					             usam.ToggleServiceAutoGenerateClient(service.beamoId);
 				             });
+				menu.AddItem(new GUIContent("Force Generate shared libs"), false, () =>
+				{
+					CsProjUtil.OnPreGeneratingCSProjectFiles(usam);
+				});
 			}
 
 
