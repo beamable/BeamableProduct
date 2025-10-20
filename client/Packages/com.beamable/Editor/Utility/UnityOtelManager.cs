@@ -52,6 +52,7 @@ namespace Beamable.Editor.Utility
 			"Unhandled exception"
 		};
 
+		private bool _telemetryEnabled;
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
 		private BeamCollectorStatusResult _collectorStatus;
@@ -259,13 +260,18 @@ namespace Beamable.Editor.Utility
 		
 		private void OnCoreConfigChanged()
 		{
-			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
+			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel && CoreConfig.EnableOtel == _telemetryEnabled)
 			{
 				return;
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
-			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
+			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs()
+			{
+				cliLogLevel = _telemetryLogLevel.ToString(),
+				cliTelemetryMaxSize = _telemetryMaxSize.ToString(),
+				cliAllowTelemetry = CoreConfig.EnableOtel
+			});
 			commandWrapper.Run();
 		}
 		
