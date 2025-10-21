@@ -148,18 +148,42 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			// proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 			proc.Start();
-			if (!proc.WaitForExit(10 * 1000))
-			{
-				Debug.LogError("dotnet tool install command did not finish fast enough; timed out.");
-				return false;
-			}
+
+			TryRunWithTimeout(1);
+			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
 			if (!string.IsNullOrWhiteSpace(error))
 			{
-				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
+				var result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"Unable to install BeamCLI: {error}", "Try Again", "Close Unity");
+				if (!result)
+				{
+					EditorApplication.Exit(0);
+				}
 			}
 			return proc.ExitCode == 0;
+
+			bool TryRunWithTimeout(int currentTry)
+			{
+				proc.Start();
+				if (proc.WaitForExit(10 * 1000 * currentTry))
+				{
+					return true;
+				}
+
+				Debug.LogError("dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
+				if (currentTry > 5)
+				{
+					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"Could not install BeamCLI because command did not finished fast enough. Timeout ed after 5 retries. Please, contact Beamable for further support.", "Try Again", "Close Unity");
+					if (!result)
+					{
+						EditorApplication.Exit(0);
+					}
+					return false;
+				}
+				return TryRunWithTimeout(++currentTry);
+
+			}
 		}
 	}
 }
