@@ -188,7 +188,7 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		public async Task SyncContentsWithProgress(bool syncModified,
+		public async Promise SyncContentsWithProgress(bool syncModified,
 		                                           bool syncCreated,
 		                                           bool syncConflicted,
 		                                           bool syncDeleted,
@@ -372,7 +372,7 @@ namespace Beamable.Editor.ContentService
 			EntriesCache[contentId] = content;
 		}
 		
-		public async Task PublishContentsWithProgress()
+		public async Promise PublishContentsWithProgress()
 		{
 			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;
