@@ -44,7 +44,13 @@ namespace Beamable.Editor.BeamCli.UI
 			string lastPublished = _unityOtelManager.OtelFileStatus.LastPublishTimestamp == 0
 				? "Never"
 				: DateTimeOffset.FromUnixTimeMilliseconds(_unityOtelManager.OtelFileStatus.LastPublishTimestamp).ToLocalTime().ToString("g");
+
+			bool otelEnabled = CoreConfiguration.Instance.EnableOtel.HasValue
+				? CoreConfiguration.Instance.EnableOtel.Value
+				: _unityOtelManager.TelemetryEnabled;
+
 			CoreConfiguration.Instance.EnableOtelAutoPublish = EditorGUILayout.Toggle("Auto-Publish", CoreConfiguration.Instance.EnableOtelAutoPublish, EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("Otel Enabled: ", otelEnabled.ToString(), EditorStyles.boldLabel);
 			EditorGUILayout.LabelField("Last Published", lastPublished, EditorStyles.boldLabel);
 			EditorGUILayout.LabelField("Size:", $"{(float)_unityOtelManager.OtelFileStatus.FolderSize/(1024 * 1024):F} MB", EditorStyles.boldLabel);
 			EditorGUILayout.LabelField("Log Files Count: ", _unityOtelManager.OtelFileStatus.FileCount.ToString(), EditorStyles.boldLabel);
