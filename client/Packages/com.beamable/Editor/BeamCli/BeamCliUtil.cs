@@ -151,6 +151,9 @@ namespace Beamable.Editor.BeamCli
 			proc.Start();
 
 			TryRunWithTimeout(1);
+
+			const string errorGuide =
+				"Please try installing manually by https://docs.beamable.com/docs/cli-guide-getting-started#installing or contact Beamable for further support.";
 			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
@@ -163,6 +166,7 @@ namespace Beamable.Editor.BeamCli
 					message.AppendLine($"Output: {output}");
 				}
 				message.AppendLine($"Error: {error}");
+				message.Append(errorGuide);
 				bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message.ToString(), "Try Again", "Close Unity");
 				if (!result)
 				{
@@ -183,7 +187,7 @@ namespace Beamable.Editor.BeamCli
 				const int maxRetries = 5;
 				if (currentTry > maxRetries)
 				{
-					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. Please contact Beamable for further support.", "Try Again", "Close Unity");
+					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. {errorGuide}", "Try Again", "Close Unity");
 					if (!result)
 					{
 						EditorApplication.Exit(0);
