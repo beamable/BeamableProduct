@@ -209,6 +209,7 @@ namespace Beamable.Editor.Utility
 			{
 				_telemetryMaxSize = report.data.BeamCliTelemetryMaxSize;
 				_telemetryLogLevel = Enum.TryParse(report.data.BeamCliTelemetryLogLevel, out OtelLogLevel logLevel) ? logLevel : _telemetryLogLevel;
+				_telemetryEnabled = report.data.BeamCliAllowTelemetry;
 			}).Run();
 		}
 		
@@ -266,6 +267,7 @@ namespace Beamable.Editor.Utility
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
+			_telemetryEnabled = CoreConfig.EnableOtel;
 			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs()
 			{
 				cliLogLevel = _telemetryLogLevel.ToString(),
