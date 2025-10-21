@@ -172,9 +172,10 @@ namespace Beamable.Editor.BeamCli
 				}
 
 				Debug.LogError("dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
-				if (currentTry > 5)
+				const int maxRetries = 5;
+				if (currentTry > maxRetries)
 				{
-					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"Could not install BeamCLI because command did not finished fast enough. Timeout ed after 5 retries. Please, contact Beamable for further support.", "Try Again", "Close Unity");
+					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. Please contact Beamable for further support.", "Try Again", "Close Unity");
 					if (!result)
 					{
 						EditorApplication.Exit(0);
