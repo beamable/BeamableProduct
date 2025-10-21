@@ -42,7 +42,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			"Force Generate Shared Project",
+			"Generate Assembly Definition Projects",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1)]
 		public static void ForceGenerateSharedProject()
 		{
