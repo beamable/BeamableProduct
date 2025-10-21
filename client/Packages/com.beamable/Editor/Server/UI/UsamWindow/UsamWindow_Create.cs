@@ -187,8 +187,9 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				
 				EditorGUILayout.Space(4, false);
+				// note, in Unity 6.2, the height of `EditorStyles.textField` increased, so we need to manually specify line height here. 
 				newServiceName =
-					BeamGUI.LayoutPlaceholderTextField(newServiceName, $"[{noun} Name]", EditorStyles.textField);
+					BeamGUI.LayoutPlaceholderTextField(newServiceName, $"[{noun} Name]", EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
 				
 				var isValidServiceName = true;

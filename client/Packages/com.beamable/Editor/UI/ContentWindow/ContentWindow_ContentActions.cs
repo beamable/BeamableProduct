@@ -6,6 +6,7 @@ using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Editor.BeamCli.UI;
 using UnityEditor;
 using UnityEngine;
@@ -24,7 +25,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private Vector2 _mainScrollPosition;
 
 		private ContentStatus _statusToDraw = ContentStatus.Invalid;
-		private Func<Task> _revertAction; 
+		private Func<Promise> _revertAction; 
 
 		private void DrawPublishPanel()
 		{
@@ -40,7 +41,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				if (EditorUtility.DisplayDialog("Publish Content", $"Are you sure you want to publish content changes to realm [{realmName}]?", "Publish", "Cancel"))
 				{
-					_ = _contentService.PublishContentsWithProgress();
+					_contentService.PublishContentsWithProgress().Then(_ =>
+					{
+						ChangeWindowStatus(ContentWindowStatus.Normal);
+					});
 				}
 			}
 
@@ -62,8 +66,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			void RevertContent()
 			{
 				if (EditorUtility.DisplayDialog("Revert Content", $"Are you sure you want to revert content changes. All changes will be reverted to match contents from realm [{realmName}]?", "Revert", "Cancel"))
-				{
-					_ = _revertAction?.Invoke();
+				{ 
+					_revertAction?.Invoke().Then(_ =>
+					{
+						ChangeWindowStatus(ContentWindowStatus.Normal);
+					});
 				}
 			}
 
@@ -77,13 +84,6 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void DrawValidatePanel()
 		{
-			if (!_contentService.HasChangedContents)
-			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
-				return;
-			}
-
-
 			var errorStyle = new GUIStyle(EditorStyles.label)
 			{
 				normal = {textColor = Color.red},
