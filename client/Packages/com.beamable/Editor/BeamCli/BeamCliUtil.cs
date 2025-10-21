@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
@@ -153,9 +154,16 @@ namespace Beamable.Editor.BeamCli
 			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
+			Debug.Log($"dotnet install BeamCli output message: {output}");
+			if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
 			{
-				var result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", $"Unable to install BeamCLI: {error}", "Try Again", "Close Unity");
+				StringBuilder message = new StringBuilder("Unable to install BeamCLI");
+				if (!string.IsNullOrEmpty(output))
+				{
+					message.AppendLine($"Output: {output}");
+				}
+				message.AppendLine($"Error: {error}");
+				bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message.ToString(), "Try Again", "Close Unity");
 				if (!result)
 				{
 					EditorApplication.Exit(0);
