@@ -129,7 +129,7 @@ The default is 60 seconds.
 		[Header("OTEL Configuration")]
 
 		[Tooltip("When true, Beamable SDK will collect Otel data")]
-		public bool EnableOtel = true;
+		public OptionalBool EnableOtel = new() {HasValue = false, Value = true};
 
 		[Tooltip("When true, Unity will auto publish OTEL logs to backend each X seconds. X is defined in the field below")]
 		public bool EnableOtelAutoPublish = true;

@@ -52,6 +52,8 @@ namespace Beamable.Editor.Utility
 			"Unhandled exception"
 		};
 
+		public bool TelemetryEnabled => _telemetryEnabled;
+
 		private bool _telemetryEnabled;
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
@@ -74,9 +76,6 @@ namespace Beamable.Editor.Utility
 			Application.wantsToQuit += OnUnityQuitting;
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			CoreConfig.OnValidateCallback += OnCoreConfigChanged;
-
-			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
-			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			
 			_ = FetchOtelConfig();
 			_ = GetUnparsedCrashLogs();
@@ -261,18 +260,18 @@ namespace Beamable.Editor.Utility
 		
 		private void OnCoreConfigChanged()
 		{
-			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel && CoreConfig.EnableOtel == _telemetryEnabled)
+			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel && CoreConfig.EnableOtel.Value == _telemetryEnabled)
 			{
 				return;
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
-			_telemetryEnabled = CoreConfig.EnableOtel;
+			_telemetryEnabled = CoreConfig.EnableOtel.HasValue ? CoreConfig.EnableOtel.Value : _telemetryEnabled;
 			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs()
 			{
 				cliLogLevel = _telemetryLogLevel.ToString(),
 				cliTelemetryMaxSize = _telemetryMaxSize.ToString(),
-				cliAllowTelemetry = CoreConfig.EnableOtel
+				cliAllowTelemetry = _telemetryEnabled
 			});
 			commandWrapper.Run();
 		}
