@@ -93,13 +93,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			buttonsRectController.ReserveWidthFromRight(BASE_PADDING * 2);
-			var additiveRestoreContent = new GUIContent("Additive Restore");
+			var additiveRestoreContent = new GUIContent("Additive Restore", "When enabled, this will restore values additively instead of replacing them completely.");
 			var additiveRestoreToggleSize = GUI.skin.toggle.CalcSize(additiveRestoreContent);
 			Rect additiveRestoreToggleRect = buttonsRectController.ReserveWidthFromRight(additiveRestoreToggleSize.x);
 			_isAdditiveRestore = EditorGUI.ToggleLeft(additiveRestoreToggleRect, additiveRestoreContent, _isAdditiveRestore);
 			
 			buttonsRectController.ReserveWidthFromRight(BASE_PADDING * 2);
-			var deleteAfterRestoreContent = new GUIContent("Delete After Restore");
+			var deleteAfterRestoreContent = new GUIContent("Delete After Restore", "When enabled, this will delete the snapshot right after restore.");
 			var deleteAfterRestoreToggleSize = GUI.skin.toggle.CalcSize(deleteAfterRestoreContent);
 			Rect deleteAfterRestoreRect = buttonsRectController.ReserveWidthFromRight(deleteAfterRestoreToggleSize.x);
 			_deleteAfterRestore = EditorGUI.ToggleLeft(deleteAfterRestoreRect, deleteAfterRestoreContent, _deleteAfterRestore);
