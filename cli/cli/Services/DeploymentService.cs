@@ -122,7 +122,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> disabledStorages = new List<string>();
 	public List<string> enabledStorages = new List<string>();
 
-	public List<string> servicesUpgradedLogFormat = new List<string>();
+	public List<ServiceLogProviderChange> servicesUpgradedLogFormat = new List<ServiceLogProviderChange>();
 
 	public List<ServiceFederationChange> addedFederations = new List<ServiceFederationChange>();
 	public List<ServiceFederationChange> removedFederations = new List<ServiceFederationChange>();
@@ -186,6 +186,25 @@ public struct ServiceImageIdChange : IServiceChangeDisplay, JsonSerializable.ISe
 		s.Serialize(nameof(service), ref service);
 		s.Serialize(nameof(oldImageId), ref oldImageId);
 		s.Serialize(nameof(nextImageId), ref nextImageId);
+	}
+}
+
+public struct ServiceLogProviderChange : IServiceChangeDisplay, JsonSerializable.ISerializable
+{
+	public string service;
+	public string oldProvider;
+	public string newProvider;
+
+	public string ToChangeString()
+	{
+		return $"{service} [{oldProvider}]->[{newProvider}]";
+	}
+
+	public void Serialize(JsonSerializable.IStreamSerializer s)
+	{
+		s.Serialize(nameof(service), ref service);
+		s.Serialize(nameof(oldProvider), ref oldProvider);
+		s.Serialize(nameof(newProvider), ref newProvider);
 	}
 }
 
@@ -870,7 +889,7 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.servicesUpgradedLogFormat, "Upgrading LogFormat", "service");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.servicesUpgradedLogFormat, "Upgrading LogFormat", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
 
 		hasChanges = plan.diff.jsonChanges.Count > 0;
@@ -1144,11 +1163,27 @@ public partial class DeployUtil
 		// Get Which services are going to upgrade to the new version
 		if (beamoV2Manifest != null)
 		{
-			diff.servicesUpgradedLogFormat = beamoV2ServiceReferences
-				.Where(serviceRef => 
-					serviceRef.serviceName.HasValue && servicesToUpload.Contains(serviceRef.serviceName) && 
-					serviceRef.logProvider != BeamoV2LogProvider.Clickhouse)
-				.Select(serviceRef => serviceRef.serviceName.Value).ToList();
+			List<ServiceLogProviderChange> logProviderChanges = new List<ServiceLogProviderChange>();
+			foreach (BeamoV2ServiceReference serviceRef in beamoV2ServiceReferences)
+			{
+				BeamoV2LogProvider localProvider =
+					beamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceRef.serviceName,
+						out HttpMicroserviceLocalProtocol httpMicroserviceLocalProtocol)
+						? httpMicroserviceLocalProtocol.DefaultLogProvider
+						: BeamoV2LogProvider.Clickhouse;
+				if (serviceRef.serviceName.HasValue && servicesToUpload.Contains(serviceRef.serviceName) &&
+				    serviceRef.logProvider != localProvider)
+				{
+					logProviderChanges.Add( new ServiceLogProviderChange
+					{
+						service = serviceRef.serviceName,
+						oldProvider = serviceRef.logProvider.GetOrElse(BeamoV2LogProvider.Cloudwatch).ToString(),
+						newProvider = localProvider.ToString()
+					});
+				}
+			}
+
+			diff.servicesUpgradedLogFormat = logProviderChanges;
 		}
 
 
@@ -1287,6 +1322,7 @@ public partial class DeployUtil
 		var api = provider.GetService<IBeamoApi>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
+		var beamo = provider.GetService<BeamoLocalSystem>();
 
 		var gamePidPromise = provider.GetService<IRealmsApi>().GetRealm();
 		var dockerRegistryUrlPromise = beamoService.GetDockerImageRegistryUri();
@@ -1348,8 +1384,15 @@ public partial class DeployUtil
 		// publish manifest. 
 		// ConvertToBeamoV2 will change the Legacy DTO to the BeamoV2 DTO.
 		BeamoV2ServiceReference[] beamoV2ServiceReferences = plan.manifest.manifest.ConvertToBeamoV2();
+
+		Dictionary<string, BeamoV2LogProvider> servicesDefaultProvider = beamoV2ServiceReferences
+			.Where(reference => reference.serviceName.HasValue &&
+			                    beamo.BeamoManifest.HttpMicroserviceLocalProtocols.ContainsKey(reference.serviceName
+				                    .Value)).ToDictionary(reference => reference.serviceName.Value,
+				reference => beamo.BeamoManifest.HttpMicroserviceLocalProtocols[reference.serviceName.Value].DefaultLogProvider);
+			
 		
-		SetServicesLogProvider(beamoV2ServiceReferences, servicesToUpload, beamoV2Manifest);
+		SetServicesLogProvider(beamoV2ServiceReferences, servicesToUpload, beamoV2Manifest, servicesDefaultProvider);
 		
 		var beamoV2PostManifestRequest = new BeamoV2PostManifestRequest
 		{
@@ -1371,20 +1414,38 @@ public partial class DeployUtil
 	}
 
 	private static void SetServicesLogProvider(BeamoV2ServiceReference[] beamoV2ServiceReferences, HashSet<string> servicesToUpload,
-		BeamoV2Manifest beamoV2Manifest)
+		BeamoV2Manifest beamoV2Manifest, Dictionary<string, BeamoV2LogProvider> servicesDefaultProvider)
 	{
 		foreach (BeamoV2ServiceReference reference in beamoV2ServiceReferences)
 		{
-			bool serviceWillBeUploaded = reference.serviceName.HasValue && servicesToUpload.Contains(reference.serviceName.Value);
 			
-			bool isServiceAlreadyUpgraded = beamoV2Manifest != null && beamoV2Manifest.serviceReferences.HasValue && 
-			                                beamoV2Manifest.serviceReferences.Value.Any(item => 
-				                                item.serviceName == reference.serviceName && item.logProvider.Value == BeamoV2LogProvider.Clickhouse);
-			BeamoV2LogProvider logProvider = serviceWillBeUploaded || isServiceAlreadyUpgraded
-				? BeamoV2LogProvider.Clickhouse
-				: BeamoV2LogProvider.Cloudwatch;
+			BeamoV2LogProvider logProvider;
+			bool serviceWillBeUploaded = reference.serviceName.HasValue && servicesToUpload.Contains(reference.serviceName.Value);
+			if (serviceWillBeUploaded && servicesDefaultProvider.TryGetValue(reference.serviceName, out var defaultLogProvider))
+			{
+				logProvider = defaultLogProvider;
+			}
+			else
+			{
+				logProvider = GetLogProviderFromManifest(reference.serviceName);
+			}
 			
 			reference.logProvider = new OptionalBeamoV2LogProvider(logProvider);
+		}
+
+		BeamoV2LogProvider GetLogProviderFromManifest(string serviceName)
+		{
+			if (beamoV2Manifest == null || !beamoV2Manifest.serviceReferences.HasValue ||
+			    beamoV2Manifest.serviceReferences.Value.All(service => service.serviceName != serviceName))
+			{
+				return BeamoV2LogProvider.Clickhouse;
+			}
+			
+			var serviceReference = beamoV2Manifest.serviceReferences.Value
+				.FirstOrDefault(item => item.serviceName == serviceName);
+			
+			return serviceReference?.logProvider.GetOrElse(BeamoV2LogProvider.Cloudwatch) 
+			       ?? BeamoV2LogProvider.Clickhouse;
 		}
 	}
 

@@ -41,6 +41,7 @@
     <PropertyGroup>
         <!-- By default, if the BeamId hasn't been set, we use the name of the file -->
         <BeamId Condition="'$(BeamId)'==''">$(MSBuildProjectName)</BeamId>
+        <BeamLogProvider Condition="'$(BeamLogProvider)'==''">Clickhouse</BeamLogProvider>
     </PropertyGroup>
     
     <PropertyGroup Label="Resolve .beamable paths">
