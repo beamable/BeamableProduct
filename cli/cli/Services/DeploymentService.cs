@@ -122,7 +122,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> disabledStorages = new List<string>();
 	public List<string> enabledStorages = new List<string>();
 
-	public List<ServiceLogProviderChange> servicesUpgradedLogFormat = new List<ServiceLogProviderChange>();
+	public List<ServiceLogProviderChange> servicesSwitchingLogProvider = new List<ServiceLogProviderChange>();
 
 	public List<ServiceFederationChange> addedFederations = new List<ServiceFederationChange>();
 	public List<ServiceFederationChange> removedFederations = new List<ServiceFederationChange>();
@@ -142,7 +142,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 		s.SerializeList(nameof(serviceImageIdChanges), ref serviceImageIdChanges);
 		s.SerializeList(nameof(addedFederations), ref addedFederations);
 		s.SerializeList(nameof(removedFederations), ref removedFederations);
-		s.SerializeList(nameof(servicesUpgradedLogFormat), ref servicesUpgradedLogFormat);
+		s.SerializeList(nameof(servicesSwitchingLogProvider), ref servicesSwitchingLogProvider);
 	}
 }
 
@@ -889,7 +889,7 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.servicesUpgradedLogFormat, "Upgrading LogFormat", "service");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.servicesSwitchingLogProvider, "Switching LogProvider", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
 
 		hasChanges = plan.diff.jsonChanges.Count > 0;
@@ -1183,7 +1183,7 @@ public partial class DeployUtil
 				}
 			}
 
-			diff.servicesUpgradedLogFormat = logProviderChanges;
+			diff.servicesSwitchingLogProvider = logProviderChanges;
 		}
 
 
