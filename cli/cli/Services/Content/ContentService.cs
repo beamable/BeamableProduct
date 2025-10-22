@@ -1282,19 +1282,25 @@ public class ContentService
 			: Path.Combine(configDirPath, Constants.CONTENT_SNAPSHOTS_DIRECTORY, pid);
 	}
 
-	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, string manifestId = "global")
+	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, bool additiveRestore, string manifestId = "global")
 	{
 		List<string> restoredContents = new List<string>();
 		string contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, manifestId);
 		string manifestSnapshotText = await File.ReadAllTextAsync(snapshotFilePath);
 		try
 		{
-			ManifestSnapshot manifestSnapshot = JsonSerializer.Deserialize<ManifestSnapshot>(manifestSnapshotText, GetContentFileSerializationOptions());
-			// Clear content folder before restoring snapshot. This ensures that the local content will have only the snapshot contents.
-			foreach (string file in Directory.GetFiles(contentFolder))
+			ManifestSnapshot manifestSnapshot =
+				JsonSerializer.Deserialize<ManifestSnapshot>(manifestSnapshotText,
+					GetContentFileSerializationOptions());
+			if (!additiveRestore)
 			{
-				File.Delete(file);
+				// Clear content folder before restoring snapshot. This ensures that the local content will have only the snapshot contents.
+				foreach (string file in Directory.GetFiles(contentFolder))
+				{
+					File.Delete(file);
+				}
 			}
+
 			ClientManifestJsonResponse latestManifest = await GetManifest(replaceLatest: true);
 			
 			restoredContents.AddRange(manifestSnapshot.ContentFiles.Keys);

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Unreleased
+### New
+- Added support to additional snapshot restore on Editor.
+
 ### Fixed
 - Issue where DLL were not being properly loaded to Microservices on Windows
 - Added a scrollbar in Account Window when logged
