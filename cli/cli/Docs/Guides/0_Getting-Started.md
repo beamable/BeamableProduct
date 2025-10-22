@@ -14,6 +14,12 @@ To install the Beamable CLI, run the following command in a shell.
 dotnet tool install --global Beamable.Tools
 ```
 
+It is also possible to install a specific version instead of the latest one using the param `--version`
+```shell
+dotnet tool install --global Beamable.Tools --version X.Y.Z
+```
+If you are using the Beamable CLI on Unity, please check if the installed version matches the Unity SDK version that you are using, you can use [this](https://beamable.github.io/docs/unity/getting-started/installing-beamable/#beam-cli-dependency) table to check the version.
+
 And verify your installation with `beam version`.
 
 ### Updating

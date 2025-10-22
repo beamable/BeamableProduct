@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
@@ -148,18 +149,56 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			// proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 			proc.Start();
-			if (!proc.WaitForExit(10 * 1000))
-			{
-				Debug.LogError("dotnet tool install command did not finish fast enough; timed out.");
-				return false;
-			}
+
+			TryRunWithTimeout(1);
+
+			const string errorGuide =
+				"Please try installing manually by https://docs.beamable.com/docs/cli-guide-getting-started#installing or contact Beamable for further support.";
+			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
+			if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
 			{
-				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
+				StringBuilder message = new StringBuilder("Unable to install BeamCLI");
+				if (!string.IsNullOrEmpty(output))
+				{
+					message.AppendLine($"Output: {output}");
+				}
+				message.AppendLine($"Error: {error}");
+				message.Append(errorGuide);
+				Debug.LogError(message.ToString());
+				bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message.ToString(), "Try Again", "Close Unity");
+				if (!result)
+				{
+					EditorApplication.Exit(0);
+				}
 			}
 			return proc.ExitCode == 0;
+
+			bool TryRunWithTimeout(int currentTry)
+			{
+				proc.Start();
+				if (proc.WaitForExit(10 * 1000 * currentTry))
+				{
+					return true;
+				}
+
+				Debug.LogError("dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
+				const int maxRetries = 5;
+				if (currentTry > maxRetries)
+				{
+					string message = $"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. {errorGuide}";
+					Debug.LogError(message);
+					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message, "Try Again", "Close Unity");
+					if (!result)
+					{
+						EditorApplication.Exit(0);
+					}
+					return false;
+				}
+				return TryRunWithTimeout(++currentTry);
+
+			}
 		}
 	}
 }
