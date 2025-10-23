@@ -55,10 +55,10 @@ public static class Diagnostics
 		// public const string NON_PARTIAL_MICROSERVICE_CLASS_DETECTED_DIAGNOSTIC_ID = "BEAM_SRV_O003";  // deprecated in CLI 6. Leave this here so ordering stays consistent. 
 		// public const string MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O004";  // deprecated in CLI 6. Leave this here so ordering stays consistent. 
 		// public const string INVALID_MICROSERVICE_ID_DIAGNOSTIC_ID = "BEAM_SRV_O005"; This isn't being used anymore, but we kept it here to keep the Diagnostics IDs order.
-		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_O006";
-		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_O007";
-		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_O008";
-		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_O009";
+		public const string INVALID_ASYNC_VOID_CALLABLE_DIAGNOSTIC_ID = "BEAM_SRV_0006";
+		public const string CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID = "BEAM_SRV_0007";
+		public const string CALLABLE_METHOD_TYPE_IS_NESTED_ID = "BEAM_SRV_0008";
+		public const string CLASS_BEAM_GENERATE_SCHEMA_ATTRIBUTE_IS_NESTED_ID = "BEAM_SRV_0009";
 		public const string MICROSERVICE_ID_INVALID_FROM_CS_PROJ_ID = "BEAM_SRV_0010";
 		public const string STATIC_FIELD_FOUND_IN_MICROSERVICE_ID = "BEAM_SRV_0011";
 		public const string MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID = "BEAM_SRV_0012";
@@ -126,7 +126,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor CallableTypeInsideMicroserviceScope
 			= new(CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
 				$"{nameof(Server.Microservice)} Callable methods uses a Type that cannot be inside microservice scope",
-				$"{nameof(Server.Microservice)} Callable method {{0}} uses a Type that cannot be inside microservice scope. Type: {{1}}.",
+				$"{nameof(Server.Microservice)} callable method '{{0}}' uses type '{{1}}' which is not allowed in microservice scope. Ensure all types used in microservice callable methods are defined in a shared project that both client and microservice can reference.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: "https://docs.beamable.com/docs/cli-guide-microservices#invalid-type-usage-in-callable-method",
