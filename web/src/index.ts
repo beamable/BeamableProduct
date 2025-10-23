@@ -14,7 +14,11 @@ export * from '@/configs/BeamEnvironmentConfig';
 export { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 export { GET, POST, PUT, PATCH, DELETE } from '@/constants';
 export { BeamEnvironmentRegistry } from '@/core/BeamEnvironmentRegistry';
-export { createStandaloneRequester } from '@/core/BeamUtils';
+export {
+  createStandaloneRequester,
+  clientServices,
+  serverServices,
+} from '@/core/BeamUtils';
 export { defaultTokenStorage } from '@/defaults';
 export type { DefaultTokenStorageProps } from '@/platform/types/DefaultTokenStorageProps';
 export type * from '@/core/types/RefreshableServiceMap';

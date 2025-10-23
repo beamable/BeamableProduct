@@ -38,6 +38,7 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
     beamServer.serverEventsConfig = config.serverEvents;
     if (beamServer.isServerEventEnabled) await beamServer.connect();
     beamServer.isInitialized = true;
+    config.services?.(beamServer);
     return beamServer;
   }
 
