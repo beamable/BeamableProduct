@@ -8,12 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - New Option to Restore Snapshots in additional mode (It will keep all local content and just replace or add new contents to it)
-
-### Added
 - Otel Metrics enabled for CLI
 
 ### Changed
 - CLI requests are no longer retried more than once for invalid token
+- The Content Manager now correctly updates reference manifest UIDs for all outdated content, including contents copied from folders.
 
 ## [6.0.0] - 2025-10-14
 ### Added

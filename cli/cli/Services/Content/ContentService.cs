@@ -14,6 +14,7 @@ using cli.Deployment.Services;
 using cli.Services;
 using cli.Utils;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -594,7 +595,8 @@ public class ContentService
 			if (!getLocalStateOnly)
 			{
 				var allRefsPromises = localFiles.ReferenceManifestUids.Select(rm => GetManifest(manifestId, rm)).ToArray();
-				localFiles.ReferenceManifests = (await Task.WhenAll(allRefsPromises)).ToDictionary(g => g.uid.Value, g => g);
+				ClientManifestJsonResponse[] clientManifestJsonResponses = await Task.WhenAll(allRefsPromises);
+				localFiles.ReferenceManifests = clientManifestJsonResponses.ToDictionary(g => g.uid.Value, g => g);
 
 				if (latestManifest != null)
 				{
@@ -1678,7 +1680,21 @@ public class ContentService
 			}
 			else
 			{
-				_cachedManifests[cacheKey] = manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
+				try
+				{
+					manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
+				}
+				catch (RequesterException e)
+				{
+					if ((e.Status == 404 && e.Message.Contains("Unable to load the requested manifest.")) ||
+					    (e.Status == 500 && e.Message.Contains("hexString has 24 characters")))
+					{
+						Log.Default.LogWarning("Manifest UID does not exist in remote or ID is corrupted. Using a EmptyManifest for it.");
+						manifest = CreateFakeEmptyManifest();
+						manifest.uid = manifestUid;
+					}
+				}
+				_cachedManifests[cacheKey] = manifest;
 			}
 		}
 
