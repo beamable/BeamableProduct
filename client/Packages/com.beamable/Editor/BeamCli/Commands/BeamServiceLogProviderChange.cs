@@ -5,10 +5,10 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamTelemetryReportStatus
+    public partial class BeamServiceLogProviderChange
     {
-        public string FilePath;
-        public bool Success;
-        public string ErrorMessage;
+        public string service;
+        public string oldProvider;
+        public string newProvider;
     }
 }
