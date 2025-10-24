@@ -1094,6 +1094,7 @@ public class SwaggerService
 
 			}
 		};
+		swagger.Document.Components.SecuritySchemes.Clear();
 		swagger.Document.Components.SecuritySchemes.Add("auth", authScheme);
 		swagger.Document.Components.SecuritySchemes.Add("scope", scopeScheme);
 
