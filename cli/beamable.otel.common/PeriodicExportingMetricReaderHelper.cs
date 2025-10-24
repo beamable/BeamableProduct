@@ -5,8 +5,8 @@ namespace beamable.otel.common;
 
 public static class PeriodicExportingMetricReaderHelper
 {
-	public const int DefaultExportIntervalMilliseconds = 60000;
-	public const int DefaultExportTimeoutMilliseconds = 30000;
+	public const int DefaultExportIntervalMilliseconds = 300000;
+	public const int DefaultExportTimeoutMilliseconds = 60000;
 
 	public static PeriodicExportingMetricReader CreatePeriodicExportingMetricReader(
 		BaseExporter<Metric> exporter,

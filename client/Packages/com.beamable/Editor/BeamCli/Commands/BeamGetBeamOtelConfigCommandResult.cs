@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string BeamCliTelemetryLogLevel;
         public long BeamCliTelemetryMaxSize;
+        public bool BeamCliAllowTelemetry;
     }
 }

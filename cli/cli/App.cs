@@ -82,6 +82,8 @@ public class App
 		Level = LogLevel.Information
 	};
 
+	public static MeterProvider MeterProvider;
+
 	public IDependencyBuilder Commands { get; set; }
 	public IDependencyProviderScope CommandProvider { get; set; }
 
@@ -316,26 +318,14 @@ public class App
 
 		services.AddSingleton<MeterProvider>(p =>
 		{
-			var resourceBuilder = p.GetService<ResourceBuilder>();
+			if (MeterProvider != null)
+			{
+				return MeterProvider;
+			}
 
-			//TODO: This is being removed because these instrumentations are spamming metrics when using the CLI in our engine integrations
-			//TODO We should research and fix this in a future release. Ticket for this work: [#4273]
-			// if (Otel.CliTracesEnabled())
-			// {
-			// 	return Sdk.CreateMeterProviderBuilder()
-			// 		.AddProcessInstrumentation()
-			// 		.AddRuntimeInstrumentation()
-			// 		.SetResourceBuilder(resourceBuilder)
-			// 		.AddHttpClientInstrumentation()
-			// 		.AddFileExporter(opts =>
-			// 		{
-			// 			var path = p.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
-			// 			opts.ExportPath = path ?? ".";
-			// 		})
-			// 		.Build();
-			// }
+			MeterProvider = _setMeterProvider(p);
 
-			return null;
+			return MeterProvider;
 		});
 
 		
@@ -348,6 +338,8 @@ public class App
 	{
 		// no-op
 	};
+
+	private Func<IDependencyProvider, MeterProvider> _setMeterProvider;
 
 	private BeamActivity _activity;
 	private TracerProvider _traceProvider;
@@ -381,6 +373,32 @@ public class App
 		
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogSwitch = new BeamLogSwitch { Level = LogLevel.Information };
+
+
+
+		_setMeterProvider = (provider) =>
+		{
+			var resourceBuilder = provider.GetService<ResourceBuilder>();
+
+			if (Otel.CliTracesEnabled())
+			{
+				return Sdk.CreateMeterProviderBuilder()
+					.AddProcessInstrumentation()
+					.AddRuntimeInstrumentation()
+					.SetResourceBuilder(resourceBuilder)
+					.AddHttpClientInstrumentation()
+					.AddFileExporter((opts, metricReader) =>
+					{
+						var path = provider.GetService<ConfigService>().ConfigTempOtelMetricsDirectoryPath;
+						opts.ExportPath = path ?? ".";
+
+						metricReader.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
+					})
+					.Build();
+			}
+
+			return null;
+		};
 
 		if (overwriteLogger)
 		{
