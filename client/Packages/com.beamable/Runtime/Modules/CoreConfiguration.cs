@@ -125,8 +125,12 @@ The default is 60 seconds.
 		[Tooltip("When true, token analytic events will be sent to Beamable. This may be useful to diagnose account switching errors related to expired tokens. Analytics are sent when a token expires (`access_token_invalid`), when a new token is issued via a refresh token (`got_new_token`), and when the beam context's token changes (`will_change_token`). \n **NOTE**: Only the last 4 digits of a token are sent with the analytics. ")]
 		public bool enableTokenAnalytics = false;
 		bool ITokenEventSettings.EnableTokenAnalytics => enableTokenAnalytics;
-		
+
 		[Header("OTEL Configuration")]
+
+		[Tooltip("When true, Beamable SDK will collect Otel data")]
+		public OptionalBool EnableOtel = new() {HasValue = false, Value = true};
+
 		[Tooltip("When true, Unity will auto publish OTEL logs to backend each X seconds. X is defined in the field below")]
 		public bool EnableOtelAutoPublish = true;
 

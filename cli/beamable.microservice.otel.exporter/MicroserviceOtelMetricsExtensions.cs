@@ -7,8 +7,8 @@ namespace beamable.microservice.otel.exporter;
 
 public static class MicroserviceOtelMetricsExtensions
 {
-	private const int DefaultExportIntervalMilliseconds = 10000;
-	private const int DefaultExportTimeoutMilliseconds = Timeout.Infinite;
+	private const int DefaultExportIntervalMilliseconds = 300000;
+	private const int DefaultExportTimeoutMilliseconds = 60000;
 
 	/// <summary>
 	/// Adds <see cref="MicroserviceOtelMetricExporter"/> to the <see cref="MeterProviderBuilder"/> using default options.

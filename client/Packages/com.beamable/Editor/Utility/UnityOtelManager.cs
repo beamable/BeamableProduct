@@ -52,6 +52,9 @@ namespace Beamable.Editor.Utility
 			"Unhandled exception"
 		};
 
+		public bool TelemetryEnabled => _telemetryEnabled;
+
+		private bool _telemetryEnabled;
 		private long _telemetryMaxSize;
 		private OtelLogLevel _telemetryLogLevel;
 		private BeamCollectorStatusResult _collectorStatus;
@@ -73,9 +76,6 @@ namespace Beamable.Editor.Utility
 			Application.wantsToQuit += OnUnityQuitting;
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			CoreConfig.OnValidateCallback += OnCoreConfigChanged;
-
-			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel;
-			_telemetryMaxSize = CoreConfig.TelemetryMaxSize;
 			
 			_ = FetchOtelConfig();
 			_ = GetUnparsedCrashLogs();
@@ -208,6 +208,7 @@ namespace Beamable.Editor.Utility
 			{
 				_telemetryMaxSize = report.data.BeamCliTelemetryMaxSize;
 				_telemetryLogLevel = Enum.TryParse(report.data.BeamCliTelemetryLogLevel, out OtelLogLevel logLevel) ? logLevel : _telemetryLogLevel;
+				_telemetryEnabled = report.data.BeamCliAllowTelemetry;
 			}).Run();
 		}
 		
@@ -259,13 +260,19 @@ namespace Beamable.Editor.Utility
 		
 		private void OnCoreConfigChanged()
 		{
-			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel)
+			if (CoreConfig.TelemetryMaxSize.Value == _telemetryMaxSize && CoreConfig.TelemetryMinLogLevel.Value == _telemetryLogLevel && CoreConfig.EnableOtel.Value == _telemetryEnabled)
 			{
 				return;
 			}
 			_telemetryMaxSize = CoreConfig.TelemetryMaxSize.HasValue ? CoreConfig.TelemetryMaxSize.Value : _telemetryMaxSize;
 			_telemetryLogLevel = CoreConfig.TelemetryMinLogLevel.HasValue ? CoreConfig.TelemetryMinLogLevel.Value : _telemetryLogLevel;
-			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs() {cliLogLevel = _telemetryLogLevel.ToString(), cliTelemetryMaxSize = _telemetryMaxSize.ToString()});
+			_telemetryEnabled = CoreConfig.EnableOtel.HasValue ? CoreConfig.EnableOtel.Value : _telemetryEnabled;
+			var commandWrapper = _cli.TelemetrySetConfig(new TelemetrySetConfigArgs()
+			{
+				cliLogLevel = _telemetryLogLevel.ToString(),
+				cliTelemetryMaxSize = _telemetryMaxSize.ToString(),
+				cliAllowTelemetry = _telemetryEnabled
+			});
 			commandWrapper.Run();
 		}
 		

@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string pid;
         /// <summary>Defines if the snapshot file should be deleted after restoring</summary>
         public bool deleteAfterRestore;
+        /// <summary>Defines if the restore will additionally adds the contents without deleting current local contents</summary>
+        public bool additiveRestore;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -38,6 +40,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.deleteAfterRestore != default(bool)))
             {
                 genBeamCommandArgs.Add(("--delete-after-restore=" + this.deleteAfterRestore));
+            }
+            // If the additiveRestore value was not default, then add it to the list of args.
+            if ((this.additiveRestore != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--additive-restore=" + this.additiveRestore));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

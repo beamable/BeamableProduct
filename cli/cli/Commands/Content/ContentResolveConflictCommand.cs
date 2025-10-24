@@ -73,6 +73,21 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 					await _contentService.SaveContentFile(contentFolder, c);
 				})));
 			}
+			// After resolving conflicts we can also update the manifest references for all contents that are not updated
+			var contentToUpdateManifestReference = lf.ContentFiles
+				.Where(c => c.CanUpdateReferenceWithTarget)
+				.ToArray();
+			foreach (ContentFile c in contentToUpdateManifestReference)
+			{
+				ContentFile contentFile = c;
+				// In some cases of conflict resolution the Reference Content could be null.
+				if (c.ReferenceContent != null)
+				{
+					contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+				}
+				contentFile.FetchedFromManifestUid = latestManifest.uid.GetOrElse("");
+				saveTasks.Add(_contentService.SaveContentFile(contentFolder, contentFile));
+			}
 		}
 
 		await Task.WhenAll(saveTasks);

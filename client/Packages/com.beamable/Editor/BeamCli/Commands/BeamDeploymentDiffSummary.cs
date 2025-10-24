@@ -16,6 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<string> removedStorage;
         public System.Collections.Generic.List<string> disabledStorages;
         public System.Collections.Generic.List<string> enabledStorages;
+        public System.Collections.Generic.List<BeamServiceLogProviderChange> servicesSwitchingLogProvider;
         public System.Collections.Generic.List<BeamServiceFederationChange> addedFederations;
         public System.Collections.Generic.List<BeamServiceFederationChange> removedFederations;
         public System.Collections.Generic.List<BeamServiceImageIdChange> serviceImageIdChanges;

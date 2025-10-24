@@ -125,7 +125,7 @@ namespace Beamable.Editor.ContentService
 			return await taskWaiter.Task;
 		}
 
-		public async Promise RestoreSnapshot(string snapshotPath)
+		public async Promise RestoreSnapshot(string snapshotPath, bool isAdditiveRestore, bool deleteAfterRestore)
 		{
 			// Disable watcher when doing a restore
 			if (_contentWatcher != null)
@@ -134,7 +134,7 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher = null;
 			}
 
-			var restoreWrapper = _cli.ContentRestore(new ContentRestoreArgs() {manifestId = GetSelectedManifestIdCliOption(), name = snapshotPath, deleteAfterRestore = false});
+			var restoreWrapper = _cli.ContentRestore(new ContentRestoreArgs() {manifestId = GetSelectedManifestIdCliOption(), name = snapshotPath, deleteAfterRestore = deleteAfterRestore, additiveRestore = isAdditiveRestore});
 			
 			await restoreWrapper.Run();
 
@@ -188,7 +188,7 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		public async Task SyncContentsWithProgress(bool syncModified,
+		public async Promise SyncContentsWithProgress(bool syncModified,
 		                                           bool syncCreated,
 		                                           bool syncConflicted,
 		                                           bool syncDeleted,
@@ -372,7 +372,7 @@ namespace Beamable.Editor.ContentService
 			EntriesCache[contentId] = content;
 		}
 		
-		public async Task PublishContentsWithProgress()
+		public async Promise PublishContentsWithProgress()
 		{
 			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;

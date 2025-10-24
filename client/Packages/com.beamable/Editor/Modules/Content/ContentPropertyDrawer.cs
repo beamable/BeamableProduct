@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.UI;
+using Beamable.Editor.Util;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -185,7 +188,7 @@ namespace Beamable.Editor.Content
 		}
 	}
 
-	public class ContentRefSearchWindow : EditorWindow
+	public class ContentRefSearchWindow : EditorWindow, IDelayedActionWindow
 	{
 		struct Option
 		{
@@ -202,6 +205,7 @@ namespace Beamable.Editor.Content
 
 		private Vector2 _scrollPos;
 		private string _searchString;
+		private SearchData _searchData = new SearchData();
 		private bool _initialized;
 		private string _typeName;
 		private GUIStyle _normalStyle, _activeStyle;
@@ -210,7 +214,7 @@ namespace Beamable.Editor.Content
 		private int _selectedIndex;
 		private Texture2D _highlightTexture;
 		private Texture2D _activeTexture;
-
+		public List<Action> delayedActions = new List<Action>();
 		private const string SearchControlName = "contentRefSearchBar";
 
 		public async void Init()
@@ -294,23 +298,9 @@ namespace Beamable.Editor.Content
 			}
 
 			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
-
-			GUI.SetNextControlName(SearchControlName);
-
-			// SIC. The "ToolbarSeachTextField" is on purpose. It's a Unity typo.
-			// hey wow, they fixed the typo, at least for most versions
-			var skin = GUI.skin.FindStyle("ToolbarSearchTextField") ?? GUI.skin.FindStyle("ToolbarSeachTextField");
-
-			_searchString = GUILayout.TextField(_searchString, skin);
+			this.DrawSearchBar(_searchData, textFieldName: SearchControlName);
+			_searchString = _searchData.searchText;
 			GUI.FocusControl(SearchControlName);
-
-			if (GUILayout.Button("", skin))
-			{
-				// Remove focus if cleared
-				_searchString = "";
-				GUI.FocusControl(null);
-			}
-
 			GUILayout.EndHorizontal();
 
 			_scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(this.position.height - 30));
@@ -365,6 +355,17 @@ namespace Beamable.Editor.Content
 
 			Property.serializedObject.UpdateIfRequiredOrScript();
 			Repaint(); // make gui reactive
+
+			foreach (var act in delayedActions)
+			{
+				act?.Invoke();
+			}
+			delayedActions.Clear();
+		}
+
+		public void AddDelayedAction(Action act)
+		{
+			delayedActions.Add(act);
 		}
 	}
 
