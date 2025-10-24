@@ -8,7 +8,7 @@ This command is meant only as a diagnostic tool, and does not have robust
 connection recovery logic. 
 
 
-To get started with the command, make sure you have the [CLI configured](doc:cli-getting-started),
+To get started with the command, make sure you have the [CLI configured](../../../../guides/getting-started/),
 and an available player.
 
 1. Run `beam listen server`, and leave the process running. 
