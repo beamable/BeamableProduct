@@ -5,6 +5,8 @@ using cli.Utils;
 using JetBrains.Annotations;
 using Spectre.Console;
 using System.CommandLine;
+using System.Diagnostics;
+using System.Text;
 using Beamable.Server;
 
 namespace cli;
@@ -119,6 +121,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 	}
 }
 
+[DebuggerDisplay("{executionPath}")]
 public class BeamCommandDescriptor
 {
 	public string executionPath;
@@ -128,6 +131,20 @@ public class BeamCommandDescriptor
 	public bool hasValidOutput;
 	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
+	public bool IsInternalSubtree
+	{
+		get
+		{
+			if ( !(command is IAppCommand appCommand))
+			{
+				return false;
+			}
+
+			if (appCommand.IsForInternalUse) return true;
+			if (parent == null) return false;
+			return parent.IsInternalSubtree;
+		}
+	}
 
 	public string ExecutionPathAsCapitalizedStringWithoutBeam(string separater = "")
 	{
@@ -135,16 +152,39 @@ public class BeamCommandDescriptor
 		if (words.Length == 1) return "Beam";
 		return string.Join(separater, words.Skip(1).Select(w => w.Capitalize()));
 	}
+	public string ExecutionPathAsFilePath(out bool shouldExist)
+	{
+		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		shouldExist = false;
+		if (words.Length == 1) return "Beam";
 
-	public string GetSlug()
+		shouldExist = true;
+		var path = string.Join(Path.DirectorySeparatorChar, words.Skip(1).Take(words.Length - 2).Select(w => w.ToLowerInvariant()));
+		if (command.Subcommands.Count > 0)
+		{
+			path = Path.Combine(path, words.Last());
+			if (!hasValidOutput)
+			{
+				shouldExist = false;
+			}
+		}
+
+		return Path.Combine(path, GetName() + ".md");
+	}
+	
+
+	public string GetSlug(string separator="-")
 	{
 		var path = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 		if (path.Length == 1)
 		{
 			return "beam";
 		}
-		return string.Join("-", path.Skip(1));
+		return string.Join(separator, path.Skip(1));
 	}
+
+	public string GetName() =>
+		executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries).Last().ToLowerInvariant();
 }
 
 public class BeamCommandResultDescriptor
