@@ -38,7 +38,7 @@ namespace Beamable.Common.Content
 	/// - See Beamable.Experimental.Common.Calendars.CalendarContent script reference
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-feature">Content</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/profile-storage/content/content-overview/">Content</a> feature documentation
 	/// - See Beamable.Content.ContentService script reference
 	///
 	/// ![img beamable-logo]

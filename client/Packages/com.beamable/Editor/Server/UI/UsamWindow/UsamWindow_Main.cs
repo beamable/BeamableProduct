@@ -1,6 +1,8 @@
+using Beamable.Common.Util;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Microservice.UI2.PublishWindow;
 using Beamable.Editor.Util;
+using Editor.Utility;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -263,7 +265,10 @@ namespace Beamable.Editor.Microservice.UI2
 				},
 				onClickedHelp: () =>
 				{
-					Application.OpenURL("https://docs.beamable.com/v2.0.0/docs/getting-started");
+					Application.OpenURL(
+						DocsPageHelper.GetUnityDocsPageUrl(
+							"unity/user-reference/cloud-services/microservices/microservice-unity-integration/",
+							EditorConstants.UNITY_CURRENT_DOCS_VERSION));
 				},
 				onClickedRefresh: () =>
 				{
