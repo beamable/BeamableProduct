@@ -4,8 +4,6 @@
 	{
 		private const string CliBaseUrl = "https://help.beamable.com/CLI-{0}/{1}";
 		private const string UnityBaseUrl = "https://help.beamable.com/Unity-{0}/{1}";
-		private const string UnrealBaseUrl = "https://help.beamable.com/Unreal-{0}/{1]";
-		private const string WebBaseUrl = "https://help.beamable.com/WebSDK-{0}/{1}";
 		
 		public static string GetCliDocsPageUrl(string subpage, string version)
 		{
@@ -15,16 +13,6 @@
 		public static string GetUnityDocsPageUrl(string subpage, string version)
 		{
 			return GetDocsFullUrl(UnityBaseUrl, subpage, version);
-		}
-		
-		public static string GetUnrealDocsPageUrl(string subpage, string version)
-		{
-			return GetDocsFullUrl(UnrealBaseUrl, subpage, version);
-		}
-		
-		public static string GetWebDocsPageUrl(string subpage, string version)
-		{
-			return GetDocsFullUrl(WebBaseUrl, subpage, version);
 		}
 		
 
