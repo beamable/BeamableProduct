@@ -92,7 +92,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor CallableTypeInsideMicroserviceScope
 			= new(CALLABLE_METHOD_TYPE_INSIDE_MICROSERVICE_SCOPE_ID,
 				$"{nameof(Server.Microservice)} Callable methods uses a Type that cannot be inside microservice scope",
-				$"{nameof(Server.Microservice)} callable method '{{0}}' uses type '{{1}}' which is not allowed in microservice scope. Ensure all types used in microservice callable methods are defined in a shared project that both client and microservice can reference.",
+				$"{nameof(Server.Microservice)} callable method '{{0}}' uses type '{{1}}' which is not allowed in microservice scope. Ensure all types used in microservice callable methods are defined in a shared project that both client and microservice can reference. Move the class to Assets/Beamable/Common or any other shared lib.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-type-usage-in-callable-method", Constants.CLI_CURRENT_DOCS_VERSION),
