@@ -86,7 +86,7 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} Callable methods cannot be async voids. Ex: {{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#async-void-callable-methods"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#async-void-callable-methods", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor CallableTypeInsideMicroserviceScope
@@ -95,7 +95,7 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} callable method '{{0}}' uses type '{{1}}' which is not allowed in microservice scope. Ensure all types used in microservice callable methods are defined in a shared project that both client and microservice can reference.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-type-usage-in-callable-method"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-type-usage-in-callable-method", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor CallableMethodTypeIsNested
@@ -104,7 +104,7 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} Callable method {{1}} uses a Type that is Nested, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-types-usage-are-nested"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-types-usage-are-nested", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor ClassBeamGenerateSchemaAttributeIsNested
@@ -113,7 +113,7 @@ public static class Diagnostics
 				$"Type {{0}} contains [BeamGenerateSchema] attribute and is a Nested type, which is not supported by the Source Code Generator. Please move {{0}} to outer scope.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#beam-generated-schema-class-is-a-nested-type"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#beam-generated-schema-class-is-a-nested-type", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor MicroserviceIdInvalidFromCsProj
@@ -122,7 +122,7 @@ public static class Diagnostics
 				$"{nameof(Server.Microservice)} ID: `{{0}}` is invalid, it needs to be the same as <BeamId> csharp property (or as csproj name if none exists): `{{1}}`",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-microservice-id"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-microservice-id", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor StaticFieldFoundInMicroservice
@@ -131,7 +131,7 @@ public static class Diagnostics
 				$"Its not recommended to have non-readonly static field on Microservice as those field doesn't work as expected when scale horizontally. Consider making {{0}} a readonly field. Otherwise the value may be inconsistent in production environments.",
 				Category_Services,
 				DiagnosticSeverity.Warning,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#static-field-in-microservice"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#static-field-in-microservice", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor MissingSerializableAttributeOnType
@@ -140,7 +140,7 @@ public static class Diagnostics
 				$"Types used in Microservice methods or marked with [BeamGenerateSchema] must be serializable. Add the [Serializable] attribute to type '{{0}}'.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#missing-serializable-attribute-on-type"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#missing-serializable-attribute-on-type", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor PropertiesFoundInSerializableTypes
@@ -149,7 +149,7 @@ public static class Diagnostics
 				$"Properties in serializable types are ignored by the client code generator. On {{0}} consider changing property '{{1}}' to a field to include it in client-generated code.",
 				Category_Services,
 				DiagnosticSeverity.Info,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#property-found-in-serializable-type"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#property-found-in-serializable-type", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor NullableTypeFoundInMicroservice
@@ -158,7 +158,7 @@ public static class Diagnostics
 				$"Nullables on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. On {{0}} change it's type to use an {nameof(Optional)} type instead of '{{1}}'.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#nullable-field-in-serializable-type"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#nullable-field-in-serializable-type", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor InvalidContentObject
@@ -167,7 +167,7 @@ public static class Diagnostics
 				$"{nameof(ContentObject)} type or its subtypes are not recommended to use as it can use a lot of data, use ContentRef<T> instead. Change {{0}} to use ContentRef<{{1}}> instead of {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Warning,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-contentobject-used"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-contentobject-used", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor TypeInBeamGeneratedIsMissingBeamGeneratedAttribute
@@ -176,7 +176,7 @@ public static class Diagnostics
 				$"Types used in fields of [BeamGenerateSchema] classes must also be marked with [BeamGenerateSchema]. Add the [BeamGenerateSchema] attribute to type '{{0}}'.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#type-used-in-beamgenerateschema-is-missing-attribute"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#type-used-in-beamgenerateschema-is-missing-attribute", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor DictionaryKeyMustBeStringOnSerializableTypes
@@ -185,7 +185,7 @@ public static class Diagnostics
 				$"Dictionary fields in serializable types are only allowed if the key is string. On {{0}} change the dictionary key of field {{1}} to string instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#dictionary-key-must-be-string-on-serializable-types"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#dictionary-key-must-be-string-on-serializable-types", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromDictionary
@@ -194,7 +194,7 @@ public static class Diagnostics
 				$"Fields that are subtype from Dictionary are not supported in serializable types. On {{0}} replace field {{1}} to Dictionary instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#field-on-serializable-type-is-subtype-from-dictionary"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#field-on-serializable-type-is-subtype-from-dictionary", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FieldOnSerializableTypeIsSubtypeFromList
@@ -203,7 +203,7 @@ public static class Diagnostics
 				$"Fields that are subtype from List are not supported in serializable types. On {{0}} replace field {{1}} to List instead of type {{2}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#field-on-serializable-type-is-subtype-from-list"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#field-on-serializable-type-is-subtype-from-list", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsInvalidDictionary
@@ -212,7 +212,7 @@ public static class Diagnostics
 				$"Dictionaries on {nameof(Server.Microservice)} Callable methods are only allowed if the key is string. Change the dictionary key of {{0}} to string instead of type {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-invalid-dictionary"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-invalid-dictionary", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsSubtypeFromDictionary
@@ -221,7 +221,7 @@ public static class Diagnostics
 				$"Types on {nameof(Server.Microservice)} Callable methods that inherits Dictionary are not supported. Replace {{0}} to Dictionary instead of type {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-subtype-from-dictionary"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-subtype-from-dictionary", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor CallableMethodDeclarationTypeIsSubtypeFromList
@@ -230,7 +230,7 @@ public static class Diagnostics
 				$"Types on {nameof(Server.Microservice)} Callable methods that inherits List are not supported. Replace {{0}} to List instead of type {{1}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-subtype-from-list"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#callable-method-declaration-type-is-subtype-from-list", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor InvalidGenericTypeOnMicroservice
@@ -239,7 +239,7 @@ public static class Diagnostics
 				$"Generic Types on {nameof(Server.Microservice)} Callable methods or classes with [BeamGenerateSchema] are not supported. The only generic types allowed are: {string.Join(", ", ServicesAnalyzer.AllowedGenericTypes)}. Please change {{0}} in {{1}} to a non-generic type.",
 				Category_Services,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-generic-type-in-microservice"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-generic-type-in-microservice", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 	}
 
@@ -278,7 +278,7 @@ public static class Diagnostics
 				$" Contain only alphanumeric characters and/or `_`. Microservice={{0}}, Id={{1}}.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{FED_GUIDE_BASE_URL}#invalid-federation-id-detected"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{FED_GUIDE_BASE_URL}#invalid-federation-id-detected", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMissingAttribute
@@ -289,7 +289,7 @@ public static class Diagnostics
 				$" Contain only alphanumeric characters and/or `_`.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{FED_GUIDE_BASE_URL}#ifederationid-is-missing-federationidattribute"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{FED_GUIDE_BASE_URL}#ifederationid-is-missing-federationidattribute", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		public static readonly DiagnosticDescriptor FederationIdMustBeDefault
@@ -298,7 +298,7 @@ public static class Diagnostics
 				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)} with a value of \"default\", Id={{0}}",
 				Category_Federations,
 				DiagnosticSeverity.Error,
-				helpLinkUri: DocsPageHelper.GetCliFullUrl($"{FED_GUIDE_BASE_URL}#ifederationid-must-be-default"),
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{FED_GUIDE_BASE_URL}#ifederationid-must-be-default", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
 		

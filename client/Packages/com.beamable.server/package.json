@@ -5,7 +5,7 @@
   "description": "server package (obsolete)",
   "unity": "2019.4",
   "changelogUrl": "https://github.com/beamable/Changelogs/blob/ci/com-beamable-server-changelog.md",
-  "documentationUrl": "https://docs.beamable.com/docs/microservices-manager",
+  "documentationUrl": "https://help.beamable.com/Unity-4.0/unity/user-reference/cloud-services/microservices/microservice-framework/",
   "keywords": [
   ],
   "author": "Beamable <info@beamable.com> (https://www.beamable.com)",
