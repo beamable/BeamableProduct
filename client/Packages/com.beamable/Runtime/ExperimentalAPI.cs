@@ -21,22 +21,22 @@ namespace Beamable.Experimental
 	public interface IExperimentalAPI
 	{
 		/// <summary>
-		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/chat-feature">Chat</a> feature.
+		/// Entry point for the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/chat/">Chat</a> feature.
 		/// </summary>
 		ChatService ChatService { get; }
 
 		/// <summary>
-		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
+		/// Entry point for the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/multiplayer/">Multiplayer</a> feature.
 		/// </summary>
 		GameRelayService GameRelayService { get; }
 
 		/// <summary>
-		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
+		/// Entry point for the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/multiplayer/">Multiplayer</a> feature.
 		/// </summary>
 		MatchmakingService MatchmakingService { get; }
 
 		/// <summary>
-		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/friends-feature">Friends</a> feature.
+		/// Entry point for the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/friends/">Friends</a> feature.
 		/// </summary>
 		SocialService SocialService { get; }
 

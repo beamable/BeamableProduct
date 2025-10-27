@@ -153,7 +153,7 @@ namespace Beamable.Editor.BeamCli
 			TryRunWithTimeout(1);
 
 			const string errorGuide =
-				"Please try installing manually by https://docs.beamable.com/docs/cli-guide-getting-started#installing or contact Beamable for further support.";
+				"Please try installing manually by https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing or contact Beamable for further support.";
 			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();

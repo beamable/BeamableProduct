@@ -20,7 +20,7 @@ namespace Beamable.Common.Content.Validation
 	/// - See Beamable.Common.Content.Validation.MustReferenceContent script reference
 	/// 
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#content-validation">Content Validation</a> documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/profile-storage/content/content-unity/#content-validation">Content Validation</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// 
 	/// ![img beamable-logo]
@@ -68,7 +68,7 @@ namespace Beamable.Common.Content.Validation
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#content-validation">Content Validation</a> documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/profile-storage/content/content-unity/#content-validation">Content Validation</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// 
 	/// ![img beamable-logo]

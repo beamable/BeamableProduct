@@ -10,7 +10,7 @@ namespace Beamable.Server.Api.Commerce
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	/// 
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature documentation
+	/// - See the <a target="_blank" href="https://beam-api.readme.io/reference/post_basic-commerce-catalog-legacy">Commerce</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
 	/// 
 	/// ![img beamable-logo]

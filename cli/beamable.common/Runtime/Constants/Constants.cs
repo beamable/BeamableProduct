@@ -5,7 +5,7 @@
 		public const string REALM_PREFERENCE = "BeamableSelectedRealms";
 		public const string SESSION_STATE_INSTALL_DEPS = "BEAM_INSTALL_DEPS";
 		public const string BEAMABLE_MAIN_WEBSITE = "beamable.com";
-		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
+		public const string BEAMABLE_DOCS_WEBSITE = "https://help.beamable.com/CLI-Latest/";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
 
 		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
@@ -72,7 +72,7 @@
 		public static class URLs
 		{
 			public const string URL_BEAMABLE_MAIN_WEBSITE = "https://www.beamable.com";
-			public const string URL_BEAMABLE_DOCS_WEBSITE = "https://docs.beamable.com/docs";
+			public const string URL_BEAMABLE_DOCS_WEBSITE = "https://help.beamable.com/CLI-Latest/";
 			public const string URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-release-unity-sdk";
 			public const string URL_BEAMABLE_LEGAL_WEBSITE = "https://app.termly.io/document/terms-of-use-for-website/c44e18e4-675f-4eeb-8fa4-a9a5267ec2c5";
 
