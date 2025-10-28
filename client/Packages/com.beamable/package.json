@@ -55,7 +55,7 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Serve_Violet@3x.png",
       "relativeMainAssetPath": "Sample_FriendsManager.unity",
-      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/friends-management"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-account/"
     },
     {
       "displayName": "Lobby Management",
