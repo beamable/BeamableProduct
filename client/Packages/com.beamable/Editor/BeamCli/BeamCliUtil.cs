@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.UI.OptionDialogWindow;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -167,8 +168,29 @@ namespace Beamable.Editor.BeamCli
 				message.AppendLine($"Error: {error}");
 				message.Append(errorGuide);
 				Debug.LogError(message.ToString());
-				bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message.ToString(), "Try Again", "Close Unity");
-				if (!result)
+				var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Try Again",
+					OnClick = () => true,
+					Color = new Color(0.08f, 0.44f, 0.82f)
+				};
+				var closeUnityButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Close Unity",
+					OnClick = () => false,
+					Color = Color.gray,
+				};
+				var openDocsButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Close Unity & Open Docs",
+					OnClick = () =>
+					{
+						Application.OpenURL("https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing");
+						return false;
+					},
+					Color = Color.gray,
+				};
+				if (!OptionDialogWindow.ShowModal("Error when Installing BeamCLI", message.ToString(), tryAgainButtonInfo, closeUnityButtonInfo, openDocsButtonInfo))
 				{
 					EditorApplication.Exit(0);
 				}
