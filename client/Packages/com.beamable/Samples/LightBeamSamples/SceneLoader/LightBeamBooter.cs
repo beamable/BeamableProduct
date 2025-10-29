@@ -110,9 +110,11 @@ public class LightBeamBooter : MonoBehaviour
 
 	public static CidPidWrapper wrapper = new CidPidWrapper();
 
+
 	[RegisterBeamableDependencies(origin: RegistrationOrigin.RUNTIME_GLOBAL)]
 	public static void Configure(IDependencyBuilder builder)
 	{
+		Debug.Log("Running custom configuration");
 		builder.RemoveIfExists<IRuntimeConfigProvider>();
 		builder.AddSingleton<IRuntimeConfigProvider, CidPidWrapper>(wrapper);
 	}
@@ -135,16 +137,19 @@ public class LightBeamBooter : MonoBehaviour
 
 		public void SetCid(string value)
 		{
+			Debug.Log("Overriding cid to " + value);
 			customCid = value;
 		}
 
 		public void SetPid(string value)
 		{
+			Debug.Log("Overriding pid to " + value);
 			customPid = value;
 		}
 
 		public void SetHost(string value)
 		{
+			Debug.Log("Overriding host to " + value);
 			customHost = value;
 		}
 	}
