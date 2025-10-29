@@ -785,7 +785,12 @@ namespace Beamable.Editor.ContentService
 
 		private ContentObject LoadContentObject(LocalContentManifestEntry entry, ContentObject contentObject)
 		{
-			string fileContent = File.ReadAllText(entry.JsonFilePath);
+			string fileContent;
+			using (FileStream fileStream = new FileStream(entry.JsonFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			using (StreamReader streamReader = new StreamReader(fileStream))
+			{
+				fileContent = streamReader.ReadToEnd();
+			}
 			try
 			{
 				contentObject =
