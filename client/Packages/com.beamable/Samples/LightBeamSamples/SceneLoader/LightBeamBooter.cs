@@ -1,10 +1,15 @@
 using Beamable.Runtime.LightBeams;
 using System;
 using System.Collections.Generic;
+using Beamable;
+using Beamable.Common;
+using Beamable.Common.Dependencies;
+using Beamable.Config;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
+[BeamContextSystem]
 public class LightBeamBooter : MonoBehaviour
 {
 	[Header("Asset References")]
@@ -25,6 +30,7 @@ public class LightBeamBooter : MonoBehaviour
 		var args = GetArgs();
 		LightBeamUtilExtensions.Hints = args;
 
+		SetBeamEnv(args);
 		var index = GetSceneName(args, config);
 
 		if (string.IsNullOrEmpty(index))
@@ -82,6 +88,65 @@ public class LightBeamBooter : MonoBehaviour
 	static string GetSampleHint(Dictionary<string, string> args)
 	{
 		return args.TryGetValue("hint", out var hint) ? hint : null;
+	}
+
+	static void SetBeamEnv(Dictionary<string, string> args)
+	{
+		if (args.TryGetValue("cid", out var cid))
+		{
+			wrapper.SetCid(cid);
+		}
+
+		if (args.TryGetValue("pid", out var pid))
+		{
+			wrapper.SetPid(pid);
+		}
+
+		if (args.TryGetValue("host", out var host))
+		{
+			wrapper.SetHost(host);
+		}
+	}
+
+	public static CidPidWrapper wrapper = new CidPidWrapper();
+
+	[RegisterBeamableDependencies(origin: RegistrationOrigin.RUNTIME_GLOBAL)]
+	public static void Configure(IDependencyBuilder builder)
+	{
+		builder.RemoveIfExists<IRuntimeConfigProvider>();
+		builder.AddSingleton<IRuntimeConfigProvider, CidPidWrapper>(wrapper);
+	}
+
+	public class CidPidWrapper : IRuntimeConfigProvider
+	{
+		private ConfigDatabaseProvider _fileBased;
+
+		private string customCid, customPid, customHost;
+
+		public string Cid => customCid ?? _fileBased.Cid;
+		public string Pid => customPid ?? _fileBased.Pid;
+		public string HostUrl => customHost ?? _fileBased.HostUrl;
+		public string PortalUrl => _fileBased.PortalUrl;
+
+		public CidPidWrapper()
+		{
+			_fileBased = new ConfigDatabaseProvider();
+		}
+
+		public void SetCid(string value)
+		{
+			customCid = value;
+		}
+
+		public void SetPid(string value)
+		{
+			customPid = value;
+		}
+
+		public void SetHost(string value)
+		{
+			customHost = value;
+		}
 	}
 
 	static string GetSceneName(Dictionary<string, string> args, LightBeamSceneConfigObject config)
