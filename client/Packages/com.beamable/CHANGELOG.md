@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue where DLL were not being properly loaded to Microservices on Windows
 - Added a scrollbar in Account Window when logged
 - Fixed an issue which the `Create a new Organization` and `Forgot password` on Beam Account were not opening the portal
+- Fixed `Sharing Violation Error` when having a content open in any text file editor while Unity reads it. 
 ### Changed
 - The Editor will now retry Beamable CLI installation up to 5 times if a timeout occurs. Error message display has also been improved.
 
