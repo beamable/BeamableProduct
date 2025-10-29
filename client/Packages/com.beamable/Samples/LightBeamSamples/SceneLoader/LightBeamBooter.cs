@@ -1,7 +1,6 @@
 using Beamable.Runtime.LightBeams;
 using System;
 using System.Collections.Generic;
-using Beamable;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -127,7 +126,15 @@ public class LightBeamBooter : MonoBehaviour
 
 		public string Cid => customCid ?? _fileBased.Cid;
 		public string Pid => customPid ?? _fileBased.Pid;
-		public string HostUrl => customHost ?? _fileBased.HostUrl;
+		public string HostUrl
+		{
+			get
+			{
+				Debug.Log("CidPidProxy fetching host " + customHost);
+				return customHost ?? _fileBased.HostUrl;
+			}
+		}
+
 		public string PortalUrl => _fileBased.PortalUrl;
 
 		public CidPidWrapper()
