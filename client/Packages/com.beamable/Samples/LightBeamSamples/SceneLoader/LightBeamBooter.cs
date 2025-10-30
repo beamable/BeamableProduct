@@ -41,6 +41,8 @@ public class LightBeamBooter : MonoBehaviour
 			sceneContainer.Clear();
 			for (var i = 1; i < config.scenes.Count; i++)
 			{
+				if (!config.scenes[i].includeInToc) continue;
+				
 				var instance = Instantiate(sceneDisplayTemplate, sceneContainer);
 				instance.Configure(config.scenes[i]);
 			}
@@ -120,16 +122,17 @@ public class LightBeamBooter : MonoBehaviour
 	public static CidPidWrapper wrapper = new CidPidWrapper();
 
 
+#if BEAM_LIGHTBEAM
 	[RegisterBeamableDependencies(origin: RegistrationOrigin.RUNTIME_GLOBAL)]
 	public static void Configure(IDependencyBuilder builder)
 	{
-		Debug.Log("Running custom lightbeam di configuration");
 		builder.RemoveIfExists<IRuntimeConfigProvider>();
 		builder.AddSingleton<IRuntimeConfigProvider, CidPidWrapper>(wrapper);
 
 		builder.RemoveIfExists<IBeamDeveloperAuthProvider>();
 		builder.AddSingleton<IBeamDeveloperAuthProvider>(wrapper);
 	}
+#endif
 
 	public class CidPidWrapper : IRuntimeConfigProvider, IBeamDeveloperAuthProvider
 	{
