@@ -41,6 +41,8 @@ namespace Beamable.Editor.BeamCli
 		, IRuntimeConfigProvider
 		, IPlatformRequesterHostResolver
 		, ISerializationCallbackReceiver
+	,
+		  IBeamDeveloperAuthProvider
 	{
 		private readonly IDependencyProvider _provider;
 
@@ -408,5 +410,8 @@ namespace Beamable.Editor.BeamCli
 		{
 			OnAfterDeserialize();
 		}
+
+		string IBeamDeveloperAuthProvider.AccessToken => latestToken.Token;
+		string IBeamDeveloperAuthProvider.RefreshToken => latestToken.RefreshToken;
 	}
 }
