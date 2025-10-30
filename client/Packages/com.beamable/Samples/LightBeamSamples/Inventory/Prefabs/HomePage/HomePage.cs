@@ -40,7 +40,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		
 		portalButton.HandleClicked(() =>
 		{
-			_ctx.OpenPortalRealm($"/players/{_ctx.BeamContext.PlayerCode}/inventory");
+			_ctx.OpenPortalRealm($"/players/{_ctx.BeamContext.PlayerId}/inventory");
 		});
 	}
 
