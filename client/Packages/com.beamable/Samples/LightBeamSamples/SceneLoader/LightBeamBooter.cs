@@ -1,6 +1,7 @@
 using Beamable.Runtime.LightBeams;
 using System;
 using System.Collections.Generic;
+using Beamable;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -105,6 +106,15 @@ public class LightBeamBooter : MonoBehaviour
 		{
 			wrapper.SetHost(host);
 		}
+
+		if (args.TryGetValue("refresh_token", out var refresh))
+		{
+			wrapper.RefreshToken = refresh;
+		}
+		if (args.TryGetValue("access_token", out var access))
+		{
+			wrapper.AccessToken = refresh;
+		}
 	}
 
 	public static CidPidWrapper wrapper = new CidPidWrapper();
@@ -116,9 +126,12 @@ public class LightBeamBooter : MonoBehaviour
 		Debug.Log("Running custom lightbeam di configuration");
 		builder.RemoveIfExists<IRuntimeConfigProvider>();
 		builder.AddSingleton<IRuntimeConfigProvider, CidPidWrapper>(wrapper);
+
+		builder.RemoveIfExists<IBeamDeveloperAuthProvider>();
+		builder.AddSingleton<IBeamDeveloperAuthProvider>(wrapper);
 	}
 
-	public class CidPidWrapper : IRuntimeConfigProvider
+	public class CidPidWrapper : IRuntimeConfigProvider, IBeamDeveloperAuthProvider
 	{
 		private ConfigDatabaseProvider _fileBased;
 
@@ -158,6 +171,9 @@ public class LightBeamBooter : MonoBehaviour
 			Debug.Log("Overriding host to " + value);
 			customHost = value;
 		}
+
+		public string AccessToken { get; set; }
+		public string RefreshToken { get; set; }
 	}
 
 	static string GetSceneName(Dictionary<string, string> args, LightBeamSceneConfigObject config)

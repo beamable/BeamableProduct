@@ -149,6 +149,8 @@ namespace Beamable
 			builder.AddSingleton<IRuntimeConfigProvider>(() => BeamEditorContext.Default.BeamCli);
 			builder.RemoveIfExists<IPlatformRequesterHostResolver>();
 			builder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamEditorContext.Default.BeamCli);
+			builder.RemoveIfExists<IBeamDeveloperAuthProvider>();
+			builder.AddSingleton<IBeamDeveloperAuthProvider>(() => BeamEditorContext.Default.BeamCli);
 		}
 	}
 

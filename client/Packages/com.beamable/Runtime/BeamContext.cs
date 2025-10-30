@@ -145,7 +145,7 @@ namespace Beamable
 		public string Cid => _requester.Cid;
 
 		public string Pid => _requester.Pid; // TODO: rename to rid
-
+		
 		public AccessToken AccessToken => _requester.Token;
 
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
