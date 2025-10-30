@@ -27,7 +27,6 @@ namespace Beamable.Config
 		{
 			get
 			{	
-				Debug.Log($"Debug-- fetching host {data?.host ?? "def"}");
 				return data?.host ?? "https://api.beamable.com";
 			}
 		}

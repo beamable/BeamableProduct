@@ -113,7 +113,7 @@ public class LightBeamBooter : MonoBehaviour
 	[RegisterBeamableDependencies(origin: RegistrationOrigin.RUNTIME_GLOBAL)]
 	public static void Configure(IDependencyBuilder builder)
 	{
-		Debug.Log("Running custom configuration");
+		Debug.Log("Running custom lightbeam di configuration");
 		builder.RemoveIfExists<IRuntimeConfigProvider>();
 		builder.AddSingleton<IRuntimeConfigProvider, CidPidWrapper>(wrapper);
 	}
@@ -130,7 +130,6 @@ public class LightBeamBooter : MonoBehaviour
 		{
 			get
 			{
-				Debug.Log("CidPidProxy fetching host " + customHost);
 				return customHost ?? _fileBased.HostUrl;
 			}
 		}
