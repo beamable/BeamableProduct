@@ -59,6 +59,9 @@
               console.error('must provide an .origin field on overrideLogs call. It is used to identify the log source later.')
               return;
             }
+            var originalLog = console.log;
+            var originalError = console.error;
+
             function sendToParent(level, args) {
               window.parent.postMessage({
                 origin: event.data.origin,
