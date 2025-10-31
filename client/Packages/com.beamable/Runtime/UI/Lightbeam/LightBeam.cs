@@ -71,8 +71,21 @@ namespace Beamable.Runtime.LightBeams
 		}
 		public void OpenPortalBase(string relativePath, Dictionary<string, string> queryArgs=null, bool includeAuthIfAvailable = true)
 		{
-			var config = BeamContext.ServiceProvider.GetService<IDefaultRuntimeConfigProvider>();
-			var escaper = BeamContext.ServiceProvider.GetService<IUrlEscaper>();
+			OpenPortalBase(BeamContext, relativePath, queryArgs, includeAuthIfAvailable);
+		}
+
+		public static void OpenPortalRealm(BeamContext ctx,
+		                                   string relativePath,
+		                                   Dictionary<string, string> queryArgs = null,
+		                                   bool includeAuthIfAvailable = true)
+		{
+			OpenPortalBase(ctx, $"/{ctx.Cid}/games/{ctx.Pid}/realms/{ctx.Pid}{(relativePath.StartsWith("/") ? relativePath : $"/{relativePath}")}", queryArgs, includeAuthIfAvailable);
+		}
+
+		public static void OpenPortalBase(BeamContext ctx, string relativePath, Dictionary<string, string> queryArgs=null, bool includeAuthIfAvailable = true)
+		{
+			var config = ctx.ServiceProvider.GetService<IDefaultRuntimeConfigProvider>();
+			var escaper = ctx.ServiceProvider.GetService<IUrlEscaper>();
 			var builder = new QueryBuilder(escaper);
 
 			if (queryArgs != null)
@@ -84,9 +97,9 @@ namespace Beamable.Runtime.LightBeams
 			}
 			if (includeAuthIfAvailable)
 			{
-				if (BeamContext.ServiceProvider.CanBuildService<IBeamDeveloperAuthProvider>())
+				if (ctx.ServiceProvider.CanBuildService<IBeamDeveloperAuthProvider>())
 				{
-					var provider = BeamContext.ServiceProvider.GetService<IBeamDeveloperAuthProvider>();
+					var provider = ctx.ServiceProvider.GetService<IBeamDeveloperAuthProvider>();
 					if (!string.IsNullOrEmpty(provider.RefreshToken))
 					{
 						builder.Add("refresh_token", provider.RefreshToken);
@@ -101,6 +114,7 @@ namespace Beamable.Runtime.LightBeams
 			var url = config.PortalUrl + relativePath + builder;
 			Application.OpenURL(url);
 		}
+		
 	}
 
 	public interface ILightRoot
