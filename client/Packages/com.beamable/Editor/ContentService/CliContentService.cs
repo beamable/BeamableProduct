@@ -20,7 +20,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.ContentService
 {
-	public class CliContentService : IStorageHandler<CliContentService>
+	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
 		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete";
@@ -88,6 +88,7 @@ namespace Beamable.Editor.ContentService
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			_contentConfiguration = contentConfiguration;
+			_ = Reload();
 		}
 
 		
