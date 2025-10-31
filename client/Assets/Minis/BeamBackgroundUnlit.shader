@@ -163,7 +163,8 @@ Shader "Unlit/BeamBackgroundUnlit"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float2 uv = (i.uv*_ScreenParams.xy - 0.5*_ScreenParams.xy)/_ScreenParams.y;
+                float2 res = float2(512, 512);
+                float2 uv = (i.uv*res.xy - 0.5*res.xy)/res.y;
                 float time = _Time.y * .25 + 1000;
                 float m=0.0;
                 float t = time*0.1;
