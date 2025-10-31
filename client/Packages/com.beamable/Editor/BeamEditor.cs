@@ -568,7 +568,7 @@ namespace Beamable
 			oldScope?.Hydrate(ServiceScope);
 
 			ServiceScope.GetService<BeamableDispatcher>();
-
+			
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
 

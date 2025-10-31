@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a scrollbar in Account Window when logged
 - Fixed an issue which the `Create a new Organization` and `Forgot password` on Beam Account were not opening the portal
 - Fixed `Sharing Violation Error` when having a content open in any text file editor while Unity reads it.
+- Fixed ContentRef fields now display correctly without needing to open the ContentManager window
 
 ### Changed
 - Improved Beamable CLI installation reliability with automatic retry mechanism (up to 5 attempts) on timeout failures, along with enhanced error messaging for troubleshooting.
