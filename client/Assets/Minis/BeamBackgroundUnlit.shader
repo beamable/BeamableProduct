@@ -203,9 +203,9 @@ Shader "Unlit/BeamBackgroundUnlit"
                 float4 tex = tex2D(_MainTex, i.uv);
                 tex.rgb *= .8;
                 tex.a = .8;
-                float4 final = (float4(col,1.0) * i.color + tex * .6);// * lerp(.3, .7, i.uv.y);
+                float4 final = (float4(col,1.0) * i.color);// * lerp(.3, .7, i.uv.y);
                 final.a = 1;
-                final.rgb *= lerp(.8, 1, i.uv.y);
+                final.rgb *= lerp(.9, 1, i.uv.y);
                 return final;
             }
 
