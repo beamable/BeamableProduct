@@ -33,6 +33,7 @@ public class LightBeamBooter : MonoBehaviour
 		SetBeamEnv(args);
 		var index = GetSceneName(args, config);
 
+		Debug.Log("LIGHTBEAM_BOOT_COMPLETE");
 		if (string.IsNullOrEmpty(index))
 		{
 			loadingBlocker.alpha = 0;
