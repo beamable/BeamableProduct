@@ -24,6 +24,8 @@
         <IncludeContentInPack>true</IncludeContentInPack>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <ContentTargetFolders>content</ContentTargetFolders>
+        <NoDefaultExcludes>true</NoDefaultExcludes>
+        
 
     </PropertyGroup>
 
@@ -32,7 +34,7 @@
         <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 
-        <Content Include="$(MSBuildThisFileDirectory)\templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\*.gitignore" />
+        <Content Include="$(MSBuildThisFileDirectory)\templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;**\*.DS_Store;**\*.dockerignore;**\.beamable" />
         <Compile Remove="**\*" />
     </ItemGroup>
 
