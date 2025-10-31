@@ -993,7 +993,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 800, y: 600}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -1079,7 +1079,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 1, g: 1, b: 1, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1491,6 +1491,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 936298978}
     m_Modifications:
+    - target: {fileID: 3220384773011572001, guid: 672249436ff2d4e1e8f13ef9c6829498,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3220384773011572001, guid: 672249436ff2d4e1e8f13ef9c6829498,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3220384773011572001, guid: 672249436ff2d4e1e8f13ef9c6829498,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5854307292731093877, guid: 672249436ff2d4e1e8f13ef9c6829498,
         type: 3}
       propertyPath: m_Name
@@ -1659,10 +1674,35 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4552338111779353085, guid: efc7a281aa1fd44aa827d2a59d3d7081,
+        type: 3}
+      propertyPath: m_UiScaleMode
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7492570112020081522, guid: efc7a281aa1fd44aa827d2a59d3d7081,
         type: 3}
       propertyPath: m_Name
       value: BackgroundMagic
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976355456742655949, guid: efc7a281aa1fd44aa827d2a59d3d7081,
+        type: 3}
+      propertyPath: m_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976355456742655949, guid: efc7a281aa1fd44aa827d2a59d3d7081,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 0.546
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976355456742655949, guid: efc7a281aa1fd44aa827d2a59d3d7081,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 0.546
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976355456742655949, guid: efc7a281aa1fd44aa827d2a59d3d7081,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 0.546
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
