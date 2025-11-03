@@ -776,6 +776,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						PropertyUnrealType = unrealType,
 						PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType),
 						PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(propertyName),
+						AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(propertyName),
 						PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(propertyDisplayName.SpaceOutOnUpperCase()),
 						RawFieldName = fieldName,
 						NonOptionalTypeName = nonOptionalUnrealType,
@@ -1306,7 +1307,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
 					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "auth");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1352,6 +1353,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						unrealProperty.PropertyUnrealType = GetUnrealTypeForField(out _, context, openApiDocument, paramSchema, paramFieldHandle);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
 						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
+						unrealProperty.AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(param.Name);
 						unrealProperty.RawFieldName = param.Name;
 						unrealProperty.PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(unrealProperty.PropertyName.SpaceOutOnUpperCase());
 						unrealProperty.NonOptionalTypeName = GetNonOptionalUnrealTypeForField(context, openApiDocument, paramSchema);
@@ -1409,6 +1411,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						unrealProperty.PropertyUnrealType = GetNonOptionalUnrealTypeForField(context, openApiDocument, bodySchema);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
 						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, "Body", kSchemaGenerationBuilder);
+						unrealProperty.AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName("Body");
 						unrealProperty.BriefCommentString = $"The \"{unrealProperty.PropertyUnrealType}\" instance to use for the request.";
 
 						unrealEndpoint.RequestBodyParameters.Add(unrealProperty);
@@ -1478,6 +1481,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealType),
 									PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(propertyName),
 									PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(propertyDisplayName.SpaceOutOnUpperCase()),
+									AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(propertyName),
 									RawFieldName = fieldName,
 									NonOptionalTypeName = unrealType,
 								};
@@ -1683,6 +1687,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				PropertyUnrealType = new(wrappedUnrealType),
 				PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize()),
 				PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize()),
+				AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType].Capitalize()),
 				RawFieldName = context.PolymorphicWrappedSchemaExpectedTypeValues[wrappedUnrealType],
 				NonOptionalTypeName = MakeUnrealUObjectTypeFromNamespacedType(GetNamespacedTypeNameFromUnrealType(wrappedUnrealType))
 			}).ToList(),
