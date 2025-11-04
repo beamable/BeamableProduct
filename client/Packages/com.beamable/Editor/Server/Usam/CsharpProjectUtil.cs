@@ -241,8 +241,8 @@ Do not add them from the custom solution file that opens from Beam Services wind
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
 			projectRoot = Path.GetFullPath(projectRoot);
-			warnings = new List<string>();
 			var parallelOutput = new ConcurrentBag<string>();
+			var parallelWarnings = new ConcurrentBag<string>();
 
 			assembly.compiledAssemblyReferences.AsParallel().ForAll(dll =>
 			{
@@ -260,10 +260,18 @@ Do not add them from the custom solution file that opens from Beam Services wind
 					return;
 				}
 
+				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) &&
+				    name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
+				{
+					parallelWarnings.Add("Any references Newtonsoft.JSON need to be refactored to use Nuget");
+					return;
+				}
+
 				var relativePath = fullPath.Replace(projectRoot + Path.DirectorySeparatorChar, "")
 					.Replace("\\", "/");
 				parallelOutput.Add(relativePath);
 			});
+			warnings = parallelWarnings.ToList();
 			return parallelOutput.ToList();
 		}
 
