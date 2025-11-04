@@ -2,7 +2,6 @@ using Beamable.Common.Util;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Microservice.UI2.PublishWindow;
 using Beamable.Editor.Util;
-using Editor.Utility;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
