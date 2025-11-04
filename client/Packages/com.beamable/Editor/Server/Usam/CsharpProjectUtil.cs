@@ -286,9 +286,9 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			}
 		}
 
-		private static ReferenceValidator _referenceValidator = new ReferenceValidator();
+		private static readonly ReferenceValidator Validator = new ReferenceValidator();
 		
-		public static bool IsValidReference(string referenceName) => _referenceValidator.IsValidReference(referenceName);
+		public static bool IsValidReference(string referenceName) => Validator.IsValidReference(referenceName);
 
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
 		{
