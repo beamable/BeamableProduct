@@ -253,7 +253,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			{
 				var start = dll.LastIndexOf('/') + 1;
 				var length = dll.Length - start - 4; // 4 is removed so `.dll` is not taken into account.
-				var name = dll.Substring(start + 1, length);
+				var name = dll.Substring(start, length);
 				if (!IsValidReference(name))
 				{
 					return;
@@ -276,6 +276,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 					.Replace("\\", "/");
 				parallelOutput.Add(relativePath);
 			});
+			
 			warnings = parallelWarnings.ToList();
 			return parallelOutput.ToList();
 		}
