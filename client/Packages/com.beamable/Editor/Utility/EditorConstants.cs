@@ -1,4 +1,4 @@
-﻿namespace Editor.Utility
+﻿namespace Beamable.Editor
 {
 	public class EditorConstants
 	{

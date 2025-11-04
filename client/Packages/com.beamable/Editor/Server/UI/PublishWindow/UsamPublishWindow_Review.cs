@@ -1,12 +1,9 @@
 using Beamable.Common.Util;
-using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Util;
-using Editor.Utility;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Beamable.Editor.Microservice.UI2.PublishWindow
 {
