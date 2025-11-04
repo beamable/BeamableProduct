@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -113,13 +114,13 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			
 		}
 
-		public class ReferenceValidator
+		public readonly struct ReferenceValidator
 		{
-			HashSet<string> invalidReferences;
-			private string[] invalidReferencesPatterns;
-			public ReferenceValidator()
+			private readonly HashSet<string> _invalidReferences;
+			private readonly string[] _invalidReferencesPatterns;
+
+			public static ReferenceValidator Build()
 			{
-				
 				var lines = File.ReadAllLines(invalidAssembliesFilePath);
 			
 				if (File.Exists(customInvalidAssembliesPath))
@@ -128,22 +129,27 @@ Do not add them from the custom solution file that opens from Beam Services wind
 					lines = lines.Concat(customInvalidRefs).ToArray();
 				}
 
-				invalidReferences = lines.Where(e => !e.EndsWith("*")).ToHashSet();
-				invalidReferencesPatterns = lines.Except(invalidReferences).Select(e => e.Replace("*","")).ToArray();
+				var invalidReferences = lines.Where(e => !e.EndsWith("*")).ToHashSet();
+				var invalidReferencesPatterns = lines.Except(invalidReferences).Select(e => e.Replace("*","")).ToArray();
+
+				return new ReferenceValidator(invalidReferences, invalidReferencesPatterns);
+			}
+			
+			ReferenceValidator(HashSet<string> invalidReferences, string[] invalidReferencesPatterns)
+			{
+				this._invalidReferences = invalidReferences;
+				this._invalidReferencesPatterns = invalidReferencesPatterns;
 			}
 
-			public bool IsValidReference(string reference)
+			
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			public bool IsValid(string reference)
 			{
-				if(invalidReferences.Contains(reference))
+				if(_invalidReferences.Contains(reference))
 				{
 					return false;
 				}
-				if (invalidReferencesPatterns.Any(x => reference.StartsWith(x)))
-				{
-					return  false;
-				}
-
-				return true;
+				return !_invalidReferencesPatterns.Any(reference.StartsWith);
 			}
 		}
 
@@ -243,7 +249,6 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			projectRoot = Path.GetFullPath(projectRoot);
 			var parallelOutput = new ConcurrentBag<string>();
 			var parallelWarnings = new ConcurrentBag<string>();
-
 			assembly.compiledAssemblyReferences.AsParallel().ForAll(dll =>
 			{
 				var start = dll.LastIndexOf('/') + 1;
@@ -286,9 +291,10 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			}
 		}
 
-		private static readonly ReferenceValidator Validator = new ReferenceValidator();
-		
-		public static bool IsValidReference(string referenceName) => Validator.IsValidReference(referenceName);
+		private static readonly ReferenceValidator Validator = ReferenceValidator.Build();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsValidReference(string referenceName) => Validator.IsValid(referenceName);
 
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
 		{
