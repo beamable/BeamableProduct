@@ -137,7 +137,7 @@ namespace Beamable.Api.Connectivity
 	/// </summary>
 	public class ConnectivityService : IConnectivityService
 	{
-		private bool _isConnected = Application.internetReachability != NetworkReachability.NotReachable;
+		private bool _isConnected = true;
 		public bool HasConnectivity => _isConnected && !Disabled;
 
 		private bool _forceDisabled;
