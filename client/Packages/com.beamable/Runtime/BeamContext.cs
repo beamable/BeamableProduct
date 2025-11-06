@@ -550,8 +550,12 @@ namespace Beamable
 
 		private async Promise UpdateAndSaveToken()
 		{
+			var secondStopWatch = new Stopwatch();
+			secondStopWatch.Start();
 			var oldToken = _requester.Token;
 			await _beamableApiRequester.RefreshToken();
+			var callTime = secondStopWatch.Elapsed.TotalSeconds;
+			Debug.Log($"Refreshing token took: {callTime}");
 			var token = _beamableApiRequester.Token;
 			ClearToken();
 			_requester.Token = token;
@@ -709,10 +713,13 @@ namespace Beamable
 
 			async Promise SetupGetUser()
 			{
+				var secondStopWatch = new Stopwatch();
+				secondStopWatch.Start();
 				var user = await _authService.GetUser();
+				var callTime = secondStopWatch.Elapsed.TotalSeconds;
 				AuthorizedUser.Value = user;
 				var userData = stopWatch.Elapsed.TotalSeconds;
-				Debug.Log($"Beamable init SetupWithConnection, got user: {userData}, since setup user: {userData - userSetupTime}");
+				Debug.Log($"Beamable init SetupWithConnection, got user: {userData}, since setup user: {userData - userSetupTime}, call itself took: {callTime}");
 			}
 			
 			async Promise GetSessionId()
@@ -821,25 +828,27 @@ namespace Beamable
 				{
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
-				} 
+				}
+
+				var newNotificiationChannel = _realmConfig.IsUsingBeamableNotifications();
 				
 				// Let's make sure that we get a fresh new JWT before attempting to connect.
-				if (AccessToken.IsExpired || _realmConfig.IsUsingBeamableNotifications())
+				if (AccessToken.IsExpired || newNotificiationChannel)
 				{
 					await UpdateAndSaveToken();
 				}
+				Promise userInfo = SetupGetUser();
 				userSetupTime = stopWatch.Elapsed.TotalSeconds;
 				Debug.Log($"Beamable init SetupWithConnection, token saved: {userSetupTime}, since internet check: {userSetupTime - internetCheckTime}");
 				var connection = SetupBeamableNotificationChannel(_realmConfig);
-				var userInfo = SetupGetUser();
-				await Promise.Sequence(userInfo,sessionIdJob);
+				await Promise.Sequence(userInfo, sessionIdJob);
 
 				var session = SetupNewSession(_realmConfig, sessionAdId);
 				var purchase = SetupPurchaser();
 				await Promise.Sequence(connection, session, purchase);
-				Debug.Log($"Beamable init SetupWithConnection, got session, connection and purchaser: {stopWatch.Elapsed.TotalSeconds}");
 
 				SetupEmitEvents();
+				Debug.Log($"Beamable init SetupWithConnection, got session, connection and purchaser: {stopWatch.Elapsed.TotalSeconds}");
 			}
 		}
 
