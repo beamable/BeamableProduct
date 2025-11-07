@@ -126,16 +126,17 @@ namespace Beamable.Editor.BeamCli
 				return true;
 			}
 			
+			if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
+			{
+				return true;
+			}
+			
 			var proc = new Process();
 			var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed";
 
 			if (Application.isBatchMode)
 			{
 				installCommand += " --add-source BeamableNugetSource ";
-			}
-			if (InstalledVersion.StartsWith(BeamableEnvironment.NugetPackageVersion))
-			{
-				return true;
 			}
 			
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
