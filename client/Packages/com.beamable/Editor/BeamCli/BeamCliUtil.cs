@@ -27,6 +27,11 @@ namespace Beamable.Editor.BeamCli
 		}
 
 		public static string OWNER => Path.GetFullPath("Library/BeamableEditor/BeamCL").ToLowerInvariant();
+		static string InstalledVersion
+		{
+			get => SessionState.GetString(nameof(InstalledVersion), string.Empty);
+			set => SessionState.SetString(nameof(InstalledVersion), value);
+		}
 
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
@@ -121,6 +126,11 @@ namespace Beamable.Editor.BeamCli
 				return true;
 			}
 			
+			if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
+			{
+				return true;
+			}
+			
 			var proc = new Process();
 			var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed";
 
@@ -194,6 +204,11 @@ namespace Beamable.Editor.BeamCli
 				{
 					EditorApplication.Exit(0);
 				}
+			}
+
+			if (proc.ExitCode == 0)
+			{
+				InstalledVersion = BeamableEnvironment.NugetPackageVersion;
 			}
 			return proc.ExitCode == 0;
 
