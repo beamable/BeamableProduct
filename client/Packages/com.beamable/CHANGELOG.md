@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue which the `Create a new Organization` and `Forgot password` on Beam Account were not opening the portal
 - Fixed `Sharing Violation Error` when having a content open in any text file editor while Unity reads it.
 - Fixed ContentRef fields now display correctly without needing to open the ContentManager window
+- Fixed an issue with the Player SDK Leaderboard throwing a Null Reference when trying to get a Board.
 
 ### Changed
 - Improved Beamable CLI installation reliability with automatic retry mechanism (up to 5 attempts) on timeout failures, along with enhanced error messaging for troubleshooting.
@@ -25,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed an `IndexOutOfRangeException` occurring when using the Content Editor Window.
 - Fixed an issue where button to create a new snapshot was not displayed when no snapshots existed.
-
+ 
 ## [3.1.4] - 2025-10-7
 ### Fixed
 - Fixed an issue where content drawer was not including subtype contents
