@@ -27,7 +27,7 @@ namespace Beamable
 	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code">Content - Agnostic</a> documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/profile-storage/content/content-overview">Content - Agnostic</a> documentation
 	///
 	/// ![img beamable-logo]
 	///

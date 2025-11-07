@@ -605,7 +605,8 @@ public class App
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
-
+		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
 		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();

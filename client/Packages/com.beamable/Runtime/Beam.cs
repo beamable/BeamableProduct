@@ -152,7 +152,7 @@ namespace Beamable
 			GlobalDependencyBuilder.AddSingleton<IPlatformRequesterHostResolver, ConfigPlatformHostResolver>();
 			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
 			GlobalDependencyBuilder.AddSingleton<IDefaultRuntimeConfigProvider>(p => p.GetService<DefaultRuntimeConfigProvider>());
-
+			
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 			
@@ -185,6 +185,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IConnectivityChecker, GatewayConnectivityChecker>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
+			DependencyBuilder.AddSingleton<IUrlEscaper>(p => p.GetService<IPlatformRequester>());
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
 			DependencyBuilder.AddScoped<CachelessInventoryService>();

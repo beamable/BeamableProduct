@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.UI.OptionDialogWindow;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +27,11 @@ namespace Beamable.Editor.BeamCli
 		}
 
 		public static string OWNER => Path.GetFullPath("Library/BeamableEditor/BeamCL").ToLowerInvariant();
+		static string InstalledVersion
+		{
+			get => SessionState.GetString(nameof(InstalledVersion), string.Empty);
+			set => SessionState.SetString(nameof(InstalledVersion), value);
+		}
 
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
@@ -120,6 +126,11 @@ namespace Beamable.Editor.BeamCli
 				return true;
 			}
 			
+			if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
+			{
+				return true;
+			}
+			
 			var proc = new Process();
 			var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed";
 
@@ -153,7 +164,7 @@ namespace Beamable.Editor.BeamCli
 			TryRunWithTimeout(1);
 
 			const string errorGuide =
-				"Please try installing manually by https://docs.beamable.com/docs/cli-guide-getting-started#installing or contact Beamable for further support.";
+				"Please try installing manually by https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing or contact Beamable for further support.";
 			
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
@@ -167,11 +178,37 @@ namespace Beamable.Editor.BeamCli
 				message.AppendLine($"Error: {error}");
 				message.Append(errorGuide);
 				Debug.LogError(message.ToString());
-				bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message.ToString(), "Try Again", "Close Unity");
-				if (!result)
+				var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Try Again",
+					OnClick = () => true,
+					Color = new Color(0.08f, 0.44f, 0.82f)
+				};
+				var closeUnityButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Close Unity",
+					OnClick = () => false,
+					Color = Color.gray,
+				};
+				var openDocsButtonInfo = new OptionDialogWindow.ButtonInfo()
+				{
+					Name = "Close Unity & Open Docs",
+					OnClick = () =>
+					{
+						Application.OpenURL("https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing");
+						return false;
+					},
+					Color = Color.gray,
+				};
+				if (!OptionDialogWindow.ShowModal("Error when Installing BeamCLI", message.ToString(), tryAgainButtonInfo, closeUnityButtonInfo, openDocsButtonInfo))
 				{
 					EditorApplication.Exit(0);
 				}
+			}
+
+			if (proc.ExitCode == 0)
+			{
+				InstalledVersion = BeamableEnvironment.NugetPackageVersion;
 			}
 			return proc.ExitCode == 0;
 

@@ -23,7 +23,14 @@ namespace Beamable.Config
 
 		public string Cid => data?.cid;
 		public string Pid => data?.pid;
-		public string HostUrl => data?.host ?? "https://api.beamable.com";
+		public string HostUrl
+		{
+			get
+			{	
+				return data?.host ?? "https://api.beamable.com";
+			}
+		}
+
 		public string PortalUrl => data?.portalUrl ?? "https://portal.beamable.com";
 
 		public bool HasNoHostField => string.IsNullOrEmpty(data?.host);

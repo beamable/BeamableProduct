@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -60,6 +61,16 @@ public class LightBeamBuilds
 		var scenePaths = config.scenes.Select(x => x.scenePath).ToList();
 		Debug.Log("LIGHTBEAM_SCENE_PATHS " + string.Join(", ", scenePaths));
 		BuildOptions options;
+		
+		// Save the original defines so you can restore them later
+		string originalDefines = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.WebGL);
+
+		// Add your custom defines (semicolon-separated)
+		string customDefines = originalDefines + ";BEAM_LIGHTBEAM";
+
+		PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.WebGL, customDefines);
+
+		
 #if UNITY_EDITOR
 		options = BuildOptions.AutoRunPlayer;
 #else
@@ -71,10 +82,13 @@ public class LightBeamBuilds
 			scenes = scenePaths.ToArray(),
 			locationPathName = outputDir,
 			target = BuildTarget.WebGL,
-			options = options
+			options = options,
+			
 		};
 
 		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+		PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.WebGL, originalDefines);
+
 		BuildSummary summary = report.summary;
 
 		if (summary.result == BuildResult.Succeeded)

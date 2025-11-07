@@ -39,6 +39,52 @@
         startGame();
       })
 
+      window.addEventListener("message", (event) => {
+        console.log('received postmessage', event)
+        if (event.data === 'startGame') {
+          container.classList.remove('hidden');
+          intention.remove();
+          startGame();
+        }
+
+        if (event.data === 'reloadGame') {
+          // kind of overkill
+          location.reload();
+          return;
+        }
+
+        if (event.data != undefined){
+          if (event.data.type === 'overrideLogs'){
+            if (!event.data.origin){
+              console.error('must provide an .origin field on overrideLogs call. It is used to identify the log source later.')
+              return;
+            }
+            var originalLog = console.log;
+            var originalError = console.error;
+
+            function sendToParent(level, args) {
+              window.parent.postMessage({
+                origin: event.data.origin,
+                type: 'iframe-console',
+                level,
+                args
+              }, '*');
+            }
+
+            console.log = function(...args) {
+              sendToParent('log', args);
+              originalLog.apply(console, args);
+            };
+
+            console.error = function(...args) {
+              sendToParent('error', args);
+              originalError.apply(console, args);
+            };
+
+          }
+        }
+      });
+
       function startGame(){
         var canvas = document.querySelector("#unity-canvas");
         var loadingBar = document.querySelector("#unity-loading-bar");

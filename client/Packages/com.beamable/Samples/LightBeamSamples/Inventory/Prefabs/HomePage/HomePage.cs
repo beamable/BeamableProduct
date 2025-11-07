@@ -14,6 +14,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public GameObject currenciesParent;
 	public Button showCurrencies;
 	public Button showItems;
+	public Button portalButton;
 	public TextMeshProUGUI playerId;
 
 	private LightBeam _ctx;
@@ -35,6 +36,11 @@ public class HomePage : MonoBehaviour, ILightComponent
 		showItems.HandleClicked(async () =>
 		{
 			await ShowAllItems();
+		});
+		
+		portalButton.HandleClicked(() =>
+		{
+			_ctx.OpenPortalRealm($"/players/{_ctx.BeamContext.PlayerId}/inventory");
 		});
 	}
 

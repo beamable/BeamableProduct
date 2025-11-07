@@ -373,6 +373,7 @@ public class UnrealCliGenerator : ICliGenerator
 				{
 					PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(fieldInfo.Name.Capitalize()),
 					PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(fieldInfo.Name.Capitalize()),
+					AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(fieldInfo.Name.Capitalize()),
 					PropertyUnrealType = typeName,
 					PropertyNamespacedType = typeName.AsNamespacedType(),
 					NonOptionalTypeName = typeName,

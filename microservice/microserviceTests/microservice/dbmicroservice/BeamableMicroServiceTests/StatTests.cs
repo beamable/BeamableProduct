@@ -32,7 +32,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		[NonParallelizable]
 		public async Task Call_BatchStats_TRIALS()
 		{
-
 			TestSocket testSocket = null;
 			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
@@ -42,7 +41,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 						MessageMatcher
 							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success(
-							"{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
+							"{ \"id\": 1, \"stats\": { \"TRIALS\": [] , \"tuna\": \"fish\", \"num\": 1 } }"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
 						MessageMatcher
@@ -79,7 +78,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 						MessageMatcher
 							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success(
-							"{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [\"123\",3] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
+							"{\"id\":1,\"stats\":{\"TRIALS\":[\"123\",3],\"tuna\":\"fish\",\"num\":1}}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
 						MessageMatcher
