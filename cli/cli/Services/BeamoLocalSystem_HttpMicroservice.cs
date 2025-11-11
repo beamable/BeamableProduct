@@ -277,7 +277,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 			return false;
 		}
 
-		var path = configService.BeamableRelativeToExecutionRelative(DockerBuildContextPath);
+		var path = configService.GetRelativeToExecutionPath(DockerBuildContextPath);
 		if (!Directory.Exists(path))
 			throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
 

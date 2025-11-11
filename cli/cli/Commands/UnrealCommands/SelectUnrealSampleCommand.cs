@@ -30,7 +30,7 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 
 	public override Task Handle(SelectUnrealSampleCommandArgs args)
 	{
-		var pathToUproject = Path.Combine(args.ConfigService.BaseDirectory, "BeamableUnreal.uproject");
+		var pathToUproject = Path.Combine(args.ConfigService.BeamableWorkspace, "BeamableUnreal.uproject");
 		if (!File.Exists(pathToUproject))
 			throw new CliException("Please ensure this is called from inside the UnrealSDK project folder.");
 
@@ -75,7 +75,7 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 			includeStorage: true,
 			ref serviceListToDisable);
 
-		ApplyProjectOverrides(args.ConfigService.BaseDirectory, foundPluginName);
+		ApplyProjectOverrides(args.ConfigService.BeamableWorkspace, foundPluginName);
 		
 		_ = SetEnabledCommand.SetProjectEnabled(serviceListToEnable, args.BeamoLocalSystem.BeamoManifest, true);
 		_ = SetEnabledCommand.SetProjectEnabled(serviceListToDisable, args.BeamoLocalSystem.BeamoManifest, false);
@@ -87,12 +87,12 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 		BeamableLogger.Log($"Selected BEAMPROJ: {args.SampleName}");
 
 		// Then we regenerate the project files
-		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.BaseDirectory);
+		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.BeamableWorkspace);
 		
 		// Whenever we select a sample, we clear the realm override so that the sample's target realm is respected. 
-		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PLATFORM);
-		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PID);
-		args.ConfigService.DeleteLocalOverride(Constants.CONFIG_CID);
+		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_HOST);
+		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
+		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_CID);
 		args.ConfigService.FlushLocalOverrides();
 
 		return Task.CompletedTask;

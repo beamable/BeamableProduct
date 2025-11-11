@@ -20,7 +20,7 @@ public class ContentReplaceCommand : AppCommand<ContentReplaceCommandArgs>, ISki
 
 	public override Task Handle(ContentReplaceCommandArgs args)
 	{
-		string contentDirectory = Path.Combine(args.ConfigService.BaseDirectory, ".beamable/content/");
+		string contentDirectory = Path.Combine(args.ConfigService.BeamableWorkspace, ".beamable/content/");
 		
 		string sourcePath = Path.Combine(contentDirectory, args.Source);	
 		

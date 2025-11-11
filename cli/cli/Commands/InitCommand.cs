@@ -129,7 +129,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		{ // set the host string from existing value or given parameter, and then reset cid/pid
-			host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
+			host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 			await _ctx.Set(string.Empty, string.Empty, host);
 		}
 		
@@ -164,7 +164,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				// need to validate that cid actually exists...
 				
 			}
-			_configService.SetConfigString(Constants.CONFIG_CID, cid);
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		}
 
 		{ // resolve the new PID
@@ -225,6 +225,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");
 			}
+			
+			if(_configService.TryGetProjectBeamableCLIVersion(out var cliVersion))
+				_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CLI_VERSION, cliVersion);
 		}
 
 		SaveExtraPathFiles(args);
@@ -232,7 +235,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
-		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
+		var host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 		var cid = await GetCid(args);
 		await _ctx.Set(cid, string.Empty, host);
 
@@ -256,7 +259,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 		}
 
-		_configService.SetConfigString(Constants.CONFIG_CID, cid);
+		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		var success = await GetPidAndAuth(args, cid, host);
 		if (!success)
 		{
@@ -281,9 +284,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		return new InitCommandResult()
 		{
-			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
-			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
-			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
+			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),
+			cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID),
+			pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID)
 		};
 	}
 
@@ -322,7 +325,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			if (didLogin)
 			{
 				_configService.SetWorkingDir(_ctx.WorkingDirectory);
-				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
+				_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
 				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
 				return true;
@@ -343,11 +346,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			throw new CliException("Failed to find a realm to target.");
 
 		await _ctx.Set(cid, pid, host);
-		_configService.SetConfigString(Constants.CONFIG_PID, pid);
+		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, pid);
 		_configService.FlushConfig();
 		
 		// Whenever we swap realms using init, we also clear the local override for the selected realm.
-		_configService.DeleteLocalOverride(Constants.CONFIG_PID);
+		_configService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
 		_configService.FlushLocalOverrides();
 		
 		return await Login(args);

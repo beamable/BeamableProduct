@@ -85,7 +85,7 @@ public static class ProjectContextUtil
 		{
 			ignoreIds.Add(id);
 		}
-		var allProjects = FindCsharpProjects(configService.BaseDirectory, searchPaths, pathsToIgnore).ToArray();
+		var allProjects = FindCsharpProjects(configService.BeamableWorkspace, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();

@@ -224,7 +224,7 @@ public class GenerateClientFileCommand
 
 					foreach (var unityProjectPath in unityProjectTargets)
 					{
-						var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
+						var unityPathRoot = Path.Combine(args.ConfigService.BeamableWorkspace, unityProjectPath);
 						var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
 						if (!Directory.Exists(unityAssetPath))
 						{
@@ -296,7 +296,7 @@ public class GenerateClientFileCommand
 				Log.Verbose($"generating client for project {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 
 				var unrealGenerator = new UnrealSourceGenerator();
-				var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
+				var previousGenerationFilePath = Path.Combine(args.ConfigService.BeamableWorkspace, unrealProjectData.BeamableBackendGenerationPassFile);
 
 				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
@@ -611,7 +611,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 				var outputDir = args.outputDirectory;
 				if (!hasOutputPath)
-					outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
+					outputDir = Path.Combine(args.ConfigService.BeamableWorkspace, unrealProjectData.SourceFilesPath);
 
 				var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}")).ToList();
 
@@ -706,7 +706,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				if (needsProjectFilesRebuild)
 				{
 					Log.Verbose($"regenerating project files for UE {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
-					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
+					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BeamableWorkspace, unrealProjectData.Path));
 					Log.Verbose($"completed regeneration of project files for UE {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 				}
 			}
