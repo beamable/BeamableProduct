@@ -338,6 +338,25 @@ public class ProjectService
 		return path;
 	}
 
+	public async Task<NewServiceInfo> CreateNewPortalExtension(NewPortalExtensionCommandArgs args)
+	{
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+		var portalExtensionInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion);
+
+		var outputPath = Path.Combine(_configService.BaseDirectory, "extensions");
+
+		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
+		await RunDotnetCommand($"new portalextensionapp -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
+
+		// Probably need this for finding all apps
+		//await args.BeamoLocalSystem.InitManifest();
+
+		return portalExtensionInfo;
+	}
+
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();

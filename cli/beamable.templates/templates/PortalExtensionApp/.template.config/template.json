@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Beamable",
+  "classifications": [ "beamable", "portal", "extension" ],
+  "tags": {
+    "language": "JavaScript",
+    "type": "project"
+  },
+  "identity": "Beamable.Templates.PortalExtensionApp",
+  "name": "Beamable Portal Extension",
+  "shortName": "portalextensionapp",
+  "sourceName": "PortalExtensionApp",
+  "sources": [
+    {
+      "modifiers": [
+        { "include": [ ".gitignore", ".dockerignore" ] },
+        { "exclude": [ ".vs/**", ".template_config/**", "[Content_Types].xml" ,"_rels/**"] }
+      ]
+    }
+  ],
+  "symbols": {
+    "TemplateVersion": {
+      "replaces": "TemplateVersion",
+      "type": "bind",
+      "binding": "Version"
+    }
+  }
+}

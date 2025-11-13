@@ -579,6 +579,7 @@ public class App
 		Commands.AddSubCommand<GroupRemoveCommand, UpdateGroupArgs, GroupCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -637,9 +638,6 @@ public class App
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
 		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
-		Commands
-			.AddSubCommandWithHandler<PortalExtensionCreateCommand, PortalExtensionCreateCommandArgs,
-				PortalExtensionCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
 				PortalExtensionCommand>();

@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Server;
 using cli.Utils;
-using System.Text.RegularExpressions;
 
 namespace cli.Portal;
 
@@ -22,23 +21,42 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 
 	public override Task Handle(PortalExtensionCheckCommandArgs args)
 	{
-
-		Check("node", "-v", min: new PackageVersion(22, 0, 0),
-			hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
-
-		// Should we need to test for both cases?
-		CheckEither(
-			primary: () => Check("vite", "--version",
-				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite"),
-			fallback: () => Check("npx", "--yes vite --version",
-				hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.")
-		);
+		Log.Information("Checking if all dependencies for a Portal Extension App exist");
+		if (CheckPortalExtensionsDependencies())
+		{
+			Log.Information("All dependencies were found");
+		}
+		else
+		{
+			Log.Information("There are missing dependencies, please check the errors to know how to proceed");
+		}
 
 		return Task.CompletedTask;
 	}
 
+	public static bool CheckPortalExtensionsDependencies()
+	{
+		var nodeCheck = CheckDependency("node", "-v", minVersion: new PackageVersion(22, 0, 0),
+			hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
 
-	private bool Check(string fileName, string args, PackageVersion? min = null, string? hint = null)
+		var viteCheck = CheckDependency("vite", "--version",
+			hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
+
+		if (!viteCheck)
+		{
+			viteCheck = CheckDependency("npx", "--yes vite --version",
+				hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
+			if (viteCheck)
+			{
+				Log.Information("Found Vite through npx installation");
+			}
+		}
+
+		return nodeCheck && viteCheck;
+	}
+
+
+	private static bool CheckDependency(string fileName, string args, PackageVersion? minVersion = null, string? hint = null)
 	{
 		try
 		{
@@ -52,16 +70,17 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 			string text = (result.stdout.Length > 0 ? result.stdout : result.stderr).Trim();
 			string verText = text.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? text.Substring(1) : text; //Node puts a "v" in front of the version
 
-			if (min != null)
+			if (minVersion != null)
 			{
-				if (!TryParseVersion(verText, out var ver))
+				if (!TryParseVersion(verText, out var version))
 				{
-					Log.Warning($"{fileName}: couldn’t parse version from '{text}'.");
+					Log.Error($"{fileName}: Could not parse version from '{verText}'.");
 					return true;
 				}
-				if (ver < min)
+
+				if (version < minVersion)
 				{
-					Log.Error($"{fileName} version {ver} is less than required {min}.", hint);
+					Log.Error($"{fileName} version {version} is less than required {minVersion}.", hint);
 					return false;
 				}
 			}
@@ -70,12 +89,12 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 		}
 		catch (Exception ex)
 		{
-			Log.Error($"{fileName} check failed: {ex.Message}", hint);
+			Log.Error($"{fileName} check failed: {ex.Message}\n {hint}");
 			return false;
 		}
 	}
 
-	private bool TryParseVersion(string version, out PackageVersion v)
+	private static bool TryParseVersion(string version, out PackageVersion v)
 	{
 		if (PackageVersion.TryFromSemanticVersionString(version, out v))
 		{
@@ -84,12 +103,5 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 
 		v = new PackageVersion(0, 0, 0);
 		return false;
-	}
-
-	private bool CheckEither(Func<bool> primary, Func<bool> fallback)
-	{
-		if (primary()) return true;
-		Console.WriteLine("→ Trying fallback...");
-		return fallback();
 	}
 }
