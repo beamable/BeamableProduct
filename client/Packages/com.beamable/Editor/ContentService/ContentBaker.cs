@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -21,16 +22,48 @@ namespace Beamable.Editor.ContentService
 {
 	public class ContentBaker
 	{
+		[MenuItem(Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
+		public static void BakeContent_Window()
+		{
+			Debug.Log("Baking content...");
+			
+			var task = BakeContent(false);
+			
+			EditorUtility.DisplayProgressBar("Baking Content", "Baking content!", 0);
+
+			void OnUpdate()
+			{
+				EditorUtility.DisplayProgressBar("Baking Content", "Baking content!", 0.5f);
+				if (!task.IsCompleted) return;
+				if (Application.isBatchMode)
+				{
+					EditorApplication.Exit(0);
+				}
+
+				EditorUtility.DisplayProgressBar("Baking Content", "Baking content!", 1f);
+				EditorUtility.ClearProgressBar();
+				EditorApplication.update -= OnUpdate;
+			}
+
+			EditorApplication.update += OnUpdate;
+			
+			Debug.Log("Finished Baking content!");
+		}
+		
 		public static async Task BakeContent(bool skipCheck)
 		{
 			void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
 
 			var api = BeamEditorContext.Default;
 			await api.InitializePromise;
-
+			
 			var contentService = api.ServiceScope.GetService<CliContentService>();
 
+			await contentService.Reload();
+			
 			var allContent = contentService.EntriesCache.Values;
+
+			BakeLog("Content count: " + allContent.Count);
 
 			List<LocalContentManifestEntry> contentList = allContent.ToList();
 
