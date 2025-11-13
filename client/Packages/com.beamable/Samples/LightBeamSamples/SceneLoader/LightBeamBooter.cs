@@ -75,7 +75,7 @@ public class LightBeamBooter : MonoBehaviour
 		}
 		else
 		{
-			await SceneManager.LoadSceneAsync(index);
+			var _ = SceneManager.LoadSceneAsync(index);
 		}
 	}
 
