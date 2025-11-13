@@ -235,6 +235,12 @@ public class LightBeamBooter : MonoBehaviour
 			return;
 		}
 		
+		// opt in
+		if (!args.ContainsKey("prepare-realm"))
+		{
+			return;
+		}
+		
 		// we need to know what scene we are prepping for
 		if (!args.TryGetValue("scene", out var sceneName))
 		{

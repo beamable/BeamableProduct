@@ -15,16 +15,8 @@ namespace Beamable.Runtime.LightBeams
 		public static RealmSettingDeclaration FromAsset(TextAsset asset)
 		{
 			var result = JsonSerializable.FromJson<RealmSettingDeclaration>(asset.text);
+			result.uniqueRealmName = asset.name;
 			return result;
-		}
-
-		[MenuItem("LightBeam/TestItOut")]
-		public static void Test()
-		{
-			Debug.Log("hello world");
-			var json = @"{""contentEntries"": [{""content"": [1,2]}, {""content"": {""id"":""leaderboards.default""}}], ""realmConfig"":{""namespace|a"":""value""}}";
-			var result = JsonSerializable.FromJson<RealmSettingDeclaration>(json);
-			Debug.Log("Done " + result);
 		}
 
 		public class ContentEntry : JsonSerializable.ISerializable
@@ -43,7 +35,6 @@ namespace Beamable.Runtime.LightBeams
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
-			s.Serialize(nameof(uniqueRealmName), ref uniqueRealmName);
 			s.SerializeList(nameof(contentEntries), ref contentEntries);
 			s.SerializeDictionary<MapOfString, string>(nameof(realmConfig), ref realmConfig);
 		}

@@ -89,6 +89,13 @@ MonoBehaviour:
     scenePath: Assets/Minis/Basics/02_Leaderboards_Simple/02_Leaderboards_Simple.unity
     includeInToc: 0
     realmRequirements: {fileID: 4900000, guid: 0d9f07931e6a449091c7df7305353c94, type: 3}
+  - label: setup_console
+    about: 
+    title: 
+    sceneName: mini_setup_console
+    scenePath: Assets/Minis/Basics/setup_console/mini_setup_console.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: fe60b80ae9ef64516b83d2dc31a395b3, type: 3}
   editorScenes:
   - name: boot
     title: 
@@ -156,3 +163,9 @@ MonoBehaviour:
     realmRequirements: {fileID: 4900000, guid: 0d9f07931e6a449091c7df7305353c94, type: 3}
     about: 
     scene: {fileID: 102900000, guid: 92d2749bbc92b48edbacf8304c336b60, type: 3}
+  - name: setup_console
+    title: 
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: fe60b80ae9ef64516b83d2dc31a395b3, type: 3}
+    about: 
+    scene: {fileID: 102900000, guid: 6e1434a24120e48e7a209871287dccc8, type: 3}
