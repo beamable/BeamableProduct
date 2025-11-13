@@ -69,7 +69,9 @@ public class LightBeamBuilds
 				realmConfigFile = x.realmRequirements == null ? null : x.realmRequirements.name
 			}).ToList()
 		}, true);
+		
 		FileUtil.DeleteFileOrDirectory("Assets/StreamingAssets/RealmConfigs");
+		Directory.CreateDirectory("Assets/StreamingAssets");
 		FileUtil.CopyFileOrDirectory("Assets/Minis/RealmConfigs", "Assets/StreamingAssets/RealmConfigs");
 		File.WriteAllText("Assets/StreamingAssets/index.json", json);
 	}
