@@ -159,7 +159,7 @@ public class ConfigService
 	}
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
-	
+
 	#region Initialization & Migrations
 
 	/// <summary>
@@ -235,13 +235,13 @@ public class ConfigService
 		{
 			var existingConfig = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(newConfigFile!));
 
-			var existingConfigVersion = existingConfig[CFG_JSON_FIELD_CLI_VERSION]!.Value<string>();
+			var existingConfigVersion = GetConfig(CFG_JSON_FIELD_CLI_VERSION, "0.0.123", existingConfig);
 			var existingPackageVersion = PackageVersion.FromSemanticVersionString(existingConfigVersion);
 
 			// Add the CLI version to the object
 			if (TryGetProjectBeamableCLIVersion(out var version))
 			{
-				if (GetConfig(CFG_JSON_FIELD_CLI_VERSION, "0.0.123", existingConfig) != version)
+				if (existingConfigVersion != version)
 				{
 					// Iterate over list of migrations and sequentially run each migration whose version number is ABOVE the current one.
 					var sortedMigrations = GetMigrations().ToList();
@@ -253,9 +253,6 @@ public class ConfigService
 							m.MigrationFunction(newConfigFile, existingConfig);
 						}
 					}
-
-					SetConfig(CFG_JSON_FIELD_CLI_VERSION, version, existingConfig);
-					File.WriteAllText(newConfigFile, JsonConvert.SerializeObject(existingConfig, Formatting.Indented));
 				}
 			}
 		}
@@ -269,13 +266,9 @@ public class ConfigService
 				// Rename the old config-defaults file.
 				var oldConfigFile = GetConfigPath("connection-configuration.json");
 				if (File.Exists(oldConfigFile)) File.Move(oldConfigFile, newConfigFile!);
-				else File.WriteAllText(newConfigFile!, "{}");
+				else return;
 
 				var newConfig = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(newConfigFile!));
-
-				// Add the CLI version to the object
-				if (TryGetProjectBeamableCLIVersion(out var version))
-					SetConfig(CFG_JSON_FIELD_CLI_VERSION, version, newConfig);
 
 				// Check for additional projects file and ignored directory files and move their data over.
 				{
@@ -391,16 +384,16 @@ public class ConfigService
 
 				// Delete all the old files and the old temp directory.
 				{
-					if(File.Exists(GetConfigPath("project-root-path.json"))) File.Delete(GetConfigPath("project-root-path.json"));
-					if(File.Exists(GetConfigPath("linked-projects.json"))) File.Delete(GetConfigPath("linked-projects.json"));
-					if(File.Exists(GetConfigPath("otel-config.json"))) File.Delete(GetConfigPath("otel-config.json"));
-					if(File.Exists(GetConfigPath("project-paths-to-ignore.json"))) File.Delete(GetConfigPath("project-paths-to-ignore.json"));
-					if(File.Exists(GetConfigPath("additional-project-paths.json"))) File.Delete(GetConfigPath("additional-project-paths.json"));
+					if (File.Exists(GetConfigPath("project-root-path.json"))) File.Delete(GetConfigPath("project-root-path.json"));
+					if (File.Exists(GetConfigPath("linked-projects.json"))) File.Delete(GetConfigPath("linked-projects.json"));
+					if (File.Exists(GetConfigPath("otel-config.json"))) File.Delete(GetConfigPath("otel-config.json"));
+					if (File.Exists(GetConfigPath("project-paths-to-ignore.json"))) File.Delete(GetConfigPath("project-paths-to-ignore.json"));
+					if (File.Exists(GetConfigPath("additional-project-paths.json"))) File.Delete(GetConfigPath("additional-project-paths.json"));
 
 					Directory.Delete(GetConfigPath("temp"), true);
 
-					File.WriteAllText(newConfigFile!, JsonConvert.SerializeObject(newConfig, Formatting.Indented));
-
+					FlushConfig(newConfig!, newConfigFile, true);
+					
 					CreateIgnoreFile(forceCreate: true);
 				}
 			}
@@ -434,8 +427,7 @@ public class ConfigService
 				// ... do something with config to make it correct.
 
 				// Update the version in the config file and save out the migrated file.
-				SetConfig(CFG_JSON_FIELD_CLI_VERSION, version, config);
-				File.WriteAllText(newConfigFile, JsonConvert.SerializeObject(config, Formatting.Indented));
+				FlushConfig(ref config!, configFilePath, true);
 			}),
 		*/
 
@@ -454,6 +446,9 @@ public class ConfigService
 			//   - If you're working on a migration for version 7.1, you start by writing code here.
 			//   - Then, once its done and tested, copy this block of code and change the semantic version string for the copy to 7.1.
 			//   - Delete your 7.1 code from this original block of code.
+			//
+			// When running commands directly from Rider, you can simply modify the cliVersion in the config.beam.json file between each run to be a number different then your current build number.
+			// Ie.: If your curr build number is 0.0.123.10, if the cliVersion is 0.0.123.9, this code will run.
 			new Migration(PackageVersion.FromSemanticVersionString("0.0.123"), (configPath, config) =>
 			{
 				Log.Warning("Cooll");
@@ -720,7 +715,7 @@ public class ConfigService
 	}
 
 	#endregion
-	
+
 	#region Config JSON Management
 
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
@@ -957,46 +952,54 @@ public class ConfigService
 	/// <summary>
 	/// Calling this function allows you to set the local config (VCS).
 	/// </summary>
-	public void FlushConfig()
+	public void FlushConfig() => FlushConfig(_config, ConfigDirectoryPath, true);
+
+	/// <summary>
+	/// Calling this function allows you to set the local config overrides (ignore by VCS).
+	/// </summary>
+	public void FlushLocalOverrides() => FlushConfig(_configLocalOverrides, ConfigLocalDirectoryPath, false);
+
+	private static object _flushConfigLock = new();
+	private void FlushConfig(JObject config, string path, bool createSubDirs)
 	{
 		// Because we have the CLI server, this block of code that writes to the config file must be guarded so that it 
 		// doesn't accidentally run at the same time by the CLI server.
-		lock (_config)
+		lock (_flushConfigLock)
 		{
-			if (string.IsNullOrEmpty(ConfigDirectoryPath))
+			if (string.IsNullOrEmpty(path))
 				throw new CliException("No beamable project exists. Please use beam init");
 
+			if (TryGetProjectBeamableCLIVersion(out var version))
+				SetConfig(CFG_JSON_FIELD_CLI_VERSION, version, config);
+
 			// Flush the config
-			var json = JsonConvert.SerializeObject(_config, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
-			if (!IsConfigValid(_config, true, out var missingRequiredKeys))
+			var json = JsonConvert.SerializeObject(config, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+
+
+			if (!Directory.Exists(path))
 			{
-				var err = "Config is not valid.";
-				err += missingRequiredKeys.Count == 0 ? "" : $"\nMissing Keys: {string.Join(",", missingRequiredKeys)}";
-				err += $"\nFull Json Below:\n{json}";
-				throw new CliException(err);
+				Directory.CreateDirectory(path);
 			}
 
-			if (!Directory.Exists(ConfigDirectoryPath))
+			if (createSubDirs)
 			{
-				Directory.CreateDirectory(ConfigDirectoryPath);
+				if (!Directory.Exists(Path.Combine(path, SHARED_FOLDER_NAME)))
+				{
+					Directory.CreateDirectory(Path.Combine(path, SHARED_FOLDER_NAME));
+				}
+
+				if (!Directory.Exists(Path.Combine(path, LOCAL_FOLDER_NAME)))
+				{
+					Directory.CreateDirectory(Path.Combine(path, LOCAL_FOLDER_NAME));
+				}
+
+				if (!Directory.Exists(Path.Combine(path, TEMP_FOLDER_NAME)))
+				{
+					Directory.CreateDirectory(Path.Combine(path, TEMP_FOLDER_NAME));
+				}
 			}
 
-			if (!Directory.Exists(GetConfigPath(SHARED_FOLDER_NAME)))
-			{
-				Directory.CreateDirectory(GetConfigPath(SHARED_FOLDER_NAME));
-			}
-
-			if (!Directory.Exists(GetConfigPath(LOCAL_FOLDER_NAME)))
-			{
-				Directory.CreateDirectory(GetConfigPath(LOCAL_FOLDER_NAME));
-			}
-
-			if (!Directory.Exists(GetConfigPath(TEMP_FOLDER_NAME)))
-			{
-				Directory.CreateDirectory(GetConfigPath(TEMP_FOLDER_NAME));
-			}
-
-			string fullPath = Path.Combine(ConfigDirectoryPath, CFG_FILE_NAME);
+			string fullPath = Path.Combine(path, CFG_FILE_NAME);
 
 			// We have to do this so that we don't collide with other software editing the files on disk.
 			var written = false;
@@ -1024,58 +1027,7 @@ public class ConfigService
 			if (!written) throw new CliException($"Failed to flush configuration. LAST_EXCEPTION={ex}");
 		}
 	}
-
-	/// <summary>
-	/// Calling this function allows you to set the local config overrides (ignore by VCS).
-	/// </summary>
-	public void FlushLocalOverrides()
-	{
-		// Because we have the CLI server, this block of code that writes to the config file must be guarded so that it 
-		// doesn't accidentally run at the same time by the CLI server.
-		lock (_configLocalOverrides)
-		{
-			if (string.IsNullOrEmpty(ConfigLocalDirectoryPath))
-				throw new CliException("No beamable project exists. Please use beam init");
-
-			// Flush the overrides
-			var json = JsonConvert.SerializeObject(_configLocalOverrides, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
-			if (!IsConfigValid(_configLocalOverrides, false, out _))
-				throw new CliException($"Config overrides are not valid. Overrides:\n{json}");
-
-			if (!Directory.Exists(ConfigLocalDirectoryPath))
-			{
-				Directory.CreateDirectory(ConfigLocalDirectoryPath);
-			}
-
-			string fullPath = Path.Combine(ConfigLocalDirectoryPath, CFG_FILE_NAME);
-
-			// We got to do this so that we don't collide with other software editing the files on disk.
-			var written = false;
-			var stopwatch = new Stopwatch();
-			stopwatch.Start();
-			var ex = default(Exception);
-			while (!written)
-			{
-				// Timeout for edge cases
-				if (stopwatch.ElapsedMilliseconds > 5000)
-					break;
-
-				try
-				{
-					File.WriteAllText(fullPath, json);
-					written = true;
-				}
-				catch (IOException e)
-				{
-					ex = e;
-					written = false;
-				}
-			}
-
-			if (!written) throw new CliException($"Failed to flush configuration overrides. LAST_EXCEPTION={ex}");
-		}
-	}
-
+	
 	#endregion
 
 	#region VCS Integration
@@ -1210,7 +1162,7 @@ public class ConfigService
 	}
 
 	#endregion
-	
+
 	#region Helpers - Docker Paths
 
 	/// <summary>
@@ -1495,12 +1447,6 @@ public class ConfigService
 
 		var content = File.ReadAllText(fullPath);
 		result = JsonConvert.DeserializeObject<JObject>(content);
-
-		if (!IsConfigValid(result, enforceRequiredFields, out var missingRequiredKeys))
-		{
-			BeamableLogger.LogWarning($"Config file did not have the expected keys: {string.Join(",", missingRequiredKeys)}!");
-			return false;
-		}
 
 		return true;
 	}

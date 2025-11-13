@@ -110,6 +110,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				return false;
 			}
+			// If the config file does not exist, we should be handling this workspace as a new one and require the full-login process to happen.
+			else if (args.ConfigService.GetConfigString("cid") == null || args.ConfigService.GetConfigString("pid") == null)
+			{
+				return false;
+			}
 		}
 
 		{ // handle confirmation step to let people know they are not creating a new workspace!
@@ -307,6 +312,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, _ctx.Pid);
 			_configService.FlushConfig();
 			_configService.CreateIgnoreFile();
 
@@ -319,13 +325,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.pid))
 		{
 			await _ctx.Set(cid, args.pid, host);
-
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
 			
 			var didLogin = !args.SaveToFile || await Login(args);
 			if (didLogin)
 			{
 				_configService.SetWorkingDir(_ctx.WorkingDirectory);
-				_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
 				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
 				return true;
