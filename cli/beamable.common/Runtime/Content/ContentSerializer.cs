@@ -559,6 +559,11 @@ namespace Beamable.Common.Content
 								continue;
 							}
 						}
+						
+						if (fieldValue == null && typeof(AssetReference).IsAssignableFrom(fieldType))
+						{
+							fieldValue = new AssetReference();
+						}
 
 						CheckNullable(fieldType, fieldValue, out fieldType, out fieldValue, out var shouldSkip);
 						if (shouldSkip)
