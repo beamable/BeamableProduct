@@ -20,6 +20,12 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
 		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"8.0.302\"\n} \n}";
 
+		static bool DotnetHandled
+		{
+			get => SessionState.GetBool(nameof(DotnetHandled), false);
+			set => SessionState.SetBool(nameof(DotnetHandled), value);
+		}
+
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
 		/// This method will ensure Dotnet exists for use with the Unity SDK.
@@ -39,6 +45,7 @@ namespace Beamable.Editor.Dotnet
 		/// </summary>
 		public static void InitializeDotnet()
 		{
+			if (DotnetHandled) return;
 			if (!TryGetDotnetFilePath(out var path))
 			{
 				InstallDotnetToLibrary();
@@ -57,6 +64,8 @@ namespace Beamable.Editor.Dotnet
 			{
 				File.WriteAllText(DOTNET_GLOBAL_CONFIG_PATH, DOTNET_GLOBAL_CONFIG);
 			}
+
+			DotnetHandled = true;
 		}
 
 		
