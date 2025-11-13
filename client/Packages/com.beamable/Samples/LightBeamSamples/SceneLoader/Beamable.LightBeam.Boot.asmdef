@@ -6,7 +6,9 @@
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.LightBeams",
         "Unity.TextMeshPro",
-        "Beamable.Config"
+        "Beamable.Config",
+        "Beamable.Platform",
+        "Beamable.SmallerJSON"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
