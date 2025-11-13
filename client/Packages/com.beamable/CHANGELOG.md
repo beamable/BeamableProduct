@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.6] - 2025-11-13
+### Fixed
+- Fixed an issue with Content Baking in batchMode failing to load all contents in time, which could result in missing assets in the final build.
+
 ## [3.1.5] - 2025-10-10
 ### Fixed
 - Fixed an `IndexOutOfRangeException` occurring when using the Content Editor Window.
