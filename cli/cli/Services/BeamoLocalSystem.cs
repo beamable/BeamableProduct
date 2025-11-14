@@ -108,6 +108,7 @@ public partial class BeamoLocalSystem
 			BeamoManifest = new BeamoLocalManifest
 			{
 				ServiceDefinitions = new List<BeamoServiceDefinition>(),
+				PortalExtensionDefinitions = new List<PortalExtensionDefinition>(),
 				HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
 				EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>()
 			};
@@ -490,6 +491,11 @@ public class BeamoLocalManifest
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
 	/// <summary>
+	/// This list contains all the <see cref="PortalExtensionDefinition"/> that the current project knows about.
+	/// </summary>
+	public List<PortalExtensionDefinition> PortalExtensionDefinitions;
+
+	/// <summary>
 	/// This list contains the concatenation of all found `.beamignore` files in the workspace.
 	/// Each element is a beamoId. 
 	/// </summary>
@@ -539,6 +545,15 @@ public class BeamoLocalManifest
 
 		return definition != null;
 	}
+}
+
+public class PortalExtensionDefinition
+{
+	public string Name;
+	public string Version;
+
+	public string RelativePath;
+	public string AbsolutePath;
 }
 
 public class BeamoServiceDefinition

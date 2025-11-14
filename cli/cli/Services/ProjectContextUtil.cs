@@ -89,6 +89,13 @@ public static class ProjectContextUtil
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
+
+		var allPortalExtensions = FindPortalExtensionProjects(configService.BaseDirectory, searchPaths, pathsToIgnore);
+
+		sw.Stop();
+		Log.Verbose($"Gathering portal extension apps took {sw.Elapsed.TotalMilliseconds} ");
+		sw.Restart();
+
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -98,6 +105,7 @@ public static class ProjectContextUtil
 		{
 			LocallyIgnoredBeamoIds = ignoreIds,
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
+			PortalExtensionDefinitions = allPortalExtensions,
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
@@ -341,6 +349,67 @@ public static class ProjectContextUtil
 		}
 
 		return beamoIdsToIgnore;
+	}
+
+	public static List<PortalExtensionDefinition> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
+	{
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			var somePaths = Directory.GetFiles(searchPath, "package.json", SearchOption.AllDirectories);
+
+			var relevantFiles = somePaths
+				.Where(path => !path.Contains(Path.DirectorySeparatorChar + "node_modules" + Path.DirectorySeparatorChar));
+
+			pathList.AddRange(relevantFiles);
+		}
+
+		var filteredPaths = new List<string>();
+
+		foreach (var path in pathList)
+		{
+			var canBeAdded = true;
+			foreach (var pathToIgnore in pathsToIgnore)
+			{
+				if (path.StartsWith(pathToIgnore))
+				{
+					canBeAdded = false;
+					break;
+				}
+			}
+
+			if(canBeAdded) filteredPaths.Add(path);
+		}
+
+		var paths = filteredPaths.ToArray();
+
+		var projects = new List<PortalExtensionDefinition>();
+
+		foreach (string filePath in paths)
+		{
+			try
+			{
+				string jsonContent = File.ReadAllText(filePath);
+
+				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
+
+				var dir = Path.GetDirectoryName(filePath);
+
+				projects.Add(new PortalExtensionDefinition()
+				{
+					Name = info.Name,
+					Version = info.Version,
+					RelativePath = Path.GetRelativePath(rootFolder, dir),
+					AbsolutePath = Path.GetFullPath(dir)
+				});
+			}
+			catch (Exception e)
+			{
+				// we don't really care if the file is not the correct format one
+			}
+		}
+
+		return projects;
 	}
 
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
