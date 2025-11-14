@@ -1,4 +1,5 @@
 import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
+import type { BeamServer } from '@/core/BeamServer';
 import { ServerEventType } from '@/core/types/ServerEventType';
 
 /** Configuration options for initializing the Beam Server SDK. */
@@ -20,6 +21,20 @@ export interface BeamServerConfig extends BeamBaseConfig {
 
   /** Configuration for server-events. */
   serverEvents?: ServerEventsConfig;
+
+  /**
+   * Optional callback invoked during Beam Server SDK initialization to register or configure server services.
+   *
+   * @example
+   * ```ts
+   * import { serverServices } from "beamable-sdk";
+   *
+   * const config: BeamServerConfig = {
+   *   services: serverServices,
+   * };
+   * ```
+   */
+  services?: (beam: BeamServer) => void;
 }
 
 /** Configuration options for server-events. */

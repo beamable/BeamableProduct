@@ -26,7 +26,7 @@ import {
   type BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
 import { ContentService } from '@/services/ContentService';
-import type { RefreshableService } from '@/services';
+import { type RefreshableService } from '@/services';
 
 /** The main class for interacting with the Beam Client SDK. */
 export class Beam extends ClientServicesMixin(BeamBase) {
@@ -47,6 +47,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     beam.isInitialized = true;
     const noop = () => {};
     beam.on('content.refresh', noop); // listen for content refresh; cache update happens inside the listener via refreshableRegistry
+    config.services?.(beam);
     return beam;
   }
 
@@ -79,9 +80,9 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   use<T extends BeamMicroServiceClient>(
     Client: BeamMicroServiceClientCtor<T>,
   ): this;
-  use(ctor: any): this {
-    if (this.isApiService(ctor)) {
-      const svc = new ctor({ beam: this, getPlayer: () => this.player });
+  use(Ctor: any): this {
+    if (this.isApiService(Ctor)) {
+      const svc = new Ctor({ beam: this, getPlayer: () => this.player });
       const svcName = svc.serviceName;
       (this.clientServices as any)[svc.serviceName] = svc;
 
@@ -90,8 +91,8 @@ export class Beam extends ClientServicesMixin(BeamBase) {
         this.refreshableRegistry[refreshKey] =
           svc as unknown as RefreshableService<any>;
       }
-    } else if (this.isMicroServiceClient(ctor)) {
-      const client = new ctor(this);
+    } else if (this.isMicroServiceClient(Ctor)) {
+      const client = new Ctor(this);
       const serviceName = client.serviceName;
       const serviceNameIdentifier =
         serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
