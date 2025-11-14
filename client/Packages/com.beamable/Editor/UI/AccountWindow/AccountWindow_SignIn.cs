@@ -78,6 +78,7 @@ namespace Beamable.Editor.Accounts
 		private GUIStyle _headerStyle;
 		private GUIStyle _titleStyle;
 		private GUIStyle _textboxStyle;
+		private GUIStyle _textboxPlaceholderStyle;
 		private GUIStyle _placeholderStyle;
 
 		public void Draw_SignIn()

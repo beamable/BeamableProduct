@@ -481,7 +481,7 @@ public class ProjectService
 				error = ($"Unspected sln filter. Expected header. output=[{bufferStr}]");
 			if (lines[0] != "Project(s)")
 				error = ($"Unspected sln filter. Expected 'Project(s)'. output=[{bufferStr}]");
-			if (lines[1].Any(c => c != '-'))
+			if (lines.Count > 1 && lines[1].Any(c => c != '-'))
 				error = ($"Unspected sln filter. Expected a line of dashes. output=[{bufferStr}]");
 
 			if (!string.IsNullOrEmpty(error))

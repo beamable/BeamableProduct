@@ -1,10 +1,9 @@
-using Beamable.Editor.BeamCli.Commands;
+using Beamable.Common.Util;
 using Beamable.Editor.Util;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Beamable.Editor.Microservice.UI2.PublishWindow
 {
@@ -39,7 +38,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					});
 					EditorGUILayout.Space(10, expand: false);
 
-					var helpUrl = "https://docs.beamable.com/v2.0.0/docs/publishing";
+					var helpUrl = DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/cloud-services/microservices/microservice-framework/#publishing-microservices", EditorConstants.UNITY_CURRENT_DOCS_VERSION);
 					DrawChangeList("Adding Services", "Toolbar Plus", "Learn about new services on Beamable", helpUrl,
 					               _planMetadata.plan.diff.addedServices.ToList());
 					DrawChangeList("Removing Services", "Warning@2x",

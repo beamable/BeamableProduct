@@ -1,0 +1,25 @@
+{
+  "uniqueRealmName": "sample-realm",
+  "realmConfig": {
+    "namespace|a": "value"
+  },
+  "contentEntries": [
+    {
+      "id": "leaderboards.default4",
+      "properties": {
+        "permissions": {
+          "data": {
+            "write_self": true
+          }
+        },
+        "custom": {
+          "data": 123
+        }
+      },
+      "tags": [
+        "sample"
+      ]
+    }
+  
+  ]
+}

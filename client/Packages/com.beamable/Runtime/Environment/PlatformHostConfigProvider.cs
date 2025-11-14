@@ -7,12 +7,12 @@ namespace Beamable
 
 	public class ConfigPlatformHostResolver : IPlatformRequesterHostResolver
 	{
-		private readonly ConfigDatabaseProvider _config;
+		private readonly IDefaultRuntimeConfigProvider _config;
 		private EnvironmentData _env;
 		public string Host => _config.HostUrl;
 		public PackageVersion PackageVersion => _env.SdkVersion;
 
-		public ConfigPlatformHostResolver(ConfigDatabaseProvider config, EnvironmentData env)
+		public ConfigPlatformHostResolver(IDefaultRuntimeConfigProvider config, EnvironmentData env)
 		{
 			_env = env;
 			_config = config;

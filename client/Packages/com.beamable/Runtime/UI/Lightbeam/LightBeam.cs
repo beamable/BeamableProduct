@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Common.Api;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -61,6 +62,59 @@ namespace Beamable.Runtime.LightBeams
 
 		public Promise<T> GotoPage<T>() where T : MonoBehaviour, ILightComponent
 			=> Scope.GotoPage<T>();
+
+		public void OpenPortalRealm(string relativePath,
+		                       Dictionary<string, string> queryArgs = null,
+		                       bool includeAuthIfAvailable = true)
+		{
+			OpenPortalBase($"/{BeamContext.Cid}/games/{BeamContext.Pid}/realms/{BeamContext.Pid}{(relativePath.StartsWith("/") ? relativePath : $"/{relativePath}")}", queryArgs, includeAuthIfAvailable);
+		}
+		public void OpenPortalBase(string relativePath, Dictionary<string, string> queryArgs=null, bool includeAuthIfAvailable = true)
+		{
+			OpenPortalBase(BeamContext, relativePath, queryArgs, includeAuthIfAvailable);
+		}
+
+		public static void OpenPortalRealm(BeamContext ctx,
+		                                   string relativePath,
+		                                   Dictionary<string, string> queryArgs = null,
+		                                   bool includeAuthIfAvailable = true)
+		{
+			OpenPortalBase(ctx, $"/{ctx.Cid}/games/{ctx.Pid}/realms/{ctx.Pid}{(relativePath.StartsWith("/") ? relativePath : $"/{relativePath}")}", queryArgs, includeAuthIfAvailable);
+		}
+
+		public static void OpenPortalBase(BeamContext ctx, string relativePath, Dictionary<string, string> queryArgs=null, bool includeAuthIfAvailable = true)
+		{
+			var config = ctx.ServiceProvider.GetService<IDefaultRuntimeConfigProvider>();
+			var escaper = ctx.ServiceProvider.GetService<IUrlEscaper>();
+			var builder = new QueryBuilder(escaper);
+
+			if (queryArgs != null)
+			{
+				foreach (var kvp in queryArgs)
+				{
+					builder.Add(kvp.Key, kvp.Value);
+				}
+			}
+			if (includeAuthIfAvailable)
+			{
+				if (ctx.ServiceProvider.CanBuildService<IBeamDeveloperAuthProvider>())
+				{
+					var provider = ctx.ServiceProvider.GetService<IBeamDeveloperAuthProvider>();
+					if (!string.IsNullOrEmpty(provider.RefreshToken))
+					{
+						builder.Add("refresh_token", provider.RefreshToken);
+					}
+				}
+			}
+			if (!relativePath.StartsWith("/"))
+			{
+				relativePath = "/" + relativePath;
+			}
+			
+			var url = config.PortalUrl + relativePath + builder;
+			Application.OpenURL(url);
+		}
+		
 	}
 
 	public interface ILightRoot

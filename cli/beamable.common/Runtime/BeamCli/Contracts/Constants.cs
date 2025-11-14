@@ -13,6 +13,7 @@ namespace Beamable.Common.BeamCli.Contracts
 		public const string PROP_PREFIX = "Beam";
 		public const string PROP_BEAM_PROJECT_TYPE = PROP_PREFIX + "ProjectType";
 		public const string PROP_BEAMO_ID = PROP_PREFIX + "Id";
+		public const string PROP_LOG_PROVIDER = PROP_PREFIX + "LogProvider";
 		public const string PROP_BEAM_ENABLED = PROP_PREFIX + "Enabled";
 		public const string PROP_BEAM_SERVICE_GROUP = PROP_PREFIX + "ServiceGroup";
 		public const string PROP_BEAM_STORAGE_DATA_VOLUME_NAME = PROP_PREFIX + "StorageDockerDataVolume";

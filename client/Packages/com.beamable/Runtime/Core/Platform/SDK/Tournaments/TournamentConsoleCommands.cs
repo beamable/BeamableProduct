@@ -12,7 +12,7 @@ namespace Beamable.Api.Tournaments
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/tournaments-feature">Tournaments</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-4.0/unity/user-reference/beamable-services/social-networking/tournaments/">Tournaments</a> feature documentation
 	/// - See Beamable.Api.Tournaments.TournamentService script reference
 	///
 	/// ![img beamable-logo]

@@ -2583,7 +2583,7 @@ public static partial class OpenApiFixtures
     ""security"": [],
     ""externalDocs"": {
         ""description"": ""Beamable Documentation"",
-        ""url"": ""https://docs.beamable.com""
+        ""url"": ""https://help.beamable.com/CLI-Latest""
     },
     ""openapi"": ""3.0.2""
 }";

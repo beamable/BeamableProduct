@@ -1,0 +1,19 @@
+{
+    "name": "Mini.02_Leaderboards_Sample",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.LightBeams",
+        "Unity.Beamable.Runtime.Common"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

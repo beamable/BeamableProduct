@@ -45,6 +45,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 				scene.sceneName = x.scene.name;
 				scene.about = x.about;
 				scene.title = x.title;
+				scene.includeInToc = x.includeInToc;
+				scene.realmRequirements = x.realmRequirements;
 				scene.scenePath = AssetDatabase.GetAssetPath(x.scene);
 			}
 
@@ -63,6 +65,8 @@ public struct LightBeamRuntimeScene
 	public string title;
 	public string sceneName;
 	public string scenePath;
+	public bool includeInToc;
+	public TextAsset realmRequirements;
 }
 
 #if UNITY_EDITOR
@@ -71,6 +75,8 @@ public struct LightBeamEditorScene
 {
 	public string name;
 	public string title;
+	public bool includeInToc;
+	public TextAsset realmRequirements;
 	[TextArea]
 	public string about;
 	public SceneAsset scene;

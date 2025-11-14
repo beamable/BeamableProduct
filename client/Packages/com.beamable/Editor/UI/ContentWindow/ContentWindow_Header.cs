@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Util;
 using UnityEditor;
 using UnityEngine;
 
@@ -105,7 +106,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
 				{
-					Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
+					
+					Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/beamable-services/profile-storage/content/content-unity/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
 				}, () => _ = _contentService.Reload());
 			});
 			

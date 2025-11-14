@@ -6,17 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## Unreleased
+## [4.0.0]
+### New
+- Added support to additional snapshot restore on Editor.
+
 ### Fixed
- - Issue where DLL were not being properly loaded to Microservices on Windows
- - Added a scrollbar in Account Window when logged
- - Fixed an issue which the `Create a new Organization` and `Forgot password` on Beam Account were not opening the portal
+- Issue where DLL were not being properly loaded to Microservices on Windows
+- Added a scrollbar in Account Window when logged
+- Fixed an issue which the `Create a new Organization` and `Forgot password` on Beam Account were not opening the portal
+- Fixed `Sharing Violation Error` when having a content open in any text file editor while Unity reads it.
+- Fixed ContentRef fields now display correctly without needing to open the ContentManager window
+- Fixed an issue with the Player SDK Leaderboard throwing a Null Reference when trying to get a Board.
+
+### Changed
+- Improved Beamable CLI installation reliability with automatic retry mechanism (up to 5 attempts) on timeout failures, along with enhanced error messaging for troubleshooting.
+- Improved Beam Accounts window when the `config-defaults.txt` is missing values.
+
+## [3.1.6] - 2025-11-13
+### Fixed
+- Fixed an issue with Content Baking in batchMode failing to load all contents in time, which could result in missing assets in the final build.
 
 ## [3.1.5] - 2025-10-10
 ### Fixed
 - Fixed an `IndexOutOfRangeException` occurring when using the Content Editor Window.
 - Fixed an issue where button to create a new snapshot was not displayed when no snapshots existed.
-
+ 
 ## [3.1.4] - 2025-10-7
 ### Fixed
 - Fixed an issue where content drawer was not including subtype contents
