@@ -45,7 +45,7 @@
     </PropertyGroup>
     
     <PropertyGroup Label="Resolve .beamable paths">
-        <BeamableProjectRoot Condition="'$(BeamableProjectRoot)'==''">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)/..", ".beamable/connection-configuration.json"))</BeamableProjectRoot>
+        <BeamableProjectRoot Condition="'$(BeamableProjectRoot)'==''">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)/..", ".beamable/config.beam.json"))</BeamableProjectRoot>
         <BeamableFolderPath Condition="'$(BeamableFolderPath)'==''">$(BeamableProjectRoot)/.beamable</BeamableFolderPath>
         <BeamableLocalDevProjectPath Condition="'$(BeamableLocalDevProjectPath)'==''">$(BeamableFolderPath)/temp/localDev</BeamableLocalDevProjectPath>
         <BeamableLocalDevProjectsGlob Condition="'$(BeamableLocalDevProjectsGlob)'==''">$(BeamableLocalDevProjectPath)/*.csproj</BeamableLocalDevProjectsGlob>

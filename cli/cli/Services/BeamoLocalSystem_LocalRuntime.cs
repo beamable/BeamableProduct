@@ -323,7 +323,7 @@ public partial class BeamoLocalSystem
 			case BeamoProtocolType.HttpMicroservice:
 
 				var dockerfile = Path.Combine(toCheck.ProjectDirectory, "Dockerfile");
-				var relativePath = _configService.BeamableRelativeToExecutionRelative(dockerfile);
+				var relativePath = _configService.GetRelativeToExecutionPath(dockerfile);
 				var hasDockerfile = File.Exists(relativePath);
 				if (!hasDockerfile) return false;
 

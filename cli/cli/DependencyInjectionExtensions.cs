@@ -97,7 +97,7 @@ public static class DependencyInjectionExtensions
 				var internalActivity = rootActivity as IInternalBeamActivity;
 				internalActivity.AddTagsDict(new Dictionary<string, object>
 				{
-					["beam.cli.config.base_path"] = args.ConfigService.BaseDirectory,
+					["beam.cli.config.base_path"] = args.ConfigService.BeamableWorkspace,
 					["beam.cli.app.docker_path"] = args.AppContext.DockerPath,
 					["beam.cli.app.dotnet_path"] = args.AppContext.DotnetPath,
 					["beam.cli.body"] = bodyJson,

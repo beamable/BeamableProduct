@@ -23,7 +23,7 @@ public class NoAuthHttpRequester : IRequester
 	public NoAuthHttpRequester(ConfigService config)
 	{
 		_client = new HttpClient();
-		_config = () => config.GetConfigString(Constants.CONFIG_PLATFORM);
+		_config = () => config.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST);
 	}
 	
 	public NoAuthHttpRequester(string host)

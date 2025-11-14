@@ -125,16 +125,25 @@ public class BeamInitFlows : CLITest
 		}
 
 		// there should a .beamable folder
-		Assert.That(File.Exists( Path.Combine(initArg,".beamable/connection-configuration.json")), "there must be a config defaults file after beam init.");
+		Assert.That(File.Exists( Path.Combine(initArg, ".beamable/config.beam.json")), "there must be a config defaults file after beam init.");
 
 		// the contents of the file should contain the given cid and pid.
-		var configDefaultsStr = File.ReadAllText(Path.Combine(initArg, ".beamable/connection-configuration.json"));
-		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
+		var configDefaultsStr = File.ReadAllText(Path.Combine(initArg, ".beamable/config.beam.json"));
+		var expectedJson = 
+$@"{{
+  ""additionalProjectPaths"" : [ ],
+  ""ignoredProjectPaths"" : [ ],
+  ""host"" : ""https://api.beamable.com"",
+  ""cid"" : ""{cid}"",
+  ""pid"" : ""{pid}"",
+  ""cliVersion"" : ""0.0.123"",
+}}";
 
-		bool areEqual = JToken.DeepEquals(JToken.Parse(configDefaultsStr), JToken.Parse(expectedJson));
-
-		Assert.IsTrue(areEqual, "The connection-configuration file should contain the cid and pid.");
-
-
+		var actual = JToken.Parse(configDefaultsStr);
+		var expected = JToken.Parse(expectedJson);
+		
+		Assert.AreEqual(expected["cid"].Value<string>(), actual["cid"].Value<string>());
+		Assert.AreEqual(expected["pid"].Value<string>(), actual["pid"].Value<string>());
+		Assert.AreEqual(expected["host"].Value<string>(), actual["host"].Value<string>());
 	}
 }
