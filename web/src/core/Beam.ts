@@ -76,31 +76,54 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     return BeamBase.env;
   }
 
-  use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
-  use<T extends BeamMicroServiceClient>(
-    Client: BeamMicroServiceClientCtor<T>,
+  use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctors: readonly T[],
   ): this;
-  use(Ctor: any): this {
-    if (this.isApiService(Ctor)) {
-      const svc = new Ctor({ beam: this, getPlayer: () => this.player });
-      const svcName = svc.serviceName;
-      (this.clientServices as any)[svc.serviceName] = svc;
+  use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctor: T,
+  ): this;
+  use(ctorOrCtors: any): this {
+    const ctors = Array.isArray(ctorOrCtors) ? ctorOrCtors : [ctorOrCtors];
 
-      if (REFRESHABLE_SERVICES.includes(svcName)) {
-        const refreshKey = `${svcName}.refresh` as keyof RefreshableServiceMap;
-        this.refreshableRegistry[refreshKey] =
-          svc as unknown as RefreshableService<any>;
-      }
-    } else if (this.isMicroServiceClient(Ctor)) {
-      const client = new Ctor(this);
-      const serviceName = client.serviceName;
-      const serviceNameIdentifier =
-        serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
-      const clientName = `${serviceNameIdentifier}Client`;
-      (this as any)[clientName] = client;
+    if (this.isApiService(ctors[0])) {
+      ctors.forEach((c) => this.registerApiService(c));
+      return this;
+    }
+
+    if (this.isMicroServiceClient(ctors[0])) {
+      ctors.forEach((c) => this.registerMicroClient(c));
+      return this;
     }
 
     return this;
+  }
+
+  /** Registers an API service with the Beam instance. */
+  private registerApiService<T extends ApiService>(Ctor: ApiServiceCtor<T>) {
+    const svc = new Ctor({ beam: this, getPlayer: () => this.player });
+    const svcName = svc.serviceName;
+
+    (this.clientServices as any)[svcName] = svc;
+
+    if (REFRESHABLE_SERVICES.includes(svcName)) {
+      const refreshKey = `${svcName}.refresh` as keyof RefreshableServiceMap;
+      this.refreshableRegistry[refreshKey] =
+        svc as unknown as RefreshableService<any>;
+    }
+  }
+
+  /** Registers a microservice client with the Beam instance. */
+  private registerMicroClient<T extends BeamMicroServiceClient>(
+    Ctor: BeamMicroServiceClientCtor<T>,
+  ) {
+    const client = new Ctor(this);
+    const serviceName = client.serviceName;
+
+    const identifier =
+      serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
+    const clientName = `${identifier}Client`;
+
+    (this as any)[clientName] = client;
   }
 
   /** Connects the client SDK to the Beamable platform. This method is called automatically during `Beam.init()`. */

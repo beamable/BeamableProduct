@@ -69,35 +69,41 @@ export abstract class BeamBase {
   }
 
   /**
-   * Dynamically adds a service to the Beam SDK instance.
-   * @param Service The service class to add.
+   * Dynamically adds multiple api services or microservice clients to the Beam SDK.
+   * @param ctors - An array of constructors for the api service or microservice client.
+   * @returns The current instance of BeamBase.
    * @example
    * ```ts
-   * // client-side:
-   * beam.use(StatsService);
-   * await beam.stats.get({...});
-   * // server-side:
-   * beamServer.use(StatsService);
-   * await beamServer.stats.get({...});
+   * const beam = await Beam.init({ ... });
+   * beam.use([LeadboardService, StatsService]);
+   * ```
+   * or
+   * ```ts
+   * const beam = await Beam.init({ ... });
+   * beam.use([MyMicroserviceClient, MyOtherMicroserviceClient]);
    * ```
    */
-  abstract use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
+  abstract use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctors: readonly T[],
+  ): this;
 
   /**
-   * Dynamically adds a microservice client to the Beam SDK instance.
-   * @param Client The microservice client class to add.
+   * Dynamically adds a single api service or microservice client to the Beam SDK.
+   * @param ctor - The constructor for the api service or microservice client.
+   * @returns The current instance of BeamBase.
    * @example
    * ```ts
-   * // client-side:
-   * beam.use(MyMicroServiceClient);
-   * beam.myMicroServiceClient.serviceName;
-   * // server-side:
-   * beamServer.use(MyMicroServiceClient);
-   * beamServer.myMicroServiceClient.serviceName;
+   * const beam = await Beam.init({ ... });
+   * beam.use(StatsService);
+   * ```
+   * or
+   * ```ts
+   * const beam = await Beam.init({ ... });
+   * beam.use(MyMicroserviceClient);
    * ```
    */
-  abstract use<T extends BeamMicroServiceClient>(
-    Client: BeamMicroServiceClientCtor<T>,
+  abstract use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctor: T,
   ): this;
 
   protected constructor(config: BeamBaseConfig) {
