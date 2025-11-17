@@ -161,6 +161,22 @@ namespace Beamable.Common.Content
 			});
 			return promise.FlatMap<SequencePromise<IContentObject>, IList<IContentObject>>(_ => seqPromise, () => seqPromise);
 		}
+
+		public static SequencePromise<TContent> ResolveAll<TContent>(this IEnumerable<IContentRef> refs, int batchSize = 50) where TContent : ContentObject, new()
+		{
+			var theRefs = refs.ToList();
+			SequencePromise<TContent> seqPromise = null;
+
+			var promise = ContentApi.Instance.Map(api =>
+			{
+				var promiseGenerators =
+					theRefs.Select(r => new Func<Promise<TContent>>(() => api.GetContent<TContent>(r))).ToList();
+
+				seqPromise = api.ConvertPromisesIntoSequence(batchSize, promiseGenerators);
+				return seqPromise;
+			});
+			return promise.FlatMap<SequencePromise<TContent>, IList<TContent>>(_ => seqPromise, () => seqPromise);
+		}
 	}
 
 	/// <summary>
