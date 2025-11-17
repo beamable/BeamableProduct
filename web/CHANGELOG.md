@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Enable Beam SDK configs to register all client/server services during initialization.
+- `Beam.use` and `BeamServer.use` now accept arrays of services or microservice clients for batch registration.
 
 ## [0.6.0] - 2025-09-15
 
