@@ -92,16 +92,17 @@ export class BeamRequester implements HttpRequester {
     const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
-    const isInvalidCredentialsError =
-      typeof response.body === 'string'
-        ? (response.body as string).includes('InvalidCredentialsError')
-        : false;
+    const errorKeys = [
+      'InvalidCredentialsError',
+      'InvalidRefreshTokenError',
+      'TokenValidationError',
+    ] as const;
 
-    if (
-      response.status === 401 &&
-      !this.useSignedRequest &&
-      !isInvalidCredentialsError
-    ) {
+    const hasKnownError =
+      typeof response.body === 'string' &&
+      errorKeys.some((key) => (response.body as string).includes(key));
+
+    if (response.status === 401 && !this.useSignedRequest && !hasKnownError) {
       await this.handleRefresh();
       // Re-attach Authorization header with the updated access token
       await this.attachAuthHeader(newReq);
