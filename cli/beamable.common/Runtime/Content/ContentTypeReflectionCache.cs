@@ -1,6 +1,8 @@
 using Beamable.Common.Reflection;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -51,12 +53,14 @@ namespace Beamable.Common.Content
 
 		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>();
 		private Dictionary<Type, string> _classToContentType = new Dictionary<Type, string>();
-
+		private TypeFieldInfoReflectionCache _typeFieldInfos = null;
 		public void ClearCachedReflectionData()
 		{
 			_contentTypeToClass.Clear();
 			_classToContentType.Clear();
 		}
+
+		public static TypeFieldInfoReflectionCache GetTypeFieldsCache() => Instance._typeFieldInfos;
 
 		public void OnSetupForCacheGeneration() { }
 		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
@@ -126,6 +130,7 @@ namespace Beamable.Common.Content
 			}
 
 			Instance = this;
+			_typeFieldInfos = new TypeFieldInfoReflectionCache(Instance);
 		}
 
 		public void AddContentTypeToDictionaries(Type type) => AddContentTypeToDictionaries(type, _contentTypeToClass, _classToContentType);
@@ -272,6 +277,223 @@ namespace Beamable.Common.Content
 			}
 
 			return type;
+		}
+	}
+	
+	public class TypeFieldInfoReflectionCache
+	{
+		public readonly struct FieldInfoWrapper
+		{
+			public readonly FieldInfo RawField;
+			public readonly string SerializedName;
+			public readonly string BackingFieldName;
+			public readonly ReadOnlyCollection<string> FormerlySerializedAs;
+			public Type FieldType => RawField.FieldType;
+
+			public FieldInfoWrapper(string serializedName,FieldInfo rawField, string backingFieldName, 
+				ReadOnlyCollection<string> formerlySerializedAs)
+			{
+				SerializedName = serializedName;
+				BackingFieldName = backingFieldName;
+				RawField = rawField;
+				FormerlySerializedAs = formerlySerializedAs;
+			}
+
+			public bool TryGetPropertyForField(ICollection<string> keys, out string field)
+			{
+				field = string.Empty;
+				var fieldName = GetFieldSerializedName();
+				
+				foreach (var key in keys)
+				{
+					if (key.Equals(fieldName))
+					{
+						field = key;
+						return true;
+					}
+
+					for (int i = 0; i < FormerlySerializedAs.Count; i++)
+					{
+						if (key.Equals(FormerlySerializedAs[i]))
+						{
+							field = key;
+						}
+					}
+				}
+
+				return string.IsNullOrWhiteSpace(field);
+			}
+
+			public string GetFieldSerializedName()
+			{
+				return string.IsNullOrWhiteSpace(BackingFieldName) ? SerializedName : BackingFieldName;
+			}
+
+			public bool TrySetValue(object obj, object value)
+			{
+				if (!FieldType.IsInstanceOfType(value)) return false;
+
+				RawField.SetValue(obj, value);
+				return true;
+			}
+			public object GetValue(object obj) => RawField.GetValue(obj);
+		}
+		private readonly Dictionary<Type, ReadOnlyCollection<FieldInfoWrapper>> _typeInfoCache = new  Dictionary<Type, ReadOnlyCollection<FieldInfoWrapper>>();
+		private readonly Dictionary<Type, ReadOnlyCollection<FieldInfoWrapper>> _typeInfoCacheWithIgnoredFields = new  Dictionary<Type, ReadOnlyCollection<FieldInfoWrapper>>();
+		private readonly ContentTypeReflectionCache _reflectionCache;
+
+		public TypeFieldInfoReflectionCache(ContentTypeReflectionCache cache)
+		{
+			_reflectionCache = cache;
+			foreach (var contentType in _reflectionCache.GetContentTypes())
+			{
+				_ = GetFieldInfos(contentType);
+			}
+		}
+		public ReadOnlyCollection<FieldInfoWrapper> GetFieldInfos(Type type, bool withIgnoredFields = false)
+		{
+			if(withIgnoredFields && _typeInfoCacheWithIgnoredFields.TryGetValue(type, out var info))
+			{
+				return info;
+			}
+			if(!withIgnoredFields && _typeInfoCache.TryGetValue(type, out info))
+			{
+				return info;
+			}
+			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
+			{
+				var attr = field.GetCustomAttribute<ContentFieldAttribute>();
+				string serializedName;
+				string backingField = null;
+				var formerlySerializedAs = new List<string>();
+				if (attr != null && !string.IsNullOrEmpty(attr.SerializedName))
+				{
+					serializedName = attr.SerializedName;
+				}
+				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
+				{
+					int startIndex = 0;
+					for (int i = 0; i <= field.Name.Length; i++)
+					{
+						if (field.Name[i] == '>')
+						{
+							startIndex = i;
+						}
+					}
+
+					serializedName = field.Name.Substring((startIndex + 1));
+					backingField = $"<{serializedName}>k__BackingField";
+				}
+				else
+				{
+					serializedName = field.Name;
+				}
+
+				if (attr != null && attr.FormerlySerializedAs != null)
+				{
+					for (var index = 0; index < attr.FormerlySerializedAs.Length; index++)
+					{
+						formerlySerializedAs.Add(attr.FormerlySerializedAs[index]);
+					}
+				}
+
+				return new FieldInfoWrapper(serializedName, field, backingField, formerlySerializedAs.AsReadOnly());
+			}
+			bool TryGetAllPrivateFields(Type currentType, out FieldInfo[] infos)
+			{
+				infos = null;
+				var shouldSkip = currentType == null;
+				shouldSkip |= currentType == typeof(System.Object);
+				shouldSkip |= currentType == typeof(ScriptableObject);
+				shouldSkip |= currentType == typeof(ContentObject);
+
+				// XXX: Revisit this check when we allow customers to only implement IContentObject instead of subclass ContentObject
+				shouldSkip |= currentType.BaseType == typeof(System.Object) &&
+				                            currentType.GetInterfaces().Contains(typeof(IContentObject));
+				if (shouldSkip)
+				{
+					return false;
+				}
+
+				// private fields are only available via reflection on the target type, and any base type fields will need to be gathered by manually walking the type tree.
+				var privateFields = currentType
+					.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly).ToList();
+				for (int i = privateFields.Count - 1; i >= 0; i--)
+				{
+					if (privateFields[i].GetCustomAttribute(typeof(SerializeField)) == null &&
+					    privateFields[i].GetCustomAttribute(typeof(ContentFieldAttribute)) == null)
+					{
+						privateFields.RemoveAt(i);
+					}
+				}
+				if(TryGetAllPrivateFields(currentType.BaseType, out var extraInfos))
+				{
+					privateFields.AddRange(extraInfos);
+				}
+
+				infos = privateFields.ToArray();
+				return true;
+			}
+
+			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null).ToList();
+
+			if (!TryGetAllPrivateFields(type, out var privateFieldInfos))
+			{
+				return new ReadOnlyCollection<FieldInfoWrapper>(new FieldInfoWrapper[]{});
+			}
+
+			var serializableFields = listOfPublicFields.Union(privateFieldInfos).ToList();
+			var notIgnoredFields = serializableFields.Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null);
+
+			var serializableFieldsWrapper = serializableFields.Select(CreateFieldWrapper);
+			var notIgnoredFieldsWrapper = notIgnoredFields.Select(CreateFieldWrapper);
+			serializableFieldsWrapper = serializableFieldsWrapper.OrderBy(n => n.SerializedName.ToString());
+			notIgnoredFieldsWrapper = notIgnoredFieldsWrapper.OrderBy(n => n.SerializedName.ToString());
+
+			var notIgnoredFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(notIgnoredFieldsWrapper.ToArray());
+			var allFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(serializableFieldsWrapper.ToArray());
+			_typeInfoCache.Add(type, notIgnoredFieldsResult);
+			_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
+			if (withIgnoredFields)
+			{
+				return allFieldsResult;
+			}
+			else
+			{
+				return notIgnoredFieldsResult;
+			}
+		}
+		
+
+		/// <summary>
+		/// Retrieves the <see cref="Type"/> associated with the given content ID.
+		/// </summary>
+		/// <param name="contentId">The identifier of the content for which the type is to be retrieved.</param>
+		/// <returns>The <see cref="Type"/> corresponding to the specified content ID.</returns>
+		public Type GetTypeById(string contentId)
+		{
+			return _reflectionCache.GetTypeFromId(contentId);
+		}
+
+		public (string, string) GetTypeNameAndContentName(string contentId)
+		{
+			int i = GetLastDotIndex(contentId);
+			return (contentId.Substring(0, i), contentId.Substring(i + 1));
+		}
+
+		
+		private int GetLastDotIndex(string contentId)
+		{
+			int lastDot = 0;
+			for (int i = contentId.Length - 1; i >= 0; i--)
+			{
+				if(contentId[i] == '.')
+				{
+					lastDot = i;
+					break;
+				}
+			}
+			return lastDot;
 		}
 	}
 }

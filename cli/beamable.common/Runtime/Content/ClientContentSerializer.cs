@@ -8,6 +8,7 @@ namespace Beamable.Common.Content.Serialization
 		private static ClientContentSerializer _instance;
 
 		private static ContentSerializer<ContentObject> Instance => _instance ?? (_instance = new ClientContentSerializer());
+		
 
 		public static string SerializeContent<TContent>(TContent content) where TContent : IContentObject, new() =>
 		   Instance.Serialize(content);
@@ -18,6 +19,7 @@ namespace Beamable.Common.Content.Serialization
 
 		public new static string SerializeProperties<TContent>(TContent content) where TContent : IContentObject =>
 			Instance.SerializeProperties(content);
+
 
 		protected override TContent CreateInstance<TContent>()
 		{
