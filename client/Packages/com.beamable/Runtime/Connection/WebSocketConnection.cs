@@ -159,6 +159,9 @@ namespace Beamable.Connection
                 {
                    _onConnectPromise.CompleteError(new WebSocketConnectionException(error));
                    Error?.Invoke(error);
+
+				   await TryRefreshToken();
+				   
                    if (_retrying)
                    {
                       PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
@@ -190,20 +193,7 @@ namespace Beamable.Connection
                 {
                    PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
                    // Handle exceptions when making RefreshToken request, to ensure that we attempt to Reconnect() after
-                   try
-                   {
-                      await _apiRequester.RefreshToken();
-                   }
-                   catch (NoConnectivityException ex)
-                   {
-                      PlatformLogger.Log(
-                         $"<b>[WebSocketConnection]</b> RefreshToken failed due to NoConnectivity. " +
-                         $"Will still retry websocket reconnect. {ex.Message}");
-                   }
-                   catch (Exception ex)
-                   {
-                      Debug.LogException(ex);
-                   }
+                   await TryRefreshToken();
 
                    if (_retrying)
                    {
@@ -237,6 +227,25 @@ namespace Beamable.Connection
 		}
 #endif
 
+		private async Promise TryRefreshToken()
+		{
+		  try
+		  {
+			 await _apiRequester.RefreshToken();
+		  }
+		  catch (NoConnectivityException ex)
+		  {
+			 PlatformLogger.Log(
+				$"<b>[WebSocketConnection]</b> RefreshToken failed due to NoConnectivity. " +
+				$"Will still retry websocket reconnect. {ex.Message}");
+		  }
+		  catch (Exception ex)
+		  {
+			 PlatformLogger.Log(
+				$"<b>[WebSocketConnection]</b> RefreshToken failed due to an exception. " +
+				$"Will still retry websocket reconnect. {ex.Message}");
+		  }
+		}
 		public async Promise OnDispose()
 		{
 			await Disconnect();
@@ -272,4 +281,5 @@ namespace Beamable.Connection
 		}
 	}
 }
+
 
