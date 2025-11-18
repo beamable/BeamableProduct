@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved Beamable CLI installation reliability with automatic retry mechanism (up to 5 attempts) on timeout failures, along with enhanced error messaging for troubleshooting.
-- Improved Beam Accounts window when the `config-defaults.txt` is missing values.
+- Improved Beam Accounts window when the `config-defaults.txt` is missing values. 
+- Updated Beam CLI version to 7.0.0.
 
 ## [3.1.6] - 2025-11-13
 ### Fixed
