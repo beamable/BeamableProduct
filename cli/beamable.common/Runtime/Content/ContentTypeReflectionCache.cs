@@ -60,7 +60,7 @@ namespace Beamable.Common.Content
 			_classToContentType.Clear();
 		}
 
-		public static TypeFieldInfoReflectionCache GetTypeFieldsCache() => Instance._typeFieldInfos;
+		public TypeFieldInfoReflectionCache GetTypeFieldsCache() => _typeFieldInfos;
 
 		public void OnSetupForCacheGeneration() { }
 		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
@@ -128,7 +128,7 @@ namespace Beamable.Common.Content
 				_classToContentType = classToContentTypeDict;
 
 			}
-
+			
 			Instance = this;
 			_typeFieldInfos = new TypeFieldInfoReflectionCache(Instance);
 		}

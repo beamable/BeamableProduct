@@ -25,7 +25,7 @@ namespace Beamable.Common.Content
 		private ReadOnlyCollection<TypeFieldInfoReflectionCache.FieldInfoWrapper> GetFieldInfos(Type type,
 			bool useIgnoreField = false)
 		{
-			return ContentTypeReflectionCache.GetTypeFieldsCache().GetFieldInfos(type, useIgnoreField);
+			return ContentTypeReflectionCache.Instance.GetTypeFieldsCache().GetFieldInfos(type, useIgnoreField);
 		}
  		protected string GetNullStringForType(Type argType)
 		{
@@ -545,28 +545,26 @@ namespace Beamable.Common.Content
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
+			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(instanceId);
 
-			return BaseConvertType(root, disableExceptions, instanceToDeserialize, instanceId);
+			return BaseConvertType(root, disableExceptions, instanceToDeserialize, type, instanceId);
 		}
 
 		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
-			return (TContent)BaseConvertType(root, disableExceptions, instance);
+			return (TContent)BaseConvertType(root, disableExceptions, instance, typeof(TContent));
 		}
 
-		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, string itemId = null)
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, Type contentType, string itemId = null)
 		{
-			var fields = GetFieldInfos(instance.GetType(), true);
+			var fields = GetFieldInfos(contentType, true);
 
 			var id = itemId ?? root["id"].ToString();
 
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
-			var typeName = "";
-
-			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(id);
-			if (!ContentTypeReflectionCache.Instance.TryGetName(type, out typeName))
+			if (!ContentTypeReflectionCache.Instance.TryGetName(contentType, out string typeName))
 			{
 				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
@@ -612,13 +610,13 @@ namespace Beamable.Common.Content
 						{
 							if (!disableExceptions)
 							{
-								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
+								Debug.LogError($"Failed to deserialize field. type=[{contentType.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
 								throw;
 							}
 							else
 							{
 								instance.ContentException = new ContentCorruptedException(e.Message);
-								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
+								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{contentType.Name}] exception=[{e.Message}]");
 							}
 						}
 					}

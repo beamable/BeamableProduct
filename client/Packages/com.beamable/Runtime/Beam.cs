@@ -194,7 +194,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
 			DependencyBuilder.AddSingleton<IManifestResolver, DefaultManifestResolver>();
-			DependencyBuilder.AddSingleton<IContentCacheFactory, DefaultContentCacheFactory>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
