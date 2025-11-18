@@ -11,6 +11,11 @@ namespace Beamable.Tests.Content.Serialization.Support
 		{
 			return new TContent();
 		}
+
+		protected override TestContentObject CreateInstanceWithType(Type type)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 	public class TestContentObject : IContentObject

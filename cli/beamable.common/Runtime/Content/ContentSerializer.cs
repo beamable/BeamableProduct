@@ -521,14 +521,16 @@ namespace Beamable.Common.Content
 			return json;
 		}
 
-
 		protected abstract TContent CreateInstance<TContent>() where TContent : TContentBase, IContentObject, new();
+		protected abstract TContentBase CreateInstanceWithType(Type type);
 		public TContentBase DeserializeByType(string json, Type contentType, bool disableExceptions = false)
 		{
-			return (TContentBase)GetType()
-			   .GetMethod(nameof(Deserialize))
-			   .MakeGenericMethod(contentType)
-			   .Invoke(this, new object[] { json, disableExceptions });
+			var deserializedResult = Json.Deserialize(json);
+			var root = deserializedResult as ArrayDict;
+			if (root == null) throw new ContentDeserializationException(json);
+			var instance = CreateInstanceWithType(contentType);
+			return (TContentBase)BaseConvertType(root, disableExceptions, instance as IContentObject, contentType);
+			
 		}
 		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()

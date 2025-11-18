@@ -26,6 +26,11 @@ namespace Beamable.Common.Content.Serialization
 			return ScriptableObject.CreateInstance<TContent>();
 		}
 
+		protected override ContentObject CreateInstanceWithType(Type type)
+		{
+			return (ContentObject)ScriptableObject.CreateInstance(type);
+		}
+
 		public static TContent DeserializeContent<TContent>(string json, bool disableExceptions = false) where TContent : ContentObject, IContentObject, new() =>
 		   Instance.Deserialize<TContent>(json, disableExceptions);
 

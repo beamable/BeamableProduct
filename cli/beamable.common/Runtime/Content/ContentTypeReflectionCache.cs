@@ -1,8 +1,10 @@
 using Beamable.Common.Reflection;
 using Beamable.Content;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -51,7 +53,7 @@ namespace Beamable.Common.Content
 		public IReadOnlyDictionary<string, Type> ContentTypeToClass => _contentTypeToClass;
 		public IReadOnlyDictionary<Type, string> ClassToContentType => _classToContentType;
 
-		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>();
+		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 		private Dictionary<Type, string> _classToContentType = new Dictionary<Type, string>();
 		private TypeFieldInfoReflectionCache _typeFieldInfos = null;
 		public void ClearCachedReflectionData()
@@ -62,8 +64,15 @@ namespace Beamable.Common.Content
 
 		public TypeFieldInfoReflectionCache GetTypeFieldsCache() => _typeFieldInfos;
 
-		public void OnSetupForCacheGeneration() { }
-		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
+		public void OnSetupForCacheGeneration()
+		{ 
+			_contentTypeToClass = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+			_classToContentType = new Dictionary<Type, string>();
+			_typeFieldInfos = new TypeFieldInfoReflectionCache(this);
+		}
+
+		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache)
+		{ }
 
 		public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 		{
@@ -113,31 +122,25 @@ namespace Beamable.Common.Content
 				// TODO: [AssistantRemoval] Add (ID_INVALID_CONTENT_TYPE_ATTRIBUTE) as a Static Check --- use errors list here.
 				// TODO: [AssistantRemoval] Add (ID_CONTENT_TYPE_NAME_COLLISION) as a Static Check --- use nameValidationResults list here.
 
-				var contentTypeToClassDict = new Dictionary<string, Type>();
-				var classToContentTypeDict = new Dictionary<Type, string>();
 
 				var validContentTypes = valid.Select(v => v.Pair.Info as Type).ToList();
 
 				// Cache data 😃
 				foreach (var type in validContentTypes)
 				{
-					AddContentTypeToDictionaries(type, contentTypeToClassDict, classToContentTypeDict);
+					AddContentTypeToDictionaries(type);
+					_ = _typeFieldInfos.GetFieldInfos(type);
 				}
-
-				_contentTypeToClass = contentTypeToClassDict;
-				_classToContentType = classToContentTypeDict;
-
 			}
-			
 			Instance = this;
-			_typeFieldInfos = new TypeFieldInfoReflectionCache(Instance);
 		}
 
 		public void AddContentTypeToDictionaries(Type type) => AddContentTypeToDictionaries(type, _contentTypeToClass, _classToContentType);
 		public static void AddContentTypeToDictionaries(Type type, Dictionary<string, Type> contentTypeToClassDict, Dictionary<Type, string> classToContentTypeDict)
 		{
 			// Guaranteed to exist due to validation.
-			var typeName = GetContentTypeName(type);
+			var typeName = GetAllValidContentTypeNames(type, false).First();
+			if(typeName == null) return;
 			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true);
 			foreach (var possibleTypeName in formerlySerializedTypeNames)
 			{
@@ -237,16 +240,44 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		public static string GetContentTypeName(Type contentType) => GetAllValidContentTypeNames(contentType, false).First();
+		public static string GetContentTypeName(Type contentType)
+		{
+			if(Instance._classToContentType.TryGetValue(contentType, out var name))
+			{
+				return name;
+			}
+
+			return GetAllValidContentTypeNames(contentType, false).First();
+		}
 
 		public IEnumerable<ContentTypePair> GetAll() => ClassToContentType.Select(kvp => new ContentTypePair { Type = kvp.Key, Name = kvp.Value });
 
 		public IEnumerable<Type> GetContentTypes() => ClassToContentType.Keys;
 		public IEnumerable<string> GetContentClassIds() => ContentTypeToClass.Keys;
 
-		public static string GetTypeNameFromId(string id) => id.Substring(0, id.LastIndexOf("."));
+		
+		public static int GetLastDotInContentId(string id)
+		{
+			for (int i = id.Length - 1; i >= 0; i--)
+			{
+				if (id[i] == '.')
+					return i;
+			}
 
-		public static string GetContentNameFromId(string id) => id.Substring(id.LastIndexOf(".") + 1);
+			return 0;
+		}
+
+		public static string GetTypeNameFromId(string id)
+		{
+			int lastDot = GetLastDotInContentId(id);
+			return id.Substring(0, lastDot);
+		}
+
+		public static string GetContentNameFromId(string id)
+		{
+			int lastDot = GetLastDotInContentId(id);
+			return id.Substring(lastDot + 1);
+		}
 
 		public bool TryGetType(string typeName, out Type type) => ContentTypeToClass.TryGetValue(typeName, out type);
 
@@ -286,7 +317,7 @@ namespace Beamable.Common.Content
 		{
 			public readonly FieldInfo RawField;
 			public readonly string SerializedName;
-			public readonly string BackingFieldName;
+			public readonly string FieldName;
 			public readonly ReadOnlyCollection<string> FormerlySerializedAs;
 			public Type FieldType => RawField.FieldType;
 
@@ -294,7 +325,7 @@ namespace Beamable.Common.Content
 				ReadOnlyCollection<string> formerlySerializedAs)
 			{
 				SerializedName = serializedName;
-				BackingFieldName = backingFieldName;
+				FieldName = string.IsNullOrWhiteSpace(backingFieldName) ? serializedName : backingFieldName;
 				RawField = rawField;
 				FormerlySerializedAs = formerlySerializedAs;
 			}
@@ -302,11 +333,9 @@ namespace Beamable.Common.Content
 			public bool TryGetPropertyForField(ICollection<string> keys, out string field)
 			{
 				field = string.Empty;
-				var fieldName = GetFieldSerializedName();
-				
 				foreach (var key in keys)
 				{
-					if (key.Equals(fieldName))
+					if (key.SequenceEqual(FieldName))
 					{
 						field = key;
 						return true;
@@ -314,7 +343,7 @@ namespace Beamable.Common.Content
 
 					for (int i = 0; i < FormerlySerializedAs.Count; i++)
 					{
-						if (key.Equals(FormerlySerializedAs[i]))
+						if (key.SequenceEqual(FormerlySerializedAs[i]))
 						{
 							field = key;
 						}
@@ -322,11 +351,6 @@ namespace Beamable.Common.Content
 				}
 
 				return string.IsNullOrWhiteSpace(field);
-			}
-
-			public string GetFieldSerializedName()
-			{
-				return string.IsNullOrWhiteSpace(BackingFieldName) ? SerializedName : BackingFieldName;
 			}
 
 			public bool TrySetValue(object obj, object value)
