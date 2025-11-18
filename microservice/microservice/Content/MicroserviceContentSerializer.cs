@@ -13,7 +13,7 @@ namespace Beamable.Server.Content
 
       protected override IContentObject CreateInstanceWithType(Type type)
       {
-	      throw new NotImplementedException();
+	      return (IContentObject)Activator.CreateInstance(type);
       }
    }
 }
