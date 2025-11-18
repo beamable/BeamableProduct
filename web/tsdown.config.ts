@@ -84,10 +84,12 @@ export default defineConfig([
   ...typeEntries.map((entry, index) => ({
     entry: [entry], // Entry files for the library build
     outDir: 'dist/types', // Output directory for the types
-    dts: true, // Generate TypeScript declaration files
     clean: index === 0, // Clean only before the first type build
+    dts: {
+      emitDtsOnly: true, // Emit only TypeScript declaration files
+    },
     outExtensions: () => ({
-      dts: '.d.ts', // Force classic declaration extension
+      dts: '.d.ts',
     }),
   })),
 ]);

@@ -2,9 +2,9 @@
   "name": "beamable-sdk",
   "version": "0.6.0",
   "description": "Beamable Web SDK",
-  "main": "dist/node/index.js",
+  "main": "dist/node/index.cjs",
   "module": "dist/node/index.mjs",
-  "unpkg": "dist/browser/index.global.js",
+  "unpkg": "dist/browser/index.iife.js",
   "types": "dist/types/index.d.ts",
   "author": "Beamable",
   "license": "MIT",
@@ -46,21 +46,21 @@
     ".": {
       "browser": {
         "types": "./dist/types/index.d.ts",
-        "require": "./dist/browser/index.global.js",
+        "require": "./dist/browser/index.iife.js",
         "import": "./dist/browser/index.mjs"
       },
       "types": "./dist/types/index.d.ts",
-      "require": "./dist/node/index.js",
+      "require": "./dist/node/index.cjs",
       "import": "./dist/node/index.mjs"
     },
     "./schema": {
       "types": "./dist/types/schema.d.ts",
-      "require": "./dist/schema.js",
+      "require": "./dist/schema.cjs",
       "import": "./dist/schema.mjs"
     },
     "./api": {
       "types": "./dist/types/api.d.ts",
-      "require": "./dist/api.js",
+      "require": "./dist/api.cjs",
       "import": "./dist/api.mjs"
     }
   },
