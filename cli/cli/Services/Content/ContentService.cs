@@ -529,25 +529,33 @@ public class ContentService
 						}
 					}
 
-					var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
-
 					var id = Path.GetFileNameWithoutExtension(fp);
-					var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
-					var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
-					
-					var contentFile = new ContentFile()
+					try
 					{
-						Id = id,
-						LocalFilePath = fp,
-						Properties = properties,
-						Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
-						FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-						ReferenceContent = referenceContent,
-					};
-					SortContentProperties(ref contentFile);
-					contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+						var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
+						var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
+						var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
 
-					return contentFile;
+						var contentFile = new ContentFile()
+						{
+							Id = id,
+							LocalFilePath = fp,
+							Properties = properties,
+							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
+							FetchedFromManifestUid =
+								json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
+							ReferenceContent = referenceContent,
+						};
+						SortContentProperties(ref contentFile);
+						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+
+						return contentFile;
+					}
+					catch (Exception e)
+					{
+						Log.Error(e, $"Error when loading content file {fp}");
+						throw;
+					}
 				})
 				// We'll also have on entry for each entry in the reference manifest that is NOT represented in the local files.
 				.Concat(
