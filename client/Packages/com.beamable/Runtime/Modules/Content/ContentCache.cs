@@ -17,45 +17,47 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
 {
-	public struct ContentCacheEntry
+	public struct ContentCacheEntry<TContent> where TContent : ContentObject
 	{
 		public readonly string Version;
-		public readonly Promise<ContentObject> Content;
+		public readonly Promise<TContent> Content;
 
-		public ContentCacheEntry(string version, Promise<ContentObject> content)
+		public ContentCacheEntry(string version, Promise<TContent> content)
 		{
 			Version = version;
 			Content = content;
 		}
 	}
 
-	public interface IContentCache
+	public abstract class ContentCache
 	{
-		Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo, Type contentType);
+		public abstract Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo);
 	}
 
-	public class ContentCache : IContentCache 
+	public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
 	{
 		private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
 		
-		private readonly Dictionary<string, ContentCacheEntry> _cache =
-			new Dictionary<string, ContentCacheEntry>();
+		private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
+			new Dictionary<string, ContentCacheEntry<TContent>>();
 
 		private readonly IHttpRequester _requester;
 		private readonly ContentService _contentService;
-		private readonly ContentTypeReflectionCache _reflectionCache;
 
-		public ContentCache(IHttpRequester requester,
-		                    ContentService contentService) // not removing unused field so as to not cause a breaking change.
+
+		public ContentCache(
+			IHttpRequester requester, 
+			IBeamableFilesystemAccessor filesystemAccessor, 
+			ContentService contentService, 
+			CoroutineService coroutineService) // not removing unused field so as to not cause a breaking change.
 		{
 			_requester = requester;
 			_contentService = contentService;
-			_reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
-		public Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo, Type contentType)
+		public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
 		{
-			return GetContent(requestedInfo, contentType).Map(content => (IContentObject)content);
+			return GetContent(requestedInfo).Map(content => (IContentObject)content);
 		}
 
 		private static string GetCacheKey(ClientContentInfo requestedInfo)
@@ -63,12 +65,12 @@ namespace Beamable.Content
 			return $"{requestedInfo.contentId}:{requestedInfo.manifestID}:{requestedInfo.version}";
 		}
 
-		private void SetCacheEntry(string cacheId, ContentCacheEntry entry)
+		private void SetCacheEntry(string cacheId, ContentCacheEntry<TContent> entry)
 		{
 			_cache[cacheId] = entry;
 		}
 
-		public Promise<ContentObject> GetContent(ClientContentInfo requestedInfo, Type contentType)
+		public Promise<TContent> GetContent(ClientContentInfo requestedInfo)
 		{
 			var cacheId = GetCacheKey(requestedInfo);
 
@@ -78,43 +80,43 @@ namespace Beamable.Content
 			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
 			
 			// Then, try the on disk cache
-			if (TryGetValueFromDisk(requestedInfo, contentType, out var diskContent))
+			if (TryGetValueFromDisk(requestedInfo, out var diskContent))
 			{
-				var promise = Promise<ContentObject>.Successful(diskContent);
-				SetCacheEntry(cacheId, new ContentCacheEntry(requestedInfo.version, promise));
+				var promise = Promise<TContent>.Successful(diskContent);
+				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
 			
 			// Check if the data exists as baked content
-			if (TryGetBaked(requestedInfo, contentType, out var bakedContent))
+			if (TryGetBaked(requestedInfo, out var bakedContent))
 			{
-				var promise = Promise<ContentObject>.Successful(bakedContent);
-				SetCacheEntry(cacheId, new ContentCacheEntry(requestedInfo.version, promise));
+				var promise = Promise<TContent>.Successful(bakedContent);
+				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
 			
 			// Finally, if not found, fetch the content from the CDN
-			var fetchedContent = DownloadContent(requestedInfo, contentType);
+			var fetchedContent = DownloadContent(requestedInfo);
 			return fetchedContent;
 		}
 
-		private async Promise<ContentObject> DownloadContent(ClientContentInfo requestedInfo, Type contentType)
+		private async Promise<TContent> DownloadContent(ClientContentInfo requestedInfo)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var cacheId = GetCacheKey(requestedInfo);
 
-			async Promise<ContentObject> Download()
+			async Promise<TContent> Download()
 			{
 				var raw = await FetchContentFromCDN(requestedInfo);
 				UpdateDiskFile(requestedInfo, raw);
-				return DeserializeContent(requestedInfo, raw, contentType);
+				return DeserializeContent(requestedInfo, raw);
 			}
 			
 			try
 			{
 				var promise = Download();
-				SetCacheEntry(cacheId, new ContentCacheEntry(requestedInfo.version, promise));
+				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return await promise;
 			}
 			catch (Exception err)
@@ -126,9 +128,9 @@ namespace Beamable.Content
 			}
 		}
 
-		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, Type contentType, out ContentObject content)
+		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out TContent content)
 		{
-			content = null;
+			content = default;
 			if (!wrapper.TryGetContent(info.contentId, info.version, out var existingInfo))
 			{
 				return false;
@@ -136,7 +138,7 @@ namespace Beamable.Content
 
 			try
 			{
-				content = DeserializeContent(info, existingInfo.data, contentType);
+				content = DeserializeContent(info, existingInfo.data);
 			}
 			catch (Exception ex)
 			{
@@ -148,18 +150,18 @@ namespace Beamable.Content
 			return true;
 		}
 
-		private bool TryGetBaked(ClientContentInfo info, Type contentType, out ContentObject content)
+		private bool TryGetBaked(ClientContentInfo info, out TContent content)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Checking content from baked for {info.contentId}: version: {info.version}");
-			return TryGetContentFromInfo(_contentService.BakedContentDataInfo, info, contentType, out content);
+			return TryGetContentFromInfo(_contentService.BakedContentDataInfo, info, out content);
 		}
 
-		private bool TryGetValueFromDisk(ClientContentInfo info, Type contentType, out ContentObject content)
+		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content)
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Loading content from disk for {info.contentId}: version: {info.version}");
-			return TryGetContentFromInfo(_contentService.CachedContentDataInfo, info, contentType, out content);
+			return TryGetContentFromInfo(_contentService.CachedContentDataInfo, info, out content);
 		}
 
 		private void UpdateDiskFile(ClientContentInfo info, string raw)
@@ -167,9 +169,9 @@ namespace Beamable.Content
 			_contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
 		}
 
-		private static ContentObject DeserializeContent(ClientContentInfo info, string raw, Type contentType)
+		private static TContent DeserializeContent(ClientContentInfo info, string raw)
 		{
-			var content = _serializer.DeserializeByType(raw, contentType);
+			var content = _serializer.Deserialize<TContent>(raw);
 			content.SetManifestID(info.manifestID);
 			content.Tags = info.tags;
 			return content;
