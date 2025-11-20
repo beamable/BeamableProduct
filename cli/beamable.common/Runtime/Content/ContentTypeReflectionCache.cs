@@ -335,7 +335,7 @@ namespace Beamable.Common.Content
 				field = string.Empty;
 				foreach (var key in keys)
 				{
-					if (key.SequenceEqual(FieldName))
+					if(string.Equals(key, FieldName, StringComparison.Ordinal))
 					{
 						field = key;
 						return true;
@@ -343,7 +343,7 @@ namespace Beamable.Common.Content
 
 					for (int i = 0; i < FormerlySerializedAs.Count; i++)
 					{
-						if (key.SequenceEqual(FormerlySerializedAs[i]))
+						if(string.Equals(key, FormerlySerializedAs[i], StringComparison.Ordinal))
 						{
 							field = key;
 						}
