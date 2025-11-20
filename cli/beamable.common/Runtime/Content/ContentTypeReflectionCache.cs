@@ -338,7 +338,13 @@ namespace Beamable.Common.Content
 				field = string.Empty;
 				foreach (var key in keys)
 				{
-					if(string.Equals(key, FieldName, StringComparison.Ordinal))
+					if (key.SequenceEqual(FieldName))
+					{
+						field = key;
+						return true;
+					}
+
+					if (key.SequenceEqual(SerializedName))
 					{
 						field = key;
 						return true;
@@ -346,14 +352,14 @@ namespace Beamable.Common.Content
 
 					for (int i = 0; i < FormerlySerializedAs.Count; i++)
 					{
-						if(string.Equals(key, FormerlySerializedAs[i], StringComparison.Ordinal))
+						if (key.SequenceEqual(FormerlySerializedAs[i]))
 						{
 							field = key;
 						}
 					}
 				}
 
-				return string.IsNullOrWhiteSpace(field);
+				return !string.IsNullOrWhiteSpace(field);
 			}
 
 			public bool TrySetValue(object obj, object value)
@@ -399,16 +405,16 @@ namespace Beamable.Common.Content
 				}
 				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
 				{
-					int startIndex = 0;
-					for (int i = 0; i < field.Name.Length; i++)
+					int endIndex = 1;
+					for (; endIndex < field.Name.Length; endIndex++)
 					{
-						if (field.Name[i] == '>')
+						if (field.Name[endIndex] == '>')
 						{
-							startIndex = i;
+							break;
 						}
 					}
 
-					serializedName = field.Name.Substring((startIndex + 1));
+					serializedName = field.Name.Substring(1, endIndex-1);
 					backingField = $"<{serializedName}>k__BackingField";
 				}
 				else
@@ -481,14 +487,6 @@ namespace Beamable.Common.Content
 			var allFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(serializableFieldsWrapper.ToArray());
 			_typeInfoCache.Add(type, notIgnoredFieldsResult);
 			_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
-			foreach (var field in allFieldsResult)
-			{
-				if (!_typeInfoCacheWithIgnoredFields.ContainsKey(field.FieldType) &&
-				    field.FieldType.BaseType != typeof(System.Object))
-				{
-					_ = GetFieldInfos(field.FieldType);
-				}
-			}
 			if (withIgnoredFields)
 			{
 				return allFieldsResult;

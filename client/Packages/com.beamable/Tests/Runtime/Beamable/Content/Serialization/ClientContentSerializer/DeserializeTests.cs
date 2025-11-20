@@ -25,7 +25,6 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		{
 			var reflectionCache = new ReflectionCache();
 			cache = new ContentTypeReflectionCache();
-			cache.GetTypeFieldsCache().GetFieldInfos(typeof(TestContent));
 			reflectionCache.RegisterTypeProvider(cache);
 			reflectionCache.RegisterReflectionSystem(cache);
 
