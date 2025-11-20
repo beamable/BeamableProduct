@@ -1,3 +1,6 @@
+// this file was copied from nuget package Beamable.Common@6.2.0
+// https://www.nuget.org/packages/Beamable.Common/6.2.0
+
 using Beamable.Content;
 // Promise library
 using Beamable.Serialization.SmallerJSON;
@@ -361,10 +364,26 @@ namespace Beamable.Common.Content
 					}
 
 					return assetRef;
-
-
+				case ArrayDict colorDict when typeof(Color).IsAssignableFrom(type):
+					var color = new Color();
+					if (colorDict.TryGetValue("r", out var r))
+					{
+						color.r = (float)Convert.ChangeType(r, typeof(float));
+					}
+					if (colorDict.TryGetValue("g", out var g))
+					{
+						color.g = (float)Convert.ChangeType(g, typeof(float));
+					}
+					if (colorDict.TryGetValue("b", out var b))
+					{
+						color.b = (float)Convert.ChangeType(b, typeof(float));
+					}
+					if (colorDict.TryGetValue("a", out var a))
+					{
+						color.a = (float)Convert.ChangeType(a, typeof(float));
+					}
+					return color;
 				case ArrayDict dict:
-
 					var fields = GetFieldInfos(type, true);
 					var instance = Activator.CreateInstance(type);
 					foreach (var field in fields)
@@ -373,7 +392,17 @@ namespace Beamable.Common.Content
 						{
 							continue;
 						}
-						object fieldValue = DeserializeResult(key, field.FieldType);
+						if (!dict.TryGetValue(key, out var dictValue))
+						{
+							if (typeof(Optional).IsAssignableFrom(field.FieldType))
+							{
+								var optional = Activator.CreateInstance(field.FieldType);
+								field.TrySetValue(instance, optional);
+							}
+
+							continue;
+						}
+						object fieldValue = DeserializeResult(dictValue, field.FieldType);
 						field.TrySetValue(instance, fieldValue);
 					}
 

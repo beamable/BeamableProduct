@@ -1,3 +1,6 @@
+// this file was copied from nuget package Beamable.Common@6.2.0
+// https://www.nuget.org/packages/Beamable.Common/6.2.0
+
 using Beamable.Common.Reflection;
 using Beamable.Content;
 using System;
@@ -397,7 +400,7 @@ namespace Beamable.Common.Content
 				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
 				{
 					int startIndex = 0;
-					for (int i = 0; i <= field.Name.Length; i++)
+					for (int i = 0; i < field.Name.Length; i++)
 					{
 						if (field.Name[i] == '>')
 						{
@@ -478,6 +481,14 @@ namespace Beamable.Common.Content
 			var allFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(serializableFieldsWrapper.ToArray());
 			_typeInfoCache.Add(type, notIgnoredFieldsResult);
 			_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
+			foreach (var field in allFieldsResult)
+			{
+				if (!_typeInfoCacheWithIgnoredFields.ContainsKey(field.FieldType) &&
+				    field.FieldType.BaseType != typeof(System.Object))
+				{
+					_ = GetFieldInfos(field.FieldType);
+				}
+			}
 			if (withIgnoredFields)
 			{
 				return allFieldsResult;
