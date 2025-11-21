@@ -248,12 +248,13 @@ namespace Beamable.Common.Content
 
 			if (!string.Equals(_contentTypeName, typeName))
 				_contentTypeName = typeName;
-
+	
+#if BEAMABLE_ENABLE_EXTRA_CONTENT_ID_CHECK
 			if (!id.StartsWith(typeName))
 			{
 				throw new Exception($"Content type of [{typeName}] cannot use id=[{id}]");
 			}
-
+#endif
 			SetContentName(id.Substring(typeName.Length + 1)); // +1 for the dot.
 
 			if (!string.Equals(Version, version))
@@ -278,13 +279,13 @@ namespace Beamable.Common.Content
 		{
 			if (!string.Equals(ContentName, newContentName))
 				ContentName = newContentName;
-
+#if BEAMABLE_ENABLE_EXTRA_CONTENT_ID_CHECK
 			if (Application.isPlaying)
 			{
 				if (!string.Equals(name, newContentName))
 					name = newContentName; // only set the SO name if we are in-game. Internally, Beamable does not depend on the SO name, but a gameMaker may want to use it.
 			}
-
+#endif
 			return this;
 		}
 
