@@ -1,3 +1,6 @@
+// this file was copied from nuget package Beamable.Common@6.2.1
+// https://www.nuget.org/packages/Beamable.Common/6.2.1
+
 using Beamable.Content;
 // Promise library
 using Beamable.Serialization.SmallerJSON;
