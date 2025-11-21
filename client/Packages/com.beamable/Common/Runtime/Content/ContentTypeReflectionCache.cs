@@ -1,11 +1,14 @@
 using Beamable.Common.Reflection;
 using Beamable.Content;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using Object = System.Object;
 
 namespace Beamable.Common.Content
 {
@@ -317,6 +320,7 @@ namespace Beamable.Common.Content
 			public readonly string SerializedName;
 			public readonly string FieldName;
 			public readonly ReadOnlyCollection<string> FormerlySerializedAs;
+			public readonly int FormerlySerializedAsLength;
 			public readonly Type FieldType;
 
 			public FieldInfoWrapper(string serializedName,FieldInfo rawField, string backingFieldName, 
@@ -324,9 +328,20 @@ namespace Beamable.Common.Content
 			{
 				FieldType = rawField.FieldType;
 				SerializedName = serializedName;
-				FieldName = string.IsNullOrWhiteSpace(backingFieldName) ? serializedName : backingFieldName;
+				if (string.IsNullOrWhiteSpace(backingFieldName))
+				{
+					FieldName = serializedName;
+					FormerlySerializedAs = formerlySerializedAs;
+				}
+				else
+				{
+					FieldName = backingFieldName;
+					var oldFieldAsBackup = new List<string>(formerlySerializedAs);
+					oldFieldAsBackup.Add(serializedName);
+					FormerlySerializedAs = oldFieldAsBackup.AsReadOnly();
+				}
+				FormerlySerializedAsLength = formerlySerializedAs.Count;
 				RawField = rawField;
-				FormerlySerializedAs = formerlySerializedAs;
 			}
 
 			public bool TryGetPropertyForField(ICollection<string> keys, out string field)
@@ -334,19 +349,12 @@ namespace Beamable.Common.Content
 				field = string.Empty;
 				foreach (var key in keys)
 				{
-					if(string.Equals(key, FieldName, StringComparison.Ordinal))
+					if (string.Equals(key, FieldName, StringComparison.Ordinal))
 					{
 						field = key;
 						return true;
 					}
-
-					if(string.Equals(key, SerializedName, StringComparison.Ordinal))
-					{
-						field = key;
-						return true;
-					}
-
-					for (int i = 0; i < FormerlySerializedAs.Count; i++)
+					for (int i = 0; i < FormerlySerializedAsLength; i++)
 					{
 						if(string.Equals(key, FormerlySerializedAs[i], StringComparison.Ordinal))
 						{
@@ -379,6 +387,25 @@ namespace Beamable.Common.Content
 				_ = GetFieldInfos(contentType, false, true);
 			}
 		}
+		
+		public static bool TryGetArrayValueType(Type baseType, out Type elementType)
+		{
+			var hasMatchingType = baseType.GenericTypeArguments.Length == 1;
+			if (hasMatchingType)
+			{
+				elementType = baseType.GenericTypeArguments[0];
+				return true;
+			}
+
+			var hasBaseType = baseType.BaseType != typeof(Object);
+			if (hasBaseType)
+			{
+				return TryGetArrayValueType(baseType.BaseType, out elementType);
+			}
+			elementType = null;
+			return false;
+		}
+
 		public ReadOnlyCollection<FieldInfoWrapper> GetFieldInfos(Type type, bool withIgnoredFields = false, bool addToCache = false)
 		{
 			if(withIgnoredFields && _typeInfoCacheWithIgnoredFields.TryGetValue(type, out var info))
@@ -483,8 +510,34 @@ namespace Beamable.Common.Content
 			var allFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(serializableFieldsWrapper.ToArray());
 			if (addToCache)
 			{
-				_typeInfoCache.Add(type, notIgnoredFieldsResult);
-				_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
+				_typeInfoCache[type] = notIgnoredFieldsResult;
+				_typeInfoCacheWithIgnoredFields[type] = allFieldsResult;
+				foreach (var field in allFieldsResult)
+				{
+					var t = field.FieldType;
+					if (typeof(Optional).IsAssignableFrom(t))
+					{
+						var optional = (Optional)Activator.CreateInstance(t);
+						t = optional.GetOptionalType();
+					} 
+					if (typeof(IDictionaryWithValue).IsAssignableFrom(t))
+					{
+						var dict = (IDictionaryWithValue)Activator.CreateInstance(t);
+						t = dict.ValueType;
+					} else if (typeof(IList).IsAssignableFrom(t))
+					{
+
+						if (TryGetArrayValueType(t, out var elementType))
+						{
+							t = elementType;
+						}
+					}
+					t = Nullable.GetUnderlyingType(t) ?? t;
+					if (!_typeInfoCacheWithIgnoredFields.ContainsKey(t))
+					{
+						_ = GetFieldInfos(t, withIgnoredFields, true);
+					}
+				}
 			}
 			if (withIgnoredFields)
 			{

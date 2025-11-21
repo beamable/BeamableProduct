@@ -246,6 +246,16 @@ namespace Beamable.Common.Content
 			IContentRef contentRef;
 			IContentLink contentLink;
 			type = Nullable.GetUnderlyingType(type) ?? type;
+			if (typeof(Enum).IsAssignableFrom(type))
+			{
+				switch (preParsedValue)
+				{
+					case string stringEnumValue:
+						return Enum.Parse(type, stringEnumValue);
+					case long longEnumValue:
+						return Enum.ToObject(type, (int)longEnumValue);
+				}
+			}
 			switch (preParsedValue)
 			{
 				/* REFERENCE TYPES */
@@ -273,27 +283,15 @@ namespace Beamable.Common.Content
 					return contentRef;
 
 				/* PRIMITIVES TYPES */
-				case string stringEnumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.Parse(type, stringEnumValue);
-				case long longEnumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.ToObject(type, (int)longEnumValue);
 				case string _:
 					return preParsedValue;
-				case float f:
-					if(type == typeof(float))
-						return f;
+				case float _:
 					return Convert.ChangeType(float.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
-				case long l:
-					if (type == typeof(long))
-						return l;
+				case long _:
 					return Convert.ChangeType(long.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
-				case double d:
-					if (type == typeof(double))
-						return d;
+				case double _:
 					return Convert.ChangeType(double.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
-				case bool b:
-					if (type == typeof(bool))
-						return b;
+				case bool _:
 					return Convert.ChangeType(bool.Parse(Json.Serialize(preParsedValue, stringBuilder)), type);
 				case int _:
 					if (type == typeof(Char))
