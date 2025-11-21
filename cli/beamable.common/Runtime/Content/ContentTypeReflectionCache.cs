@@ -132,7 +132,7 @@ namespace Beamable.Common.Content
 				foreach (var type in validContentTypes)
 				{
 					AddContentTypeToDictionaries(type);
-					_ = _typeFieldInfos.GetFieldInfos(type);
+					_ = _typeFieldInfos.GetFieldInfos(type, false, true);
 				}
 			}
 			Instance = this;
@@ -322,11 +322,12 @@ namespace Beamable.Common.Content
 			public readonly string SerializedName;
 			public readonly string FieldName;
 			public readonly ReadOnlyCollection<string> FormerlySerializedAs;
-			public Type FieldType => RawField.FieldType;
+			public readonly Type FieldType;
 
 			public FieldInfoWrapper(string serializedName,FieldInfo rawField, string backingFieldName, 
-				ReadOnlyCollection<string> formerlySerializedAs)
+			                        ReadOnlyCollection<string> formerlySerializedAs)
 			{
+				FieldType = rawField.FieldType;
 				SerializedName = serializedName;
 				FieldName = string.IsNullOrWhiteSpace(backingFieldName) ? serializedName : backingFieldName;
 				RawField = rawField;
@@ -338,13 +339,13 @@ namespace Beamable.Common.Content
 				field = string.Empty;
 				foreach (var key in keys)
 				{
-					if (key.SequenceEqual(FieldName))
+					if(string.Equals(key, FieldName, StringComparison.Ordinal))
 					{
 						field = key;
 						return true;
 					}
 
-					if (key.SequenceEqual(SerializedName))
+					if(string.Equals(key, SerializedName, StringComparison.Ordinal))
 					{
 						field = key;
 						return true;
@@ -352,7 +353,7 @@ namespace Beamable.Common.Content
 
 					for (int i = 0; i < FormerlySerializedAs.Count; i++)
 					{
-						if (key.SequenceEqual(FormerlySerializedAs[i]))
+						if(string.Equals(key, FormerlySerializedAs[i], StringComparison.Ordinal))
 						{
 							field = key;
 						}
@@ -380,10 +381,10 @@ namespace Beamable.Common.Content
 			_reflectionCache = cache;
 			foreach (var contentType in _reflectionCache.GetContentTypes())
 			{
-				_ = GetFieldInfos(contentType);
+				_ = GetFieldInfos(contentType, false, true);
 			}
 		}
-		public ReadOnlyCollection<FieldInfoWrapper> GetFieldInfos(Type type, bool withIgnoredFields = false)
+		public ReadOnlyCollection<FieldInfoWrapper> GetFieldInfos(Type type, bool withIgnoredFields = false, bool addToCache = false)
 		{
 			if(withIgnoredFields && _typeInfoCacheWithIgnoredFields.TryGetValue(type, out var info))
 			{
@@ -485,8 +486,11 @@ namespace Beamable.Common.Content
 
 			var notIgnoredFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(notIgnoredFieldsWrapper.ToArray());
 			var allFieldsResult = new ReadOnlyCollection<FieldInfoWrapper>(serializableFieldsWrapper.ToArray());
-			_typeInfoCache.Add(type, notIgnoredFieldsResult);
-			_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
+			if (addToCache)
+			{
+				_typeInfoCache.Add(type, notIgnoredFieldsResult);
+				_typeInfoCacheWithIgnoredFields.Add(type, allFieldsResult);
+			}
 			if (withIgnoredFields)
 			{
 				return allFieldsResult;

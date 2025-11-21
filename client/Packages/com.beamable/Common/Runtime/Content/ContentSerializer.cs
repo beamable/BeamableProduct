@@ -390,16 +390,15 @@ namespace Beamable.Common.Content
 					{
 						if (!field.TryGetPropertyForField(dict.Keys, out string key))
 						{
-							continue;
-						}
-						if (!dict.TryGetValue(key, out var dictValue))
-						{
 							if (typeof(Optional).IsAssignableFrom(field.FieldType))
 							{
 								var optional = Activator.CreateInstance(field.FieldType);
 								field.TrySetValue(instance, optional);
 							}
-
+							continue;
+						}
+						if (!dict.TryGetValue(key, out var dictValue))
+						{
 							continue;
 						}
 						object fieldValue = DeserializeResult(dictValue, field.FieldType);
@@ -613,6 +612,11 @@ namespace Beamable.Common.Content
 			{
 				if (!field.TryGetPropertyForField(properties.Keys, out string key))
 				{
+					if (typeof(Optional).IsAssignableFrom(field.FieldType))
+					{
+						var optional = Activator.CreateInstance(field.FieldType);
+						field.TrySetValue(instance, optional);
+					}
 					continue;
 				}
 
