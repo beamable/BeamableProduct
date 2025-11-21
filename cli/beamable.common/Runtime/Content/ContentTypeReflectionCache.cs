@@ -1,6 +1,3 @@
-// this file was copied from nuget package Beamable.Common@6.2.0
-// https://www.nuget.org/packages/Beamable.Common/6.2.0
-
 using Beamable.Common.Reflection;
 using Beamable.Content;
 using System;
