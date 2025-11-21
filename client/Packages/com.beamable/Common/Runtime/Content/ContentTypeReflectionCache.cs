@@ -4,10 +4,8 @@
 using Beamable.Common.Reflection;
 using Beamable.Content;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -56,7 +54,7 @@ namespace Beamable.Common.Content
 		public IReadOnlyDictionary<string, Type> ContentTypeToClass => _contentTypeToClass;
 		public IReadOnlyDictionary<Type, string> ClassToContentType => _classToContentType;
 
-		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>(StringComparer.Ordinal);
 		private Dictionary<Type, string> _classToContentType = new Dictionary<Type, string>();
 		private TypeFieldInfoReflectionCache _typeFieldInfos = null;
 		public void ClearCachedReflectionData()
@@ -69,7 +67,7 @@ namespace Beamable.Common.Content
 
 		public void OnSetupForCacheGeneration()
 		{ 
-			_contentTypeToClass = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+			_contentTypeToClass = new Dictionary<string, Type>(StringComparer.Ordinal);
 			_classToContentType = new Dictionary<Type, string>();
 			_typeFieldInfos = new TypeFieldInfoReflectionCache(this);
 		}
