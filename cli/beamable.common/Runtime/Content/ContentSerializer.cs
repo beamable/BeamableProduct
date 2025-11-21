@@ -174,7 +174,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		protected object DeserializeResult(object preParsedValue, Type type)
+		protected object DeserializeResult(object preParsedValue, Type type, StringBuilder stringBuilder)
 		{
 			if (typeof(Optional).IsAssignableFrom(type))
 			{
@@ -192,7 +192,7 @@ namespace Beamable.Common.Content
 
 					if (!skip)
 					{
-						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+						var value = DeserializeResult(preParsedValue, optional.GetOptionalType(), stringBuilder);
 						if (!optional.GetOptionalType().IsAssignableFrom(value?.GetType()))
 						{
 							value = Activator.CreateInstance(optional.GetOptionalType());
@@ -204,14 +204,14 @@ namespace Beamable.Common.Content
 				return optional;
 			}
 
-			//if (typeof(IContentLink).IsAssignableFrom())
-
-
-			var json = Json.Serialize(preParsedValue, new StringBuilder());
-
 			if (typeof(Unit).IsAssignableFrom(type))
 			{
 				return PromiseBase.Unit;
+			}
+
+			if (preParsedValue == null)
+			{
+				return null;
 			}
 
 			bool TryGetElementType(IList list, Type baseType, out Type elementType)
@@ -248,10 +248,6 @@ namespace Beamable.Common.Content
 			type = Nullable.GetUnderlyingType(type) ?? type;
 			switch (preParsedValue)
 			{
-				case null:
-					return null;
-
-
 				/* REFERENCE TYPES */
 				case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
 					contentLink = (IContentLink)Activator.CreateInstance(type);
@@ -283,18 +279,26 @@ namespace Beamable.Common.Content
 					return Enum.ToObject(type, (int)longEnumValue);
 				case string _:
 					return preParsedValue;
-				case float _:
-					return Convert.ChangeType(float.Parse(json, CultureInfo.InvariantCulture), type);
-				case long _:
-					return Convert.ChangeType(long.Parse(json, CultureInfo.InvariantCulture), type);
-				case double _:
-					return Convert.ChangeType(double.Parse(json, CultureInfo.InvariantCulture), type);
-				case bool _:
-					return Convert.ChangeType(bool.Parse(json), type);
+				case float f:
+					if(type == typeof(float))
+						return f;
+					return Convert.ChangeType(float.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
+				case long l:
+					if (type == typeof(long))
+						return l;
+					return Convert.ChangeType(long.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
+				case double d:
+					if (type == typeof(double))
+						return d;
+					return Convert.ChangeType(double.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
+				case bool b:
+					if (type == typeof(bool))
+						return b;
+					return Convert.ChangeType(bool.Parse(Json.Serialize(preParsedValue, stringBuilder)), type);
 				case int _:
 					if (type == typeof(Char))
-						return (char)int.Parse(json, CultureInfo.InvariantCulture);
-					return Convert.ChangeType(int.Parse(json, CultureInfo.InvariantCulture), type);
+						return (char)int.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture);
+					return Convert.ChangeType(int.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
 
 
 				case ArrayDict dictionary when typeof(IDictionaryWithValue).IsAssignableFrom(type):
@@ -314,7 +318,7 @@ namespace Beamable.Common.Content
 
 					foreach (var kvp in dictionary)
 					{
-						var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
+						var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType, stringBuilder);
 						dictInst.Add(kvp.Key, convertedValue);
 					}
 
@@ -324,7 +328,7 @@ namespace Beamable.Common.Content
 					var fieldType = type.GetElementType();
 					for (var index = 0; index < list.Count; index++)
 					{
-						output[index] = DeserializeResult(list[index], fieldType);
+						output[index] = DeserializeResult(list[index], fieldType, stringBuilder);
 					}
 
 					return output;
@@ -345,7 +349,7 @@ namespace Beamable.Common.Content
 
 					foreach (var elem in list)
 					{
-						var elemValue = DeserializeResult(elem, listElementType);
+						var elemValue = DeserializeResult(elem, listElementType, stringBuilder);
 						outputList.Add(elemValue);
 					}
 
@@ -361,25 +365,6 @@ namespace Beamable.Common.Content
 					}
 
 					return assetRef;
-				case ArrayDict colorDict when typeof(Color).IsAssignableFrom(type):
-					var color = new Color();
-					if (colorDict.TryGetValue("r", out var r))
-					{
-						color.r = (float)Convert.ChangeType(r, typeof(float));
-					}
-					if (colorDict.TryGetValue("g", out var g))
-					{
-						color.g = (float)Convert.ChangeType(g, typeof(float));
-					}
-					if (colorDict.TryGetValue("b", out var b))
-					{
-						color.b = (float)Convert.ChangeType(b, typeof(float));
-					}
-					if (colorDict.TryGetValue("a", out var a))
-					{
-						color.a = (float)Convert.ChangeType(a, typeof(float));
-					}
-					return color;
 				case ArrayDict dict:
 					var fields = GetFieldInfos(type, true);
 					var instance = Activator.CreateInstance(type);
@@ -398,7 +383,7 @@ namespace Beamable.Common.Content
 						{
 							continue;
 						}
-						object fieldValue = DeserializeResult(dictValue, field.FieldType);
+						object fieldValue = DeserializeResult(dictValue, field.FieldType, stringBuilder);
 						field.TrySetValue(instance, fieldValue);
 					}
 
@@ -603,6 +588,7 @@ namespace Beamable.Common.Content
 
 			var properties = root["properties"] as ArrayDict;
 			instance.SetIdAndVersion(id, version);
+			var stringBuilder = new StringBuilder();
 
 
 			foreach (var field in fields)
@@ -632,7 +618,7 @@ namespace Beamable.Common.Content
 					{
 						try
 						{
-							var hackResult = DeserializeResult(dataValue, field.FieldType);
+							var hackResult = DeserializeResult(dataValue, field.FieldType, stringBuilder);
 							field.TrySetValue(instance, hackResult);
 							if (hackResult is ISerializationCallbackReceiver rec &&
 							    !(hackResult is IIgnoreSerializationCallbacks))
