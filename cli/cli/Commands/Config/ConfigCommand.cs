@@ -30,41 +30,41 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 		{
 			if (args.IsSet)
 			{
-				args.ConfigService.SetConfigString(Constants.CONFIG_PLATFORM, args.AppContext.Host);
-				args.ConfigService.SetConfigString(Constants.CONFIG_CID, args.AppContext.Cid);
-				args.ConfigService.SetConfigString(Constants.CONFIG_PID, args.AppContext.Pid);
+				args.ConfigService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, args.AppContext.Host);
+				args.ConfigService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, args.AppContext.Cid);
+				args.ConfigService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.AppContext.Pid);
 				args.ConfigService.FlushConfig();
 			}
 
-			res.host = args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_PLATFORM);
-			res.cid = args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_CID);
-			res.pid = args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_PID);
+			res.host = args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_HOST);
+			res.cid = args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_CID);
+			res.pid = args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_PID);
 		}
 		else
 		{
 			if (args.IsSet)
 			{
-				if (args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_PLATFORM) != args.AppContext.Host)
-					args.ConfigService.SetLocalOverride(Constants.CONFIG_PLATFORM, args.AppContext.Host);
+				if (args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_HOST) != args.AppContext.Host)
+					args.ConfigService.SetLocalOverride(ConfigService.CFG_JSON_FIELD_HOST, args.AppContext.Host);
 				else
-					args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PLATFORM);
+					args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_HOST);
 
-				if (args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_CID) != args.AppContext.Cid)
-					args.ConfigService.SetLocalOverride(Constants.CONFIG_CID, args.AppContext.Cid);
+				if (args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_CID) != args.AppContext.Cid)
+					args.ConfigService.SetLocalOverride(ConfigService.CFG_JSON_FIELD_CID, args.AppContext.Cid);
 				else
-					args.ConfigService.DeleteLocalOverride(Constants.CONFIG_CID);
+					args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_CID);
 
-				if (args.ConfigService.GetConfigStringIgnoreOverride(Constants.CONFIG_PID) != args.AppContext.Pid)
-					args.ConfigService.SetLocalOverride(Constants.CONFIG_PID, args.AppContext.Pid);
+				if (args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_PID) != args.AppContext.Pid)
+					args.ConfigService.SetLocalOverride(ConfigService.CFG_JSON_FIELD_PID, args.AppContext.Pid);
 				else
-					args.ConfigService.DeleteLocalOverride(Constants.CONFIG_PID);
+					args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
 
 				args.ConfigService.FlushLocalOverrides();
 			}
 
-			res.host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM);
-			res.cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID);
-			res.pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID);
+			res.host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST);
+			res.cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID);
+			res.pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID);
 		}
 
 		return Task.FromResult(res);

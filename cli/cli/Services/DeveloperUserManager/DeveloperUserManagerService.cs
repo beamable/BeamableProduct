@@ -201,8 +201,6 @@ public class DeveloperUserManagerService
 	
 	private static readonly string CapturedUserPath = "capturedUser";
 	private static readonly string LocalUserPath = "localUser";
-	
-	private static readonly string BaseUserPath = "developerUser";
 
 	public static readonly int BACKEND_ERROR = 400;
 	public static readonly int UNKOWN_SERVER_ERROR = 500;
@@ -1224,15 +1222,8 @@ public class DeveloperUserManagerService
 	/// <returns></returns>
 	private string GetFullPath(DeveloperUserType developerUserType)
 	{
-		if (developerUserType == DeveloperUserType.Shared)
-		{
-			return Path.Combine(Path.Combine(_configService.ConfigDirectoryPath!, BaseUserPath), GetDeveloperUserFolder(developerUserType));
-		}
-		else
-		{
-			return Path.Combine(Path.Combine(_configService.ConfigTempDirectoryPath!, BaseUserPath), GetDeveloperUserFolder(developerUserType));
-		}
-
+		var subDir = developerUserType == DeveloperUserType.Shared ? ConfigService.DEV_USER_SHARED_DIR : ConfigService.DEV_USER_LOCAL_DIR;
+		return _configService.GetConfigPath(Path.Combine(subDir, GetDeveloperUserFolder(developerUserType)));
 	}
 
 	/// <summary>
