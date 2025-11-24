@@ -134,7 +134,7 @@ namespace Beamable.Tests.Runtime
 						 portalURI = "",
 						 storageBrowserURI = ""
 					 }))
-					 .WithToken(ACCESS_TOKEN);
+					 .WithNoAuthHeader();
 			return this;
 		}
 
