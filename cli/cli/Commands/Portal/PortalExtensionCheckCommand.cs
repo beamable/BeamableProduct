@@ -9,7 +9,7 @@ public class PortalExtensionCheckCommandArgs : CommandArgs
 
 }
 
-public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckCommandArgs>
+public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckCommandArgs>, ISkipManifest
 {
 	public PortalExtensionCheckCommand() : base("check", "Verifies that all dependencies required for a Portal Extension app exist")
 	{
@@ -21,10 +21,11 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 
 	public override Task Handle(PortalExtensionCheckCommandArgs args)
 	{
+
 		Log.Information("Checking if all dependencies for a Portal Extension App exist");
 		if (CheckPortalExtensionsDependencies())
 		{
-			Log.Information("All dependencies were found");
+			Log.Information("All dependencies for running a Portal Extension were found");
 		}
 		else
 		{

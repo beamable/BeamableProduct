@@ -641,7 +641,10 @@ public class App
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
 				PortalExtensionCommand>();
-		
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionRunCommand, PortalExtensionRunCommandArgs,
+				PortalExtensionCommand>();
+
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();

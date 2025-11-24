@@ -1,3 +1,5 @@
+using cli.Portal;
+
 namespace cli.Commands.Project;
 
 public class NewPortalExtensionCommandArgs : SolutionCommandArgs
@@ -21,9 +23,14 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
 	{
+		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
+		{
+			throw new CliException("Not all required dependencies exist. Aborting.");
+		}
+
 		await args.CreateConfigIfNeeded(_initCommand);
 		var newPortalExtensionInfo = await args.ProjectService.CreateNewPortalExtension(args);
 
-		//TODO make sure all config files exist and also find a way for the manifest scan to find the apps
+		await args.BeamoLocalSystem.InitManifest();
 	}
 }
