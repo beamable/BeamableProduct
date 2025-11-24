@@ -66,7 +66,7 @@ namespace Beamable.Common.Content
 		public TypeFieldInfoReflectionCache GetTypeFieldsCache() => _typeFieldInfos;
 
 		public void OnSetupForCacheGeneration()
-		{ 
+		{
 			_contentTypeToClass = new Dictionary<string, Type>(StringComparer.Ordinal);
 			_classToContentType = new Dictionary<Type, string>();
 			_typeFieldInfos = new TypeFieldInfoReflectionCache(this);
@@ -256,7 +256,7 @@ namespace Beamable.Common.Content
 		public IEnumerable<Type> GetContentTypes() => ClassToContentType.Keys;
 		public IEnumerable<string> GetContentClassIds() => ContentTypeToClass.Keys;
 
-		
+
 		public static int GetLastDotInContentId(string id)
 		{
 			for (int i = id.Length - 1; i >= 0; i--)
@@ -311,7 +311,7 @@ namespace Beamable.Common.Content
 			return type;
 		}
 	}
-	
+
 	public class TypeFieldInfoReflectionCache
 	{
 		public readonly struct FieldInfoWrapper
@@ -323,7 +323,7 @@ namespace Beamable.Common.Content
 			public readonly int FormerlySerializedAsLength;
 			public readonly Type FieldType;
 
-			public FieldInfoWrapper(string serializedName,FieldInfo rawField, string backingFieldName, 
+			public FieldInfoWrapper(string serializedName,FieldInfo rawField, string backingFieldName,
 			                        ReadOnlyCollection<string> formerlySerializedAs)
 			{
 				FieldType = rawField.FieldType;
@@ -340,7 +340,7 @@ namespace Beamable.Common.Content
 					oldFieldAsBackup.Add(serializedName);
 					FormerlySerializedAs = oldFieldAsBackup.AsReadOnly();
 				}
-				FormerlySerializedAsLength = formerlySerializedAs.Count;
+				FormerlySerializedAsLength = FormerlySerializedAs.Count;
 				RawField = rawField;
 			}
 
@@ -387,7 +387,7 @@ namespace Beamable.Common.Content
 				_ = GetFieldInfos(contentType, false, true);
 			}
 		}
-		
+
 		public static bool TryGetArrayValueType(Type baseType, out Type elementType)
 		{
 			var hasMatchingType = baseType.GenericTypeArguments.Length == 1;
@@ -519,7 +519,7 @@ namespace Beamable.Common.Content
 					{
 						var optional = (Optional)Activator.CreateInstance(t);
 						t = optional.GetOptionalType();
-					} 
+					}
 					if (typeof(IDictionaryWithValue).IsAssignableFrom(t))
 					{
 						var dict = (IDictionaryWithValue)Activator.CreateInstance(t);
@@ -548,7 +548,7 @@ namespace Beamable.Common.Content
 				return notIgnoredFieldsResult;
 			}
 		}
-		
+
 
 		/// <summary>
 		/// Retrieves the <see cref="Type"/> associated with the given content ID.
@@ -566,7 +566,7 @@ namespace Beamable.Common.Content
 			return (contentId.Substring(0, i), contentId.Substring(i + 1));
 		}
 
-		
+
 		private int GetLastDotIndex(string contentId)
 		{
 			int lastDot = 0;

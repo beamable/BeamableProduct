@@ -343,7 +343,7 @@ namespace Beamable.Common.Content
 					oldFieldAsBackup.Add(serializedName);
 					FormerlySerializedAs = oldFieldAsBackup.AsReadOnly();
 				}
-				FormerlySerializedAsLength = formerlySerializedAs.Count;
+				FormerlySerializedAsLength = FormerlySerializedAs.Count;
 				RawField = rawField;
 			}
 
