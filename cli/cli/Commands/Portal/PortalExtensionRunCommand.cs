@@ -11,7 +11,6 @@ public class PortalExtensionRunCommandArgs : CommandArgs
 
 public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArgs>
 {
-	private const int CheckDelay = 250; // in milliseconds
 
 	public PortalExtensionRunCommand() : base("run", "Runs the specified Portal Extension project")
 	{
@@ -34,51 +33,22 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		}
 
 		// run a microservice that will be feeding portal with new builds of the portal extension app
-		Task runningMicroserviceTask = RunMicroserviceForever();
-
-		// keep listening to changes in the portal extension app files
-		Log.Information($"Path of the extension: {service.AbsolutePath}");
-		var cancellationSource = new CancellationTokenSource();
-		await ExtensionFileWatcher(service.AbsolutePath, cancellationSource.Token);
+		await RunMicroserviceForever(service.AbsolutePath);
 	}
 
-	private async Task ExtensionFileWatcher(string path, CancellationToken token)
-	{
-		using var watcher = new FileSystemWatcher(path);
-
-		watcher.Filters.Clear();
-		watcher.Filters.Add("*.css");
-		watcher.Filters.Add("*.svelte");
-		watcher.Filters.Add("*.js");
-		watcher.Filters.Add("*.html");
-
-		watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-
-		watcher.IncludeSubdirectories = true;
-		watcher.EnableRaisingEvents = true;
-
-		watcher.Changed += OnChanged;
-		watcher.Created += OnChanged;
-		watcher.Deleted += OnChanged;
-		watcher.Renamed += OnChanged;
-
-		while (!token.IsCancellationRequested)
-		{
-			await Task.Delay(CheckDelay, token);
-		}
-	}
-
-	private static void OnChanged(object sender, FileSystemEventArgs e)
-	{
-		Log.Information($"Changed: {e.Name}", ConsoleColor.Cyan);
-	}
-
-	private async Task RunMicroserviceForever()
+	private async Task RunMicroserviceForever(string fullPath)
 	{
 		try
 		{
 			await BeamServer
 				.Create()
+				.ConfigureServices((dependency) =>
+				{
+					var observer = new PortalExtensionObserver();
+					observer.AppFilesPath = fullPath;
+
+					dependency.AddSingleton(observer);
+				})
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.RunForever();
 		}

@@ -13,7 +13,7 @@ public class StartProcessResult
 
 public static class StartProcessUtil
 {
-	public static StartProcessResult Run(string fileName, string args)
+	public static StartProcessResult Run(string fileName, string args, string workingDirectoryPath = null)
 	{
 		var psi = new ProcessStartInfo
 		{
@@ -24,6 +24,11 @@ public static class StartProcessUtil
 			UseShellExecute = false,
 			CreateNoWindow = true,
 		};
+
+		if (!string.IsNullOrEmpty(workingDirectoryPath))
+		{
+			psi.WorkingDirectory = workingDirectoryPath;
+		}
 
 		using var p = Process.Start(psi)!;
 		var stdout = new StringBuilder();
