@@ -9,7 +9,17 @@ public class PortalExtensionDiscoveryService : Microservice
 	public string RequestPortalExtensionData()
 	{
 		Log.Information("Trying to request portal extension data");
-		return "look some data";
+
+		var observer = Provider.GetService<PortalExtensionObserver>();
+
+		if (observer.TryGetNewAppBuild(out string build))
+		{
+			return build;
+		}
+
+		Log.Information("No changes were detected since last build of portal extension");
+
+		return string.Empty;
 	}
 }
 
@@ -18,6 +28,7 @@ public class PortalExtensionObserver
 	private bool _alreadyStarted;
 	private string _appPath;
 	private bool _hasChanges = true;
+	private CancellationTokenSource _cancelToken;
 
 	public string AppFilesPath
 	{
@@ -41,6 +52,16 @@ public class PortalExtensionObserver
 		}
 	}
 
+	public PortalExtensionObserver()
+	{
+
+	}
+
+	public void CancelDiscovery()
+	{
+		_cancelToken.Cancel();
+	}
+
 	public bool TryGetNewAppBuild(out string javascript)
 	{
 		if (!_hasChanges)
@@ -61,6 +82,12 @@ public class PortalExtensionObserver
 		// Now we read the generated javascript file and return it's contents
 		var buildPath = Path.Combine(_appPath, "assets", "main.js");
 
+		if (!File.Exists(buildPath))
+		{
+			throw new CliException($"Could not find the built file in [{buildPath}]");
+		}
+
+		_hasChanges = false;
 		javascript = File.ReadAllText(buildPath);
 		return true;
 	}
@@ -100,6 +127,11 @@ public class PortalExtensionObserver
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
+		if (e.Name != null && e.Name.Contains("assets/main"))
+		{
+			return; // this case we ignore because these are the build files
+		}
+
 		Log.Information($"Changed: {e.Name}", ConsoleColor.Cyan);
 		_hasChanges = true;
 	}

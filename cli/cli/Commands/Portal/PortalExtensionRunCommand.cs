@@ -11,6 +11,7 @@ public class PortalExtensionRunCommandArgs : CommandArgs
 
 public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArgs>
 {
+	private CancellationTokenSource _tokenSource;
 
 	public PortalExtensionRunCommand() : base("run", "Runs the specified Portal Extension project")
 	{
@@ -47,7 +48,20 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 					var observer = new PortalExtensionObserver();
 					observer.AppFilesPath = fullPath;
 
+					// Get the file observation started
+					_tokenSource = new CancellationTokenSource();
+					try
+					{
+						var _ = observer.StartExtensionFileWatcher(_tokenSource.Token);
+					}
+					catch (Exception e)
+					{
+						throw new CliException(
+							$"Portal extension file observer failed. Error: [{e.Message}] StackTrace: [{e.StackTrace}]");
+					}
+
 					dependency.AddSingleton(observer);
+					Log.Information("Created the observer service");
 				})
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.RunForever();

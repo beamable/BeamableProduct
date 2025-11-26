@@ -144,4 +144,19 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="BeamableSettings" BeforeTargets="BeforeResGen">
+    <Message Importance="high" Text="Bundling Beamable Settings..."/>
+    <PropertyGroup>
+      <BeamSettingsFile>$(IntermediateOutputPath)/beamableSettings.txt</BeamSettingsFile>
+
+    </PropertyGroup>
+    <Delete Files="$(BeamSettingsFile)"/>
+
+    <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=PortalExtensionDiscoveryService"/>
+
+    <ItemGroup>
+      <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
+    </ItemGroup>
+  </Target>
+
 </Project>
