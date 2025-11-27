@@ -25,7 +25,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const float ITEM_GROUP_HEIGHT = 35;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
-		
+		private const float ITEM_LIST_MIN_WIDTH = 450;
+
 		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
 		
 		private readonly Dictionary<string, List<LocalContentManifestEntry>> _filteredCache = new();
@@ -152,7 +153,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
 				{
+					var options = new List<GUILayoutOption> { GUILayout.ExpandWidth(true) };
+					var availableWidth = _mainSplitter.cellNormalizedSizes.Last() * EditorGUIUtility.currentViewWidth;
+					if(availableWidth < ITEM_LIST_MIN_WIDTH) 
+						options.Add(GUILayout.MinWidth(ITEM_LIST_MIN_WIDTH));
+					GUILayout.BeginVertical(options.ToArray());
 					DrawGroupNode();
+					GUILayout.EndVertical();
 				}
 				GUILayout.EndScrollView();
 			}
