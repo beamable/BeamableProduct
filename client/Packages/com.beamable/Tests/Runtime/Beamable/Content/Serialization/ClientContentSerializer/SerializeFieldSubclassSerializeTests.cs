@@ -104,9 +104,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       },
  ""icon"": {
          ""data"": {
-            ""referenceKey"": """",
-            ""subObjectName"": """"
-         }
+			""referenceKey"" : """",
+			""subObjectName"" : """"
+		}
       },
 
     ""spriteAssetName"": {
