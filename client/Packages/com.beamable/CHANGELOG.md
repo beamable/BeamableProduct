@@ -5,9 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2025-11-20
+### Changed
+- Update CLI to 6.2.1, to fix content serialization issue
 
-## [4.0.0]
-### New
+## [4.0.1] - 2025-11-20
+### Fixed
+- file locking issue when attempting to install Beam CLI
+
+## [4.0.0] - 2025-11-19
+### Added
 - Added support to additional snapshot restore on Editor.
 
 ### Fixed
@@ -20,7 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved Beamable CLI installation reliability with automatic retry mechanism (up to 5 attempts) on timeout failures, along with enhanced error messaging for troubleshooting.
-- Improved Beam Accounts window when the `config-defaults.txt` is missing values.
+- Improved Beam Accounts window when the `config-defaults.txt` is missing values. 
+- Updated Beam CLI version to 6.2.0
 
 ## [3.1.6] - 2025-11-13
 ### Fixed

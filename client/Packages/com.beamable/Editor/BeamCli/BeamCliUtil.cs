@@ -117,124 +117,137 @@ namespace Beamable.Editor.BeamCli
 			
 			System.Environment.SetEnvironmentVariable("BEAM_UNITY_TEST_CI", "true");
 		}
+
+		public static object _installLock = new object();
 		
 		static bool InstallTool()
 		{
-			if (EditorConfiguration.Instance.IgnoreCliVersionRequirement)
+			lock (_installLock)
 			{
-				// the developer has opted out of the cli version requirement. 
-				return true;
-			}
-			
-			if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
-			{
-				return true;
-			}
-			
-			var proc = new Process();
-			var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed";
-
-			if (Application.isBatchMode)
-			{
-				installCommand += " --add-source BeamableNugetSource ";
-			}
-			
-			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
-			{
-				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
-			}
-			else
-			{
-				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
-			}
-			proc.StartInfo = new ProcessStartInfo
-			{
-				FileName = "dotnet",
-				WorkingDirectory = Path.GetFullPath("."),
-				Arguments = installCommand,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			// proc.StartInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
-			proc.Start();
-
-			TryRunWithTimeout(1);
-
-			const string errorGuide =
-				"Please try installing manually by https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing or contact Beamable for further support.";
-			
-			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
-			{
-				StringBuilder message = new StringBuilder("Unable to install BeamCLI");
-				if (!string.IsNullOrEmpty(output))
+				if (EditorConfiguration.Instance.IgnoreCliVersionRequirement)
 				{
-					message.AppendLine($"Output: {output}");
+					// the developer has opted out of the cli version requirement. 
+					return true;
 				}
-				message.AppendLine($"Error: {error}");
-				message.Append(errorGuide);
-				Debug.LogError(message.ToString());
-				var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
-				{
-					Name = "Try Again",
-					OnClick = () => true,
-					Color = new Color(0.08f, 0.44f, 0.82f)
-				};
-				var closeUnityButtonInfo = new OptionDialogWindow.ButtonInfo()
-				{
-					Name = "Close Unity",
-					OnClick = () => false,
-					Color = Color.gray,
-				};
-				var openDocsButtonInfo = new OptionDialogWindow.ButtonInfo()
-				{
-					Name = "Close Unity & Open Docs",
-					OnClick = () =>
-					{
-						Application.OpenURL("https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing");
-						return false;
-					},
-					Color = Color.gray,
-				};
-				if (!OptionDialogWindow.ShowModal("Error when Installing BeamCLI", message.ToString(), tryAgainButtonInfo, closeUnityButtonInfo, openDocsButtonInfo))
-				{
-					EditorApplication.Exit(0);
-				}
-			}
 
-			if (proc.ExitCode == 0)
-			{
-				InstalledVersion = BeamableEnvironment.NugetPackageVersion;
-			}
-			return proc.ExitCode == 0;
-
-			bool TryRunWithTimeout(int currentTry)
-			{
-				proc.Start();
-				if (proc.WaitForExit(10 * 1000 * currentTry))
+				if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
 				{
 					return true;
 				}
 
-				Debug.LogError("dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
-				const int maxRetries = 5;
-				if (currentTry > maxRetries)
+				var proc = new Process();
+				var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed --allow-downgrade";
+
+				if (Application.isBatchMode)
 				{
-					string message = $"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. {errorGuide}";
-					Debug.LogError(message);
-					bool result = EditorUtility.DisplayDialog("Error when Installing BeamCLI", message, "Try Again", "Close Unity");
-					if (!result)
+					installCommand += " --add-source BeamableNugetSource ";
+				}
+
+				if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
+				{
+					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
+				}
+				else
+				{
+					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
+				}
+
+				proc.StartInfo = new ProcessStartInfo
+				{
+					FileName = "dotnet",
+					WorkingDirectory = Path.GetFullPath("."),
+					Arguments = installCommand,
+					UseShellExecute = false,
+					CreateNoWindow = true,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				};
+				proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+				TryRunWithTimeout(1);
+
+				const string errorGuide =
+					"Please try installing manually by https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing or contact Beamable for further support.";
+
+				var output = proc.StandardOutput.ReadToEnd();
+				var error = proc.StandardError.ReadToEnd();
+				if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
+				{
+					StringBuilder message = new StringBuilder("Unable to install BeamCLI");
+					if (!string.IsNullOrEmpty(output))
+					{
+						message.AppendLine($"Output: {output}");
+					}
+
+					message.AppendLine($"Error: {error}");
+					message.Append(errorGuide);
+					Debug.LogError(message.ToString());
+					var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Try Again",
+						OnClick = () => true,
+						Color = new Color(0.08f, 0.44f, 0.82f)
+					};
+					var closeUnityButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Close Unity",
+						OnClick = () => false,
+						Color = Color.gray,
+					};
+					var openDocsButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Close Unity & Open Docs",
+						OnClick = () =>
+						{
+							Application.OpenURL(
+								"https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing");
+							return false;
+						},
+						Color = Color.gray,
+					};
+					if (!OptionDialogWindow.ShowModal("Error when Installing BeamCLI", message.ToString(),
+					                                  tryAgainButtonInfo, closeUnityButtonInfo, openDocsButtonInfo))
 					{
 						EditorApplication.Exit(0);
 					}
-					return false;
 				}
-				return TryRunWithTimeout(++currentTry);
 
+				if (proc.ExitCode == 0)
+				{
+					InstalledVersion = BeamableEnvironment.NugetPackageVersion;
+				}
+
+				return proc.ExitCode == 0;
+
+				bool TryRunWithTimeout(int currentTry)
+				{
+					proc.Start();
+					if (proc.WaitForExit(10 * 1000 * currentTry))
+					{
+						return true;
+					}
+
+					Debug.LogError(
+						"dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
+					const int maxRetries = 5;
+					if (currentTry > maxRetries)
+					{
+						string message =
+							$"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. {errorGuide}";
+						Debug.LogError(message);
+						bool result =
+							EditorUtility.DisplayDialog("Error when Installing BeamCLI", message, "Try Again",
+							                            "Close Unity");
+						if (!result)
+						{
+							EditorApplication.Exit(0);
+						}
+
+						return false;
+					}
+
+					return TryRunWithTimeout(++currentTry);
+
+				}
 			}
 		}
 	}
