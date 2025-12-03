@@ -152,6 +152,7 @@
     </PropertyGroup>
     <Delete Files="$(BeamSettingsFile)"/>
 
+    <!--  TODO we will need to change this to work for multiple portal extensions  -->
     <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=PortalExtensionDiscoveryService"/>
 
     <ItemGroup>

@@ -24,6 +24,12 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 
 	public override async Task Handle(PortalExtensionRunCommandArgs args)
 	{
+		// Check for dependencies
+		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
+		{
+			throw new CliException("Portal Extension dependencies are missing");
+		}
+
 		// Check if service exists
 		var service =
 			args.BeamoLocalSystem.BeamoManifest.PortalExtensionDefinitions.FirstOrDefault(p => p.Name == args.AppName);

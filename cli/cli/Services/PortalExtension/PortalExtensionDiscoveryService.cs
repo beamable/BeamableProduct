@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Utils;
+using System.IO.Compression;
 
 namespace cli.Services.PortalExtension;
 
@@ -52,21 +53,16 @@ public class PortalExtensionObserver
 		}
 	}
 
-	public PortalExtensionObserver()
-	{
-
-	}
-
 	public void CancelDiscovery()
 	{
 		_cancelToken.Cancel();
 	}
 
-	public bool TryGetNewAppBuild(out string javascript)
+	public bool TryGetNewAppBuild(out string bundle)
 	{
 		if (!_hasChanges)
 		{
-			javascript = string.Empty;
+			bundle = string.Empty;
 			return false;
 		}
 
@@ -75,20 +71,20 @@ public class PortalExtensionObserver
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
-			javascript = string.Empty;
+			bundle = string.Empty;
 			return false;
 		}
 
-		// Now we read the generated javascript file and return it's contents
-		var buildPath = Path.Combine(_appPath, "assets", "main.js");
+		var mainJsPath = Path.Combine(_appPath, "assets", "main.js");
+		var mainCssPath = Path.Combine(_appPath, "assets", "main.css");
 
-		if (!File.Exists(buildPath))
+		if (!File.Exists(mainJsPath) || !File.Exists(mainCssPath))
 		{
-			throw new CliException($"Could not find the built file in [{buildPath}]");
+			throw new CliException($"Could not find the portal extension built files. These should exist: [\"{mainJsPath}\", \"{mainCssPath}\"]");
 		}
 
+		bundle = ConvertBuiltFiles(new string[]{mainJsPath, mainCssPath});
 		_hasChanges = false;
-		javascript = File.ReadAllText(buildPath);
 		return true;
 	}
 
@@ -125,6 +121,29 @@ public class PortalExtensionObserver
 		}
 	}
 
+	private string ConvertBuiltFiles(string[] paths)
+	{
+		using (var memoryStream = new MemoryStream())
+		{
+			using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+			{
+				foreach (var path in paths)
+				{
+					var file1Entry = archive.CreateEntry(Path.GetFileName(path));
+					using (var entryStream = file1Entry.Open())
+					using (var streamWriter = new StreamWriter(entryStream))
+					{
+						streamWriter.Write(File.ReadAllText(path));
+					}
+				}
+			}
+
+			memoryStream.Position = 0;
+			byte[] zipBytes = memoryStream.ToArray();
+			return Convert.ToBase64String(zipBytes);
+		}
+	}
+
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
 		if (e.Name != null && e.Name.Contains("assets/main"))
@@ -132,7 +151,7 @@ public class PortalExtensionObserver
 			return; // this case we ignore because these are the build files
 		}
 
-		Log.Information($"Changed: {e.Name}", ConsoleColor.Cyan);
+		Log.Information($"Change detected in file: {e.Name}");
 		_hasChanges = true;
 	}
 }
