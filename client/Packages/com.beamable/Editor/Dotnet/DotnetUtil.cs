@@ -15,10 +15,18 @@ namespace Beamable.Editor.Dotnet
 {
 	public static partial class DotnetUtil
 	{
-		private static readonly PackageVersion REQUIRED_INSTALL_VERSION = "8.0.302";
+		private const string DOTNET_10_VERSION = "10.0.100";
+		private static readonly string[] ALLOWED_DOTNET_VERSIONS = new string[]
+		{
+			// version 8 will work with CLI 7, because CLI 7 is built for both net versions.
+			"8.0.302",
+			
+			// version 10 is the new default, starting with CLI 7 
+			DOTNET_10_VERSION
+		};
 		public static readonly string DOTNET_EXEC = "dotnet.dll";
 		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
-		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"8.0.302\"\n} \n}";
+		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"" + DOTNET_10_VERSION +  "\"\n} \n}";
 
 		static bool DotnetHandled
 		{
@@ -46,10 +54,10 @@ namespace Beamable.Editor.Dotnet
 		public static void InitializeDotnet()
 		{
 			if (DotnetHandled) return;
-			if (!TryGetDotnetFilePath(out var path))
+			if (!TryGetDotnetFilePath())
 			{
 				InstallDotnetToLibrary();
-				if (!TryGetDotnetFilePath(out path))
+				if (!TryGetDotnetFilePath())
 				{
 					throw new Exception("Beamable unable to start because no Dotnet exists");
 				}
@@ -77,7 +85,8 @@ namespace Beamable.Editor.Dotnet
 			{
 				installed = $" Currently installed: {string.Join(", ", versions.Keys)}.";
 			}
-			var message = $"Beamable Unity SDK requires Dotnet SDK {REQUIRED_INSTALL_VERSION} to function properly.{installed} Please download the SDK Installer and proceed with the installation before continuing.";
+			
+			var message = $"Beamable Unity SDK requires Dotnet SDK {string.Join(" or ", ALLOWED_DOTNET_VERSIONS)} to function properly. {installed} Please download the SDK Installer and proceed with the installation before continuing.";
 
 			if (Application.isBatchMode)
 			{
@@ -85,7 +94,7 @@ namespace Beamable.Editor.Dotnet
 			}
 			if (EditorUtility.DisplayDialog("Dotnet Installation Required", message,"Download", "Close"))
         	{
-				Application.OpenURL(GetDotnetDownloadLink());
+				Application.OpenURL(GetDotnetDownloadLink_10());
 				if (EditorUtility.DisplayDialog("Dotnet Installation Required", "Waiting for dotnet installation before proceeding", "Ok"))
 				{
 					// We don't need to do anything here, just continue the flow and the next thing will be checking if dotnet was successfuly installed
@@ -111,6 +120,7 @@ namespace Beamable.Editor.Dotnet
 				RedirectStandardError = true,
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			proc.StartInfo.Environment.Add("MSBUILDTERMINALLOGGER", "off");
 			try
 			{
 				proc.Start();
@@ -139,7 +149,37 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
-		public static string GetDotnetDownloadLink()
+		public static string GetDotnetDownloadLink_10()
+		{
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X86:
+						return "https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-windows-x86-installer";
+					case Architecture.X64:
+						return "https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-windows-x64-installer";
+					case Architecture.Arm64:
+						return "https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-windows-arm64-installer";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			{
+				switch (RuntimeInformation.OSArchitecture)
+				{
+					case Architecture.X64:
+						return "https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-macos-x64-installer";
+					case Architecture.Arm64:
+						return "https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-macos-arm64-installer";
+				}
+			} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			{
+				return "https://learn.microsoft.com/dotnet/core/install/linux?WT.mc_id=dotnet-35129-website";
+			}
+
+			throw new NotImplementedException("unsupported os");
+		}
+		
+		public static string GetDotnetDownloadLink_8()
 		{
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
@@ -167,9 +207,8 @@ namespace Beamable.Editor.Dotnet
 			throw new NotImplementedException("unsupported os");
 		}
 
-		public static bool TryGetDotnetFilePath(out string filePath)
+		public static bool TryGetDotnetFilePath()
 		{
-			filePath = null;
 			var errors = new List<string>();
 
 			if (!CheckDotnetInfo(out Dictionary<string, string> pathByVersion))
@@ -179,22 +218,21 @@ namespace Beamable.Editor.Dotnet
 
 			foreach (var path in pathByVersion)
 			{
-				if (!(path.Key == REQUIRED_INSTALL_VERSION))
+				if (!ALLOWED_DOTNET_VERSIONS.Contains(path.Key, StringComparer.InvariantCultureIgnoreCase))
 				{
-
 					errors.Add(
-						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}, required: {REQUIRED_INSTALL_VERSION}");
+						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}");
 					continue;
 				}
-
-				filePath = path.Value;
 				return true;
 			}
-
+			
 			foreach (string err in errors)
 			{
 				Debug.LogWarning(err);
 			}
+			
+			Debug.LogWarning($"Only the following dotnet versions are allowed. {string.Join(",", ALLOWED_DOTNET_VERSIONS)}");
 
 			return false;
 		}
