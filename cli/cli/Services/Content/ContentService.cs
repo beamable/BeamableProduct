@@ -247,19 +247,29 @@ public class ContentService
 
 		// Keep waiting for messages from the set up file watcher.
 		var reader = _channelChangedContentFiles.Reader;
-
-		while (await reader.WaitToReadAsync(token))
+		
+		while (true)
 		{
 			// If the operation was cancelled, we break out.
 			if (token.IsCancellationRequested)
 			{
 				break;
 			}
-			
-			// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
-			// So to batch it together we wait 100 ms and then try to read from the buffer.
-			await Task.Delay(100, token);
-			
+
+			try
+			{
+				await reader.WaitToReadAsync(token);
+
+				// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
+				// So to batch it together we wait 100 ms and then try to read from the buffer.
+				await Task.Delay(100, token);
+			}
+			catch (OperationCanceledException)
+			{
+				Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
+				break;
+			}
+
 			// Get all the files that were changed respecting the PID filter.
 			var batchedChanges = new LocalContentFileChanges() { AllFileChanges = new() };
 			while (reader.TryRead(out var changed))
@@ -270,6 +280,7 @@ public class ContentService
 				}
 			}
 
+			
 			yield return batchedChanges;
 		}
 
@@ -353,7 +364,7 @@ public class ContentService
 				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 				{
 					Log.Verbose("Received Content Publish Notification");
-					Task.Run(async () => await OnContentPublished(message.body, args.Lifecycle), token);
+					Task.Run(async () => await OnContentPublished(message.body, args.Lifecycle));
 				}, token);
 			}
 			catch (Exception e)
@@ -361,15 +372,25 @@ public class ContentService
 				Console.WriteLine(e);
 				throw;
 			}
-		}, token);
+		});
 
 		// Loop while we are listing to the published changes on this realm and emit an event out of this enumerable every time we get one. 
 		var reader = _channelRemoteContentPublishes.Reader;
-		while (await reader.WaitToReadAsync(token) && !token.IsCancellationRequested)
+		while (true)
 		{
 			// Break if a cancellation request came in.
 			if (token.IsCancellationRequested)
 				break;
+
+			try
+			{
+				await reader.WaitToReadAsync(token);
+			}
+			catch (OperationCanceledException)
+			{
+				Log.Debug($"{nameof(ListenToRemoteContentPublishes)} was cancelled");
+				break;
+			}
 
 			// Get all the files that were changed respecting the PID filter.
 			while (reader.TryRead(out var changed))
