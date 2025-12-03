@@ -122,6 +122,10 @@ public class WebsocketUtil
 				if (cancellationToken.IsCancellationRequested)
 					break;
 			}
+			catch (OperationCanceledException)
+			{
+				Log.Debug($"{nameof(RunServerNotificationListenLoop)} was cancelled");
+			}
 			catch (WebSocketException ex) when (ex.Message.Contains("remote party closed the WebSocket connection without completing the close handshake"))
 			{
 				handle.ResetSocket();
