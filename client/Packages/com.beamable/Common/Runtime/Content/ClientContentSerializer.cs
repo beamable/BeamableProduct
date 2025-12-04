@@ -30,7 +30,7 @@ namespace Beamable.Common.Content.Serialization
 		public static TContent DeserializeContent<TContent>(string json, bool disableExceptions = false) where TContent : ContentObject, IContentObject, new() =>
 		   Instance.Deserialize<TContent>(json, disableExceptions);
 
-		public static IContentObject DeserializeContentFromCli(string json, IContentObject instanceToDeserialize, string contentId, out bool schemaIsDifferent, bool disableExceptions = false)
+		public static IContentObject DeserializeContentFromCli(string json, IContentObject instanceToDeserialize, string contentId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
 		{
 			return Instance.DeserializeFromCli(json, instanceToDeserialize, contentId, out schemaIsDifferent, disableExceptions);
 		}

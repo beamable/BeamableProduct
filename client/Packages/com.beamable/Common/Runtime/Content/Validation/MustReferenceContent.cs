@@ -145,7 +145,13 @@ namespace Beamable.Common.Content.Validation
 					var typeField = fieldType.GetField("type");
 					if (typeField != null)
 					{
-						string typeValue = typeField.GetValue(field.Target).ToString();
+						var typeValueBase = typeField.GetValue(field.Target);
+
+						string typeValue = typeValueBase.ToString();
+						if (typeValueBase.GetType().IsEnum)
+						{
+							typeValue = typeValue.ToLowerInvariant();
+						}
 						if (!string.IsNullOrWhiteSpace(typeValue))
 						{
 							string fullId = $"{typeValue}.{contentName}";
