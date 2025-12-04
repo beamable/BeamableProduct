@@ -1,5 +1,6 @@
 using Beamable.Server;
 using System.Text;
+using FileConstants = Beamable.Common.Constants.Files;
 
 namespace cli.Utils;
 
@@ -65,7 +66,7 @@ public static class DirectoryUtils
 		return $"{len:0.##} {sizes[order]}";
 	}
 
-	private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(false);
+	
 	
 	/// <summary>
 	/// Writes a UTF8 file without a BOM asynchronously.
@@ -79,7 +80,7 @@ public static class DirectoryUtils
 	/// <returns>Task to await</returns>
 	public static Task WriteUtf8FileAsync(string path, string content, CancellationToken cancellationToken = default)
 	{
-		return File.WriteAllTextAsync(path, content, UTF8NoBom, cancellationToken);
+		return File.WriteAllTextAsync(path, content, FileConstants.DEFAULT_FILE_ENCONDING, cancellationToken);
 	}
 	/// <summary>
 	/// Writes a UTF8 file without a BOM.
@@ -88,6 +89,6 @@ public static class DirectoryUtils
 	/// <param name="content"></param>
 	public static void WriteUtf8File(string path, string content)
 	{
-		File.WriteAllText(path, content, UTF8NoBom);
+		File.WriteAllText(path, content, FileConstants.DEFAULT_FILE_ENCONDING);
 	}
 }
