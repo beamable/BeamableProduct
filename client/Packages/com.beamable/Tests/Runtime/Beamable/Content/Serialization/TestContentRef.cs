@@ -14,7 +14,7 @@ namespace Beamable.Tests.Content.Serialization.Support
 
 		protected override TestContentObject CreateInstanceWithType(Type type)
 		{
-			throw new NotImplementedException();
+			return new TestContentObject();
 		}
 	}
 
