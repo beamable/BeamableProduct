@@ -804,7 +804,7 @@ namespace Beamable.Editor.ContentService
 			try
 			{
 				contentObject =
-					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId, out bool schemaDiffers,
+					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId, out SchemaDifference schemaDifference,
 					                                                  disableExceptions: true) as ContentObject;
 				if (contentObject)
 				{
@@ -812,9 +812,9 @@ namespace Beamable.Editor.ContentService
 					contentObject.ContentStatus = entry.StatusEnum;
 					contentObject.IsInConflict = entry.IsInConflict;
 					contentObject.OnEditorChanged = () => { SaveContent(contentObject); };
-					if (schemaDiffers)
+					if (schemaDifference != SchemaDifference.None)
 					{
-						Debug.LogWarning($"Schema for content with id=[{entry.FullId}] is different from content JSON,\nPlease update the scriptable object to Match the JSON or Publish the local content.\nJson: {fileContent}");
+						Debug.LogWarning($"Schema for content with id=[{entry.FullId}] is different from content JSON. reason=[{schemaDifference}]\nPlease update the scriptable object to Match the JSON or Publish the local content.\nJson: {fileContent}");
 						SaveContent(contentObject);
 					}
 				}

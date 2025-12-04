@@ -663,7 +663,7 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, out bool schemaIsDifferent, bool disableExceptions = false)
+		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
@@ -679,9 +679,9 @@ namespace Beamable.Common.Content
 			return (TContent)BaseConvertType(root, disableExceptions, instance, out _);
 		}
 
-		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, out bool schemaIsDifferent, string itemId = null)
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, out SchemaDifference schemaIsDifferent, string itemId = null)
 		{
-			schemaIsDifferent = false;
+			schemaIsDifferent = SchemaDifference.None;
 			var fields = GetFieldInfos(instance.GetType(), true);
 
 			var id = itemId ?? root["id"].ToString();
@@ -746,10 +746,10 @@ namespace Beamable.Common.Content
 
 					if (!foundFormerlySerializedAs)
 					{
-						// If it's not optional and not found, the schema doesn't match
+						// If field it's not optional and not found, the schema doesn't match, it is missing the field in json
 						if (!isOptional)
 						{
-							schemaIsDifferent = true;
+							schemaIsDifferent |= SchemaDifference.MissingFieldsInJson;
 						}
 						continue; // there is no property for this field...
 
@@ -860,7 +860,7 @@ namespace Beamable.Common.Content
 			// If there are extra keys in the JSON that aren't in the class, the schema is different
 			if (jsonPropertyKeys.Count > 0)
 			{
-				schemaIsDifferent = true;
+				schemaIsDifferent |= SchemaDifference.UnknownFieldsInJson;
 			}
 			
 			if (instance is ISerializationCallbackReceiver receiver)
@@ -885,4 +885,12 @@ namespace Beamable.Common.Content
 			return rawJson;
 		}
 	}
+	
+	[Flags]
+	public enum SchemaDifference
+	{
+		None = 0,
+		MissingFieldsInJson = 1 << 0,
+		UnknownFieldsInJson = 1 << 1,
+	};
 }
