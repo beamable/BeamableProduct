@@ -744,8 +744,9 @@ namespace Beamable.Common.Content
 
 					if (!foundFormerlySerializedAs)
 					{
-						// If field it's not optional and not found, the schema doesn't match, it is missing the field in json
-						if (!isOptional)
+						var isIgnored = field.RawField.GetCustomAttribute<IgnoreContentFieldAttribute>() != null;
+						// If field it's not optional, not Ignored, and not found, the schema doesn't match, it is missing the field in json
+						if (!isOptional && !isIgnored)
 						{
 							schemaIsDifferent |= SchemaDifference.MissingFieldsInJson;
 						}
