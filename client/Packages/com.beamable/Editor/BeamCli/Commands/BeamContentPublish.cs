@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.Commands
         ///SharedOnly => Will save the snapshot under `.beamable/content-snapshots` folder
         ///Both => Will save two snapshots, under local and shared folders</summary>
         public Beamable.Common.BeamCli.Contracts.AutoSnapshotType autoSnapshotType;
-        /// <summary>Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot.</summary>
+        /// <summary>Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot</summary>
         public int maxLocalSnapshots;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
