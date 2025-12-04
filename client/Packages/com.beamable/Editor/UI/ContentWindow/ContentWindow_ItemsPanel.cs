@@ -25,7 +25,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const float ITEM_GROUP_HEIGHT = 35;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
-		
+		private const float ITEM_LIST_MIN_WIDTH = 450;
+
 		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
 		
 		private readonly Dictionary<string, List<LocalContentManifestEntry>> _filteredCache = new();
@@ -152,7 +153,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
 				{
+					var options = new List<GUILayoutOption> { GUILayout.ExpandWidth(true) };
+					var availableWidth = _mainSplitter.cellNormalizedSizes.Last() * EditorGUIUtility.currentViewWidth;
+					if(availableWidth < ITEM_LIST_MIN_WIDTH) 
+						options.Add(GUILayout.MinWidth(ITEM_LIST_MIN_WIDTH));
+					GUILayout.BeginVertical(options.ToArray());
 					DrawGroupNode();
+					GUILayout.EndVertical();
 				}
 				GUILayout.EndScrollView();
 			}
@@ -584,12 +591,21 @@ namespace Beamable.Editor.UI.ContentWindow
 				var isShiftClick = Event.current.shift;
 				var isLeftClick = Event.current.button == 0;
 				var isRightClick = Event.current.button == 1;
+				var isDoubleClick = Event.current.clickCount == 2;
 				
 				var isAddClick = (Event.current.control || Event.current.alt  ||
 				                    Event.current.command);
 				var isRepeatClick = MultiSelectItemIds.Contains(entry.FullId);
 
-
+				if (entry.StatusEnum is not ContentStatus.Deleted && isDoubleClick && !isAddClick && isLeftClick && !isEditingName && !isShiftClick)
+				{
+					SetEntryIdAsSelected(entry.FullId);
+					StartEditEntryName(entry);
+					Event.current.Use();
+					Repaint();
+					return;
+				}
+				
 				var shouldShowMenu = false;
 				if (!isShiftClick)
 				{
@@ -612,7 +628,7 @@ namespace Beamable.Editor.UI.ContentWindow
 							}
 							else
 							{
-								RemoveEntryIdAsSelected(entry.FullId);
+								RemoveEntryIdAsSelected(entry.FullId);	
 							}
 							break;
 						case (false, true):
@@ -744,8 +760,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 					menu.AddItem(new GUIContent("Rename Item"), false, () =>
 					{
-						_editItemId = entry.FullId;
-						_editLabels = new[] {entry.Name};
+						StartEditEntryName(entry);
 					});
 
 
@@ -847,12 +862,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			menu.DropDown(new Rect(menuPosition, Vector2.zero));
 		}
 
+		private void StartEditEntryName(LocalContentManifestEntry entry)
+		{
+			_editItemId = entry.FullId;
+			_editLabels = new[] {entry.Name};
+		}
+
 		private string[] DrawTableRow(string[] labels,
-		                                 float[] columnWidths,
-		                                 GUIStyle rowStyle,
-		                                 GUIStyle fieldStyle,
-		                                 Rect fullRect,
-		                                 Texture[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
+		                              float[] columnWidths,
+		                              GUIStyle rowStyle,
+		                              GUIStyle fieldStyle,
+		                              Rect fullRect,
+		                              Texture[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -944,6 +965,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void SetEntryIdAsSelected(string entryId)
 		{
+			if (!string.IsNullOrEmpty(_editItemId))
+			{
+				RenameEntry(_editItemId, _editLabels[0]);
+			}
+			
 			if(_contentService.TryGetContentObject(entryId, out ContentObject value))
 			{
 				Selection.activeObject = value;
