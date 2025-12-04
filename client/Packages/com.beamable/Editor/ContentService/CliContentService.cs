@@ -311,14 +311,16 @@ namespace Beamable.Editor.ContentService
 			string newFullId = $"{entry.TypeName}.{newName}";
 			var fullName = $"{newFullId}.json";
 
-			string fileDirectoryPath = Path.GetDirectoryName(entry.JsonFilePath);
+			string originalPath = entry.JsonFilePath;
+			string fileDirectoryPath = Path.GetDirectoryName(originalPath);
 			string newFileNamePath = Path.Combine(fileDirectoryPath, fullName);
 			if (File.Exists(newFileNamePath))
 			{
 				Debug.LogError($"A Content already exists with name: {newName}");
 				return contentId;
 			}
-
+			
+			
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
@@ -330,8 +332,16 @@ namespace Beamable.Editor.ContentService
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
 			}
+			else
+			{
+				RemoveContentFromCache(entry);
+				entry.Name = newName;
+				entry.FullId = newFullId;
+				AddContentToCache(entry);
+			}
 
-			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, fullName);
+			BeamUnityFileUtils.RenameFile(originalPath, fullName);
+			
 			return newFullId;
 		}
 
@@ -486,11 +496,10 @@ namespace Beamable.Editor.ContentService
 							if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
 							{
 								RemoveContentFromCache(oldEntry);
-							}
-
-							if (oldEntry.StatusEnum is not ContentStatus.Created)
-							{
-								AddContentToCache(entry);
+								if (oldEntry.StatusEnum is not ContentStatus.Created)
+								{
+									AddContentToCache(entry);
+								}
 							}
 
 							ValidationContext.AllContent.Remove(entry.FullId);
