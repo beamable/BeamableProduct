@@ -477,7 +477,9 @@ namespace Beamable.Common.Content
 				return privateFields;
 			}
 
-			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).ToList();
+			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+				.Where(field => field.GetCustomAttribute<NonSerializedAttribute>() == null &&
+				                !typeof(Delegate).IsAssignableFrom(field.FieldType)).ToList();
 			var listOfPrivateFields = GetAllPrivateFields(type).Where(field =>
 			{
 				return field.GetCustomAttributes<SerializeField>() != null || field.GetCustomAttribute<ContentFieldAttribute>() != null;
@@ -652,24 +654,25 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, bool disableExceptions = false)
+		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, out bool schemaIsDifferent, bool disableExceptions = false)
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 
-			return BaseConvertType(root, disableExceptions, instanceToDeserialize, instanceId);
+			return BaseConvertType(root, disableExceptions, instanceToDeserialize, out schemaIsDifferent, instanceId);
 		}
 
 		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
-			return (TContent)BaseConvertType(root, disableExceptions, instance);
+			return (TContent)BaseConvertType(root, disableExceptions, instance, out _);
 		}
 
-		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, string itemId = null)
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, out bool schemaIsDifferent, string itemId = null)
 		{
+			schemaIsDifferent = false;
 			var fields = GetFieldInfos(instance.GetType(), true);
 
 			var id = itemId ?? root["id"].ToString();
@@ -691,6 +694,16 @@ namespace Beamable.Common.Content
 			var properties = root["properties"] as ArrayDict;
 			instance.SetIdAndVersion(id, version);
 
+			// track all the keys in the json. If we visit them, we'll remove them. 
+			// if any are left over, then the schema is different. 
+			var jsonPropertyKeys = new HashSet<string>();
+			if (properties != null)
+			{
+				foreach (var kvp in properties)
+				{
+					jsonPropertyKeys.Add(kvp.Key);
+				}
+			}
 
 			foreach (var field in fields)
 			{
@@ -701,7 +714,8 @@ namespace Beamable.Common.Content
 				if (!properties.TryGetValue(field.SerializedName, out property))
 				{
 					// mark empty optional, if exists.
-					if (typeof(Optional).IsAssignableFrom(field.FieldType))
+					bool isOptional = typeof(Optional).IsAssignableFrom(field.FieldType);
+					if (isOptional)
 					{
 						var optional = Activator.CreateInstance(field.FieldType);
 						field.SetValue(instance, optional);
@@ -716,15 +730,25 @@ namespace Beamable.Common.Content
 							// ah ha! We found the field...
 							foundFormerlySerializedAs = true;
 							field.SerializedName = field.FormerlySerializedAs[i];
+							jsonPropertyKeys.Remove(field.FormerlySerializedAs[i]);
 							break;
 						}
 					}
 
 					if (!foundFormerlySerializedAs)
 					{
+						// If it's not optional and not found, the schema doesn't match
+						if (!isOptional)
+						{
+							schemaIsDifferent = true;
+						}
 						continue; // there is no property for this field...
 
 					}
+				}
+				else
+				{
+					jsonPropertyKeys.Remove(field.SerializedName);
 				}
 
 				if (property is ArrayDict propertyDict)
@@ -823,6 +847,13 @@ namespace Beamable.Common.Content
 					}
 				}
 			}
+			
+			// If there are extra keys in the JSON that aren't in the class, the schema is different
+			if (jsonPropertyKeys.Count > 0)
+			{
+				schemaIsDifferent = true;
+			}
+			
 			if (instance is ISerializationCallbackReceiver receiver)
 				receiver.OnAfterDeserialize();
 

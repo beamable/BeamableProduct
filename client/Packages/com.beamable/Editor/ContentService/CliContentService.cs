@@ -795,7 +795,7 @@ namespace Beamable.Editor.ContentService
 			try
 			{
 				contentObject =
-					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId,
+					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId, out bool schemaDiffers,
 					                                                  disableExceptions: true) as ContentObject;
 				if (contentObject)
 				{
@@ -803,6 +803,11 @@ namespace Beamable.Editor.ContentService
 					contentObject.ContentStatus = entry.StatusEnum;
 					contentObject.IsInConflict = entry.IsInConflict;
 					contentObject.OnEditorChanged = () => { SaveContent(contentObject); };
+					if (schemaDiffers)
+					{
+						Debug.LogError($"Schema for content with id=[{entry.FullId}] has changed, it will be marked as modified because we can't convert the JSON to the current local schema.\nPlease update the scriptable object.\nJson: {fileContent}");
+						SaveContent(contentObject);
+					}
 				}
 			}
 			catch
