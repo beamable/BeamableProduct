@@ -54,6 +54,9 @@ namespace Beamable.Content
 			get => ValidateManifestID(_runtimeManifestID);
 			set => _runtimeManifestID = ValidateManifestID(value);
 		}
+		
+		[Tooltip("When enabled, the Beamable SDK will validate that the content schema is the same between the C# Definition and JSON data.")]
+		public bool validateSchemaDifference = true;
 
 		[Header("Baking")]
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
