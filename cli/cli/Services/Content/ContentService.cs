@@ -552,24 +552,31 @@ public class ContentService
 						}
 					}
 
-					var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
-
 					var id = Path.GetFileNameWithoutExtension(fp);
-					var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
-					var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
-					
-					var contentFile = new ContentFile()
+					try
 					{
-						Id = id,
-						LocalFilePath = fp,
-						Properties = properties,
-						Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
-						FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-						ReferenceContent = referenceContent,
-					};
-					contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+						var json = JsonSerializer.Deserialize<JsonElement>(text, GetContentFileSerializationOptions());
+						var referenceContent = localFiles.TargetManifest.entries.FirstOrDefault(e => e.contentId == id);
+						var properties = json.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
 
-					return contentFile;
+						var contentFile = new ContentFile()
+						{
+							Id = id,
+							LocalFilePath = fp,
+							Properties = properties,
+							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
+							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
+							ReferenceContent = referenceContent,
+						};
+						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+
+						return contentFile;
+					}
+					catch (Exception e)
+					{
+						Log.Error(e, $"Error when loading content file {fp}");
+						throw;
+					}
 				})
 				// We'll also have on entry for each entry in the reference manifest that is NOT represented in the local files.
 				.Concat(
@@ -697,7 +704,7 @@ public class ContentService
 	///
 	/// For updates of existing files, there are no restrictions. 
 	/// </summary>
-	public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties)
+	public async Task BulkSaveLocalContent(LocalContentFiles localCache, string[] contentIds, string[] contentProperties, CancellationToken cancellationToken = default)
 	{
 		var createdOrUpdatedDocs = new List<ContentFile>(contentIds.Length);
 		for (int i = 0; i < contentIds.Length; i++)
@@ -729,11 +736,11 @@ public class ContentService
 		}
 
 		// Save the actual created or updated content
-		await _fileSystemOperationSemaphore.WaitAsync();
+		await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
 		try
 		{
 			var contentFolder = EnsureContentPathForRealmExists(out _, _requester.Pid, localCache.ManifestId);
-			var updateTasks = createdOrUpdatedDocs.Select(d => SaveContentFile(contentFolder, d));
+			var updateTasks = createdOrUpdatedDocs.Select(d => SaveContentFile(contentFolder, d, cancellationToken));
 			await Task.WhenAll(updateTasks);
 		}
 		catch (Exception e)
@@ -1506,7 +1513,7 @@ public class ContentService
 	/// When <paramref name="maxRemoveCount"/> is 0, we'll remove every instance of that tag from the list of tags.
 	/// If its any value ABOVE 0, we'll remove only that many instances of the tags from the list of content.
 	/// </summary>
-	public async Task RemoveTags(LocalContentFiles localContentFiles, string[] tags)
+	public async Task RemoveTags(LocalContentFiles localContentFiles, string[] tags, CancellationToken token = default)
 	{
 		// The caller of this function must ensure that a reset has happened at least once in this realm (hence the assert)
 		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, localContentFiles.ManifestId);
@@ -1521,7 +1528,7 @@ public class ContentService
 			var newTags = existingTags.Except(tags);
 
 			f.Tags = JsonSerializer.SerializeToElement(newTags);
-			saveTasks.Add(SaveContentFile(contentFolder, f));
+			saveTasks.Add(SaveContentFile(contentFolder, f, token));
 		}
 
 		await Task.WhenAll(saveTasks);
@@ -1530,13 +1537,13 @@ public class ContentService
 	/// <summary>
 	/// Utility function that saves the given <see cref="ContentFile"/> to the given folder.
 	/// </summary>
-	public async Task SaveContentFile(string contentFolder, ContentFile f)
+	public async Task SaveContentFile(string contentFolder, ContentFile f, CancellationToken token = default)
 	{
 		try
 		{
 			var fileName = Path.Combine(contentFolder, $"{f.Id}.json");
 			var fileContents = JsonSerializer.Serialize(f, GetContentFileSerializationOptions());
-			await File.WriteAllTextAsync(fileName, fileContents);
+			await DirectoryUtils.WriteUtf8FileAsync(fileName, fileContents, token);
 		}
 		catch(Exception exception)
 		{
