@@ -443,13 +443,22 @@ namespace Beamable.Common.Content
 					wrapper.SerializedName = field.Name;
 				}
 
-				if (attr != null && attr.FormerlySerializedAs != null)
+				if (attr is { FormerlySerializedAs: { } })
 				{
 					wrapper.FormerlySerializedAs = attr.FormerlySerializedAs;
 				}
 				else
 				{
-					wrapper.FormerlySerializedAs = new string[] { };
+					var formerlySerializedList = new List<string>();
+					var formerlySerializedAttrs = field.GetCustomAttributes<UnityEngine.Serialization.FormerlySerializedAsAttribute>();
+					foreach (var formerlyAttr in formerlySerializedAttrs)
+					{
+						if (!string.IsNullOrEmpty(formerlyAttr.oldName))
+						{
+							formerlySerializedList.Add(formerlyAttr.oldName);
+						}
+					}
+					wrapper.FormerlySerializedAs = formerlySerializedList.ToArray();
 				}
 
 				wrapper.RawField = field;
