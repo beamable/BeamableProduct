@@ -10,6 +10,7 @@ namespace cli.Commands.Project;
 public class NewStorageCommandArgs : SolutionCommandArgs
 {
 	public List<string> linkedServices;
+	public string targetFramework;
 }
 
 
@@ -24,6 +25,17 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 	public override void Configure()
 	{
+		AddOption(
+			new Option<string>(new string[] { "--target-framework", "-f" },
+				() =>
+				{
+					return "net" + AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
+				},
+				"The target framework to use for the new project. Defaults to the current dotnet runtime framework."),
+			(args, i) =>
+			{
+				args.targetFramework = i;
+			});
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		SolutionCommandArgs.Configure(this);
 
