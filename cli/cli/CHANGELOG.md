@@ -66,6 +66,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam project ps` no longer reports remote storages incorrectly
 - Issue that `beam project logs` were skipping logs
 
+## [5.4.3] - 2025-12-04
+### Fixed
+- `content ps -w` no longer hangs forever when invoked from CLI server
+- validation case issue for rewards in `game_types` content
+
 ## [5.4.2] - 2025-09-24
 ### Fixed
  - Issue when deserializing content with any fields that have the Attribute `[IgnoreContentField]` 

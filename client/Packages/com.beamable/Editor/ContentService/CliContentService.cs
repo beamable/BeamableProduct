@@ -311,14 +311,16 @@ namespace Beamable.Editor.ContentService
 			string newFullId = $"{entry.TypeName}.{newName}";
 			var fullName = $"{newFullId}.json";
 
-			string fileDirectoryPath = Path.GetDirectoryName(entry.JsonFilePath);
+			string originalPath = entry.JsonFilePath;
+			string fileDirectoryPath = Path.GetDirectoryName(originalPath);
 			string newFileNamePath = Path.Combine(fileDirectoryPath, fullName);
 			if (File.Exists(newFileNamePath))
 			{
 				Debug.LogError($"A Content already exists with name: {newName}");
 				return contentId;
 			}
-
+			
+			
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
@@ -330,8 +332,16 @@ namespace Beamable.Editor.ContentService
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
 			}
+			else
+			{
+				RemoveContentFromCache(entry);
+				entry.Name = newName;
+				entry.FullId = newFullId;
+				AddContentToCache(entry);
+			}
 
-			BeamUnityFileUtils.RenameFile(entry.JsonFilePath, fullName);
+			BeamUnityFileUtils.RenameFile(originalPath, fullName);
+			
 			return newFullId;
 		}
 
@@ -486,11 +496,10 @@ namespace Beamable.Editor.ContentService
 							if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
 							{
 								RemoveContentFromCache(oldEntry);
-							}
-
-							if (oldEntry.StatusEnum is not ContentStatus.Created)
-							{
-								AddContentToCache(entry);
+								if (oldEntry.StatusEnum is not ContentStatus.Created)
+								{
+									AddContentToCache(entry);
+								}
 							}
 
 							ValidationContext.AllContent.Remove(entry.FullId);
@@ -795,7 +804,7 @@ namespace Beamable.Editor.ContentService
 			try
 			{
 				contentObject =
-					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId,
+					ClientContentSerializer.DeserializeContentFromCli(fileContent, contentObject, entry.FullId, out SchemaDifference schemaDifference,
 					                                                  disableExceptions: true) as ContentObject;
 				if (contentObject)
 				{
@@ -803,6 +812,11 @@ namespace Beamable.Editor.ContentService
 					contentObject.ContentStatus = entry.StatusEnum;
 					contentObject.IsInConflict = entry.IsInConflict;
 					contentObject.OnEditorChanged = () => { SaveContent(contentObject); };
+					if (_contentConfiguration.validateSchemaDifference && schemaDifference != SchemaDifference.None)
+					{
+						Debug.LogWarning($"Schema for content with id=[{entry.FullId}] is different from content JSON. reason=[{schemaDifference}]\nPlease update the scriptable object to Match the JSON or Publish the local content.\nJson: {fileContent}");
+						SaveContent(contentObject);
+					}
 				}
 			}
 			catch
