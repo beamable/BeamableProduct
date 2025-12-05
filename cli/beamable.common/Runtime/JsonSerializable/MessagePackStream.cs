@@ -1,0 +1,209 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using Beamable.Common.Pooling;
+using UnityEngine;
+
+namespace Beamable.Serialization
+{
+    public static class BeamMessagePack
+    {
+        public static byte[] Serialize(JsonSerializable.ISerializable serializable)
+        {
+            var stream = new MessagePackSerializerStream();
+            serializable.Serialize(stream);
+
+            return stream._bytes.ToArray();
+        }
+    }
+    
+    public class MessagePackSerializerStream : JsonSerializable.IStreamSerializer
+    {
+        public List<byte> _bytes = new List<byte>(1000);
+        
+        public bool isSaving { get; }
+        public bool isLoading { get; }
+        public object GetValue(string key)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetValue(string key, object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HasKey(string key)
+        {
+            throw new NotImplementedException();
+        }
+
+        public JsonSerializable.ListMode Mode { get; }
+        public bool SerializeNestedJson(string key, ref JsonString jsonString)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref IDictionary<string, object> target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref bool target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref bool? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref int target)
+        {
+            // throw new NotImplementedException();
+            return true;
+        }
+
+        public bool Serialize(string key, ref int? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref long target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref long? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref ulong target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref ulong? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref float target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref float? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref double target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref double? target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref string target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Guid target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref StringBuilder target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref DateTime target, params string[] formats)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Rect target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Vector2 target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Vector3 target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Vector4 target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Color target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Quaternion target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize(string key, ref Gradient target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Serialize<T>(string key, ref T value) where T : JsonSerializable.ISerializable
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeInline<T>(string key, ref T value) where T : JsonSerializable.ISerializable
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeList<TList>(string key, ref TList value) where TList : IList, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : JsonSerializable.ISerializable, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeArray<T>(string key, ref T[] value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeDictionary<TDict, TElem>(string key, ref TDict target) where TDict : IDictionary<string, TElem>, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SerializeILL<T>(string key, ref LinkedList<T> list) where T : ClassPool<T>, new()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}

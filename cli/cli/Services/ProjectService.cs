@@ -384,7 +384,7 @@ public class ProjectService
 		}
 
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
-		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()}");
+		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()} --no-update-check --TargetFrameworkOverride {args.targetFramework}");
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath.EnquotePath()} add {microserviceInfo.ServicePath.EnquotePath()}");
 
 		await args.BeamoLocalSystem.InitManifest();
@@ -416,7 +416,7 @@ public class ProjectService
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon, args.TargetFramework);
 		return microserviceInfo;
 	}
 
@@ -541,7 +541,7 @@ public class ProjectService
 		// }
 	}
 
-	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon, string targetFramework)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -551,7 +551,7 @@ public class ProjectService
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 
 		// create the beam microservice project
-		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()}");
+		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()} --no-update-check --TargetFrameworkOverride {targetFramework}");
 
 		// restore the microservice tools
 		await RunDotnetCommand(
