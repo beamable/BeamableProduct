@@ -159,11 +159,11 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 			yield return _service.GetItems<InventoryTestItem>().Then(view =>
 			{
 				Assert.AreEqual(2, view.Count);
-				Assert.AreEqual(contentName, view[0].ItemContent.name);
+				Assert.AreEqual(contentName, view[0].ItemContent.ContentName);
 				Assert.AreEqual("bar1", view[0].Properties["foo"]);
 				Assert.AreEqual(123, view[0].ItemContent.Foo);
 
-				Assert.AreEqual(contentName, view[1].ItemContent.name);
+				Assert.AreEqual(contentName, view[1].ItemContent.ContentName);
 				Assert.AreEqual("bar2", view[1].Properties["foo"]);
 				Assert.AreEqual(123, view[1].ItemContent.Foo);
 			}).AsYield();
@@ -215,7 +215,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 			yield return _service.GetItems<InventoryTestItem>().Then(view =>
 			{
 				Assert.AreEqual(1, view.Count);
-				Assert.AreEqual(contentName, view[0].ItemContent.name);
+				Assert.AreEqual(contentName, view[0].ItemContent.ContentName);
 				Assert.AreEqual("bar", view[0].Properties["foo"]);
 				Assert.AreEqual(123, view[0].ItemContent.Foo);
 			}).AsYield();

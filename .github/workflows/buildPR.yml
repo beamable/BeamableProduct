@@ -44,6 +44,11 @@ jobs:
           name: Microservice Nuget Package
           path: ./nuget-build
           retention-days: 1
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -103,6 +108,11 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Install local packages
         working-directory: ./
         shell: bash
@@ -167,6 +177,7 @@ jobs:
           - 2021.3.29f1
           - 2022.3.7f1
           - 6000.0.37f1
+          - 6000.2.8f1
         include:
           - unityVersion: 2022.3.7f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
@@ -208,6 +219,11 @@ jobs:
           dotnet-version: |
             9.0.x
             8.0.302
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
@@ -258,7 +274,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.unityVersion == '6000.2.8f1' && '3.2.0' || '3.1.0' }}
           customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
@@ -325,6 +341,11 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |

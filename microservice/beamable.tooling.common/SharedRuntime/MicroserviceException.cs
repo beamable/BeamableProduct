@@ -89,6 +89,15 @@ namespace Beamable.Server
 
 		}
 	}
+	
+	public class HeaderMissingRequiredException : MicroserviceException
+	{
+		public HeaderMissingRequiredException(string missingParameterName)
+			: base(400, "inputParameterFailure", $"Parameter requires header={missingParameterName}")
+		{
+
+		}
+	}
 
 	public class ParameterNullException : MicroserviceException
 	{

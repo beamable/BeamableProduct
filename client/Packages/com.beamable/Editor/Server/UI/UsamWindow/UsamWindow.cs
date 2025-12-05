@@ -40,6 +40,16 @@ namespace Beamable.Editor.Microservice.UI2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
+		[MenuItem(
+			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			"Generate Assembly Definition Projects",
+			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1)]
+		public static void ForceGenerateSharedProject()
+		{
+			var usamService = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();
+			CsProjUtil.OnPreGeneratingCSProjectFiles(usamService);
+		}
+
 		public static async void CreateInState(WindowState state)
 		{
 			var window = await GetFullyInitializedWindow();

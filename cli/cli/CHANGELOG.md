@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.2]
+### Changed
+- Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   
+
+## [6.2.1] - 2025-11-20
+### Fixed
+- Reverted content serialization caching
+
+## [6.2.0] - 2025-11-19
+### Changed
+- `project ps` command now also outputs storage object dependencies for services that has them.
+- Improved ContentTypeCache to avoid unnecessary allocations and improve performance.
+
+### Fixed
+- Fixed an issue where Unity's `AssetReference` type fields were set to null instead of their default value when creating new content.
+
+## [6.1.0] - 2025-10-31
+### Added
+- New Option to Restore Snapshots in additional mode (It will keep all local content and just replace or add new contents to it)
+- Otel Metrics enabled for CLI
+
+### Changed
+- CLI requests are no longer retried more than once for invalid token
+- The Content Manager now correctly updates reference manifest UIDs for all outdated content, including contents copied from folders.
+- Updated Beamable docs reference for the new documentation page
+
+### Fixed
+- Fixed an issue when generating MakeAuthenticatedBlueprintRequestProcessor for Unreal was missing context parameter.
+- Fixed an issue where `.gitignore` files were not being packed into Beamable dotnet templates.
+
+## [6.0.0] - 2025-10-14
+### Added
+- CLI reports telemetry data to Beamable
+- `beam telemetry` command suite for managing Open Telemetry collectors, log data, and configuration
+- `beam deploy plan` includes new `--docker-compose-dir` option to generate a docker compose project that can be used to run services locally
+- `beam project generate-env` no longer includes realm secret by default. Pass `--include-secret` to opt into realm secret. 
+- `beam project generate-env` can write a `.env` file of required environment variables by passing a `.env` file path to the command. 
+- Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
+
+### Changed
+- `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
+- Event subscriptions use the developer's access token for authentication instead of the realm secret. 
+- `beam services` command suite is marked as internal
+- Rider IDE will be forced to re-run Beamable targets on project builds
+- `EnableUnrealBlueprintCompatibility` property is now added automatically to any `.csproj` created in a Beamable project that is linked to an Unreal project.
+- Default project template's `.gitignore` explicitly includes the `.csproj` and `.sln` files. 
+- CLI no longer indefinitely retries all HTTP requests that failed with a 50x response
+
+### Fixed
+- `content ps` allows non-`.json` files in any of your content folders.
+- `beam unreal init` command allows path to the Unreal Sdk had a `.` in it.
+- C#MS Static Analyzer no longer adds `EnableUnrealBlueprintCompatibility` incorrectly.
+- C#MS Static Analyzer with `EnableUnrealBlueprintCompatibility` enabled allows generic types with (`Promises`).  
+- Improved error message when user is not logged into CLI.
+- `beam project ps` no longer reports remote storages incorrectly
+- Issue that `beam project logs` were skipping logs
+
 ## [5.4.3] - 2025-12-04
 ### Fixed
 - `content ps -w` no longer hangs forever when invoked from CLI server

@@ -1,12 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Common.Reflection;
-using Beamable.Common.Runtime;
 using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
-using microservice.Common;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
@@ -14,9 +11,11 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.Reflection;
+using Beamable.Common.Dependencies;
 using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
+
 
 /// <summary>
 /// Generates OpenAPI documentation for a microservice.
@@ -49,48 +48,59 @@ public class ServiceDocGenerator
 
 	private static OpenApiSecurityScheme _userSecuritySchemeReference = new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = USER } };
 	private static OpenApiSecurityScheme _scopeSecuritySchemeReference = new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = SCOPE } };
-
-	/// <summary>
-	/// Generates OpenAPI documentation for a specified microservice type.
-	/// </summary>
-	/// <typeparam name="TMicroservice">The type of the microservice to generate documentation for.</typeparam>
-	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
-	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public OpenApiDocument Generate<TMicroservice>(AdminRoutes adminRoutes) where TMicroservice : Microservice
+	
+	
+	
+	
+	public OpenApiDocument Generate(StartupContext startupCtx, IDependencyProvider rootProvider)
 	{
-		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
-		return Generate(typeof(TMicroservice), attr, adminRoutes);
-	}
 
-	/// <summary>
-	/// Generates OpenAPI documentation for a specified microservice type.
-	/// </summary>
-	/// <param name="microserviceType">The type of the microservice to generate documentation for.</param>
-	/// <param name="attribute">The MicroserviceAttribute associated with the microservice.</param>
-	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
-	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes)
-	{
-		var extraSchemas = LoadDotnetDeclaredSchemasFromTypes(microserviceType.Assembly.GetExportedTypes(), out var missingAttributes)
+		var telemetryAttributes = new List<TelemetryAttributeDescriptor>();
+		if (rootProvider.CanBuildService<SingletonDependencyList<ITelemetryAttributeProvider>>())
+		{
+			var attributeProviders = rootProvider.GetService<SingletonDependencyList<ITelemetryAttributeProvider>>();
+			for (var i = attributeProviders.Elements.Length - 1; i >= 0; i --)
+			{
+				telemetryAttributes.AddRange(attributeProviders.Elements[i].GetDescriptors());
+			}
+			telemetryAttributes = telemetryAttributes.GroupBy(a => a.name, a => a).Select(g =>
+			{
+				var first = g.First();
+				return new TelemetryAttributeDescriptor
+				{
+					name = g.Key,
+					description = first.description,
+					type = first.type,
+					level = first.level,
+					source = g.Aggregate(TelemetryAttributeSource.NONE, (source, desc) => source | desc.source)
+				};
+			}).ToList();
+		}
+		
+		var uniqueAssemblies = startupCtx.routeSources
+			.Select(t => t.InstanceType.Assembly)
+			.Distinct()
+			.ToList();
+
+		var allTypes = uniqueAssemblies
+			.SelectMany(asm => asm.GetExportedTypes())
+			.ToArray();
+		
+		var extraSchemas = LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes)
 			.Select(t => t.type)
 			.ToArray();
 		if (missingAttributes.Count > 0)
 		{
 			var typesWithErr = string.Join(",", missingAttributes.Select(t => t.Name));
 			throw new Exception(
-				$"Types [{typesWithErr}] in microservice {attribute.MicroserviceName} should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.");
+				$"Types [{typesWithErr}] in microservice {startupCtx.attributes.MicroserviceName} should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.");
 		}
 
-		if (!microserviceType.IsAssignableTo(typeof(Microservice)))
-		{
-			throw new ArgumentException($"must be a subtype of {nameof(Microservice)}", nameof(microserviceType));
-		}
-
-		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, adminRoutes, _ => null);
+		var coll = RouteSourceUtil.BuildRoutes(startupCtx, startupCtx.args);
 		var methods = coll.Methods.ToList();
 		var doc = new OpenApiDocument
 		{
-			Info = new OpenApiInfo { Title = attribute.MicroserviceName, Version = "0.0.0" },
+			Info = new OpenApiInfo { Title = startupCtx.attributes.MicroserviceName, Version = "0.0.0" },
 			Paths = new OpenApiPaths(),
 			Components = new OpenApiComponents
 			{
@@ -99,9 +109,52 @@ public class ServiceDocGenerator
 		};
 		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
 
-		var interfaces = microserviceType.GetInterfaces();
+
+		var oapiTelemetryAttributes = new OpenApiArray();
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_TELEMETRY_ATTRIBUTES_KEY, oapiTelemetryAttributes);
+		var enumSourceValues = Enum.GetValues(typeof(TelemetryAttributeSource))
+			.Cast<TelemetryAttributeSource>()
+			.ToList();
+		foreach (var attr in telemetryAttributes)
+		{
+			var sources = new OpenApiArray();
+			var attrSourceArray = enumSourceValues
+				.Where(flag => flag != TelemetryAttributeSource.NONE && attr.source.HasFlag(flag))
+				.Select(flag => flag.ToString())
+				.ToArray();
+			foreach (var source in attrSourceArray)
+			{
+				sources.Add(new OpenApiString(source));
+			}
+			var oapiAttr = new OpenApiObject
+			{
+				["name"] = new OpenApiString(attr.name),
+				["description"] = new OpenApiString(attr.description),
+				["type"] = new OpenApiString(attr.type.GetDisplayName()),
+				["sources"] = sources,
+				["level"] = new OpenApiInteger((int)attr.level),
+			};
+			oapiTelemetryAttributes.Add(oapiAttr);
+		}
+		
+		
+		var interfaces = startupCtx.routeSources
+			.Select(t => t.InstanceType)
+			.SelectMany(t => t.GetInterfaces())
+			.ToList();
+		// var interfaces = microserviceType.GetInterfaces();
 		var apiComponents = new OpenApiArray();
 		var v2ApiComponents = new OpenApiArray();
+		
+		var routeSources = new OpenApiArray();
+		foreach (var routeSource in startupCtx.routeSources)
+		{
+			routeSources.Add(new OpenApiObject
+			{
+				[Constants.Features.Services.MICROSERVICE_ROUTE_SOURCE_FIELD_ROUTE_PREFIX] = new OpenApiString(routeSource.RoutePrefix),
+				[Constants.Features.Services.MICROSERVICE_ROUTE_SOURCE_FIELD_CLIENT_PREFIX] = new OpenApiString(routeSource.ClientNamespacePrefix),
+			});
+		}
 
 		foreach (Type it in interfaces)
 		{
@@ -133,9 +186,10 @@ public class ServiceDocGenerator
 		}
 
 
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_ROUTE_SOURCES_KEY, routeSources);
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY, apiComponents);
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY, v2ApiComponents);
-		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_CLASS_TYPE_KEY, new OpenApiString(microserviceType.ToString()));
+		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_CLASS_TYPE_KEY, new OpenApiString(startupCtx.attributes.MicroserviceName));
 
 		// We add to the list of schemas all complex types in method signatures and all extra schemas that were given to us (usually, this is any type that has BeamGenerateSchemaAttribute -- but we can pass
 		// in any serializable type here that follows microservice serialization rules).
@@ -203,13 +257,19 @@ public class ServiceDocGenerator
 			
 			// This schema should be excluded from client-code generation if its from a federation.
 			requestSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(method.IsFederatedCallbackMethod));
+			var openApiTags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } };
+			var operation = new OpenApiOperation
+			{
+				Responses = new OpenApiResponses { ["200"] = response }, Description = comments.Remarks, Summary = comments.Summary, Tags = openApiTags,
+			};
 			
 			for (var i = 0; i < method.ParameterInfos.Count; i++)
 			{
 				Type parameterType = method.ParameterInfos[i].ParameterType;
 				var parameterSchema = SchemaGenerator.Convert(parameterType, 0);
 				var parameterName = method.ParameterNames[i];
-
+				var parameterSource = method.ParameterSources[parameterName];
+				
 				if (parameterNameToComment.TryGetValue(parameterName, out var comment))
 				{
 					parameterSchema.Description = comment ?? "";
@@ -220,35 +280,42 @@ public class ServiceDocGenerator
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
 
-				if (parameterSchema.Reference != null && !doc.Components.Schemas.ContainsKey(parameterSchema.Reference.Id))
+				switch (parameterSource)
 				{
-					requestSchema.Properties[parameterName] = SchemaGenerator.Convert(parameterType, 1, true);
-				}
-				else
-				{
-					requestSchema.Properties[parameterName] = parameterSchema;
-				}
+					case ParameterSource.Body:
+						if (parameterSchema.Reference != null && !doc.Components.Schemas.ContainsKey(parameterSchema.Reference.Id))
+						{
+							requestSchema.Properties[parameterName] = SchemaGenerator.Convert(parameterType, 1, true);
+						}
+						else
+						{
+							requestSchema.Properties[parameterName] = parameterSchema;
+						}
+				
 
-				if (!isOptional)
-				{
-					requestSchema.Required.Add(parameterName);
-				}
-				else
-				{
-					var optionalTypeValue = new OpenApiString(parameterType.IsGenericType
-						? parameterType.GetGenericTypeDefinition().FullName.Replace("`1", "<{0}>")
-						: parameterType.FullName);
+						if (!isOptional)
+						{
+							requestSchema.Required.Add(parameterName);
+						}
+						else
+						{
+							var optionalTypeValue = new OpenApiString(parameterType.IsGenericType
+								? parameterType.GetGenericTypeDefinition().FullName.Replace("`1", "<{0}>")
+								: parameterType.FullName);
 
-					parameterSchema.Extensions.Add(SCHEMA_OPTIONAL_TYPE_KEY, optionalTypeValue);
+							parameterSchema.Extensions.Add(SCHEMA_OPTIONAL_TYPE_KEY, optionalTypeValue);
+						}
+						break;
+					case ParameterSource.Injection:
+						// don't do anything, we should not include this in the api contract because
+						//  the argument will be satisfied locally.
+						break;
 				}
+				
 			}
 
-			var openApiTags = new List<OpenApiTag> { new OpenApiTag { Name = method.Tag } };
 
-			var operation = new OpenApiOperation
-			{
-				Responses = new OpenApiResponses { ["200"] = response }, Description = comments.Remarks, Summary = comments.Summary, Tags = openApiTags,
-			};
+		
 			if (callableAttrs.Length > 0 && method.Tag != "Admin")
 			{
 				operation.Extensions.Add(Constants.Features.Services.OPERATION_CALLABLE_METHOD_TYPE_KEY,
@@ -258,6 +325,7 @@ public class ServiceDocGenerator
 			if (method.ParameterInfos.Count > 0)
 			{
 				doc.Components.Schemas.Add(requestSchemaName, requestSchema);
+				
 				operation.RequestBody = new OpenApiRequestBody
 				{
 					Content = new Dictionary<string, OpenApiMediaType>
@@ -286,6 +354,7 @@ public class ServiceDocGenerator
 
 			pathItem.Extensions.Add(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(shouldSkipClientCodeGeneration));
 			pathItem.Extensions.Add(Constants.Features.Services.PATH_CALLABLE_METHOD_NAME_KEY, new OpenApiString(method.Method.Name));
+			pathItem.Extensions.Add(Constants.Features.Services.PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY, new OpenApiString(method.ClientNamespacePrefix));
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
 
@@ -390,5 +459,34 @@ public class ServiceDocGenerator
 			output = pulledInTypesWithAttributes.Select(t => (t, t.GetCustomAttribute<BeamGenerateSchemaAttribute>())).ToList();
 
 		return output;
+	}
+}
+
+
+public static class DocGenExtensions
+{
+    
+	/// <summary>
+	/// Generates OpenAPI documentation for a specified microservice type.
+	/// </summary>
+	/// <typeparam name="TMicroservice">The type of the microservice to generate documentation for.</typeparam>
+	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
+	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
+	public static OpenApiDocument Generate<TMicroservice>(this ServiceDocGenerator generator, IDependencyProvider provider) where TMicroservice : Microservice
+	{
+		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
+		var startupContext = new StartupContext
+		{
+			routeSources = new BeamRouteSource[]
+			{
+				new BeamRouteSource
+				{
+					InstanceType = typeof(TMicroservice)
+				}
+			},
+			attributes = attr,
+			args = provider.GetService<IMicroserviceArgs>()
+		};
+		return generator.Generate(startupContext, provider);
 	}
 }

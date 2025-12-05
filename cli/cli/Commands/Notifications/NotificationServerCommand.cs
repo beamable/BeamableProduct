@@ -2,6 +2,7 @@ using cli.Utils;
 using Newtonsoft.Json;
 using System.CommandLine;
 using Beamable.Server;
+using ServicesConstants = Beamable.Common.Constants.Features.Services;
 
 namespace cli.Notifications;
 
@@ -33,8 +34,9 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 
 	public override async Task Handle(NotificationServerCommandArgs args)
 	{
-		var cancelToken = new CancellationToken();
-		var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest", "realm-config.refresh", "beamo.service_registration_changed" }, cancelToken);
+		var cancelToken = CancellationToken.None;
+		string[] filters = args.noFilterList ? Array.Empty<string>() : new[] { "content.manifest", "realm-config.refresh", "beamo.service_registration_changed", ServicesConstants.LOGGING_CONTEXT_UPDATE_EVENT};
+		var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, filters, cancelToken);
 		await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 		{
 			var bodyJson = JsonConvert.SerializeObject(message.body);

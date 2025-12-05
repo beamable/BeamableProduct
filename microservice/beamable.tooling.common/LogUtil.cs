@@ -104,18 +104,19 @@ public static class LogUtil
 		}
 	}
 
-	
+
 	/// <summary>
 	/// Tries to parse a log level string and convert it to a System log event level.
 	/// </summary>
 	/// <param name="logLevel">The log level string to parse.</param>
 	/// <param name="parsedLogLevel">The corresponding System log event level if parsing is successful.</param>
+	/// <param name="defaultLog">The default log if no string is present</param>
 	/// <returns><c>true</c> if parsing is successful, <c>false</c> otherwise.</returns>
-	public static bool TryParseSystemLogLevel(string logLevel, out LogLevel parsedLogLevel)
+	public static bool TryParseSystemLogLevel(string logLevel, out LogLevel parsedLogLevel, LogLevel defaultLog=LogLevel.Debug)
 	{
 		if (logLevel == null)
 		{
-			parsedLogLevel = LogLevel.Debug;
+			parsedLogLevel = defaultLog;
 			return false;
 		}
 

@@ -18,7 +18,6 @@ namespace Beamable.Microservice.SourceGen.Fixers;
 public class InvalidMicroserviceAttributeFixer : CodeFixProvider
 {
 	public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-			Diagnostics.Srv.MISSING_MICROSERVICE_ID_DIAGNOSTIC_ID,
 			Diagnostics.Srv.MICROSERVICE_ID_INVALID_FROM_CS_PROJ_ID);
 
 	public sealed override FixAllProvider GetFixAllProvider() => null;

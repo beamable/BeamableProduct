@@ -43,7 +43,6 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
     <PackageReference Include="System.Threading.RateLimiting" Version="9.0.1" />
     <PackageReference Include="MongoDB.Driver" Version="3.3.0"/>
 
@@ -54,6 +53,7 @@
   
   <ItemGroup Label="Public Beamable References">
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj"/>
+    <ProjectReference Include="..\..\cli\beamable.microservice.otel.exporter\beamable.microservice.otel.exporter.csproj" />
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj"/>
     <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj"/>
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj"/>

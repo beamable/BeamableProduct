@@ -1,117 +1,183 @@
-# beamable-sdk
+# Changelog
 
-## 0.4.1
+All notable changes to this project will be documented in this file.
 
-### Patch Changes
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- Fix invalid credential when `loginWithEmail` triggers a refresh token and retries.
+## [1.0.0] - 2025-11-19
 
-## 0.4.0
+### Added
 
-### Minor Changes
+- Enable Beam SDK configs to register all client/server services during initialization.
+- `Beam.use` and `BeamServer.use` now accept arrays of services or microservice clients for batch registration.
 
-- Introduced initialization via `Beam.init()` and `BeamServer.init()`.
-- Introduced new environment-variable support via `BeamBase.env` or `Beam.env` or `BeamServer.env`.
-- Introduced `use()` as a service locator, and an SDK mixin to register client and server services.
-- Added support for authentication via email/password, third-party providers, and external identity.
-- Added `federationIds` to generated microservice web client to support federated authentication.
-- Normalized built-in Beamable environment names (`dev`, `stg` and `prod`) to lowercase for consistency.
+### Fixed
 
-## 0.3.2
+- Skip refresh token attempts when endpoints return known `BeamRequester` errors (`InvalidCredentialsError`, `InvalidRefreshTokenError`, `TokenValidationError`).
 
-### Patch Changes
+## [0.6.0] - 2025-09-15
 
-- Web client generation for Beamable C# Microservices
+### Added
 
-## 0.3.1
+- Thorium socket support.
+- `BeamServerWebSocket` implementation for connecting to thorium sockets.
+- Beamable server event types, with support for custom server event types.
 
-### Patch Changes
+### Changed
 
-- Switch from Api classes to functions
-- Access to SDK APIs via `beamable-sdk/api`
-- Removed `BeamApi` class
+- `getExternalIdentityStatus` and `removeExternalIdentity` include a required `externalUserId` field.
+- Improved code structure in `Beam`, `BeamServer`, `BeamRequester`, and `BeamUtils`.
+- Updated `TokenStorage` implementation.
 
-## 0.3.0
+### Fixed
 
-### Minor Changes
+- New tokens were not being added to the Authorization header after a 401 refresh.
 
-- Added Signed Requests Implementation
-- Added `Leaderboard` Service
-- New `BeamServer` class for server-side integration with the Beam SDK
+## [0.5.1] - 2025-09-02
 
-## 0.2.0
+### Fixed
 
-### Minor Changes
+- Removed unexpected dependencies.
 
-- Added WebSocket Implementation
-- Added `Announcements` Service
-- Added `Stats` Service
-- Access to SDK schema types via `beamable-sdk/schema`
+## [0.5.0] - 2025-09-01
 
-## 0.1.7
+### Added
 
-### Patch Changes
+- `Content` service.
+- `Content` types.
+- `ContentStorage` for persisting manifests and content to IndexedDB or the file system.
+- `content.refresh` added to list of refreshable events.
+- In-memory cache for `Content` to optimize retrieval.
 
-- Separate build config for various bundle format
+### Changed
 
-## 0.1.6
+- Updated auto-generated APIs and schemas.
 
-### Patch Changes
+## [0.4.1] - 2025-08-12
 
-- New package name
+### Fixed
 
-## 0.1.5
+- Invalid credential when `loginWithEmail` triggered a refresh token and retried.
 
-### Patch Changes
+## [0.4.0] - 2025-08-06
 
-- Split bundle based on platform
+### Added
 
-## 0.1.4
+- Initialization via `Beam.init()` and `BeamServer.init()`.
+- Environment-variable support via `BeamBase.env`, `Beam.env`, and `BeamServer.env`.
+- `use()` service locator and SDK mixin to register client and server services.
+- Authentication via email/password, third-party providers, and external identity.
+- `federationIds` in generated Microservice web client for federated authentication.
 
-### Patch Changes
+### Changed
 
-- Implement file storage for token persistence in node environments
-- Upgrades to TokenStorage implementations
-- Bundle size reduction of generated api classes
-- Fix bug with token storage `isExpired` function always returning true
-- Fix bug with `BeamRequester` token refresh functionality
+- Normalized built-in Beamable environment names (`dev`, `stg`, `prod`) to lowercase.
 
-## 0.1.3
+## [0.3.2] - 2025-07-24
 
-### Patch Changes
+### Added
 
-- Minor update to the api classes
+- Web client generation for Beamable C# Microservices.
 
-## 0.1.2
+## [0.3.1] - 2025-07-18
 
-### Patch Changes
+### Changed
 
-- Make `Beam.ready()` idempotent so that calling it multiple times has no additional effect after initialization.
+- Switched from API classes to functions.
+- Access SDK APIs via `beamable-sdk/api`.
 
-## 0.1.1
+### Removed
 
-### Patch Changes
+- `BeamApi` class.
 
-- New `ready` function to initialize the sdk
-- Initial `Auth`, `Account` and `Player` services for the sdk
+## [0.3.0] - 2025-07-14
 
-## 0.1.0
+### Added
 
-### Minor Changes
+- Signed Requests implementation.
+- `Leaderboard` service.
+- `BeamServer` class for server-side integration with the Beam SDK.
 
-- Beam web sdk autogenerated schemas and apis
-- New `BeamRequester` class for serializing and deserializing api requests and responses
-- New `TokenStorage` interface and implementation for browser and node environment
-- Automatic token refresh and beam api request retry
+## [0.2.0] - 2025-06-30
 
-## 0.0.2
+### Added
 
-### Patch Changes
+- WebSocket implementation.
+- `Announcements` service.
+- `Stats` service.
+- Access to SDK schema types via `beamable-sdk/schema`.
 
-- Beam initial core implementation with default requester using fetch api
+## [0.1.7] - 2025-06-19
 
-## 0.0.1
+### Changed
 
-### Patch Changes
+- Separate build configs for various bundle formats.
 
-- Web SDK initial project setup
+## [0.1.6] - 2025-06-19
+
+### Changed
+
+- Package renamed.
+
+## [0.1.5] - Unpublished
+
+### Changed
+
+- Split bundle based on platform.
+
+## [0.1.4] - Unpublished
+
+### Added
+
+- File storage for token persistence in Node environments.
+
+### Changed
+
+- TokenStorage implementations upgraded.
+- Reduced bundle size of generated API classes.
+
+### Fixed
+
+- `TokenStorage.isExpired` always returning true.
+- `BeamRequester` token refresh functionality.
+
+## [0.1.3] - Unpublished
+
+### Changed
+
+- Minor updates to API classes.
+
+## [0.1.2] - Unpublished
+
+### Changed
+
+- `Beam.ready()` is idempotent; repeated calls have no additional effect after initialization.
+
+## [0.1.1] - Unpublished
+
+### Added
+
+- `ready` function to initialize the SDK.
+- Initial `Auth`, `Account`, and `Player` services.
+
+## [0.1.0] - Unpublished
+
+### Added
+
+- Autogenerated schemas and APIs for the Beam web SDK.
+- `BeamRequester` class for serializing and deserializing API requests and responses.
+- `TokenStorage` interface and implementations for browser and Node environments.
+- Automatic token refresh and Beam API request retry.
+
+## [0.0.2] - Unpublished
+
+### Added
+
+- Initial core implementation with default requester using the Fetch API.
+
+## [0.0.1] - Unpublished
+
+### Added
+
+- Initial project setup for the Web SDK.

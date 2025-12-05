@@ -149,7 +149,7 @@ namespace Beamable.Content
 	/// This type defines the %Client main entry point for the %Content feature.
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	/// #### Related Links
-	///     - See the <a target="_blank" href="https://docs.beamable.com/docs/content-feature">Content</a> feature
+	///     - See the <a target="_blank" href="https://help.beamable.com/Unity-4.0/unity/user-reference/beamable-services/profile-storage/content/content-overview/">Content</a> feature
 	///     documentation
 	/// - See Beamable.API script reference
 	/// ![img beamable-logo]
@@ -160,7 +160,6 @@ namespace Beamable.Content
 	{
 		private readonly IDependencyProvider _provider;
 		private readonly ContentParameterProvider _config;
-		private readonly IContentCacheFactory _cacheFactory;
 
 		/// <summary>
 		/// The default content manifest ID controls which manifest the <see cref="ContentService"/> will use.
@@ -203,7 +202,7 @@ namespace Beamable.Content
 
 		private IPlatformService Platform => _provider.GetService<IPlatformService>();
 		private IConnectivityService _connectivityService;
-		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
+		private readonly ContentCache _contentCache;
 		private readonly OfflineCache _offlineCache;
 		private static bool _testScopeEnabled;
 		private static ContentTypeReflectionCache reflectionCache;
@@ -269,11 +268,11 @@ namespace Beamable.Content
 			reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 			_provider = provider;
 			_config = config;
-			_cacheFactory = provider.GetService<IContentCacheFactory>();
 			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
 			_offlineCache = offlineCache;
+			_contentCache = new ContentCache(provider.GetService<IHttpRequester>(), this);
 
 			// Subscribable = _provider.GetService<IManifestSubscriptionFactory>()
 			//                         .CreateSubscription(CurrentDefaultManifestID);
@@ -492,14 +491,8 @@ namespace Beamable.Content
 				throw new Exception("Cannot resolve content at edit time!");
 			}
 #endif
-			ContentCache rawCache;
 
 			var determinedManifestID = DetermineManifestID(manifestID);
-			if (!_contentCaches.TryGetValue(contentType, out rawCache))
-			{
-				rawCache = _cacheFactory.CreateCache(this, determinedManifestID, contentType);
-				_contentCaches.Add(contentType, rawCache);
-			}
 
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
@@ -508,7 +501,7 @@ namespace Beamable.Content
 					// check cached content
 					if (cachedManifestInfo.TryGetValue(contentId, out var cachedInfo))
 					{
-						return rawCache.GetContentObject(cachedInfo);
+						return _contentCache.GetContentObject(cachedInfo, contentType);
 					}
 				}
 
@@ -521,7 +514,7 @@ namespace Beamable.Content
 					return Promise<IContentObject>.Failed(new ContentNotFoundException(contentId));
 
 				info.manifestID = determinedManifestID;
-				return rawCache.GetContentObject(info);
+				return _contentCache.GetContentObject(info, contentType);
 			});
 		}
 

@@ -12,21 +12,22 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 {
 	private ContentService _contentService;
 
-	public ContentSnapshotListCommand() : base("snapshot-list", "Find and list all shared (.beamable/content-snapshots) and local (.beamable/temp/content-snapshots) snapshots")
+	public ContentSnapshotListCommand() : base("snapshot-list", "Find and list all shared (.beamable/content-snapshots/[PID]) and local (.beamable/temp/content-snapshots/[PID]) snapshots")
 	{
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--manifest-id", () => "global", "Defines the name of the manifest that will be used to compare the changes between the manifest and the snapshot. The default value is `global`"), (args, s) => args.ManifestId = s);
+		AddOption(new Option<string>("--pid", () => string.Empty, "An optional field to set the PID from where you would like to get the snapshot to list. The default will get for all the realms"), (args, s) => args.Pid = s);
 	}
 
 	public override async Task<ContentSnapshotListResult> GetResult(ContentSnapshotListCommandArgs args)
 	{
 		_contentService = args.ContentService;
 		
-		var localSnapshotPaths = _contentService.GetContentSnapshots(true);
-		var sharedSnapshotPaths = _contentService.GetContentSnapshots(false);
+		var localSnapshotPaths = _contentService.GetContentSnapshots(true, args.Pid);
+		var sharedSnapshotPaths = _contentService.GetContentSnapshots(false, args.Pid);
 
 		var allContentFiles = await _contentService.GetAllContentFiles(manifestId:args.ManifestId);
 		
@@ -117,6 +118,7 @@ public class ContentSnapshotListCommand : AtomicCommand<ContentSnapshotListComma
 public class ContentSnapshotListCommandArgs : ContentCommandArgs
 {
 	public string ManifestId;
+	public string Pid;
 }
 
 [CliContractType, Serializable]

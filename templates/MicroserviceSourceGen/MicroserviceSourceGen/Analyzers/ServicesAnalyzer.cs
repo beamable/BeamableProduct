@@ -26,7 +26,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private string _beamId;
 
 	private const string VALIDATE_CALLABLE_TYPES_PROPERTY_NAME = "build_property.beamvalidatecallabletypesexistinsharedlibraries";
-	private const string ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME = "build_property.enableunrealblueprintcompability";
+	private const string ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME = "build_property.enableunrealblueprintcompatibility";
 	private const string BEAM_ID_PROPERTY_NAME = "build_property.beamid";
 	private const string DICTIONARY_CLASS_FULLNAME = "System.Collections.Generic.Dictionary";
 	private const string LIST_CLASS_FULLNAME = "System.Collections.Generic.List";
@@ -47,9 +47,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
 		ImmutableArray.Create(Diagnostics.BeamVerboseDescriptor, Diagnostics.BeamExceptionDescriptor,
-			Diagnostics.Srv.InvalidAsyncVoidCallableMethod, Diagnostics.Srv.MultipleMicroserviceClassesDetected,
-			Diagnostics.Srv.MissingMicroserviceId, Diagnostics.Srv.NonPartialMicroserviceClassDetected,
-			Diagnostics.Srv.NoMicroserviceClassesDetected, Diagnostics.Srv.CallableTypeInsideMicroserviceScope,
+			Diagnostics.Srv.InvalidAsyncVoidCallableMethod, Diagnostics.Srv.CallableTypeInsideMicroserviceScope,
 			Diagnostics.Srv.CallableMethodTypeIsNested, Diagnostics.Srv.ClassBeamGenerateSchemaAttributeIsNested,
 			Diagnostics.Srv.MicroserviceIdInvalidFromCsProj, Diagnostics.Srv.StaticFieldFoundInMicroservice,
 			Diagnostics.Srv.MissingSerializableAttributeOnType, Diagnostics.Srv.PropertiesFoundInSerializableTypes,
@@ -144,35 +142,6 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				Location.None, 
 				analysisContext.Compilation));
 			
-			// Diagnostics generated after the compilation end do not appear as red squiggle in the code
-			// This happens because the SyntaxTree is already done, and it cannot be changed anymore with 
-			// diagnostics warning/suggestions/errors
-			if (microserviceInfos.Count == 0)
-			{
-				var err = Diagnostic.Create(Diagnostics.Srv.NoMicroserviceClassesDetected, null);
-				analysisContext.ReportDiagnostic(err);
-			}
-			
-			// Check if there is more than one microservice in the cs proj.
-			// This needs to run at the end of the compilation to ensure that all microservices classes were be detected
-			// The Distinct is used to we ignore multiple partial classes of the same name
-			// Then we get the first one by order so we keep the diagnostic always on the same class 
-			
-			if (foundMicroservices.Count() > 1)
-			{
-				MicroserviceInfo microserviceInfo = microserviceInfos.OrderBy(item => item.Name).First();
-				string otherMicroservices = string.Join(", ", microserviceInfos
-					.Where(item => item.Name != microserviceInfo.Name)
-					.Select(info => info.Name).ToList());
-				
-				var diag = Diagnostic.Create(
-					Diagnostics.Srv.MultipleMicroserviceClassesDetected,
-					microserviceInfo.MicroserviceClassLocation,
-					otherMicroservices
-				);
-		
-				analysisContext.ReportDiagnostic(diag);
-			}
 		});
 	}
 
@@ -230,8 +199,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			if (!attributes.Any(att => att.AttributeClass is { Name: nameof(MicroserviceAttribute) }))
 			{
-				var missingIdDiagnostic = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, location);
-				symbolContext.ReportDiagnostic(missingIdDiagnostic);
+				
 			}
 			else
 			{
@@ -247,14 +215,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					symbolContext.ReportDiagnostic(invalidMicroserviceBeamId);
 				}
 			}
-
-			if (!classDeclarationSyntaxes.Any(syntax =>
-				    syntax.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword))))
-			{
-				var err = Diagnostic.Create(Diagnostics.Srv.NonPartialMicroserviceClassDetected, location);
-				symbolContext.ReportDiagnostic(err);
-			}
-
+			
 			return new MicroserviceInfo(namedSymbol);
 		}
 		catch (Exception e)
@@ -492,7 +453,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	private static bool IsBlueprintCompatible(AnalyzerConfigOptions options)
 	{
 		return options.TryGetValue(ENABLE_UNREAL_BLUEPRINT_COMPABILITY_NAME, out string value) &&
-		       value.Equals("true", StringComparison.CurrentCultureIgnoreCase);
+		       value.Equals("true", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static void ValidateParameters(SyntaxNodeAnalysisContext context, IMethodSymbol methodSymbol)
@@ -505,6 +466,20 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				$"Method Name {methodSymbol.Name} | Parameter {parameterSymbol.Name}, Location: {parameterLocation.GetLineSpan()}", 
 				parameterLocation, 
 				context.Compilation));
+
+			var parameterAttributes = parameterSymbol.GetAttributes();
+
+			var isInjected = parameterAttributes.Any(p => p.AttributeClass.Name == nameof(InjectAttribute));
+			var parameterAttribute =
+				parameterAttributes.FirstOrDefault(p => p.AttributeClass.Name == nameof(ParameterAttribute));
+			if (parameterAttribute != null)
+			{
+				isInjected |= parameterAttribute.ConstructorArguments.Any(a =>
+					a.Type.Name == nameof(ParameterSource) && a.Value is int value &&
+					value == (int)ParameterSource.Injection);
+			}
+
+			if (isInjected) return;
 			
 			bool isBlueprintCompatible = IsBlueprintCompatible(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions);
 			
@@ -988,7 +963,14 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		{
 			string typeName = genericTypeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
 			
-			if(isBlueprintCompatible && !AllowedGenericTypes.Any(allowed => typeName.StartsWith(allowed)))
+			var allGenericTypeSymbol = genericTypeSymbol.GetAllBaseTypes();
+			
+			reportDiagnostic.Invoke(Diagnostics.GetVerbose(nameof(ValidateGenericTypes), 
+				$"Reference {reference} - IsReturn: {isReturnType}, has base types: {allBaseTypesString} - " +
+				$"TypeName: {typeName}, IsCompatible: {isBlueprintCompatible}, genericTypes:{string.Join(",", allGenericTypeSymbol)}, AllowedTypes:{string.Join(",", AllowedGenericTypes)}", 
+				location, 
+				compilation));
+			if(isBlueprintCompatible && !AllowedGenericTypes.Any(allowed => allGenericTypeSymbol.Any(baseName => baseName.StartsWith(allowed))))
 			{
 				var genericTypeFoundDiagnostic = Diagnostic.Create(Diagnostics.Srv.InvalidGenericTypeOnMicroservice, location, messageParam, methodName);
 				reportDiagnostic.Invoke(genericTypeFoundDiagnostic);

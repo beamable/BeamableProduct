@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterAll } from 'vitest';
 import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
+import { ContentService } from '@/services/ContentService';
 
 // Use mock WebSocket for realtime connection
 vi.mock('@/network/websocket/BeamWebSocket', () => ({
@@ -22,6 +23,10 @@ describe('Beam', () => {
       'refreshAuthToken',
     );
     const mockAccountCurrent = vi.spyOn(AccountService.prototype, 'current');
+    const mockSyncContentManifests = vi.spyOn(
+      ContentService.prototype,
+      'syncContentManifests',
+    );
     let config: BeamConfig;
 
     beforeEach(() => {
@@ -29,6 +34,7 @@ describe('Beam', () => {
       mockLoginAsGuest.mockClear();
       mockRefreshAuthToken.mockClear();
       mockAccountCurrent.mockClear();
+      mockSyncContentManifests.mockClear();
     });
 
     afterAll(() => {
@@ -40,12 +46,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => null,
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: null,
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: false,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };
@@ -63,6 +70,7 @@ describe('Beam', () => {
         scopes: [],
         thirdPartyAppAssociations: [],
       });
+      mockSyncContentManifests.mockResolvedValue();
 
       const beam = await Beam.init(config);
 
@@ -73,6 +81,7 @@ describe('Beam', () => {
         expect.objectContaining({ access_token: 'guest-token' }),
       );
       expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
 
     it('should initialize Beam and refresh token if access token is expired', async () => {
@@ -80,12 +89,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => 'access-token',
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: true,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };
@@ -103,6 +113,7 @@ describe('Beam', () => {
         scopes: [],
         thirdPartyAppAssociations: [],
       });
+      mockSyncContentManifests.mockResolvedValue();
 
       const beam = await Beam.init(config);
 
@@ -115,6 +126,7 @@ describe('Beam', () => {
         expect.objectContaining({ access_token: 'new-access-token' }),
       );
       expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
 
     it('should initialize Beam and use existing token if not expired', async () => {
@@ -122,12 +134,13 @@ describe('Beam', () => {
         cid: 'test-cid',
         pid: 'test-pid',
         tokenStorage: {
-          getAccessToken: async () => 'access-token',
-          getRefreshToken: async () => 'refresh-token',
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
           isExpired: false,
-          setAccessToken: async () => {},
-          setRefreshToken: async () => {},
-          setExpiresIn: async () => {},
+          setTokenData: async () => {},
           clear: async () => {},
         } as unknown as TokenStorage,
       };
@@ -138,12 +151,14 @@ describe('Beam', () => {
         scopes: [],
         thirdPartyAppAssociations: [],
       });
+      mockSyncContentManifests.mockResolvedValue();
 
       const beam = await Beam.init(config);
 
       expect(beam).toBeInstanceOf(Beam);
       expect(mockLoginAsGuest).not.toHaveBeenCalled();
       expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
   });
 });

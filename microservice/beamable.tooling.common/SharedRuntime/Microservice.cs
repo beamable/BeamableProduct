@@ -11,13 +11,89 @@ namespace Beamable.Server
 	public delegate IBeamableRequester RequesterFactory(RequestContext ctx);
 	public delegate IBeamableServices ServicesFactory(IBeamableRequester requester, RequestContext ctx);
 
-	public struct RequestHandlerData
+	public struct RequestHandlerData : IUserScope
 	{
 		public RequestContext Context;
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
 		public IDependencyProvider Provider;
 		public ISignedRequester SignedRequester => Provider.GetService<ISignedRequester>();
+
+		RequestContext IUserScope.Context => Context;
+
+		IBeamableRequester IUserScope.Request => Requester;
+
+		IBeamableServices IUserScope.Services => Services;
+
+		IDependencyProvider IUserScope.Provider => Provider;
+
+		public ValueTask DisposeAsync()
+		{
+			// this whole type is obsolete, we don't need to do anything here. 
+			return new ValueTask();
+		}
+
+		public void Dispose()
+		{
+			
+		}
+	}
+
+	public interface IUserScope 
+			: IDisposable
+#if NETSTANDARD2_1_OR_GREATER
+			, IAsyncDisposable
+#endif
+	{
+		public RequestContext Context { get; }
+		public IBeamableRequester Request { get; }
+		public IBeamableServices Services { get; }
+		public IDependencyProvider Provider { get; }
+	}
+
+	public interface IUserScopeCallbackReceiver : IUserScope
+	{
+		void ReceiveDefaultServices(IDependencyProviderScope scope);
+	}
+
+	public static class IUserScopeExtensions
+	{
+		public static IUserScope CreateUserScope(
+			this IUserScope scope, 
+			long userId,
+			Action<IDependencyBuilder> configurator = null,
+			bool requireAdmin = false
+			)
+		{
+			if (userId <= 0)
+			{
+				throw new InvalidArgumentException(
+					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
+			}
+			// require admin privs.
+			if (requireAdmin)
+			{
+				scope.Context.AssertAdmin();
+			}
+			
+			var newCtx = new RequestContext(
+				scope.Context.Cid, scope.Context.Pid, scope.Context.Id, scope.Context.Status, userId, scope.Context.Path, scope.Context.Method, scope.Context.Body,
+				scope.Context.Scopes, scope.Context.Headers);
+			
+			
+			var provider = scope.Provider.Fork(builder =>
+			{
+				// each _request_ gets its own service scope, so we fork the provider again and override certain services. 
+				builder.Remove<RequestContext>();
+				builder.AddScoped(newCtx);
+				
+				configurator?.Invoke(builder);
+			});
+
+			var nextScope = new UserRequestDataHandler(provider);
+			return nextScope;
+		}
+		
 	}
 
 	/// <summary>
@@ -30,13 +106,13 @@ namespace Beamable.Server
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/microservices-feature">Microservice</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/cloud-services/microservices/microservice-framework/">Microservice</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
 	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public abstract class Microservice
+	public abstract class Microservice : IUserScopeCallbackReceiver
 	{
 		/// <summary>
 		/// This type defines the %Microservice %RequestContext.
@@ -63,6 +139,14 @@ namespace Beamable.Server
 		protected IBeamableServices Services;
 
 		protected IStorageObjectConnectionProvider Storage;
+
+		RequestContext IUserScope.Context => Context;
+
+		IBeamableRequester IUserScope.Request => Requester;
+
+		IBeamableServices IUserScope.Services => Services;
+
+		IDependencyProvider IUserScope.Provider => Provider;
 
 		/// <summary>
 		/// <para>
@@ -92,7 +176,7 @@ namespace Beamable.Server
 		private RequesterFactory _requesterFactory;
 		private ServicesFactory _servicesFactory;
 		private IDependencyProviderScope _serviceProvider;
-		private Func<RequestContext, Action<IDependencyBuilder>, IDependencyProviderScope> _scopeGenerator;
+		private UserGenerator _scopeGenerator;
 
 		[Obsolete]
 		public void ProvideContext(RequestContext ctx)
@@ -114,7 +198,8 @@ namespace Beamable.Server
 			Services = _servicesFactory(Requester, Context);
 		}
 
-		public void ProvideDefaultServices(IDependencyProviderScope provider, Func<RequestContext, Action<IDependencyBuilder>, IDependencyProviderScope> scopeGenerator)
+		[Obsolete]
+		public void ProvideDefaultServices(IDependencyProviderScope provider, UserGenerator scopeGenerator)
 		{
 			Context = provider.GetService<RequestContext>();
 			Requester = provider.GetService<IBeamableRequester>();
@@ -122,6 +207,15 @@ namespace Beamable.Server
 			Storage = provider.GetService<IStorageObjectConnectionProvider>();
 			_serviceProvider = provider;
 			_scopeGenerator = scopeGenerator;
+		}
+		
+		public void ReceiveDefaultServices(IDependencyProviderScope scope)
+		{
+			Context = scope.GetService<RequestContext>();
+			Requester = scope.GetService<IBeamableRequester>();
+			Services = scope.GetService<IBeamableServices>();
+			Storage = scope.GetService<IStorageObjectConnectionProvider>();
+			_serviceProvider = scope;
 		}
 
 		/// <summary>
@@ -145,31 +239,14 @@ namespace Beamable.Server
 		[Obsolete("Please use the " + nameof(AssumeNewUser) + " instead")]
 		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
-			if (userId <= 0)
-			{
-				throw new InvalidArgumentException(
-					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
-			}
-			
-			// require admin privs.
-			if (requireAdminUser)
-			{
-				Context.AssertAdmin();
-			}
-
-			var newCtx = new RequestContext(
-			   Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
-			   Context.Scopes, Context.Headers);
-			var provider = _scopeGenerator(newCtx, null);
-
-			var requester = provider.GetService<IBeamableRequester>();
-			var services = provider.GetService<IBeamableServices>();
+			var scope = (IUserScope)this;
+			var nextScope = scope.CreateUserScope(userId, requireAdmin: requireAdminUser);
 			return new RequestHandlerData
 			{
-				Context = newCtx,
-				Requester = requester,
-				Services = services,
-				Provider = provider
+				Context = nextScope.Context,
+				Provider = nextScope.Provider,
+				Requester = nextScope.Request,
+				Services = nextScope.Services
 			};
 		}
 
@@ -194,31 +271,7 @@ namespace Beamable.Server
 		/// <returns>A <see cref="UserRequestDataHandler"/> object that contains a request context, and a collection of services to execute SDK calls against.</returns>
 		protected UserRequestDataHandler AssumeNewUser(long userId, Action<IDependencyBuilder> configurator = null, bool requireAdminUser = true)
 		{
-			if (userId <= 0)
-			{
-				throw new InvalidArgumentException(
-					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
-			}
-			// require admin privs.
-			if (requireAdminUser)
-			{
-				Context.AssertAdmin();
-			}
-
-			var newCtx = new RequestContext(
-				Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
-				Context.Scopes, Context.Headers);
-			var provider = _scopeGenerator(newCtx, configurator);
-
-			var requester = provider.GetService<IBeamableRequester>();
-			var services = provider.GetService<IBeamableServices>();
-			return new UserRequestDataHandler(provider)
-			{
-				Context = newCtx,
-				Requester = requester,
-				Services = services,
-				Provider = provider
-			};
+			return (UserRequestDataHandler)this.CreateUserScope(userId, configurator, requireAdminUser);
 		}
 
 		public async Promise DisposeMicroservice()
@@ -232,23 +285,36 @@ namespace Beamable.Server
 			_servicesFactory = null;
 			_scopeGenerator = null;
 		}
+
+		public ValueTask DisposeAsync()
+		{
+			// TODO: think about doing actual clean up here?
+			return new ValueTask();
+		}
+
+		public void Dispose()
+		{
+			
+		}
 	}
 
-	public class UserRequestDataHandler : IDisposable
-#if NETSTANDARD2_1_OR_GREATER
-	                                    , IAsyncDisposable
-#endif
+	public delegate IDependencyProviderScope UserGenerator(RequestContext requestContext, Action<IDependencyBuilder> configurator);
+	
+	public class UserRequestDataHandler : IUserScope
 	{
 		public RequestContext Context;
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
-		public IDependencyProvider Provider;
+		public IDependencyProvider Provider => _serviceProvider;
 
 		private IDependencyProviderScope _serviceProvider;
-
+		
 		public UserRequestDataHandler(IDependencyProviderScope serviceProvider)
 		{
 			_serviceProvider = serviceProvider;
+			Context = _serviceProvider.GetService<RequestContext>();
+			Requester = _serviceProvider.GetService<IBeamableRequester>();
+			Services = _serviceProvider.GetService<IBeamableServices>();
 		}
 
 		public void Dispose()
@@ -257,7 +323,7 @@ namespace Beamable.Server
 			Context = null;
 			Requester = null;
 			Services = null;
-			Provider = null;
+			_serviceProvider = null;
 		}
 
 #if NETSTANDARD2_1_OR_GREATER
@@ -267,8 +333,15 @@ namespace Beamable.Server
 			Context = null;
 			Requester = null;
 			Services = null;
-			Provider = null;
+			_serviceProvider = null;
 		}
 #endif
+		RequestContext IUserScope.Context => Context;
+		
+		IBeamableRequester IUserScope.Request => Requester;
+
+		IBeamableServices IUserScope.Services => Services;
+
+		IDependencyProvider IUserScope.Provider => Provider;
 	}
 }

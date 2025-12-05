@@ -18,7 +18,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -38,7 +38,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -57,7 +57,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -77,7 +77,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -97,7 +97,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -116,7 +116,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -136,7 +136,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/game-economy/inventory-overview/">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]

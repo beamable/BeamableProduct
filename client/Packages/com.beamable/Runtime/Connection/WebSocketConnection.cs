@@ -148,54 +148,70 @@ namespace Beamable.Connection
 					Debug.LogException(e);
 				}
 			};
-			_webSocket.OnError += error =>
-			{
-				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnError received: {error}");
-				try
-				{
-					_onConnectPromise.CompleteError(new WebSocketConnectionException(error));
-					Error?.Invoke(error);
-				}
-				catch (Exception e)
-				{
-					Debug.LogException(e);
-				}
-			};
-			_webSocket.OnClose += async code =>
-			{
-				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnClose received: {code}");
-				try
-				{
-					if (_disconnecting)
-					{
-						Close?.Invoke();
-					}
-					else
-					{
-						PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
+			 _webSocket.OnError += async error =>
+          {
+             PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnError received: {error}");
+             try
+             {
+                // No connectivity kills the onConnectPromise, requiring that we call Reconnect
+                // if we are "retrying" to connect.  If there's no connectivity, OnOpen never fires
+                if (_onConnectPromise is not null && !_onConnectPromise.IsCompleted)
+                {
+                   _onConnectPromise.CompleteError(new WebSocketConnectionException(error));
+                   Error?.Invoke(error);
 
-						// Let's make sure that we get a fresh new JWT before attempting to reconnect.
-						await _apiRequester.RefreshToken();
+				   await TryRefreshToken();
+				   
+                   if (_retrying)
+                   {
+                      PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
+                       await Task.Delay(_delay);
+                      _delay = (_retrying && _delay < MAX_DELAY) ? _delay * 2 : MIN_DELAY;
+                      _delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
+                      Reconnect();
+                   }
+                }
+               
+             }
+             catch (Exception e)
+             {
+                Debug.LogException(e);
+             }
+          };
+		  _webSocket.OnClose += async code =>
+          {
+             PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnClose received: {code}");
+             try
+             {
+                // When Reconnect is invoked, _disconnecting == true until the socket successfully opens
+                // This prevents the retry routine from happening here, because it exits early.
+                if (_disconnecting)
+                {
+                   Close?.Invoke();
+                }
+                else
+                {
+                   PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
+                   // Handle exceptions when making RefreshToken request, to ensure that we attempt to Reconnect() after
+                   await TryRefreshToken();
 
-						if (_retrying)
-						{
-							PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
-							await Task.Delay(_delay);
-						}
-						_delay = (_retrying && _delay < MAX_DELAY) ? _delay * 2 : MIN_DELAY; // always doubling the delay in case of an error
-						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
-						_retrying = true;
+                   if (_retrying)
+                   {
+                      PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
+                      await Task.Delay(_delay);
+                   }
+                   _retrying = true;
+                   // Kick off initial reconnect due to a valid socket being closed
+                   Reconnect();
+                }
 
-						Reconnect();
-					}
-
-				}
-				catch (Exception e)
-				{
-					Debug.LogException(e);
-				}
-			};
-		}
+             }
+             catch (Exception e)
+             {
+                Debug.LogException(e);
+             }
+          };
+       }
 
 #if !UNITY_WEBGL || UNITY_EDITOR
 		private IEnumerator DispatchMessages()
@@ -211,6 +227,25 @@ namespace Beamable.Connection
 		}
 #endif
 
+		private async Promise TryRefreshToken()
+		{
+		  try
+		  {
+			 await _apiRequester.RefreshToken();
+		  }
+		  catch (NoConnectivityException ex)
+		  {
+			 PlatformLogger.Log(
+				$"<b>[WebSocketConnection]</b> RefreshToken failed due to NoConnectivity. " +
+				$"Will still retry websocket reconnect. {ex.Message}");
+		  }
+		  catch (Exception ex)
+		  {
+			 PlatformLogger.Log(
+				$"<b>[WebSocketConnection]</b> RefreshToken failed due to an exception. " +
+				$"Will still retry websocket reconnect. {ex.Message}");
+		  }
+		}
 		public async Promise OnDispose()
 		{
 			await Disconnect();
@@ -246,3 +281,5 @@ namespace Beamable.Connection
 		}
 	}
 }
+
+

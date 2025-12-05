@@ -192,6 +192,7 @@ describe('AccountService', () => {
       const result = await accountService.removeExternalIdentity({
         providerService: 'serviceName',
         providerNamespace: 'namespace',
+        externalUserId: 'user123',
       });
 
       expect(apis.accountsDeleteExternalIdentityBasic).toHaveBeenCalledWith(
@@ -243,6 +244,7 @@ describe('AccountService', () => {
       const status = await accountService.getExternalIdentityStatus({
         providerService: 'serviceName',
         providerNamespace: 'namespace',
+        externalUserId: 'user123',
       });
 
       expect(
@@ -278,6 +280,7 @@ describe('AccountService', () => {
       const status = await accountService.getExternalIdentityStatus({
         providerService: 'serviceName',
         providerNamespace: 'namespace',
+        externalUserId: 'user123',
       });
 
       expect(status).toBe(CredentialStatus.Assigned);
@@ -300,6 +303,7 @@ describe('AccountService', () => {
       const status = await accountService.getExternalIdentityStatus({
         providerService: 'serviceName',
         providerNamespace: 'namespace',
+        externalUserId: 'user123',
       });
 
       expect(status).toBe(CredentialStatus.Unknown);

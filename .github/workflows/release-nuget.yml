@@ -45,7 +45,7 @@ on:
 run-name: Release Nuget (CLI) ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     concurrency:
       group: release-nuget
@@ -97,6 +97,10 @@ jobs:
         working-directory: ./otel-collector
         run: |
           OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
+
+      - name: Add collector version
+        run: |
+            sh ./build/bin/set-collector-version-property.sh
 
       - name: Install CLI
         working-directory: ./
@@ -191,6 +195,7 @@ jobs:
         env:
           COPY_UNITY_SDK: 'false'
           COPY_CLI: 'true'
+          COPY_WEB_SDK: 'false'
           VERSION: ${{ steps.version.outputs.VERSION }}
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}

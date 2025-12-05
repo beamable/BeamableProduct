@@ -7,6 +7,8 @@ using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Common.Util;
 using UnityEditor;
 using UnityEngine;
 
@@ -104,7 +106,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
 				{
-					Application.OpenURL("https://docs.beamable.com/docs/content-manager-overview");
+					
+					Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/beamable-services/profile-storage/content/content-unity/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
 				}, () => _ = _contentService.Reload());
 			});
 			
@@ -135,15 +138,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					publishTooltip = "There is not any modified items to publish. You are up-to-date.";
 					syncTooltip = "There is not any modified items to sync. You are up-to-date.";
-					validateTooltip = "There is not any modified items to validate.";
 				}
 
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
-					if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
-					                         () => BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
+					
+					if (BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
 					                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-					                                                    tooltip: validateTooltip)))
+					                                                    tooltip: validateTooltip))
 					{
 						ChangeToValidateMode();
 					}
@@ -416,27 +418,27 @@ namespace Beamable.Editor.UI.ContentWindow
 			menu.ShowAsContext();
 		}
 
-		private async Task RevertAllContents()
+		private async Promise RevertAllContents()
 		{
 			await _contentService.SyncContentsWithProgress(true, true, true, true);
 		}
 
-		private async Task RevertModifiedContents()
+		private async Promise RevertModifiedContents()
 		{
 			await _contentService.SyncContentsWithProgress(true, false, false, false);
 		}
 
-		private async Task RevertConflictedContents()
+		private async Promise RevertConflictedContents()
 		{
 			await _contentService.SyncContentsWithProgress(false, false, true, false);
 		}
 
-		private async Task RevertDeletedContents()
+		private async Promise RevertDeletedContents()
 		{
 			await _contentService.SyncContentsWithProgress(false, false, false, true);
 		}
 
-		private async Task RevertAllNewContents()
+		private async Promise RevertAllNewContents()
 		{
 			await _contentService.SyncContentsWithProgress(false, true, false, false);
 		}

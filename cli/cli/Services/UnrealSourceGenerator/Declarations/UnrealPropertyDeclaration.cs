@@ -9,6 +9,7 @@ public struct UnrealPropertyDeclaration
 	public UnrealSourceGenerator.NamespacedType PropertyNamespacedType;
 	public string PropertyName;
 	public string PropertyDisplayName;
+	public string AsParameterName;
 
 	/// <summary>
 	/// This is the type the optional wraps around. 
@@ -38,7 +39,30 @@ public struct UnrealPropertyDeclaration
 	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
 	/// Funny does not mean funny here.
 	/// </summary>
-	public static string GetSanitizedPropertyName(string n) => n.StartsWith('$') ? n[1..] : n;
+	public static string GetSanitizedPropertyName(string n)
+	{
+		var escaped = n.StartsWith('$') ? n[1..] : n;
+		return escaped;
+	}
+
+	/// <summary>
+	/// This escapes any names that match a UE global variable declaration so we don't inadvertently use them as parameter names.
+	/// </summary>
+	public static string GetSanitizedParameterName(string n)
+	{
+		// UNREAL GLOBAL VARIABLES
+		string[] KnownUnrealGlobalVariables = new[]
+		{
+			"LogPath", "LogController", "LogPhysics", "LogBlueprint", "LogBlueprintUserMessages", "LogAnimation", "LogRootMotion", "LogLevel", "LogSkeletalMesh", "LogStaticMesh", "LogNet", "LogNetLifecycle",
+			"LogNetSubObject", "LogRep", "LogNetPlayerMovement", "LogNetTraffic", "LogRepTraffic", "LogNetDormancy", "LogSkeletalControl", "LogSubtitle", "LogTexture", "LogTextureUpload", "LogPlayerManagement",
+			"LogSecurity", "LogEngineSessionManager", "LogViewport"
+		};
+
+		var escaped = n.StartsWith('$') ? n[1..] : n;
+		escaped = KnownUnrealGlobalVariables.Contains(escaped) ? $"_{escaped}" : escaped;
+		return escaped;
+	}
+	
 
 	/// <summary>
 	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.

@@ -66,10 +66,10 @@ public class WebsocketUtil
 		var connector = new Func<Task<ClientWebSocket>>(async () =>
 		{
 			var socketAddress = GetSocketUrl(args.AppContext.Host);
-			var realmSecret = await GetRealmSecret(args);
+			var accessToken = args.AppContext.Token.Token;
 			var cid = args.AppContext.Cid;
 			var pid = args.AppContext.Pid;
-			return await ConfigureWebSocketForServerNotifications(cid, pid, socketAddress, realmSecret, events, cancellationToken);
+			return await ConfigureWebSocketForServerNotifications(cid, pid, socketAddress, accessToken, events, cancellationToken);
 		});
 		return new WebsocketConnectionHandle(connector);
 	}
@@ -137,13 +137,15 @@ public class WebsocketUtil
 		return ws;
 	}
 
-	private static async Task<ClientWebSocket> ConfigureWebSocketForServerNotifications(string cid, string pid, string socketAddress, string realmSecret, string[] events, CancellationToken cancellationToken)
+	private static async Task<ClientWebSocket> ConfigureWebSocketForServerNotifications(string cid, string pid, string socketAddress, 
+		string accessToken, 
+		string[] events, CancellationToken cancellationToken)
 	{
-		Log.Debug($"Connecting to {socketAddress} / {realmSecret}");
+		Log.Debug($"Connecting to {socketAddress} / token={accessToken}");
 		var ws = new ClientWebSocket();
 
 		await ws.ConnectAsync(new Uri(socketAddress), cancellationToken);
-		await Authenticate(ws, realmSecret, cid, pid, cancellationToken);
+		await AuthenticateWithToken(ws, accessToken, cid, pid, cancellationToken);
 		await RegisterForEvents(ws, cancellationToken, events);
 
 		return ws;
@@ -222,9 +224,54 @@ public class WebsocketUtil
 
 	public struct AuthResult
 	{
+		// {
+		// 	"id" : 2,
+		// 	"status" : 400,
+		// 	"body" : {
+		// 		"status" : 400,
+		// 		"service" : "gateway",
+		// 		"error" : "TBD",
+		// 		"message" : ""
+		// 	}
+		// }
+
+		public int id;
 		public int status;
+		public AuthResultBody body;
+
+		public struct AuthResultBody
+		{
+			public int status;
+			public string service;
+			public string message;
+			public string error;
+		}
 	}
 
+	
+	private static async Task AuthenticateWithToken(ClientWebSocket ws, string accessToken, string cid, string pid, CancellationToken cancellationToken)
+	{
+		var authRequest = JsonConvert.SerializeObject(new { id = 2, method = "post", path = "gateway/auth", body = new
+		{
+			cid, 
+			pid, 
+			token = accessToken,
+		} });
+		await SendMessageAsync(ws, authRequest, cancellationToken);
+		Log.Debug($"Sending auth request {authRequest}");
+
+		var authResponse = await ReadMessage(ws, cancellationToken);
+		Log.Debug($"Received auth response {authResponse}");
+
+		var authResult = JsonConvert.DeserializeObject<AuthResult>(authResponse);
+		if (authResult.status != 200)
+		{
+			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}] service=[{authResult.body.service}] message=[{authResult.body.message}] error=[{authResult.body.error}]");
+		}
+	}
+
+
+	[Obsolete("this is here for documentation purposes; if you wanted to connect with a realm secret, this is how. ")]
 	private static async Task Authenticate(ClientWebSocket ws, string secret, string cid, string pid, CancellationToken cancellationToken)
 	{
 		string CalculateSignature(string text)
@@ -244,7 +291,12 @@ public class WebsocketUtil
 		var nonceObj = JsonConvert.DeserializeObject<NonceResult>(nonceResponse);
 		var nonce = nonceObj.body["nonce"];
 		var sig = CalculateSignature(secret + nonce);
-		var authRequest = JsonConvert.SerializeObject(new { id = 2, method = "post", path = "gateway/auth", body = new { cid, pid, signature = sig } });
+		var authRequest = JsonConvert.SerializeObject(new { id = 2, method = "post", path = "gateway/auth", body = new
+		{
+			cid, 
+			pid, 
+			signature = sig,
+		} });
 		await SendMessageAsync(ws, authRequest, cancellationToken);
 		Log.Debug($"Sending auth request {authRequest}");
 
@@ -254,7 +306,7 @@ public class WebsocketUtil
 		var authResult = JsonConvert.DeserializeObject<AuthResult>(authResponse);
 		if (authResult.status != 200)
 		{
-			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}]");
+			throw new CliException($"Could not authenticate with Beamable status=[{authResult.status}] service=[{authResult.body.service}] message=[{authResult.body.message}] error=[{authResult.body.error}]");
 		}
 	}
 

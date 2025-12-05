@@ -17,8 +17,8 @@ import { BeamBase } from '@/core/BeamBase';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
-  tokenStorage?: TokenStorage;
-  useSignedRequest?: boolean;
+  tokenStorage: TokenStorage;
+  useSignedRequest: boolean;
   pid: string;
 };
 
@@ -78,14 +78,7 @@ export class BeamRequester implements HttpRequester {
         [HEADERS.BEAM_SIGNATURE]: this.generateSignature(req.url, body),
       };
     } else if (req.withAuth) {
-      const token = await this.tokenStorage?.getAccessToken();
-      if (token) {
-        // add the bearer token to the request headers
-        req.headers = {
-          ...req.headers,
-          [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
-        };
-      }
+      await this.attachAuthHeader(req);
     }
 
     // add the routing key to the request headers if it exists
@@ -99,17 +92,20 @@ export class BeamRequester implements HttpRequester {
     const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
-    const isInvalidCredentialsError =
-      typeof response.body === 'string'
-        ? (response.body as string).includes('InvalidCredentialsError')
-        : false;
+    const errorKeys = [
+      'InvalidCredentialsError',
+      'InvalidRefreshTokenError',
+      'TokenValidationError',
+    ] as const;
 
-    if (
-      response.status === 401 &&
-      !this.useSignedRequest &&
-      !isInvalidCredentialsError
-    ) {
+    const hasKnownError =
+      typeof response.body === 'string' &&
+      errorKeys.some((key) => (response.body as string).includes(key));
+
+    if (response.status === 401 && !this.useSignedRequest && !hasKnownError) {
       await this.handleRefresh();
+      // Re-attach Authorization header with the updated access token
+      await this.attachAuthHeader(newReq);
       response = await this.inner.request<TRes, TReq>(newReq);
     }
 
@@ -128,7 +124,7 @@ export class BeamRequester implements HttpRequester {
             response: {
               status: response.status,
               message: response.body,
-            }
+            },
           },
         },
       );
@@ -177,8 +173,20 @@ export class BeamRequester implements HttpRequester {
     return createHash('md5').update(data).digest('base64');
   }
 
+  private async attachAuthHeader(req: HttpRequest<any>): Promise<void> {
+    const data = await this.tokenStorage?.getTokenData();
+    const token = data?.accessToken ?? null;
+    if (token) {
+      req.headers = {
+        ...req.headers,
+        [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
+      };
+    }
+  }
+
   private async handleRefresh(): Promise<void> {
-    const refreshToken = await this.tokenStorage?.getRefreshToken();
+    const tokenData = await this.tokenStorage?.getTokenData();
+    const refreshToken = tokenData?.refreshToken ?? null;
     if (!refreshToken) {
       throw new NoRefreshTokenError();
     }
@@ -188,7 +196,7 @@ export class BeamRequester implements HttpRequester {
       refresh_token: refreshToken,
     });
     if (response.status !== 200) {
-      await this.tokenStorage?.removeRefreshToken();
+      await this.tokenStorage?.setTokenData({ refreshToken: null });
       throw new RefreshAccessTokenError();
     }
 
@@ -198,16 +206,12 @@ export class BeamRequester implements HttpRequester {
       expires_in: newExpiresIn,
     } = response.body;
 
-    if (newAccessToken) {
-      await this.tokenStorage?.setAccessToken(newAccessToken);
-    }
-
-    if (newRefreshToken) {
-      await this.tokenStorage?.setRefreshToken(newRefreshToken);
-    }
-
-    if (newExpiresIn) {
-      await this.tokenStorage?.setExpiresIn(Date.now() + Number(newExpiresIn));
+    const update: any = {};
+    if (newAccessToken) update['accessToken'] = newAccessToken;
+    if (newRefreshToken) update['refreshToken'] = newRefreshToken;
+    if (newExpiresIn) update['expiresIn'] = Date.now() + Number(newExpiresIn);
+    if (Object.keys(update).length > 0) {
+      await this.tokenStorage?.setTokenData(update);
     }
   }
 }

@@ -22,7 +22,7 @@ public partial class BeamProjectNewFlows : CLITestExtensions
         }
 
         { // act
-            RunFull(new string[] { "project", "open" }, assertExitCode: true, builder =>
+            RunFull(new string[] { "project", "open", "--quiet" }, assertExitCode: true, builder =>
             {
                 builder.RemoveIfExists<IFileOpenerService>();
                 builder.AddSingleton<IFileOpenerService>(p =>

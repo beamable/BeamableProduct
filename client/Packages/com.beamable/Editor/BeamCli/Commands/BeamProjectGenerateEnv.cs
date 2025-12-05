@@ -12,10 +12,14 @@ namespace Beamable.Editor.BeamCli.Commands
         public string output;
         /// <summary>If true, the generated .env file will include the local machine name as prefix</summary>
         public bool includePrefix;
+        /// <summary>If true, do not ask for otel auth credentials to be put in the env</summary>
+        public bool excludeOtelCreds;
         /// <summary>How many virtual websocket connections the server will open</summary>
         public int instanceCount;
         /// <summary>When enabled, automatically deploy dependencies that aren't running</summary>
         public bool autoDeploy;
+        /// <summary>When enabled, includes the legacy SECRET realm secret environment variable</summary>
+        public bool includeSecret;
         /// <summary>When enabled, automatically stop all other local instances of this service</summary>
         public int removeAllExceptPid;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -32,6 +36,11 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--include-prefix=" + this.includePrefix));
             }
+            // If the excludeOtelCreds value was not default, then add it to the list of args.
+            if ((this.excludeOtelCreds != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--exclude-otel-creds=" + this.excludeOtelCreds));
+            }
             // If the instanceCount value was not default, then add it to the list of args.
             if ((this.instanceCount != default(int)))
             {
@@ -41,6 +50,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.autoDeploy != default(bool)))
             {
                 genBeamCommandArgs.Add(("--auto-deploy=" + this.autoDeploy));
+            }
+            // If the includeSecret value was not default, then add it to the list of args.
+            if ((this.includeSecret != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--include-secret=" + this.includeSecret));
             }
             // If the removeAllExceptPid value was not default, then add it to the list of args.
             if ((this.removeAllExceptPid != default(int)))

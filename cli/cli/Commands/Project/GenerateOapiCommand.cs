@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using microservice.Extensions;
+using MongoDB.Bson;
 
 namespace cli.Commands.Project;
 
@@ -39,49 +40,64 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
-	public override Task Handle(GenerateOApiCommandArgs args)
+	public override async Task Handle(GenerateOApiCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		var generator = new ServiceDocGenerator();
 		foreach (var service in args.services)
 		{
-			var result = ProjectCommand.IsProjectBuiltMsBuild(args, service);
-			if (!result.isBuilt)
-			{
-				Log.Information($"service=[{service}] is not built.");
-				SendResults(new GenerateOApiCommandOutput
-				{
-					service = service,
-					isBuilt = false
-				});
-				continue;
-			}
+			var def = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == service);
 
-			var assembly = LoadDotnetMicroserviceAssembly(service, result.path);
-			var microservices = LoadDotnetMicroserviceTypesFromAssembly(assembly);
-			foreach (var (microservice, attribute) in microservices)
+			var outputPath = $"{service}_openApi.json";
+			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,
+					$"run {def.AbsoluteProjectPath} -- --generate-oapi")
+				.WithEnvironmentVariables(new Dictionary<string, string>
+				{
+					["OPEN_API_OUTPUT_PATH"] = outputPath
+				});
+			await command.ExecuteAsyncAndLog();
+			
+			SendResults(new GenerateOApiCommandOutput
 			{
-				var doc = generator.Generate(microservice.Type, attribute, new AdminRoutes
-				{
-					MicroserviceAttribute = attribute,
-					MicroserviceType = microservice.Type
-				});
-				
-				var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
-				Log.Information(outputString);
-				SendResults(new GenerateOApiCommandOutput
-				{
-					isBuilt = result.isBuilt,
-					service = service,
-					openApi = outputString
-				});
-
-			}
+				isBuilt = true,
+				openApi = outputPath,
+				service = service
+			});
+			// var result = ProjectCommand.IsProjectBuiltMsBuild(args, service);
+			// if (!result.isBuilt)
+			// {
+			// 	Log.Information($"service=[{service}] is not built.");
+			// 	SendResults(new GenerateOApiCommandOutput
+			// 	{
+			// 		service = service,
+			// 		isBuilt = false
+			// 	});
+			// 	continue;
+			// }
+			//
+			// var assembly = LoadDotnetMicroserviceAssembly(service, result.path);
+			// var microservices = LoadDotnetMicroserviceTypesFromAssembly(assembly);
+			// foreach (var (microservice, attribute) in microservices)
+			// {
+			// 	var doc = generator.Generate(microservice.Type, attribute, new AdminRoutes
+			// 	{
+			// 		MicroserviceAttribute = attribute,
+			// 		MicroserviceType = microservice.Type
+			// 	});
+			// 	
+			// 	var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+			// 	Log.Information(outputString);
+			// 	SendResults(new GenerateOApiCommandOutput
+			// 	{
+			// 		isBuilt = result.isBuilt,
+			// 		service = service,
+			// 		openApi = outputString
+			// 	});
+			//
+			// }
 
 		}
 
-		return Task.CompletedTask;
 	}
 
 	static List<(MicroserviceDescriptor, MicroserviceAttribute)> LoadDotnetMicroserviceTypesFromAssembly(Assembly assembly)

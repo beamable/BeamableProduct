@@ -143,7 +143,7 @@ public class DiscoveryService
 					}
 					remoteStorageQueue.Enqueue(new RemoteStorageEvent()
 					{
-						type = ServiceEventType.Running,
+						type = storage.enabled ? ServiceEventType.Running : ServiceEventType.Stopped,
 						descriptor = new RemoteStorageDescriptor
 						{
 							groups = groups,

@@ -40,11 +40,11 @@ public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, Chec
 
 		// process data into separate categories
 		var dataGroups = data.Events.GroupBy(evt => evt.name).ToDictionary(group => group.Key, group => group.ToArray());
-		if (!dataGroups.TryGetValue("CPU Usage (%)", out var cpuData))
+		if (!dataGroups.TryGetValue("dotnet.process.cpu.count ({cpu})", out var cpuData))
 		{
 			throw new CliException("File does not contain CPU data");
 		}
-		if (!dataGroups.TryGetValue("Working Set (MB)", out var memData))
+		if (!dataGroups.TryGetValue("dotnet.process.memory.working_set (By)", out var memData))
 		{
 			throw new CliException("File does not contain memory data");
 		}
@@ -65,7 +65,8 @@ public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, Chec
 		for (var i = 0; i < memData.Length; i++)
 		{
 			// check for spike
-			if (memData[i].value > memLimit)
+			var mb = memData[i].value / (1000 * 1000); // value is in bytes
+			if (mb > memLimit)
 			{
 				warnings.Add(new DotnetCounterPerfWarning($"Memory utilization spiked beyond limit=[{memLimit}] i=[{i}]", memData[i]));
 			}

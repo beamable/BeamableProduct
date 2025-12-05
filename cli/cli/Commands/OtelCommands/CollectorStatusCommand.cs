@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using cli.Dotnet;
+using cli.Utils;
 using Spectre.Console;
 using System.Diagnostics;
 
@@ -20,9 +21,11 @@ public class CollectorStatusResult
 }
 
 
-public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>
+public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>, IResultSteam<ExtraStreamResultChannel, OtelFileStatus>
 {
-	public CollectorStatusCommand() : base("status", "Starts a stream of messages containing the status of the collector")
+	
+	private const int SECONDS_DELAY_TO_FILE_STATUS = 15;
+	public CollectorStatusCommand() : base("ps", "Starts a stream of messages containing the status of the collector")
 	{
 	}
 
@@ -46,11 +49,20 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		CollectorStatusResult result = new CollectorStatusResult();
 
 		// First take ~1s to check all running collectors 
-		result.collectorsStatus = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token,
-			BeamableZLoggerProvider.LogContext.Value, attemptsAmountOverride: 10);
+		result.collectorsStatus = await CollectorManager.CheckAllRunningCollectors(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 
 		if (args.watch)
 		{
+			_ = Task.Run(async () =>
+			{
+				while (!args.Lifecycle.Source.Token.IsCancellationRequested)
+				{
+					var otelFileStatus = await GetOtelFileStatus(args.ConfigService.ConfigTempOtelDirectoryPath);
+					this.SendResults<ExtraStreamResultChannel, OtelFileStatus>(otelFileStatus);
+					await Task.Delay(TimeSpan.FromSeconds(SECONDS_DELAY_TO_FILE_STATUS));
+				}
+			});
+			
 			bool hasChanged = true;
 			List<CollectorStatus> lastRunningCols;
 			while (!args.Lifecycle.Source.Token.IsCancellationRequested)
@@ -118,7 +130,32 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		{
 			LogStatus(result.collectorsStatus);
 			SendResults(result);
+			var otelFileStatus = await GetOtelFileStatus(args.ConfigService.ConfigTempOtelDirectoryPath);
+			this.SendResults<ExtraStreamResultChannel, OtelFileStatus>(otelFileStatus);
 		}
+	}
+	
+	private static async Task<OtelFileStatus> GetOtelFileStatus(string otelDirectory)
+	{
+		if (!Directory.Exists(otelDirectory))
+		{
+			return new OtelFileStatus();
+		}
+
+		DirectoryInfoUtils directoryInfo = DirectoryUtils.CalculateDirectorySize(otelDirectory);
+		string lastPublishedFilePath = Path.Join(otelDirectory, PushTelemetryCommand.LAST_PUBLISH_OTEL_FILE_NAME);
+		long lastPublished = 0;
+		if(File.Exists(lastPublishedFilePath))
+		{
+			string fileText = await File.ReadAllTextAsync(lastPublishedFilePath);
+			long.TryParse(fileText, out lastPublished);
+		}
+
+		var otelFileStatus= new OtelFileStatus()
+		{
+			FileCount = directoryInfo.FileCount, FolderSize = directoryInfo.Size, LastPublishTimestamp = lastPublished
+		};
+		return otelFileStatus;
 	}
 
 	private bool HaveStatusChanged(List<CollectorStatus> lastStatusList, List<CollectorStatus> currentStatusList)

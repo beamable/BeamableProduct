@@ -19,13 +19,11 @@ namespace Beamable.Server {
 
 	public class ContainerDiagnosticService
 	{
-		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
 		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogProcessor debugLogSink)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
-			_beamableService = service;
 			Log.Verbose($"Debug server starting at port={args.HealthPort}");
 			_server = new WebServer(args.HealthPort)
 				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink)));

@@ -1,8 +1,11 @@
+using Microsoft.Extensions.Logging;
+
 namespace beamable.otel.exporter;
 
 public class FileExporterOptions
 {
 	private string? _path;
+	private LogLevel? _minimalLogLevel;
 
 	public string ExportPath
 	{
@@ -24,5 +27,11 @@ public class FileExporterOptions
 
 			this._path = value;
 		}
+	}
+
+	public LogLevel MinimalLogLevel
+	{
+		get => _minimalLogLevel ?? LogLevel.Warning;
+		set => _minimalLogLevel = value;
 	}
 }

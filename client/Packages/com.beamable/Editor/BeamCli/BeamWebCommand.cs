@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.Utility;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 using UnityEngine.Networking;

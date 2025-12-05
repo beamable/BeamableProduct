@@ -51,11 +51,21 @@ export class BeamError extends Error {
   }
 }
 
-/** Error thrown when web socket failed to connect. */
+/** Error related to beam client web socket. */
 export class BeamWebSocketError extends BeamError {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options: BeamErrorOptions = {}) {
+    super(message, options);
     this.name = 'BeamWebSocketError';
+    // Ensure the prototype chain is set correctly for instanceof checks
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/** Error related to beam server web socket. */
+export class BeamServerWebSocketError extends BeamError {
+  constructor(message: string, options: BeamErrorOptions = {}) {
+    super(message, options);
+    this.name = 'BeamServerWebSocketError';
     // Ensure the prototype chain is set correctly for instanceof checks
     Object.setPrototypeOf(this, new.target.prototype);
   }

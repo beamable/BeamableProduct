@@ -43,6 +43,7 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using Beamable.Editor.ContentService;
+using Beamable.Editor.Utility;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -128,6 +129,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CommonAreaService>();
 			DependencyBuilder.AddScoped<MicroserviceClients>();
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
+			DependencyBuilder.AddSingleton<UnityOtelManager>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 
@@ -147,6 +149,8 @@ namespace Beamable
 			builder.AddSingleton<IRuntimeConfigProvider>(() => BeamEditorContext.Default.BeamCli);
 			builder.RemoveIfExists<IPlatformRequesterHostResolver>();
 			builder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamEditorContext.Default.BeamCli);
+			builder.RemoveIfExists<IBeamDeveloperAuthProvider>();
+			builder.AddSingleton<IBeamDeveloperAuthProvider>(() => BeamEditorContext.Default.BeamCli);
 		}
 	}
 
@@ -372,6 +376,7 @@ namespace Beamable
 				}
 			}
 
+			BeamEditorContext.Default.ServiceScope.GetService<UnityOtelManager>(); // TODO: Check if it is the best place to init, or switch to a Interface
 			InitDefaultContext().Error(Debug.LogError);
 		}
 
@@ -563,7 +568,7 @@ namespace Beamable
 			oldScope?.Hydrate(ServiceScope);
 
 			ServiceScope.GetService<BeamableDispatcher>();
-
+			
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
 
