@@ -5,6 +5,8 @@ namespace cli.OtelCommands.Grafana;
 
 public class GrafanaCommand : CommandGroup
 {
+    public override bool IsForInternalUse => true;
+
     public GrafanaCommand() : base("grafana", "Allows access to a local Grafana instance")
     {
     }

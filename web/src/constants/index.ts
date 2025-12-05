@@ -16,3 +16,4 @@ export const enum HEADERS {
   GAMERTAG = 'X-BEAM-GAMERTAG',
   ROUTING_KEY = 'X-BEAM-SERVICE-ROUTING-KEY',
 }
+export const BEAM_NODE_DIR = '.beamable_node';

@@ -186,6 +186,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
 	}
 
+
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
 		var originalPath = Path.GetFullPath(Directory.GetCurrentDirectory());
@@ -388,13 +389,16 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			.Where(r => !r.Archived)
 			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
 		var realmSelection = args.Quiet ? 
-			realms.Where(r => r.Depth == 2).OrderBy(r =>r.Pid).Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}").First() :
+			realms.Where(r => r.Depth == 2)
+				.OrderBy(r =>r.Pid)
+				.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}")
+				.First() :
 			AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
 				.AddBeamHightlight()
 		);
-		var realm = realms.FirstOrDefault(g => realmSelection.StartsWith(g.DisplayName.Replace("[", "").Replace("]", "")));
+		var realm = realms.FirstOrDefault(g => realmSelection.Contains(g.Pid) && !g.Archived) ?? realms.First(g => g.IsDev);
 		return realm.Pid;
 	}
 
@@ -457,7 +461,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		// If we were given a host that is a path, let's just return it.
-		if (env.StartsWith("https"))
+		if (env.StartsWith("http"))
 			return env;
 
 		// Otherwise, we try to convert it into a valid URL.

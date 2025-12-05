@@ -36,5 +36,14 @@ namespace Beamable.Common.BeamCli.Contracts
             return true;
         }
     }
+    
+    [CliContractType]
+    [Serializable]
+    public class OtelFileStatus
+    {
+	    public int FileCount;
+	    public long FolderSize;
+	    public long LastPublishTimestamp;
+    }
 
 }

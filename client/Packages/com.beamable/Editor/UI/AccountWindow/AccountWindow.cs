@@ -19,6 +19,7 @@ namespace Beamable.Editor.Accounts
 		public BeamEditorContext context;
 
 		private GUIStyle _errorStyle;
+		private static readonly Vector2 WindowMinSize = new(300, 660);
 
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -29,7 +30,7 @@ namespace Beamable.Editor.Accounts
 		public static void Init()
 		{
 			var window = GetWindow<AccountWindow>(true, "Beam Account");
-			window.minSize = new Vector2(300, 600);
+			window.minSize = WindowMinSize;
 			RefreshCli();
 		}
 
@@ -39,7 +40,7 @@ namespace Beamable.Editor.Accounts
 			_onQuitAction = onQuitAction;
 			var window = GetWindow<AccountWindow>("Beam Account", true, root.GetType());
 			window.focusLater = root;
-			window.minSize = new Vector2(300, 600);
+			window.minSize = WindowMinSize;
 			RefreshCli();
 		}
 
@@ -82,7 +83,7 @@ namespace Beamable.Editor.Accounts
 				// EditorGUILayout.LabelField("Has cid");
 			}
 
-			minSize = new Vector2(300, 600);
+			minSize = WindowMinSize;
 			if (string.IsNullOrEmpty(cli?.latestAccount?.email) || _loginPromise != null)
 			{
 				Draw_SignIn();
@@ -95,7 +96,7 @@ namespace Beamable.Editor.Accounts
 				}
 				else
 				{
-					minSize = new Vector2(600, 600);
+					minSize = WindowMinSize;
 					Draw_SignedIn();
 				}
 			}
@@ -129,6 +130,19 @@ namespace Beamable.Editor.Accounts
 				fontSize = 12,
 				fixedHeight = 24,
 				alignment = TextAnchor.MiddleLeft
+			};
+			
+			_textboxPlaceholderStyle = new GUIStyle(EditorStyles.textField)
+			{
+				fontSize = 12,
+				fixedHeight = 24,
+				alignment = TextAnchor.MiddleLeft,
+				normal = new GUIStyleState
+				{
+					textColor = Color.Lerp(EditorStyles.label.normal.textColor, new Color(1, 1, 1, 0f), .5f),
+					background = EditorStyles.textField.normal.background,
+					scaledBackgrounds = EditorStyles.textField.normal.scaledBackgrounds
+				}
 			};
 		
 			_placeholderStyle = new GUIStyle(EditorStyles.label)

@@ -46,7 +46,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		[TearDown]
 		public void Cleanup()
 		{
-			_ctx.ClearPlayerAndStop();
+			_ = _ctx.ClearPlayerAndStop();
 		}
 	}
 }

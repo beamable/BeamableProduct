@@ -36,6 +36,7 @@ public class ServiceStatus
 	public string service;
 	public string serviceType;
 	public string[] groups;
+	public string[] storages;
 	public List<ServicesForRouteCollection> availableRoutes = new List<ServicesForRouteCollection>();
 }
 
@@ -251,9 +252,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				if (route.instances != null)
 				{
-					foreach (var instance in route.instances)
+					if (route.knownToBeRunning)
 					{
-						AddRow(service, route, instance);
+						foreach (var instance in route.instances)
+						{
+							AddRow(service, route, instance);
+						}
 					}
 				}
 			}
@@ -304,12 +308,15 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		{
 			if (!definition.IsLocal) continue;
 			if (serviceFilter != null && !serviceFilter.Contains(definition.BeamoId)) continue;
+			
+			var isMicroservice = manifest.HttpMicroserviceLocalProtocols.TryGetValue(definition.BeamoId, out var http);
 			if (!result.TryGetStatus(definition.BeamoId, out var status))
 			{
 				status = new ServiceStatus
 				{
 					service = definition.BeamoId,
 					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+					storages = isMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
 						new()
@@ -348,12 +355,14 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		{
 			if (serviceFilter != null && !serviceFilter.Contains(discoveryEvent.Service)) continue;
 
+			var isLocalMicroservice = manifest.HttpMicroserviceLocalProtocols.TryGetValue(discoveryEvent.Service, out var http);
 			if (!result.TryGetStatus(discoveryEvent.Service, out var status))
 			{
 				status = new ServiceStatus
 				{
 					service = discoveryEvent.Service,
 					serviceType = discoveryEvent.ServiceType,
+					storages = isLocalMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					groups = discoveryEvent switch
 					{
 						DockerServiceEvent dockerServiceEvent => dockerServiceEvent.descriptor.groups,

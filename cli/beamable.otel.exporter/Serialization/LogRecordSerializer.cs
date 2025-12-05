@@ -80,7 +80,7 @@ public static class LogRecordSerializer
 	}
 
 	public static LogRecord DeserializeLogRecord(SerializableLogRecord serializedLog)
-	{
+	{ 
 		var timestamp = DateTimeOffset.Parse(serializedLog.Timestamp).UtcDateTime;
 		var category = serializedLog.CategoryName;
 		var logLevel = serializedLog.LogLevel;

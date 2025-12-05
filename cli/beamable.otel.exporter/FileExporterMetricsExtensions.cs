@@ -1,4 +1,4 @@
-using beamable.otel.exporter.Utils;
+using beamable.otel.common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
@@ -7,8 +7,8 @@ namespace beamable.otel.exporter;
 
 public static class FileExporterMetricsExtensions
 {
-	private const int DefaultExportIntervalMilliseconds = 10000;
-	private const int DefaultExportTimeoutMilliseconds = Timeout.Infinite;
+	private const int DefaultExportIntervalMilliseconds = 300000;
+	private const int DefaultExportTimeoutMilliseconds = 60000;
 
 	/// <summary>
 	/// Adds <see cref="FileMetricExporter"/> to the <see cref="MeterProviderBuilder"/> using default options.

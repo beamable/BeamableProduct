@@ -445,7 +445,15 @@ public class SwaggerService
 					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
 						continue;
 				}
-				combinedDocument.Components.Schemas.Add(component.Value.Reference.Id, component.Value);
+
+				if (combinedDocument.Components.Schemas.ContainsKey(component.Value.Reference.Id))
+				{
+					Log.Warning($"Cannot add schema=[{component.Value.Reference.Id}] because a different value schema already exists. ");
+				}
+				else
+				{
+					combinedDocument.Components.Schemas.Add(component.Value.Reference.Id, component.Value);
+				}
 			}
 
 			foreach (var component in documentResult.Document.Components.RequestBodies)
@@ -583,6 +591,8 @@ public class SwaggerService
 			(nameof(AddTitlesToAllSchemasIfNone), AddTitlesToAllSchemasIfNone),
 			(nameof(RewriteObjectEnumsAsStrings), RewriteObjectEnumsAsStrings),
 			(nameof(DetectNonSelfReferentialTypes), DetectNonSelfReferentialTypes),
+			(nameof(PopulateBasicTags), PopulateBasicTags),
+			(nameof(ForcePlayerScopedAuth), ForcePlayerScopedAuth),
 			(nameof(FixBasicCloudsavingDataMetadataGet), FixBasicCloudsavingDataMetadataGet),
 			(nameof(Reserailize), Reserailize)
 		};
@@ -1051,6 +1061,113 @@ public class SwaggerService
 		return output;
 	}
 
+	private static List<OpenApiDocumentResult> ForcePlayerScopedAuth(OpenApiDocumentResult swagger)
+	{
+		// every path ever should use a single security schema
+		var authScheme = new OpenApiSecurityScheme
+		{
+			Type = SecuritySchemeType.Http,
+			In = ParameterLocation.Header,
+			Name = "Authorization",
+			Description = "Bearer authentication with a player access token in the Authorization header.",
+			Scheme = "bearer",
+			BearerFormat = "Bearer <Access Token>",
+			Reference = new OpenApiReference
+			{
+				Type = ReferenceType.SecurityScheme,
+				Id = "auth",
+				HostDocument = swagger.Document,
+
+			}
+		};
+		var scopeScheme = new OpenApiSecurityScheme
+		{
+			Type = SecuritySchemeType.ApiKey,
+			In = ParameterLocation.Header,
+			Name = "X-BEAM-SCOPE",
+			Description = "The cid and pid of your project in cid.pid format",
+			Reference = new OpenApiReference
+			{
+				Type = ReferenceType.SecurityScheme,
+				Id = "scope",
+				HostDocument = swagger.Document,
+
+			}
+		};
+		swagger.Document.Components.SecuritySchemes.Clear();
+		swagger.Document.Components.SecuritySchemes.Add("auth", authScheme);
+		swagger.Document.Components.SecuritySchemes.Add("scope", scopeScheme);
+
+		var scopedAuthReq = new OpenApiSecurityRequirement
+		{
+			[authScheme] = new List<string>{},
+			[scopeScheme] = new List<string>{}
+		};
+		var authReq = new OpenApiSecurityRequirement
+		{
+			[authScheme] = new List<string>()
+		};
+		var scopeReq = new OpenApiSecurityRequirement
+		{
+			[scopeScheme] = new List<string>()
+		};
+		var noReq = new OpenApiSecurityRequirement();
+		
+		foreach (var path in swagger.Document.Paths)
+		{
+			var scopeHeader = path.Value.Parameters.FirstOrDefault(x => x.In == ParameterLocation.Header && x.Name == "X-BEAM-SCOPE");
+			var hasScopeHeader = scopeHeader != null;
+
+			var canRemoveScopeHeader = false;
+			foreach (var op in path.Value.Operations)
+			{
+		
+				var isProto = swagger.Descriptor.Source == BeamableApiSource.PLAT_PROTO;
+				var needsAuth = isProto || op.Value.Security.Count > 0 && op.Value.Security[0].Keys.Count > 0;
+				op.Value.Security.Clear();
+				
+				if (needsAuth && hasScopeHeader)
+				{
+					op.Value.Security.Add(scopedAuthReq);
+					canRemoveScopeHeader = true;
+				} else if (!needsAuth && hasScopeHeader)
+				{
+					op.Value.Security.Add(scopeReq);
+					canRemoveScopeHeader = true;
+				} else if (needsAuth && !hasScopeHeader)
+				{
+					op.Value.Security.Add(authReq);
+				}
+			}
+
+			if (canRemoveScopeHeader)
+			{
+				path.Value.Parameters.Remove(scopeHeader);
+			}
+		}
+		
+		return new List<OpenApiDocumentResult> { swagger };
+	}
+	
+	private static List<OpenApiDocumentResult> PopulateBasicTags(OpenApiDocumentResult swagger)
+	{
+		foreach (var path in swagger.Document.Paths)
+		{
+			foreach (var op in path.Value.Operations)
+			{
+				var tags = op.Value.Tags;
+				if (tags.Count == 0)
+				{
+					tags.Add(new OpenApiTag
+					{
+						Name = swagger.Descriptor.Service.Capitalize()
+					});
+				}
+			}
+		}
+		return new List<OpenApiDocumentResult> { swagger };
+	}
+	
 	private static List<OpenApiDocumentResult> FixBasicCloudsavingDataMetadataGet(OpenApiDocumentResult swagger)
 	{
 		// this is a bit broken endpoint, it is a GET request with support for body

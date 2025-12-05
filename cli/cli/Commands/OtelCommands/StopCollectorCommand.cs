@@ -22,7 +22,7 @@ public class StopCollectorCommand : AppCommand<StopCollectorCommandArgs>
 
 	public override async Task Handle(StopCollectorCommandArgs args)
 	{
-
+		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
 		if(string.IsNullOrEmpty(port))
 		{

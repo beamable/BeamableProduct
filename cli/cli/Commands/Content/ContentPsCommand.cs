@@ -68,7 +68,8 @@ public class ContentPsCommand
 		}
 		
 		// If we are just creating the local representation for this realm+manifest combo, let's reset our state to match the remote state.
-		_ = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
+		
+		var contentFolder = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
 		if (created)
 		{
 			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
@@ -160,6 +161,25 @@ public class ContentPsCommand
 						localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId, ContentFilterType.ExactIds, allRelevantIds);
 						await localContentAgainstLatest;
 
+						
+						// If a content referenceId was changed and can be updated we don't need to wait for a content ps to be called again to reset it
+						var saveTasks = new List<Task>();
+						var contentToUpdateManifestReference = localContentAgainstLatest.Result.ContentFiles
+							.Where(c => c.CanUpdateReferenceWithTarget)
+							.ToArray();
+						foreach (ContentFile c in contentToUpdateManifestReference)
+						{
+							ContentFile contentFile = c;
+							// In some cases of conflict resolution the Reference Content could be null.
+							if (c.ReferenceContent != null)
+							{
+								contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+							}
+							contentFile.FetchedFromManifestUid = latestManifestId;
+							saveTasks.Add(contentService.SaveContentFile(contentFolder, contentFile));
+						}
+						await Task.WhenAll(saveTasks);
+						
 						// Prepare a new Manifest to push out with only the changed entries.
 						var fileChangeManifestToEmit = new ContentPsCommandEvent()
 						{

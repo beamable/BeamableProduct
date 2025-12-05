@@ -18,83 +18,154 @@ MonoBehaviour:
     title: 
     sceneName: LightBeam_Boot
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/LightBeam_Boot.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
   - label: accounts
     about: Contains a simple user interface demonstrating how to use the Beamable
       Accounts SDK.
     title: Account Management
     sceneName: Sample_AccountManager
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/AccountManager/Sample_AccountManager.unity
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
   - label: currencyHud
     about: Contains a tiny user interface demonstrating how to show a Beamable Currency.
     title: Currency Hud
     sceneName: Sample_CurrencyHud
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/CurrencyHud/Sample_CurrencyHud.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
   - label: inventory
     about: Contains a modest user interface demonstrating how to access and how inventory
       items and currencies.
     title: Inventory Management
     sceneName: Sample_InventoryManager
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/Inventory/Sample_InventoryManager.unity
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
   - label: friends
     about: Contains a humble user interface demonstrating how to use social features
       to add, remove, block friends.
     title: Friends Hud
     sceneName: Sample_FriendsManager
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/FriendsManager/Sample_FriendsManager.unity
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
   - label: lobbies
     about: Contains a unostentatious user interface demonstrating how to use the
       API for creating, joining and managing lobbies.
     title: Lobby Management
     sceneName: Sample_LobbyManager
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/LobbyManager/Sample_LobbyManager.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
   - label: lootbox
     about: Contains a friendly user interface demonstrating how to use a C#MS to
       create a Loot Box system.
     title: Loot Box
     sceneName: Sample_LootBox
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/LootBox/Sample_LootBox.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
   - label: cloudsaving
     about: Contains a friendly user interface demonstrating how to use the Player
       Cloud Saving Service.
     title: Cloud Saving
     sceneName: Sample_CloudSaving
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/CloudSaving/Sample_CloudSaving.unity
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
+  - label: mini-basic-01
+    about: 
+    title: 
+    sceneName: 01_BeamContext_HelloWorld
+    scenePath: Assets/Minis/Basics/01_BeamContext_HelloWorld/01_BeamContext_HelloWorld.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
+  - label: mini-basic-02
+    about: 
+    title: 
+    sceneName: 02_Leaderboards_Simple
+    scenePath: Assets/Minis/Basics/02_Leaderboards_Simple/02_Leaderboards_Simple.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: 0d9f07931e6a449091c7df7305353c94, type: 3}
+  - label: setup_console
+    about: 
+    title: 
+    sceneName: mini_setup_console
+    scenePath: Assets/Minis/Basics/setup_console/mini_setup_console.unity
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: fe60b80ae9ef64516b83d2dc31a395b3, type: 3}
   editorScenes:
   - name: boot
     title: 
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
     about: 
     scene: {fileID: 102900000, guid: 5f6f0a08d9e624549b34668b3bf733cf, type: 3}
   - name: accounts
     title: Account Management
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
     about: Contains a simple user interface demonstrating how to use the Beamable
       Accounts SDK.
     scene: {fileID: 102900000, guid: c6ddc9966256c427da56cf576323e005, type: 3}
   - name: currencyHud
     title: Currency Hud
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
     about: Contains a tiny user interface demonstrating how to show a Beamable Currency.
     scene: {fileID: 102900000, guid: 3863d5870632241f383eaad4a42a89e5, type: 3}
   - name: inventory
     title: Inventory Management
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
     about: Contains a modest user interface demonstrating how to access and how inventory
       items and currencies.
     scene: {fileID: 102900000, guid: f9d893bd375e8429ebcc07120873a85b, type: 3}
   - name: friends
     title: Friends Hud
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
     about: Contains a humble user interface demonstrating how to use social features
       to add, remove, block friends.
     scene: {fileID: 102900000, guid: dee51f5a283164b649282ea3f20aabbe, type: 3}
   - name: lobbies
     title: Lobby Management
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
     about: Contains a unostentatious user interface demonstrating how to use the
       API for creating, joining and managing lobbies.
     scene: {fileID: 102900000, guid: 7dbba4b4b37ee486a83555160b85e498, type: 3}
   - name: lootbox
     title: Loot Box
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
     about: Contains a friendly user interface demonstrating how to use a C#MS to
       create a Loot Box system.
     scene: {fileID: 102900000, guid: 316e018940e0d4900ba58ee614346c61, type: 3}
   - name: cloudsaving
     title: Cloud Saving
+    includeInToc: 1
+    realmRequirements: {fileID: 0}
     about: Contains a friendly user interface demonstrating how to use the Player
       Cloud Saving Service.
     scene: {fileID: 102900000, guid: b095fd13200fa74498971019fbbcba7f, type: 3}
+  - name: mini-basic-01
+    title: 
+    includeInToc: 0
+    realmRequirements: {fileID: 0}
+    about: 
+    scene: {fileID: 102900000, guid: dc6e72d457162475a847a4344b8f7e49, type: 3}
+  - name: mini-basic-02
+    title: 
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: 0d9f07931e6a449091c7df7305353c94, type: 3}
+    about: 
+    scene: {fileID: 102900000, guid: 92d2749bbc92b48edbacf8304c336b60, type: 3}
+  - name: setup_console
+    title: 
+    includeInToc: 0
+    realmRequirements: {fileID: 4900000, guid: fe60b80ae9ef64516b83d2dc31a395b3, type: 3}
+    about: 
+    scene: {fileID: 102900000, guid: 6e1434a24120e48e7a209871287dccc8, type: 3}

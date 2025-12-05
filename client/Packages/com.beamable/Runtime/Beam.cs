@@ -112,8 +112,8 @@ namespace Beamable
 		/// However, this should not be used directly. Instead,
 		/// Use <see cref="SwitchToPid"/> to change the PID at runtime.
 		/// </summary>
-		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
-			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
+		public static IDefaultRuntimeConfigProvider RuntimeConfigProvider =>
+			GlobalScope.GetService<IDefaultRuntimeConfigProvider>();
 
 		public static ReflectionCache ReflectionCache;
 
@@ -151,7 +151,8 @@ namespace Beamable
 			GlobalDependencyBuilder.AddSingleton<ConfigDatabaseProvider>();
 			GlobalDependencyBuilder.AddSingleton<IPlatformRequesterHostResolver, ConfigPlatformHostResolver>();
 			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
-
+			GlobalDependencyBuilder.AddSingleton<IDefaultRuntimeConfigProvider>(p => p.GetService<DefaultRuntimeConfigProvider>());
+			
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 			
@@ -184,6 +185,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IConnectivityChecker, GatewayConnectivityChecker>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
+			DependencyBuilder.AddSingleton<IUrlEscaper>(p => p.GetService<IPlatformRequester>());
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
 			DependencyBuilder.AddScoped<CachelessInventoryService>();
@@ -192,7 +194,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
 			DependencyBuilder.AddSingleton<IManifestResolver, DefaultManifestResolver>();
-			DependencyBuilder.AddSingleton<IContentCacheFactory, DefaultContentCacheFactory>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();

@@ -153,7 +153,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			for (int i = 0; i < _size; ++i)
 			{
-				if (key == _keys[i])
+				if (string.Equals(key, _keys[i], StringComparison.Ordinal))
 				{
 					_values[i] = value;
 					return;
@@ -195,7 +195,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			for (int i = 0; i < _size; ++i)
 			{
-				if (key == _keys[i])
+				if (string.Equals(key, _keys[i], StringComparison.Ordinal))
 				{
 					return true;
 				}
@@ -207,7 +207,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			for (int i = 0; i < _size; ++i)
 			{
-				if (key == _keys[i])
+				if (string.Equals(key, _keys[i], StringComparison.Ordinal))
 				{
 					--_size;
 					_keys[i] = _keys[_size];
@@ -222,7 +222,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			for (int i = 0; i < _size; ++i)
 			{
-				if (key == _keys[i])
+				if (string.Equals(key, _keys[i], StringComparison.Ordinal))
 				{
 					value = _values[i];
 					return true;
@@ -238,7 +238,7 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				for (int i = 0; i < _size; ++i)
 				{
-					if (key == _keys[i])
+					if (string.Equals(key, _keys[i], StringComparison.Ordinal))
 					{
 						return _values[i];
 					}

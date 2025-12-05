@@ -23,9 +23,9 @@ MonoBehaviour:
     DisableBeamableDateStringPropertyDrawers: 0
     DisableBeamableCidPidWarningsOnBuild: 0
   AdvancedCli:
-    HasValue: 1
+    HasValue: 0
     Value:
-      IgnoreVersionRequirement: 1
+      IgnoreVersionRequirement: 0
   CustomPathInclusions:
     HasValue: 0
     Value: []

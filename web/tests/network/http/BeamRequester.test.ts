@@ -26,11 +26,12 @@ describe('BeamRequester', () => {
 
   beforeEach(() => {
     tokenStorage = {
-      getAccessToken: vi.fn().mockResolvedValue('test_token'),
-      getRefreshToken: vi.fn(),
-      setAccessToken: vi.fn(),
-      setRefreshToken: vi.fn(),
-      removeRefreshToken: vi.fn(),
+      getTokenData: vi.fn().mockResolvedValue({
+        accessToken: 'test_token',
+        refreshToken: null,
+        expiresIn: null,
+      }),
+      setTokenData: vi.fn(),
     } as unknown as TokenStorage;
   });
 
@@ -182,7 +183,11 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
+    (tokenStorage.getTokenData as any).mockResolvedValue({
+      accessToken: 'test_token',
+      refreshToken: 'rt',
+      expiresIn: null,
+    });
     const mockRefreshResponse = {
       status: 200,
       headers: {},
@@ -199,13 +204,14 @@ describe('BeamRequester', () => {
     });
     const res = await requester.request<unknown, unknown>({ url: '/test' });
     expect(inner.request).toHaveBeenCalledTimes(2);
-    expect(tokenStorage.getRefreshToken).toHaveBeenCalled();
+    expect(tokenStorage.getTokenData).toHaveBeenCalled();
     expect(apis.authPostTokenBasic).toHaveBeenCalledWith(requester, {
       grant_type: 'refresh_token',
       refresh_token: 'rt',
     });
-    expect(tokenStorage.setAccessToken).toHaveBeenCalledWith('at');
-    expect(tokenStorage.setRefreshToken).toHaveBeenCalledWith('nrt');
+    expect(tokenStorage.setTokenData).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'at', refreshToken: 'nrt' }),
+    );
     expect(res.body).toBe('ok');
   });
 
@@ -218,7 +224,11 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    (tokenStorage.getRefreshToken as any).mockResolvedValue(null);
+    (tokenStorage.getTokenData as any).mockResolvedValue({
+      accessToken: 'test_token',
+      refreshToken: null,
+      expiresIn: null,
+    });
     const requester = new BeamRequester({
       inner,
       tokenStorage,
@@ -239,7 +249,11 @@ describe('BeamRequester', () => {
       setDefaultHeader: vi.fn(),
       setTokenProvider: vi.fn(),
     } as unknown as HttpRequester;
-    (tokenStorage.getRefreshToken as any).mockResolvedValue('rt');
+    (tokenStorage.getTokenData as any).mockResolvedValue({
+      accessToken: 'test_token',
+      refreshToken: 'rt',
+      expiresIn: null,
+    });
     const mockRefreshResponse = { status: 400, body: {} };
     vi.spyOn(apis, 'authPostTokenBasic').mockResolvedValue(
       mockRefreshResponse as any,
@@ -253,7 +267,9 @@ describe('BeamRequester', () => {
     await expect(requester.request({ url: '/test' })).rejects.toBeInstanceOf(
       RefreshAccessTokenError,
     );
-    expect(tokenStorage.removeRefreshToken).toHaveBeenCalled();
+    expect(tokenStorage.setTokenData).toHaveBeenCalledWith({
+      refreshToken: null,
+    });
   });
 
   it('throws BeamError on non-2xx response', async () => {

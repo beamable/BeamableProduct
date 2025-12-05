@@ -1,7 +1,8 @@
-import { TokenStorage } from '@/platform/types/TokenStorage';
+import { TokenStorage, type TokenData } from '@/platform/types/TokenStorage';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { BEAM_NODE_DIR } from '@/constants';
 
 /**
  * TokenStorage implementation for Node.js environments.
@@ -14,7 +15,7 @@ export class NodeTokenStorage extends TokenStorage {
   constructor(pid: string, tag?: string) {
     super();
     this.prefix = tag ? `${tag}_${pid}_` : `${pid}_`;
-    const directory = path.join(os.homedir(), '.beamable_node');
+    const directory = path.join(os.homedir(), BEAM_NODE_DIR);
     this.filePath = path.join(directory, `${this.prefix}beam_tokens.json`);
     try {
       if (fs.existsSync(this.filePath)) {
@@ -49,51 +50,25 @@ export class NodeTokenStorage extends TokenStorage {
     }
   }
 
-  async getAccessToken(): Promise<string | null> {
-    return this.accessToken;
+  async getTokenData() {
+    return {
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken,
+      expiresIn: this.expiresIn,
+    };
   }
 
-  async setAccessToken(token: string): Promise<void> {
-    this.accessToken = token;
+  async setTokenData(data: Partial<TokenData>): Promise<this> {
+    if ('accessToken' in data) this.accessToken = data.accessToken ?? null;
+    if ('refreshToken' in data) this.refreshToken = data.refreshToken ?? null;
+    if ('expiresIn' in data) this.expiresIn = data.expiresIn ?? null;
     await this.persist();
-  }
-
-  async removeAccessToken(): Promise<void> {
-    this.accessToken = null;
-    await this.persist();
-  }
-
-  async getRefreshToken(): Promise<string | null> {
-    return this.refreshToken;
-  }
-
-  async setRefreshToken(token: string): Promise<void> {
-    this.refreshToken = token;
-    await this.persist();
-  }
-
-  async removeRefreshToken(): Promise<void> {
-    this.refreshToken = null;
-    await this.persist();
-  }
-
-  async getExpiresIn(): Promise<number | null> {
-    return this.expiresIn;
-  }
-
-  async setExpiresIn(expiresIn: number): Promise<void> {
-    this.expiresIn = expiresIn;
-    await this.persist();
-  }
-
-  async removeExpiresIn(): Promise<void> {
-    this.expiresIn = null;
-    await this.persist();
+    return this;
   }
 
   async clear(): Promise<void> {
     // Remove all token files from disk regardless of prefix
-    const dir = path.join(os.homedir(), '.beamable_node');
+    const dir = path.join(os.homedir(), BEAM_NODE_DIR);
     try {
       const files = await fs.promises.readdir(dir);
       await Promise.all(

@@ -7,16 +7,17 @@ import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { BeamBaseConfig } from '@/configs/BeamBaseConfig';
 import { BeamError } from '@/constants/Errors';
 import { ApiService, type ApiServiceCtor } from '@/services/types/ApiService';
-import {
+import type {
   BeamServerServiceType,
   BeamServiceType,
-  RefreshableServiceMap,
+  RefreshableRegistry,
 } from '@/core/types';
-import type { Refreshable } from '@/services';
 import {
   BeamMicroServiceClient,
   BeamMicroServiceClientCtor,
 } from '@/core/BeamMicroServiceClient';
+import { TokenStorage } from '@/platform/types/TokenStorage';
+import { defaultTokenStorage } from '@/defaults';
 
 export interface BeamEnvVars {
   /** The secret key for signing requests. */
@@ -29,20 +30,22 @@ export interface BeamEnvVars {
 export abstract class BeamBase {
   /** The HTTP requester instance used by the Beam SDK. */
   readonly requester: HttpRequester;
-
   /** The Beamable Customer ID. */
   cid: string;
   /** The Beamable Project ID. */
   pid: string;
+  /**
+   * The token storage instance used by the client SDK.
+   * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.
+   * Can be overridden via the `tokenStorage` option in the `BeamConfig`.
+   */
+  tokenStorage: TokenStorage;
 
   protected envConfig: BeamEnvironmentConfig;
   protected defaultHeaders: Record<string, string>;
   protected clientServices = {} as BeamServiceType;
   protected serverServices = {} as BeamServerServiceType;
-  protected refreshable = {} as Record<
-    keyof RefreshableServiceMap,
-    Refreshable<unknown>
-  >;
+  protected refreshableRegistry = {} as RefreshableRegistry;
   protected isInitialized = false;
 
   private static _env: BeamEnvVars = {
@@ -66,41 +69,50 @@ export abstract class BeamBase {
   }
 
   /**
-   * Dynamically adds a service to the Beam SDK instance.
-   * @param Service The service class to add.
+   * Dynamically adds multiple api services or microservice clients to the Beam SDK.
+   * @param ctors - An array of constructors for the api service or microservice client.
+   * @returns The current instance of BeamBase.
    * @example
    * ```ts
-   * // client-side:
-   * beam.use(StatsService);
-   * await beam.stats.get({...});
-   * // server-side:
-   * beamServer.use(StatsService);
-   * await beamServer.stats.get({...});
+   * const beam = await Beam.init({ ... });
+   * beam.use([LeadboardService, StatsService]);
+   * ```
+   * or
+   * ```ts
+   * const beam = await Beam.init({ ... });
+   * beam.use([MyMicroserviceClient, MyOtherMicroserviceClient]);
    * ```
    */
-  abstract use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
+  abstract use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctors: readonly T[],
+  ): this;
 
   /**
-   * Dynamically adds a microservice client to the Beam SDK instance.
-   * @param Client The microservice client class to add.
+   * Dynamically adds a single api service or microservice client to the Beam SDK.
+   * @param ctor - The constructor for the api service or microservice client.
+   * @returns The current instance of BeamBase.
    * @example
    * ```ts
-   * // client-side:
-   * beam.use(MyMicroServiceClient);
-   * beam.myMicroServiceClient.serviceName;
-   * // server-side:
-   * beamServer.use(MyMicroServiceClient);
-   * beamServer.myMicroServiceClient.serviceName;
+   * const beam = await Beam.init({ ... });
+   * beam.use(StatsService);
+   * ```
+   * or
+   * ```ts
+   * const beam = await Beam.init({ ... });
+   * beam.use(MyMicroserviceClient);
    * ```
    */
-  abstract use<T extends BeamMicroServiceClient>(
-    Client: BeamMicroServiceClientCtor<T>,
+  abstract use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctor: T,
   ): this;
 
   protected constructor(config: BeamBaseConfig) {
     this.cid = config.cid;
     this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(config.environment ?? 'prod');
+    this.envConfig = BeamEnvironment.get(this.getConfigEnvironment(config));
+    this.tokenStorage =
+      config.tokenStorage ??
+      defaultTokenStorage({ pid: config.pid, tag: config.instanceTag });
     this.defaultHeaders = {
       [HEADERS.ACCEPT]: 'application/json',
       [HEADERS.CONTENT_TYPE]: 'application/json',
@@ -119,6 +131,10 @@ export abstract class BeamBase {
     if (value) {
       this.defaultHeaders[key] = value;
     }
+  }
+
+  protected getConfigEnvironment(config: BeamBaseConfig) {
+    return config.environment ?? 'prod'; // default to prod if not provided
   }
 
   protected isApiService(ctor: any): ctor is ApiServiceCtor<ApiService> {

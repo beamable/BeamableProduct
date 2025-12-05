@@ -20,6 +20,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     bool WatchToken { get; }
     public bool DisableCustomInitializationHooks { get; }
     public string LogLevel { get; }
+    public string OapiGenLogLevel { get; }
     public bool DisableLogTruncate { get; }
     public int LogTruncateLimit { get; }
     public int LogMaxCollectionSize { get; }
@@ -42,11 +43,18 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool EnableDangerousDeflateOptions { get; }
     public string MetadataUrl { get; }
     public string RefreshToken { get; }
+    public string AccountEmail { get; }
     public long AccountId { get; }
     public int RequireProcessId { get; }
     public string OtelExporterOtlpProtocol { get; }
     public string OtelExporterOtlpEndpoint { get; }
     public string OtelExporterOtlpHeaders { get; }
-
+    public bool UseLocalOtel { get; }
+    public bool SkipLocalEnv { get; }
+    public bool SkipAliasResolve { get; }
+    public bool OtelExporterShouldRetry { get; }
+    public bool OtelExporterStandardEnabled { get; }
+    public string OtelExporterRetryMaxSize { get; }
+    public bool AllowStartupWithoutBeamableSettings { get; }
     void SetResolvedCid(string resolvedCid);
 }

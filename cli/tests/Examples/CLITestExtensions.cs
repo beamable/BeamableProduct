@@ -7,7 +7,9 @@ using cli.Services;
 using Moq;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using System;
 using tests.MoqExtensions;
+using RealmView = Beamable.Common.Api.Realms.RealmView;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace tests.Examples;
@@ -80,7 +82,8 @@ public class CLITestExtensions : CLITest
 					{
 						refresh_token = "refresh",
 						access_token = "access",
-						token_type = "token"
+						token_type = "token",
+						expires_in = (long)TimeSpan.FromMinutes(30).TotalMilliseconds
 					})
 					.Verifiable();
 			});

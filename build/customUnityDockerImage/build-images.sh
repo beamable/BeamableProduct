@@ -7,10 +7,16 @@ MY_USERNAME=beamable
 
 # BUILD THE EDITOR VERSIONS
 declare -a components=("android" "ios" "mac-mono" "webgl" "windows-mono" "base")
-declare -a versions=("2021.3.29f1" "2022.3.7f1" "6000.0.37f1")
+declare -a versions=("2021.3.29f1" "2022.3.7f1" "6000.0.37f1" "6000.2.8f1")
 
 for version in "${versions[@]}"
 do
+    # Use GameCI 3.2.0 only for Unity 6000.2.*
+    if [[ "$version" == 6000.2.* ]]; then
+        GAME_CI_VERSION=3.2.0
+    else
+        GAME_CI_VERSION=3.1.0
+    fi
     for component in "${components[@]}"
     do
         # a valid image resembles something like this,

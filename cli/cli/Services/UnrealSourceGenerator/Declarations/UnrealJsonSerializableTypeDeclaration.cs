@@ -215,18 +215,18 @@ public struct UnrealJsonSerializableTypeDeclaration
 			// We skip properties that are not blueprint compatible when generating the Make/Break helper functions.
 			if (!unrealPropertyDeclaration.IsBlueprintCompatible()) continue;
 
-			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.PropertyName}";
+			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.AsParameterName}";
 
 			makeSb.Append($"{paramDeclaration}, ");
 			if (unrealPropertyDeclaration.PropertyUnrealType.IsOptional())
 			{
-				makeOptionalParamNamesSb.Append($"{unrealPropertyDeclaration.PropertyName}, ");
+				makeOptionalParamNamesSb.Append($"{unrealPropertyDeclaration.AsParameterName}, ");
 			}
 
-			makeAssignmentSb.Append($"Serializable->{unrealPropertyDeclaration.PropertyName} = {unrealPropertyDeclaration.PropertyName};\n\t");
+			makeAssignmentSb.Append($"Serializable->{unrealPropertyDeclaration.PropertyName} = {unrealPropertyDeclaration.AsParameterName};\n\t");
 
-			breakSb.Append($", {unrealPropertyDeclaration.PropertyUnrealType}& {unrealPropertyDeclaration.PropertyName}");
-			breakAssignmentSb.Append($"\t{unrealPropertyDeclaration.PropertyName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
+			breakSb.Append($", {unrealPropertyDeclaration.PropertyUnrealType}& {unrealPropertyDeclaration.AsParameterName}");
+			breakAssignmentSb.Append($"\t{unrealPropertyDeclaration.AsParameterName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
 		}
 
 		_makeParams = makeSb.ToString();

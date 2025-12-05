@@ -94,6 +94,9 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+
+    <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
+    <PackageReference Include="Dapper" Version="2.1.66"/>
     
   </ItemGroup>
 
@@ -130,37 +133,6 @@
     <!-- Windows-Based -->
     <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net9.0\')" Command=".\$(OutputPath)net9.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
   </Target>
-
-<!--  <PropertyGroup Condition="$(PackageVersion.Contains('0.0.123'))==true OR '$(PackageVersion)'==''">-->
-<!--    <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>-->
-<!--    <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>-->
-<!--    <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>-->
-<!--    <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>-->
-
-<!--    <BeamCollectorConfig>clickhouse-config.yaml</BeamCollectorConfig>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorExecutable>-->
-
-<!--    <BeamCollectorExecutablePath>Resources\$(BeamCollectorExecutable)</BeamCollectorExecutablePath>-->
-<!--    <BeamCollectorConfigPath>Resources\$(BeamCollectorConfig)</BeamCollectorConfigPath>-->
-
-<!--  </PropertyGroup>-->
-
-<!--  <ItemGroup Condition="$(PackageVersion.Contains('0.0.123'))==true  OR '$(PackageVersion)'==''">-->
-<!--    <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">-->
-<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
-<!--      <TargetPath>$(BeamCollectorExecutable)</TargetPath>-->
-<!--    </None>-->
-
-<!--    <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">-->
-<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
-<!--      <TargetPath>$(BeamCollectorConfig)</TargetPath>-->
-<!--    </None>-->
-<!--  </ItemGroup>-->
   
   <ItemGroup>
     <Content Include="Commands/OtelCommands/Grafana/ContainerFiles/**/*">

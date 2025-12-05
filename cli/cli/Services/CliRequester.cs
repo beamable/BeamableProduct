@@ -7,13 +7,15 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
 using Beamable.Server;
-
+using System.Net.Http.Headers;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
 
 public class CliRequester : IRequester
 {
+
+	private readonly int ProgressiveDelayIncreaser = 5;
 	private readonly IRequesterInfo _requesterInfo;
 	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
@@ -118,38 +120,74 @@ public class CliRequester : IRequester
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).
-		RecoverWith(error =>
+		return InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, 0);
+	}
+
+	private Promise<T> InternalRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+		Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).RecoverWith(error =>
 		{
 			switch (error)
 			{
+				case RequesterException e when e.Status == 401:
+					Log.Warning(
+						$"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
+
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
 				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
+						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
-											   e.Status == 403 ||
-											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
-												AccessToken.ExpiresAt < DateTime.Now):
+				                               e.Status == 403 ||
+				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+				                                AccessToken.ExpiresAt < DateTime.Now):
 					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
-					var authService = new AuthApi(this);
-					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
-						{
-							Log.Debug(
-								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_requesterInfo.SetToken(rsp);
-							return PromiseBase.Unit;
-						})
-						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
-				case RequesterException { Status: > 500 and < 510 }:
-					BeamableLogger.LogWarning($"Problems with host {_requesterInfo.Host}, trying again in few seconds...");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
+				case RequesterException e when e.Status == 502:
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
+					if (retryCount >= 5 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
+				case RequesterException e when e.Status > 500 && e.Status < 510:
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
+					break;
 			}
 
 			return Promise<T>.Failed(error);
-		});
+		}).ReportInnerException();
+	}
+
+	private async Promise<T> GetTokenAndRetry<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		var authService = new AuthApi(this);
+
+		TokenResponse tokenResponse = await authService.LoginRefreshToken(AccessToken.RefreshToken);
+		Log.Debug(
+			$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
+		_requesterInfo.SetToken(tokenResponse);
+
+		return await InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, ++retryCount);
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
@@ -166,6 +204,7 @@ public class CliRequester : IRequester
 		{
 			byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
 			request.Content = new ByteArrayContent(bodyBytes);
+			request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 		}
 		else
 		{

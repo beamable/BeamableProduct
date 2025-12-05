@@ -3,10 +3,11 @@ datasources:
   - name: Beamable Telemetry
     type: grafana-clickhouse-datasource
     access: proxy
+    url: $BEAM_CLICKHOUSE_ENDPOINT
     jsonData:
       defaultDatabase: default
-      protocol: native
-      port: 9440
+      protocol: http
+      port: $BEAM_CLICKHOUSE_PORT
       secure: true
       host: $BEAM_CLICKHOUSE_HOST
       username: $BEAM_CLICKHOUSE_USERNAME

@@ -48,7 +48,7 @@ public partial class TunaService : Beamable.Server.Microservice, IFederatedLogin
 
 	
 	[Fact]
-	public async Task Test_Diagnostic_Srv_NoMicroserviceClassesDetected()
+	public async Task Test_Diagnostic_Srv_NoMicroserviceClassesDetected_IsFine()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -63,13 +63,11 @@ public class SomeUserMicroservice
 		
 		PrepareForRun(ctx, UserCode);
 
-		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NoMicroserviceClassesDetected));
-		
 		await ctx.RunAsync();
 	}
 
 	[Fact]
-	public async Task Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected()
+	public async Task Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected_IsFine()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -92,11 +90,6 @@ public partial class {|#0:SomeOtherUserMicroservice|} : Microservice
 		
 		PrepareForRun(ctx, UserCode);
 
-		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MultipleMicroserviceClassesDetected)
-			.WithLocation(0)
-			.WithArguments("SomeUserMicroservice")
-			.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations));
-		
 		await ctx.RunAsync();
 	}
 	
@@ -127,7 +120,7 @@ public partial class SomeUserMicroservice : Microservice
 	}
 
 	[Fact]
-	public async Task Test_Diagnostic_Srv_NonPartialMicroserviceClassDetected()
+	public async Task Test_Diagnostic_Srv_NonPartialMicroserviceClassDetected_IsFine()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -145,13 +138,11 @@ public class {|#0:SomeUserMicroservice|} : Microservice
 		
 		PrepareForRun(ctx, UserCode);
 
-		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.NonPartialMicroserviceClassDetected).WithLocation(0));
-		
 		await ctx.RunAsync();
 	}
 
 	[Fact]
-	public async Task Test_Diagnostic_Srv_MissingMicroserviceId()
+	public async Task Test_Diagnostic_Srv_MissingMicroserviceId_IsFine()
 	{
 		const string UserCode = @"
 using Beamable.Server;
@@ -168,11 +159,57 @@ public partial class {|#0:SomeUserMicroservice|} : Microservice
 		
 		PrepareForRun(ctx, UserCode);
 
-		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Srv.MissingMicroserviceId).WithLocation(0));
-		
 		await ctx.RunAsync();
 	}
 	
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ParameterViaInject_IsFine()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+public class TunaSauce : Microservice
+{	
+	[ClientCallable]
+	public void Tuna([Inject]IUserScope scope) {}
+}
+";
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, UserCode);
+		
+		await ctx.RunAsync();
+	}
+
+	
+	[Fact]
+	public async Task Test_Diagnostic_Srv_ParameterViaParameterSource_IsFine()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+public class TunaSauce : Microservice
+{	
+	[ClientCallable]
+	public void Tuna([Parameter(source: ParameterSource.Injection)]IUserScope scope) {}
+}
+";
+		
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+		
+		PrepareForRun(ctx, UserCode);
+		
+		await ctx.RunAsync();
+	}
+
 	
 	[Fact]
 	public async Task Test_Diagnostic_Srv_InvalidAsyncVoidCallableMethod()

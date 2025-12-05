@@ -5,7 +5,10 @@
         "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.LightBeams",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Beamable.Config",
+        "Beamable.Platform",
+        "Beamable.SmallerJSON"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -16,7 +16,8 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	public Image avatarImage;
 
 	public Button changeAccountButton;
-
+	public Button portalButton;
+	
 	private PlayerAccount _model;
 	private LightBeam _ctx;
 
@@ -26,7 +27,7 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		_model = model;
 		model.OnUpdated += Refresh;
 		Refresh();
-
+		
 		return Promise.Success;
 	}
 
@@ -36,6 +37,8 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		aliasLabel.text = _model.Alias ?? "Anonymous";
 		emailLabel.text = _model.Email ?? "";
 		avatarImage.sprite = _ctx.Scope.GetService<AvatarConfiguration>().GetAvatarSprite(_model.Avatar);
+		
+		portalButton.HandleClicked(() => _ctx.OpenPortalRealm($"/players/{_model.GamerTag}"));
 	}
 
 	private void OnDestroy()

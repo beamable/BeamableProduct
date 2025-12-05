@@ -2,32 +2,24 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { TokenStorage } from '@/platform/types/TokenStorage';
 
 class DummyStorage extends TokenStorage {
-  async getAccessToken() {
-    return this.accessToken;
+  async getTokenData() {
+    return {
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken,
+      expiresIn: this.expiresIn,
+    };
   }
-  async setAccessToken(token: string) {
-    this.accessToken = token;
-  }
-  async removeAccessToken() {
-    this.accessToken = null;
-  }
-  async getRefreshToken() {
-    return this.refreshToken;
-  }
-  async setRefreshToken(token: string) {
-    this.refreshToken = token;
-  }
-  async removeRefreshToken() {
-    this.refreshToken = null;
-  }
-  async getExpiresIn() {
-    return this.expiresIn;
-  }
-  async setExpiresIn(expiresIn: number) {
-    this.expiresIn = expiresIn;
-  }
-  async removeExpiresIn() {
-    this.expiresIn = null;
+  async setTokenData(
+    data: Partial<{
+      accessToken: string | null;
+      refreshToken: string | null;
+      expiresIn: number | null;
+    }>,
+  ) {
+    if ('accessToken' in data) this.accessToken = data.accessToken ?? null;
+    if ('refreshToken' in data) this.refreshToken = data.refreshToken ?? null;
+    if ('expiresIn' in data) this.expiresIn = data.expiresIn ?? null;
+    return this;
   }
   clear() {
     this.accessToken = null;
@@ -50,21 +42,21 @@ describe('TokenStorage', () => {
   it('returns true when expiresIn is null or NaN', () => {
     const storage = new DummyStorage();
     expect(storage.isExpired).toBe(true);
-    storage.setExpiresIn(NaN);
+    storage.setTokenData({ expiresIn: NaN });
     expect(storage.isExpired).toBe(true);
   });
 
   it('returns false when expiresIn is more than one day in the future', () => {
     const storage = new DummyStorage();
     const twoDays = 2 * 24 * 60 * 60 * 1000;
-    storage.setExpiresIn(Date.now() + twoDays);
+    storage.setTokenData({ expiresIn: Date.now() + twoDays });
     expect(storage.isExpired).toBe(false);
   });
 
   it('returns true when expiresIn is less than one day in the future', () => {
     const storage = new DummyStorage();
     const twelveHours = 12 * 60 * 60 * 1000;
-    storage.setExpiresIn(Date.now() + twelveHours);
+    storage.setTokenData({ expiresIn: Date.now() + twelveHours });
     expect(storage.isExpired).toBe(true);
   });
 });

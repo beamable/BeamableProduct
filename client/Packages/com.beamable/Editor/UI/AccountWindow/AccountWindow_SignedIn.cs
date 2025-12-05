@@ -4,6 +4,7 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Library;
 using Beamable.Editor.Microservice.UI2;
 using Beamable.Editor.Util;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,20 +12,31 @@ namespace Beamable.Editor.Accounts
 {
 	public partial class AccountWindow
 	{
+		private Vector2 _signedInScroll;
+		private const string RUNTIME_INFO_IS_NOT_SET = "The build runtime {0}: <b>[{1}]</b> {2} not set. Please set your editor Realm to a desired Realm and set the value by clicking on: ";
+
 		void Draw_SignedIn()
 		{
 			
-			void RenderLabel(string label, string value)
+			void RenderLabel(string label, string value, string placeholder = "")
 			{
+				bool isValueNullOrEmpty = string.IsNullOrEmpty(value);
 				EditorGUILayout.LabelField(label, _titleStyle);
-				EditorGUILayout.SelectableLabel(value, _textboxStyle);
-				if (string.IsNullOrEmpty(value))
+				if (!isValueNullOrEmpty)
 				{
-					var rect = GUILayoutUtility.GetLastRect();
-					var spinnerTex = BeamGUI.GetSpinner();
-					var spinnerRect = new Rect(rect.xMax - (spinnerTex.width + 8), rect.y - 5, spinnerTex.width,
-					                           rect.height);
-					GUI.DrawTexture(spinnerRect, spinnerTex, ScaleMode.ScaleToFit);
+					EditorGUILayout.SelectableLabel(value, _textboxStyle);
+				}
+				else
+				{
+					EditorGUILayout.LabelField(placeholder, _textboxPlaceholderStyle);
+					if (string.IsNullOrEmpty(placeholder))
+					{
+						var rect = GUILayoutUtility.GetLastRect();
+						var spinnerTex = BeamGUI.GetSpinner();
+						var spinnerRect = new Rect(rect.xMax - (spinnerTex.width + 8), rect.y - 5, spinnerTex.width,
+						                           rect.height);
+						GUI.DrawTexture(spinnerRect, spinnerTex, ScaleMode.ScaleToFit);
+					}
 				}
 			}
 			
@@ -32,6 +44,8 @@ namespace Beamable.Editor.Accounts
 			{
 				padding = new RectOffset(12, 12, 12, 12)
 			});
+			
+			_signedInScroll = EditorGUILayout.BeginScrollView(_signedInScroll);
 
 			BeamGUI.DrawLogoBanner();
 			
@@ -52,15 +66,49 @@ namespace Beamable.Editor.Accounts
 
 					{
 						var config = context.ServiceScope.GetService<ConfigDatabaseProvider>();
-						RenderLabel("Runtime Host", config.HostUrl);
-						RenderLabel("Runtime Cid", config.Cid);
+						RenderLabel("Runtime Host", config.HostUrl, "No value set");
+						RenderLabel("Runtime Cid", config.Cid, "No value set");
 
 						var realmDisplay = config.Pid;
 						if (cli.pidToRealm.TryGetValue(config.Pid, out var realm))
 						{
 							realmDisplay = realm.GetDisplayName();
 						}
-						RenderLabel("Runtime Realm", realmDisplay);
+						RenderLabel("Runtime Realm", realmDisplay, "No value set");
+
+						List<string> missingRuntimeFields = new List<string>();
+						if (string.IsNullOrEmpty(config.HostUrl))
+						{
+							missingRuntimeFields.Add("host");
+						}
+
+						if (string.IsNullOrEmpty(config.Cid))
+						{
+							missingRuntimeFields.Add("cid");
+						}
+
+						if (string.IsNullOrEmpty(realmDisplay))
+						{
+							missingRuntimeFields.Add("realm");
+						}
+						
+						if (missingRuntimeFields.Count > 0)
+						{
+							GUIStyle guiStyle = new GUIStyle(EditorStyles.label)
+							{
+								wordWrap = true,
+								richText = true,
+								padding = new RectOffset(0, 0, 10, 0)
+							};
+							var valueInfo = missingRuntimeFields.Count > 1 ? "values" : "value";
+							var missingFields = string.Join(", ", missingRuntimeFields);
+							var missingFieldsText = missingRuntimeFields.Count > 1 ? "are" : "is";
+							EditorGUILayout.LabelField(string.Format(RUNTIME_INFO_IS_NOT_SET, valueInfo, missingFields, missingFieldsText), guiStyle);
+							if (BeamGUI.SoftLeftLinkButton(new GUIContent("Copy editor connection strings to build")))
+							{
+								context.CommitConfigDefaults();
+							}
+						}
 						
 						// var clickedOpen = BeamGUI.SoftRightLinkButton(new GUIContent("Select config-defaults.txt"));
 						// if (clickedOpen)
@@ -170,7 +218,7 @@ namespace Beamable.Editor.Accounts
 			EditorGUILayout.Space(1, true);
 
 			EditorGUILayout.EndHorizontal();
-
+			EditorGUILayout.EndScrollView();
 			EditorGUILayout.EndVertical();
 		}
 	}

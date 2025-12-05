@@ -37,10 +37,11 @@
 
     </PropertyGroup>
 
-    <!-- Set some default Beamable options, https://docs.beamable.com/docs/cli-guide-microservice-configuration -->
+    <!-- Set some default Beamable options, https://help.beamable.com/CLI-Latest/cli/guides/ms-configuration/ -->
     <PropertyGroup>
         <!-- By default, if the BeamId hasn't been set, we use the name of the file -->
         <BeamId Condition="'$(BeamId)'==''">$(MSBuildProjectName)</BeamId>
+        <BeamLogProvider Condition="'$(BeamLogProvider)'==''">Clickhouse</BeamLogProvider>
     </PropertyGroup>
     
     <PropertyGroup Label="Resolve .beamable paths">
@@ -66,7 +67,7 @@
     
     <ItemGroup>
         <CompilerVisibleProperty Include="BeamValidateCallableTypesExistInSharedLibraries" />
-        <CompilerVisibleProperty Include="EnableUnrealBlueprintCompability" />
+        <CompilerVisibleProperty Include="EnableUnrealBlueprintCompatibility" />
         <CompilerVisibleProperty Include="BeamId" />
     </ItemGroup>
 

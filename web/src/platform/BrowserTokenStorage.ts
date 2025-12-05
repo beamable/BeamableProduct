@@ -1,4 +1,4 @@
-import { TokenStorage } from '@/platform/types/TokenStorage';
+import { TokenStorage, type TokenData } from '@/platform/types/TokenStorage';
 
 const BASE_ACCESS_TOKEN_KEY = 'beam_access_token';
 const BASE_REFRESH_TOKEN_KEY = 'beam_refresh_token';
@@ -86,55 +86,50 @@ export class BrowserTokenStorage extends TokenStorage {
     window.addEventListener('storage', this.storageListener);
   }
 
-  async getAccessToken(): Promise<string | null> {
-    return this.accessToken;
+  async getTokenData(): Promise<TokenData> {
+    return {
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken,
+      expiresIn: this.expiresIn,
+    };
   }
 
-  async setAccessToken(token: string): Promise<void> {
-    this.accessToken = token;
-    localStorage.setItem(this.accessTokenKey, token);
-    this.bc?.postMessage({ type: 'access', value: token });
-  }
+  async setTokenData(data: Partial<TokenData>): Promise<this> {
+    if ('accessToken' in data) {
+      this.accessToken = data.accessToken ?? null;
+      if (this.accessToken === null) {
+        localStorage.removeItem(this.accessTokenKey);
+      } else {
+        localStorage.setItem(this.accessTokenKey, this.accessToken);
+      }
+      this.bc?.postMessage({ type: 'access', value: this.accessToken });
+    }
 
-  async removeAccessToken(): Promise<void> {
-    this.accessToken = null;
-    localStorage.removeItem(this.accessTokenKey);
-    this.bc?.postMessage({ type: 'access', value: null });
-  }
+    if ('refreshToken' in data) {
+      this.refreshToken = data.refreshToken ?? null;
+      if (this.refreshToken === null) {
+        localStorage.removeItem(this.refreshTokenKey);
+      } else {
+        localStorage.setItem(this.refreshTokenKey, this.refreshToken);
+      }
+      this.bc?.postMessage({ type: 'refresh', value: this.refreshToken });
+    }
 
-  async getRefreshToken(): Promise<string | null> {
-    return this.refreshToken;
-  }
+    if ('expiresIn' in data) {
+      this.expiresIn = data.expiresIn ?? null;
+      if (this.expiresIn === null) {
+        localStorage.removeItem(this.expiresInKey);
+        this.bc?.postMessage({ type: 'expiresIn', value: null });
+      } else {
+        localStorage.setItem(this.expiresInKey, String(this.expiresIn));
+        this.bc?.postMessage({
+          type: 'expiresIn',
+          value: String(this.expiresIn),
+        });
+      }
+    }
 
-  async setRefreshToken(token: string): Promise<void> {
-    this.refreshToken = token;
-    localStorage.setItem(this.refreshTokenKey, token);
-    this.bc?.postMessage({ type: 'refresh', value: token });
-  }
-
-  async removeRefreshToken(): Promise<void> {
-    this.refreshToken = null;
-    localStorage.removeItem(this.refreshTokenKey);
-    this.bc?.postMessage({ type: 'refresh', value: null });
-  }
-
-  async getExpiresIn(): Promise<number | null> {
-    return this.expiresIn;
-  }
-
-  async setExpiresIn(expiresIn: number): Promise<void> {
-    this.expiresIn = expiresIn;
-    localStorage.setItem(this.expiresInKey, String(expiresIn));
-    this.bc?.postMessage({
-      type: 'expiresIn',
-      value: String(expiresIn),
-    });
-  }
-
-  async removeExpiresIn(): Promise<void> {
-    this.expiresIn = null;
-    localStorage.removeItem(this.expiresInKey);
-    this.bc?.postMessage({ type: 'expiresIn', value: null });
+    return this;
   }
 
   async clear(): Promise<void> {

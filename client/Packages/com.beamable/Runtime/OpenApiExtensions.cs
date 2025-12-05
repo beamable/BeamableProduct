@@ -4,7 +4,7 @@ namespace Beamable
 {
 	public static class OpenApiExtensions
 	{
-		public static bool IsUsingBeamableNotifications(this RealmConfiguration config)
+		public static bool IsUsingBeamableNotifications(this RealmsBasicRealmConfiguration config)
 		{
 			// "pubnub" is the only other valid option besides using beamable notifications.
 			//  thus, if the string is pubnub, we aren't using beam notifs...
@@ -12,7 +12,7 @@ namespace Beamable
 			return config?.websocketConfig?.provider != "pubnub";
 		}
 
-		public static bool IsUsingPubnubNotifications(this RealmConfiguration config) =>
+		public static bool IsUsingPubnubNotifications(this RealmsBasicRealmConfiguration config) =>
 			!IsUsingBeamableNotifications(config);
 	}
 }

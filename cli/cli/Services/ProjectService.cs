@@ -10,6 +10,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 using microservice.Extensions;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace cli.Services;
 
@@ -479,7 +481,7 @@ public class ProjectService
 				error = ($"Unspected sln filter. Expected header. output=[{bufferStr}]");
 			if (lines[0] != "Project(s)")
 				error = ($"Unspected sln filter. Expected 'Project(s)'. output=[{bufferStr}]");
-			if (lines[1].Any(c => c != '-'))
+			if (lines.Count > 1 && lines[1].Any(c => c != '-'))
 				error = ($"Unspected sln filter. Expected a line of dashes. output=[{bufferStr}]");
 
 			if (!string.IsNullOrEmpty(error))
@@ -557,7 +559,27 @@ public class ProjectService
 
 		// add the microservice to the solution
 		await RunDotnetCommand($"sln {solutionPath.EnquotePath()} add {projectPath.EnquotePath()}");
-
+		
+		// If we are linked to an Unreal project, we should add the property to turn on UE-Specific static analyses.
+		if ((_projects?.unrealProjectsPaths?.Count ?? 0) > 0)
+		{
+			var csprojPath = Path.Combine(projectPath, $"{projectName}.csproj");
+			var doc = XDocument.Load(csprojPath);
+			
+			var propertyGroup = doc.Descendants("PropertyGroup").FirstOrDefault(e => (e.Attribute("Label")?.Value ?? "") == "Beamable Settings");
+			Debug.Assert(propertyGroup != null, nameof(propertyGroup) + " != null");
+			propertyGroup.Add(new XElement("EnableUnrealBlueprintCompatibility", "true"));
+			doc.Save(csprojPath);
+			
+			// At the moment, we look for <Project Sdk="Microsoft.NET.Sdk"> to be the first line of any Beamable-compatible csprojs.
+			// Saving with XDocument adds <?xml version="1.0" encoding="utf-8"?> to the top of the file.
+			// We need to remove this line that the XML library adds.
+			// TODO: In general, we need a more robust way of identifying projects we care about BEFORE feeding the file into MsBuild
+			//  See -> ProjectContextUtil.FindCsharpProjects
+			string[] lines = File.ReadAllLines(csprojPath);
+			File.WriteAllLines(csprojPath, lines.Skip(1).ToArray());
+		}
+			
 		// create the shared library project only if requested
 		if (generateCommon)
 		{

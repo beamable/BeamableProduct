@@ -18,8 +18,8 @@ public class ContentPublishCommand : AtomicCommand<ContentPublishCommandArgs, Co
 		AddOption(new Option<AutoSnapshotType>("--auto-snapshot-type", () => AutoSnapshotType.None,
 			"Defines if after publish the Content System should take snapshots of the content." + 
 			$"\n{nameof(AutoSnapshotType.None)} => Will not save any snapshot after publishing" +
-		    $"\n{nameof(AutoSnapshotType.LocalOnly)} => Will save the snapshot under `.beamable/temp/content-snapshots` folder" +
-		    $"\n{nameof(AutoSnapshotType.SharedOnly)} => Will save the snapshot under `.beamable/content-snapshots` folder" +
+		    $"\n{nameof(AutoSnapshotType.LocalOnly)} => Will save the snapshot under `.beamable/temp/content-snapshots/[PID]` folder" +
+		    $"\n{nameof(AutoSnapshotType.SharedOnly)} => Will save the snapshot under `.beamable/content-snapshots/[PID]` folder" +
 		    $"\n{nameof(AutoSnapshotType.Both)} => Will save two snapshots, under local and shared folders"), 
 			(args, t) => args.SnapshotType = t);
 		AddOption(new Option<int>("--max-local-snapshots", () => 20, 

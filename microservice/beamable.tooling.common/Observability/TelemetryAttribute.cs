@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Util;
+using Beamable.Tooling.Common.OpenAPI;
 using Otel = Beamable.Common.Constants.Features.Otel;
 
 namespace Beamable.Server
@@ -11,24 +12,33 @@ namespace Beamable.Server
         /// This type of information must always be included.
         /// Without essential information, downstream systems can break.
         /// </summary>
-        ESSENTIAL,
+        ESSENTIAL = 30,
         
         /// <summary>
         /// Errors, messages, logic.
         /// Most telemetry is informational.
         /// </summary>
-        INFO,
+        INFO = 20,
         
         /// <summary>
         /// Used for advanced debugging. Not meant for everyday use. 
         /// </summary>
-        VERBOSE
+        VERBOSE = 10
     }
 
     public enum TelemetryAttributeType
     {
         STRING, 
         LONG
+    }
+
+    [Flags]
+    public enum TelemetryAttributeSource
+    {
+        NONE = 0,
+        RESOURCE = 1, 
+        CONNECTION = 2,
+        REQUEST = 4
     }
     
     public struct TelemetryAttribute
@@ -69,7 +79,6 @@ namespace Beamable.Server
         }
 
     }
-    
 
     public static class TelemetryAttributes
     {
@@ -92,6 +101,11 @@ namespace Beamable.Server
             name: Otel.ATTR_AUTHOR, 
             description: "The player id of the user that started the service, or 0 if remote. ",
             playerId);
+        
+        public static TelemetryAttribute OwnerPlayerEmail(string email) => TelemetryAttribute.String(
+            name: Otel.ATTR_AUTHOR_EMAIL, 
+            description: "The player email of the user that started the service, or blank if remote. ",
+            email);
         
         public static TelemetryAttribute RequestPlayerId(long playerId) => TelemetryAttribute.Long(
             name: Otel.ATTR_REQ_PLAYER_ID, 
@@ -173,6 +187,7 @@ namespace Beamable.Server
 
         public void Add(TelemetryAttribute attr)
         {
+            if (attr.type == TelemetryAttributeType.STRING && attr.stringValue == null) return;
             attributes.Add(attr);
         }
 
@@ -247,6 +262,8 @@ namespace Beamable.Server
     
     public interface ITelemetryAttributeProvider
     {
+        List<TelemetryAttributeDescriptor> GetDescriptors();
+        
         void CreateDefaultAttributes(IDefaultAttributeContext ctx);
         void CreateConnectionAttributes(IConnectionAttributeContext ctx);
         void CreateRequestAttributes(IRequestAttributeContext ctx);
@@ -270,17 +287,26 @@ namespace Beamable.Server
             return telemetryCtx.Attributes.ToDictionary();
         }
         
-        public static TelemetryAttributeCollection CreateRequestAttributes(this SingletonDependencyList<ITelemetryAttributeProvider> providers, IMicroserviceArgs args, RequestContext ctx)
+        public static TelemetryAttributeCollection CreateRequestAttributes(this SingletonDependencyList<ITelemetryAttributeProvider> providers, IMicroserviceArgs args, RequestContext ctx, string connectionId)
         {
             var requestTelemetryContext = new RequestAttributeContext
             {
                 Attributes = new TelemetryAttributeCollection(),
                 Args = args,
-                Request = ctx
+                Request = ctx,
+                ConnectionId = connectionId
             };
             foreach (var provider in providers.Elements)
             {
-                provider.CreateRequestAttributes(requestTelemetryContext);
+                try
+                {
+                    provider.CreateRequestAttributes(requestTelemetryContext);
+                }
+                catch (Exception ex)
+                {
+                    BeamableZLoggerProvider.Instance.Error("Failed to add request attributes");
+                    BeamableZLoggerProvider.Instance.Error(ex);
+                }
             }
 
             return requestTelemetryContext.Attributes;
@@ -289,9 +315,51 @@ namespace Beamable.Server
 
     public class BeamStandardTelemetryAttributeProvider : ITelemetryAttributeProvider
     {
+        public List<TelemetryAttributeDescriptor> GetDescriptors()
+        {
+            var resourceBased = new List<TelemetryAttribute>()
+            {
+                TelemetryAttributes.OwnerPlayerId(0),
+                TelemetryAttributes.OwnerPlayerEmail(""),
+                TelemetryAttributes.Pid(null),
+                TelemetryAttributes.SdkVersion(),
+                TelemetryAttributes.RoutingKey(null),
+                TelemetryAttributes.Source(null)
+            }.Select(x => x.FromAttribute(TelemetryAttributeSource.RESOURCE));
+
+            
+            var connectionBased = new List<TelemetryAttribute>()
+            {
+                TelemetryAttributes.ConnectionId(null)
+            }.Select(x => x.FromAttribute(TelemetryAttributeSource.CONNECTION));
+
+            
+            var requestBased = new List<TelemetryAttribute>()
+            {
+                TelemetryAttributes.ConnectionId(null),
+                TelemetryAttributes.RequestPlayerId(0),
+                TelemetryAttributes.RequestId(null),
+                TelemetryAttributes.ConnectionRequestId(0),
+                TelemetryAttributes.RequestPath(null),
+                TelemetryAttributes.RequestClientType(null),
+                TelemetryAttributes.RequestClientSdkVersion(null),
+                TelemetryAttributes.RequestClientVersion(null),
+                TelemetryAttributes.RequestClientGameVersion(null),
+                TelemetryAttributes.RequestBeamRootTrace(null),
+                TelemetryAttributes.RequestBeamParentTrace(null),
+            }.Select(x => x.FromAttribute(TelemetryAttributeSource.REQUEST));
+
+            
+            var final = resourceBased.ToList();
+            final.AddRange(connectionBased.ToList());
+            final.AddRange(requestBased.ToList());
+            return final;
+        }
+
         public void CreateDefaultAttributes(IDefaultAttributeContext ctx)
         {
             ctx.Attributes.Add(TelemetryAttributes.OwnerPlayerId(ctx.Args.AccountId));
+            ctx.Attributes.Add(TelemetryAttributes.OwnerPlayerEmail(ctx.Args.AccountEmail));
             
             ctx.Attributes.Add(TelemetryAttributes.Cid(ctx.Args.CustomerID));
             ctx.Attributes.Add(TelemetryAttributes.Pid(ctx.Args.ProjectName));
@@ -307,11 +375,20 @@ namespace Beamable.Server
 
         public void CreateRequestAttributes(IRequestAttributeContext ctx)
         {
-            ctx.Attributes.Add(TelemetryAttributes.ConnectionId(ctx.ConnectionId));
             ctx.Attributes.Add(TelemetryAttributes.RequestPlayerId(ctx.Request.UnsafeUserId));
             ctx.Attributes.Add(TelemetryAttributes.RequestId(Guid.NewGuid().ToString()));
             ctx.Attributes.Add(TelemetryAttributes.ConnectionRequestId(ctx.Request.Id));
-            ctx.Attributes.Add(TelemetryAttributes.RequestPath(ctx.Request.Path));
+
+            var path = ctx.Request.Path;
+            if (!string.IsNullOrEmpty(path))
+            {
+                if (path.StartsWith("micro_"))
+                {
+                    path = path.Substring("micro_".Length);
+                }
+
+                ctx.Attributes.Add(TelemetryAttributes.RequestPath(path));
+            }
 
             if (!ctx.Request.Headers.TryGetClientType(out var clientType))
             {

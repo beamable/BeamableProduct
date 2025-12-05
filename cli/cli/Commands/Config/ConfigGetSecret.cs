@@ -21,11 +21,16 @@ public class ConfigGetSecret : AppCommand<ConfigGetSecretArgs>
 
 	public override async Task Handle(ConfigGetSecretArgs args)
 	{
+		var secret = await GetSecret(args);
+		BeamableLogger.Log(secret);
+	}
+
+	public static async Task<string> GetSecret(CommandArgs args)
+	{
 		var api = args.Provider.GetService<IRealmsApi>();
 		var res = await api.GetAdminCustomer();
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
 		var secret = proj.secret;
-
-		BeamableLogger.Log(secret);
+		return secret;
 	}
 }

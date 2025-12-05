@@ -16,7 +16,7 @@ public class ErrorTests : CommonTest
 	public async Task CaughtPromiseDoesNotLog()
 	{
 
-		MicroserviceBootstrapper.ConfigureUnhandledError();
+		MicroserviceStartupUtil.ConfigureUnhandledError();
 		var exception = new Exception("test failure");
 #pragma warning disable CS1998
 		async Promise SubMethod()
@@ -49,7 +49,7 @@ public class ErrorTests : CommonTest
 	public async Task UncaughtPromiseDoesLog()
 	{
 		allowErrorLogs = true;
-		MicroserviceBootstrapper.ConfigureUnhandledError();
+		MicroserviceStartupUtil.ConfigureUnhandledError();
 		var exception = new Exception("test failure");
 #pragma warning disable CS1998
 		async Promise SubMethod()

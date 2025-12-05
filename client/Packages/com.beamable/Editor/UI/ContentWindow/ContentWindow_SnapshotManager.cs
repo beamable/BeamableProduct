@@ -36,6 +36,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private SearchData _snapshotSearchData;
 		private ContentSnapshotType? _currentSnapshotCreationMode;
 		private bool _mustSetControl = false;
+		private bool _isAdditiveRestore;
+		private bool _deleteAfterRestore;
 
 		private void DrawSnapshotManager()
 		{
@@ -90,6 +92,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				_selectedSnapshotsPaths.Clear();
 			}
 
+			buttonsRectController.ReserveWidthFromRight(BASE_PADDING * 2);
+			var additiveRestoreContent = new GUIContent("Additive Restore", "When enabled, this will restore values additively instead of replacing them completely.");
+			var additiveRestoreToggleSize = GUI.skin.toggle.CalcSize(additiveRestoreContent);
+			Rect additiveRestoreToggleRect = buttonsRectController.ReserveWidthFromRight(additiveRestoreToggleSize.x);
+			_isAdditiveRestore = EditorGUI.ToggleLeft(additiveRestoreToggleRect, additiveRestoreContent, _isAdditiveRestore);
+			
+			buttonsRectController.ReserveWidthFromRight(BASE_PADDING * 2);
+			var deleteAfterRestoreContent = new GUIContent("Delete After Restore", "When enabled, this will delete the snapshot right after restore.");
+			var deleteAfterRestoreToggleSize = GUI.skin.toggle.CalcSize(deleteAfterRestoreContent);
+			Rect deleteAfterRestoreRect = buttonsRectController.ReserveWidthFromRight(deleteAfterRestoreToggleSize.x);
+			_deleteAfterRestore = EditorGUI.ToggleLeft(deleteAfterRestoreRect, deleteAfterRestoreContent, _deleteAfterRestore);
+
 			EditorGUILayout.EndVertical();
 		}
 
@@ -101,7 +115,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				                                $"Are you sure you want to restore your local content to match the snapshot {snapshotItem.Name}? This will delete all your local content.",
 				                                "Restore", "Cancel"))
 				{
-					_ = _contentService.RestoreSnapshot(snapshotItem.Path).Then(unit => { _ = CacheSnapshots(); });
+					_ = _contentService.RestoreSnapshot(snapshotItem.Path, _isAdditiveRestore, _deleteAfterRestore).Then(unit => { _ = CacheSnapshots(); });
 				}
 			}
 		}
@@ -126,8 +140,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(BASE_PADDING, false);
 			EditorGUILayout.EndHorizontal();
 			
-			var minWidth = Mathf.Min(biggerNameSize, snapshotListAreaWidth);
-			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
+			var rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -144,7 +157,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				DrawSnapshotsList(_localSnapshots.Values.ToList(), ContentSnapshotType.Local, true);
 			}
 
-			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(minWidth)));
+			rectController = new EditorGUIRectController(EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(snapshotListAreaWidth)));
 			rectController.ReserveWidth(BASE_PADDING);
 			rectController.ReserveWidthFromRight(BASE_PADDING);
 			
@@ -493,7 +506,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorGUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
 			}
 
-			if (deletedContents.Count > 0)
+			if (deletedContents.Count > 0 && !_isAdditiveRestore)
 			{
 				EditorGUILayout.LabelField("Contents that will be locally deleted:", boldLabel);
 				var deletedVisHeight = Mathf.Min(300, (int)EditorGUIUtility.singleLineHeight * deletedContents.Count);

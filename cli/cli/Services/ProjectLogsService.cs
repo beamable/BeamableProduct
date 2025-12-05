@@ -129,9 +129,7 @@ public class ProjectLogsService
 							Log.Verbose("invalid log, server is likely destroyed.");
 							break;
 						}
-
-						var _ = await reader.ReadLineAsync(cts.Token);
-
+ 
 						var substrLength = "data: ".Length;
 						if (line?.Length > substrLength)
 						{

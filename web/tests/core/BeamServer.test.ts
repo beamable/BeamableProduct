@@ -17,12 +17,15 @@ describe('BeamServer', () => {
     });
 
     it('should initialize BeamServer', async () => {
-      const beamServer = BeamServer.init(config);
+      const beamServer = await BeamServer.init(config);
       expect(beamServer).toBeInstanceOf(BeamServer);
     });
 
     it('should create a BeamRequester with useSignedRequest set to true', async () => {
-      const beamServer = BeamServer.init(config);
+      const beamServer = await BeamServer.init({
+        ...config,
+        useSignedRequest: true,
+      });
       const requester = beamServer.requester;
       expect(requester).toBeInstanceOf(BeamRequester);
       expect((requester as any)['useSignedRequest']).toBe(true);

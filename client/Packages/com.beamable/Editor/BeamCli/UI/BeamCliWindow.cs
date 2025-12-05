@@ -9,6 +9,7 @@ using Beamable.Editor.BeamCli.Commands;
 using UnityEditor;
 using UnityEditor.Graphs;
 using UnityEngine;
+using UnityEngine.Diagnostics;
 
 namespace Beamable.Editor.BeamCli.UI
 {
@@ -17,7 +18,8 @@ namespace Beamable.Editor.BeamCli.UI
 		Commands,
 		Servers,
 		Terminal,
-		Overrides
+		Overrides,
+		OTEL
 	}
 	
 	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
@@ -31,7 +33,7 @@ namespace Beamable.Editor.BeamCli.UI
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => await GetFullyInitializedWindow();
-
+ 		
 		static BeamCliWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -159,6 +161,9 @@ namespace Beamable.Editor.BeamCli.UI
 					break;
 				case BeamCliWindowTab.Overrides:
 					OnOverridesGui();
+					break;
+				case BeamCliWindowTab.OTEL:
+					OnOtelGui();
 					break;
 				default:
 					GUILayout.Label("There is no tab implemented yet!");

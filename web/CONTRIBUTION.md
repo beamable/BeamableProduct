@@ -6,8 +6,7 @@ Contributions are welcome! This project is configured with:
 
 - TypeScript for compile-time type safety.
 
-- `tsup` for bundling the code into multiple formats:
-
+- `tsdown` for bundling the code into multiple formats:
   - esm
   - cjs
   - iife (for CDN usage)
@@ -15,8 +14,6 @@ Contributions are welcome! This project is configured with:
 - Vitest as the test runner.
 
 - ESLint/Prettier for maintaining code quality and style.
-
-- Changesets for versioning and changelog management.
 
 - TypeDoc for SDK documentation.
 
@@ -135,11 +132,7 @@ Open the file in your browser and watch the console for output.
 
 ## Releasing & Versioning
 
-We use [changesets](https://github.com/changesets/changesets) for versioning. To create a changeset, run:
-
-```bash
-pnpm changeset
-```
+Please ensure that all notable changes are clearly documented in the `CHANGELOG.md` file before releasing.
 
 When we are ready to release, update the version and build:
 

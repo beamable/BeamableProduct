@@ -23,6 +23,8 @@ import type { AttachExternalIdentityApiRequest } from '@/__generated__/schemas/A
 import type { AttachExternalIdentityApiResponse } from '@/__generated__/schemas/AttachExternalIdentityApiResponse';
 import type { AvailableRolesResponse } from '@/__generated__/schemas/AvailableRolesResponse';
 import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { CreateAccountWithCredsApiResponse } from '@/__generated__/schemas/CreateAccountWithCredsApiResponse';
+import type { CreateAccountWithCredsRequest } from '@/__generated__/schemas/CreateAccountWithCredsRequest';
 import type { CreateElevatedAccountRequest } from '@/__generated__/schemas/CreateElevatedAccountRequest';
 import type { DeleteDevicesRequest } from '@/__generated__/schemas/DeleteDevicesRequest';
 import type { DeleteExternalIdentityApiRequest } from '@/__generated__/schemas/DeleteExternalIdentityApiRequest';
@@ -415,6 +417,25 @@ export async function accountsGetFindBasic(requester: HttpRequester, query: stri
     },
     g: gamertag,
     w: true
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `CreateAccountWithCredsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function accountsPostSignupBasic(requester: HttpRequester, payload: CreateAccountWithCredsRequest, gamertag?: string): Promise<HttpResponse<CreateAccountWithCredsApiResponse>> {
+  let endpoint = "/basic/accounts/signup";
+  
+  // Make the API request
+  return makeApiRequest<CreateAccountWithCredsApiResponse, CreateAccountWithCredsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
   });
 }
 

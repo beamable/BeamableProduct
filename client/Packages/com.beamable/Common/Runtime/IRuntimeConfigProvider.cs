@@ -34,7 +34,14 @@ namespace Beamable.Common
 		string PortalUrl { get; }
 	}
 
-	public class DefaultRuntimeConfigProvider : IRuntimeConfigProvider
+	public interface IDefaultRuntimeConfigProvider : IRuntimeConfigProvider
+	{
+		IRuntimeConfigProvider Fallback { get; set; }
+
+		new string Pid { get; set; }
+	}
+
+	public class DefaultRuntimeConfigProvider : IDefaultRuntimeConfigProvider
 	{
 		public IRuntimeConfigProvider Fallback { get; set; }
 

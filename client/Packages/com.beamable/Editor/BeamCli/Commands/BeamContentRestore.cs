@@ -8,10 +8,14 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Defines the name of the manifest on which the snapshot will be restored. The default value is `global`</summary>
         public string manifestId;
-        /// <summary>Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots' than from the local only under '.beamable/temp/content-snapshots'. If a path is passed, it is going to try get the json file from the path</summary>
+        /// <summary>Defines the name or path for the snapshot to be restored. If passed a name, it will first get the snapshot from shared folder '.beamable/content-snapshots/[PID]' than from the local only under '.beamable/temp/content-snapshots/[PID]'. If a path is passed, it is going to try get the json file from the path</summary>
         public string name;
+        /// <summary>An optional field to set the PID from where you would like to get the snapshot to be restored. The default will be the current PID the user are in</summary>
+        public string pid;
         /// <summary>Defines if the snapshot file should be deleted after restoring</summary>
         public bool deleteAfterRestore;
+        /// <summary>Defines if the restore will additionally adds the contents without deleting current local contents</summary>
+        public bool additiveRestore;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -27,10 +31,20 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--name=" + this.name));
             }
+            // If the pid value was not default, then add it to the list of args.
+            if ((this.pid != default(string)))
+            {
+                genBeamCommandArgs.Add(("--pid=" + this.pid));
+            }
             // If the deleteAfterRestore value was not default, then add it to the list of args.
             if ((this.deleteAfterRestore != default(bool)))
             {
                 genBeamCommandArgs.Add(("--delete-after-restore=" + this.deleteAfterRestore));
+            }
+            // If the additiveRestore value was not default, then add it to the list of args.
+            if ((this.additiveRestore != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--additive-restore=" + this.additiveRestore));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

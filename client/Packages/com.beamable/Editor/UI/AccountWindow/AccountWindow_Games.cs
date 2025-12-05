@@ -67,7 +67,7 @@ namespace Beamable.Editor.Accounts
 				}
 
 				{
-					if (realmNames == null)
+					if (realmNames == null && _realmsCommand == null)
 					{
 						UpdateRealmsForGame();
 					}
@@ -149,7 +149,7 @@ namespace Beamable.Editor.Accounts
 				{
 					var data = dp.data;
 					_visibleRealms = data.VisibleRealms;
-					realmNames = data.VisibleRealms.Select(x => $"{x.RealmName} - {x.Pid}").ToArray();
+					realmNames = data.VisibleRealms.Where(x => x.ProjectName == cli.latestGames.VisibleGames[gameSelectionIndex].ProjectName).Select(x => $"{x.RealmName} - {x.Pid}").ToArray();
 				});
 
 				_realmCommandPromise = _realmsCommand.Run();

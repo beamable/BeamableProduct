@@ -19,13 +19,11 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Common.Util;
-using Beamable.Config;
 using Beamable.Connection;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
 using Beamable.Player.CloudSaving;
-using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -144,7 +142,7 @@ namespace Beamable
 		public string Cid => _requester.Cid;
 
 		public string Pid => _requester.Pid; // TODO: rename to rid
-
+		
 		public AccessToken AccessToken => _requester.Token;
 
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
@@ -265,7 +263,7 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
-		private RealmConfiguration _realmConfig;
+		private RealmsBasicRealmConfiguration _realmConfig;
 
 		
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
@@ -541,10 +539,32 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
+			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
 
 			var _ = _serviceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 		}
 
+		private async Promise UpdateAndSaveToken()
+		{
+			var oldToken = _requester.Token;
+			await _beamableApiRequester.RefreshToken();
+			var token = _beamableApiRequester.Token;
+			ClearToken();
+			_requester.Token = token;
+			_beamableApiRequester.Token = token;
+			var settings = _serviceScope.GetService<ITokenEventSettings>();
+			if (settings.EnableTokenAnalytics)
+			{
+				var analytics = _serviceScope.GetService<IAnalyticsTracker>();
+				analytics.TrackEvent(
+					TokenEvent.ChangingToken(playerId: PlayerId,
+					                         newAccessToken: token?.Token,
+					                         newRefreshToken: token?.RefreshToken,
+					                         oldAccessToken: oldToken?.Token,
+					                         oldRefreshToken: oldToken?.RefreshToken), true);
+			}
+			_ = _beamableApiRequester.Token.Save();
+		}
 
 		private async Promise SaveToken(TokenResponse rsp)
 		{
@@ -613,9 +633,7 @@ namespace Beamable
 
 		private async Promise InitProcedure(bool silent = false)
 		{
-
 			#region resolve routing key
-
 			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
 			{
 				var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
@@ -628,19 +646,29 @@ namespace Beamable
 			_beamableApiRequester.Token = _requester.Token;
 			#endregion
 
-			#region wait for connectivity...
-
-			var checker = _serviceScope.GetService<IConnectivityChecker>();
-			checker.ConnectivityCheckingEnabled = true;
-			var hasInternet = await checker.ForceCheck();
-
-			#endregion
 
 			#region make decisions about the current account
 			var hasNoToken = AccessToken == null;
 			var hasOfflineToken = AccessToken?.Token == Constants.Commons.OFFLINE;
 			var needsToken = hasNoToken || hasOfflineToken;
 			#endregion
+
+			#region wait for connectivity...
+			var checker = _serviceScope.GetService<IConnectivityChecker>();
+			checker.ConnectivityCheckingEnabled = true;
+			var hasInternet = _connectivityService.HasConnectivity;
+			if (hasInternet)
+			{
+				var baseUserJob = GetBaseUser();
+				var configJob = SetupGetConfigRealms();
+				await Promise.Sequence(baseUserJob, configJob).RecoverFromNoConnectivity(_ =>
+				{
+					hasInternet = false;
+					return new List<Unit>();
+				});
+			}
+			#endregion
+
 
 			if (!hasInternet)
 			{
@@ -662,12 +690,10 @@ namespace Beamable
 			}
 			
 
-			async Promise SetupBeamableNotificationChannel(RealmConfiguration config)
+			async Promise SetupBeamableNotificationChannel(RealmsBasicRealmConfiguration config)
 			{
 				if (config.IsUsingBeamableNotifications())
 				{
-					// Let's make sure that we get a fresh new JWT before attempting to connect.
-					await _beamableApiRequester.RefreshToken();
 					await InitStep_StartWebsocket(config.websocketConfig.uri);
 				}
 				else
@@ -681,11 +707,11 @@ namespace Beamable
 				var user = await _authService.GetUser();
 				AuthorizedUser.Value = user;
 			}
-
-			async Promise SetupNewSession(RealmConfiguration config)
+			
+			async Promise SetupNewSession(RealmsBasicRealmConfiguration config)
 			{
-				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
+				string id = await AdvertisingIdentifier.GetIdentifier();
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, id);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 
 				bool sendHeartbeat = config.IsUsingPubnubNotifications();
@@ -716,6 +742,13 @@ namespace Beamable
 				{
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(new DummyPurchaser());
 				}
+			}
+			
+			
+			async Promise SetupGetConfigRealms()
+			{
+				var realmConfiguration = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults(false);
+				_realmConfig = realmConfiguration;
 			}
 
 			void SetupEmitEvents()
@@ -761,29 +794,28 @@ namespace Beamable
 				SetupEmitEvents();
 			}
 
-			async Promise SetupWithConnection()
+			async Promise GetBaseUser()
 			{
 				if (needsToken)
 				{
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
-				else if (AccessToken.IsExpired)
-				{
-					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
-					await SaveToken(rsp);
-				}
-
-				await SetupGetUser();
 				
-				_realmConfig = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults();
+				// Let's make sure that we get a fresh new JWT before attempting to connect.
+				await UpdateAndSaveToken();
+			}
 
-				
+			async Promise SetupWithConnection()
+			{
+				Promise userInfo = SetupGetUser();
 				var connection = SetupBeamableNotificationChannel(_realmConfig);
-				var session = SetupNewSession(_realmConfig);
 				var purchase = SetupPurchaser();
-				await Promise.Sequence(connection, session, purchase);
+				
+				await userInfo;
 
+				var session = SetupNewSession(_realmConfig);
+				await Promise.Sequence( connection, session, purchase);
 				SetupEmitEvents();
 			}
 		}

@@ -1,6 +1,5 @@
+using Beamable.Common.Util;
 using Beamable.Editor.Util;
-using System;
-using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.Library
@@ -29,7 +28,7 @@ namespace Beamable.Editor.Library
 			                          },
 			                          onClickedHelp: () =>
 			                          {
-				                          Application.OpenURL("https://docs.beamable.com/v2.0.0/docs/lightbeam-code-overview");
+				                          Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/samples/lightbeam/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
 			                          });
 		}
 	}

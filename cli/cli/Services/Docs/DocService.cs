@@ -1,3 +1,4 @@
+using System.Collections;
 using cli.Docs;
 using cli.Unreal;
 using Markdig;
@@ -153,8 +154,15 @@ public class DocService
 			return "";
 		}
 
+		var link = $"[{command.parent.GetSlug(" ")}](./{command.parent.GetName()}.md)";
+
+		if (command.children.Count > 0)
+		{
+			link = $"[{command.parent.GetSlug(" ")}](../{command.parent.GetName()}.md)";
+		}
+		
 		return @$"### Parent Command
-{GetLink(category, command.parent)}";
+{link}";
 	}
 
 	public string GetChildrenSection(string category, BeamCommandDescriptor command)
@@ -168,7 +176,17 @@ public class DocService
 		sb.Append("### Sub Commands\n");
 		foreach (var sub in command.children)
 		{
-			sb.Append($"{GetLink(category, sub)}\n");
+			if (sub.children.Count > 0)
+			{
+				sb.AppendLine($"- [{sub.GetName()}]({sub.GetName()}/{sub.GetName()}.md)");
+
+			}
+			else
+			{
+				sb.AppendLine($"- [{sub.GetName()}](./{sub.GetName()}.md)");
+
+			}
+			// sb.Append($"{GetLink(category, sub)}\n");
 		}
 		return sb.ToString();
 	}
@@ -193,9 +211,23 @@ public class DocService
 			argSb.Append("|--");
 			argSb.Append(opt.ArgumentHelpName ?? opt.Name);
 			argSb.Append("|");
-			argSb.Append(opt.ValueType.Name);
+			if (opt.ValueType.IsGenericType)
+			{
+				if (opt.ValueType.IsAssignableTo(typeof(IEnumerable)))
+				{
+					argSb.Append("Set[" + opt.ValueType.GetGenericArguments()[0].Name + "]");
+				}
+				else
+				{
+					argSb.Append("unknown");
+				}
+			}
+			else
+			{
+				argSb.Append(opt.ValueType.Name);
+			}
 			argSb.Append("|");
-			var argDesc = opt.Description;
+			var argDesc = opt.Description.ReplaceLineEndings("<br>");
 			if (desc.TryGetMarkdown($"{{{{Opt_{opt.Name}}}}}", out var extra))
 			{
 				extra = extra.Replace("\n", " ")
@@ -255,6 +287,11 @@ public class DocService
 		return argSection;
 	}
 
+	public string Render(BeamCommandDescriptor commandDesc)
+	{
+		return Render("_", commandDesc, (KEY_TITLE, commandDesc.executionPath.Substring("beam".Length).Trim()),
+			(KEY_DESC, commandDesc.command.Description));
+	}
 	public string Render(string docCategory, BeamCommandDescriptor command, params (string, string)[] extraVars)
 	{
 		var desc = Parse(command);
