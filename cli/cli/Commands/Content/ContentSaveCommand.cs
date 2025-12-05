@@ -33,6 +33,7 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 
 	public override async Task Handle(ContentSaveCommandArgs args)
 	{
+		var tokenSource = new CancellationTokenSource();
 		_contentService = args.ContentService;
 
 		Log.Verbose("Validating Content Save Command.");
@@ -63,7 +64,7 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 			string.Join("\n", args.ContentIds.Zip(args.ContentProperties).Select((id, props) => $"({id}, {props})")));
 
 		// Save the new contentId/contentProperties pairs
-		await _contentService.BulkSaveLocalContent(localCache, args.ContentIds, args.ContentProperties);
+		await _contentService.BulkSaveLocalContent(localCache, args.ContentIds, args.ContentProperties, tokenSource.Token);
 
 		Log.Verbose("Saved Content.\nMANIFEST_ID={0}.\nIDS_PROPS={1}",
 			manifestId,

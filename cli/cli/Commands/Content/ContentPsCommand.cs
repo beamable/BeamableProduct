@@ -72,12 +72,12 @@ public class ContentPsCommand
 		var contentFolder = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
 		if (created)
 		{
-			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage);
+			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
 		// Auto-sync with latest like when we react to a published manifest.
 		else
 		{
-			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage);
+			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.
@@ -118,10 +118,17 @@ public class ContentPsCommand
 			// The events will only contain the entries for the modified content objects and expects the engine integration to only rebuild their in-memory representation of the modified object.
 			var localFileChangesTask = Task.Run(async () =>
 			{
-				var tokenSource = new CancellationTokenSource();
-				await foreach (var batchedLocalFileChanges in contentService.ListenToLocalContentFileChanges(pid, manifestId, tokenSource.Token))
+				await foreach (var batchedLocalFileChanges in contentService.ListenToLocalContentFileChanges(pid, manifestId, args.Lifecycle.Source.Token))
 				{
-					await watchSemaphore.WaitAsync();
+					try
+					{
+						await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+					}
+					catch (OperationCanceledException)
+					{
+						// let it go. 
+						Log.Information("content ps command was cancelled. ");
+					}
 
 					try
 					{
@@ -233,8 +240,7 @@ public class ContentPsCommand
 			// Set up a task that will emit a RemotePublished event every time someone THAT IS NOT YOU publish a manifest to this realm+manifestid handle.
 			var remoteManifestPublishTask = Task.Run(async () =>
 			{
-				var tokenSource = new CancellationTokenSource();
-				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, tokenSource.Token))
+				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token))
 				{
 					await watchSemaphore.WaitAsync();
 					try

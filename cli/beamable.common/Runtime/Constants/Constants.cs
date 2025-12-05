@@ -1,4 +1,6 @@
-﻿namespace Beamable.Common
+﻿using System.Text;
+
+namespace Beamable.Common
 {
 	public static partial class Constants
 	{
@@ -70,6 +72,7 @@
 		public static class Files
 		{
 			public const string COMMON_USS_FILE = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Common.uss";
+			public static readonly UTF8Encoding DEFAULT_FILE_ENCONDING = new UTF8Encoding(false);
 		}
 		public static class URLs
 		{
