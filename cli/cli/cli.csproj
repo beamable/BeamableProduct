@@ -87,6 +87,7 @@
     <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.NET.StringTools" Version="17.10.4" ExcludeAssets="runtime" />
     <PackageReference Include="ZLogger" Version="2.5.10" />
 
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />
