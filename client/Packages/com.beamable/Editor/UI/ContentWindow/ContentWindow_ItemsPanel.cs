@@ -201,6 +201,8 @@ namespace Beamable.Editor.UI.ContentWindow
 							{
 								_contentService.DeleteContent(id.FullId);
 							}
+							ClearSelection();
+							
 						});
 						
 						Selection.activeObject = null;
@@ -771,6 +773,14 @@ namespace Beamable.Editor.UI.ContentWindow
 						                                "Cancel"))
 						{
 							_contentService.DeleteContent(entry.FullId);
+							if (entry.StatusEnum is ContentStatus.Created)
+							{
+								ClearSelection();
+							}
+							else
+							{
+								SetEntryIdAsSelected(entry.FullId);
+							}
 						}
 
 					});
@@ -816,6 +826,9 @@ namespace Beamable.Editor.UI.ContentWindow
 								{
 									_contentService.DeleteContent(entry.FullId);
 								}
+
+								ClearSelection();
+								
 							});
 						}
 					});

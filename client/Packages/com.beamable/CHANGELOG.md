@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed schema mismatches during content deserialization not triggering an update to the local ScriptableObject.
 - Fixed an issue where the Content Inspector would not update when a content item was renamed.
+- Fixed an issue when deleting a content the inspector window would not properly update.
 
 ## [3.1.6] - 2025-11-13
 ### Fixed
