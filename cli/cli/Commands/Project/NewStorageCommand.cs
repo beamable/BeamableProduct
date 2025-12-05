@@ -31,7 +31,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 				{
 					return "net" + AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
 				},
-				"The target framework to use for the new project. Defaults to the current dotnet runtime framework."),
+				"The target framework to use for the new project. Defaults to the current dotnet runtime framework"),
 			(args, i) =>
 			{
 				args.targetFramework = i;
