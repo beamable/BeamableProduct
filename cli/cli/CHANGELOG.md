@@ -5,11 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Fixed
-- `content ps -w` no longer hangs forever when invoked from CLI server 
-- validation case issue for rewards in `game_types` content 
-
 ## [6.2.2]
 ### Changed
 - Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   
@@ -66,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error message when user is not logged into CLI.
 - `beam project ps` no longer reports remote storages incorrectly
 - Issue that `beam project logs` were skipping logs
+
+## [5.4.3] - 2025-12-04
+### Fixed
+- `content ps -w` no longer hangs forever when invoked from CLI server
+- validation case issue for rewards in `game_types` content
 
 ## [5.4.2] - 2025-09-24
 ### Fixed

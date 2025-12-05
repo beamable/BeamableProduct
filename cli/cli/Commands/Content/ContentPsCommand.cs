@@ -72,12 +72,12 @@ public class ContentPsCommand
 		var contentFolder = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
 		if (created)
 		{
-			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage);
+			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
 		// Auto-sync with latest like when we react to a published manifest.
 		else
 		{
-			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage);
+			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
 
 		// Refresh the local ContentFile objects based on the latest reference manifest and emit a "full-rebuild" event.
