@@ -203,7 +203,7 @@ public class ContentService
 
 			jsonObj[ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID] = manifest.uid.Value;
 			
-			await File.WriteAllTextAsync(destinationFilePath, jsonObj.ToString());
+			await DirectoryUtils.WriteUtf8FileAsync(destinationFilePath, jsonObj.ToString());
 		}
 		
 		
@@ -437,7 +437,7 @@ public class ContentService
 				Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 				try
 				{
-					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false);
+					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
 
 					// Put this on the channel so it gets picked up below.
 					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
@@ -953,7 +953,7 @@ public class ContentService
 		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate, lifecycle.CancellationToken);
 	}
 
 	/// <summary>
@@ -962,7 +962,7 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
+		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null, CancellationToken cancellationToken = default)
 	{
 		// Reset processed count when calling SyncLocalContent method
 		_syncProcessedCount = 0;
@@ -1113,7 +1113,7 @@ public class ContentService
 			contentFile.Properties = j.GetProperty("properties");
 			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			contentFile.FetchedFromManifestUid = targetManifestUid;
-			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
+			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
 		// Make the Up-to-Date content files reference the manifest to which we just synchronized.
@@ -1126,7 +1126,7 @@ public class ContentService
 				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			}
 			contentFile.FetchedFromManifestUid = targetManifestUid;
-			saveTasks.Add(SaveContentFile(contentFolder, contentFile));
+			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
 		// If any problem happens while we are saving to disk, let's undo the pull operation and log out the exceptions.
@@ -1158,7 +1158,7 @@ public class ContentService
 				{
 					var fileName = Path.Combine(contentFolder, $"{contentFile.Id}.json");
 					var fileContents = JsonSerializer.Serialize(contentFile, GetContentFileSerializationOptions());
-					await File.WriteAllTextAsync(fileName, fileContents);
+					await DirectoryUtils.WriteUtf8FileAsync(fileName, fileContents, cancellationToken);
 				}).ToArray();
 
 			await Task.WhenAll(undoPullTasks);
@@ -1295,7 +1295,8 @@ public class ContentService
 				ManifestId = manifestId,
 				IsAutoSnapshot = isAutoSnapshot,
 			};
-			await File.WriteAllTextAsync(snapshotFilePath, JsonSerializer.Serialize(contentSnapshot, GetContentFileSerializationOptions()));
+			string serializedSnapshotContent = JsonSerializer.Serialize(contentSnapshot, GetContentFileSerializationOptions());
+			await DirectoryUtils.WriteUtf8FileAsync(snapshotFilePath, serializedSnapshotContent);
 		}
 		catch (Exception e)
 		{
@@ -1347,7 +1348,7 @@ public class ContentService
 						latestManifest.uid.GetOrElse("")
 				};
 				string contentData = JsonSerializer.Serialize(content, GetContentFileSerializationOptions());
-				await File.WriteAllTextAsync(fileName, contentData);
+				await DirectoryUtils.WriteUtf8FileAsync(fileName, contentData);
 			});
 			await Task.WhenAll(contentRestoreTasks);
 			if(deleteSnapshotAfterRestore) File.Delete(snapshotFilePath);
@@ -1544,6 +1545,11 @@ public class ContentService
 			var fileName = Path.Combine(contentFolder, $"{f.Id}.json");
 			var fileContents = JsonSerializer.Serialize(f, GetContentFileSerializationOptions());
 			await DirectoryUtils.WriteUtf8FileAsync(fileName, fileContents, token);
+		}
+		catch (OperationCanceledException)
+		{
+			// let it go
+			Log.Information("For some reason operation was cancelled.");
 		}
 		catch(Exception exception)
 		{

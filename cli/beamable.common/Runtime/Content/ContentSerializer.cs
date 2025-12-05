@@ -390,6 +390,7 @@ namespace Beamable.Common.Content
 					throw new Exception($"Cannot deserialize type [{type.Name}]");
 			}
 		}
+
 		[Obsolete("content serializer options are no longer supported.")]
 		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options)
 			where TContent : IContentObject =>
@@ -537,7 +538,7 @@ namespace Beamable.Common.Content
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 			var instance = CreateInstanceWithType(contentType);
-			return (TContentBase)BaseConvertType(root, disableExceptions, instance as IContentObject, contentType);
+			return (TContentBase)BaseConvertType(root, disableExceptions, instance as IContentObject, contentType, out _);
 			
 		}
 		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
@@ -550,26 +551,27 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, bool disableExceptions = false)
+		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(instanceId);
 
-			return BaseConvertType(root, disableExceptions, instanceToDeserialize, type, instanceId);
+			return BaseConvertType(root, disableExceptions, instanceToDeserialize, type, out schemaIsDifferent, instanceId);
 		}
 
 		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
-			return (TContent)BaseConvertType(root, disableExceptions, instance, typeof(TContent));
+			return (TContent)BaseConvertType(root, disableExceptions, instance,  typeof(TContent), out _);
 		}
 
-		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, Type contentType, string itemId = null)
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, Type contentType, out SchemaDifference schemaIsDifferent, string itemId = null)
 		{
-			var fields = GetFieldInfos(contentType, true);
+			schemaIsDifferent = SchemaDifference.None;
+			var fields = GetFieldInfos(instance.GetType(), true);
 
 			var id = itemId ?? root["id"].ToString();
 
@@ -588,18 +590,37 @@ namespace Beamable.Common.Content
 			instance.SetIdAndVersion(id, version);
 			var stringBuilder = new StringBuilder();
 
+			// track all the keys in the json. If we visit them, we'll remove them. 
+			// if any are left over, then the schema is different. 
+			var jsonPropertyKeys = new HashSet<string>();
+			if (properties != null)
+			{
+				foreach (var kvp in properties)
+				{
+					jsonPropertyKeys.Add(kvp.Key);
+				}
+			}
 
 			foreach (var field in fields)
 			{
 				if (!field.TryGetPropertyForField(properties.Keys, out string key))
 				{
-					if (typeof(Optional).IsAssignableFrom(field.FieldType))
+					bool isOptional = typeof(Optional).IsAssignableFrom(field.FieldType);
+					if (isOptional)
 					{
 						var optional = Activator.CreateInstance(field.FieldType);
 						field.TrySetValue(instance, optional);
 					}
+					
+					bool isIgnored = field.RawField.GetCustomAttribute<IgnoreContentFieldAttribute>() != null;
+					if (!isOptional && !isIgnored)
+					{
+						schemaIsDifferent |= SchemaDifference.MissingFieldsInJson;
+					}
 					continue;
 				}
+				
+				jsonPropertyKeys.Remove(key);
 
 				if (!properties.TryGetValue(key, out var property))
 				{
@@ -706,6 +727,13 @@ namespace Beamable.Common.Content
 					}
 				}
 			}
+			
+			// If there are extra keys in the JSON that aren't in the class, the schema is different
+			if (jsonPropertyKeys.Count > 0)
+			{
+				schemaIsDifferent |= SchemaDifference.UnknownFieldsInJson;
+			}
+			
 			if (instance is ISerializationCallbackReceiver receiver)
 				receiver.OnAfterDeserialize();
 
@@ -728,4 +756,12 @@ namespace Beamable.Common.Content
 			return rawJson;
 		}
 	}
+	
+	[Flags]
+	public enum SchemaDifference
+	{
+		None = 0,
+		MissingFieldsInJson = 1 << 0,
+		UnknownFieldsInJson = 1 << 1,
+	};
 }

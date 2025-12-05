@@ -406,6 +406,7 @@ namespace Beamable.Common.Content
 			return false;
 		}
 
+		
 		public ReadOnlyCollection<FieldInfoWrapper> GetFieldInfos(Type type, bool withIgnoredFields = false, bool addToCache = false)
 		{
 			if(withIgnoredFields && _typeInfoCacheWithIgnoredFields.TryGetValue(type, out var info))
@@ -452,6 +453,17 @@ namespace Beamable.Common.Content
 						formerlySerializedAs.Add(attr.FormerlySerializedAs[index]);
 					}
 				}
+				else
+				{
+					var formerlySerializedAttrs = field.GetCustomAttributes<UnityEngine.Serialization.FormerlySerializedAsAttribute>();
+					foreach (var formerlyAttr in formerlySerializedAttrs)
+					{
+						if (!string.IsNullOrEmpty(formerlyAttr.oldName))
+						{
+							formerlySerializedAs.Add(formerlyAttr.oldName);
+						}
+					}
+				}
 
 				return new FieldInfoWrapper(serializedName, field, backingField, formerlySerializedAs.AsReadOnly());
 			}
@@ -491,7 +503,9 @@ namespace Beamable.Common.Content
 				return true;
 			}
 
-			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null).ToList();
+			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Where(field =>
+				field.GetCustomAttribute<NonSerializedAttribute>() == null &&
+				!typeof(Delegate).IsAssignableFrom(field.FieldType)).ToList();
 
 			if (!TryGetAllPrivateFields(type, out var privateFieldInfos))
 			{
