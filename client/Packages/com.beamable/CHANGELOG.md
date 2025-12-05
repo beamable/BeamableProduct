@@ -30,6 +30,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved Beam Accounts window when the `config-defaults.txt` is missing values. 
 - Updated Beam CLI version to 6.2.0
 
+## [3.1.7] - 2025-12-05
+### Fixed
+- Fixed schema mismatches during content deserialization not triggering an update to the local ScriptableObject.
+- Fixed an issue where the Content Inspector would not update when a content item was renamed.
+- Fixed an issue when deleting a content the inspector window would not properly update.
+
+### Changed
+- Bumped CLI Version to 5.4.3
+
 ## [3.1.6] - 2025-11-13
 ### Fixed
 - Fixed an issue with Content Baking in batchMode failing to load all contents in time, which could result in missing assets in the final build.
