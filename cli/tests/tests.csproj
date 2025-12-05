@@ -20,6 +20,9 @@
         <PackageReference Include="coverlet.collector" Version="3.1.0" />
         <PackageReference Include="Spectre.Console.Testing" Version="0.48.0" />
         <PackageReference Include="Testcontainers" Version="3.3.0" />
+        <PackageReference Include="NuGet.Frameworks" Version="5.0.0"
+                          ExcludeAssets="runtime"
+                          PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>

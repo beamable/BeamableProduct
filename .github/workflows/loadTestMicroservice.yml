@@ -65,7 +65,7 @@ jobs:
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
-          cd ./standalone-microservice/bin/Debug/net8.0
+          cd ./standalone-microservice/bin/Debug/net10.0
       
 
           echo "starting counters"
