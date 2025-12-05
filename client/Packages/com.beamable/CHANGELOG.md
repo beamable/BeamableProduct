@@ -5,11 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.7] - 2025-12-04
+## [3.1.7] - 2025-12-05
 ### Fixed
 - Fixed schema mismatches during content deserialization not triggering an update to the local ScriptableObject.
 - Fixed an issue where the Content Inspector would not update when a content item was renamed.
 - Fixed an issue when deleting a content the inspector window would not properly update.
+
+### Changed
+- Bumped CLI Version to 5.4.3
 
 ## [3.1.6] - 2025-11-13
 ### Fixed
