@@ -15,18 +15,21 @@ namespace Beamable.Editor.Dotnet
 {
 	public static partial class DotnetUtil
 	{
-		private const string DOTNET_10_VERSION = "10.0.100";
-		private static readonly string[] ALLOWED_DOTNET_VERSIONS = new string[]
+		private static readonly PackageVersion DOTNET_8_VERSION = "8.0.302";
+		private static readonly PackageVersion DOTNET_10_VERSION = "10.0.100";
+		private static readonly PackageVersion[] ALLOWED_DOTNET_VERSIONS = new PackageVersion[]
 		{
 			// version 8 will work with CLI 7, because CLI 7 is built for both net versions.
-			"8.0.302",
+			DOTNET_8_VERSION,
 			
 			// version 10 is the new default, starting with CLI 7 
 			DOTNET_10_VERSION
 		};
 		public static readonly string DOTNET_EXEC = "dotnet.dll";
 		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
-		public static readonly string DOTNET_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"" + DOTNET_10_VERSION +  "\"\n} \n}";
+
+		public const string DOTNET_TEMPLATE_ARG_VERSION = "__DOTNET_VERSION__";
+		public const string DOTNET_TEMPLATE_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"" + DOTNET_TEMPLATE_ARG_VERSION +  "\"\n} \n}";
 
 		static bool DotnetHandled
 		{
@@ -70,7 +73,9 @@ namespace Beamable.Editor.Dotnet
 		{
 			if (!File.Exists(DOTNET_GLOBAL_CONFIG_PATH))
 			{
-				File.WriteAllText(DOTNET_GLOBAL_CONFIG_PATH, DOTNET_GLOBAL_CONFIG);
+				var info = CheckDotnetInfo();
+				var globalContent = DOTNET_TEMPLATE_GLOBAL_CONFIG.Replace(DOTNET_TEMPLATE_ARG_VERSION, info.PreferredDotnetVersion);
+				File.WriteAllText(DOTNET_GLOBAL_CONFIG_PATH, globalContent);
 			}
 
 			DotnetHandled = true;
@@ -81,12 +86,13 @@ namespace Beamable.Editor.Dotnet
 		static void InstallDotnetToLibrary()
 		{
 			var installed = string.Empty;
-			if (CheckDotnetInfo(out Dictionary<string, string> versions))
+			var info = CheckDotnetInfo();
+			if (!info.HasAnyDotnet)
 			{
-				installed = $" Currently installed: {string.Join(", ", versions.Keys)}.";
+				installed = $" Currently installed: {string.Join(", ", info.versionToPath.Keys)}.";
 			}
 			
-			var message = $"Beamable Unity SDK requires Dotnet SDK {string.Join(" or ", ALLOWED_DOTNET_VERSIONS)} to function properly. {installed} Please download the SDK Installer and proceed with the installation before continuing.";
+			var message = $"Beamable Unity SDK requires Dotnet SDK {string.Join(" or ", ALLOWED_DOTNET_VERSIONS.Select(x => x.ToString()))} to function properly. {installed} Please download the SDK Installer and proceed with the installation before continuing.";
 
 			if (Application.isBatchMode)
 			{
@@ -102,9 +108,77 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
-		public static bool CheckDotnetInfo(out Dictionary<string, string> pathByVersion)
+		public class DotnetInfoResult
 		{
-			pathByVersion = new Dictionary<string, string>();
+			public string PreferredDotnetVersion
+			{
+				get
+				{
+					// if the user has old dotnet, use that.
+					if (HasNet8 && !HasNet10)
+					{
+						return DOTNET_8_VERSION.ToString();
+					}
+
+					// otherwise, always use the latest.
+					return DOTNET_10_VERSION.ToString();
+				}
+			}
+			public bool HasAnyDotnet => HasNet8 || HasNet10;
+
+			public bool HasNet8
+			{
+				get
+				{
+					foreach (var version in versionToPath.Keys)
+					{
+						// ignore non 8.x versions
+						if (version.Major != 8) continue;
+						
+#if BEAM_RESTRICT_DOTNET_VERSION
+						return version == DOTNET_8_VERSION;
+#endif
+
+						// the version needs to match our min required version
+						if (version >= DOTNET_8_VERSION)
+						{
+							return true;
+						}
+
+					}
+
+					return false;
+				}
+			}
+			public bool HasNet10 {
+				get
+				{
+					foreach (var version in versionToPath.Keys)
+					{
+						// ignore non 10.x versions
+						if (version.Major != 10) continue;
+						
+#if BEAM_RESTRICT_DOTNET_VERSION
+						return version == DOTNET_10_VERSION;
+#endif
+
+						// the version needs to match our min required version
+						if (version >= DOTNET_10_VERSION)
+						{
+							return true;
+						}
+					}
+
+					return false;
+				}
+			}
+
+			public Dictionary<PackageVersion, string> versionToPath = new Dictionary<PackageVersion, string>();
+		}
+		
+		public static DotnetInfoResult CheckDotnetInfo()
+		{
+			var info = new DotnetInfoResult();
 			var proc = new Process();
 
 			var infoCommand = $" --info";
@@ -134,19 +208,19 @@ namespace Beamable.Editor.Dotnet
 
 				foreach (Match match in regex.Matches(sdkSection))
 				{
-					if (!pathByVersion.ContainsKey(match.Groups[1].Value))
+					if (!info.versionToPath.ContainsKey(match.Groups[1].Value))
 					{
-						pathByVersion.Add(match.Groups[1].Value,
+						info.versionToPath.Add(match.Groups[1].Value,
 							Path.Combine(match.Groups[2].Value, match.Groups[1].Value));
 					}
 				}
-
-				return proc.ExitCode == 0;
 			}
 			catch
 			{
-				return false;
+				// let it gooo!
 			}
+
+			return info;
 		}
 
 		public static string GetDotnetDownloadLink_10()
@@ -209,32 +283,13 @@ namespace Beamable.Editor.Dotnet
 
 		public static bool TryGetDotnetFilePath()
 		{
-			var errors = new List<string>();
-
-			if (!CheckDotnetInfo(out Dictionary<string, string> pathByVersion))
+			var info = CheckDotnetInfo();
+			if (!info.HasAnyDotnet)
 			{
 				return false;
 			}
 
-			foreach (var path in pathByVersion)
-			{
-				if (!ALLOWED_DOTNET_VERSIONS.Contains(path.Key, StringComparer.InvariantCultureIgnoreCase))
-				{
-					errors.Add(
-						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {path.Key}");
-					continue;
-				}
-				return true;
-			}
-			
-			foreach (string err in errors)
-			{
-				Debug.LogWarning(err);
-			}
-			
-			Debug.LogWarning($"Only the following dotnet versions are allowed. {string.Join(",", ALLOWED_DOTNET_VERSIONS)}");
-
-			return false;
+			return true;
 		}
 
 	}
