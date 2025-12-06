@@ -110,8 +110,9 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 
 
 		// If we have the BeamableCore plugin installed, delete it and then copy it in.
+		var unrealRootPath = Path.GetDirectoryName(args.UProjectFilePath)!;
 		{
-			var gameMakerBeamablePluginPath = Path.Combine(args.ConfigService.WorkingDirectory, "Plugins", "BeamableCore");
+			var gameMakerBeamablePluginPath = Path.Combine(unrealRootPath, "Plugins", "BeamableCore");
 			var sdkBeamablePluginPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "Plugins", "BeamableCore");
 			if (Directory.Exists(gameMakerBeamablePluginPath))
 			{
@@ -126,7 +127,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 		// If we have the OnlineSubsystem plugin installed, delete ONLY the non-Customer parts of it then copy it in.
 		if (args.IsInstallingOnlineSubsystem)
 		{
-			var gameMakerOssPath = Path.Combine(args.ConfigService.WorkingDirectory, "Plugins", "OnlineSubsystemBeamable");
+			var gameMakerOssPath = Path.Combine(unrealRootPath, "Plugins", "OnlineSubsystemBeamable");
 			var sdkBeamablePluginPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "Plugins", "OnlineSubsystemBeamable");
 
 			if (Directory.Exists(gameMakerOssPath))
@@ -198,7 +199,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 
 		// Copy over the Beam utility functions to the project's main Target.cs file
 		var projectName = Path.GetFileNameWithoutExtension(args.UProjectFileName);
-		var gameMakerTargetCsFile = Path.GetDirectoryName(args.UProjectFilePath);
+		var gameMakerTargetCsFile = Path.GetDirectoryName(args.UProjectFilePath)!;
 		gameMakerTargetCsFile = Path.Combine(gameMakerTargetCsFile, "Source", $"{projectName}.Target.cs");
 		if (!File.Exists(gameMakerTargetCsFile))
 			throw new CliException("Failed to find the project's target file.");
@@ -265,7 +266,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 		File.WriteAllText(gameMakerTargetCsFile, gameMakerTargetFile);
 
 		// Regenerate project files as we made changes to the Target.cs file.
-		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.WorkingDirectory);
+		MachineHelper.RunUnrealGenerateProjectFiles(unrealRootPath);
 
 		return Task.CompletedTask;
 	}

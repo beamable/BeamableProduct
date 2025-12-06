@@ -96,7 +96,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		var projService = args.ProjectService;
 
 		var badUnityPath = Path.Combine("Library", "PackageCache");
-		var baseDir = args.ConfigService.BaseDirectory;
+		var baseDir = args.ConfigService.BeamableWorkspace;
 		return await projService.CreateSolutionFilterFile(slnPath, csProjPath =>
 		{
 			if (csProjPath.Contains(badUnityPath, StringComparison.InvariantCultureIgnoreCase))

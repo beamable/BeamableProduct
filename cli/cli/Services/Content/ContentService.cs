@@ -117,7 +117,7 @@ public class ContentService
 		_channelRemoteContentPublishes = Channel.CreateUnbounded<RemoteContentPublished>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 	}
 
-	private string RootContentPath => Path.Combine(_config.ConfigDirectoryPath!, Constants.CONTENT_DIRECTORY);
+	private string RootContentPath => _config.GetConfigPath(ConfigService.CONTENT_DIR);
 
 	private IEnumerable<string> GetPidsWithCachedLocalContent() => Directory.EnumerateDirectories(RootContentPath);
 	private string GetCacheKeyForManifest(string cid, string pid, string manifestId, string manifestUid) => $"{cid}₢{pid}₢{manifestId}₢{manifestUid}";
@@ -1310,8 +1310,8 @@ public class ContentService
 	public static string GetContentSnapshotDirectoryPath(string configDirPath, string pid, bool useLocal)
 	{
 		return useLocal
-			? Path.Combine(configDirPath, Constants.TEMP_FOLDER, Constants.CONTENT_SNAPSHOTS_DIRECTORY, pid)
-			: Path.Combine(configDirPath, Constants.CONTENT_SNAPSHOTS_DIRECTORY, pid);
+			? Path.Combine(configDirPath, ConfigService.CONTENT_SNAPSHOTS_LOCAL_DIR, pid)
+			: Path.Combine(configDirPath, ConfigService.CONTENT_SNAPSHOTS_SHARED_DIR, pid);
 	}
 
 	public async Task<string[]> RestoreSnapshot(string snapshotFilePath, bool deleteSnapshotAfterRestore, bool additiveRestore, string manifestId = "global")
