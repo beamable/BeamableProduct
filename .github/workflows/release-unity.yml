@@ -184,9 +184,17 @@ jobs:
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
       
+      - name: Pack com.beamable UPM Package
+        if: ${{ inputs.dryRun == false }}
+        run: npm pack --provenance --access public
+        working-directory: ./client/Packages/com.beamable
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --provenance --access public
+        run: npm publish *.tgz
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
