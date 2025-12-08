@@ -210,35 +210,7 @@ jobs:
           NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
         run: |
           ls -a
-      - name: Recombine files
-        if: ${{ inputs.dryRun == false }}
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          # The files generated
-          TGZ="${NAME}-${VERSION}.tgz"
-          ATTESTATION="${NAME}-${VERSION}.attestation.p7m"
       
-          if [ ! -f "$ATTESTATION" ]; then
-            echo "Error: attestation file not found: $ATTESTATION"
-            exit 1
-          fi
-
-          # Extract tarball
-          mkdir tmp
-          tar -xf "$TGZ" -C tmp
-
-          # Copy attestation inside the package folder
-          cp "$ATTESTATION" tmp/package/
-
-          # Repack tarball
-          tar -czf "$TGZ" -C tmp package
-
-          # Clean up
-          rm -rf tmp "$ATTESTATION"
-
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
         working-directory: ./client/Packages/com.beamable
