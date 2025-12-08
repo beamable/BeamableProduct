@@ -84,6 +84,9 @@ jobs:
               "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
             }')[github.event.inputs.releaseType] }}
         
+      - name: Check Npm version
+        run: npm --version
+
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -198,10 +201,26 @@ jobs:
           # Generate the tarball with provenance
           npm pack --provenance --access public
           
+
+      - name: Check files
+        if: ${{ inputs.dryRun == false }}
+        working-directory: ./client/Packages/com.beamable
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
+        run: |
+          ls -a
+      - name: Recombine files
+        if: ${{ inputs.dryRun == false }}
+        working-directory: ./client/Packages/com.beamable
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
+        run: |
           # The files generated
           TGZ="${NAME}-${VERSION}.tgz"
           ATTESTATION="${NAME}-${VERSION}.attestation.p7m"
-
+      
           if [ ! -f "$ATTESTATION" ]; then
             echo "Error: attestation file not found: $ATTESTATION"
             exit 1
