@@ -47,6 +47,9 @@ jobs:
   nuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # REQUIRED for provenance
+      contents: read    # standard for checkout
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
