@@ -218,7 +218,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
         run: |
-          npm publish *.tgz --provenance
+          npm publish *.tgz 
 
 
       - name: Release com.beamable.server UPM Package
