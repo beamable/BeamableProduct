@@ -183,26 +183,44 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-      
-      - name: Pack com.beamable UPM Package
+      - name: Pack com.beamable UPM Package with attestation inside
         if: ${{ inputs.dryRun == false }}
-        run: npm pack --provenance --access public
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
+        run: |
+          # Pack the package normally and get tarball name
+          TGZ=$(npm pack --dry-run | tail -1)
+
+          # Generate attestation separately
+          npm pack --provenance > /dev/null
+          ATTESTATION=$(ls *.attestation.p7m | head -1)
+
+          # Extract tarball
+          mkdir tmp
+          tar -xf "$TGZ" -C tmp
+
+          # Copy attestation inside the package folder
+          cp "$ATTESTATION" tmp/package/
+
+          # Repack tarball
+          tar -czf "$TGZ" -C tmp package
+
+          # Clean up
+          rm -rf tmp "$ATTESTATION"
 
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish *.tgz
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-
+          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
+        run: |
+          npm publish *.tgz --provenance
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --provenance --access public
+        run: npm publish
         working-directory: ./client/Packages/com.beamable.server
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
