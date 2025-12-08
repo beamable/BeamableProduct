@@ -469,7 +469,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		// If we were given a host that is a path, let's just return it.
-		if (env.StartsWith("https"))
+		if (env.StartsWith("http"))
 			return env;
 
 		// Otherwise, we try to convert it into a valid URL.

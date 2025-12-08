@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `net10` support
+
+## [6.2.2]
+### Changed
+- Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   
+
+## [6.2.1] - 2025-11-20
+### Fixed
+- Reverted content serialization caching
+
+## [6.2.0] - 2025-11-19
+### Changed
+- `project ps` command now also outputs storage object dependencies for services that has them.
+- Improved ContentTypeCache to avoid unnecessary allocations and improve performance.
+
+### Fixed
+- Fixed an issue where Unity's `AssetReference` type fields were set to null instead of their default value when creating new content.
+
 ## [6.1.0] - 2025-10-31
 ### Added
 - New Option to Restore Snapshots in additional mode (It will keep all local content and just replace or add new contents to it)
@@ -45,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error message when user is not logged into CLI.
 - `beam project ps` no longer reports remote storages incorrectly
 - Issue that `beam project logs` were skipping logs
+
+## [5.4.3] - 2025-12-04
+### Fixed
+- `content ps -w` no longer hangs forever when invoked from CLI server
+- validation case issue for rewards in `game_types` content
 
 ## [5.4.2] - 2025-09-24
 ### Fixed

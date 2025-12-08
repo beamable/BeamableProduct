@@ -45,7 +45,7 @@ on:
 run-name: Release Nuget (CLI) ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     concurrency:
       group: release-nuget
@@ -68,7 +68,7 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
 
       - uses: actions/setup-node@v4
         with:

@@ -1,6 +1,6 @@
 import type { TokenResponse } from '@/__generated__/schemas';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import type { RefreshableServiceMap } from '@/core/types';
+import { REFRESHABLE_SERVICES, type RefreshableServiceMap } from '@/core/types';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
 import { BeamRequester } from '@/network/http/BeamRequester';
@@ -11,6 +11,16 @@ import { BeamEnvironmentName } from '@/configs/BeamEnvironmentConfig';
 import { BeamEnvironment } from '@/core/BeamEnvironmentRegistry';
 import { HEADERS } from '@/constants';
 import packageJson from '../../package.json';
+import type { Beam } from '@/core/Beam';
+import type { BeamServer } from '@/core/BeamServer';
+import {
+  AccountService,
+  AnnouncementsService,
+  AuthService,
+  ContentService,
+  LeaderboardsService,
+  StatsService,
+} from '@/services';
 
 /** Saves the access token, refresh token, and expiration time from a token response to the token storage. */
 export async function saveToken(
@@ -94,5 +104,49 @@ export function createStandaloneRequester(
       defaultTokenStorage({ pid: props.pid, tag: props.tokenStorageTag }),
     useSignedRequest: !isBrowserEnv() && (props.useSignedRequest ?? false),
     pid: props.pid,
+  });
+}
+
+/** Creates services for the Beam Client SDK */
+export function clientServices(beam: Beam) {
+  const apiServiceProps = { beam, getPlayer: () => beam.player };
+  const allApiServices = [
+    new AccountService(apiServiceProps),
+    new AnnouncementsService(apiServiceProps),
+    new AuthService(apiServiceProps),
+    new ContentService(apiServiceProps),
+    new LeaderboardsService(apiServiceProps),
+    new StatsService(apiServiceProps),
+  ];
+
+  allApiServices.forEach((svc) => {
+    const svcName = svc.serviceName;
+    (beam as any).clientServices[svcName] = svc;
+
+    if (REFRESHABLE_SERVICES.includes(svcName)) {
+      const refreshKey = `${svcName}.refresh` as keyof RefreshableServiceMap;
+      (beam as any).refreshableRegistry[refreshKey] = svc;
+    }
+  });
+}
+
+/** Creates services for the Beam Server SDK */
+export function serverServices(beamServer: BeamServer) {
+  const apiServiceProps = { beam: beamServer };
+  const allApiServices = [
+    new AccountService(apiServiceProps),
+    new AnnouncementsService(apiServiceProps),
+    new AuthService(apiServiceProps),
+    new ContentService(apiServiceProps),
+    new LeaderboardsService(apiServiceProps),
+    new StatsService(apiServiceProps),
+  ];
+
+  allApiServices.forEach((svc) => {
+    const svcName = svc.serviceName;
+    (beamServer as any).serverServices[svcName] = (userId: string) => {
+      svc.userId = userId;
+      return svc;
+    };
   });
 }
