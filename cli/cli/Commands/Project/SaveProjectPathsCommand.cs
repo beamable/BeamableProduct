@@ -50,6 +50,7 @@ public class SaveProjectPathsCommand : AtomicCommand<SaveProjectPathsCommandArgs
         // save the extra-paths and the paths to ignore to the config folder
         configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
         configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
+        configService.FlushConfig();
     }
 
     public override Task<SaveProjectPathsCommandResults> GetResult(SaveProjectPathsCommandArgs args)

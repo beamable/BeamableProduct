@@ -220,7 +220,7 @@ public partial class BeamProjectNewFlows : CLITestExtensions
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		// there should a .beamable folder
-		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
+		Assert.That(BFile.Exists(".beamable/config.beam.json"), "there must be a config defaults file after beam init.");
 
 		// there should be a csproj file
 		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
@@ -288,7 +288,7 @@ public partial class BeamProjectNewFlows : CLITestExtensions
 			"the second service needs to have a csproj");
 
 		// there should a .beamable folder
-		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
+		Assert.That(BFile.Exists(".beamable/config.beam.json"), "there must be a config defaults file after beam init.");
 
 		// there should be a csproj file
 		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
@@ -355,7 +355,7 @@ public partial class BeamProjectNewFlows : CLITestExtensions
 			"the second service needs to have a csproj");
 
 		// there should a .beamable folder
-		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
+		Assert.That(BFile.Exists(".beamable/config.beam.json"), "there must be a config defaults file after beam init.");
 
 		// there should be a csproj file
 		Assert.That(BFile.Exists($"services/{storageName}/{storageName}.csproj"),

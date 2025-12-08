@@ -41,7 +41,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 			unityProjectClient.FindProjectClientInDirectory(workingDir, ref directory);
 		}
 
-		directory = Path.GetRelativePath(args.ConfigService.BaseDirectory, directory);
+		directory = Path.GetRelativePath(args.ConfigService.BeamableWorkspace, directory);
 
 		if (startingDir != directory && !args.Quiet)
 		{

@@ -48,14 +48,14 @@ public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 		Log.Debug($"linked unity projects=[{string.Join(",", linkedUnityProjects)}]");
 		foreach (var unityProjectPath in linkedUnityProjects)
 		{
-			var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
+			var unityAssetPath = Path.Combine(args.ConfigService.BeamableWorkspace, unityProjectPath, "Assets");
 			if (!Directory.Exists(unityAssetPath))
 			{
 				BeamableLogger.LogError($"Could not copy shared project [{fileName}] because linked unity project because directory doesn't exist [{unityAssetPath}]");
 				continue;
 			}
 
-			var outputDirectory = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, SAMS_COMMON_DLL_DIR);
+			var outputDirectory = Path.Combine(args.ConfigService.BeamableWorkspace, unityProjectPath, SAMS_COMMON_DLL_DIR);
 			Directory.CreateDirectory(outputDirectory);
 			
 			Log.Debug($"-unity project=[{unityAssetPath}] src-dll-folder=[{outputDirectory}]");

@@ -158,7 +158,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 		if (args.saveToFile)
 		{
-			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
+			BeamableLogger.Log($"Saving refresh token to {ConfigService.CFG_TOKEN_FILE_NAME}-" +
 			                   " do not add it to control version system. It should be used only locally.");
 			_configService.SaveTokenToFile(_ctx.Token);
 		}
