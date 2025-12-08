@@ -16,8 +16,10 @@
     </PropertyGroup>
     
     <PropertyGroup Label="Dotnet Settings">
-        <!-- net8.0 is the LTS version until 2026. To update your net version, update the <TargetFramework> when Beamable announces support. -->
-        <TargetFramework>net8.0</TargetFramework>
+        <!-- net 8.0 is supported between Beamable CLI 2.0 and beyond. -->
+        <!-- net 10.0 is supported between Beamable CLI 7.0 and beyond. -->
+        <TargetFramework Condition="'$(TargetFrameworkOverride)' == ''">net10.0</TargetFramework>
+        <TargetFramework Condition="'$(TargetFrameworkOverride)' != ''">TargetFrameworkOverride</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup Label="Nuget References">

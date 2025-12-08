@@ -23,6 +23,17 @@
       "replaces": "TemplateVersion",
       "type": "bind",
       "binding": "Version"
+    },
+    "TargetFrameworkOverride": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "net8.0", "description": "Use net8.0 LTS" },
+        { "choice": "net9.0", "description": "Use net9.0 STS" },
+        { "choice": "net10.0", "description": "Use net10.0 LTS" }
+      ],
+      "defaultValue": "net10.0",
+      "replaces": "TargetFrameworkOverride"
     }
   }
 }

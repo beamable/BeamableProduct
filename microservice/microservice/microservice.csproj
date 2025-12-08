@@ -22,7 +22,7 @@
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <OutputType>Library</OutputType>
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
     <LangVersion>11</LangVersion>
   </PropertyGroup>

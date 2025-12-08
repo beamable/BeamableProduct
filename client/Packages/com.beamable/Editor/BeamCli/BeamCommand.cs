@@ -386,6 +386,7 @@ namespace Beamable.Editor.BeamCli
 
 				// prevent the beam CLI from saving any log information to file.
 				process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
+				process.StartInfo.Environment.Add("MSBUILDTERMINALLOGGER", "off");
 
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
 				

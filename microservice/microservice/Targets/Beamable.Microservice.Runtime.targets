@@ -33,11 +33,13 @@
         <Exec Condition="'$(BeamPlatform)'=='osx'"
               EchoOff="true"
               IgnoreExitCode="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
               Command="nohup sh -c 'sleep $(BeamBuildCacheInvalidationTimeout) &amp;&amp; touch $(MSBuildProjectFullPath)' &gt;/dev/null 2&gt;&amp;1 &amp;" 
         />
         <Exec Condition="'$(BeamPlatform)'=='win'"
               EchoOff="true"
               IgnoreExitCode="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
               Command="powershell -NoProfile -Command &quot;Start-Process powershell -ArgumentList '-NoProfile -Command &quot;Start-Sleep -Seconds $(BeamBuildCacheInvalidationTimeout); (Get-Item ''$(MSBuildProjectFullPath)'').LastWriteTime = Get-Date&quot;' -WindowStyle Hidden&quot;" 
         />
     </Target>
@@ -45,8 +47,8 @@
     <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
     <Target Name="generate-oapi" AfterTargets="AfterBuild" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true' AND '$(BeamPreventOapiGen)'!='true'">
         <Message Text="Generating OAPI specifications" Importance="high" />
-        <Exec Command="dotnet &quot;$(TargetPath)&quot; --generate-oapi" 
-              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath)"/>
+        <Exec Command="dotnet &quot;$(TargetPath)&quot; --generate-oapi --tl:off" 
+              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath);MSBUILDTERMINALLOGGER=off"/>
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
     
@@ -96,7 +98,7 @@
         />
         <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
                 Command="$(BeamableDotnetPath) $(BeamableTool) telemetry collector get $(BeamCollectorPlatformArchArg) --quiet"
-                EnvironmentVariables=""/>
+                EnvironmentVariables="MSBUILDTERMINALLOGGER=off"/>
 
         <Message
                 Importance="high"

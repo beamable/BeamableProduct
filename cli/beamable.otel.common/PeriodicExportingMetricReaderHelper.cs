@@ -1,30 +1,34 @@
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 
-namespace beamable.otel.common;
-
-public static class PeriodicExportingMetricReaderHelper
+namespace beamable.otel.common
 {
-	public const int DefaultExportIntervalMilliseconds = 300000;
-	public const int DefaultExportTimeoutMilliseconds = 60000;
 
-	public static PeriodicExportingMetricReader CreatePeriodicExportingMetricReader(
-		BaseExporter<Metric> exporter,
-		MetricReaderOptions options,
-		int defaultExportIntervalMilliseconds = DefaultExportIntervalMilliseconds,
-		int defaultExportTimeoutMilliseconds = DefaultExportTimeoutMilliseconds)
+	public static class PeriodicExportingMetricReaderHelper
 	{
-		var exportInterval =
-			options.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds ?? defaultExportIntervalMilliseconds;
+		public const int DefaultExportIntervalMilliseconds = 300000;
+		public const int DefaultExportTimeoutMilliseconds = 60000;
 
-		var exportTimeout =
-			options.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds ?? defaultExportTimeoutMilliseconds;
-
-		var metricReader = new PeriodicExportingMetricReader(exporter, exportInterval, exportTimeout)
+		public static PeriodicExportingMetricReader CreatePeriodicExportingMetricReader(
+			BaseExporter<Metric> exporter,
+			MetricReaderOptions options,
+			int defaultExportIntervalMilliseconds = DefaultExportIntervalMilliseconds,
+			int defaultExportTimeoutMilliseconds = DefaultExportTimeoutMilliseconds)
 		{
-			TemporalityPreference = options.TemporalityPreference,
-		};
+			var exportInterval =
+				options.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds ??
+				defaultExportIntervalMilliseconds;
 
-		return metricReader;
+			var exportTimeout =
+				options.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds ??
+				defaultExportTimeoutMilliseconds;
+
+			var metricReader = new PeriodicExportingMetricReader(exporter, exportInterval, exportTimeout)
+			{
+				TemporalityPreference = options.TemporalityPreference,
+			};
+
+			return metricReader;
+		}
 	}
 }
