@@ -370,7 +370,7 @@ namespace Beamable.Common.Content
 
 
       [SerializeField]
-      private string _serializedValidationGUID { get; set; }
+      private string _serializedValidationGUID;
       
       private static readonly int[] _guidByteOrder =
 	      new[] { 15, 14, 13, 12, 11, 10, 9, 8, 6, 7, 4, 5, 0, 1, 2, 3 };

@@ -23,7 +23,13 @@ namespace Beamable.Editor.Modules.Sessions
 			}
 			else
 			{
+				#if UNITY_6000_3_OR_NEWER
+				startPath = AssetDatabase.GetAssetPath(obj.GetEntityId());
+				#else
 				startPath = AssetDatabase.GetAssetPath(obj.GetInstanceID());
+				#endif
+				
+				
 			}
 
 			if (startPath.Length == 0)
