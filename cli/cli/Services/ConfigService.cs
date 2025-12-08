@@ -392,7 +392,7 @@ public class ConfigService
 
 					Directory.Delete(GetConfigPath("temp"), true);
 
-					FlushConfig(newConfig!, newConfigFile, true);
+					FlushConfig(newConfig!, Path.GetDirectoryName(newConfigFile), true);
 					
 					CreateIgnoreFile(forceCreate: true);
 				}
