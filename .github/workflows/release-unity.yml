@@ -183,7 +183,7 @@ jobs:
       
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish
+        run: npm publish --provenance --access public
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
@@ -191,7 +191,7 @@ jobs:
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish
+        run: npm publish --provenance --access public
         working-directory: ./client/Packages/com.beamable.server
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
