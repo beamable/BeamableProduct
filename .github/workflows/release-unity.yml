@@ -183,6 +183,7 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
+
       - name: Pack com.beamable UPM Package with attestation inside
         if: ${{ inputs.dryRun == false }}
         working-directory: ./client/Packages/com.beamable
@@ -190,12 +191,21 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
         run: |
-          # Pack the package normally and get tarball name
-          TGZ=$(npm pack --dry-run | tail -1)
+          # Get the package name and version from package.json
+          NAME=$(node -p "require('./package.json').name.replace('@','').replace('/','-')")
+          VERSION=$(node -p "require('./package.json').version")
+          
+          # Generate the tarball with provenance
+          npm pack --provenance --access public
+          
+          # The files generated
+          TGZ="${NAME}-${VERSION}.tgz"
+          ATTESTATION="${NAME}-${VERSION}.attestation.p7m"
 
-          # Generate attestation separately
-          npm pack --provenance > /dev/null
-          ATTESTATION=$(ls *.attestation.p7m | head -1)
+          if [ ! -f "$ATTESTATION" ]; then
+            echo "Error: attestation file not found: $ATTESTATION"
+            exit 1
+          fi
 
           # Extract tarball
           mkdir tmp
@@ -218,6 +228,8 @@ jobs:
           NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
         run: |
           npm publish *.tgz --provenance
+
+
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
         run: npm publish
