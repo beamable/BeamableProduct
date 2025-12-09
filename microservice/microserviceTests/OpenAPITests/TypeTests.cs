@@ -83,9 +83,9 @@ public class TypeTests
 				Schemas = new Dictionary<string, OpenApiSchema>()
 			}
 		};
-		doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(typeof(MicroserviceRuntimeMetadata)), schema);
+		doc.Components.Schemas.Add(typeof(MicroserviceRuntimeMetadata).GetSanitizedFullName(), schema);
 		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredFields);
-		Assert.AreEqual(doc.Components.Schemas[SchemaGenerator.GetQualifiedReferenceName<FederationComponentMetadata>()].Properties.Count, 2);
+		Assert.AreEqual(2, doc.Components.Schemas[typeof(FederationComponentMetadata).GetSanitizedFullName()].Properties.Count);
 	}
 
 	[Test]
@@ -136,7 +136,7 @@ public class TypeTests
 		
 		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
-		Assert.AreEqual(doc.Components.Schemas[typeof(Result<string>).GetGenericSanitizedFullName()].Properties["Field"].Type, "string");
+		Assert.AreEqual(doc.Components.Schemas[typeof(Result<string>).GetSanitizedFullName()].Properties[nameof(Result<string>.Field)].Type, "string");
 	}
 
 	[Test]

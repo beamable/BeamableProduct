@@ -20,7 +20,26 @@ public static class TypeExtensions
 
 	public static string GetSanitizedFullName(this Type type)
 	{
-		if (type.FullName != null && type.FullName.Contains("`"))
+		if (type.IsGenericType)
+		{
+			string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
+		
+			var genericArgs = type.GetGenericArguments();
+			string args = string.Join(", ", genericArgs.Select(GetSanitizedFullName));
+
+			return $"{typeName}<{args}>";
+		}
+		if(type.IsBasicType() && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
+		{
+			return shortName;
+		}
+
+		if (type.FullName == null)
+		{
+			return type.Name;
+		}
+
+		if(type.FullName.Contains("`"))
 			return type.FullName.Split('`')[0];
 		return type.FullName;
 	}
@@ -46,43 +65,8 @@ public static class TypeExtensions
 				return true;
 
 			default:
-				return false;
+				return t.IsPrimitive;
 		}
 	}
-	
-	public static string GetGenericSanitizedFullName(this Type type)
-	{
-		if (!type.IsGenericType)
-		{
-			if(type.IsBasicType() && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
-			{
-				return shortName;
-			}
-			return type.FullName ?? type.Name;
-		}
-		
-		string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
-		
-		var genericArgs = type.GetGenericArguments();
-		string args = string.Join(", ", genericArgs.Select(GetGenericSanitizedFullName));
-
-		return $"{typeName}<{args}>";
-	}
-
-	public static string GetGenericQualifiedTypeName(this Type type)
-	{
-		if (!type.IsGenericType)
-		{
-			return type.FullName ?? type.Name;
-		}
-		
-		string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
-		
-		var genericArgs = type.GetGenericArguments();
-		string args = string.Join(", ", genericArgs.Select(GetGenericQualifiedTypeName));
-
-		return $"{typeName}.{args}";
-	}
-	
 	
 }

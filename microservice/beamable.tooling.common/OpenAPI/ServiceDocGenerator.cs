@@ -217,7 +217,7 @@ public class ServiceDocGenerator
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
-				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetGenericSanitizedFullName()));
+				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetSanitizedFullName()));
 			}
 
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
