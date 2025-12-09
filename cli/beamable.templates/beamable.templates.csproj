@@ -38,4 +38,8 @@
         <Compile Remove="**\*" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="templates\PortalExtensionApp\assets\" />
+    </ItemGroup>
+
 </Project>

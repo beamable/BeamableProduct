@@ -1,9 +1,17 @@
-import { mount } from 'svelte'
+import { mount, unmount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 
-const app = mount(App, {
-  target: document.getElementById('app'),
-})
+const APP_NAMESPACE = 'TestingApp';
 
-export default app
+window[APP_NAMESPACE] = {
+  mount: (targetElement, props = {}) => {
+    return mount(App, {
+      target: targetElement,
+      props: props
+    });
+  },
+  unmount: (appInstance) => {
+    unmount(appInstance);
+  }
+}
