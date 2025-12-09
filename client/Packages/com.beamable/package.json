@@ -11,6 +11,9 @@
     "engine"
   ],
   "author": "Beamable <info@beamable.com> (https://www.beamable.com)",
+  "repository": {
+    "url": "https://github.com/beamable/BeamableProduct"
+  },
   "license": "ISC",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
