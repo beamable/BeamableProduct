@@ -66,14 +66,6 @@ public class PortalExtensionObserver
 			return false;
 		}
 
-		// First lets build the app
-		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
-		if (result.exit != 0)
-		{
-			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
-			bundle = string.Empty;
-			return false;
-		}
 
 		var mainJsPath = Path.Combine(_appPath, "assets", "main.js");
 		var mainCssPath = Path.Combine(_appPath, "assets", "main.css");
@@ -149,6 +141,13 @@ public class PortalExtensionObserver
 		if (e.Name != null && e.Name.Contains("assets/main"))
 		{
 			return; // this case we ignore because these are the build files
+		}
+
+		// run a build in case there was changes
+		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
+		if (result.exit != 0)
+		{
+			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
 		}
 
 		Log.Information($"Change detected in file: {e.Name}");
