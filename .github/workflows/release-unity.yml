@@ -84,6 +84,8 @@ jobs:
               "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
             }')[github.event.inputs.releaseType] }}
         
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Check Npm version
         run: npm --version
 
