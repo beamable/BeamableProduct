@@ -174,7 +174,7 @@ jobs:
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
         env:
-          NPM_REGISTRY: registry.npmjs.org
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Update UPM Version (com.beamable.server)
         run: npm version ${{ steps.version.outputs.VERSION }}
@@ -198,7 +198,7 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-          NPM_REGISTRY: nexus.beamable.com
+          NPM_REGISTRY: https://nexus.beamable.com
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
@@ -208,7 +208,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPMJS_TOKEN: ${{secrets.NPMJS_TOKEN}}
-          NPM_REGISTRY: registry.npmjs.org
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
