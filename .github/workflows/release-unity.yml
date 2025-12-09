@@ -76,14 +76,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: >-
-            ${{ fromJson('{
-              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
-              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
-            }')[github.event.inputs.releaseType] }}
-        
+          registry-url: 'https://registry.npmjs.org'
+            
       - name: Update npm
         run: npm install -g npm@latest
       - name: Check Npm version
@@ -138,6 +132,13 @@ jobs:
       - name: Store version number as output
         id: version
         env: 
+          NEXUS_REGISTRY: >-
+            ${{ fromJson('{
+              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
+              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
+            }')[github.event.inputs.releaseType] }}
           BUILD_ENV: >-
             ${{ fromJson('{
               "nightly": "dev",
@@ -150,6 +151,7 @@ jobs:
           echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
           echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
           echo "BUILD_ENV=$BUILD_ENV" >> "$GITHUB_OUTPUT"
+          echo "NEXUS_REG=$NEXUS_REG" >> "$GITHUB_OUTPUT"
 
       - name: review version
         run: |
@@ -157,6 +159,7 @@ jobs:
           echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
+          echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
 
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
@@ -182,7 +185,7 @@ jobs:
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
         env:
-          NPM_REGISTRY: registry.npmjs.org
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Review Unity SDK Files
         run: |
@@ -192,7 +195,12 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-      
+
+      - name: Release com.beamable UPM Package to Public
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish --provenance --access public
+        working-directory: ./client/Packages/com.beamable
+
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
         run: npm publish
@@ -200,14 +208,7 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-          NPM_REGISTRY: https://nexus.beamable.com
-
-      - name: Release com.beamable UPM Package to Public
-        if: ${{ inputs.dryRun == false }}
-        run: npm publish --provenance --access public --userconfig npmjs.npmrc
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NPM_AUTH: ${{secrets.NPMJS_TOKEN}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
@@ -216,6 +217,7 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }} 
