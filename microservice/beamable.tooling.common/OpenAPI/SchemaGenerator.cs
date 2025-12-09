@@ -242,7 +242,11 @@ public class SchemaGenerator
 		var newRequiredTypes = new HashSet<Type>();
 		foreach (Type requiredType in requiredTypes)
 		{
-			var key = GetQualifiedReferenceName(requiredType);
+			if (requiredType.IsBasicType())
+			{
+				continue;
+			}
+			var key = requiredType.GetGenericSanitizedFullName();
 			if(oapiDoc.Components.Schemas.ContainsKey(key))
 				continue;
 			var schema = Convert(requiredType, ref newRequiredTypes);
@@ -266,11 +270,11 @@ public class SchemaGenerator
 		{
 			case { } x when x.IsAssignableTo(typeof(Optional)):
 				var instance = Activator.CreateInstance(runtimeType) as Optional;
-				return Convert(instance.GetOptionalType(), ref requiredTypes,depth - 1);
+				return Convert(instance.GetOptionalType(), ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
-				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1);
+				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
-				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1);
+				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double" };
 			case { } x when x == typeof(float):
@@ -311,7 +315,7 @@ public class SchemaGenerator
 				{
 					Type = "object",
 					AdditionalPropertiesAllowed = true,
-					AdditionalProperties = Convert(x.GetGenericArguments()[1], ref requiredTypes,depth - 1),
+					AdditionalProperties = Convert(x.GetGenericArguments()[1], ref requiredTypes,depth - 1, sanitizeGenericType),
 					Extensions = new Dictionary<string, IOpenApiExtension>
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
@@ -379,7 +383,7 @@ public class SchemaGenerator
 				foreach (var member in members)
 				{
 					var name = member.Name;
-					var fieldSchema = Convert(member.FieldType,ref requiredTypes, depth - 1);
+					var fieldSchema = Convert(member.FieldType,ref requiredTypes, depth - 1, sanitizeGenericType);
 
 					var comment = DocsLoader.GetMemberComments(member);
 					fieldSchema.Description = comment?.Summary;

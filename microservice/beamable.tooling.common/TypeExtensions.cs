@@ -25,12 +25,39 @@ public static class TypeExtensions
 		return type.FullName;
 	}
 	
+	public static bool IsBasicType(this Type t)
+	{
+		switch (Type.GetTypeCode(t))
+		{
+			case TypeCode.Boolean:
+			case TypeCode.Byte:
+			case TypeCode.SByte:
+			case TypeCode.Int16:
+			case TypeCode.UInt16:
+			case TypeCode.Int32:
+			case TypeCode.UInt32:
+			case TypeCode.Int64:
+			case TypeCode.UInt64:
+			case TypeCode.Single:
+			case TypeCode.Double:
+			case TypeCode.Decimal:
+			case TypeCode.String:
+			case TypeCode.Char:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+	
 	public static string GetGenericSanitizedFullName(this Type type)
 	{
 		if (!type.IsGenericType)
 		{
-			if(type.IsPrimitive && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
+			if(type.IsBasicType() && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
+			{
 				return shortName;
+			}
 			return type.FullName ?? type.Name;
 		}
 		

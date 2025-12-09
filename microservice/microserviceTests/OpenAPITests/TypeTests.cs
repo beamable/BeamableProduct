@@ -1,10 +1,12 @@
 using beamable.server;
+using Beamable.Server.Common;
 using Beamable.Tooling.Common.OpenAPI;
 using Microsoft.OpenApi.Models;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using UnityEngine;
 
 namespace microserviceTests.OpenAPITests;
@@ -114,6 +116,28 @@ public class TypeTests
 		Assert.AreEqual("a fish", schema.Properties[nameof(Sample.fish)].Description);
 		Assert.AreEqual(requiredField.Count, 1, "It should be missing Sample type definition");
 	}
+	[Test]
+	public void CheckObjectWithGeneric()
+	{
+		var requiredFields = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(SampleGenericField), ref requiredFields, 1, true);
+		var doc = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Test", Version = "0.0.0" },
+			
+			Paths = new OpenApiPaths(),
+			Components = new OpenApiComponents
+			{
+				Schemas = new Dictionary<string, OpenApiSchema>()
+			}
+		};
+		doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(typeof(SampleGenericField)), schema);
+		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredFields);
+		
+		Assert.AreEqual("this is a sample", schema.Description);
+		Assert.AreEqual(1, schema.Properties.Count);
+		Assert.AreEqual(doc.Components.Schemas[typeof(Result<string>).GetGenericSanitizedFullName()].Properties["Field"].Type, "string");
+	}
 
 	[Test]
 	public void CheckEnums()
@@ -145,6 +169,18 @@ public class TypeTests
 		/// a fish
 		/// </summary>
 		public Tuna fish;
+	}
+	/// <summary>
+	/// this is a sample
+	/// </summary>
+	public class SampleGenericField
+	{
+		public Result<string> theOnlyField;
+	}
+
+	public class Result<T>
+	{
+		public T Field;
 	}
 
 	/// <summary>
