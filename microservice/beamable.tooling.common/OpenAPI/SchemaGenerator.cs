@@ -408,13 +408,6 @@ public class SchemaGenerator
 	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{
-		return runtimeType.FullName.Replace("+", ".");
-	}
-	/// <summary>
-	/// Gets the fully qualified reference name for a runtime type.
-	/// </summary>
-	public static string GetQualifiedReferenceName<T>()
-	{
-		return GetQualifiedReferenceName(typeof(T));
+		return runtimeType.GetSanitizedFullName().Replace("+", ".");
 	}
 }
