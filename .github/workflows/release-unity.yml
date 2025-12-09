@@ -173,10 +173,14 @@ jobs:
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
+        env:
+          NPM_REGISTRY: registry.npmjs.org
 
       - name: Update UPM Version (com.beamable.server)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
+        env:
+          NPM_REGISTRY: registry.npmjs.org
 
       - name: Review Unity SDK Files
         run: |
