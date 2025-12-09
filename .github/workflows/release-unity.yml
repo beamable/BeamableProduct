@@ -186,40 +186,23 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-
-      - name: Pack com.beamable UPM Package with attestation inside
-        if: ${{ inputs.dryRun == false }}
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          # Get the package name and version from package.json
-          NAME=$(node -p "require('./package.json').name.replace('@','').replace('/','-')")
-          VERSION=$(node -p "require('./package.json').version")
-          
-          # Generate the tarball with provenance
-          npm pack --provenance --access public
-          
-
-      - name: Check files
-        if: ${{ inputs.dryRun == false }}
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          ls -a
       
-      - name: Release com.beamable UPM Package
+      - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
+        run: npm publish --registry=https://nexus.beamable.com/nexus/content/repositories/
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          npm publish *.tgz 
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
+      - name: Release com.beamable UPM Package to Public
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish --registry=registry.npmjs.org/ --provenance --access public
+        working-directory: ./client/Packages/com.beamable
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPMJS_TOKEN: ${{secrets.NPMJS_TOKEN}}
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
