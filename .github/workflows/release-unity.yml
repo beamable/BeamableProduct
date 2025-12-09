@@ -202,7 +202,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --provenance --access public --userconfig npmjs.jpmrc
+        run: npm publish --provenance --access public --userconfig npmjs.npmrc
         working-directory: ./client/Packages/com.beamable
         env: 
           NPM_AUTH: ${{secrets.NPMJS_TOKEN}}
