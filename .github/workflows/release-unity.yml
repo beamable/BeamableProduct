@@ -195,12 +195,15 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
+      
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
         run: npm publish --provenance --access public
         working-directory: ./client/Packages/com.beamable
-
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+        
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
         run: npm publish
