@@ -202,13 +202,10 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --registry=registry.npmjs.org/ --provenance --access public
+        run: npm publish --provenance --access public --userconfig npmjs.jpmrc
         working-directory: ./client/Packages/com.beamable
         env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-          NPMJS_TOKEN: ${{secrets.NPMJS_TOKEN}}
-          NPM_REGISTRY: https://registry.npmjs.org
+          NPM_AUTH: ${{secrets.NPMJS_TOKEN}}
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
