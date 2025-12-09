@@ -1,5 +1,6 @@
-using Beamable.Common.Reflection;
+using beamable.server;
 using Beamable.Tooling.Common.OpenAPI;
+using Microsoft.OpenApi.Models;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,8 @@ public class TypeTests
 	[TestCase(typeof(Guid), "string", "uuid")]
 	public void CheckPrimitives(Type runtimeType, string typeName, string format)
 	{
-		var schema = SchemaGenerator.Convert(runtimeType);
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(runtimeType, ref requiredField);
 		Assert.AreEqual(typeName, schema.Type);
 		Assert.AreEqual(format, schema.Format);
 	}
@@ -39,7 +41,8 @@ public class TypeTests
 	[TestCase(typeof(List<float>), "number", "float")]
 	public void CheckPrimitiveArrays(Type runtimeType, string typeName, string format)
 	{
-		var schema = SchemaGenerator.Convert(runtimeType);
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(runtimeType, ref requiredField);
 		Assert.AreEqual(typeName, schema.Items.Type);
 		Assert.AreEqual(format, schema.Items.Format);
 	}
@@ -47,7 +50,8 @@ public class TypeTests
 	[TestCase(typeof(Dictionary<string, int>), "integer", "int32")]
 	public void CheckMapTypes(Type runtimeType, string typeName, string format)
 	{
-		var schema = SchemaGenerator.Convert(runtimeType);
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(runtimeType, ref requiredField);
 		Assert.AreEqual(true, schema.AdditionalPropertiesAllowed);
 		Assert.AreEqual(typeName, schema.AdditionalProperties.Type);
 		Assert.AreEqual(format, schema.AdditionalProperties.Format);
@@ -57,15 +61,36 @@ public class TypeTests
 	[TestCase(typeof(List<Sample>))]
 	public void CheckListOfObjects(Type runtimeType)
 	{
-		var schema = SchemaGenerator.Convert(runtimeType);
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(runtimeType, ref requiredField);
 		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Sample", schema.Items.Reference.Id);
 	}
 
+	[Test]
+	public void CheckMicroserviceRuntimeMetadata()
+	{
+		var requiredFields = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(MicroserviceRuntimeMetadata),ref requiredFields);
+		Assert.AreEqual("beamable.server.FederationComponentMetadata", schema.Properties["federatedComponents"].Items.Reference.Id);
+		var doc = new OpenApiDocument
+		{
+			Info = new OpenApiInfo { Title = "Test", Version = "0.0.0" },
+			Paths = new OpenApiPaths(),
+			Components = new OpenApiComponents
+			{
+				Schemas = new Dictionary<string, OpenApiSchema>()
+			}
+		};
+		doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(typeof(MicroserviceRuntimeMetadata)), schema);
+		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredFields);
+		Assert.AreEqual(doc.Components.Schemas[SchemaGenerator.GetQualifiedReferenceName<FederationComponentMetadata>()].Properties.Count, 2);
+	}
 
 	[Test]
 	public void CheckObject()
 	{
-		var schema = SchemaGenerator.Convert(typeof(Vector2));
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(Vector2), ref requiredField);
 		
 		Assert.AreEqual(2, schema.Properties.Count);
 		
@@ -79,19 +104,22 @@ public class TypeTests
 	[Test]
 	public void CheckObjectWithReference()
 	{
-		var schema = SchemaGenerator.Convert(typeof(Sample));
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(Sample), ref requiredField);
 		
 		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
 		
 		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Tuna", schema.Properties[nameof(Sample.fish)].Reference.Id);
 		Assert.AreEqual("a fish", schema.Properties[nameof(Sample.fish)].Description);
+		Assert.AreEqual(requiredField.Count, 1, "It should be missing Sample type definition");
 	}
 
 	[Test]
 	public void CheckEnums()
 	{
-		var schema = SchemaGenerator.Convert(typeof(Fish));
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(Fish), ref requiredField);
 		Assert.AreEqual(2, schema.Enum.Count);
 	}
 	
@@ -99,7 +127,8 @@ public class TypeTests
 	[Test]
 	public void CheckEnumsOnObject()
 	{
-		var schema = SchemaGenerator.Convert(typeof(FishThing));
+		var requiredField = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(typeof(FishThing), ref requiredField);
 		Assert.AreEqual(1, schema.Properties.Count);
 
 		var prop = schema.Properties[nameof(FishThing.type)];

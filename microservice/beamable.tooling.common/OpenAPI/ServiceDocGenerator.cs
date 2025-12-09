@@ -195,30 +195,11 @@ public class ServiceDocGenerator
 		// in any serializable type here that follows microservice serialization rules).
 		var allTypesFromRoutes = SchemaGenerator.FindAllTypesForOAPI(methods).ToList();
 		allTypesFromRoutes.AddRange(extraSchemas.Select(ex => new SchemaGenerator.OAPIType(null, ex)));
-		foreach (var oapiType in allTypesFromRoutes)
+		var requiredTypes = new HashSet<Type>();
+		var routesFromSchemas = SchemaGenerator.ToOpenApiSchemasDictionary(allTypesFromRoutes, ref requiredTypes);
+		foreach (var (key, schema) in routesFromSchemas)
 		{
-			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
-			// If all usages of this type (within a sub-graph of types starting from a ServiceMethod) is set to NOT generate the client code, we won't.
-			// Otherwise, even if just a single usage of the type wants the client code to be generated, we do generate it.
-			// That's what this thing does.
-			var type = oapiType.Type;
-			var key = SchemaGenerator.GetQualifiedReferenceName(type);
-			if (doc.Components.Schemas.TryGetValue(key, out var existingSchema))
-			{
-				var shouldGenerate = !oapiType.ShouldNotGenerateClientCode();
-				if (shouldGenerate) existingSchema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(false));
-
-				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Tried to add Schema more than once. Type={type.FullName}, SchemaKey={key}, WillGenClient={oapiType.ShouldNotGenerateClientCode()}");
-			}
-			else
-			{
-				// Convert the type into a schema, then set this schema's client-code generation extension based on whether the OAPI type so our code-gen pipelines can decide whether to output it. 
-				var schema = SchemaGenerator.Convert(type);
-				schema.AddExtension(Constants.Features.Services.METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(oapiType.ShouldNotGenerateClientCode()));
-
-				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}, WillGenClient={oapiType.ShouldNotGenerateClientCode()}");
-				doc.Components.Schemas.Add(key, schema);
-			}
+			doc.Components.Schemas.Add(key, schema);
 		}
 
 		var methodsSkippedForClientCodeGen = new List<string>();
@@ -232,7 +213,7 @@ public class ServiceDocGenerator
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
 
-			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, 0);
+			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, ref requiredTypes,0);
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
@@ -266,7 +247,7 @@ public class ServiceDocGenerator
 			for (var i = 0; i < method.ParameterInfos.Count; i++)
 			{
 				Type parameterType = method.ParameterInfos[i].ParameterType;
-				var parameterSchema = SchemaGenerator.Convert(parameterType, 0);
+				var parameterSchema = SchemaGenerator.Convert(parameterType, ref requiredTypes,0);
 				var parameterName = method.ParameterNames[i];
 				var parameterSource = method.ParameterSources[parameterName];
 				
@@ -285,7 +266,7 @@ public class ServiceDocGenerator
 					case ParameterSource.Body:
 						if (parameterSchema.Reference != null && !doc.Components.Schemas.ContainsKey(parameterSchema.Reference.Id))
 						{
-							requestSchema.Properties[parameterName] = SchemaGenerator.Convert(parameterType, 1, true);
+							requestSchema.Properties[parameterName] = SchemaGenerator.Convert(parameterType, ref requiredTypes,1, true);
 						}
 						else
 						{
@@ -358,6 +339,8 @@ public class ServiceDocGenerator
 			doc.Paths.Add("/" + method.Path, pathItem);
 		}
 
+		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredTypes);
+
 		var skippedForClientCodeGenArray = new OpenApiArray();
 		skippedForClientCodeGenArray.AddRange(methodsSkippedForClientCodeGen.Select(item => new OpenApiString(item)));
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, skippedForClientCodeGenArray);
@@ -384,11 +367,11 @@ public class ServiceDocGenerator
 			}
 		};
 		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
-
+		var requiredTypes = new HashSet<Type>();
 		// Generate the list of schemas
 		foreach (var type in schemas)
 		{
-			var schema = SchemaGenerator.Convert(type);
+			var schema = SchemaGenerator.Convert(type, ref requiredTypes);
 			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}");
 			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
