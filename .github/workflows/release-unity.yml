@@ -132,6 +132,13 @@ jobs:
       - name: Store version number as output
         id: version
         env: 
+          NPM_TAG: >-
+            ${{ fromJson('{
+              "nightly": "--tag nightly",
+              "rc": "--tag rc",
+              "exp": "--tag exp",
+              "production": ""
+            }')[github.event.inputs.releaseType] }}
           NEXUS_REGISTRY: >-
             ${{ fromJson('{
               "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
@@ -152,6 +159,7 @@ jobs:
           echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
           echo "BUILD_ENV=$BUILD_ENV" >> "$GITHUB_OUTPUT"
           echo "NEXUS_REG=$NEXUS_REG" >> "$GITHUB_OUTPUT"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
       - name: review version
         run: |
@@ -160,6 +168,7 @@ jobs:
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
           echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
+          echo npm-tag=${{steps.version.outputs.NPM_TAG}}
 
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
@@ -199,7 +208,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable
         env:
           NPM_REGISTRY: https://registry.npmjs.org
