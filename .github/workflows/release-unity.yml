@@ -189,7 +189,7 @@ jobs:
       
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish --registry=https://nexus.beamable.com/nexus/content/repositories/
+        run: npm publish --registry=nexus.beamable.com/
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
