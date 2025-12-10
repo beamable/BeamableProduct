@@ -306,7 +306,7 @@ namespace Beamable.Platform.Tests
 			}
 		}
 
-		public void DeleteToken()
+		public void DeleteToken(bool eraseFromDisk=true)
 		{
 			Token = null;
 		}
