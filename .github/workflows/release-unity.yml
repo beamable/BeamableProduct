@@ -232,6 +232,21 @@ jobs:
       #     project-path: ./client
       #     args: '-quit -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
 
+      - name: Install Unity dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk2.0-0 \
+            libgtk-3-0 \
+            libnss3 \
+            libasound2 \
+            libxss1 \
+            libxtst6 \
+            libxrandr2 \
+            libglu1-mesa \
+            libgbm1 \
+            xvfb
+
       - uses: buildalon/unity-action@v1
         name: Bundle Up
         env: 
