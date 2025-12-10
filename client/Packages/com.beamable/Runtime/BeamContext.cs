@@ -569,7 +569,7 @@ namespace Beamable
 		private async Promise SaveToken(TokenResponse rsp)
 		{
 			var oldToken = _requester.Token;
-			ClearToken(eraseFromDisk: true);
+			ClearToken(eraseFromDisk: false);
 			var token = new AccessToken(_tokenStorage,
 										Cid,
 										Pid,
