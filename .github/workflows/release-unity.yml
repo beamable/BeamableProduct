@@ -170,12 +170,26 @@ jobs:
           echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
           echo npm-tag=${{steps.version.outputs.NPM_TAG}}
 
+
+      - uses: buildalon/unity-setup@v2
+        id: unity-setup
+        with:
+          unity-version: 6000.3
+          build-targets: StandaloneLinux64
+      - uses: buildalon/activate-unity-license@v1
+        with:
+          license: 'Professional'
+          username: '${{ secrets.UNITY_EMAIL }}'
+          password: '${{ secrets.UNITY_PASSWORD }}'
+          serial: '${{ secrets.UNITY_SERIAL }}'
+
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
           
+
       - name: Apply Nuget Version to Unity SDK
         run: |
           beam unity download-all-nuget-packages ./client --logs v
@@ -205,6 +219,31 @@ jobs:
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
       
+
+      - name: Add Build Pipeline Package
+        working-directory: ./client
+        run: |
+          npm install -g openupm-cli
+          openupm add com.virtualmaker.buildalon
+
+      - uses: buildalon/unity-action@v1
+        name: Project Validation
+        with:
+          log-name: 'project-validation'
+          project-path: ./client
+          args: '-quit -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+
+      - uses: buildalon/unity-action@v1
+        name: Bundle Up
+        env: 
+          BEAM_ORG_ID: ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
+        with:
+          log-name: 'project-validation'
+          project-path: ./client
+          args: '-quit -batchmode -executeMethod GithubActions.BundlePackage'
+
+      - name: Review Output
+        run: ls -a client/package_dist
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
