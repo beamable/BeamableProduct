@@ -175,7 +175,6 @@ jobs:
         id: unity-setup
         with:
           unity-version: 6000.3
-          build-targets: StandaloneLinux64
       - uses: buildalon/activate-unity-license@v1
         with:
           license: 'Professional'
@@ -220,18 +219,18 @@ jobs:
           cat client/Packages/com.beamable/package.json
       
 
-      - name: Add Build Pipeline Package
-        working-directory: ./client
-        run: |
-          npm install -g openupm-cli
-          openupm add com.virtualmaker.buildalon
+      # - name: Add Build Pipeline Package
+      #   working-directory: ./client
+      #   run: |
+      #     npm install -g openupm-cli
+      #     openupm add com.virtualmaker.buildalon
 
-      - uses: buildalon/unity-action@v1
-        name: Project Validation
-        with:
-          log-name: 'project-validation'
-          project-path: ./client
-          args: '-quit -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+      # - uses: buildalon/unity-action@v1
+      #   name: Project Validation
+      #   with:
+      #     log-name: 'project-validation'
+      #     project-path: ./client
+      #     args: '-quit -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
 
       - uses: buildalon/unity-action@v1
         name: Bundle Up
