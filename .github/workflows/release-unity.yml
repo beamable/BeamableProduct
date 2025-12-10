@@ -45,7 +45,7 @@ on:
 run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # REQUIRED for provenance
