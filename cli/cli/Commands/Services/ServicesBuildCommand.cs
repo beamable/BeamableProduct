@@ -470,11 +470,19 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			message = "starting docker build..."
 		});
 
+		var defaultBaseImageTag = "8.0-alpine";
+		var targetFramework = http.Metadata.msbuildProject.GetPropertyValue("TargetFramework");
+		if (targetFramework.Contains("net10.0"))
+		{
+			defaultBaseImageTag = "10.0-alpine";
+		}
+		
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
+		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
