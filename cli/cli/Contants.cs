@@ -19,7 +19,7 @@ public static class Constants
 	/// <summary>
 	/// OpenAPI extension that describes the semantic type of a primitive field.
 	/// </summary>
-	public const string EXTENSION_BEAMABLE_SEMANTIC_TYPE = "x-beamable-semantic-type";
+	public const string EXTENSION_BEAMABLE_SEMANTIC_TYPE = Beamable.Common.Constants.Features.Services.SCHEMA_SEMANTIC_TYPE_NAME_KEY;
 
 	/// <summary>
 	/// OpenAPI extension, added here as a <see cref="SwaggerService.DetectNonSelfReferentialTypes"/>, 

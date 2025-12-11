@@ -1,0 +1,60 @@
+﻿using System;
+using Beamable.Common.BeamCli;
+
+namespace Beamable.Common.Semantics
+{
+    [CliContractType, Serializable, BeamSemanticType(BeamSemanticType.Cid)]
+    public struct BeamCid : IBeamSemanticType<long>
+    {
+        private long _longValue;
+        private string _stringValue;
+        
+        public long AsLong {
+            get => _longValue;
+            set {
+                _longValue = value;
+                _stringValue = value.ToString();
+            }
+        }
+
+        public string AsString
+        {
+            get => _stringValue;
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    throw new ArgumentNullException($"Parameter {nameof(value)} cannot be null or empty.");
+                }
+                _stringValue = value;
+                _longValue = long.TryParse(value, out var longValue)
+                    ? longValue
+                    : throw new ArgumentException($"Parameter {nameof(value)} is invalid. Must be a numeric value.");
+            }
+        }
+
+        public BeamCid(long value)
+        {
+            _longValue = value;
+            _stringValue = value.ToString();
+        }
+
+        public BeamCid(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentNullException($"Parameter {nameof(value)} cannot be null or empty.");
+            }
+            _stringValue = value;
+            _longValue = long.TryParse(value, out var longValue)
+                ? longValue
+                : throw new ArgumentException($"Parameter {nameof(value)} is invalid. Must be a numeric value.");
+        }
+
+        public static implicit operator string(BeamCid cid) => cid.AsString;
+        public static implicit operator long(BeamCid cid) => cid.AsLong;
+
+        public static implicit operator BeamCid(string value) => new BeamCid(value);
+        public static implicit operator BeamCid(long value) => new BeamCid(value);
+    }
+}
