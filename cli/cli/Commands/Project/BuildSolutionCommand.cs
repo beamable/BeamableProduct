@@ -118,8 +118,9 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                         //  and after wards, we will copy only the app pieces to the 
                         //  /app folder.
                         $"-p:PublishDir={buildDirSupport.EnquotePath()} " +
-                        
-                        // trick; do a "publish" command, but make nothing publishable. 
+                        /// trick- specify the output path for the app binaries
+                        $"-p:OutputPath={buildDirApp.EnquotePath()} "
+                        // trick; do a "publish" command, but make nothing publishable.
                         //  this prevents any projects from actually being published
                         //  EXCEPT the ones that pay attention to the 'BeamPublish' flag.
                         //  Microservice projects override `IsPublishable` when `BeamPublish`
