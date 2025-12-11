@@ -161,7 +161,7 @@ jobs:
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-8core
     concurrency:
       group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
       cancel-in-progress: true
@@ -262,30 +262,6 @@ jobs:
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-
-      - name: Docker storage stats
-        run: |
-          docker system df
-
-      - name: Increase Docker overlay2 storage
-        run: |
-          sudo systemctl stop docker
-          sudo mkdir -p /etc/docker
-          echo '{ "storage-driver": "overlay2", "storage-opts": ["overlay2.size=40G"] }' | sudo tee /etc/docker/daemon.json
-          sudo systemctl start docker
-      - name: Docker storage stats (again)
-        run: |
-          docker system df
-
-      - name: Free disk space
-        run: |
-          echo "Removing large preinstalled packages..."
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/hostedtoolcache || true
-          docker system prune -a -f || true
-          echo "Disk space after cleanup:"
-          df -h
 
       - uses: game-ci/unity-test-runner@v4
         id: tests
