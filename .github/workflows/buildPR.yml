@@ -161,7 +161,7 @@ jobs:
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-    runs-on: ubuntu-24.04-8core
+    runs-on: ubuntu-latest
     concurrency:
       group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
       cancel-in-progress: true
@@ -263,6 +263,21 @@ jobs:
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
