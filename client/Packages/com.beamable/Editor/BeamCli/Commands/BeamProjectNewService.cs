@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Name of the new project</summary>
         public Beamable.Common.Semantics.ServiceName name;
-        /// <summary>The target framework to use for the new project. Defaults to the current dotnet runtime framework.</summary>
+        /// <summary>The target framework to use for the new project. Defaults to the current dotnet runtime framework</summary>
         public string targetFramework;
         /// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
         public string sln;

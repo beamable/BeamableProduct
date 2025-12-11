@@ -4,8 +4,8 @@ using System.Text.RegularExpressions;
 
 namespace Beamable.Common.Semantics
 {
-	[CliContractType]
-	public struct ServiceName
+	[CliContractType, Serializable, BeamSemanticType(BeamSemanticType.ServiceName)]
+	public struct ServiceName : IBeamSemanticType<string>
 	{
 		public string Value { get; }
 		public ServiceName(string value)
@@ -27,10 +27,13 @@ namespace Beamable.Common.Semantics
 		}
 
 		public static implicit operator string(ServiceName d) => d.Value;
+		public static implicit operator ServiceName(string s) => new ServiceName(s);
 
 		public override string ToString()
 		{
 			return Value;
 		}
+
+		public Type OpenApiType => typeof(string);
 	}
 }

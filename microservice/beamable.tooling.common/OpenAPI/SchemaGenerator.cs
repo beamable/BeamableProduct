@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
+using Beamable.Common.Semantics;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 
@@ -38,7 +39,9 @@ public class SchemaGenerator
 		public bool IsFromBeamGenerateSchema() => SourceCallable == null && Type.GetCustomAttribute<BeamGenerateSchemaAttribute>() != null;
 
 		public bool IsFromCallableWithNoClientGen() => IsFromCallable() && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
-		public bool ShouldNotGenerateClientCode() => (IsFromFederation() || IsFromCallableWithNoClientGen()) && !IsFromBeamGenerateSchema();
+		public bool IsBeamSemanticType() => Type.GetCustomAttribute<BeamSemanticTypeAttribute>() != null;
+		
+		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType()) && !IsFromBeamGenerateSchema();
 		
 		public bool IsPrimitive()
 		{
@@ -204,6 +207,10 @@ public class SchemaGenerator
 				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
 				return Convert(x.GetGenericArguments()[0], depth - 1);
+			case { } x when x.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>)):
+				var semanticType = x.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
+				
+				return Convert(semanticType.GetGenericArguments()[0], depth - 1);
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double" };
 			case { } x when x == typeof(float):
@@ -312,6 +319,23 @@ public class SchemaGenerator
 
 					var comment = DocsLoader.GetMemberComments(member);
 					fieldSchema.Description = comment?.Summary;
+
+					// First check if the type has the BeamSemanticTypeAttribute (all IBeamSemanticType have it already)
+					var classBeamSemanticTypeAttr = member.FieldType.GetCustomAttribute<BeamSemanticTypeAttribute>();
+					if (classBeamSemanticTypeAttr != null)
+					{
+						fieldSchema.Extensions[SCHEMA_SEMANTIC_TYPE_NAME_KEY] =
+							new OpenApiString(classBeamSemanticTypeAttr.SemanticType);
+					}
+					
+					// Then check if the method declaration has it, if it has, it will override the one from the class
+					var beamSemanticTypeAttribute = member.GetCustomAttribute<BeamSemanticTypeAttribute>();
+					if (beamSemanticTypeAttribute != null)
+					{
+						fieldSchema.Extensions[SCHEMA_SEMANTIC_TYPE_NAME_KEY] =
+							new OpenApiString(beamSemanticTypeAttribute.SemanticType);
+					}
+					
 					schema.Properties[name] = fieldSchema;
 
 					if (!member.FieldType.IsAssignableTo(typeof(Optional)))
