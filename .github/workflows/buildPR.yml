@@ -263,6 +263,20 @@ jobs:
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
 
+      - name: Docker storage stats
+        run: |
+          docker system df
+
+      - name: Increase Docker overlay2 storage
+        run: |
+          sudo systemctl stop docker
+          sudo mkdir -p /etc/docker
+          echo '{ "storage-driver": "overlay2", "storage-opts": ["overlay2.size=40G"] }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl start docker
+      - name: Docker storage stats (again)
+        run: |
+          docker system df
+
       - name: Free disk space
         run: |
           echo "Removing large preinstalled packages..."
