@@ -262,6 +262,17 @@ jobs:
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+
+      - name: Free disk space
+        run: |
+          echo "Removing large preinstalled packages..."
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          docker system prune -a -f || true
+          echo "Disk space after cleanup:"
+          df -h
+
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
