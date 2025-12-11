@@ -262,6 +262,22 @@ jobs:
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
@@ -381,15 +397,21 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - name: Free Disk Space for Android
-        run: |
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          sudo apt clean
-          docker rmi $(docker images -q) || true
-          docker system prune -af || true
-          rm -rf /opt/hostedtoolcache
-          df -h
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:

@@ -282,10 +282,14 @@ namespace Beamable.Api
 			return UnityWebRequest.EscapeURL(url);
 		}
 
-		public void DeleteToken()
+		public void DeleteToken(bool eraseFromDisk=true)
 		{
-			Token?.Delete();
-			Token?.DeleteAsCustomerScoped();
+			if (eraseFromDisk)
+			{
+				Token?.Delete();
+				Token?.DeleteAsCustomerScoped();
+			}
+
 			Token = null;
 		}
 

@@ -549,7 +549,7 @@ namespace Beamable
 			var oldToken = _requester.Token;
 			await _beamableApiRequester.RefreshToken();
 			var token = _beamableApiRequester.Token;
-			ClearToken();
+			ClearToken(eraseFromDisk: false);
 			_requester.Token = token;
 			_beamableApiRequester.Token = token;
 			var settings = _serviceScope.GetService<ITokenEventSettings>();
@@ -568,8 +568,8 @@ namespace Beamable
 
 		private async Promise SaveToken(TokenResponse rsp)
 		{
-			ClearToken();
 			var oldToken = _requester.Token;
+			ClearToken(eraseFromDisk: false);
 			var token = new AccessToken(_tokenStorage,
 										Cid,
 										Pid,
@@ -594,9 +594,9 @@ namespace Beamable
 			await _requester.Token.Save();
 		}
 
-		private void ClearToken()
+		private void ClearToken(bool eraseFromDisk=true)
 		{
-			_requester.DeleteToken();
+			_requester.DeleteToken(eraseFromDisk);
 		}
 
 		private async Promise InitStep_StartPubnub()
@@ -960,7 +960,7 @@ namespace Beamable
 		/// </summary>
 		public async Promise ClearPlayerAndStop()
 		{
-			ClearToken();
+			ClearToken(eraseFromDisk: true);
 			await Stop();
 		}
 
