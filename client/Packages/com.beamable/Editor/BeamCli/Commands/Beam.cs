@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>[DEPRECATED] Run as much of the command as possible without making any network calls</summary>
         public bool dryrun;
-        /// <summary>CID (CustomerId) to use (found in Portal->Account); defaults to whatever is in '.beamable/connection-configuration.json'</summary>
+        /// <summary>CID (CustomerId) to use (found in Portal->Account); defaults to whatever is in '.beamable/config.beam.json'</summary>
         public string cid;
         /// <summary>If passed, sets the engine integration that is calling for the command</summary>
         public string engine;
@@ -16,15 +16,15 @@ namespace Beamable.Editor.BeamCli.Commands
         public string engineSdkVersion;
         /// <summary>The version of the engine that is calling the CLI</summary>
         public string engineVersion;
-        /// <summary>PID (Realm ID) to use (found in Portal -> Games -> Any Realm's details); defaults to whatever is in '.beamable/connection-configuration.json'</summary>
+        /// <summary>PID (Realm ID) to use (found in Portal -> Games -> Any Realm's details); defaults to whatever is in '.beamable/config.beam.json'</summary>
         public string pid;
         /// <summary>When true, skip input waiting and use default arguments (or error if no defaults are possible)</summary>
         public bool quiet;
-        /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/connection-configuration.json'</summary>
+        /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'</summary>
         public string host;
-        /// <summary>The access token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
+        /// <summary>The access token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string accessToken;
-        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
+        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string refreshToken;
         /// <summary>Extra logs gets printed out</summary>
         public string log;
@@ -47,8 +47,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool emitLogStreams;
         /// <summary>additional file paths to be included when building a local project manifest. </summary>
         public string[] addProjectPath;
-        /// <summary>[DEPRECATED] Path override for the .beamable folder</summary>
-        public string dir;
         /// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
         public bool raw;
         /// <summary>Output syntax highlighted box text. This happens by default when the command is not piped</summary>
@@ -173,11 +171,6 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--add-project-path=" + this.addProjectPath[i]));
                 }
-            }
-            // If the dir value was not default, then add it to the list of args.
-            if ((this.dir != default(string)))
-            {
-                genBeamCommandArgs.Add(("--dir=" + this.dir));
             }
             // If the raw value was not default, then add it to the list of args.
             if ((this.raw != default(bool)))
