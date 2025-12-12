@@ -81,6 +81,11 @@ namespace Beamable.Common
 		/// </summary>
 		public int? RC => IsReleaseCandidate ? _rc : default;
 
+		/// <summary>
+		/// Whether this version is one of our locally built versions relative to our internal workflow.
+		/// </summary>
+		public bool IsLocalDev => ToString().StartsWith("0.0.123");
+
 		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false, bool isExperimental = false)
 		{
 			_major = major;

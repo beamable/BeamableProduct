@@ -3,12 +3,15 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -274,8 +277,8 @@ namespace Beamable.Server
 				}
 				return wrapped.items;
 			}
-
-			return JsonUtility.FromJson<T>(json);
+			
+			return Json.Deserialize<T>(json);
 		}
 
 		public static Dictionary<string, T> ConvertArrayDictToDictionary<T>(ArrayDict arrayDict)

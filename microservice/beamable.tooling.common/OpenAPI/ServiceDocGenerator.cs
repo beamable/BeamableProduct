@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.Reflection;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
@@ -235,12 +236,6 @@ public class ServiceDocGenerator
 			
 			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, 0);
 			
-			var beamSemanticType = method.Method.ReturnParameter.GetCustomAttribute<BeamSemanticTypeAttribute>();
-			if (beamSemanticType != null)
-			{
-				openApiSchema.Extensions.Add(SCHEMA_SEMANTIC_TYPE_NAME_KEY, new OpenApiString(beamSemanticType.SemanticType));
-			}
-			
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
@@ -289,12 +284,6 @@ public class ServiceDocGenerator
 				bool isOptional = parameterType.IsAssignableTo(typeof(Optional));
 				parameterSchema.Nullable = isNullable;
 				parameterSchema.Extensions.Add(SCHEMA_IS_OPTIONAL_KEY, new OpenApiBoolean(isOptional));
-				
-				var paramBeamSemanticType = method.ParameterInfos[i].GetCustomAttribute<BeamSemanticTypeAttribute>();
-				if (paramBeamSemanticType != null)
-				{
-					parameterSchema.Extensions.Add(SCHEMA_SEMANTIC_TYPE_NAME_KEY, new OpenApiString(paramBeamSemanticType.SemanticType));
-				}
 
 				switch (parameterSource)
 				{
