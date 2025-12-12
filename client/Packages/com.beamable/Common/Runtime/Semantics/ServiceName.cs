@@ -7,10 +7,13 @@ using System.Text.RegularExpressions;
 
 namespace Beamable.Common.Semantics
 {
-	[CliContractType]
-	public struct ServiceName
+	[CliContractType, Serializable]
+	public struct ServiceName : IBeamSemanticType<string>
 	{
 		public string Value { get; }
+		
+		public string SemanticName => "ServiceName";
+		
 		public ServiceName(string value)
 		{
 			// if we do not set the value skip checks
@@ -30,10 +33,18 @@ namespace Beamable.Common.Semantics
 		}
 
 		public static implicit operator string(ServiceName d) => d.Value;
+		public static implicit operator ServiceName(string s) => new ServiceName(s);
 
 		public override string ToString()
 		{
 			return Value;
 		}
+
+		public string ToJson()
+		{
+			return $"\"{Value}\"";
+		}
+
+		public Type OpenApiType => typeof(string);
 	}
 }

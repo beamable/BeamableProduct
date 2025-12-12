@@ -1,13 +1,16 @@
 ﻿using System;
 using Beamable.Common.BeamCli;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Common.Semantics
 {
-    [CliContractType, Serializable, BeamSemanticType(BeamSemanticType.Cid)]
+    [CliContractType, Serializable]
     public struct BeamCid : IBeamSemanticType<long>
     {
-        private long _longValue;
+	    private long _longValue;
         private string _stringValue;
+        
+        public string SemanticName => "Cid";
         
         public long AsLong {
             get => _longValue;
@@ -19,7 +22,7 @@ namespace Beamable.Common.Semantics
 
         public string AsString
         {
-            get => _stringValue;
+	        get => string.IsNullOrEmpty(_stringValue) ? _longValue.ToString() : _stringValue;
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -56,5 +59,9 @@ namespace Beamable.Common.Semantics
 
         public static implicit operator BeamCid(string value) => new BeamCid(value);
         public static implicit operator BeamCid(long value) => new BeamCid(value);
+        public string ToJson()
+        {
+	        return AsString;
+        }
     }
 }

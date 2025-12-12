@@ -1,8 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
+using Beamable.Common.Semantics;
 using System.Reflection;
-using Beamable.Common.Semantics.JsonConverters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -30,10 +30,15 @@ namespace Beamable.Server.Common
 				new StringToSomethingDictionaryConverter<long>(),
 				new StringToSomethingDictionaryConverter<CurrencyPropertyList>(),
 				new StringToSomethingDictionaryConverter<List<FederatedItemProxy>>(),
-				new OptionalConverter(),
 				new BeamAccountIdConverter(),
 				new BeamCidConverter(),
+				new BeamContentIdConverter(),
+				new BeamContentManifestIdConverter(),
 				new BeamGamerTagConverter(),
+				new BeamPidConverter(),
+				new BeamStatsConverter(),
+				new ServiceNameConverter(),
+				new OptionalConverter(),
 				// THIS MUST BE LAST, because it is hacky, and falls back onto other converts as its _normal_ behaviour. If its not last, then other converts can run twice, which causes newtonsoft to explode.
 				new UnitySerializationCallbackInvoker(),
 
@@ -289,6 +294,266 @@ namespace Beamable.Server.Common
 	    public void Dispose()
 	    {
 		    _skip.Dispose();
+	    }
+    }
+    
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamAccountId"/> to serialize as long and deserialize it from string and long
+    /// </summary>
+    public class BeamAccountIdConverter : JsonConverter<BeamAccountId>
+    {
+        
+	    public override BeamAccountId ReadJson(JsonReader reader, Type objectType, BeamAccountId existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.Integer:
+			    {
+				    var longValue = Convert.ToInt64(reader.Value);
+				    return new BeamAccountId(longValue);
+			    }
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamAccountId(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamAccountId();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamAccountId");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamAccountId value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsLong);
+	    }
+
+        
+    }
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamCid"/> to serialize as long and deserialize it from string and long
+    /// </summary>
+    public class BeamCidConverter : JsonConverter<BeamCid>
+    {
+	    public override BeamCid ReadJson(JsonReader reader, Type objectType, BeamCid existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.Integer:
+			    {
+				    var longValue = Convert.ToInt64(reader.Value);
+				    return new BeamCid(longValue);
+			    }
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamCid(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamCid();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamCid value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsLong);
+	    }
+    }
+
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamContentId"/> to serialize and deserialize it from string
+    /// </summary>
+    public class BeamContentIdConverter : JsonConverter<BeamContentId>
+    {
+	    public override BeamContentId ReadJson(JsonReader reader, Type objectType, BeamContentId existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamContentId(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamContentId();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamContentId value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsString);
+	    }
+    }
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamContentManifestId"/> to serialize and deserialize it from string
+    /// </summary>
+    public class BeamContentManifestIdConverter : JsonConverter<BeamContentManifestId>
+    {
+	    public override BeamContentManifestId ReadJson(JsonReader reader, Type objectType, BeamContentManifestId existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamContentManifestId(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamContentManifestId();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamContentManifestId value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsString);
+	    }
+    }
+    
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamGamerTag"/> to serialize as long and deserialize it from string and long
+    /// </summary>
+    public class BeamGamerTagConverter : JsonConverter<BeamGamerTag>
+    {
+	    public override BeamGamerTag ReadJson(JsonReader reader, Type objectType, BeamGamerTag existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.Integer:
+			    {
+				    var longValue = Convert.ToInt64(reader.Value);
+				    return new BeamGamerTag(longValue);
+			    }
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamGamerTag(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamGamerTag();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamGamerTag value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsLong);
+	    }
+    }
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamPid"/> to serialize and deserialize it from string
+    /// </summary>
+    public class BeamPidConverter : JsonConverter<BeamPid>
+    {
+	    public override BeamPid ReadJson(JsonReader reader, Type objectType, BeamPid existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamPid(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamPid();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamPid value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsString);
+	    }
+    }
+
+    /// <summary>
+    /// Custom JSON converter for <see cref="BeamStats"/> to serialize and deserialize it from string
+    /// </summary>
+    public class BeamStatsConverter : JsonConverter<BeamStats>
+    {
+	    public override BeamStats ReadJson(JsonReader reader, Type objectType, BeamStats existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new BeamStats(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new BeamStats();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, BeamStats value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.AsString);
+	    }
+    }
+    
+    /// <summary>
+    /// Custom JSON converter for <see cref="ServiceName"/> to serialize and deserialize it from string
+    /// </summary>
+    public class ServiceNameConverter : JsonConverter<ServiceName>
+    {
+	    public override ServiceName ReadJson(JsonReader reader, Type objectType, ServiceName existingValue, bool hasExistingValue,
+		    JsonSerializer serializer)
+	    {
+		    switch (reader.TokenType)
+		    {
+			    case JsonToken.String:
+			    {
+				    var stringValue = (string)reader.Value;
+				    return new ServiceName(stringValue);
+			    }
+			    case JsonToken.Null:
+			    {
+				    return new ServiceName();
+			    }
+			    default:
+				    throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing BeamCid");
+		    }
+	    }
+        
+	    public override void WriteJson(JsonWriter writer, ServiceName value, JsonSerializer serializer)
+	    {
+		    writer.WriteValue(value.Value);
 	    }
     }
 
