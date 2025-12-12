@@ -15,7 +15,8 @@
 #  5. invalidate the nuget cache for local beamable dev packages, which
 #     means that downstream projects will need to run a `dotnet restore`.
 
-echo "Hello, you stalwart Beamable"
+compliment=$(awk 'BEGIN{srand()} {a[NR]=$0} END{print a[int(rand()*NR)+1]}' compliments.txt)
+echo "$compliment"
 
 # the .dev.env file hosts some common variables
 source ./.dev.env
