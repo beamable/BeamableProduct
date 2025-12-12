@@ -28,10 +28,10 @@ public class BuildSolutionCommandResults
 }
 public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, BuildSolutionCommandResults>
 {
-    
+
     // I haven't thought too hard about this yet; this command
     //  was developed as a way to test solution-level building
-    //  for usage in the plan/release flows. 
+    //  for usage in the plan/release flows.
     public override bool IsForInternalUse => true;
 
     public BuildSolutionCommand() : base("build-sln", "Builds all local projects with a temp solution file")
@@ -59,15 +59,15 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
         }
     }
 
-    public static async Task<Dictionary<string, BuildImageSourceOutput>> Build<TArgs>(TArgs args, 
+    public static async Task<Dictionary<string, BuildImageSourceOutput>> Build<TArgs>(TArgs args,
         bool forDeployment=true,
         bool forceCpu=true)
         where TArgs : CommandArgs, IHasSolutionFileArg
     {
         var beamo = args.BeamoLocalSystem;
         var resultMap = new Dictionary<string, BuildImageSourceOutput>();
-        
-        
+
+
         var buildDirRoot = Path.Combine("bin", "beamApp");
         var buildDirSupport = Path.Combine(buildDirRoot, "support");
         var buildDirApp = Path.Combine(buildDirRoot, "app");
@@ -119,12 +119,12 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                         //  /app folder.
                         $"-p:PublishDir={buildDirSupport.EnquotePath()} " +
                         /// trick- specify the output path for the app binaries
-                        $"-p:OutputPath={buildDirApp.EnquotePath()} "
+                        $"-p:OutputPath={buildDirApp.EnquotePath()} " +
                         // trick; do a "publish" command, but make nothing publishable.
                         //  this prevents any projects from actually being published
                         //  EXCEPT the ones that pay attention to the 'BeamPublish' flag.
                         //  Microservice projects override `IsPublishable` when `BeamPublish`
-                        //  is enabled. 
+                        //  is enabled.
                         $"-p:BeamPublish=\"true\"";
         
         Log.Verbose($"Running dotnet publish {buildArgs}");
@@ -133,12 +133,12 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
         var command = CliExtensions.GetDotnetCommand(dotnetPath, buildArgs)
             .WithEnvironmentVariables(new Dictionary<string, string>
             {
-                ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", 
+                ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
                 ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
-                
+
                 // control where the custom log file goes
                 [MsBuildSolutionLogger.LOG_PATH_ENV_VAR] = buildLogFile,
-                
+
                 // this makes it so that no projects publish, unless those projects
                 //  explicitly set the `IsPublishable` property to true. Our
                 //  microservices do this in the .props file when BeamPublish it set.
@@ -209,15 +209,15 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                     // this build has failed, and there is no point in file-copying...
                     continue;
                 }
-                
+
                 if (!Directory.Exists(result.outputDirSupport))
                 {
-                    // the build failed and there is nothing to move. 
+                    // the build failed and there is nothing to move.
                     continue;
                 }
-                
+
                 Directory.CreateDirectory(result.outputDirApp);
-                
+
                 var filesToMove = Directory.GetFiles(result.outputDirSupport, beamoId + ".*", SearchOption.TopDirectoryOnly);
                 foreach (var fileToMove in filesToMove)
                 {
