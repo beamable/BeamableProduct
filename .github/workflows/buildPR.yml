@@ -197,7 +197,7 @@ jobs:
           - unityVersion: 6000.2.8f1
             gameCiVersion: 3.2.0
           - unityVersion: 6000.3.1f1
-            gameCiVersion: 3.2.0
+            gameCiVersion: 3.2.1
     steps:
       - uses: actions/checkout@v4
 
