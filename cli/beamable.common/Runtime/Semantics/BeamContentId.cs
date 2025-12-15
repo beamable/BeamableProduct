@@ -5,7 +5,7 @@ using Beamable.Common.Content;
 namespace Beamable.Common.Semantics
 {
     [CliContractType, Serializable]
-    public struct BeamContentId : IBeamSemanticType<string>
+    public struct BeamContentId : IBeamSemanticType<string>, IEquatable<string>, IEquatable<BeamContentId>
     {
         private string _value;
 
@@ -32,6 +32,21 @@ namespace Beamable.Common.Semantics
         public string ToJson()
         {
 	        return $"\"{AsString}\"";
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(BeamContentId other)
+        {
+	        return other.AsString == AsString;
+        }
+
+        public override string ToString()
+        {
+	        return AsString;
         }
     }
 }

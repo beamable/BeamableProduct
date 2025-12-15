@@ -4,7 +4,7 @@ using System;
 namespace Beamable.Common.Semantics
 {
     [CliContractType, Serializable]
-    public struct BeamAccountId : IBeamSemanticType<long>
+    public struct BeamAccountId : IBeamSemanticType<long>, IEquatable<string>, IEquatable<long>, IEquatable<BeamAccountId>
     {
         private long _longValue;
         private string _stringValue;
@@ -61,6 +61,26 @@ namespace Beamable.Common.Semantics
         public static implicit operator BeamAccountId(string value) => new BeamAccountId(value);
         public static implicit operator BeamAccountId(long value) => new BeamAccountId(value);
         public string ToJson()
+        {
+	        return AsString;
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(long other)
+        {
+	        return other == AsLong;
+        }
+
+        public bool Equals(BeamAccountId other)
+        {
+	        return other.AsLong == AsLong;
+        }
+
+        public override string ToString()
         {
 	        return AsString;
         }

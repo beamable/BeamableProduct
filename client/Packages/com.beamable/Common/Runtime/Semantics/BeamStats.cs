@@ -8,7 +8,7 @@ using Beamable.Common.BeamCli;
 namespace Beamable.Common.Semantics
 {
     [CliContractType, Serializable]
-    public struct BeamStats : IBeamSemanticType<string>
+    public struct BeamStats : IBeamSemanticType<string>, IEquatable<string>, IEquatable<BeamStats>
     {
         private string _value;
 
@@ -42,6 +42,21 @@ namespace Beamable.Common.Semantics
         public string ToJson()
         {
 	        return $"\"{AsString}\"";
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(BeamStats other)
+        {
+	        return other.AsString == AsString;
+        }
+
+        public override string ToString()
+        {
+	        return AsString;
         }
     }
 }
