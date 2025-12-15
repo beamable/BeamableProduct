@@ -7,7 +7,7 @@ using Beamable.Common.BeamCli;
 namespace Beamable.Common.Semantics
 {
     [CliContractType, Serializable]
-    public struct BeamGamerTag : IBeamSemanticType<long>
+    public struct BeamGamerTag : IBeamSemanticType<long>, IEquatable<string>, IEquatable<long>, IEquatable<BeamGamerTag>
     {
         private long _longValue;
         private string _stringValue;
@@ -63,6 +63,26 @@ namespace Beamable.Common.Semantics
         public static implicit operator BeamGamerTag(string value) => new BeamGamerTag(value);
         public static implicit operator BeamGamerTag(long value) => new BeamGamerTag(value);
         public string ToJson()
+        {
+	        return AsString;
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(long other)
+        {
+	        return other == AsLong;
+        }
+
+        public bool Equals(BeamGamerTag other)
+        {
+	        return other.AsLong == AsLong;
+        }
+
+        public override string ToString()
         {
 	        return AsString;
         }

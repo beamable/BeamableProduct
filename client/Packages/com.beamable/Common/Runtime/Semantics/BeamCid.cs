@@ -3,12 +3,11 @@
 
 using System;
 using Beamable.Common.BeamCli;
-using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Common.Semantics
 {
     [CliContractType, Serializable]
-    public struct BeamCid : IBeamSemanticType<long>
+    public struct BeamCid : IBeamSemanticType<long>, IEquatable<string>, IEquatable<long>, IEquatable<BeamCid>
     {
 	    private long _longValue;
         private string _stringValue;
@@ -63,6 +62,26 @@ namespace Beamable.Common.Semantics
         public static implicit operator BeamCid(string value) => new BeamCid(value);
         public static implicit operator BeamCid(long value) => new BeamCid(value);
         public string ToJson()
+        {
+	        return AsString;
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(long other)
+        {
+	        return other == AsLong;
+        }
+
+        public bool Equals(BeamCid other)
+        {
+	        return other.AsLong == AsLong;
+        }
+
+        public override string ToString()
         {
 	        return AsString;
         }
