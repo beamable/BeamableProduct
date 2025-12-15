@@ -79,7 +79,7 @@ public partial class BeamoLocalSystem
 		{
 			// First, try to match the container by name...
 			var beamoId = serviceDefinitions
-				.FirstOrDefault(c => dockerContainer.Names[0].Split('_')[0].EndsWith(c.BeamoId))?.BeamoId;
+				.FirstOrDefault(c => dockerContainer.Names.Count > 0 && dockerContainer.Names[0].Split('_')[0].EndsWith(c.BeamoId))?.BeamoId;
 
 			// If failed to fine, match it by image id.
 			if (string.IsNullOrEmpty(beamoId))
