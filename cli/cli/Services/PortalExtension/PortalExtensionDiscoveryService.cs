@@ -9,16 +9,12 @@ public class PortalExtensionDiscoveryService : Microservice
 	[ClientCallable]
 	public string RequestPortalExtensionData()
 	{
-		Log.Information("Trying to request portal extension data");
-
 		var observer = Provider.GetService<PortalExtensionObserver>();
 
 		if (observer.TryGetNewAppBuild(out string build))
 		{
 			return build;
 		}
-
-		Log.Information("No changes were detected since last build of portal extension");
 
 		return string.Empty;
 	}
