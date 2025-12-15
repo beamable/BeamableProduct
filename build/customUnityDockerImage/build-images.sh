@@ -12,8 +12,10 @@ declare -a versions=("6000.3.1f1")
 for version in "${versions[@]}"
 do
     # Use GameCI 3.2.0 only for Unity 6000.2+
-    if [[ "$version" == 6000.2.* || "$version" == 6000.3.* ]]; then
+    if [[ "$version" == 6000.2.* ]]; then
         GAME_CI_VERSION=3.2.0
+    elif [[ "$version" == 6000.3.* ]]; then
+        GAME_CI_VERSION=3.2.1
     else
         GAME_CI_VERSION=3.1.0
     fi
