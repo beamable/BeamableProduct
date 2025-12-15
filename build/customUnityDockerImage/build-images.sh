@@ -7,7 +7,7 @@ MY_USERNAME=beamable
 
 # BUILD THE EDITOR VERSIONS
 declare -a components=("android" "ios" "mac-mono" "webgl" "windows-mono" "base")
-declare -a versions=("2021.3.29f1" "2022.3.7f1" "6000.0.37f1" "6000.2.8f1", "6000.3.1f1")
+declare -a versions=("6000.3.1f1")
 
 for version in "${versions[@]}"
 do
