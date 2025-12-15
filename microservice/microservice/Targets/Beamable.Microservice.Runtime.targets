@@ -79,7 +79,7 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamDisableCollectorResolution)'!='true'">
+    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamProjectType)'=='service' AND '$(BeamDisableCollectorResolution)'!='true'">
 
         <PropertyGroup>
             <ActualOutputDir>$(OutputPath)</ActualOutputDir>
