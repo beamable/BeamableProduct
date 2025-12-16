@@ -249,6 +249,8 @@ jobs:
           projectPath: client
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           allowDirtyBuild: true
+          versioning: Custom
+          version: ${{ steps.version.outputs.VERSION }}
           buildMethod: GithubActions.BundlePackage
 
       - name: Review Output
