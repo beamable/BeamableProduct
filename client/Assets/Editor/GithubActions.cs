@@ -11,7 +11,7 @@ public static class GithubActions
 	public static void BundlePackage()
 	{
 		var BeamableOrgId = Environment.GetEnvironmentVariable("BEAM_ORG_ID");
-		var packRequest = Client.Pack("Packages/com.beamable", "package_dist", BeamableOrgId);
+		var packRequest = Client.Pack("Packages/com.beamable", "build/package_dist", BeamableOrgId);
 		Debug.Log("Packing...");
 		while (packRequest.Status == StatusCode.InProgress)
 		{
