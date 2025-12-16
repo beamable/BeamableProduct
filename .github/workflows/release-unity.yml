@@ -43,6 +43,8 @@ on:
         default: false
 
 run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
+env:
+  DOCKER_REGISTRY: ghcr.io
 jobs:
   nuget:
     timeout-minutes: 60
