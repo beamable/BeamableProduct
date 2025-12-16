@@ -178,7 +178,7 @@ jobs:
           - 2022.3.7f1
           - 6000.0.37f1
           - 6000.2.8f1
-          - 6000.3.1f1
+          - 6000.3.0f1
         gameCiVersion:
           - 3.1.0
         include:
@@ -196,7 +196,7 @@ jobs:
             unitySerialOverride: UNITY_SERIAL_BUILD
           - unityVersion: 6000.2.8f1
             gameCiVersion: 3.2.0
-          - unityVersion: 6000.3.1f1
+          - unityVersion: 6000.3.0f1
             gameCiVersion: 3.2.1
     steps:
       - uses: actions/checkout@v4

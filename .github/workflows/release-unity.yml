@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         unityVersion:
-          - 6000.3.1f1
+          - 6000.3.0f1
         gameCiVersion:
           - 3.2.1
     steps:
@@ -247,7 +247,6 @@ jobs:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: client
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           allowDirtyBuild: true
           versioning: Custom
           version: ${{ steps.version.outputs.VERSION }}
