@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace Beamable.Common.Semantics
 {
 	[CliContractType, Serializable]
-	public struct ServiceName : IBeamSemanticType<string>
+	public struct ServiceName : IBeamSemanticType<string>, IEquatable<string>, IEquatable<ServiceName>
 	{
 		public string Value { get; }
 		
@@ -34,6 +34,16 @@ namespace Beamable.Common.Semantics
 
 		public static implicit operator string(ServiceName d) => d.Value;
 		public static implicit operator ServiceName(string s) => new ServiceName(s);
+
+		public bool Equals(string other)
+		{
+			return other == Value;
+		}
+
+		public bool Equals(ServiceName other)
+		{
+			return other.Value == Value;
+		}
 
 		public override string ToString()
 		{
