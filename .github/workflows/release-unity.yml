@@ -176,25 +176,12 @@ jobs:
           echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
           echo npm-tag=${{steps.version.outputs.NPM_TAG}}
 
-
-      - uses: buildalon/unity-setup@v2
-        id: unity-setup
-        with:
-          unity-version: 6000.3
-      - uses: buildalon/activate-unity-license@v1
-        with:
-          license: 'Professional'
-          username: '${{ secrets.UNITY_EMAIL }}'
-          password: '${{ secrets.UNITY_PASSWORD }}'
-          serial: '${{ secrets.UNITY_SERIAL }}'
-
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
           
-
       - name: Apply Nuget Version to Unity SDK
         run: |
           beam unity download-all-nuget-packages ./client --logs v
