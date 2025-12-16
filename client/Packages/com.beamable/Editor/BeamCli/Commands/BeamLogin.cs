@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool noTokenSave;
         /// <summary>Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one</summary>
         public bool realmScoped;
-        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in connection-auth.json for THIS INVOCATION ONLY</summary>
+        /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string refreshToken;
         /// <summary>Prints out login request response to console</summary>
         public bool printToConsole;
