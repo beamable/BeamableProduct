@@ -311,7 +311,7 @@ namespace Beamable.Common.CronExpression
 		///     Converts schedule definition into cron expression
 		/// </summary>
 		/// <param name="scheduleDefinition">Schedule definition</param>
-		/// <returns>The cron expression<returns>
+		/// <returns>The cron expression</returns>
 		public static string ScheduleDefinitionToCron(ScheduleDefinition scheduleDefinition)
 		{
 			var second = ConvertToCronString(scheduleDefinition.second);
