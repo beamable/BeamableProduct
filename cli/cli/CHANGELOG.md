@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `net10` support
 
+### Fixed
+- possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
+- common projects no longer attempt to resolve Beamable Otel Collector
+
 ## [6.2.2]
 ### Changed
 - Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   

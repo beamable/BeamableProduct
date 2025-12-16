@@ -45,7 +45,7 @@ on:
 run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # REQUIRED for provenance
@@ -53,6 +53,12 @@ jobs:
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
+    strategy:
+      matrix:
+        unityVersion:
+          - 6000.3.1f1
+        gameCiVersion:
+          - 3.2.1
     steps:
       - name: review options
         run: |
@@ -76,14 +82,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: >-
-            ${{ fromJson('{
-              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
-              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
-            }')[github.event.inputs.releaseType] }}
-        
+          registry-url: 'https://registry.npmjs.org'
+            
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Check Npm version
         run: npm --version
 
@@ -136,6 +138,20 @@ jobs:
       - name: Store version number as output
         id: version
         env: 
+          NPM_TAG: >-
+            ${{ fromJson('{
+              "nightly": "--tag nightly",
+              "rc": "--tag rc",
+              "exp": "--tag exp",
+              "production": ""
+            }')[github.event.inputs.releaseType] }}
+          NEXUS_REGISTRY: >-
+            ${{ fromJson('{
+              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
+              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
+            }')[github.event.inputs.releaseType] }}
           BUILD_ENV: >-
             ${{ fromJson('{
               "nightly": "dev",
@@ -148,6 +164,8 @@ jobs:
           echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
           echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
           echo "BUILD_ENV=$BUILD_ENV" >> "$GITHUB_OUTPUT"
+          echo "NEXUS_REG=$NEXUS_REG" >> "$GITHUB_OUTPUT"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
       - name: review version
         run: |
@@ -155,6 +173,8 @@ jobs:
           echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
+          echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
+          echo npm-tag=${{steps.version.outputs.NPM_TAG}}
 
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
@@ -173,10 +193,14 @@ jobs:
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Update UPM Version (com.beamable.server)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Review Unity SDK Files
         run: |
@@ -186,40 +210,63 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-
-      - name: Pack com.beamable UPM Package with attestation inside
-        if: ${{ inputs.dryRun == false }}
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          # Get the package name and version from package.json
-          NAME=$(node -p "require('./package.json').name.replace('@','').replace('/','-')")
-          VERSION=$(node -p "require('./package.json').version")
-          
-          # Generate the tarball with provenance
-          npm pack --provenance --access public
-          
-
-      - name: Check files
-        if: ${{ inputs.dryRun == false }}
-        working-directory: ./client/Packages/com.beamable
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          ls -a
       
-      - name: Release com.beamable UPM Package
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - uses: game-ci/unity-builder@v4
+        timeout-minutes: 60
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          BEAM_ORG_ID:  ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
+        with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: client
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          allowDirtyBuild: true
+          buildMethod: GithubActions.BundlePackage
+
+      - name: Review Output
+        run: ls -a client/build/package_dist
+
+      - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
+        run: npm publish client/build/package_dist/ ${{steps.version.outputs.NPM_TAG}}
+        working-directory: ./client/Packages/com.beamable
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+        
+      - name: Release com.beamable UPM Package to Nexus
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
-          NPM_AUTH: ${{ secrets.NEXUS_NPM_AUTH }}
-        run: |
-          npm publish *.tgz 
-
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
@@ -228,6 +275,7 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }} 

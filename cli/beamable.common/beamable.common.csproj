@@ -60,5 +60,12 @@
         <!-- runu the CLI, only building it if it needs to be built by using `dotnet run`. Make sure to pass the BEAM_PREVENT_COPY_CODE_TO_UNITY property to prevent a recursive loop. -->
         <Exec Command="dotnet run -f net10.0 --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file" EnvironmentVariables="BEAM_AUTO_SETUP_TELEMETRY=false"/>
     </Target>
+
+    <Target Name="CopyCodeToUnity"
+            Condition="'$(BEAM_COPY_CODE_TO_UNITY)' == 'true' AND Exists('../../client/Packages/com.beamable') AND '$(TargetFramework)'=='net10.0'"
+    >
+        <!-- runu the CLI, only building it if it needs to be built by using `dotnet run`. Make sure to pass the BEAM_PREVENT_COPY_CODE_TO_UNITY property to prevent a recursive loop. -->
+        <Exec Command="dotnet run -f net10.0 --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file" EnvironmentVariables="BEAM_AUTO_SETUP_TELEMETRY=false"/>
+    </Target>
     
 </Project>
