@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
+using System.Linq;
 
 namespace Beamable.Server.Common
 {
@@ -57,9 +58,31 @@ namespace Beamable.Server.Common
 			serializer.Serialize(writer, optional.GetValue());
 		}
 
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+			JsonSerializer serializer)
 		{
+
 			var instance = (Optional)Activator.CreateInstance(objectType);
+
+			// Handle object representation (when JSON is { "Value": value, "HasValue": true }
+			if (reader.TokenType == JsonToken.StartObject)
+			{
+				var jObject = JObject.Load(reader);
+				var fields = objectType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+				foreach (var field in fields)
+				{
+					if (jObject.TryGetValue(field.Name, out var token))
+					{
+						var fieldValue = token.ToObject(field.FieldType, serializer);
+						field.SetValue(instance, fieldValue);
+					}
+				}
+
+				return instance;
+			}
+
+			// Handle direct value representation (when JSON is { "value": value }
 			var optionalType = instance.GetOptionalType();
 			var value = serializer.Deserialize(reader, optionalType);
 			instance.SetValue(value);
