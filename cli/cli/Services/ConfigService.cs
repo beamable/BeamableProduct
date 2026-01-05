@@ -1560,6 +1560,10 @@ public class EngineProjectData
 	[Serializable]
 	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
 	{
+
+		public const string CORE_NAME_SUFFIX = "MicroserviceClients";
+		public const string BP_CORE_NAME_SUFFIX = "MicroserviceClientsBp";
+		
 		/// <summary>
 		/// Name for the project's core module (the module every other module has access to).
 		/// This will be used to generate the ______API UE Macros for the generated types.
@@ -1609,6 +1613,13 @@ public class EngineProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
+		public ReplacementTypeInfo[] ReplacementTypeInfos;
+
+		public string GetProjectName()
+		{
+			return CoreProjectName.Remove(CoreProjectName.Length - CORE_NAME_SUFFIX.Length);
+		}
+
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
 
@@ -1619,5 +1630,10 @@ public class EngineProjectData
 
 		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
 		public static bool operator !=(Unreal left, Unreal right) => !(left == right);
+		
+		public static string GetCoreName(string projectName) => $"{projectName}{CORE_NAME_SUFFIX}";
+		public static string GetBlueprintNodesProjectName(string projectName) => $"{projectName}{BP_CORE_NAME_SUFFIX}";
+		
+		
 	}
 }
