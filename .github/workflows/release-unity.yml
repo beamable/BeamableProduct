@@ -52,6 +52,7 @@ jobs:
     permissions:
       id-token: write   # REQUIRED for provenance
       contents: read    # standard for checkout
+      packages: read
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
