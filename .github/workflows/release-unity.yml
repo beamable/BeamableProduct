@@ -83,6 +83,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker Image Review
+        run: |
+          docker image ls
+
+      - name: Docker Image Review
+        run: |
+          docker pull ghcr.io/beamable/editor:ubuntu-6000.3.0f1-base-3.2.1
+
+      - name: Docker Image Review
+        run: |
+          docker image ls
+
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -236,6 +248,7 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+
 
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
