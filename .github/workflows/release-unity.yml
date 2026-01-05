@@ -257,13 +257,13 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-          BEAM_ORG_ID:  ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
           DOTNET_CLI_UI_LANGUAGE: en
           DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: client
