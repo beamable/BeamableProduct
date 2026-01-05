@@ -43,6 +43,50 @@ public class GenerateClientFileCommand
 	: AppCommand<GenerateClientFileCommandArgs>
 		, IResultSteam<DefaultStreamResultChannel, GenerateClientFileEvent>
 {
+	private static readonly Dictionary<OpenApiReferenceId, ReplacementTypeInfo> BaseReplacementTypeInfos = new()
+	{
+		{
+			"ClientPermission", new ReplacementTypeInfo
+			{
+				ReferenceId = "ClientPermission",
+				EngineReplacementType = "FBeamClientPermission",
+				EngineOptionalReplacementType =
+					$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
+				EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+			}
+		},
+		{
+			"ExternalIdentity", new ReplacementTypeInfo
+			{
+				ReferenceId = "ExternalIdentity",
+				EngineReplacementType = "FBeamExternalIdentity",
+				EngineOptionalReplacementType =
+					$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
+				EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+			}
+		},
+		{
+			"Tag", new ReplacementTypeInfo
+			{
+				ReferenceId = "Tag",
+				EngineReplacementType = "FBeamTag",
+				EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
+				EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+			}
+		},
+		{
+			"ClientContentInfoJson", new ReplacementTypeInfo()
+			{
+				ReferenceId = "ClientContentInfoJson",
+				EngineReplacementType = "FBeamRemoteContentManifestEntry",
+				EngineOptionalReplacementType =
+					$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamRemoteContentManifestEntry",
+				EngineImport =
+					@"#include ""BeamBackend/ReplacementTypes/BeamRemoteContentManifestEntry.h""",
+			}
+		}
+	};
+
 	public override bool IsForInternalUse => true;
 
 	public GenerateClientFileCommand() : base("generate-client",
@@ -313,53 +357,19 @@ public class GenerateClientFileCommand
 				UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 				UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
 
+
+				var replacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(BaseReplacementTypeInfos);
+				
+				foreach (ReplacementTypeInfo replacementTypeInfo in unrealProjectData.ReplacementTypeInfos)
+				{
+					replacementTypes.TryAdd(replacementTypeInfo.ReferenceId, replacementTypeInfo);
+				}
+				
 				var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
 				{
 					Documents = docs,
 					OrderedSchemas = orderedSchemas,
-					ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
-					{
-						{
-							"ClientPermission", new ReplacementTypeInfo
-							{
-								ReferenceId = "ClientPermission",
-								EngineReplacementType = "FBeamClientPermission",
-								EngineOptionalReplacementType =
-									$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
-							}
-						},
-						{
-							"ExternalIdentity", new ReplacementTypeInfo
-							{
-								ReferenceId = "ExternalIdentity",
-								EngineReplacementType = "FBeamExternalIdentity",
-								EngineOptionalReplacementType =
-									$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
-							}
-						},
-						{
-							"Tag", new ReplacementTypeInfo
-							{
-								ReferenceId = "Tag",
-								EngineReplacementType = "FBeamTag",
-								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
-							}
-						},
-						{
-							"ClientContentInfoJson", new ReplacementTypeInfo()
-							{
-								ReferenceId = "ClientContentInfoJson",
-								EngineReplacementType = "FBeamRemoteContentManifestEntry",
-								EngineOptionalReplacementType =
-									$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamRemoteContentManifestEntry",
-								EngineImport =
-									@"#include ""BeamBackend/ReplacementTypes/BeamRemoteContentManifestEntry.h""",
-							}
-						}
-					}
+					ReplacementTypes = replacementTypes,
 				});
 
 				Log.Verbose($"completed in-memory generation of clients for project {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
