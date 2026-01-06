@@ -270,6 +270,10 @@ jobs:
       - name: Review Output 3
         run: ls -a client/build/package_dist
 
+      - name: Fix permissions
+        run: |
+          sudo chown -R $USER:$USER client/build
+
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
