@@ -254,7 +254,7 @@ jobs:
         run: |
           mkdir /home/runner/work/_temp/_github_home
           cd /home/runner/work/_temp/_github_home
-          echo "[npmAuth.\"${{steps.version.outputs.NEXUS_REG}}\"]" >> .upmconfig.toml
+          echo "[npmAuth.\"https://nexus.beamable.com/nexus/content/repositories\"]" >> .upmconfig.toml
           echo "alwaysAuth = true" >> .upmconfig.toml
           echo "token = \"${{ secrets.NEXUS_NPM_AUTH }}\"" >> .upmconfig.toml
 
