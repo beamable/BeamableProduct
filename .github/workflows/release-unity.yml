@@ -258,7 +258,7 @@ jobs:
           LC_ALL: en_US.UTF-8
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
-          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable.tgz
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable
           gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: client
@@ -267,20 +267,32 @@ jobs:
           version: ${{ steps.version.outputs.VERSION }}
           # buildMethod: GithubActions.BundlePackage
 
-      - name: Review Output 3
-        run: ls -a client/build/package_dist
+      - name: Review Output
+        run: |
+          ls -a client/build/package_dist
+          file client/build/package_dist/com.beamable
 
       - name: Fix permissions
         run: |
           sudo chown -R $USER:$USER client/build
-          sudo chown $USER:$USER client/build/package_dist/com.beamable.tgz
+          sudo chown $USER:$USER client/build/package_dist/com.beamable
 
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
+      - name: Create com.beamable tarball
+        working-directory: ./client/build/package_dist
+        run: |
+          tar -czf com.beamable.tar.gz -C com.beamable .
+
+      - name: Review Output (again)
+        run: |
+          ls -a client/build/package_dist
+          file com.beamable.tar.gz
+
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./com.beamable.tgz
+        run: npm publish ./com.beamable.tar.gz
         working-directory: ./client/build/package_dist/
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
@@ -289,7 +301,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./client/build/package_dist/com.beamable.tgz ${{steps.version.outputs.NPM_TAG}}
+        run: npm publish ./client/build/package_dist/com.beamable.tar.gz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable
         env:
           NPM_REGISTRY: https://registry.npmjs.org
