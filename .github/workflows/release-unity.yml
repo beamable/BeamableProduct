@@ -291,7 +291,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/build/package_dist/
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
