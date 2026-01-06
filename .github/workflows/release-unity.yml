@@ -290,6 +290,10 @@ jobs:
           ls -a client/build/package_dist
           file client/build/package_dist/com.beamable.tar.gz
 
+      - name: Review Tarball 
+        run: |
+          tar -tzf client/build/package_dist/com.beamable.tgz | head -20
+
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
         run: npm publish ./com.beamable.tar.gz
