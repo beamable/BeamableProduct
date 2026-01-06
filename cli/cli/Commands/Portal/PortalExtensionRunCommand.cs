@@ -1,6 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Server;
 using cli.Services.PortalExtension;
+using Microsoft.Extensions.Logging;
 using System.CommandLine;
 
 namespace cli.Portal;
@@ -42,10 +43,10 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		}
 
 		// run a microservice that will be feeding portal with new builds of the portal extension app
-		await RunMicroserviceForever(service.AbsolutePath, args.AppName);
+		await RunMicroserviceForever(service.AbsolutePath, args);
 	}
 
-	private async Task RunMicroserviceForever(string fullPath, string appName)
+	private async Task RunMicroserviceForever(string fullPath, PortalExtensionRunCommandArgs args)
 	{
 		try
 		{
@@ -77,7 +78,12 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 				{
 					config.Attributes = new DefaultMicroserviceAttributes()
 					{
-						MicroserviceName = GetMicroName(appName)
+						MicroserviceName = GetMicroName(args.AppName)
+					};
+
+					config.AddLoggerProvider = (builder) =>
+					{
+						SetLoggerProvider(builder, args);
 					};
 				})
 				.RunForever();
@@ -89,6 +95,20 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		}
 	}
 
+	private void SetLoggerProvider(ILoggingBuilder builder, PortalExtensionRunCommandArgs args)
+	{
+		Action readyForTraffic = () =>
+		{
+			if (TryBuildPortalUrl(args, out string portalUrl))
+			{
+				Log.Information($"Portal URL: {portalUrl}");
+			}
+		};
+
+		builder.ClearProviders();
+		builder.AddProvider(new ExtensionAppLogProvider(readyForTraffic));
+	}
+
 	private string GetMicroName(string appName)
 	{
 		if (!string.IsNullOrEmpty(ComputedMicroserviceName))
@@ -96,7 +116,7 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 			return ComputedMicroserviceName;
 		}
 
-		return $"__BeamPortalExtension_{appName}_{Guid.NewGuid()}";
+		return $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
 	}
 
 	private bool TryBuildPortalUrl(PortalExtensionRunCommandArgs args, out string portalUrl)
@@ -126,5 +146,74 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/extensions?{joinedQueryString}";
 
 		return true;
+	}
+}
+
+public class ExtensionAppLogProvider : ILoggerProvider
+{
+	private Action _onExtensionAppReady;
+
+	public ExtensionAppLogProvider(Action onExtensionAppReady = null)
+	{
+		_onExtensionAppReady = onExtensionAppReady;
+	}
+
+	public ILogger CreateLogger(string categoryName)
+	{
+		return (ILogger)new OverrideLogger(_onExtensionAppReady);
+	}
+
+	public void Dispose()
+	{
+		// nothing to dispose for now
+	}
+}
+
+public class OverrideLogger : ILogger
+{
+	private Action _readyForTraffic;
+
+	public bool SupportScopes => false;
+
+	public OverrideLogger(Action readyForTraffic = null)
+	{
+		if (readyForTraffic != null)
+		{
+			_readyForTraffic += readyForTraffic;
+		}
+	}
+
+	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+	{
+		string message = formatter(state, exception);
+
+		if (exception != null)
+		{
+			Console.WriteLine($"\nTEST Exception: {exception.Message}");
+		}
+
+		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
+		{
+			_readyForTraffic?.Invoke();
+		}
+	}
+
+	public bool IsEnabled(LogLevel logLevel)
+	{
+		return true;
+	}
+
+	public IDisposable BeginScope<TState>(TState state) where TState : notnull
+	{
+		return NullDisposable.Instance;
+	}
+
+	class NullDisposable : IDisposable
+	{
+		public static readonly IDisposable Instance = new NullDisposable();
+
+		public void Dispose()
+		{
+		}
 	}
 }

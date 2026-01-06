@@ -29,7 +29,7 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Action<IDependencyBuilder>> IBeamServiceConfig.ServiceConfigurations { get; set; } = new List<Action<IDependencyBuilder>>();
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
-    Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
+    Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider { get; set; }
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
 }
 
@@ -128,7 +128,7 @@ public interface IBeamServiceConfig
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
-    Func<ILogger> LogFactory { get; set; }
+    Action<ILoggingBuilder> AddLoggerProvider { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
 }
 
