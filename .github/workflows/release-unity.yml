@@ -155,7 +155,7 @@ jobs:
               "exp": "--tag exp",
               "production": ""
             }')[github.event.inputs.releaseType] }}
-          NEXUS_REGISTRY: >-
+          NEXUS_REG: >-
             ${{ fromJson('{
               "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
               "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
