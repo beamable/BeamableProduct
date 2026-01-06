@@ -250,6 +250,14 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Create .upmconfig.toml UPM authentication file
+        run: |
+          mkdir /home/runner/work/_temp/_github_home
+          cd /home/runner/work/_temp/_github_home
+          echo "[npmAuth.\"${{steps.version.outputs.NEXUS_REG}}\"]" >> .upmconfig.toml
+          echo "alwaysAuth = true" >> .upmconfig.toml
+          echo "token = \"${{ secrets.NEXUS_NPM_AUTH }}\"" >> .upmconfig.toml
+
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
@@ -262,14 +270,14 @@ jobs:
           LC_ALL: en_US.UTF-8
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
-          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable.tgz
-          # githubToken: ${{ secrets.GITHUB_TOKEN }}
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: client
           allowDirtyBuild: true
           versioning: Custom
           version: ${{ steps.version.outputs.VERSION }}
-          # buildMethod: GithubActions.BundlePackage
+          buildMethod: GithubActions.BundlePackage
 
       - name: Review Output
         run: ls -a client/build/package_dist
