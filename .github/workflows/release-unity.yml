@@ -275,28 +275,23 @@ jobs:
       - name: Fix permissions
         run: |
           sudo chown -R $USER:$USER client/build
-          sudo chown $USER:$USER client/build/package_dist/com.beamable
 
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
-      - name: Create com.beamable tarball
-        working-directory: ./client/build/package_dist
-        run: |
-          tar -czf com.beamable.tar.gz -C com.beamable .
+      # - name: Create com.beamable tarball
+      #   working-directory: ./client/build/package_dist
+      #   run: |
+      #     tar -czf com.beamable.tar.gz -C com.beamable .
 
-      - name: Review Output (again)
-        run: |
-          ls -a client/build/package_dist
-          file client/build/package_dist/com.beamable.tar.gz
-
-      - name: Review Tarball 
-        run: |
-          tar -tzf client/build/package_dist/com.beamable.tgz | head -20
+      # - name: Review Output (again)
+      #   run: |
+      #     ls -a client/build/package_dist
+      #     file client/build/package_dist/com.beamable.tar.gz
 
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./com.beamable.tar.gz
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz
         working-directory: ./client/build/package_dist/
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
@@ -305,7 +300,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./client/build/package_dist/com.beamable.tar.gz ${{steps.version.outputs.NPM_TAG}}
+        run: npm publish ./client/build/package_dist/com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable
         env:
           NPM_REGISTRY: https://registry.npmjs.org
