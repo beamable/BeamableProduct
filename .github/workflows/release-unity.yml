@@ -84,18 +84,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker Image Review
-        run: |
-          docker image ls
-
-      - name: Docker Image Review
-        run: |
-          docker pull ghcr.io/beamable/editor:ubuntu-6000.3.0f1-base-3.2.1
-
-      - name: Docker Image Review
-        run: |
-          docker image ls
-
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -270,16 +258,22 @@ jobs:
           LC_ALL: en_US.UTF-8
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
-          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack Packages/com.beamable build/package_dist/com.beamable.tgz
+          gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: client
           allowDirtyBuild: true
           versioning: Custom
           version: ${{ steps.version.outputs.VERSION }}
-          buildMethod: GithubActions.BundlePackage
+          # buildMethod: GithubActions.BundlePackage
 
-      - name: Review Output
+      - name: Review Output 1
+        run: ls -a build/
+
+      - name: Review Output 2
+        run: ls -a client/build/
+
+      - name: Review Output 3
         run: ls -a client/build/package_dist
 
       - name: Release com.beamable UPM Package to Public
