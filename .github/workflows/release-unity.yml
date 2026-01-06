@@ -273,13 +273,14 @@ jobs:
       - name: Fix permissions
         run: |
           sudo chown -R $USER:$USER client/build
+          sudo chown $USER:$USER client/build/package_dist/com.beamable.tgz
 
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish com.beamable.tgz
+        run: npm publish ./com.beamable.tgz
         working-directory: ./client/build/package_dist/
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
@@ -288,7 +289,7 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish client/build/package_dist/com.beamable.tgz ${{steps.version.outputs.NPM_TAG}}
+        run: npm publish ./client/build/package_dist/com.beamable.tgz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable
         env:
           NPM_REGISTRY: https://registry.npmjs.org
