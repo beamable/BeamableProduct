@@ -250,17 +250,6 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Configure UPM auth
-        run: |
-          mkdir -p "$HOME"
-          cat <<EOF | tee "$HOME/.upmconfig.toml" > /github/home/.upmconfig.toml
-          [registry]
-          url = "${{ steps.version.outputs.NEXUS_REG }}"
-
-          [registry.auth]
-          token = "${{ secrets.NEXUS_NPM_AUTH }}"
-          EOF
-
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
