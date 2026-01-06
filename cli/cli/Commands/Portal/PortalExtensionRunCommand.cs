@@ -101,7 +101,11 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		{
 			if (TryBuildPortalUrl(args, out string portalUrl))
 			{
-				Log.Information($"Portal URL: {portalUrl}");
+				Console.WriteLine($"Portal URL: {portalUrl}");
+			}
+			else
+			{
+				Console.WriteLine("Couldn't generate Portal URL for extension app.");
 			}
 		};
 
@@ -191,6 +195,8 @@ public class OverrideLogger : ILogger
 		{
 			Console.WriteLine($"\nTEST Exception: {exception.Message}");
 		}
+
+
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
