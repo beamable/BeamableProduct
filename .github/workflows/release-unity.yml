@@ -269,7 +269,7 @@ jobs:
 
       - name: Review Output
         run: |
-          ls -a client/build/package_dist
+          ls -Ra client/build/package_dist
           file client/build/package_dist/com.beamable
 
       - name: Fix permissions
@@ -288,7 +288,7 @@ jobs:
       - name: Review Output (again)
         run: |
           ls -a client/build/package_dist
-          file com.beamable.tar.gz
+          file client/build/package_dist/com.beamable.tar.gz
 
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
