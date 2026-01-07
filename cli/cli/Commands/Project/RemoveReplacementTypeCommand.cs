@@ -43,10 +43,7 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 			if (unrealProjects.Any(item => item.GetProjectName() == args.UnrealProjectName))
 			{
 				var projectData = unrealProjects.FirstOrDefault(item => item.GetProjectName() == args.UnrealProjectName);
-				linkedEngineProjects.unrealProjectsPaths.Remove(projectData);
-				projectData.ReplacementTypeInfos = projectData.ReplacementTypeInfos.Where(item => item.ReferenceId != referenceId).ToArray();
-				linkedEngineProjects.unrealProjectsPaths.Add(projectData);
-				args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
+				RemoveReferenceAndSetLinkedEngineProjects(args, linkedEngineProjects, projectData, referenceId);
 			}
 			else
 			{
@@ -59,10 +56,7 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 		if (unrealProjects.Count == 1 || args.Quiet)
 		{
 			var onlyItem = unrealProjects.First();
-			linkedEngineProjects.unrealProjectsPaths.Remove(onlyItem);
-			onlyItem.ReplacementTypeInfos = onlyItem.ReplacementTypeInfos.Where(item => item.ReferenceId != referenceId).ToArray();
-			linkedEngineProjects.unrealProjectsPaths.Add(onlyItem);
-			args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
+			RemoveReferenceAndSetLinkedEngineProjects(args, linkedEngineProjects, onlyItem, referenceId);
 			return;
 		}
 		
@@ -74,9 +68,16 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 		);
 		
 		var selectedProject = unrealProjects.First(item => item.GetProjectName() == projectSelection);
-		linkedEngineProjects.unrealProjectsPaths.Remove(selectedProject);
-		selectedProject.ReplacementTypeInfos = selectedProject.ReplacementTypeInfos.Where(item => item.ReferenceId != referenceId).ToArray();
-		linkedEngineProjects.unrealProjectsPaths.Add(selectedProject);
+		RemoveReferenceAndSetLinkedEngineProjects(args, linkedEngineProjects, selectedProject, referenceId);
+	}
+
+	private static void RemoveReferenceAndSetLinkedEngineProjects(RemoveReplacementTypeCommandArgs args,
+		EngineProjectData linkedEngineProjects, EngineProjectData.Unreal projectData, string referenceId)
+	{
+		var array = projectData.ReplacementTypeInfos ?? Array.Empty<ReplacementTypeInfo>();
+		linkedEngineProjects.unrealProjectsPaths.Remove(projectData);
+		projectData.ReplacementTypeInfos = array.Where(item => item.ReferenceId != referenceId).ToArray();
+		linkedEngineProjects.unrealProjectsPaths.Add(projectData);
 		args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
 	}
 
