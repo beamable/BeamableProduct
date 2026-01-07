@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `net10` support
+- New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
+- Semantic Types for Beamable Classes with custom serialization and deserialization
 
 ### Fixed
 - possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
