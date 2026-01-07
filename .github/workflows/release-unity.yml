@@ -300,8 +300,8 @@ jobs:
 
       - name: Release com.beamable UPM Package to Public
         if: ${{ inputs.dryRun == false }}
-        run: npm publish ./client/build/package_dist/com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
-        working-directory: ./client/Packages/com.beamable
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
+        working-directory: ./client/build/package_dist/
         env:
           NPM_REGISTRY: https://registry.npmjs.org
 
