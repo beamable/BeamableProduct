@@ -307,7 +307,7 @@ jobs:
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish
+        run: npm publish ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable.server
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
