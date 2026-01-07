@@ -307,6 +307,7 @@ public class GenerateClientFileCommand
 
 		// Handle Unreal code-gen
 		var hasUnrealLinkedProjects = args.outputToLinkedProjects && args.ProjectService.GetLinkedUnrealProjects().Count > 0;
+		const string customReplacementTypesFolderName = "CustomReplacementTypes";
 		if (hasUnrealLinkedProjects)
 		{
 			// Check if the microservice projects are built and that the OAPI exists.
@@ -407,7 +408,12 @@ public class GenerateClientFileCommand
 			""Name"": ""{unrealProjectData.BlueprintNodesProjectName}"",
 			""Type"": ""UncookedOnly"",
 			""LoadingPhase"": ""Default""
-		}}
+		}},
+		{{
+			""Name"": ""{customReplacementTypesFolderName}"",
+			""Type"": ""Runtime"",
+			""LoadingPhase"": ""Default""
+		}},
 	],
 	""Plugins"": [
 		{{
@@ -710,6 +716,13 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				}
 
 				await Task.WhenAll(writeFiles);
+
+				var replacementTypeFolder = new DirectoryInfo(Path.Join(outputDir, "Source", customReplacementTypesFolderName));
+				if (!replacementTypeFolder.Exists)
+				{
+					Directory.CreateDirectory(replacementTypeFolder.FullName);
+				}
+				
 				Log.Verbose($"completed writing auto-generated files to disk {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 
 				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
