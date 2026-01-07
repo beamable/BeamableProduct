@@ -23,11 +23,11 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("reference-id", "The reference Id (C# class/struct name) for the replacement"), (args, i) => args.ReferenceId = i);
-		AddOption(new Option<string>("replacement-type", "The name of the Type to replaced with in Unreal auto-gen"), (args, i) => args.EngineReplacementType = i);
-		AddOption(new Option<string>("optional-replacement-type", "The name of the Optional Type to replaced with in Unreal auto-gen"), (args, i) => args.EngineOptionalReplacementType = i);
-		AddOption(new Option<string>("engine-import", "The full import for the replacement type to be used in Unreal auto-gen"), (args, i) => args.EngineImport = i);
-		AddOption(new Option<string>("project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
+		AddOption(new Option<string>("--reference-id", "The reference Id (C# class/struct name) for the replacement"), (args, i) => args.ReferenceId = i);
+		AddOption(new Option<string>("--replacement-type", "The name of the Type to replaced with in Unreal auto-gen"), (args, i) => args.EngineReplacementType = i);
+		AddOption(new Option<string>("--optional-replacement-type", "The name of the Optional Type to replaced with in Unreal auto-gen"), (args, i) => args.EngineOptionalReplacementType = i);
+		AddOption(new Option<string>("--engine-import", "The full import for the replacement type to be used in Unreal auto-gen"), (args, i) => args.EngineImport = i);
+		AddOption(new Option<string>("--project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
 	}
 
 	public override async Task Handle(AddReplacementTypeCommandArgs args)
@@ -85,6 +85,7 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 		onlyItem.ReplacementTypeInfos = array.Append(replacementType).ToArray();
 		linkedEngineProjects.unrealProjectsPaths.Add(onlyItem);
 		args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
+		AnsiConsole.MarkupLine($"Added replacement type [green]{replacementType.ReferenceId}[/] for [green]{onlyItem.GetProjectName()}[/]. Make sure to add the Replacement Type Under your [green]Plugins/BeamableUnrealMicroserviceClients/Source/CustomReplacementTypes[/] folder");
 	}
 
 	private static string GetProjectPrompt(HashSet<EngineProjectData.Unreal> unrealProjects)
@@ -103,7 +104,7 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 		if (string.IsNullOrEmpty(args.ReferenceId))
 		{
 			return Task.FromResult(AnsiConsole.Prompt(
-				new TextPrompt<string>("Please enter the Replacement [green]Reference Id[/]:").PromptStyle("green")));
+				new TextPrompt<string>("Please enter the Replacement [green]Reference Id[/] (Use the same name as in the OpenApi Specs):").PromptStyle("green")));
 		}
 		return Task.FromResult(args.ReferenceId);
 	}

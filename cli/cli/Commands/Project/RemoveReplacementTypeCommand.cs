@@ -20,8 +20,8 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("reference-id", "The reference Id (C# class/struct name) for the replacement"), (args, i) => args.ReferenceId = i);
-		AddOption(new Option<string>("project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
+		AddOption(new Option<string>("--reference-id", "The reference Id (C# class/struct name) for the replacement"), (args, i) => args.ReferenceId = i);
+		AddOption(new Option<string>("--project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
 	}
 
 	public override async Task Handle(RemoveReplacementTypeCommandArgs args)

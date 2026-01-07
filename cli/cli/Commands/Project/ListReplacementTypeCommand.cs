@@ -24,7 +24,7 @@ public class ListReplacementTypeCommand : AtomicCommand<ListReplacementTypeComma
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
+		AddOption(new Option<string>("--project-name", "The Unreal project name"), (args, i) => args.UnrealProjectName = i);
 	}
 
 	public override async Task<ListReplacementTypeCommandOutput> GetResult(ListReplacementTypeCommandArgs args)
