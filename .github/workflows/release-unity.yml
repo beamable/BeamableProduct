@@ -238,14 +238,6 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Create .upmconfig.toml UPM authentication file
-        run: |
-          mkdir /home/runner/work/_temp/_github_home
-          cd /home/runner/work/_temp/_github_home
-          echo "[npmAuth.\"https://nexus.beamable.com/nexus/content/repositories\"]" >> .upmconfig.toml
-          echo "alwaysAuth = true" >> .upmconfig.toml
-          echo "token = \"${{ secrets.NEXUS_NPM_AUTH }}\"" >> .upmconfig.toml
-
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
@@ -265,7 +257,6 @@ jobs:
           allowDirtyBuild: true
           versioning: Custom
           version: ${{ steps.version.outputs.VERSION }}
-          # buildMethod: GithubActions.BundlePackage
 
       - name: Review Output
         run: |
@@ -278,16 +269,6 @@ jobs:
 
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
-
-      # - name: Create com.beamable tarball
-      #   working-directory: ./client/build/package_dist
-      #   run: |
-      #     tar -czf com.beamable.tar.gz -C com.beamable .
-
-      # - name: Review Output (again)
-      #   run: |
-      #     ls -a client/build/package_dist
-      #     file client/build/package_dist/com.beamable.tar.gz
 
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
