@@ -54,10 +54,7 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 			if (unrealProjects.Any(item => item.GetProjectName() == args.UnrealProjectName))
 			{
 				var projectData = unrealProjects.FirstOrDefault(item => item.GetProjectName() == args.UnrealProjectName);
-				linkedEngineProjects.unrealProjectsPaths.Remove(projectData);
-				projectData.ReplacementTypeInfos = projectData.ReplacementTypeInfos.Append(replacementType).ToArray();
-				linkedEngineProjects.unrealProjectsPaths.Add(projectData);
-				args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
+				AddReplacementAndSetLinkedEngineProjects(args, linkedEngineProjects, projectData, replacementType);
 			}
 			else
 			{
@@ -70,19 +67,23 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 		if (unrealProjects.Count == 1 || args.Quiet)
 		{
 			var onlyItem = unrealProjects.First();
-			linkedEngineProjects.unrealProjectsPaths.Remove(onlyItem);
-			onlyItem.ReplacementTypeInfos = onlyItem.ReplacementTypeInfos.Append(replacementType).ToArray();
-			linkedEngineProjects.unrealProjectsPaths.Add(onlyItem);
-			args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
+			AddReplacementAndSetLinkedEngineProjects(args, linkedEngineProjects, onlyItem, replacementType);
 			return;
 		}
 		
 		string projectSelection = GetProjectPrompt(unrealProjects);
 		
 		var selectedProject = unrealProjects.First(item => item.GetProjectName() == projectSelection);
-		linkedEngineProjects.unrealProjectsPaths.Remove(selectedProject);
-		selectedProject.ReplacementTypeInfos = selectedProject.ReplacementTypeInfos.Append(replacementType).ToArray();
-		linkedEngineProjects.unrealProjectsPaths.Add(selectedProject);
+		AddReplacementAndSetLinkedEngineProjects(args, linkedEngineProjects, selectedProject, replacementType);
+	}
+
+	private static void AddReplacementAndSetLinkedEngineProjects(AddReplacementTypeCommandArgs args,
+		EngineProjectData linkedEngineProjects, EngineProjectData.Unreal onlyItem, ReplacementTypeInfo replacementType)
+	{
+		var array = onlyItem.ReplacementTypeInfos ?? Array.Empty<ReplacementTypeInfo>();
+		linkedEngineProjects.unrealProjectsPaths.Remove(onlyItem);
+		onlyItem.ReplacementTypeInfos = array.Append(replacementType).ToArray();
+		linkedEngineProjects.unrealProjectsPaths.Add(onlyItem);
 		args.ConfigService.SetLinkedEngineProjects(linkedEngineProjects);
 	}
 
