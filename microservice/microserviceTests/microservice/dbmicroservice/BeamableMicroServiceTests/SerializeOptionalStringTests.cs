@@ -31,6 +31,23 @@ public class SerializeOptionalStringTests : CommonTest
 		Assert.That(x.announcements[0].gift.Value.description.HasValue, Is.False);
 	}
 
+	
+	[Test]
+	[NonParallelizable]
+	public async Task SerializeObject()
+	{
+		const string JSON = @"{
+""x"": {
+	""Value"": ""tuna"",
+	""HasValue"": true
+}
+}";
+		var x = JsonConvert.DeserializeObject<Sample>(JSON, UnitySerializationSettings.Instance);
+
+		Assert.That(x.x.Value, Is.EqualTo("tuna"));
+	}
+
+	
 	[Test]
 	[NonParallelizable]
 	public async Task SerializeSample()
