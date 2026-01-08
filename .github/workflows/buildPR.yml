@@ -196,10 +196,13 @@ jobs:
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
-          - unityVersion: 6000.2.8f1
-            gameCiVersion: 3.2.0
-          - unityVersion: 6000.3.0f1
-            gameCiVersion: 3.2.1
+    env:
+      GAME_CI_VERSION: >-
+        ${{
+          matrix.unityVersion == '6000.2.8f1' && '3.2.0' ||
+          matrix.unityVersion == '6000.3.0f1' && '3.2.1' ||
+          matrix.gameCiVersion
+        }}
     steps:
       - uses: actions/checkout@v4
 
@@ -300,7 +303,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
