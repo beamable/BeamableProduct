@@ -384,30 +384,53 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
-		var gameSelection = args.Quiet ? gameChoices.First() : AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
-				.Title("What [green]game[/] are you using?")
-				.AddChoices(gameChoices)
-				.AddBeamHightlight()
-		);
+		var gameSelection = args.Quiet
+			? gameChoices.First()
+			: AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("What [green]game[/] are you using?")
+					.AddChoices(gameChoices)
+					.AddBeamHightlight()
+			);
 		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
 
 		var realms = await _realmsApi.GetRealms(game).ShowLoading("Fetching realms...");
 		var realmChoices = realms
 			.Where(r => !r.Archived)
 			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
-		var realmSelection = args.Quiet ? 
-			realms.Where(r => r.Depth == 2)
-				.OrderBy(r =>r.Pid)
-				.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}")
-				.First() :
-			AnsiConsole.Prompt(new SelectionPrompt<string>()
+		var realmSelection = args.Quiet
+			?	FindBestDefaultRealm()
+			: AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
 				.AddBeamHightlight()
-		);
+			);
 		var realm = realms.FirstOrDefault(g => realmSelection.Contains(g.Pid) && !g.Archived) ?? realms.First(g => g.IsDev);
 		return realm.Pid;
+
+		string FindBestDefaultRealm(int allowedDepth=2) // a depth of 2 signals a "dev" realm. 
+		{
+			if (allowedDepth < 0)
+			{
+				// the min depth is zero (a production realm), so at this point, there are NO realms left to use as the default.
+				throw new CliException(
+					"There are no valid default realms. Please select a realm manually with the --pid option");
+			}
+			
+			var realmsAtDepth = realms.Where(r => !r.Archived && r.Depth >= allowedDepth).ToList();
+			if (realmsAtDepth.Count == 0)
+			{
+				// uh oh, there are no non-archived realms at this depth. 
+				//  it isn't ideal, but try looking for realms at a lower depth (staging, and production)
+				return FindBestDefaultRealm(allowedDepth - 1);
+			}
+
+			// order the realms by PID, because PIDs are sequentially issued (higher pids mean later creation date)
+			return realmsAtDepth
+				.OrderBy(r => r.Pid)
+				.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}")
+				.First();
+		}
 	}
 
 	public void ValidationRedirection(InvocationContext context, Command command, InitCommandArgs args, StringBuilder errorStream,
