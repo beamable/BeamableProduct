@@ -162,10 +162,6 @@ jobs:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
-    permissions:   
-      id-token: write
-      contents: write   
-      packages: read
     concurrency:
       group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
       cancel-in-progress: true
