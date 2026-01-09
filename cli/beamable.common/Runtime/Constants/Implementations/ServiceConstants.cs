@@ -79,6 +79,11 @@ namespace Beamable.Common
 				public const string PATH_CALLABLE_METHOD_NAME_KEY = "x-beamable-callable-method-name";
 				public const string PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY = "x-beamable-route-source-client-prefix";
 				
+				/// <summary>
+				/// OpenAPI extension that describes the semantic type of a primitive field.
+				/// </summary>
+				public const string SCHEMA_SEMANTIC_TYPE_NAME_KEY = "x-beamable-semantic-type";
+				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY = "federationClassName";
