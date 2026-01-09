@@ -7,10 +7,10 @@ using static cli.Services.Web.Helpers.OpenApiMethodNameGenerator;
 namespace cli.Services.Web.Helpers;
 
 public record BuildAndAddMethodParams(
-	TsClass TsClass,
+	List<TsFunction> TsFunctions,
 	Dictionary<string, TsImport> TsImports,
 	List<TsEnum> Enums,
-	string MethodName,
+	string FunctionName,
 	List<TsFunctionParameter> RequiredParams,
 	TsFunctionParameter BodyParam,
 	List<TsFunctionParameter> OptionalParams,
@@ -25,7 +25,10 @@ public record BuildAndAddMethodParams(
 
 public static class WebApi
 {
+	private static readonly HashSet<string> ConstantParamNames = new();
+
 	public static readonly TsFile API_BARREL_FILE = new("index");
+	public static readonly TsFile API_CONSTANT_FILE = new("constants");
 
 	public static void BuildApiBarrel(GeneratedFileDescriptor fileDescriptor)
 	{
@@ -34,44 +37,52 @@ public static class WebApi
 		API_BARREL_FILE.AddExport(tsExport);
 	}
 
+	private static void BuildApiConstants()
+	{
+		var tsConstants = ConstantParamNames.Select(paramName =>
+			new TsVariable($"{paramName}Placeholder").AddModifier(TsModifier.Export).AsConst()
+				.WithInitializer(new TsLiteralExpression($"{{{paramName}}}")));
+
+		foreach (var tsConstant in tsConstants)
+			API_CONSTANT_FILE.AddDeclaration(tsConstant);
+	}
+
 	public static List<GeneratedFileDescriptor> GenerateApiModules(IReadOnlyList<OpenApiDocument> ctxDocuments,
 		List<TsEnum> enums)
 	{
 		var resources = new List<GeneratedFileDescriptor>();
-		var apiDeclarations = new Dictionary<string, (Dictionary<string, TsImport>, TsClass)>();
+		var apiDeclarations = new Dictionary<string, (Dictionary<string, TsImport>, List<TsFunction>)>();
 		var httpRequester = new TsIdentifier("HttpRequester");
 		var httpResponse = new TsIdentifier("HttpResponse");
-		var requester = new TsIdentifier("r");
 
 		foreach (var document in ctxDocuments)
 		{
-			var apiName = ToPascalCaseIdentifier(document.Info.Title.Split(' ').First()) + "Api";
+			var services = document.Info.Title.Split(' ');
+			var serviceName = services.First();
+			var serviceType = services.Last();
+			var apiName = ToPascalCaseIdentifier(serviceName) + "Api";
 			if (apiDeclarations.TryGetValue(apiName, out var declaration))
 			{
-				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums);
+				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType);
 				continue;
 			}
 
 			var tsImports = new Dictionary<string, TsImport>();
-			var tsClass = new TsClass(apiName).AddModifier(TsModifier.Export);
-			var tsConstructorParam =
-				new TsConstructorParameter(requester.Identifier, TsType.Of(httpRequester.Identifier))
-					.AddModifier(TsModifier.Private | TsModifier.Readonly);
-			var tsConstructor = new TsConstructor().AddParameter(tsConstructorParam);
-			tsClass.SetConstructor(tsConstructor);
-
-			GenerateApiMethod(document, tsImports, tsClass, enums);
-			apiDeclarations.Add(apiName, (tsImports, tsClass));
+			var tsFunctions = new List<TsFunction>();
+			GenerateApiMethod(document, tsImports, tsFunctions, enums, serviceName, serviceType);
+			apiDeclarations.Add(apiName, (tsImports, tsFunctions));
 		}
 
-		foreach ((string apiName, (Dictionary<string, TsImport> tsImports, TsClass tsApiClass)) in apiDeclarations)
+		foreach ((string apiName, (Dictionary<string, TsImport> tsImports, List<TsFunction> tsFunctions)) in
+		         apiDeclarations)
 		{
 			var tsFile = new TsFile(apiName);
 			var tsImportHttpRequester =
-				new TsImport($"@/network/http/types/{httpRequester.Identifier}").AddNamedImport(
+				new TsImport($"@/network/http/types/{httpRequester.Identifier}", typeImportOnly: true).AddNamedImport(
 					httpRequester.Identifier);
 			var tsImportHttpResponse =
-				new TsImport($"@/network/http/types/{httpResponse.Identifier}").AddNamedImport(httpResponse.Identifier);
+				new TsImport($"@/network/http/types/{httpResponse.Identifier}", typeImportOnly: true).AddNamedImport(
+					httpResponse.Identifier);
 			var tsImportMakeApiRequest =
 				new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest");
 
@@ -79,10 +90,16 @@ public static class WebApi
 			tsImports.TryAdd("httpResponse", tsImportHttpResponse);
 			tsImports.TryAdd("makeApiRequest", tsImportMakeApiRequest);
 
-			foreach (var kvp in tsImports.OrderBy(kvp => kvp.Key))
+			// Order by: type-imports last (true → 1), non-type first (false → 0), then alphabetically
+			var orderedTsImports = tsImports
+				.OrderBy(kvp => kvp.Value.TypeImportOnly ? 1 : 0)
+				.ThenBy(kvp => kvp.Key);
+
+			foreach (var kvp in orderedTsImports)
 				tsFile.AddImport(kvp.Value);
 
-			tsFile.AddDeclaration(tsApiClass);
+			foreach (var tsFunction in tsFunctions)
+				tsFile.AddDeclaration(tsFunction);
 
 			resources.Add(new GeneratedFileDescriptor
 			{
@@ -90,11 +107,12 @@ public static class WebApi
 			});
 		}
 
+		BuildApiConstants();
 		return resources;
 	}
 
 	private static void GenerateApiMethod(OpenApiDocument document, Dictionary<string, TsImport> tsImports,
-		TsClass tsClass, List<TsEnum> enums)
+		List<TsFunction> tsFunctions, List<TsEnum> enums, string serviceName, string serviceType)
 	{
 		foreach (var (apiEndpoint, pathItem) in document.Paths)
 		{
@@ -107,21 +125,22 @@ public static class WebApi
 
 			foreach (var (httpMethod, operation) in pathItem.Operations)
 			{
-				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsClass, enums);
+				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsFunctions, enums,
+					serviceName, serviceType);
 			}
 		}
 	}
 
 	private static void ProcessOperation(string apiEndpoint, OperationType httpMethod, OpenApiOperation operation,
-		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, TsClass tsClass,
-		List<TsEnum> enums)
+		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, List<TsFunction> tsFunctions,
+		List<TsEnum> enums, string serviceName, string serviceType)
 	{
 		if (!TryGetMediaTypeAndResponseType(operation, out var responseType))
 			return;
 
 		AddResponseTypeImport(tsImports, responseType);
 
-		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation);
+		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation, serviceName, serviceType);
 		var deprecatedDoc = DetermineIfDeprecated(operation);
 		var apiMethodType = httpMethod.ToString().ToUpper();
 		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
@@ -130,10 +149,13 @@ public static class WebApi
 		var modules = new List<string>();
 		var requiredParams = new List<TsFunctionParameter>();
 		var optionalParams = new List<TsFunctionParameter>();
-		var paramCommentList = new List<string>();
+		var paramCommentList = new List<string>
+		{
+			$"@param requester - The `HttpRequester` type to use for the API request."
+		};
 		var methodBodyStatements = new List<TsNode>();
 		var queriesObjectLiteral = new TsObjectLiteralExpression();
-		var endpointVariable = new TsVariable("e");
+		var endpointVariable = new TsVariable("endpoint");
 
 		var hasRequestBody = false;
 		var bodyParam = AddBodyParameterIfExist(operation, payload, modules, paramCommentList, ref hasRequestBody,
@@ -150,9 +172,8 @@ public static class WebApi
 		tsImports.TryAdd("makeApiRequest", new TsImport("@/utils/makeApiRequest").AddNamedImport("makeApiRequest"));
 
 		var propsLiteral = new TsObjectLiteralExpression()
-			.AddMember(new TsObjectLiteralMember(new TsIdentifier("r"),
-				new TsMemberAccessExpression(new TsIdentifier("this"), "r")))
-			.AddMember(new TsObjectLiteralMember(new TsIdentifier("e"), new TsIdentifier("e")))
+			.AddMember(new TsObjectLiteralMember(new TsIdentifier("r"), new TsIdentifier("requester")))
+			.AddMember(new TsObjectLiteralMember(new TsIdentifier("e"), endpointVariable.Identifier))
 			.AddMember(new TsObjectLiteralMember(new TsIdentifier("m"), new TsIdentifier(apiMethodType)));
 
 		if (apiParameters.Any(p => p.In == ParameterLocation.Query))
@@ -167,7 +188,7 @@ public static class WebApi
 			headerParams.ForEach(headerParam =>
 			{
 				paramCommentList.Add(
-					$"@param {{{TsType.String.Render()}}} {gamertag.Identifier} - {headerParam.Description ?? $"The `{headerParam.Name}` header to include in the API request."}");
+					$"@param {gamertag.Identifier} - {headerParam.Description ?? $"The `{headerParam.Name}` header to include in the API request."}");
 			});
 			propsLiteral.AddMember(
 				new TsObjectLiteralMember(new TsIdentifier("g"), gamertag));
@@ -187,7 +208,7 @@ public static class WebApi
 		methodBodyStatements.Add(new TsComment("Make the API request"));
 		methodBodyStatements.Add(new TsReturnStatement(apiMethodCall));
 
-		var @params = new BuildAndAddMethodParams(tsClass, tsImports, enums, methodName, requiredParams, bodyParam,
+		var @params = new BuildAndAddMethodParams(tsFunctions, tsImports, enums, methodName, requiredParams, bodyParam,
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
 			modules, headerParams);
 		BuildAndAddMethod(@params);
@@ -217,14 +238,16 @@ public static class WebApi
 	private static void AddResponseTypeImport(Dictionary<string, TsImport> tsImports, string responseType)
 	{
 		tsImports.TryAdd(responseType,
-			new TsImport($"@/__generated__/schemas/{responseType}").AddNamedImport(responseType));
+			new TsImport($"@/__generated__/schemas/{responseType}", typeImportOnly: true).AddNamedImport(responseType));
 	}
 
 	private static (bool requiresAuth, string requiresAuthRemarks) DetermineAuth(
-		OpenApiOperation operation)
+		OpenApiOperation operation, string serviceName, string serviceType)
 	{
-		var requiresAuth = operation.Security.Count >= 1 &&
-		                   operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+		var requiresAuth = !serviceType.Equals("basic", StringComparison.InvariantCultureIgnoreCase) ||
+		                   serviceName.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+		                   (operation.Security.Count >= 1 &&
+		                    operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user"));
 		var remarks = requiresAuth
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;
@@ -253,7 +276,7 @@ public static class WebApi
 			requestType = OpenApiTsTypeMapper.Map(requestSchema, ref modules);
 			hasRequestBody = true;
 			paramCommentList.Add(
-				$"@param {{{requestType.Render()}}} {payloadIdentifier.Identifier} - The `{requestType.Render()}` instance to use for the API request");
+				$"@param {payloadIdentifier.Identifier} - The `{requestType.Render()}` instance to use for the API request");
 			bodyParam = new TsFunctionParameter(payloadIdentifier.Identifier, requestType);
 		}
 		else
@@ -318,7 +341,7 @@ public static class WebApi
 			}
 
 			var tsType = OpenApiTsTypeMapper.Map(paramSchema, ref modules);
-			paramCommentList.Add($"@param {{{tsType.Render()}}} {paramName} - {paramDescription}");
+			paramCommentList.Add($"@param {paramName} - {paramDescription}");
 
 			if (param.Required)
 				requiredParams.Add(new TsFunctionParameter(paramName, tsType));
@@ -335,19 +358,21 @@ public static class WebApi
 
 		foreach (var param in apiParameters.Where(p => p.In == ParameterLocation.Path))
 		{
+			var paramName = param.Name;
 			var encodeParamInvocation = new TsInvokeExpression(
 				new TsIdentifier("endpointEncoder"), new TsIdentifier(param.Name));
-			var tsImportObjectIdPlaceholder =
-				new TsImport("@/constants").AddNamedImport("objectIdPlaceholder");
+			var tsImportParamNamePlaceholder =
+				new TsImport("@/__generated__/apis/constants").AddNamedImport($"{paramName}Placeholder");
 			var tsImportEndpointEncoder =
 				new TsImport("@/utils/endpointEncoder").AddNamedImport("endpointEncoder");
-			tsImports.TryAdd("objectIdPlaceholder", tsImportObjectIdPlaceholder);
+
+			tsImports.TryAdd($"{paramName}Placeholder", tsImportParamNamePlaceholder);
 			tsImports.TryAdd("endpointEncoder", tsImportEndpointEncoder);
 
 			endpointReplaceExpression = new TsMemberAccessExpression(endpointReplaceExpression, "replace");
-
 			endpointReplaceExpression = new TsInvokeExpression(endpointReplaceExpression,
-				new TsIdentifier("objectIdPlaceholder"), encodeParamInvocation);
+				new TsIdentifier($"{paramName}Placeholder"), encodeParamInvocation);
+			ConstantParamNames.Add(paramName);
 		}
 
 		endpoint.WithInitializer(endpointReplaceExpression);
@@ -369,39 +394,43 @@ public static class WebApi
 		var paramComments = p.ParamCommentList.Count > 0
 			? string.Join("\n", p.ParamCommentList) + "\n"
 			: string.Empty;
-		var tsMethodReturnType = TsType.Generic("Promise",
+		var tsFunctionReturnType = TsType.Generic("Promise",
 			TsType.Generic("HttpResponse", TsType.Of(p.ResponseType)));
-		var tsMethodComment = new TsComment(
-			$"{p.RequiresAuthRemarks}{p.DeprecatedDoc}{paramComments}@returns {{{tsMethodReturnType.Render()}}} A promise containing the HttpResponse of {p.ResponseType}",
+		var tsFunctionComment = new TsComment(
+			$"{p.RequiresAuthRemarks}{p.DeprecatedDoc}{paramComments}",
 			TsCommentStyle.Doc);
-		var tsMethod = new TsMethod(p.MethodName)
-			.SetReturnType(tsMethodReturnType)
-			.AddModifier(TsModifier.Async)
-			.AddComment(tsMethodComment);
+		var tsFunction = new TsFunction(p.FunctionName)
+			.SetReturnType(tsFunctionReturnType)
+			.AddModifier(TsModifier.Export | TsModifier.Async)
+			.AddComment(tsFunctionComment);
+
+		var requester = new TsIdentifier("requester");
+		tsFunction.AddParameter(new TsFunctionParameter(requester.Identifier, TsType.Of("HttpRequester")));
+
 		// add required path and query parameters
 		foreach (var requiredParam in p.RequiredParams)
-			tsMethod.AddParameter(requiredParam);
+			tsFunction.AddParameter(requiredParam);
 
 		// add required header parameters
 		foreach (var headerParam in p.HeaderParams.Where(param => param.Required))
-			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name, TsType.String));
+			tsFunction.AddParameter(new TsFunctionParameter(headerParam.Name, TsType.String));
 
 		// add body parameter if exists
 		if (p.BodyParam != null)
-			tsMethod.AddParameter(p.BodyParam);
+			tsFunction.AddParameter(p.BodyParam);
 
 		// add optional query parameters
 		foreach (var optionalParam in p.OptionalParams)
-			tsMethod.AddParameter(optionalParam);
+			tsFunction.AddParameter(optionalParam);
 
 		// add optional header parameters
 		foreach (var headerParam in p.HeaderParams.Where(param => !param.Required))
-			tsMethod.AddParameter(new TsFunctionParameter(headerParam.Name.Split('-').Last().ToLower(), TsType.String)
+			tsFunction.AddParameter(new TsFunctionParameter(headerParam.Name.Split('-').Last().ToLower(), TsType.String)
 				.AsOptional());
 
 		AddModuleImports(p.TsImports, p.Modules, p.Enums);
-		tsMethod.AddBody(p.MethodBodyStatements.ToArray());
-		p.TsClass.AddMethod(tsMethod);
+		tsFunction.AddBody(p.MethodBodyStatements.ToArray());
+		p.TsFunctions.Add(tsFunction);
 	}
 
 	private static void AddModuleImports(Dictionary<string, TsImport> tsImports, List<string> modules,
@@ -411,8 +440,8 @@ public static class WebApi
 		{
 			tsImports.TryAdd(mod,
 				enums.Any(e => e.Name == mod)
-					? new TsImport($"@/__generated__/schemas/enums/{mod}").AddNamedImport(mod)
-					: new TsImport($"@/__generated__/schemas/{mod}").AddNamedImport(mod));
+					? new TsImport($"@/__generated__/schemas/enums/{mod}", typeImportOnly: true).AddNamedImport(mod)
+					: new TsImport($"@/__generated__/schemas/{mod}", typeImportOnly: true).AddNamedImport(mod));
 		}
 	}
 }

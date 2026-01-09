@@ -35,6 +35,7 @@ namespace Beamable.Api.Sessions
 		/// </summary>
 		/// <param name="gamerTag">The player id of the player to find the <see cref="Session"/> for.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="Session"/></returns>
+		[Obsolete("This will be removed in a future version.")]
 		Promise<Session> GetHeartbeat(long gamerTag);
 
 		/// <summary>
@@ -62,7 +63,6 @@ namespace Beamable.Api.Sessions
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/accounts-feature">Accounts</a> feature documentation
 	/// - See Beamable.API script reference
 	///
 	/// ![img beamable-logo]

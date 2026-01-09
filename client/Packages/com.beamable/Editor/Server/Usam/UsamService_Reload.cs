@@ -29,17 +29,30 @@ namespace Beamable.Server.Editor.Usam
 			// make sure the cli has been initialized, 
 			//  otherwise there may be settings or files that haven't 
 			//  been flushed yet. 
-			await _ctx.BeamCli.OnReady;
+			// await _ctx.BeamCli.OnReady;
 
+			Promise updatePromise = UpdateUnityManifest(taskId);
+			ListenForStatus();
+			ListenForDocker();
+			ListenForBuildChanges();
+			await updatePromise;
+		}
+
+		private Promise UpdateUnityManifest(int taskId)
+		{
 			var command = _cli.UnityManifest();
-			var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
-			checkCommand.OnStreamCheckResultsForBeamoId(cb =>
+
+			if (!_config.DisableAutoChecks)
 			{
-				if (latestReloadTaskId != taskId)
-					return;
-				_requiredUpgrades.Add(cb.data);
-			});
-			_ = checkCommand.Run();
+				var checkCommand = _cli.ChecksScan(new ChecksScanArgs());
+				checkCommand.OnStreamCheckResultsForBeamoId(cb =>
+				{
+					if (latestReloadTaskId != taskId)
+						return;
+					_requiredUpgrades.Add(cb.data);
+				});
+				_ = checkCommand.Run();
+			}
 			
 			
 			command.OnStreamShowManifestCommandOutput(cb =>
@@ -76,10 +89,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			
 			var p = command.Run();
-			ListenForStatus();
-			ListenForDocker();
-			ListenForBuildChanges();
-			await p;
+			return p;
 		}
 
 		private void OnBeamEditorRealmChanged(RealmView realm)

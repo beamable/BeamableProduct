@@ -1,7 +1,13 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 export * from './AccountsApi';
 export * from './AnnouncementsApi';
 export * from './AuthApi';
 export * from './BeamoApi';
+export * from './BeamoOtelApi';
 export * from './CalendarsApi';
 export * from './CloudsavingApi';
 export * from './CommerceApi';

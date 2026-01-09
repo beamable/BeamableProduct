@@ -6,6 +6,8 @@ namespace cli.Services.Web.CodeGen;
 /// </summary>
 public abstract class TsNode
 {
+	protected bool EmitJavaScript;
+
 	/// <summary>
 	/// Writes the node to the given <see cref="TsCodeWriter"/>.
 	/// </summary>

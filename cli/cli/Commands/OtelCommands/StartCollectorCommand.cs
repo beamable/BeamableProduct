@@ -1,7 +1,7 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Server;
-using cli.Services;
-using System.Net;
+using System.CommandLine;
 
 namespace cli.OtelCommands;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -9,13 +9,7 @@ using Otel = Beamable.Common.Constants.Features.Otel;
 [Serializable]
 public class StartCollectorCommandArgs : CommandArgs
 {
-}
-
-public class CollectorItemToDownload
-{
-	public string fileName;
-	public string downloadUrl;
-	public string filePath;
+	public bool Detach;
 }
 
 public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
@@ -26,19 +20,36 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 
 	public override void Configure()
 	{
+		AddOption(new Option<bool>("--detach", () => true, "If it is false the collector process will run indefinitely"),
+			(arg, b) => arg.Detach = b);
 	}
 
 	public override async Task Handle(StartCollectorCommandArgs args)
 	{
-		AssertEnvironmentVars();//TODO this requirement is just while we don't have a way to get credentials from beamo
+		await AssertEnvironmentVars(args);
+		
+		var CollectorStatus = await CollectorManager.IsCollectorRunning( args.Lifecycle.CancellationToken , BeamableZLoggerProvider.LogContext.Value);
 
-		var basePath = CollectorManager.GetCollectorBasePathForCli();
-		var processId = await CollectorManager.StartCollector(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
+		if (!CollectorStatus.isRunning)
+		{
+			var basePath = CollectorManager.GetCollectorBasePathForCli();
+			var status = await CollectorManager.StartCollectorAndWait(basePath, true, args.Detach, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 
-		Log.Information($"Collector with process id [{processId}] started successfully");
+			Log.Information($"Collector with process id [{status.pid}] started successfully");
+
+			
+			if (!args.Detach)
+			{
+				await Task.Delay(-1);
+			}
+		}
+		else
+		{
+			Log.Information($"The collector process is already running. Please stop the collector process and try again.");
+		}
 	}
 
-	private void AssertEnvironmentVars()
+	private async Promise AssertEnvironmentVars(StartCollectorCommandArgs args)
 	{
 		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
@@ -47,34 +58,21 @@ public class StartCollectorCommand : AppCommand<StartCollectorCommandArgs>
 			throw new Exception("There is no port configured for the collector discovery");
 		}
 
-		if (!Int32.TryParse(port, out int portNumber))
+		if (!Int32.TryParse(port, out int _))
 		{
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_HOST);
-
-		if(string.IsNullOrEmpty(host))
+		try
 		{
-			throw new Exception("There is no host configured for the collector discovery");
+			var res = await args.OtelApi.GetOtelAuthWriterConfig();
+			CollectorManager.AddAuthEnvironmentVars(res);
+			CollectorManager.AddCollectorConfigurationToEnvironment();
 		}
-
-		var user = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_USERNAME);
-		if(string.IsNullOrEmpty(user))
+		catch (Exception ex)
 		{
-			throw new Exception("There is no user configured for the collector startup");
-		}
-
-		var passd = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD);
-		if(string.IsNullOrEmpty(passd))
-		{
-			throw new Exception("There is no password configured for the collector startup");
-		}
-		
-		var chHost = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT);
-		if(string.IsNullOrEmpty(chHost))
-		{
-			throw new Exception("There is no clickhouse endpoint configured for the collector startup");
+			throw new CliException(
+				message: $"An error happened while trying to get otel credentials from Beamo. Message=[{ex.Message}] StackTrace=[{ex.StackTrace}]");
 		}
 	}
 }

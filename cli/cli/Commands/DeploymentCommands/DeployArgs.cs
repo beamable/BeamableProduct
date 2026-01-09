@@ -10,6 +10,16 @@ public delegate void ProgressHandler(string name, float ratio, bool isKnownLengt
 
 public class DeployArgs
 {
+
+	public static void AddDockerComposeOutputOptions<TArgs>(AppCommand<TArgs> command)
+		where TArgs : CommandArgs, IHasDockerComposeArgs
+	{
+		command.AddOption(new Option<string>(new string[]{"--docker-compose-dir", "-dcd"}, () => "", 
+				description: $"Specify an output path where a new docker-compose project will be created. " +
+				             $"The compose file can be used to run services locally. " +
+				             $"(Note, existing files in this folder will be overwritten)"),
+			(args, i) => args.DockerComposeDirectoryPath = i);
+	}
 	
 	public static void AddPlanOptions<TArgs>(AppCommand<TArgs> command)
 		where TArgs : CommandArgs, IHasDeployPlanArgs

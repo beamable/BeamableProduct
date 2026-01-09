@@ -1,4 +1,9 @@
-import { OnlineStatus } from './OnlineStatus';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { OnlineStatus } from './OnlineStatus';
 
 export type PlayersStatusResponse = { 
   playersStatus?: OnlineStatus[]; 

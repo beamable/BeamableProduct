@@ -9,6 +9,7 @@ public struct UnrealPropertyDeclaration
 	public UnrealSourceGenerator.NamespacedType PropertyNamespacedType;
 	public string PropertyName;
 	public string PropertyDisplayName;
+	public string AsParameterName;
 
 	/// <summary>
 	/// This is the type the optional wraps around. 
@@ -33,6 +34,41 @@ public struct UnrealPropertyDeclaration
 
 
 	public string BriefCommentString;
+
+	/// <summary>
+	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
+	/// Funny does not mean funny here.
+	/// </summary>
+	public static string GetSanitizedPropertyName(string n)
+	{
+		var escaped = n.StartsWith('$') ? n[1..] : n;
+		return escaped;
+	}
+
+	/// <summary>
+	/// This escapes any names that match a UE global variable declaration so we don't inadvertently use them as parameter names.
+	/// </summary>
+	public static string GetSanitizedParameterName(string n)
+	{
+		// UNREAL GLOBAL VARIABLES
+		string[] KnownUnrealGlobalVariables = new[]
+		{
+			"LogPath", "LogController", "LogPhysics", "LogBlueprint", "LogBlueprintUserMessages", "LogAnimation", "LogRootMotion", "LogLevel", "LogSkeletalMesh", "LogStaticMesh", "LogNet", "LogNetLifecycle",
+			"LogNetSubObject", "LogRep", "LogNetPlayerMovement", "LogNetTraffic", "LogRepTraffic", "LogNetDormancy", "LogSkeletalControl", "LogSubtitle", "LogTexture", "LogTextureUpload", "LogPlayerManagement",
+			"LogSecurity", "LogEngineSessionManager", "LogViewport"
+		};
+
+		var escaped = n.StartsWith('$') ? n[1..] : n;
+		escaped = KnownUnrealGlobalVariables.Contains(escaped) ? $"_{escaped}" : escaped;
+		return escaped;
+	}
+	
+
+	/// <summary>
+	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
+	/// Funny does not mean funny here.
+	/// </summary>
+	public static string GetSanitizedPropertyDisplayName(string n) => n.StartsWith('$') ? n[1..] : n;
 
 	public void IntoProcessMap(Dictionary<string, string> helperDict)
 	{
@@ -72,12 +108,12 @@ public struct UnrealPropertyDeclaration
 
 	// Fallback for non-supported types
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
-	
-	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
-	
-	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 
-	
+	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"UBeamJsonUtils::SerializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
+
+	public const string UNREAL_RAW_PRIMITIVE_DESERIALIZE = @$"UBeamJsonUtils::DeserializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢);";
+
+
 	public const string UNREAL_JSON_FIELD_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -88,7 +124,7 @@ public struct UnrealPropertyDeclaration
 		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), UBeamJsonUtils::EnumToSerializationName(₢{nameof(PropertyName)}₢));";
 
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeRawPrimitive(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
+		$@"UBeamJsonUtils::DeserializeRawPrimitive(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢);";
 
 	public const string U_STRUCT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
@@ -106,31 +142,31 @@ public struct UnrealPropertyDeclaration
 		$@"UBeamJsonUtils::SerializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string ARRAY_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetArrayField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(Bag->GetArrayField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string MAP_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string MAP_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetObjectField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string MAP_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string MAP_SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(Bag->GetObjectField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string SEMTYPE_U_PROPERTY_DESERIALIZE =
-		$@"UBeamJsonUtils::DeserializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(Bag->TryGetField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
+		$@"UBeamJsonUtils::DeserializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string OPTIONAL_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeOptional<₢{nameof(NonOptionalTypeName)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
@@ -212,7 +248,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_SERIALIZE;
-		
+
 		if (unrealType.IsRawPrimitive())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
@@ -240,7 +276,7 @@ public struct UnrealPropertyDeclaration
 			{
 				return isSemType ? OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_WRAPPER_U_PROPERTY_DESERIALIZE;
 			}
-			
+
 			return isSemType ? OPTIONAL_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_U_PROPERTY_DESERIALIZE;
 		}
 
@@ -259,10 +295,10 @@ public struct UnrealPropertyDeclaration
 			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
-		
+
 		if (unrealType.IsUnrealJson())
 			return UNREAL_JSON_FIELD_DESERIALIZE;
-		
+
 		if (unrealType.IsRawPrimitive())
 			return UNREAL_RAW_PRIMITIVE_DESERIALIZE;
 
@@ -275,8 +311,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.IsUnrealStruct())
 			return U_STRUCT_U_PROPERTY_DESERIALIZE;
-			
-		
+
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}
@@ -289,6 +324,15 @@ public struct UnrealPropertyDeclaration
 		do
 		{
 			idx = fieldName.IndexOf("_", wordStartIdx, StringComparison.Ordinal);
+
+			// If we start with "_", we change the field name after the underscore
+			if (idx == 0)
+			{
+				wordStartIdx = 1;
+				idx = -1;
+			}
+
+			// // Otherwise, we keep the full name if 
 			var length = idx == -1 ? fieldName.Length - wordStartIdx : idx - wordStartIdx;
 
 			var word = fieldName.AsSpan(wordStartIdx, length);
@@ -303,6 +347,6 @@ public struct UnrealPropertyDeclaration
 			stringBuilder.Insert(0, "b");
 		}
 
-		return stringBuilder.ToString();
+		return GetSanitizedPropertyName(stringBuilder.ToString());
 	}
 }

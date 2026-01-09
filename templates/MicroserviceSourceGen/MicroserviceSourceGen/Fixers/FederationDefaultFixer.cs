@@ -16,16 +16,12 @@ namespace Beamable.Microservice.SourceGen.Fixers;
 /// <summary>
 /// This class is responsible for Fixing Federations issues which we cannot automatically apply the fixes
 /// The fix message will appear on the IDE, inserting a comment line with a pragma warning disable for that diagnostics.
+/// This class is not being used at the moment as some of the Diagnostics that was using it were removed as we don't have Federation.json anymore.
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FederationDefaultFixer)), Shared]
 public class FederationDefaultFixer : CodeFixProvider
 {
-	public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-		
-		Diagnostics.Fed.DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID,
-		Diagnostics.Fed.CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID,
-		Diagnostics.Fed.FEDERATION_ID_INVALID_CONFIG_FILE_ID
-	);
+	public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray<string>.Empty;
 
 	public sealed override FixAllProvider GetFixAllProvider() => null;
 	
@@ -72,30 +68,6 @@ public class FederationDefaultFixer : CodeFixProvider
 
 	private string GetFixMessages(Diagnostic diagnostic)
 	{
-		switch (diagnostic.Id)
-		{
-			case Diagnostics.Fed.DECLARED_FEDERATION_MISSING_FROM_SOURCE_GEN_CONFIG_DIAGNOSTIC_ID:
-
-				return string.Format(
-					"Add this ID by running `dotnet beam fed add {0} {1} {2}` from your project's root directory.",
-					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
-					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
-					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]
-				);
-
-			case Diagnostics.Fed.CONFIGURED_FEDERATION_MISSING_FROM_CODE_DIAGNOSTIC_ID:
-				return string.Format(
-					"Remove this ID by running `dotnet beam fed remove {0} {1} {2}` from your project's root directory.",
-					diagnostic.Properties[Diagnostics.Fed.PROP_MICROSERVICE_NAME],
-					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID],
-					diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_INTERFACE]);
-			case Diagnostics.Fed.FEDERATION_ID_INVALID_CONFIG_FILE_ID:
-				string fedId = diagnostic.Properties[Diagnostics.Fed.PROP_FEDERATION_ID];
-				string fixedFedId = FederationIdNameFixer.FixFederationIdName(fedId);
-				return
-					$"Open `federations.json` from your project's root directory and rename {fedId} for {fixedFedId}";
-			default:
-				return diagnostic.GetMessage();
-		}
+		return diagnostic.GetMessage();
 	}
 }

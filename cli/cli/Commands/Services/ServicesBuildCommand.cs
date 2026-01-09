@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 using cli.OtelCommands;
+using cli.Utils;
 using microservice.Extensions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -85,7 +86,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServicesBuildCommandOutput>
 	, IResultSteam<ProgressStream, ServicesBuiltProgress>
 {
-	public ServicesBuildCommand() : base("build", "Build a set of services into docker images")
+	public ServicesBuildCommand() : base("build", ServicesDeletionNotice.REMOVED_PREFIX + "Build a set of services into docker images")
 	{
 	}
 
@@ -266,7 +267,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\" -p:CopyToLinkedProjects=\"false\""
 			: "";
 		var runtimeArg = forceCpu
-			? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
+			? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamPublish=\"true\" -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
 			: $"--use-current-runtime ";
 		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
@@ -307,6 +308,57 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			outputDirSupport = buildDirSupport,
 			report = report
 		};
+	}
+
+	public static bool TryExtractAllMessages(StringBuilder buffer, out List<BuildkitMessage> messages)
+	{
+		messages = new List<BuildkitMessage>();
+		while (TryExtractFirstMessage(buffer, out var msg))
+		{
+			messages.Add(msg);
+		}
+
+		return messages.Count > 0;
+	}
+	public static bool TryExtractFirstMessage(StringBuilder buffer, out BuildkitMessage msg)
+	{
+		var line = buffer.ToString();
+		msg = null;
+		var openingBracketIndex = line.IndexOf('{');
+		if (openingBracketIndex == -1)
+		{
+			return false;
+		}
+		var index = openingBracketIndex;
+		var parsed = false;
+		while (!parsed)
+		{
+			var closingBracketIndex = line.IndexOf('}', index);
+			if (closingBracketIndex == -1)
+			{
+				break;
+			}
+
+			var json = line.Substring(openingBracketIndex, (closingBracketIndex - openingBracketIndex) + 1);
+			try
+			{
+				msg = System.Text.Json.JsonSerializer.Deserialize<BuildkitMessage>(json,
+					new JsonSerializerOptions
+					{
+						IncludeFields = true,
+					});
+
+				buffer.Remove(0, closingBracketIndex + 1);
+				parsed = true;
+				return true;
+			}
+			catch
+			{
+				index = closingBracketIndex + 1;
+			}
+		}
+
+		return false;
 	}
 
 	/// <summary>
@@ -418,11 +470,19 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			message = "starting docker build..."
 		});
 
+		var defaultBaseImageTag = "8.0-alpine";
+		var targetFramework = http.Metadata.msbuildProject.GetPropertyValue("TargetFramework");
+		if (targetFramework.Contains("net10.0"))
+		{
+			defaultBaseImageTag = "10.0-alpine";
+		}
+		
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
+		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
@@ -435,26 +495,11 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();
+		var entireBuffer = new StringBuilder();
 		var statusBuffer = new StringBuilder();
 		var digestToVertex = new Dictionary<string, BuildkitVertex>();
 		var idToStatus = new Dictionary<string, BuildkitStatus>();
 		string imageId = string.Empty; 
-		bool TryParse(out BuildkitMessage msg)
-		{
-			string json = buffer.ToString();
-			try
-			{
-				msg = System.Text.Json.JsonSerializer.Deserialize<BuildkitMessage>(json,
-					new JsonSerializerOptions { IncludeFields = true });
-				buffer.Clear();
-				return true;
-			}
-			catch
-			{
-				msg = null;
-				return false;
-			}
-		}
 
 		void PostMessage(BuildkitMessage msg)
 		{
@@ -556,9 +601,13 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				lock (buffer)
 				{
 					buffer.Append(line);
-					if (TryParse(out var msg))
+					entireBuffer.Append(line);
+					if (TryExtractAllMessages(buffer, out var messages))
 					{
-						PostMessage(msg);
+						foreach (var message in messages)
+						{
+							PostMessage(message);
+						}
 					}
 				}
 			}));
@@ -574,7 +623,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				isSuccess = false;
 				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message. " +
 				          $"Make sure to gather information about used OS and Docker version." +
-				          $"Here are the status updates: {statusBuffer}");
+				          $"Here are the status updates: {statusBuffer}. Entire buffer=[{entireBuffer}]");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
@@ -598,7 +647,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	/// https://github.com/moby/buildkit/blob/master/api/services/control/control.proto#L115
 	/// of the StatusResponse
 	/// </summary>
-	class BuildkitMessage
+	public class BuildkitMessage
 	{
 		public List<BuildkitVertex> vertexes = new List<BuildkitVertex>();
 		public List<BuildkitStatus> statuses = new List<BuildkitStatus>();
@@ -610,7 +659,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	/// a vertex represents a build step in the docker-file.
 	/// buildkit will publish all the vertexes and then publish status and log updates for each vertex.
 	/// </summary>
-	class BuildkitVertex
+	public class BuildkitVertex
 	{
 		public string digest;
 		public string name;
@@ -630,7 +679,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public List<string> inputs = new List<string>(); 
 	}
 
-	class BuildkitLogs
+	public class BuildkitLogs
 	{
 		public string vertex;
 		public DateTimeOffset timestamp;
@@ -645,7 +694,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public string DecodedMessage => Encoding.UTF8.GetString(Convert.FromBase64String(data));
 	}
 
-	class BuildkitStatus
+	public class BuildkitStatus
 	{
 		public string id;
 		public string vertex;
@@ -657,7 +706,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public bool IsStarted => started.HasValue;
 	}
 
-	class VertexWarning
+	public class VertexWarning
 	{
 		public string vertex;
 		public long level;

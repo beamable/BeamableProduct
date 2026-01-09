@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `net10` support
+
+## [6.1.0] - 2025-10-31
+### Fixed
+- Call for `Services.Stats.GetStats( StatsDomainType.Game, StatsAccessType.Private, Context.UserId)` no longer yields `NoReadAccess`error
+
+### Changed
+- New msbuild property `BeamLogProvider` allows microservice switch between Cloudwatch and Clickhouse logs providers.
+
+## [6.0.0] - 2025-10-14
+
+### Added
+- Microservices can source `[Callable]` methods from multiple base classes
+- Microservice initialization flow uses builder pattern
+- Microservice support dynamic log level configurations per request 
+- Microservices include Open Telemetry collector as part of the build process
+
+### Fixed
+- Project references without assembly names no longer cause `NRE`
+- `StringBuilderPool` no longer throws rare concurrency exception in high traffic cases
+- new projects include `.gitignore` and `.dockerignore`
+
+### Changed
+- Microservices use new Open Telemetry log system
+- Local development uses the developer's access token to authenticate the Microservice
+- `Log.Verbose` is obsolete. Please use `Log.Trace` instead.
+- `Log.Fatal` is obsolete. Please use `Log.Critical` instead.
+- Source generator no longer treats non-partial Microservice classes as an error.
+- Source generator no longer treats multiple Microservice classes as an error.
+- new projects no longer require `[Microservice]` attribute
+
+## [5.4.0] - 2025-08-27
+no changes
+
+## [5.3.0] - 2025-08-05
+no changes
+
+## [5.2.0] - 2025-07-30
+### Added
+- `BeamableBootstrapper.AdjustWorkingDirectory<T>()` function will auto-correct working directory for Microservices
+
+### Fixed
+- `Lobby` type includes `.data` field when used in `[ClientCallable]` methods.
+
+
+## [5.1.0] - 2025-07-23
+### Fixed
+- Non `async` Callables can return `Task` types [4156](https://github.com/beamable/BeamableProduct/issues/4156)
+
 ## [5.0.3] - 2025-06-24
 no changes
 

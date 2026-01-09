@@ -28,6 +28,19 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Tooltip("These are advanced Beamable CLI features. It should not be changed without deeper understanding of Beamable internals.")]
 		public OptionalAdvancedCliSettings AdvancedCli = new OptionalAdvancedCliSettings();
 
+		public bool IgnoreCliVersionRequirement
+		{
+			get
+			{
+				if (AdvancedCli.TryGet(out var settings))
+				{
+					return settings.IgnoreVersionRequirement;
+				}
+
+				return false;
+			}
+		}
+		
 		[Tooltip("UnityHub may delete your PATH variable for the process. In order to customize the path, use this variable. By default, the common usr/local/bin path is included.")]
 		public OptionalListString CustomPathInclusions = new OptionalListString();
 		
@@ -181,16 +194,16 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Serializable]
 		public class AdvancedCliSettings
 		{
-			[Tooltip("When true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
-			public bool UseGlobalCLI;
-
-			public OptionalString UseFromSource = new OptionalString();
+			[Tooltip("By default, the Beamable Unity SDK requires a specific version of the Beam CLI. " +
+			         "However, if this setting is enabled, the SDK will not enforce the requirement. " +
+			         "Please note; things will probably break if you use a different version. ")]
+			public bool IgnoreVersionRequirement;
+			
 		}
 
 		[Serializable]
 		public class OptionalAdvancedCliSettings : Optional<AdvancedCliSettings>
 		{
-
 		}
 	}
 }

@@ -19,21 +19,95 @@ namespace Beamable.Tooling.Common.OpenAPI;
 public class SchemaGenerator
 {
 	/// <summary>
-	/// Finds all complex types used in the specified service methods.
+	/// This struct represents a type that should be included in the OAPI generated for the microservice.
+	/// For the most 
 	/// </summary>
-	/// <param name="startingTypes">The collection of service methods to analyze.</param>
-	/// <returns>An enumeration of complex types found in the service methods.</returns>
-	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<Type> startingTypes)
+	public struct OAPIType : IEquatable<OAPIType>
+	{
+		public ServiceMethod SourceCallable;
+		public Type Type;
+
+		public OAPIType(ServiceMethod method, Type type)
+		{
+			SourceCallable = method;
+			Type = type;
+		}
+
+		public bool IsFromCallable() => SourceCallable != null && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true) != null;
+		public bool IsFromFederation() => SourceCallable != null && SourceCallable.IsFederatedCallbackMethod;
+		public bool IsFromBeamGenerateSchema() => SourceCallable == null && Type.GetCustomAttribute<BeamGenerateSchemaAttribute>() != null;
+
+		public bool IsFromCallableWithNoClientGen() => IsFromCallable() && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
+		public bool ShouldNotGenerateClientCode() => (IsFromFederation() || IsFromCallableWithNoClientGen()) && !IsFromBeamGenerateSchema();
+		
+		public bool IsPrimitive()
+		{
+			return Type.IsPrimitive || Type == typeof(string);
+		}
+
+		public bool IsSerializable() => Type.IsSerializable;
+
+		public bool IsOptional() => typeof(Optional).IsAssignableFrom(Type);
+
+		public bool IsNullable() => Nullable.GetUnderlyingType(Type) != null;
+
+		public bool IsIncluded()
+		{
+			var shouldEmit = true;
+
+			// The type must be serializable as we were bound by Unity's serialization logic (so for legacy reasons, we need this to be true).
+			shouldEmit &= IsSerializable();
+
+			// We don't want to emit primitives, because those are known implicitly by the OAPI spec generation code.
+			shouldEmit &= !IsPrimitive();
+
+			// We don't want to emit generic types for documentation, because the generic aspect will be covered by the openAPI schema itself
+			// No arrays, dictionaries and collections because the OAPI has its own definitions for those (so we don't need to include them as Schemas)
+			shouldEmit &= !Type.IsGenericType;
+			shouldEmit &= !Type.IsArray;
+
+			// Nullables are not supported, use optional instead
+			shouldEmit &= !IsNullable();
+			shouldEmit &= !IsOptional();
+
+			// Only types coming in from callables, federations and marked with BeamGenerateSchema should be found.
+			shouldEmit &= (IsFromCallable() || IsFromFederation() || IsFromBeamGenerateSchema());
+
+			return shouldEmit;
+		}
+
+		public bool Equals(OAPIType other) => Equals(SourceCallable, other.SourceCallable) && Equals(Type, other.Type);
+
+		public override bool Equals(object obj) => obj is OAPIType other && Equals(other);
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				return ((SourceCallable != null ? SourceCallable.GetHashCode() : 0) * 397) ^ (Type != null ? Type.GetHashCode() : 0);
+			}
+		}
+
+		public static bool operator ==(OAPIType left, OAPIType right) => left.Equals(right);
+		public static bool operator !=(OAPIType left, OAPIType right) => !left.Equals(right);
+	}
+
+	/// <summary>
+	/// Finds all complex types that must be included in the OAPI document.
+	/// </summary>
+	/// <param name="startingTypes">The collection of starting <see cref="OAPIType"/>s to analyze.</param>
+	/// <returns>An enumeration of <see cref="OAPIType"/> found in the service methods.</returns>
+	public static IEnumerable<OAPIType> FindAllTypesForOAPI(IEnumerable<OAPIType> startingTypes)
 	{
 		// construct a queue of types that we will need to search over for other types... These types are the entry points into the search.
-		var toExplore = new Queue<Type>();
+		var toExplore = new Queue<OAPIType>();
 		foreach (var startingType in startingTypes)
 		{
 			toExplore.Enqueue(startingType);
 		}
 
 		// construct a set of types we've seen. It starts empty.
-		var seen = new HashSet<Type>();
+		var seen = new HashSet<OAPIType>();
 
 		// perform a BFS over the type graph until we've exhausted all types, or we've hit a safety limit.
 		var safety = 99999;
@@ -41,43 +115,36 @@ public class SchemaGenerator
 		{
 			var curr = toExplore.Dequeue();
 			if (seen.Contains(curr)) continue;
-			if (curr == null) continue;
+			if (curr.Type == null) continue;
 
+			// Keep track of the types we've seen already so we don't double-check it.
 			seen.Add(curr);
 
-			var shouldEmit = true;
-			shouldEmit &= !curr.IsGenericType; // we don't want to emit generic types for documentation, because the generic aspect will be covered by the openAPI schema itself
-			shouldEmit &= !curr.IsPrimitive; // we don't want to emit primitives, because those don't need special documentation
-			shouldEmit &= curr.IsSerializable;
-			shouldEmit &= !curr.IsArray;
-			shouldEmit &= curr != typeof(string);
-			shouldEmit &= !typeof(Optional).IsAssignableFrom(curr);
-			if (shouldEmit)
-			{
-				yield return curr; // add the current type to the final set of types.
-			}
-			
+			// add the current type to the final set of types.
+			if (curr.IsIncluded()) { yield return curr; }
+
 			// expand on this type... 
 			// need to final the serialized properties of the type.
-			var fields = UnityJsonContractResolver.GetSerializedFields(curr);
+			var fields = UnityJsonContractResolver.GetSerializedFields(curr.Type);
 			foreach (var field in fields)
 			{
-				toExplore.Enqueue(field.FieldType);
+				toExplore.Enqueue(new OAPIType(curr.SourceCallable, field.FieldType));
 			}
+
 			// but also, in C#, if this is a list, or a promise, or a task like, then we are about the _generic_ argument involved. 
-			if (curr.IsGenericType)
+			if (curr.Type.IsGenericType)
 			{
-				foreach (var genType in curr.GetGenericArguments())
+				foreach (var genType in curr.Type.GetGenericArguments())
 				{
-					toExplore.Enqueue(genType);
+					toExplore.Enqueue(new OAPIType(curr.SourceCallable, genType));
 				}
 			}
+
 			// if this an array, we need the element type
-			if (curr.IsArray)
+			if (curr.Type.IsArray)
 			{
-				toExplore.Enqueue(curr.GetElementType());
+				toExplore.Enqueue(new OAPIType(curr.SourceCallable, curr.Type.GetElementType()));
 			}
-			
 		}
 
 		if (safety <= 0)
@@ -85,25 +152,25 @@ public class SchemaGenerator
 			throw new InvalidOperationException("Exceeded while-loop safety limit");
 		}
 	}
-	
+
 	/// <summary>
-	/// Finds all complex types used in the specified service methods.
+	/// Finds all complex types used in the specified service methods that must be included in the OAPI document.
 	/// </summary>
 	/// <param name="methods">The collection of service methods to analyze.</param>
 	/// <returns>An enumeration of complex types found in the service methods.</returns>
-	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
+	public static IEnumerable<OAPIType> FindAllTypesForOAPI(IEnumerable<ServiceMethod> methods)
 	{
-		var startingTypes = new List<Type>();
+		var startingTypes = new List<OAPIType>();
 		foreach (var method in methods)
 		{
-			startingTypes.Add(method.Method.ReturnType); // output type of a method
+			startingTypes.Add(new OAPIType(method, method.Method.ReturnType)); // output type of a method
 			foreach (var parameter in method.ParameterInfos)
 			{
-				startingTypes.Add(parameter.ParameterType); // and all input types of the method
+				startingTypes.Add(new OAPIType(method, parameter.ParameterType)); // and all input types of the method
 			}
 		}
 
-		return FindAllComplexTypes(startingTypes);
+		return FindAllTypesForOAPI(startingTypes);
 	}
 
 	/// <summary>
@@ -128,48 +195,49 @@ public class SchemaGenerator
 	/// </summary>
 	public static OpenApiSchema Convert(Type runtimeType, int depth = 1, bool sanitizeGenericType = false)
 	{
-
 		switch (runtimeType)
 		{
-			case {} x when x.IsAssignableTo(typeof(Optional)):
+			case { } x when x.IsAssignableTo(typeof(Optional)):
 				var instance = Activator.CreateInstance(runtimeType) as Optional;
-				return Convert(instance.GetOptionalType());
-			case {} x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
-				return Convert(x.GetGenericArguments()[0]);
+				return Convert(instance.GetOptionalType(), depth - 1);
+			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
+				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
-				return Convert(x.GetGenericArguments()[0]);
+				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x == typeof(double):
-				return new OpenApiSchema { Type = "number", Format = "double"};
+				return new OpenApiSchema { Type = "number", Format = "double" };
 			case { } x when x == typeof(float):
-				return new OpenApiSchema { Type = "number", Format = "float"};
-			
+				return new OpenApiSchema { Type = "number", Format = "float" };
+
 			case { } x when x == typeof(short):
-				return new OpenApiSchema { Type = "integer", Format = "int16"};
+				return new OpenApiSchema { Type = "integer", Format = "int16" };
 			case { } x when x == typeof(int):
-				return new OpenApiSchema { Type = "integer", Format = "int32"};
+				return new OpenApiSchema { Type = "integer", Format = "int32" };
 			case { } x when x == typeof(long):
-				return new OpenApiSchema { Type = "integer", Format = "int64"};
-			
+				return new OpenApiSchema { Type = "integer", Format = "int64" };
+
 			case { } x when x == typeof(bool):
-				return new OpenApiSchema { Type = "boolean"};
+				return new OpenApiSchema { Type = "boolean" };
 			case { } x when x == typeof(decimal):
 				return new OpenApiSchema { Type = "number", Format = "decimal" };
-			
+
 			case { } x when x == typeof(string):
-				return new OpenApiSchema { Type = "string"};
+				return new OpenApiSchema { Type = "string" };
 			case { } x when x == typeof(byte):
-				return new OpenApiSchema { Type = "string", Format = "byte"};
+				return new OpenApiSchema { Type = "string", Format = "byte" };
 			case { } x when x == typeof(Guid):
-				return new OpenApiSchema { Type = "string", Format = "uuid"};
-			
+				return new OpenApiSchema { Type = "string", Format = "uuid" };
+
 			// handle arrays
 			case Type x when x.IsArray:
 				var elemType = x.GetElementType();
-				return new OpenApiSchema { Type = "array", Items = Convert(elemType, depth - 1)};
+				OpenApiSchema arrayOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				return new OpenApiSchema { Type = "array", Items = arrayOpenApiSchema };
 			case Type x when x.IsAssignableTo(typeof(IList)) && x.IsGenericType:
 				elemType = x.GetGenericArguments()[0];
-				return new OpenApiSchema { Type = "array", Items = Convert(elemType, depth - 1)};
-			
+				OpenApiSchema listOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				return new OpenApiSchema { Type = "array", Items = listOpenApiSchema };
+
 			// handle maps
 			case Type x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Dictionary<,>) && x.GetGenericArguments()[0] == typeof(string):
 				return new OpenApiSchema
@@ -188,13 +256,9 @@ public class SchemaGenerator
 					}
 				};
 
-			
+
 			case Type _ when depth <= 0:
-				return new OpenApiSchema
-				{
-					Type = "object",
-					Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema}
-				};
+				return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
 
 			case { IsEnum: true }:
 				var enumNames = Enum.GetNames(runtimeType);
@@ -202,22 +266,22 @@ public class SchemaGenerator
 				{
 					Enum = enumNames.Select(name => new OpenApiString(name)).Cast<IOpenApiAny>().ToList(),
 					Extensions = new Dictionary<string, IOpenApiExtension>
-				{
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
-				}
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+					}
 				};
-			
+
 			default:
-				
+
 				var schema = new OpenApiSchema { };
 				var comments = DocsLoader.GetTypeComments(runtimeType);
-				
+
 				string typeName = sanitizeGenericType ? runtimeType.GetGenericSanitizedFullName() : runtimeType.Name;
-				
+
 				schema.Description = comments.Summary;
 				schema.Properties = new Dictionary<string, OpenApiSchema>();
 				schema.Required = new SortedSet<string>();
@@ -238,7 +302,7 @@ public class SchemaGenerator
 					schema.Extensions[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] =
 						new OpenApiString(runtimeType.GetGenericSanitizedFullName());
 				}
-				
+
 				if (depth == 0) return schema;
 				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);
 				foreach (var member in members)

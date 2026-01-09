@@ -3,6 +3,7 @@ using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
 using System.CommandLine;
 using Beamable.Server;
+using cli.Services;
 
 namespace cli;
 
@@ -51,6 +52,10 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 			var data = SwaggerService.ExtractAllSchemas(documents.Select(result => result.Document).ToList(),
 				GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 			var combined = _swaggerService.GetCombinedDocument(data);
+
+			combined.Info.Title = "Beamable API";
+			combined.ExternalDocs.Url = new Uri("https://help.beamable.com");
+			
 			var json = combined.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
 
 			if (args.OutputToStandardOutOnly)
@@ -58,10 +63,17 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 				Log.Information(json);
 				return;
 			}
-			var pathName = Path.Combine(args.OutputPath!, "combinedOpenApi.json");
 
-			Directory.CreateDirectory(Path.GetDirectoryName(pathName) ?? throw new InvalidOperationException());
-			await File.WriteAllTextAsync(pathName, json);
+			if (string.IsNullOrEmpty(args.OutputPath))
+			{
+				args.OutputPath = "beam-oapi.json";
+			}
+			var dir = Path.GetDirectoryName(args.OutputPath);
+			if (!string.IsNullOrEmpty(dir))
+			{
+				Directory.CreateDirectory(dir);
+			}
+			await File.WriteAllTextAsync(args.OutputPath, json);
 			return;
 		}
 

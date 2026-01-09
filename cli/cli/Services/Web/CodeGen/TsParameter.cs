@@ -37,11 +37,12 @@ public abstract class TsParameter : TsNode
 	/// <param name="type">The type of the parameter.</param>
 	/// <param name="isOptional">Whether the parameter is optional.</param>
 	/// <param name="defaultValue">The default value of the parameter.</param>
-	protected TsParameter(string name, TsType type)
+	protected TsParameter(string name, TsType type, bool emitJavaScript = false)
 	{
 		Name = name;
 		Type = type;
 		Identifier = new TsIdentifier(name);
+		EmitJavaScript = emitJavaScript;
 	}
 
 	public override void Write(TsCodeWriter writer)
@@ -50,11 +51,14 @@ public abstract class TsParameter : TsNode
 
 		writer.Write(Name);
 
-		if (IsOptional)
+		if (IsOptional && !EmitJavaScript)
 			writer.Write("?");
 
-		writer.Write(": ");
-		Type.Write(writer);
+		if (!EmitJavaScript)
+		{
+			writer.Write(": ");
+			Type.Write(writer);
+		}
 
 		if (DefaultValue != null)
 		{
@@ -81,7 +85,9 @@ public abstract class TsParameter : TsNode
 /// </summary>
 public class TsFunctionParameter : TsParameter
 {
-	public TsFunctionParameter(string name, TsType type) : base(name, type) { }
+	public TsFunctionParameter(string name, TsType type, bool emitJavaScript = false) : base(name, type, emitJavaScript)
+	{
+	}
 
 	/// <summary>
 	/// Makes the parameter optional.
@@ -117,7 +123,10 @@ public class TsConstructorParameter : TsParameter
 	/// </summary>
 	public TsModifier Modifiers { get; private set; }
 
-	public TsConstructorParameter(string name, TsType type) : base(name, type) { }
+	public TsConstructorParameter(string name, TsType type, bool emitJavaScript = false)
+		: base(name, type, emitJavaScript)
+	{
+	}
 
 	/// <summary>
 	/// Adds a modifier to the parameter.

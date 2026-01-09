@@ -181,21 +181,7 @@ namespace Beamable.Api
 		{
 			return PlatformService.User.id.ToString();
 		}
-
-		[BeamableConsoleCommand("HEARTBEAT", "Get heartbeat of a user", "HEARTBEAT <dbid>")]
-		string GetHeartbeat(params string[] args)
-		{
-			if (args.Length != 1)
-			{
-				return "Requires dbid";
-			}
-			var dbid = long.Parse(args[0]);
-			_provider.GetService<ISessionService>().GetHeartbeat(dbid)
-				.Then(rsp => { Console.Log(rsp.ToString()); })
-				.Error(err => { Console.Log(String.Format("Error:", err)); });
-
-			return "Querying...";
-		}
+		
 
 		/**
          * Login to a previously registered account with the given username and password.

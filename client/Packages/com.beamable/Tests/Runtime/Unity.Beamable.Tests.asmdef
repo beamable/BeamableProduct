@@ -3,6 +3,7 @@
     "references": [
         "Unity.Beamable",
         "Beamable.Platform",
+        "Unity.Beamable.Editor",
         "Beamable.Coroutines",
         "Beamable.Service",
         "Beamable.Content",

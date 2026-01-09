@@ -34,6 +34,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.tem
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "beamable.templates\templates\CommonLibrary\CommonLibrary.csproj", "{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.exporter", "beamable.otel.exporter\beamable.otel.exporter.csproj", "{658250C8-C929-428B-8425-EC5D1100B7D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.microservice.otel.exporter", "beamable.microservice.otel.exporter\beamable.microservice.otel.exporter.csproj", "{79B6E45A-7747-4894-93F5-F70836293D83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.common", "beamable.otel.common\beamable.otel.common.csproj", "{343D6679-0ECA-478B-851D-95D570257958}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +110,16 @@ Global
 		{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{658250C8-C929-428B-8425-EC5D1100B7D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{658250C8-C929-428B-8425-EC5D1100B7D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79B6E45A-7747-4894-93F5-F70836293D83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79B6E45A-7747-4894-93F5-F70836293D83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79B6E45A-7747-4894-93F5-F70836293D83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79B6E45A-7747-4894-93F5-F70836293D83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{343D6679-0ECA-478B-851D-95D570257958}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{343D6679-0ECA-478B-851D-95D570257958}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EF261D57-B886-47CD-80E0-5AB36C5AC531} = {C7F833F5-4FC1-47A0-AE55-2EAACA51D519}

@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
+using System.Linq;
 
 namespace Beamable.Server.Common
 {
@@ -23,6 +24,7 @@ namespace Beamable.Server.Common
         {
 			Converters = new List<JsonConverter>
 			{
+				new MapOfStringConverter(),
 				new StringToSomethingDictionaryConverter<string>(),
 				new StringToSomethingDictionaryConverter<int>(),
 				new StringToSomethingDictionaryConverter<long>(),
@@ -56,9 +58,41 @@ namespace Beamable.Server.Common
 			serializer.Serialize(writer, optional.GetValue());
 		}
 
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+			JsonSerializer serializer)
 		{
+
 			var instance = (Optional)Activator.CreateInstance(objectType);
+
+			// Handle object representation (when JSON is { "Value": value, "HasValue": true }
+			if (reader.TokenType == JsonToken.StartObject)
+			{
+				var fields = objectType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				var jObject = JObject.Load(reader);
+				
+				// validate that the jObject has exactly 2 fields, matching the Value/HasValue.
+				//  because the starting '{' character could just be the start of an optional object literal
+				if (!jObject.ContainsKey(nameof(Optional.HasValue)) ||
+				    !jObject.ContainsKey(nameof(Optional<int>.HasValue)))
+				{
+					var opt = jObject.ToObject(instance.GetOptionalType(), serializer);
+					instance.SetValue(opt);
+					return instance;
+				}
+				
+				foreach (var field in fields)
+				{
+					if (jObject.TryGetValue(field.Name, out var token))
+					{
+						var fieldValue = token.ToObject(field.FieldType, serializer);
+						field.SetValue(instance, fieldValue);
+					}
+				}
+			
+				return instance;
+			}
+			
+			// Handle direct value representation (when JSON is { "value": value }
 			var optionalType = instance.GetOptionalType();
 			var value = serializer.Deserialize(reader, optionalType);
 			instance.SetValue(value);
@@ -102,6 +136,21 @@ namespace Beamable.Server.Common
         /// <returns>The deserialized object of type T.</returns>
         public T FromJson<T>(string json) => JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
     }
+
+	public class MapOfStringConverter : JsonConverter<MapOfString>
+	{
+		public override void WriteJson(JsonWriter writer, MapOfString value, JsonSerializer serializer)
+		{
+			serializer.Serialize(writer, new Dictionary<string, string>(value));
+		}
+
+		public override MapOfString ReadJson(JsonReader reader, Type objectType, MapOfString existingValue, bool hasExistingValue,
+			JsonSerializer serializer)
+		{
+			var map = serializer.Deserialize<Dictionary<string, string>>(reader);
+			return new MapOfString(map);
+		}
+	}
 
 	/// <summary>
 	/// Custom JSON converter for serializing and deserializing dictionaries with string keys and values of type T.

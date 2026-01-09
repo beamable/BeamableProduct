@@ -5,7 +5,166 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `net10` support
+
+### Fixed
+- possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
+- common projects no longer attempt to resolve Beamable Otel Collector
+- do not log into archived realm as default selection with --ignore-pid is given to `beam init` [4245](https://github.com/beamable/BeamableProduct/issues/4245)
+
+## [6.2.2]
+### Changed
+- Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   
+
+## [6.2.1] - 2025-11-20
+### Fixed
+- Reverted content serialization caching
+
+## [6.2.0] - 2025-11-19
+### Changed
+- `project ps` command now also outputs storage object dependencies for services that has them.
+- Improved ContentTypeCache to avoid unnecessary allocations and improve performance.
+
+### Fixed
+- Fixed an issue where Unity's `AssetReference` type fields were set to null instead of their default value when creating new content.
+
+## [6.1.0] - 2025-10-31
+### Added
+- New Option to Restore Snapshots in additional mode (It will keep all local content and just replace or add new contents to it)
+- Otel Metrics enabled for CLI
+
+### Changed
+- CLI requests are no longer retried more than once for invalid token
+- The Content Manager now correctly updates reference manifest UIDs for all outdated content, including contents copied from folders.
+- Updated Beamable docs reference for the new documentation page
+
+### Fixed
+- Fixed an issue when generating MakeAuthenticatedBlueprintRequestProcessor for Unreal was missing context parameter.
+- Fixed an issue where `.gitignore` files were not being packed into Beamable dotnet templates.
+
+## [6.0.0] - 2025-10-14
+### Added
+- CLI reports telemetry data to Beamable
+- `beam telemetry` command suite for managing Open Telemetry collectors, log data, and configuration
+- `beam deploy plan` includes new `--docker-compose-dir` option to generate a docker compose project that can be used to run services locally
+- `beam project generate-env` no longer includes realm secret by default. Pass `--include-secret` to opt into realm secret. 
+- `beam project generate-env` can write a `.env` file of required environment variables by passing a `.env` file path to the command. 
+- Added `microServiceId` field to `MicroserviceServiceProviderRequest` to enable backend service grouping for proper microservice instance counting
+
+### Changed
+- `snapshots` for content now support multiple per realm snapshots for contents instead of only one main snapshot folder.
+- Event subscriptions use the developer's access token for authentication instead of the realm secret. 
+- `beam services` command suite is marked as internal
+- Rider IDE will be forced to re-run Beamable targets on project builds
+- `EnableUnrealBlueprintCompatibility` property is now added automatically to any `.csproj` created in a Beamable project that is linked to an Unreal project.
+- Default project template's `.gitignore` explicitly includes the `.csproj` and `.sln` files. 
+- CLI no longer indefinitely retries all HTTP requests that failed with a 50x response
+
+### Fixed
+- `content ps` allows non-`.json` files in any of your content folders.
+- `beam unreal init` command allows path to the Unreal Sdk had a `.` in it.
+- C#MS Static Analyzer no longer adds `EnableUnrealBlueprintCompatibility` incorrectly.
+- C#MS Static Analyzer with `EnableUnrealBlueprintCompatibility` enabled allows generic types with (`Promises`).  
+- Improved error message when user is not logged into CLI.
+- `beam project ps` no longer reports remote storages incorrectly
+- Issue that `beam project logs` were skipping logs
+
+## [5.4.3] - 2025-12-04
+### Fixed
+- `content ps -w` no longer hangs forever when invoked from CLI server
+- validation case issue for rewards in `game_types` content
+
+## [5.4.2] - 2025-09-24
+### Fixed
+ - Issue when deserializing content with any fields that have the Attribute `[IgnoreContentField]` 
+
+## [5.4.1] - 2025-08-29
+### Fixed
+ - Fixed an issue with how `beam content publish` command retrieves information from the developer user. This resolves potential lockups that could occur in certain realms during content publishing.
+
+## [5.4.0] - 2025-08-27
+### Added
+- Support `ts` and `js` shorthand for the `--lang` option in the `project generate web-client` command.
+- `beam content snapshot` command creates a new snapshot based on your local contents.
+- `beam content restore` command takes `--name` to restore your local content based on the snapshot path or name. It can also take `--delete-after-restore` to delete the snapshot after restoring it.
+- `beam content snapshot-list` command list all snapshots under the local and shared folders with the changes for each content.
+- New utilities in the Lobby that helps handling server provisioning and updates in the player/global data.
+- `IFederatedGameServer`'s `ServerInfo` schema now allows for modifying other lobby properties than just player/global data.  
+
+### Changed
+- Changed how `beam fed list` finds the implemented federations. Now `federation.json` is obsolete and replaced by the OpenApi specifications. 
+- Changed how federations are detected. Federation.json is not needed anymore, instead the federations are found by openApi specs.
+- Removed CodeAnalyzers and CodeFixers that were validating federation from Federation.json
+
+### Fixed
+- Projects using the `project-root-path.json` file can now use `beam services run` again, [4323](https://github.com/beamable/BeamableProduct/issues/4232)
+- Announcements deserialization issue which weren't correctly deserializing Announcements gift [4228](https://github.com/beamable/BeamableProduct/issues/4228)
+
+### Removed
+- `beam fed add` Command as it isn't being used anymore
+- `beam fed remove` Command as it isn't being used anymore
+- `beam fed set` Command as it isn't being used anymore
+
+## [5.3.1] - 2025-08-06
+### Fixed
+- `beam project share-code` copies all dll dependencies into Unity, and adds debug logging.
+
+## [5.3.0] - 2025-08-05
+### Added
+- `beam project` commands that take `--ids` also take a `--exact-ids` option to pass an explicitly _empty_ list of ids. 
+- `beam project add-paths` command to add paths to the `project-paths-to-ignore.json` and `additional-project-paths.json` files. 
+
+### Changed
+- `generate-client-oapi` command can generate a subset of services using the `--ids` flag.
+
+### Fixed
+- `beam deploy plan` no longer breaks when `publish.json` file does not exist due to an empty workspace folder.
+
+## [5.2.0] - 2025-07-30
+### Added
+- Added a new command `project generate web-client `, which generates typescript/javascript web client code for calling c# microservices.
+- New Static Analyzer for Generic Types on `Microservice` classes; 
+
+### Fixed
+- `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services. 
+- `beam publish` commands now updates published content reference manifest UID for the published one
+- `beam checks scan` MongoDB validator for `MongoDB.Driver 3.3.0` no longer adds incorrect xml to `.csproj` files
+
+### Changed
+- `beam content sync` command emits a progress event on initial content downloads
+
+## [5.1.0] - 2025-07-23
+### Added
+  - `developer-user-manager ps` command that watches your developer users files to check if there's any user created/removed/updated.
+  - `developer-user-manager create-user-batch` command that create multiple developer users in a batch, it can received a list of templates to copy from.
+  - `developer-user-manager create-user` command that can create one developer user.
+  - `developer-user-manager remove-user` command that remove the user from the local files (it will not remove from the portal).
+  - `developer-user-manager save-user` command that can save a new developer user in the local files.
+  - `developer-user-manager update-info` command to edit the local files informations like alias, description and etc.
+- Improved diagnostic information for failures in `beam project generate-client --logs v` and better error messaging  
+- `beam org games` command will fetch list of available games
+- `beam content` commands for handling multiple content manifest ids
+
+### Changed
+- `beam services run` command now forces cpu architecture to be linux amd64 by default, with `-pfcpu` option to make it use the user's machine
+- `beam deploy release` requires explicit typing `yes` to deploy, unless the `--quiet | -q` flag is given. [4101](https://github.com/beamable/BeamableProduct/issues/4101)
+
+### Fixed
+- Fixed issue in the `beam checks scan -f *` command that would cause the fixed code to break serialization of federations.
+- Fixed issue in `beam project generate-client` command (for Unreal's code-generation) that caused internal `AdminRoutes`'s Callables (health-check/docs every microservice has) to be seen by the UE generation.
+- `beam project ps` shows remote running storage objects [4146](https://github.com/beamable/BeamableProduct/issues/4146)
+- `beam init` no longer tries to use old PID when switching CID [4178](https://github.com/beamable/BeamableProduct/issues/4178)
+- Content serializer will not serialize `null` Optional values as default values of optional type.
+
+## [5.0.4] - 2025-07-02
+### Fixed
+- Added check to verify that users actually have the required permissions for the various `ps` commands to work. At the moment, due to a backend bug, the permissions must be set per-realm as an Admin.
+- Beamable content downloads ignore SSL when networking with the known Beamable CDN
+
 ## [5.0.3] - 2025-06-24
+### Fixed
 - Fixed issue with `content publish` when a content has a `link` field (this would cause the publish to fail).
 
 ## [5.0.2] - 2025-06-23

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -20,23 +21,30 @@ namespace Beamable.Editor.BeamCli.Commands
 {
 	public partial class BeamCommands : IBeamableDisposable
 	{
-		private readonly IBeamableRequester _requester;
+		// private readonly IBeamableRequester _requester;
 		private IBeamCommandFactory _factory;
 
 		public Action<BeamArgs> argModifier = null;
+		public Stack<Action<BeamArgs>> argStackModifier = new Stack<Action<BeamArgs>>();
+
+		public void ModifierNextDefault(Action<BeamArgs> modifier) => argStackModifier.Push(modifier);
+		
 		protected BeamArgs defaultBeamArgs
 		{
 			get
 			{
 				var args = ConstructDefaultArgs();
+				if (argStackModifier.TryPop(out var modifier))
+				{
+					modifier?.Invoke(args);
+				}
 				argModifier?.Invoke(args);
 				return args;
 			}
 		}
 
-		public BeamCommands(IBeamableRequester requester, IBeamCommandFactory factory)
+		public BeamCommands(IBeamCommandFactory factory)
 		{
-			_requester = requester;
 			_factory = factory;
 		}
 
@@ -49,31 +57,23 @@ namespace Beamable.Editor.BeamCli.Commands
 
 		public BeamArgs ConstructDefaultArgs()
 		{
-			string cid = null;
-			string pid = null;
-			try
-			{
-				cid = _requester.Cid;
-				pid = _requester.Pid;
-			}
-			catch
-			{
-				// if there is no cid or pid, oh well.
-			}
-
+			
 			var beamArgs = new BeamArgs
 			{
-				cid = cid,
-				pid = pid,
-				host = BeamableEnvironment.ApiUrl,
-				refreshToken = _requester?.AccessToken?.RefreshToken,
+				// cid = cid,
+				// pid = pid,
+				// host = BeamableEnvironment.ApiUrl,
+				// refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Verbose",
 				skipStandaloneValidation = true,
 				dotnetPath = "dotnet",
 				quiet = true,
 				noLogFile = true,
 				raw = true,
-				emitLogStreams = true
+				emitLogStreams = true,
+				engine = "unity",
+				engineVersion = Application.unityVersion,
+				engineSdkVersion = BeamableEnvironment.SdkVersion.ToString()
 			};
 			return beamArgs;
 		}
@@ -306,10 +306,12 @@ namespace Beamable.Editor.BeamCli
 			return false;
 		}
 
+		private StringBuilder _logBuffer = new StringBuilder();
 		private void ProcessStandardOut(string message)
 		{
 			if (string.IsNullOrEmpty(message)) return;
 
+			_logBuffer.AppendLine(message);
 			_messageBuffer += message;
 
 			if (CheckForData(ref _messageBuffer, out ReportDataPointDescription data, out string jsonRaw))
@@ -320,17 +322,20 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		private StringBuilder _errorBuffer = new StringBuilder();
 		private void ProcessStandardErr(string data)
 		{
 			if (string.IsNullOrWhiteSpace(data)) return;
+			_errorBuffer.AppendLine(data);
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
 
 		public static string GetCommandPrefix()
 		{
-			var beamCli = BeamCliUtil.CLI;
+			// var beamCli = BeamCliUtil.CLI;
 
+			var beamCli = "beam";
 			var isLocalDllFile = beamCli.Contains(".dll");
 
 			if (isLocalDllFile)
@@ -381,6 +386,7 @@ namespace Beamable.Editor.BeamCli
 
 				// prevent the beam CLI from saving any log information to file.
 				process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
+				process.StartInfo.Environment.Add("MSBUILDTERMINALLOGGER", "off");
 
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
 				
@@ -492,16 +498,20 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
 
-							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							if (string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("BEAM_UNITY_TEST_CI")))
 							{
-								Debug.LogError($"CLI Beam Command had {_errors.Count} errors");
-								foreach (var err in _errors)
+								BeamEditorContext.Default.Dispatcher.Schedule(() =>
 								{
-									Debug.LogError(err.message);
-								}
-							});
-							
-							throw new CliInvocationException(_command, _errors);
+									Debug.LogError(
+										$"CLI Beam Command had {_errors.Count} errors. stdourbuffer=[{_logBuffer}] stderrbuffer=[{_errorBuffer}]");
+									foreach (var err in _errors)
+									{
+										Debug.LogError(err.message);
+									}
+								});
+
+								throw new CliInvocationException(_command, _errors);
+							}
 						}
 						else
 						{

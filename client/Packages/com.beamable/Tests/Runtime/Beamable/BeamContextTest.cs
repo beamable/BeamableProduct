@@ -42,7 +42,7 @@ namespace Beamable.Tests.Runtime
 		[TearDown]
 		public void Cleanup()
 		{
-			Context.ClearPlayerAndStop();
+			_ = Context.ClearPlayerAndStop();
 		}
 
 		protected virtual void OnInit(MockBeamContext ctx)

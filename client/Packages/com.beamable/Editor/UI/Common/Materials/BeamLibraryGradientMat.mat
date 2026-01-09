@@ -9,8 +9,6 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: BeamLibraryGradientMat
   m_Shader: {fileID: 4800000, guid: aff16f0b732624e54acba8212546f583, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -19,7 +17,6 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -82,6 +79,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Rect: {r: 339, g: 300, b: 284, a: 128}
-    - _RectPosition: {r: 617, g: 300, b: 282, a: 128}
-    - _Size: {r: 294, g: 67, b: 933, a: 674}
+    - _RectPosition: {r: 516, g: 268, b: 232, a: 96}
+    - _Size: {r: 1800, g: -15, b: 1030, a: 557}
   m_BuildTextureStacks: []

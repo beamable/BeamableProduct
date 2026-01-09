@@ -160,7 +160,7 @@ public static class WebSchema
 
 				var isEnum = enums.Any(e => e.Name == module);
 				var importPath = isEnum ? $"./enums/{module}" : $"./{module}";
-				var tsImport = new TsImport(importPath).AddNamedImport(module);
+				var tsImport = new TsImport(importPath, typeImportOnly: true).AddNamedImport(module);
 
 				// Only add the import if one with the same module path has not been added already
 				if (tsImports.All(existing => existing.Module != tsImport.Module))
@@ -171,7 +171,7 @@ public static class WebSchema
 		// add imports for each distinct item type module
 		itemsSchemaModules.Distinct().ToList().ForEach(module =>
 		{
-			var tsImport = new TsImport($"./{module}").AddNamedImport(module);
+			var tsImport = new TsImport($"./{module}", typeImportOnly: true).AddNamedImport(module);
 			tsImports.Add(tsImport);
 		});
 	}

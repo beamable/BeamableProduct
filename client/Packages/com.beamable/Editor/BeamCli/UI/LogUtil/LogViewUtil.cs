@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Editor.UI;
+using Beamable.Editor.Util;
 using Beamable.Editor.Utility;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 	[Serializable]
 	public class LogView
 	{
+		public SearchData _searchData;
+		
 		public int selectedIndex;
 		public Vector2 logScroll;
 		public Vector2 selectedScroll;
@@ -34,7 +37,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public LogLevelView fatal = new LogLevelView();
 
 		public bool isTailing = true;
-		public string searchText;
+		
 
 		public bool clearOnPlay = true;
 		
@@ -59,6 +62,18 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		[NonSerialized]
 		private IDelayedActionWindow _window;
 
+		public string searchText
+		{
+			get => _searchData.searchText; 
+			set => _searchData.searchText = value;
+		}
+		
+		public SearchData searchData => _searchData;
+
+		public LogView()
+		{
+			_searchData = new SearchData {onEndCheck = RebuildView};
+		}
 
 		public void Scan(int budget, out bool foundDiff)
 		{
@@ -215,6 +230,13 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		}
 	}
 
+	[Serializable]
+	public class SearchData
+	{
+		public string searchText;
+		[NonSerialized]
+		public Action onEndCheck;
+	}
 	
 	public static class CliLogMessageExtensions
 	{
@@ -319,17 +341,17 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 	public static class LogUtil
 	{
-		
-		public static void DrawLogWindow(this IDelayedActionWindow window, 
+
+		public static void DrawLogWindow(this IDelayedActionWindow window,
 		                                 LogView logView,
-		                                 LogDataProvider dataList, 
+		                                 LogDataProvider dataList,
 		                                 Action onClear,
-		                                 Func<LogView, bool> customClearGui=null)
+		                                 Func<LogView, bool> customClearGui = null)
 		{
-			
-			logView.BuildView(dataList); 
+
+			logView.BuildView(dataList);
 			logView.Init(window);
-			
+
 			var labelStyle = new GUIStyle(EditorStyles.label);
 			labelStyle.wordWrap = true;
 			labelStyle.alignment = TextAnchor.UpperLeft;
@@ -348,6 +370,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				{
 					isClear = customClearGui.Invoke(logView);
 				}
+
 				if (isClear)
 				{
 					window.AddDelayedAction(() =>
@@ -359,56 +382,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 				EditorGUILayout.Space(1, false);
 
-				{ // search text field
-					EditorGUI.BeginChangeCheck();
-					var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
-					// searchStyle.margin = new RectOffset(1, 50, 1, 1);
-					var searchRect = GUILayoutUtility.GetRect(GUIContent.none, searchStyle);
-					
-					// if there isn't enough space, don't bother rendering it.
-					if (searchRect.width > 30)
-					{
-						var searchClearRect = new Rect(searchRect.xMax - searchRect.height - 2, searchRect.y,
-						                               searchRect.height, searchRect.height);
-
-						EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
-						var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);
-						var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
-
-						logView.searchText = EditorGUI.TextField(searchRect, logView.searchText, searchStyle);
-						if (EditorGUI.EndChangeCheck())
-						{
-							logView.RebuildView();
-						}
-
-						if (!string.IsNullOrEmpty(logView.searchText))
-						{
-							var tex = EditorGUIUtility.FindTexture("winbtn_win_close");
-							GUI.Button(searchClearRect, tex, GUIStyle.none);
-
-							if (clearButtonClicked)
-							{
-								window.AddDelayedAction(() =>
-								{
-									logView.searchText = null;
-									GUIUtility.hotControl = 0;
-									GUIUtility.keyboardControl = 0;
-									logView.RebuildView();
-									window.Repaint();
-								});
-							}
-						}
-					}
-					else
-					{
-						var noSearchBarSpaceButton = GUILayout.Button("\u2026", new GUIStyle(EditorStyles.toolbarButton), GUILayout.MinWidth(35),  GUILayout.ExpandWidth(false));
-						if (noSearchBarSpaceButton)
-						{ 
-							Vector2 windowSize = new Vector2(Screen.width, 70);
-							PopupWindow.Show(searchRect, new GenericMessagePopup("Hidden Contents", "There is no available space to display the search bar, please resize the window.", windowSize));
-						}
-					}
-				}
+				DrawSearchBar(window, logView.searchData);
 
 
 				// EditorGUILayout.Space(5, false);
@@ -441,148 +415,165 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 			var elementHeight = (int)EditorGUIUtility.singleLineHeight * 2;
 			var maxScroll = logView.view.Count * elementHeight - scrollRect.height;
-			
+
 			if (logView.isTailing)
 			{
 				logView.logScroll.y = maxScroll;
 			}
 
 			var startScrollPosition = logView.logScroll.y;
-			BeamCliWindow.DrawVirtualScroller(scrollRect, elementHeight, logView.view.Count, ref logView.logScroll, (index, position) =>
-			{
-				if (index >= logView.view.Count) return false;
-				
-				var log = logView.view[index];
+			BeamCliWindow.DrawVirtualScroller(scrollRect, elementHeight, logView.view.Count, ref logView.logScroll,
+			                                  (index, position) =>
+			                                  {
+				                                  if (index >= logView.view.Count) return false;
 
-				/*
-				 * progressive filtering will make the log move a bit, but I think its worth it for the speed improvements...
-				 *
-				 */
-				switch (log.GetLogLevel())
-				{
-					case CliLogLevel.Verbose:
-						if (!logView.verbose.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
-						break;
-					case CliLogLevel.Debug:
-						if (!logView.debug.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
-						break;
-					case CliLogLevel.Info:
-						if (!logView.info.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
+				                                  var log = logView.view[index];
 
-						break;
-					case CliLogLevel.Warning:
-						if (!logView.warning.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
-						break;
+				                                  /*
+				                                   * progressive filtering will make the log move a bit, but I think its worth it for the speed improvements...
+				                                   *
+				                                   */
+				                                  switch (log.GetLogLevel())
+				                                  {
+					                                  case CliLogLevel.Verbose:
+						                                  if (!logView.verbose.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
 
-					case CliLogLevel.Error:
-						if (!logView.error.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
-						break;
+						                                  break;
+					                                  case CliLogLevel.Debug:
+						                                  if (!logView.debug.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
 
-					case CliLogLevel.Fatal:
-						if (!logView.fatal.enabled)
-						{
-							window.AddDelayedAction(() =>
-							{
-								logView.view.Remove(log);
-							});
-							return false; // skip
-						}
-						break;
-				}
+						                                  break;
+					                                  case CliLogLevel.Info:
+						                                  if (!logView.info.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
 
-				if (!string.IsNullOrEmpty(logView.searchText) &&
-				    !log.message.ToLowerInvariant().Contains(logView.searchText.ToLowerInvariant()))
-				{
-					logView.view.Remove(log);
-					return false;
-				}
+						                                  break;
+					                                  case CliLogLevel.Warning:
+						                                  if (!logView.warning.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
+
+						                                  break;
+
+					                                  case CliLogLevel.Error:
+						                                  if (!logView.error.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
+
+						                                  break;
+
+					                                  case CliLogLevel.Fatal:
+						                                  if (!logView.fatal.enabled)
+						                                  {
+							                                  window.AddDelayedAction(() =>
+							                                  {
+								                                  logView.view.Remove(log);
+							                                  });
+							                                  return false; // skip
+						                                  }
+
+						                                  break;
+				                                  }
+
+				                                  if (!string.IsNullOrEmpty(logView.searchText) &&
+				                                      !log.message.ToLowerInvariant()
+				                                          .Contains(logView.searchText.ToLowerInvariant()))
+				                                  {
+					                                  logView.view.Remove(log);
+					                                  return false;
+				                                  }
 
 
-				// show selected index
-				if (index == logView.selectedIndex)
-				{
-					EditorGUI.DrawRect(position, GUI.skin.settings.selectionColor);
-				}
-				
-				if (dataList.showLogLevels)
-				{
-					var iconWidth = 32;
-					var iconPadding = 4;
-					var iconRect = new Rect(position.x + iconPadding, position.y + iconPadding, iconWidth - iconPadding*2, position.height - iconPadding*2);
-					var labelRect = new Rect(position.x + iconWidth, position.y, position.width - iconWidth,
-					                         position.height);
-					var logLevel = log.GetLogLevel();
-					var hasTexture = TryGetTextureForLogLevel(logLevel, out var texture);
+				                                  // show selected index
+				                                  if (index == logView.selectedIndex)
+				                                  {
+					                                  EditorGUI.DrawRect(position, GUI.skin.settings.selectionColor);
+				                                  }
 
-					var date = DateTimeOffset.FromUnixTimeMilliseconds(log.timestamp).ToLocalTime();
-					var logMessage = $"[{date:hh:mm:ss}] {log.message}";
+				                                  if (dataList.showLogLevels)
+				                                  {
+					                                  var iconWidth = 32;
+					                                  var iconPadding = 4;
+					                                  var iconRect =
+						                                  new Rect(position.x + iconPadding, position.y + iconPadding,
+						                                           iconWidth - iconPadding * 2,
+						                                           position.height - iconPadding * 2);
+					                                  var labelRect = new Rect(
+						                                  position.x + iconWidth, position.y,
+						                                  position.width - iconWidth,
+						                                  position.height);
+					                                  var logLevel = log.GetLogLevel();
+					                                  var hasTexture =
+						                                  TryGetTextureForLogLevel(logLevel, out var texture);
 
-					EditorGUI.LabelField(labelRect, logMessage, labelStyle);
+					                                  var date = DateTimeOffset.FromUnixTimeMilliseconds(log.timestamp)
+					                                                           .ToLocalTime();
+					                                  var logMessage = $"[{date:hh:mm:ss}] {log.message}";
 
-					if (hasTexture)
-					{
-						GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
-					}
-				}
-				else
-				{
-					var logMessage = $"{log.message}";
-					var labelRect = new Rect(position.x, position.y, position.width, position.height);
-					EditorGUI.LabelField(labelRect, logMessage, labelStyle);
-				}
-				
-				var wasPressed = GUI.Button(position, GUIContent.none, EditorStyles.label);
-				
-				if (wasPressed)
-				{
-					var currIndex = index;
-					window.AddDelayedAction(() =>
-					{
-						logView.selectedIndex = currIndex;
-						GUIUtility.hotControl = 0;
-						GUIUtility.keyboardControl = 0;
-					});
-				}
+					                                  EditorGUI.LabelField(labelRect, logMessage, labelStyle);
 
-				return true;
-			});
+					                                  if (hasTexture)
+					                                  {
+						                                  GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
+					                                  }
+				                                  }
+				                                  else
+				                                  {
+					                                  var logMessage = $"{log.message}";
+					                                  var labelRect =
+						                                  new Rect(position.x, position.y, position.width,
+						                                           position.height);
+					                                  EditorGUI.LabelField(labelRect, logMessage, labelStyle);
+				                                  }
 
-			
+				                                  var wasPressed =
+					                                  GUI.Button(position, GUIContent.none, EditorStyles.label);
+
+				                                  if (wasPressed)
+				                                  {
+					                                  var currIndex = index;
+					                                  window.AddDelayedAction(() =>
+					                                  {
+						                                  logView.selectedIndex = currIndex;
+						                                  GUIUtility.hotControl = 0;
+						                                  GUIUtility.keyboardControl = 0;
+					                                  });
+				                                  }
+
+				                                  return true;
+			                                  });
+
+
 			// if the user tries to interact with the scroll, then un-tail
 			if (Math.Abs(startScrollPosition - logView.logScroll.y) > .0001f)
 			{
@@ -594,8 +585,88 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			{
 				logView.isTailing = true;
 			}
-			
+
 			EditorGUILayout.EndVertical();
+		}
+
+		public static void DrawSearchBar(this IDelayedActionWindow window,
+		                                 SearchData searchData,
+		                                 bool isVerticallyCentered = false,
+		                                 string textFieldName=null)
+		{
+			var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
+
+			if (isVerticallyCentered)
+			{
+				GUILayout.BeginVertical();
+				GUILayout.FlexibleSpace();
+			}
+
+			// note, in Unity 6.2, the height of `EditorStyles.textField` increased, so we need to manually specify line height here. 
+			var searchRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.textField, GUILayout.ExpandWidth(true), GUILayout.MinWidth(30), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+
+			if (isVerticallyCentered)
+			{
+				GUILayout.FlexibleSpace();
+				GUILayout.EndVertical();
+			}
+
+			// if there isn't enough space, don't bother rendering it.
+			if (searchRect.width > 30)
+			{
+				EditorGUI.BeginChangeCheck();
+				var searchClearRect = new Rect(searchRect.xMax - searchRect.height - 2, searchRect.y,
+				                               searchRect.height, searchRect.height);
+
+				EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
+				var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);
+				var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
+				if (searchData != null)
+				{
+					if (textFieldName != null)
+						GUI.SetNextControlName(textFieldName);
+					searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
+					if (EditorGUI.EndChangeCheck())
+					{
+						searchData.onEndCheck?.Invoke();
+					}
+
+					if (!string.IsNullOrEmpty(searchData.searchText))
+					{
+						GUI.Button(searchClearRect, GUIContent.none, "SearchCancelButton");
+
+						if (clearButtonClicked)
+						{
+							window.AddDelayedAction(() =>
+							{
+								searchData.searchText = null;
+								GUIUtility.hotControl = 0;
+								GUIUtility.keyboardControl = 0;
+								searchData.onEndCheck?.Invoke();
+								window.Repaint();
+							});
+						}
+					}
+				}
+			}
+			else
+			{
+				var noSearchBarSpaceButton = BeamGUI.HeaderButton(null, BeamGUI.iconMenuOptions,
+				                                                  padding: 4,
+				                                                  iconPadding: -5,
+				                                                  drawBorder: true,
+				                                                  forcedRect: searchRect);
+
+				if (noSearchBarSpaceButton)
+				{
+					Vector2 windowSize = new Vector2(Screen.width, 70);
+					PopupWindow.Show(
+						searchRect,
+						new GenericMessagePopup("Hidden Contents",
+						                        "There is no available space to display the search bar, please resize the window.",
+						                        windowSize));
+				}
+			}
 		}
 
 		static void DrawLogLevelToggle(CliLogLevel logLevel, LogLevelView view, IDelayedActionWindow window, LogView serverLogs)

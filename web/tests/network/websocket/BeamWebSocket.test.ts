@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
+import * as apis from '@/__generated__/apis';
 
 // replace the wait helper with a no-op (instantly resolves)
 vi.mock('@/utils/wait', () => ({ wait: () => Promise.resolve() }));
@@ -18,13 +19,18 @@ vi.mock('@/utils/promiseWithResolvers', () => {
   return { promiseWithResolvers };
 });
 
-// simple BeamApi stub for the refresh-token flow
-const postAuthRefreshTokenV2 = vi
-  .fn()
-  .mockResolvedValue({ body: { accessToken: 'access-from-refresh' } });
-const fakeApi: any = {
-  auth: { postAuthRefreshTokenV2 },
-};
+// mock generated API calls for token refresh and realm config
+vi.mock('@/__generated__/apis', () => {
+  const authPostTokensRefreshToken = vi
+    .fn()
+    .mockResolvedValue({ body: { accessToken: 'access-from-refresh' } });
+  const realmsGetClientDefaultsBasic = vi.fn().mockResolvedValue({
+    body: { websocketConfig: { provider: 'beamable', uri: 'ws://test' } },
+  });
+  return { authPostTokensRefreshToken, realmsGetClientDefaultsBasic };
+});
+
+const fakeRequester: any = {};
 
 // mock WebSocket implementation
 class MockWebSocket {
@@ -77,8 +83,7 @@ describe('BeamWebSocket', () => {
     const ws = new BeamWebSocket();
 
     const connectPromise = ws.connect({
-      api: fakeApi,
-      url: 'wss://example.com',
+      requester: fakeRequester,
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -89,15 +94,14 @@ describe('BeamWebSocket', () => {
 
     await expect(connectPromise).resolves.toBeUndefined();
     // refresh token endpoint was called once
-    expect(postAuthRefreshTokenV2).toHaveBeenCalledTimes(1);
+    expect(apis.authPostTokensRefreshToken).toHaveBeenCalledTimes(1);
   });
 
   it('disconnect() closes the socket and can be called safely twice', async () => {
     const ws = new BeamWebSocket();
 
     const connectPromise = ws.connect({
-      api: fakeApi,
-      url: 'wss://example.com',
+      requester: fakeRequester,
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -118,13 +122,14 @@ describe('BeamWebSocket', () => {
     const ws = new BeamWebSocket();
 
     // patch the refresh-token API call to return null
-    postAuthRefreshTokenV2.mockResolvedValueOnce({
+    vi.spyOn(apis, 'authPostTokensRefreshToken').mockResolvedValueOnce({
+      status: 200,
+      headers: {},
       body: { accessToken: null },
     });
 
     const p = ws.connect({
-      api: fakeApi,
-      url: 'wss://example.com',
+      requester: fakeRequester,
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -139,8 +144,7 @@ describe('BeamWebSocket', () => {
     const ws = new BeamWebSocket();
 
     const connectPromise = ws.connect({
-      api: fakeApi,
-      url: 'wss://example.com',
+      requester: fakeRequester,
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
@@ -156,7 +160,7 @@ describe('BeamWebSocket', () => {
     await vi.runAllTimersAsync();
 
     // check that the connect() promise resolves again
-    expect(postAuthRefreshTokenV2).toHaveBeenCalledTimes(2);
+    expect(apis.authPostTokensRefreshToken).toHaveBeenCalledTimes(2);
     await expect(connectPromise).resolves.toBeUndefined();
   });
 });

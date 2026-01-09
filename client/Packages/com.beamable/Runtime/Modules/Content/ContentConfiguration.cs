@@ -1,8 +1,9 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
+using Beamable.Modules.Content;
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 using static Beamable.Common.Constants.Features.ContentManager;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
@@ -53,6 +54,9 @@ namespace Beamable.Content
 			get => ValidateManifestID(_runtimeManifestID);
 			set => _runtimeManifestID = ValidateManifestID(value);
 		}
+		
+		[Tooltip("When enabled, the Beamable SDK will validate that the content schema is the same between the C# Definition and JSON data.")]
+		public bool validateSchemaDifference = true;
 
 		[Header("Baking")]
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
@@ -63,6 +67,20 @@ namespace Beamable.Content
 
 		[Tooltip("This options is used for disable content download exceptions to allow manual repairs.")]
 		public bool DisableContentDownloadExceptions = false;
+
+		[Header("Content Snapshot")]
+		[Tooltip("This define what will be the AutoSnapshot types to be taken after publishing content from Unity.")]
+		public AutoSnapshotType OnPublishAutoSnapshotType = AutoSnapshotType.LocalOnly;
+
+		[Tooltip("This define the max stored local snapshot taken when auto creating snapshot during publish, when hit the desired value, the older one will be replaced by the new auto generated one")]
+		public OptionalInt MaxLocalAutoSnapshot;
+		
+			
+		
+		[Header("Content Editor")]
+		[Tooltip("This option will change the Max size of Content Items before showing it as a list.")]
+		public int MaxContentVisibleItems = 15;
+		public ContentTextureConfiguration ContentTextureConfiguration;
 
 		public ContentParameterProvider ParameterProvider
 		{
@@ -102,6 +120,7 @@ namespace Beamable.Content
 				_runtimeManifestID = DEFAULT_MANIFEST_ID;
 			}
 		}
+
 		public static bool IsValidManifestID(string name, out string message)
 		{
 			const int MAX_NAME_LENGTH = 36;

@@ -9,6 +9,7 @@ on:
         options:
           - main
           - issue/otel
+          - issue/websdkdocbucket
       environment:
         type: choice
         description: 'Environment'

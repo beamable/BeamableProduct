@@ -16,6 +16,8 @@ MonoBehaviour:
   - base
   name: Demo Tournament
   anchorTimeUTC: 2020-01-01T12:00:00Z
+  cycleText: 0
+  cycleDuration: P1D
   playerLimit: 25
   tiers:
   - name: Bronze
@@ -25,6 +27,9 @@ MonoBehaviour:
   - name: Gold
     color: {r: 0.96862745, g: 0.70980394, b: 0, a: 1}
   stagesPerTier: 3
+  passiveDecayStages:
+    HasValue: 0
+    Value: 0
   DefaultEntryColor: {r: 0.62352943, g: 0, b: 0, a: 1}
   ChampionColor: {r: 0.96862745, g: 0.70980394, b: 0, a: 1}
   stageChanges:
@@ -125,3 +130,19 @@ MonoBehaviour:
     - amount: 80
       symbol:
         Id: currency.gems
+  scoreRewards:
+  - name: Winner Score
+    tier: 0
+    minScore: 1
+    maxScore:
+      HasValue: 1
+      Value: 1
+    stageMin:
+      HasValue: 1
+      Value: 1
+    stageMax:
+      HasValue: 1
+      Value: 1
+    currencyRewards: []
+  groupRewards:
+    rankRewards: []

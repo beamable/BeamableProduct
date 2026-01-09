@@ -7,22 +7,25 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
 using Beamable.Server;
+using System.Net.Http.Headers;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
 namespace cli;
 
 public class CliRequester : IRequester
 {
-	private readonly IAppContext _ctx;
-	public IAccessToken AccessToken => _ctx.Token;
+
+	private readonly int ProgressiveDelayIncreaser = 5;
+	private readonly IRequesterInfo _requesterInfo;
+	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
 	public string Cid => AccessToken.Cid;
 
 	public Dictionary<string, string> GlobalHeaders { get; } = new Dictionary<string, string>();
 
-	public CliRequester(IAppContext ctx)
+	public CliRequester(IRequesterInfo requesterInfo)
 	{
-		_ctx = ctx;
+		_requesterInfo = requesterInfo;
 	}
 
 	public async Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body,
@@ -39,8 +42,8 @@ public class CliRequester : IRequester
 	{
 		Log.Verbose($"{method} call: {uri}");
 		
-		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
-		var request = PrepareRequest(method, _ctx.Host, uri, body);
+		using HttpClient client = GetClient(_requesterInfo.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
+		var request = PrepareRequest(method, _requesterInfo.Host, uri, body);
 		
 		if (GlobalHeaders != null)
 		{
@@ -71,7 +74,7 @@ public class CliRequester : IRequester
 
 		Log.Verbose($"Calling: {request}");
 
-		if (_ctx.IsDryRun)
+		if (_requesterInfo.IsDryRun)
 		{
 			Log.Verbose($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
 			return default(T);
@@ -117,38 +120,74 @@ public class CliRequester : IRequester
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).
-		RecoverWith(error =>
+		return InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, 0);
+	}
+
+	private Promise<T> InternalRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+		Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).RecoverWith(error =>
 		{
 			switch (error)
 			{
+				case RequesterException e when e.Status == 401:
+					Log.Warning(
+						$"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
+
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
 				case RequesterException e when e.RequestError.error is "TimeOutError":
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
+						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
-											   e.Status == 403 ||
-											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
-												AccessToken.ExpiresAt < DateTime.Now):
+				                               e.Status == 403 ||
+				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+				                                AccessToken.ExpiresAt < DateTime.Now):
 					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
-					var authService = new AuthApi(this);
-					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
-						{
-							Log.Debug(
-								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
-							_ctx.SetToken(rsp);
-							return PromiseBase.Unit;
-						})
-						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
-				case RequesterException { Status: > 500 and < 510 }:
-					BeamableLogger.LogWarning($"Problems with host {_ctx.Host}, trying again in few seconds...");
-					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
-						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
+				case RequesterException e when e.Status == 502:
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
+					if (retryCount >= 5 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					{
+						break;
+					}
+
+					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
+				case RequesterException e when e.Status > 500 && e.Status < 510:
+					BeamableLogger.LogWarning(
+						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
+					break;
 			}
 
 			return Promise<T>.Failed(error);
-		});
+		}).ReportInnerException();
+	}
+
+	private async Promise<T> GetTokenAndRetry<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+		bool useCache = false, int retryCount = 0)
+	{
+		var authService = new AuthApi(this);
+
+		TokenResponse tokenResponse = await authService.LoginRefreshToken(AccessToken.RefreshToken);
+		Log.Debug(
+			$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
+		_requesterInfo.SetToken(tokenResponse);
+
+		return await InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, ++retryCount);
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
@@ -165,6 +204,7 @@ public class CliRequester : IRequester
 		{
 			byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
 			request.Content = new ByteArrayContent(bodyBytes);
+			request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 		}
 		else
 		{
@@ -174,9 +214,47 @@ public class CliRequester : IRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
+	static string GetSuffixFilter(string host)
 	{
-		var client = new HttpClient();
+		if (string.IsNullOrEmpty(host) || host.Contains("localhost"))
+		{
+			return ".beamable.com";
+		}
+
+		var hostLike = host.Replace("dev.api", "dev-api");
+		var filter = "." + string.Join(".", hostLike
+			.Split(".")
+			.Skip(1));
+			   
+		// trim off any pathing in the host 
+		int idx = filter.IndexOf('/');
+		if (idx != -1)
+			filter = filter.Substring(0, idx);
+		return filter;
+	}
+	
+	private static HttpClient GetClient(string host, bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
+	{
+		var handler = new HttpClientHandler();
+		handler.ServerCertificateCustomValidationCallback = (message, _, _, _) =>
+		{
+			if (message?.RequestUri == null) return false;
+			
+			var filter = GetSuffixFilter(host);
+			var isBeamableEndpoint = message.RequestUri.Host.EndsWith(filter);
+			var isContentRelated = message.RequestUri.Fragment.Contains("content/", StringComparison.InvariantCultureIgnoreCase);
+
+			var shouldAvoidSslDueToContentInfra = isBeamableEndpoint && isContentRelated;
+			if (shouldAvoidSslDueToContentInfra)
+			{
+				return false;
+			}
+			
+			return true;
+		};
+
+		var client = new HttpClient(handler);
+
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 
 		var scope = string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";

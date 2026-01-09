@@ -15,7 +15,7 @@ namespace Beamable.Editor.Content
 	public class DatePropertyDrawer : PropertyDrawer
 	{
 		private const string TextFieldPref = "DateDrawer_useTextField";
-		private const float SingleLineWidth = 590f;
+		public const float SingleLineWidth = 590f;
 		private const float CalendarButtonWidth = 24f;
 		private const float SpaceWidth = 2f;
 
@@ -150,7 +150,7 @@ namespace Beamable.Editor.Content
 				timeRectController.ReserveWidth(14f);
 			}
 
-			GUI.Label(dateRectController.ReserveWidth(shortLabelWidth), "Y");
+			GUI.Label(dateRectController.ReserveWidth(shortLabelWidth), "Y", new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleRight});
 			var year = DrawYearSelection(date, dateRectController.ReserveWidth(yearFieldWidth), property);
 			dateRectController.ReserveWidth(SpaceWidth);
 
@@ -215,6 +215,11 @@ namespace Beamable.Editor.Content
 			if (!DateTime.TryParseExact(GetStringProperty(property).stringValue, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 				DateTimeStyles.None, out var date))
 			{
+				if (IsOptionalString(property) && !property.FindPropertyRelative("HasValue").boolValue)
+				{
+					return DateTime.UtcNow;
+				}
+
 				var now = DateTime.UtcNow;
 				date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second); // skipping milliseconds
 				ApplyNewDate(property, date.ToUniversalTime());

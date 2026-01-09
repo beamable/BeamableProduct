@@ -1,3 +1,0 @@
-#buttonImage {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_light.png");
-}

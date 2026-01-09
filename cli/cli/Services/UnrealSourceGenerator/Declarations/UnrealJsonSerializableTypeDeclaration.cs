@@ -7,7 +7,6 @@ public enum ResponseBodyType
 {
 	None,
 	Json,
-	Csv,
 	PrimitiveWrapper
 }
 
@@ -35,154 +34,6 @@ public struct TypeRequestBody : IEquatable<string>, IComparable<string>
 	{
 		return (UnrealType.AsStr != null ? UnrealType.GetHashCode() : 0);
 	}
-}
-
-public struct UnrealCsvRowTypeDeclaration
-{
-	public UnrealType RowUnrealType;
-	public NamespacedType RowNamespacedType;
-
-	public int KeyDeclarationIdx;
-
-	public List<UnrealPropertyDeclaration> PropertyDeclarations;
-	public string IncludesForProperties;
-
-	private string _keyFieldPropertyName;
-	private string _headerFieldsContent;
-
-
-	public void IntoProcessMap(Dictionary<string, string> processDictionary)
-	{
-		var @this = this;
-		var propertyDeclarations = string.Join("\n\t", PropertyDeclarations.Select(ud =>
-		{
-			ud.IntoProcessMap(processDictionary);
-			var decl = ud.GetDeclarationTemplate().ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return decl;
-		}));
-
-		_keyFieldPropertyName = PropertyDeclarations[KeyDeclarationIdx].PropertyName;
-
-		_headerFieldsContent = string.Join(",\n\t", PropertyDeclarations.Select((ud, i) =>
-		{
-			if (i == @this.KeyDeclarationIdx)
-				return "KeyField";
-
-			return $"GET_MEMBER_NAME_STRING_CHECKED({@this.RowUnrealType}, {ud.PropertyName})";
-		}));
-
-		processDictionary.Add(nameof(exportMacro), exportMacro);
-		processDictionary.Add(nameof(RowNamespacedType), RowNamespacedType);
-		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
-		processDictionary.Add(nameof(PropertyDeclarations), propertyDeclarations);
-		processDictionary.Add(nameof(_keyFieldPropertyName), _keyFieldPropertyName);
-		processDictionary.Add(nameof(_headerFieldsContent), _headerFieldsContent);
-		processDictionary.Add(nameof(IncludesForProperties), IncludesForProperties);
-	}
-
-
-	public const string CSV_ROW_TYPE_HEADER =
-		$@"#pragma once
-
-#include ""CoreMinimal.h""
-#include ""Engine/DataTable.h""
-₢{nameof(IncludesForProperties)}₢
-
-#include ""₢{nameof(RowNamespacedType)}₢.generated.h""
-
-USTRUCT(BlueprintType)
-struct ₢{nameof(exportMacro)}₢ ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
-{{
-	GENERATED_BODY()
-
-	const static FString KeyField;
-	const static TArray<FString> HeaderFields;
-
-	₢{nameof(PropertyDeclarations)}₢		
-}};";
-
-	public const string CSV_ROW_TYPE_CPP =
-		@$"
-#include ""AutoGen/Rows/₢{nameof(RowNamespacedType)}₢.h""
-
-const FString ₢{nameof(RowUnrealType)}₢::KeyField = GET_MEMBER_NAME_STRING_CHECKED(₢{nameof(RowUnrealType)}₢, ₢{nameof(_keyFieldPropertyName)}₢);
-const TArray<FString> ₢{nameof(RowUnrealType)}₢::HeaderFields = {{
-	₢{nameof(_headerFieldsContent)}₢	
-}};
-
-";
-}
-
-public struct UnrealCsvSerializableTypeDeclaration
-{
-	public UnrealType UnrealTypeName;
-	public NamespacedType NamespacedTypeName;
-
-	public UnrealType RowUnrealType;
-	public NamespacedType RowNamespacedTypeName;
-	public bool NeedsKeyGeneration;
-	public bool NeedsHeaderRow;
-
-	private string _defineResponseBodyInterface;
-
-
-	public void IntoProcessMap(Dictionary<string, string> processDictionary)
-	{
-		// Adds the implementation
-		_defineResponseBodyInterface = @$"
-void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FString ResponseContent)
-{{
-	CsvData = NewObject<UDataTable>(RequestData);
-
-	{(NeedsKeyGeneration ? $"// Generate this only if the CSV has no unique value\n\tUBeamCsvUtils::AddAutoGenKeyField(ResponseContent);" : @"")}
-
-	{(NeedsHeaderRow ? $"// Generate this only if the CSV will not contain the header row\n\tUBeamCsvUtils::AddHeaderRow(ResponseContent, {RowUnrealType}::HeaderFields);" : @"")}
-	
-	// Generate this always.
-	UBeamCsvUtils::ParseIntoDataTable(CsvData,
-	                                  {RowUnrealType}::StaticStruct(),
-	                                  {RowUnrealType}::KeyField,
-	                                  ResponseContent);
-
-	UBeamCsvUtils::StoreNameAsColumn<{RowUnrealType}>(CsvData, {RowUnrealType}::KeyField);
-}}";
-		processDictionary.Add(nameof(exportMacro), exportMacro);
-		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
-		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
-		processDictionary.Add(nameof(RowNamespacedTypeName), RowNamespacedTypeName);
-		processDictionary.Add(nameof(_defineResponseBodyInterface), _defineResponseBodyInterface);
-	}
-
-	public const string CSV_SERIALIZABLE_TYPE_HEADER =
-		$@"#pragma once
-
-#include ""CoreMinimal.h""
-#include ""BeamBackend/BeamBaseResponseBodyInterface.h""
-#include ""Serialization/BeamCsvUtils.h""
-
-#include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
-
-UCLASS(BlueprintType, Category=""Beam"")
-class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamBaseResponseBodyInterface
-{{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(BlueprintReadOnly)
-	UDataTable* CsvData;
-
-	virtual void DeserializeRequestResponse(UObject* RequestData, FString ResponseContent) override;
-}};";
-
-	public const string CSV_SERIALIZABLE_TYPE_CPP =
-		@$"
-#include ""AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
-#include ""AutoGen/Rows/₢{nameof(RowNamespacedTypeName)}₢.h""
-
-₢{nameof(_defineResponseBodyInterface)}₢
-
-";
 }
 
 public struct PolymorphicWrappedData
@@ -364,18 +215,18 @@ public struct UnrealJsonSerializableTypeDeclaration
 			// We skip properties that are not blueprint compatible when generating the Make/Break helper functions.
 			if (!unrealPropertyDeclaration.IsBlueprintCompatible()) continue;
 
-			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.PropertyName}";
+			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.AsParameterName}";
 
 			makeSb.Append($"{paramDeclaration}, ");
 			if (unrealPropertyDeclaration.PropertyUnrealType.IsOptional())
 			{
-				makeOptionalParamNamesSb.Append($"{unrealPropertyDeclaration.PropertyName}, ");
+				makeOptionalParamNamesSb.Append($"{unrealPropertyDeclaration.AsParameterName}, ");
 			}
 
-			makeAssignmentSb.Append($"Serializable->{unrealPropertyDeclaration.PropertyName} = {unrealPropertyDeclaration.PropertyName};\n\t");
+			makeAssignmentSb.Append($"Serializable->{unrealPropertyDeclaration.PropertyName} = {unrealPropertyDeclaration.AsParameterName};\n\t");
 
-			breakSb.Append($", {unrealPropertyDeclaration.PropertyUnrealType}& {unrealPropertyDeclaration.PropertyName}");
-			breakAssignmentSb.Append($"{unrealPropertyDeclaration.PropertyName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
+			breakSb.Append($", {unrealPropertyDeclaration.PropertyUnrealType}& {unrealPropertyDeclaration.AsParameterName}");
+			breakAssignmentSb.Append($"\t{unrealPropertyDeclaration.AsParameterName} = Serializable->{unrealPropertyDeclaration.PropertyName};\n\t");
 		}
 
 		_makeParams = makeSb.ToString();
@@ -396,10 +247,6 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	OuterOwner = RequestData;
 	BeamDeserialize(ResponseContent);	
 }}";
-		}
-		else if (IsResponseBodyType == ResponseBodyType.Csv)
-		{
-			throw new Exception("You should never be seeing this! Instead, schemas that represent the result of the 'text/csv' endpoints have a special code-gen path.");
 		}
 		else if (IsResponseBodyType == ResponseBodyType.PrimitiveWrapper)
 		{
@@ -532,6 +379,7 @@ public:
 #include ""₢{nameof(includeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
 
 #include ""CoreMinimal.h""
+#include ""BeamCoreSettings.h""
 
 
 FString U₢{nameof(NamespacedTypeName)}₢Library::₢{nameof(NamespacedTypeName)}₢ToJsonString(const U₢{nameof(NamespacedTypeName)}₢* Serializable, const bool Pretty)
@@ -568,6 +416,9 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 
 	public const string BREAK_UTILITY_DEFINITION = $@"void U₢{nameof(NamespacedTypeName)}₢Library::Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢)
 {{
-	₢{nameof(_breakAssignments)}₢	
+	if(GetDefault<UBeamCoreSettings>()->BreakGuard(Serializable))
+	{{
+	₢{nameof(_breakAssignments)}₢}}
+		
 }}";
 }

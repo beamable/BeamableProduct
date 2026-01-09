@@ -16,15 +16,13 @@ namespace Beamable.Editor.Util
 			};
 
 			var size = style.CalcSize(content);
-			
-			
 			var bounds = GUILayoutUtility.GetRect(content, style, GUILayout.MinHeight(32 + padding));
 
 			var labelRect = new Rect(bounds.x, bounds.yMax - size.y, bounds.width, size.y);
 			var spinnerRect = new Rect(bounds.x, bounds.y, bounds.width, bounds.height - size.y - padding);
 
 			GUI.DrawTexture(spinnerRect, GetSpinner(), ScaleMode.ScaleToFit);
-			
+			GUI.changed = true;
 			EditorGUI.LabelField(labelRect, content, style);
 
 		}

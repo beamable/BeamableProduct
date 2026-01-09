@@ -19,6 +19,8 @@ namespace Beamable.Tests.Runtime
 	{
 		public string Cid { get; set; } = BeamableTest.DEFAULT_CID;
 		public string Pid { get; set; } = BeamableTest.DEFAULT_PID;
+		public string HostUrl => "https://test.fake.does-not-exist.beamable.com";
+		public string PortalUrl => "https://test.fake.portal.does-not-exist.beamable.com";
 	}
 
 	public class MockBeamContext : BeamContext
@@ -48,6 +50,8 @@ namespace Beamable.Tests.Runtime
 			// var cid = requester.AccessToken.Cid;
 			// var pid = requester.AccessToken.Pid;
 			var configProvider = new TestConfigProvider();
+			Beam.RuntimeConfigProvider.Fallback = configProvider;
+
 			new AccessTokenStorage(playerCode).DeleteTokenForRealm(configProvider.Cid, configProvider.Pid);
 			ctx.Requester = requester;
 			var builder = Beam.DependencyBuilder.Clone();
@@ -117,20 +121,27 @@ namespace Beamable.Tests.Runtime
 					 .WithResponse(new EmptyResponse())
 					 .WithToken(ACCESS_TOKEN);
 
-			Requester.MockRequest<RealmConfiguration>(Method.GET, "/basic/realms/client/defaults")
-					 .WithRawResponse(JsonUtility.ToJson(new RealmConfiguration
-					 {
-						 environment = "test",
-						 microserviceURI = "",
-						 websocketConfig = new WebSocketConfiguration
-						 {
-							 uri = new OptionalString(""),
-							 provider = "pubnub"
-						 },
-						 portalURI = "",
-						 storageBrowserURI = ""
-					 }))
-					 .WithToken(ACCESS_TOKEN);
+			var realmsBasicRealmConfiguration = new RealmsBasicRealmConfiguration
+			{
+				environment = "test",
+				microserviceURI = "",
+				websocketConfig = new RealmsBasicWebSocketConfiguration
+				{
+					uri = new OptionalString(""),
+					provider = "pubnub"
+				},
+				portalURI = "",
+				storageBrowserURI = ""
+			};
+			
+			Requester.MockRequest<RealmsBasicRealmConfiguration>(Method.GET, "/basic/realms/client/defaults")
+			         .WithRawResponse(JsonUtility.ToJson(realmsBasicRealmConfiguration))
+			         .WithToken(ACCESS_TOKEN);
+			
+			Requester.MockRequest<RealmsBasicRealmConfiguration>(Method.GET, "/basic/realms/client/defaults")
+			         .WithRawResponse(JsonUtility.ToJson(realmsBasicRealmConfiguration))
+			         .WithToken(ACCESS_TOKEN)
+			         .WithNoAuthHeader();
 			return this;
 		}
 

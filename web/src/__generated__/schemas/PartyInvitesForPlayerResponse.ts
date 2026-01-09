@@ -1,4 +1,9 @@
-import { PartyInvitation } from './PartyInvitation';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { PartyInvitation } from './PartyInvitation';
 
 export type PartyInvitesForPlayerResponse = { 
   invitations?: PartyInvitation[] | null; 

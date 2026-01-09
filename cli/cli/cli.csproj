@@ -33,7 +33,7 @@
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>10</LangVersion>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     
   </PropertyGroup>
@@ -64,6 +64,18 @@
     </PackageReference>
   </ItemGroup>
   
+  <ItemGroup Condition="'$(TargetFramework)'=='net8.0' OR '$(TargetFramework)'=='net9.0'">
+    <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
+    <PackageReference Include="Microsoft.NET.StringTools" Version="17.10.4" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net10.0'">
+    <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2" />
+    <PackageReference Include="Microsoft.NET.StringTools" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime"/>
+  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.0" />
@@ -84,9 +96,6 @@
     <PackageReference Include="Spectre.Console.Json" Version="0.47.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
-    <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
     <PackageReference Include="ZLogger" Version="2.5.10" />
 
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />
@@ -94,6 +103,9 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+
+    <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
+    <PackageReference Include="Dapper" Version="2.1.66"/>
     
   </ItemGroup>
 
@@ -108,6 +120,7 @@
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
+    <ProjectReference Include="..\beamable.otel.exporter\beamable.otel.exporter.csproj" />
     
   </ItemGroup>
 
@@ -124,42 +137,11 @@
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
     <!-- Unix-Based -->
-    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net9.0/')" Command="./$(OutputPath)net9.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net10.0/')" Command="./$(OutputPath)net10.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
     
     <!-- Windows-Based -->
-    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net9.0\')" Command=".\$(OutputPath)net9.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net10.0\')" Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
   </Target>
-
-<!--  <PropertyGroup Condition="$(PackageVersion.Contains('0.0.123'))==true OR '$(PackageVersion)'==''">-->
-<!--    <BeamIsWindows>$([MSBuild]::IsOSPlatform('Windows'))</BeamIsWindows>-->
-<!--    <BeamIsLinux>$([MSBuild]::IsOSPlatform('Linux'))</BeamIsLinux>-->
-<!--    <BeamIsMacOS>$([MSBuild]::IsOSPlatform('OSX'))</BeamIsMacOS>-->
-<!--    <BeamRunningArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString())</BeamRunningArchitecture>-->
-
-<!--    <BeamCollectorConfig>clickhouse-config.yaml</BeamCollectorConfig>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-windows-amd64.exe</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsWindows)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-windows-arm64.exe</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-linux-amd64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsLinux)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-linux-arm64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='X64'">collector-darwin-amd64</BeamCollectorExecutable>-->
-<!--    <BeamCollectorExecutable Condition="$(BeamIsMacOS)==true AND '$(BeamRunningArchitecture)'=='Arm64'">collector-darwin-arm64</BeamCollectorExecutable>-->
-
-<!--    <BeamCollectorExecutablePath>Resources\$(BeamCollectorExecutable)</BeamCollectorExecutablePath>-->
-<!--    <BeamCollectorConfigPath>Resources\$(BeamCollectorConfig)</BeamCollectorConfigPath>-->
-
-<!--  </PropertyGroup>-->
-
-<!--  <ItemGroup Condition="$(PackageVersion.Contains('0.0.123'))==true  OR '$(PackageVersion)'==''">-->
-<!--    <None Include="$(BeamCollectorExecutablePath)" PackagePath="$(OutputPath)" Visible="false">-->
-<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
-<!--      <TargetPath>$(BeamCollectorExecutable)</TargetPath>-->
-<!--    </None>-->
-
-<!--    <None Include="$(BeamCollectorConfigPath)" PackagePath="$(OutputPath)" Visible="false">-->
-<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
-<!--      <TargetPath>$(BeamCollectorConfig)</TargetPath>-->
-<!--    </None>-->
-<!--  </ItemGroup>-->
   
   <ItemGroup>
     <Content Include="Commands/OtelCommands/Grafana/ContainerFiles/**/*">

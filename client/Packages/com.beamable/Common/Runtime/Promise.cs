@@ -145,9 +145,6 @@ namespace Beamable.Common
 	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
-	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/learning-fundamentals">Learning Fundamentals</a> documentation
-	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -1033,7 +1030,17 @@ namespace Beamable.Common
 		{
 			var result = new Promise<T>();
 			promise.Then(value => result.CompleteSuccess(value))
-			   .Error(err => result.CompleteSuccess(callback(err)));
+			   .Error(err =>
+			   {
+				   try
+				   {
+					   result.CompleteSuccess(callback(err));
+				   }
+				   catch (Exception ex)
+				   {
+					   result.CompleteError(ex);
+				   }
+			   });
 			return result;
 		}
 
@@ -1064,6 +1071,12 @@ namespace Beamable.Common
 				}
 			});
 			return result;
+		}
+
+		public static Promise<T> ReportInnerException<T>(this Promise<T> promise, bool raiseInnerException = true)
+		{
+			promise.RaiseInnerException = raiseInnerException;
+			return promise;
 		}
 
 #if !UNITY_WEBGL || UNITY_EDITOR // webgl does not support the system.threading library

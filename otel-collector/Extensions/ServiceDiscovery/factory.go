@@ -12,10 +12,9 @@ const typeStr = "servicediscovery"
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Port:           "8686",
-		Host:           "127.0.0.1",
-		DiscoveryDelay: 10,
-		LogsBufferSize: 128,
+		DiscoveryPort:      8686,
+		DiscoveryDelay:     100,
+		DiscoveryMaxErrors: 10,
 	}
 }
 

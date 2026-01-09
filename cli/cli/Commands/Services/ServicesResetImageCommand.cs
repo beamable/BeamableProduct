@@ -1,4 +1,5 @@
 using cli.Dotnet;
+using cli.Utils;
 using Spectre.Console;
 
 namespace cli;
@@ -17,7 +18,7 @@ public class ServicesResetImageCommandOutput
 
 public class ServicesResetImageCommand : StreamCommand<ServicesResetImageCommandArgs, ServicesResetImageCommandOutput>
 {
-	public ServicesResetImageCommand() : base("image", "Delete any images associated with the given Beamable services")
+	public ServicesResetImageCommand() : base("image", ServicesDeletionNotice.REMOVED_PREFIX + "Delete any images associated with the given Beamable services")
 	{
 	}
 
@@ -28,29 +29,8 @@ public class ServicesResetImageCommand : StreamCommand<ServicesResetImageCommand
 
 	public override async Task Handle(ServicesResetImageCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, ref args.services);
-
-		await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
-		await args.BeamoLocalSystem.StartListeningToDocker();
-		
-		await AnsiConsole
-			.Progress()
-			.StartAsync(async ctx =>
-			{
-				var progressTasks = args.services.Select(id => ctx.AddTask($"Deleting Local Service Image - {id}")).ToList();
-				var actualTasks = args.services.Select(async id =>
-				{
-					await args.BeamoLocalSystem.CleanUpDocker(id);
-					var progressTask = progressTasks.First(pt => pt.Description.Contains(id));
-					progressTask.Increment(progressTask.MaxValue);
-					this.SendResults(new ServicesResetImageCommandOutput
-					{
-						message = "removed",
-						id = id
-					});
-				});
-
-				await Task.WhenAll(actualTasks);
-			});
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.UNSUPPORTED_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }

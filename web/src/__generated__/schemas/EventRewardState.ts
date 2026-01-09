@@ -1,8 +1,13 @@
-import { EventInventoryPendingRewards } from './EventInventoryPendingRewards';
-import { EventInventoryRewardCurrency } from './EventInventoryRewardCurrency';
-import { EventInventoryRewardItem } from './EventInventoryRewardItem';
-import { EventRewardObtain } from './EventRewardObtain';
-import { ItemCreateRequest } from './ItemCreateRequest';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { EventInventoryPendingRewards } from './EventInventoryPendingRewards';
+import type { EventInventoryRewardCurrency } from './EventInventoryRewardCurrency';
+import type { EventInventoryRewardItem } from './EventInventoryRewardItem';
+import type { EventRewardObtain } from './EventRewardObtain';
+import type { ItemCreateRequest } from './ItemCreateRequest';
 
 export type EventRewardState = { 
   claimed: boolean; 

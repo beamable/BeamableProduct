@@ -19,14 +19,34 @@ namespace Beamable.Common
 		/// The PID is the project id, or realm id.
 		/// </summary>
 		string Pid { get; }
+		
+		/// <summary>
+		/// The api endpoint for Beamable
+		/// </summary>
+		string HostUrl { get; }
+		
+		/// <summary>
+		/// The portal endpoint for Beamable
+		/// </summary>
+		string PortalUrl { get; }
 	}
 
-	public class DefaultRuntimeConfigProvider : IRuntimeConfigProvider
+	public interface IDefaultRuntimeConfigProvider : IRuntimeConfigProvider
+	{
+		IRuntimeConfigProvider Fallback { get; set; }
+
+		new string Pid { get; set; }
+	}
+
+	public class DefaultRuntimeConfigProvider : IDefaultRuntimeConfigProvider
 	{
 		public IRuntimeConfigProvider Fallback { get; set; }
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Cid"/>
 		public string Cid => Fallback.Cid;
+
+		public string HostUrl => Fallback.HostUrl;
+		public string PortalUrl => Fallback.PortalUrl;
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Pid"/>
 		public string Pid

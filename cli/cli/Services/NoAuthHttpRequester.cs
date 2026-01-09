@@ -4,22 +4,32 @@ using Beamable.Common.Api.Auth;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
+using Beamable.Server;
 
 namespace cli;
+
+public delegate string HostFunction();
+
 
 public class NoAuthHttpRequester : IRequester
 {
 	private const string CONTENT_TYPE = "application/json";
 	private const string BASE_ADDRESS = "https://api.beamable.com";
 	private readonly HttpClient _client;
-	private readonly ConfigService _config;
+	private readonly HostFunction _config;
 
-	private string Host => _config.GetConfigString(Constants.CONFIG_PLATFORM);
+	private string Host => _config?.Invoke();
 
 	public NoAuthHttpRequester(ConfigService config)
 	{
 		_client = new HttpClient();
-		_config = config;
+		_config = () => config.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST);
+	}
+	
+	public NoAuthHttpRequester(string host)
+	{
+		_client = new HttpClient();
+		_config = () => host;
 	}
 
 	public string EscapeURL(string url)
@@ -45,6 +55,7 @@ public class NoAuthHttpRequester : IRequester
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
 		req.RequestUri = new Uri(uri);
+		Log.Verbose($"no auth request uri=[{uri}]");
 
 		if (body is string bodyStr)
 		{

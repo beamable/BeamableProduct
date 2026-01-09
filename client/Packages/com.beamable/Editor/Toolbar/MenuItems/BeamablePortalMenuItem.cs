@@ -1,3 +1,4 @@
+using Beamable.Common;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -10,7 +11,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override void OnItemClicked(BeamEditorContext ctx)
 		{
-			string url = $"{BeamableEnvironment.PortalUrl}/{ctx.CurrentCustomer.Cid}/games/{ctx.ProductionRealm.Pid}/realms/{ctx.CurrentRealm.Pid}/dashboard?refresh_token={ctx.Requester.Token.RefreshToken}";
+			string url = $"{BeamableEnvironment.PortalUrl}/{ctx.BeamCli.Cid}/games/{ctx.BeamCli.ProductionRealm.Pid}/realms/{ctx.BeamCli.Pid}/dashboard?refresh_token={ctx.Requester.Token.RefreshToken}";
 			Application.OpenURL(url);
 		}
 	}

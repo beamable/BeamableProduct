@@ -29,14 +29,19 @@ jobs:
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build CLI 
         run: |
           ./setup.sh
           dotnet build ./cli/cli 
       - name: Build and Publish Docs
         run: |
-          dotnet run -f net9.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
+          dotnet run -f net10.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
       - name: Post to a Slack channel
         id: slack
         uses: slackapi/slack-github-action@v1.21.0

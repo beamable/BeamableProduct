@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <BeamBuildCacheInvalidationTimeout Condition="'$(BeamBuildCacheInvalidationTimeout)'==''">1</BeamBuildCacheInvalidationTimeout>
         <BeamIsDevVersion Condition="$(BeamableVersion.Contains('0.0.123'))==true">true</BeamIsDevVersion>
         
         <BeamCollectorVersion Condition="'$(BeamIsDevVersion)'=='true'">0.0.123</BeamCollectorVersion>
@@ -28,11 +29,26 @@
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
             Project="$(BeamableLocalDevProjectsGlob)"/>
     
+    <Target Name="beam-invalidate-build-cache" AfterTargets="AfterBuild" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true' AND '$(BeamPreventBuildCacheInvalidation)'!='true'">
+        <Exec Condition="'$(BeamPlatform)'=='osx'"
+              EchoOff="true"
+              IgnoreExitCode="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="nohup sh -c 'sleep $(BeamBuildCacheInvalidationTimeout) &amp;&amp; touch $(MSBuildProjectFullPath)' &gt;/dev/null 2&gt;&amp;1 &amp;" 
+        />
+        <Exec Condition="'$(BeamPlatform)'=='win'"
+              EchoOff="true"
+              IgnoreExitCode="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="powershell -NoProfile -Command &quot;Start-Process powershell -ArgumentList '-NoProfile -Command &quot;Start-Sleep -Seconds $(BeamBuildCacheInvalidationTimeout); (Get-Item ''$(MSBuildProjectFullPath)'').LastWriteTime = Get-Date&quot;' -WindowStyle Hidden&quot;" 
+        />
+    </Target>
+    
     <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
-    <Target Name="generate-oapi" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true'">
+    <Target Name="generate-oapi" AfterTargets="AfterBuild" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true' AND '$(BeamPreventOapiGen)'!='true'">
         <Message Text="Generating OAPI specifications" Importance="high" />
-        <Exec Command="dotnet $(TargetPath) --generate-oapi" 
-              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath)"/>
+        <Exec Command="dotnet &quot;$(TargetPath)&quot; --generate-oapi --tl:off" 
+              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath);MSBUILDTERMINALLOGGER=off"/>
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
     
@@ -47,8 +63,25 @@
             <EmbeddedResource Include="$(BeamPropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
         </ItemGroup>
     </Target>
+    
+    <Target Name="BeamableSettings" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service'">
+        <Message Importance="high" Text="Bundling Beamable Settings..."/>
+        <PropertyGroup>
+            <BeamSettingsFile>$(IntermediateOutputPath)/beamableSettings.txt</BeamSettingsFile>
+            
+        </PropertyGroup>
+        <Delete Files="$(BeamSettingsFile)"/>
 
-    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamEnableCollectorResolution)'=='true'">
+        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>
+<!--        TODO: add more settings?   -->
+<!--        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>-->
+        
+        <ItemGroup>
+            <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamProjectType)'=='service' AND '$(BeamDisableCollectorResolution)'!='true'">
 
         <PropertyGroup>
             <ActualOutputDir>$(OutputPath)</ActualOutputDir>
@@ -56,19 +89,22 @@
         </PropertyGroup>
 
         <Message Importance="high" Text="resolving collector... $(ActualOutputDir)"/>
-        <Message Condition="'$(BeamCollectorExists)'!='true'"
+        <Message Importance="normal" Text="collector exists=[$(BeamCollectorExists)]"/>
+        <Message Importance="normal" Text="disable collector resolution=[$(BeamDisableCollectorResolution)]"/>
+        <Message Importance="normal" Text="collector bin path=[$(BeamCollectorBinaryFilepath)]"/>
+        <Message Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
                  Importance="high"
                  Text="Downloading collector... $(BeamCollectorVersion) --- $(BeamCollectorPlatformArchArg)"
         />
-        <Exec   Condition="'$(BeamCollectorExists)'!='true'"
-                Command="$(BeamableDotnetPath) $(BeamableTool) collector get $(BeamCollectorPlatformArchArg)"
-                EnvironmentVariables=""/>
+        <Exec   Condition="'$(BeamCollectorExists)'!='true' AND '$(BeamDisableCollectorResolution)'!='true'"
+                Command="$(BeamableDotnetPath) $(BeamableTool) telemetry collector get $(BeamCollectorPlatformArchArg) --quiet"
+                EnvironmentVariables="MSBUILDTERMINALLOGGER=off"/>
 
         <Message
                 Importance="high"
-                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)] "
+                Text="Copying collector to output folder from path = [$(BeamCollectorFolder)]"
         />
-        <Copy
+        <Copy   Condition="'$(BeamDisableCollectorResolution)'!='true'"
                 SourceFiles="$(BeamCollectorBinaryFilepath);$(BeamCollectorConfigFilepath)"
                 DestinationFolder="$(ActualOutputDir)"
                 SkipUnchangedFiles="true"

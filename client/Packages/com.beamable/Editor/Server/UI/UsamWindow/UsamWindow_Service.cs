@@ -74,7 +74,7 @@ namespace Beamable.Editor.Microservice.UI2
 					iconPadding = 2;
 				}
 
-				var isProductionRealm = ActiveContext.CurrentRealm.IsProduction;
+				var isProductionRealm = ActiveContext.BeamCli.CurrentRealm.IsProduction;
 				BeamGUI.ShowDisabled(!isProductionRealm && !isCreating, () =>
 				{
 					var tooltip = isRunning
@@ -254,6 +254,10 @@ namespace Beamable.Editor.Microservice.UI2
 				             {
 					             usam.ToggleServiceAutoGenerateClient(service.beamoId);
 				             });
+				menu.AddItem(new GUIContent("Generate Assembly Definition Projects"), false, () =>
+				{
+					CsProjUtil.OnPreGeneratingCSProjectFiles(usam);
+				});
 			}
 
 

@@ -58,6 +58,14 @@ public class AccountMeCommandOutput
 	/// </summary>
 	public List<AccountMeExternalIdentity> external;
 
+	/// <summary>
+	/// The default role for the user on all realms. This may be overidden by the <see cref="roles"/> list.
+	/// </summary>
+	public string roleString;
+	
+	/// <summary>
+	/// Specific roles per realm
+	/// </summary>
 	public List<RealmRole> roles;
 
 	/// <summary>
@@ -208,6 +216,7 @@ public class AccountMeCommand
 			language = response.language,
 			thirdPartyAppAssociations = response.thirdPartyAppAssociations.ToList(),
 			tokenCid = token.Cid,
+			roleString = response.roleString,
 			roles = response.roles.GetOrElse(new RoleMapping[]{}).Select(m => new RealmRole
 			{
 				pid = m.projectId,

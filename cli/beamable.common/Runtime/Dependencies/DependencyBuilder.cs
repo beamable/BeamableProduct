@@ -508,6 +508,17 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddScoped<T>() => AddScoped<T, T>();
 
+		public IDependencyBuilder AddScoped(Type tImpl)
+		{
+			ScopedServices.Add(new ServiceDescriptor
+			{
+				Interface = tImpl,
+				Implementation = tImpl,
+				Factory = (provider) => Instantiate(tImpl, provider)
+			});
+			return this;
+		}
+
 
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{

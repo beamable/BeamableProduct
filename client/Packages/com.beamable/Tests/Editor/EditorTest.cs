@@ -32,22 +32,18 @@ namespace Beamable.Editor.Tests
 		public IEnumerator Setup()
 		{
 			var builder = BeamEditorDependencies.DependencyBuilder.Clone();
-			builder.ReplaceSingleton<IRuntimeConfigProvider>(new TestConfigProvider
+			var testConfig = new TestConfigProvider
 			{
-				Cid = "000",
-				Pid = "111"
-			});
-			builder.ReplaceSingleton<IAccountService, MockAccountService>(provider =>
-			{
-				var service = new MockAccountService();
-
-				return service;
-			});
+				// Cid = "000",
+				// Pid = "111"
+			};
+			builder.ReplaceSingleton<IRuntimeConfigProvider>(testConfig);
+			Beam.RuntimeConfigProvider.Fallback = testConfig;
 			Configure(builder);
 
 			Context = BeamEditorContext.Instantiate("test", builder);
 
-			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "000", "111", "token", "refreshToken", 420);
+			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), testConfig.Cid, testConfig.Pid, "token", "refreshToken", 420);
 
 			yield return Context.InitializePromise.ToYielder();
 		}

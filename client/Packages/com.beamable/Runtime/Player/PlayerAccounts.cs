@@ -1774,7 +1774,7 @@ namespace Beamable.Player
 		/// If the third party token has already been added to a different <see cref="PlayerAccount"/>,
 		/// then the the resulting <see cref="RegistrationResult.error"/> field will be <see cref="PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN"/>
 		///
-		/// To get the token, follow the available <a href="https://docs.beamable.com/docs/identity">documentation </a>
+		/// To get the token, follow the available <a href="https://help.beamable.com/Unity-4.0/unity/user-reference/beamable-services/identity/identity/">documentation </a>
 		/// </summary>
 		/// <param name="thirdParty">
 		/// Which <see cref="AuthThirdParty"/> is being added to the <see cref="PlayerAccount"/>

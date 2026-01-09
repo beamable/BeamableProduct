@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Server
 {
@@ -12,7 +13,7 @@ namespace Beamable.Server
 	   /// </summary>
 	   /// <param name="method">The service method for which to retrieve parameters.</param>
 	   /// <returns>An array of method parameters.</returns>
-      object[] GetParameters(ServiceMethod method);
+      object[] GetParameters(ServiceMethod method, IDependencyProvider provider);
    }
 
 	/// <summary>
@@ -32,7 +33,7 @@ namespace Beamable.Server
 	   }
 
 	   /// <inheritdoc />
-	   public object[] GetParameters(ServiceMethod method)
+	   public object[] GetParameters(ServiceMethod method, IDependencyProvider provider)
 	   {
 		   var hasPayloadProperty = _ctx.BodyElement.TryGetProperty("payload", out var payloadElem);
 
@@ -44,7 +45,7 @@ namespace Beamable.Server
 		   {
 			   if (!isPayloadArray)
 			   {
-				   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
+				   internalProvider = new NamedParameterProvider(_ctx);
 			   }
 			   else
 			   {
@@ -58,10 +59,10 @@ namespace Beamable.Server
 		   }
 		   else
 		   {
-			   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
+			   internalProvider = new NamedParameterProvider(_ctx);
 		   }
 
-		   return internalProvider.GetParameters(method);
+		   return internalProvider.GetParameters(method, provider);
 	   }
    }
 
@@ -84,7 +85,7 @@ namespace Beamable.Server
       }
 
       /// <inheritdoc />
-      public object[] GetParameters(ServiceMethod method)
+      public object[] GetParameters(ServiceMethod method, IDependencyProvider provider)
       {
 	      if (_bodyElement.TryGetProperty("payload", out var payloadString))
 	      {
@@ -130,9 +131,9 @@ namespace Beamable.Server
 	/// </summary>
    public class NamedParameterProvider : IParameterProvider
    {
-	   private readonly JsonElement _bodyElement;
+	   private MicroserviceRequestContext _ctx;
 
-      // public NamedParameterProvider(MicroserviceRequestContext ctx)
+	   // public NamedParameterProvider(MicroserviceRequestContext ctx)
       // {
       //    _bodyDoc = JsonDocument.Parse(ctx.Body);
       // }
@@ -141,26 +142,36 @@ namespace Beamable.Server
       /// Initializes a new instance of the <see cref="NamedParameterProvider"/> class.
       /// </summary>
       /// <param name="bodyElement">The JSON element representing the payload with named parameters.</param>
-      public NamedParameterProvider(JsonElement bodyElement)
+      public NamedParameterProvider(MicroserviceRequestContext ctx)
       {
-	      _bodyElement = bodyElement;
+	      _ctx = ctx;
       }
 
       /// <inheritdoc />
-      public object[] GetParameters(ServiceMethod method)
+      public object[] GetParameters(ServiceMethod method, IDependencyProvider provider)
       {
          var args = new object[method.Deserializers.Count];
 
          for (var i = 0; i < method.ParameterNames.Count; i++)
          {
+	         var parameter = method.ParameterInfos[i];
             var parameterName = method.ParameterNames[i];
+            var source = method.ParameterSources[parameterName];
 
-            if (!_bodyElement.TryGetProperty(parameterName, out var jsonElement))
+            switch (source)
             {
-               throw new ParameterMissingRequiredException(parameterName);
-            }
+	            case ParameterSource.Body:
+		            if (!_ctx.BodyElement.TryGetProperty(parameterName, out var jsonElement))
+		            {
+			            throw new ParameterMissingRequiredException(parameterName);
+		            }
 
-            args[i] = method.ParameterDeserializers[parameterName](jsonElement.GetRawText());
+		            args[i] = method.ParameterDeserializers[parameterName](jsonElement.GetRawText());
+		            break;
+	            case ParameterSource.Injection:
+		            args[i] = provider.GetService(parameter.ParameterType);
+		            break;
+            }
          }
 
          return args;

@@ -1,5 +1,10 @@
-import { ServiceComponent } from './ServiceComponent';
-import { ServiceDependencyReference } from './ServiceDependencyReference';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { ServiceComponent } from './ServiceComponent';
+import type { ServiceDependencyReference } from './ServiceDependencyReference';
 
 export type ServiceReference = { 
   archived: boolean; 

@@ -23,7 +23,13 @@ namespace Beamable.Editor.Modules.Sessions
 			}
 			else
 			{
+				#if UNITY_6000_3_OR_NEWER
+				startPath = AssetDatabase.GetAssetPath(obj.GetEntityId());
+				#else
 				startPath = AssetDatabase.GetAssetPath(obj.GetInstanceID());
+				#endif
+				
+				
 			}
 
 			if (startPath.Length == 0)
@@ -87,6 +93,7 @@ namespace Beamable.Editor.Modules.Sessions
 				return;
 			}
 
+			Debug.Log("Beamable is creating a session parameter provider creator.");
 			var assetPath = Path.ChangeExtension(path, ".asset");
 			AssetDatabase.CreateAsset(assetInstance, assetPath);
 

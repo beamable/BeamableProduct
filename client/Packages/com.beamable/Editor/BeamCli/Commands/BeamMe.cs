@@ -45,5 +45,15 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
+        public virtual MeWrapper OnErrorNoTokenError(System.Action<ReportDataPoint<BeamNoTokenError>> cb)
+        {
+            this.Command.On("errorNoTokenError", cb);
+            return this;
+        }
+        public virtual MeWrapper OnErrorInvalidTokenError(System.Action<ReportDataPoint<BeamInvalidTokenError>> cb)
+        {
+            this.Command.On("errorInvalidTokenError", cb);
+            return this;
+        }
     }
 }

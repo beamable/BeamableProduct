@@ -67,5 +67,19 @@ public static class StringHelper
 	/// </returns>
 	/// </summary>
 	public static string Capitalize(string word)
-		=> string.IsNullOrEmpty(word) ? word : char.ToUpper(word[0]) + word[1..];
+		=> string.IsNullOrEmpty(word) ? word : char.ToUpperInvariant(word[0]) + word[1..];
+
+	/// <summary>
+	/// Converts a string to a camelCase identifier.
+	/// </summary>
+	/// <param name="input">The input string to convert.</param>
+	/// <returns>A camelCase identifier formed by converting the input to PascalCase and then lowercasing the first character.</returns>
+	public static string ToCamelCaseIdentifier(string input)
+	{
+		if (string.IsNullOrEmpty(input))
+			return string.Empty;
+
+		var pascalCase = ToPascalCaseIdentifier(input);
+		return char.ToLowerInvariant(pascalCase[0]) + pascalCase[1..];
+	}
 }

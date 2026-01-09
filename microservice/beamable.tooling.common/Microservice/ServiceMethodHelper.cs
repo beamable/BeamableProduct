@@ -14,6 +14,18 @@ using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
+	public class ServiceMethodInstanceData : ServiceMethodInstanceData<object>
+	{
+	}
+
+	public class ServiceMethodInstanceData<T> where T : class
+	{
+		public IDependencyProvider provider;
+		public T instance;
+	}
+
+	public delegate ServiceMethodInstanceData ServiceMethodInstanceFactory(MicroserviceRequestContext context);
+	
 	/// <summary>
 	/// Represents a provider for service methods.
 	/// </summary>
@@ -27,12 +39,17 @@ namespace Beamable.Server
 		/// <summary>
 		/// The factory function to create service method instances.
 		/// </summary>
-		public Func<MicroserviceRequestContext, object> factory;
+		public ServiceMethodInstanceFactory factory;
 
 		/// <summary>
 		/// The path prefix for the service methods.
 		/// </summary>
 		public string pathPrefix;
+
+		/// <summary>
+		/// The client code prefix for the service methods.
+		/// </summary>
+		public string clientPrefix;
 	}
 
 	/// <summary>
@@ -43,7 +60,7 @@ namespace Beamable.Server
 	   /// <summary>
 	   /// Scans for service methods based on various providers and generators.
 	   /// </summary>
-      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
+      public static ServiceMethodCollection Scan(IMicroserviceAttributes serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
       {
          var output = new List<ServiceMethod>();
          foreach (var provider in serviceMethodProviders)
@@ -58,8 +75,7 @@ namespace Beamable.Server
          return new ServiceMethodCollection(output);
       }
 	   
-	   private static List<ServiceMethod> ScanTypeFederation(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
-
+	   private static List<ServiceMethod> ScanTypeFederation(IMicroserviceAttributes serviceAttribute, ServiceMethodProvider provider)
 	   {
 		   var type = provider.instanceType;
 		   var output = new List<ServiceMethod>();
@@ -131,7 +147,7 @@ namespace Beamable.Server
 	   /// <param name="isFederatedCallbackMethod">Whether or not this method is meant to be used only as part of a federated flow (<see cref="FederatedLoginCallableGenerator"/>).</param>
 	   /// <returns>The created service method.</returns>
 	   public static ServiceMethod CreateMethod(
-	      MicroserviceAttribute serviceAttribute,
+	      IMicroserviceAttributes serviceAttribute,
 	      ServiceMethodProvider provider,
 	      string path,
 	      string tag,
@@ -160,17 +176,20 @@ namespace Beamable.Server
 		      out var executor,
 		      out var deserializers,
 		      out var namedDeserializers,
+		      out var namedParameterSources,
 		      out var parameterNames,
 		      out var parameters);
 
 	      var serviceMethod = new ServiceMethod
 	      {
+		      ClientNamespacePrefix = provider.clientPrefix,
 		      ParameterInfos = parameters.ToList(),
 		      InstanceFactory = provider.factory,
 		      ParameterNames = parameterNames,
 		      ParameterDeserializers = namedDeserializers,
 		      RequiredScopes = requiredScopes,
 		      RequireAuthenticatedUser = requiredUser,
+		      ParameterSources = namedParameterSources,
 		      Path = path,
 		      Deserializers = deserializers,
 		      Method = method,
@@ -186,12 +205,14 @@ namespace Beamable.Server
 	      out MethodInvocation executor,
 	      out List<ParameterDeserializer> deserializers,
 	      out Dictionary<string, ParameterDeserializer> namedDeserializers,
+	      out Dictionary<string, ParameterSource> namedParameterSources,
 	      out List<string> parameterNames,
 	      out ParameterInfo[] parameters
 	      )
       {
 	      parameters = method.GetParameters();
 	      deserializers = new List<ParameterDeserializer>();
+	      namedParameterSources = new Dictionary<string, ParameterSource>();
 	      namedDeserializers = new Dictionary<string, ParameterDeserializer>(); // parameter name -> deserializer
 	      parameterNames = new List<string>();
 	      foreach (var parameter in parameters)
@@ -199,7 +220,7 @@ namespace Beamable.Server
 		      var pType = parameter.ParameterType;
 		      var parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
 		      var parameterName = parameterAttribute?.ParameterNameOverride ?? parameter.Name;
-
+		      namedParameterSources[parameterName] = parameterAttribute?.Source ?? ParameterSource.Body;
 		      ParameterDeserializer deserializer;
 		      if (typeof(string) == pType)
 		      {
@@ -247,9 +268,8 @@ namespace Beamable.Server
 	      }
 	      else
 	      {
-		      var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-
-		      if (isAsync)
+		      var isTaskBased = resultType.IsAssignableTo(typeof(Task));
+		      if (isTaskBased)
 		      {
 			      executor = (target, args) =>
 			      {
@@ -294,7 +314,7 @@ namespace Beamable.Server
 		   return json.Substring(1, json.Length - 2);
 	   }
 
-	   private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+	   private static List<ServiceMethod> ScanType(IMicroserviceAttributes serviceAttribute, ServiceMethodProvider provider)
       {
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
@@ -324,7 +344,7 @@ namespace Beamable.Server
                servicePath = method.Name;
             }
 
-            servicePath = provider.pathPrefix + servicePath;
+            servicePath = (provider.pathPrefix?.Trim('/') + '/' + servicePath.Trim('/')).Trim('/');
 
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;

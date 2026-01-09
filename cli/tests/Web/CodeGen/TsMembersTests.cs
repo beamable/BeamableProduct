@@ -131,4 +131,46 @@ public class TsMembersTests
 		Assert.AreEqual(expected, writer.ToString());
 		Assert.AreEqual(expected, param.Render());
 	}
+
+	[Test]
+	public void FunctionParameter_JavaScript_WritesParamOptionalWithoutMarker()
+	{
+		const string expected = "x";
+		var p = new TsFunctionParameter("x", TsType.String, true)
+			.AsOptional();
+		var writer = new TsCodeWriter();
+		p.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, p.Render());
+	}
+
+	[Test]
+	public void FunctionParameter_JavaScript_WritesParamDefaultWithoutType()
+	{
+		const string expected = "x = 5";
+		var p = new TsFunctionParameter("x", TsType.Number, true)
+			.WithDefaultValue(new TsLiteralExpression(5));
+		var writer = new TsCodeWriter();
+		p.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, p.Render());
+	}
+
+	[Test]
+	public void Method_JavaScript_Minimal_WritesMethodWithoutTypes()
+	{
+		const string expected = "async m(a) {\n" +
+		                        "  await a;\n" +
+		                        "}\n";
+		var method = new TsMethod("m", true)
+			.AddModifier(TsModifier.Async)
+			.AddTypeParameter(new TsGenericParameter("T"))
+			.AddParameter(new TsFunctionParameter("a", TsType.Of("T"), true))
+			.AddBody(new TsAwaitStatement(new TsIdentifier("a")))
+			.SetReturnType(TsType.Void);
+		var writer = new TsCodeWriter();
+		method.Write(writer);
+		Assert.AreEqual(expected, writer.ToString());
+		Assert.AreEqual(expected, method.Render());
+	}
 }

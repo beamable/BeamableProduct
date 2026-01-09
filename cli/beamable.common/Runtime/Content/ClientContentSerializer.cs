@@ -8,6 +8,7 @@ namespace Beamable.Common.Content.Serialization
 		private static ClientContentSerializer _instance;
 
 		private static ContentSerializer<ContentObject> Instance => _instance ?? (_instance = new ClientContentSerializer());
+		
 
 		public static string SerializeContent<TContent>(TContent content) where TContent : IContentObject, new() =>
 		   Instance.Serialize(content);
@@ -19,12 +20,23 @@ namespace Beamable.Common.Content.Serialization
 		public new static string SerializeProperties<TContent>(TContent content) where TContent : IContentObject =>
 			Instance.SerializeProperties(content);
 
+
 		protected override TContent CreateInstance<TContent>()
 		{
 			return ScriptableObject.CreateInstance<TContent>();
 		}
 
+		protected override ContentObject CreateInstanceWithType(Type type)
+		{
+			return (ContentObject)ScriptableObject.CreateInstance(type);
+		}
+
 		public static TContent DeserializeContent<TContent>(string json, bool disableExceptions = false) where TContent : ContentObject, IContentObject, new() =>
 		   Instance.Deserialize<TContent>(json, disableExceptions);
+
+		public static IContentObject DeserializeContentFromCli(string json, IContentObject instanceToDeserialize, string contentId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
+		{
+			return Instance.DeserializeFromCli(json, instanceToDeserialize, contentId, out schemaIsDifferent, disableExceptions);
+		}
 	}
 }

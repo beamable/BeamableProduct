@@ -1,9 +1,13 @@
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Modules.EditorConfig;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -101,13 +105,52 @@ Do not add them from the custom solution file that opens from Beam Services wind
 ";
 
 		private const string invalidAssembliesFilePath =
-			"Packages/com.beamable.server/Editor/invalid-assemblies.txt";
+			"Packages/com.beamable/Editor/Server/invalid-assemblies.txt";
 
 		private const string customInvalidAssembliesPath = "Assets/Beamable/Resources/custom-invalid-assemblies.txt";
 
 		public static void GenerateAllAssemblies(List<Assembly> assemblies)
 		{
 			
+		}
+
+		public readonly struct ReferenceValidator
+		{
+			private readonly HashSet<string> _invalidReferences;
+			private readonly string[] _invalidReferencesPatterns;
+
+			public static ReferenceValidator Build()
+			{
+				var lines = File.ReadAllLines(invalidAssembliesFilePath);
+			
+				if (File.Exists(customInvalidAssembliesPath))
+				{
+					var customInvalidRefs = File.ReadAllLines(customInvalidAssembliesPath);
+					lines = lines.Concat(customInvalidRefs).ToArray();
+				}
+
+				var invalidReferences = lines.Where(e => !e.EndsWith("*")).ToHashSet();
+				var invalidReferencesPatterns = lines.Except(invalidReferences).Select(e => e.Replace("*","")).ToArray();
+
+				return new ReferenceValidator(invalidReferences, invalidReferencesPatterns);
+			}
+			
+			ReferenceValidator(HashSet<string> invalidReferences, string[] invalidReferencesPatterns)
+			{
+				this._invalidReferences = invalidReferences;
+				this._invalidReferencesPatterns = invalidReferencesPatterns;
+			}
+
+			
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			public bool IsValid(string reference)
+			{
+				if(_invalidReferences.Contains(reference))
+				{
+					return false;
+				}
+				return !_invalidReferencesPatterns.Any(reference.StartsWith);
+			}
 		}
 
 		public static void GenerateAllReferencedAssemblies(UsamService usam)
@@ -203,27 +246,39 @@ Do not add them from the custom solution file that opens from Beam Services wind
 		public static List<string> GetValidDllReferences(Assembly assembly, out List<string> warnings)
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
-			warnings = new List<string>();
-			var outputDlls = new List<string>();
-			foreach (var dll in assembly.compiledAssemblyReferences)
+			projectRoot = Path.GetFullPath(projectRoot);
+			var parallelOutput = new ConcurrentBag<string>();
+			var parallelWarnings = new ConcurrentBag<string>();
+			assembly.compiledAssemblyReferences.AsParallel().ForAll(dll =>
 			{
-				var fullDllName = Path.GetFullPath(dll);
-
-				var name = Path.GetFileName(dll);
-				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) && name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
+				var start = dll.LastIndexOf('/') + 1;
+				var length = dll.Length - start - 4; // 4 is removed so `.dll` is not taken into account.
+				var name = dll.Substring(start, length);
+				if (!IsValidReference(name))
 				{
-					warnings.Add("Any references Newtonsoft.JSON need to be refactored to use Nuget");
-					continue;
+					return;
 				}
-				
-				if (!fullDllName.StartsWith(projectRoot)) continue;
-				// var dllPath = dll.Substring(fullDllName.Length + 1);
-				var dllName = Path.GetFileName(fullDllName);
-				if (!IsValidReference(dllName.Replace(".dll", ""))) continue;
-				outputDlls.Add(FileUtil.GetProjectRelativePath(fullDllName));
-			}
 
-			return outputDlls;
+				var fullPath = Path.GetFullPath(dll);
+				if (!fullPath.StartsWith(projectRoot))
+				{
+					return;
+				}
+
+				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) &&
+				    name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
+				{
+					parallelWarnings.Add("Any references Newtonsoft.JSON need to be refactored to use Nuget");
+					return;
+				}
+
+				var relativePath = fullPath.Replace(projectRoot + Path.DirectorySeparatorChar, "")
+					.Replace("\\", "/");
+				parallelOutput.Add(relativePath);
+			});
+			
+			warnings = parallelWarnings.ToList();
+			return parallelOutput.ToList();
 		}
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)
@@ -236,35 +291,11 @@ Do not add them from the custom solution file that opens from Beam Services wind
 				}
 			}
 		}
-		
-		public static bool IsValidReference(string referenceName)
-		{
-			var invalidReferences = File.ReadAllLines(invalidAssembliesFilePath);
 
-			if (File.Exists(customInvalidAssembliesPath))
-			{
-				var customInvalidRefs = File.ReadAllLines(customInvalidAssembliesPath);
-				invalidReferences = invalidReferences.Concat(customInvalidRefs).ToArray();
-			}
-			
-			foreach (var invalidRef in invalidReferences)
-			{
-				if (invalidRef.Contains("*"))
-				{
-					if (referenceName.StartsWith(invalidRef.Replace("*", "")))
-					{
-						return false;
-					}
-				}
+		private static readonly ReferenceValidator Validator = ReferenceValidator.Build();
 
-				if (referenceName.Equals(invalidRef))
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsValidReference(string referenceName) => Validator.IsValid(referenceName);
 
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
 		{

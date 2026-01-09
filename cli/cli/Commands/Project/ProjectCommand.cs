@@ -3,6 +3,7 @@ using cli.Services;
 using cli.Utils;
 using Microsoft.Build.Evaluation;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.Reflection;
 using System.Runtime.Loader;
 using Beamable.Server;
@@ -28,12 +29,18 @@ public class ProjectCommand : CommandGroup
 		command.AddOption(option, binder);
 	}
 
+	private static Option<bool> ExactIdsOption = new Option<bool>(
+		name: "--exact-ids",
+		description:
+		"By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids");
+	
 	public static void AddIdsOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, List<string>> binder)
 		where TArgs : CommandArgs
 	{
 		command.AddOption(new Option<List<string>>(
 			name: "--ids",
-			description: "The list of services to include, defaults to all local services (separated by whitespace)") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
+			description: "The list of services to include, defaults to all local services (separated by whitespace). To use NO services, use the --exact-ids flag") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
+		command.AddOption(ExactIdsOption);
 	}
 
 	public static void AddServiceTagsOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, List<string>> bindWithTags, Action<TArgs, List<string>> bindWithoutTags)
@@ -92,7 +99,11 @@ public class ProjectCommand : CommandGroup
 	public static void FinalizeServicesArg(CommandArgs args, List<string> withTags, List<string> withoutTags, bool includeStorage, ref List<string> services, bool allowEmptyServices=false)
 	{
 		services ??= new List<string>();
-		var noExplicitlyListedServices = services.Count == 0;
+
+		var ctx = args.Provider.GetService<BindingContext>();
+		var exactResult = ctx.ParseResult.GetValueForOption(ExactIdsOption);
+		
+		var noExplicitlyListedServices = services.Count == 0 && !exactResult;
 		var noInclusionTags = withTags == null || withTags.Count == 0;
 
 		if (noExplicitlyListedServices && noInclusionTags) // get all services
@@ -141,13 +152,14 @@ public class ProjectCommand : CommandGroup
 		Log.Debug("using services " + string.Join(",", services));
 	}
 
-	public static void FinalizeServicesArg(CommandArgs args, ref List<string> services)
+	public static void FinalizeServicesArg(CommandArgs args, ref List<string> services, bool allowEmptyServices=false)
 	{
 		FinalizeServicesArg(args,
 			withTags: null,
 			withoutTags: null,
 			includeStorage: false,
-			ref services);
+			ref services,
+			allowEmptyServices);
 	}
 
 	public static ProjectBuildStatusReport IsProjectBuiltMsBuild(Project project)

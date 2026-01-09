@@ -1,305 +1,315 @@
-import { AnnouncementContentResponse } from '@/__generated__/schemas/AnnouncementContentResponse';
-import { AnnouncementDto } from '@/__generated__/schemas/AnnouncementDto';
-import { AnnouncementQueryResponse } from '@/__generated__/schemas/AnnouncementQueryResponse';
-import { AnnouncementRawResponse } from '@/__generated__/schemas/AnnouncementRawResponse';
-import { AnnouncementRequest } from '@/__generated__/schemas/AnnouncementRequest';
-import { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import { DELETE } from '@/constants';
-import { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnouncementRequest';
-import { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
-import { HttpRequester } from '@/network/http/types/HttpRequester';
-import { HttpResponse } from '@/network/http/types/HttpResponse';
-import { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
-import { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 import { makeApiRequest } from '@/utils/makeApiRequest';
-import { objectIdPlaceholder } from '@/constants';
+import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
+import type { AnnouncementContentResponse } from '@/__generated__/schemas/AnnouncementContentResponse';
+import type { AnnouncementDto } from '@/__generated__/schemas/AnnouncementDto';
+import type { AnnouncementQueryResponse } from '@/__generated__/schemas/AnnouncementQueryResponse';
+import type { AnnouncementRawResponse } from '@/__generated__/schemas/AnnouncementRawResponse';
+import type { AnnouncementRequest } from '@/__generated__/schemas/AnnouncementRequest';
+import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
+import type { DeleteAnnouncementRequest } from '@/__generated__/schemas/DeleteAnnouncementRequest';
+import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { HttpRequester } from '@/network/http/types/HttpRequester';
+import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefinitionsResponse';
+import type { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 
-export class AnnouncementsApi {
-  constructor(
-    private readonly r: HttpRequester
-  ) {
-  }
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param tagNameFilter - The `tagNameFilter` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetListTagsBasic(requester: HttpRequester, tagNameFilter?: string, gamertag?: string): Promise<HttpResponse<ListTagsResponse>> {
+  let endpoint = "/basic/announcements/list/tags";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} tagNameFilter - The `tagNameFilter` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<ListTagsResponse>>} A promise containing the HttpResponse of ListTagsResponse
-   */
-  async getAnnouncementsListTags(tagNameFilter?: string, gamertag?: string): Promise<HttpResponse<ListTagsResponse>> {
-    let e = "/basic/announcements/list/tags";
-    
-    // Make the API request
-    return makeApiRequest<ListTagsResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        tagNameFilter
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<ListTagsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      tagNameFilter
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetListBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+  let endpoint = "/basic/announcements/list";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
-   */
-  async getAnnouncementsList(gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let e = "/basic/announcements/list";
-    
-    // Make the API request
-    return makeApiRequest<AnnouncementContentResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<AnnouncementContentResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param date - The `date` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetSearchBasic(requester: HttpRequester, date?: string, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+  let endpoint = "/basic/announcements/search";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} date - The `date` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
-   */
-  async getAnnouncementsSearch(date?: string, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let e = "/basic/announcements/search";
-    
-    // Make the API request
-    return makeApiRequest<AnnouncementContentResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        date
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<AnnouncementContentResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      date
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetListDefinitionsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ListDefinitionsResponse>> {
+  let endpoint = "/basic/announcements/list/definitions";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<ListDefinitionsResponse>>} A promise containing the HttpResponse of ListDefinitionsResponse
-   */
-  async getAnnouncementsListDefinitions(gamertag?: string): Promise<HttpResponse<ListDefinitionsResponse>> {
-    let e = "/basic/announcements/list/definitions";
-    
-    // Make the API request
-    return makeApiRequest<ListDefinitionsResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<ListDefinitionsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `AnnouncementDto` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsPostBasic(requester: HttpRequester, payload: AnnouncementDto, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/announcements/";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {AnnouncementDto} payload - The `AnnouncementDto` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async postAnnouncement(payload: AnnouncementDto, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/announcements/";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, AnnouncementDto>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, AnnouncementDto>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `DeleteAnnouncementRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsDeleteBasic(requester: HttpRequester, payload: DeleteAnnouncementRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+  let endpoint = "/basic/announcements/";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {DeleteAnnouncementRequest} payload - The `DeleteAnnouncementRequest` instance to use for the API request
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<EmptyResponse>>} A promise containing the HttpResponse of EmptyResponse
-   */
-  async deleteAnnouncement(payload: DeleteAnnouncementRequest, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
-    let e = "/basic/announcements/";
-    
-    // Make the API request
-    return makeApiRequest<EmptyResponse, DeleteAnnouncementRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<EmptyResponse, DeleteAnnouncementRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetContentBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
+  let endpoint = "/basic/announcements/content";
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<AnnouncementContentResponse>>} A promise containing the HttpResponse of AnnouncementContentResponse
-   */
-  async getAnnouncementsContent(gamertag?: string): Promise<HttpResponse<AnnouncementContentResponse>> {
-    let e = "/basic/announcements/content";
-    
-    // Make the API request
-    return makeApiRequest<AnnouncementContentResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<AnnouncementContentResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `AnnouncementRequest` instance to use for the API request
+ * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsPutReadByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/object/announcements/{objectId}/read".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {AnnouncementRequest} payload - The `AnnouncementRequest` instance to use for the API request
-   * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async putAnnouncementReadByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/object/announcements/{objectId}/read".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, AnnouncementRequest>({
-      r: this.r,
-      e,
-      m: PUT,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, AnnouncementRequest>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `AnnouncementRequest` instance to use for the API request
+ * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsPostClaimByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/object/announcements/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {AnnouncementRequest} payload - The `AnnouncementRequest` instance to use for the API request
-   * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async postAnnouncementClaimByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/object/announcements/{objectId}/claim".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, AnnouncementRequest>({
-      r: this.r,
-      e,
-      m: POST,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, AnnouncementRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetRawByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
+  let endpoint = "/object/announcements/{objectId}/raw".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<AnnouncementRawResponse>>} A promise containing the HttpResponse of AnnouncementRawResponse
-   */
-  async getAnnouncementRawByObjectId(objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AnnouncementRawResponse>> {
-    let e = "/object/announcements/{objectId}/raw".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<AnnouncementRawResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<AnnouncementRawResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param include_deleted - The `include_deleted` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsGetByObjectId(requester: HttpRequester, objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
+  let endpoint = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
-   * @param {boolean} include_deleted - The `include_deleted` parameter to include in the API request.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<AnnouncementQueryResponse>>} A promise containing the HttpResponse of AnnouncementQueryResponse
-   */
-  async getAnnouncementByObjectId(objectId: bigint | string, include_deleted?: boolean, gamertag?: string): Promise<HttpResponse<AnnouncementQueryResponse>> {
-    let e = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<AnnouncementQueryResponse>({
-      r: this.r,
-      e,
-      m: GET,
-      q: {
-        include_deleted
-      },
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<AnnouncementQueryResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      include_deleted
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `AnnouncementRequest` instance to use for the API request
+ * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function announcementsDeleteByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
-  /**
-   * @remarks
-   * **Authentication:**
-   * This method requires a valid bearer token in the `Authorization` header.
-   * 
-   * @param {AnnouncementRequest} payload - The `AnnouncementRequest` instance to use for the API request
-   * @param {bigint | string} objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
-   * @param {string} gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
-   * @returns {Promise<HttpResponse<CommonResponse>>} A promise containing the HttpResponse of CommonResponse
-   */
-  async deleteAnnouncementByObjectId(objectId: bigint | string, payload: AnnouncementRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
-    let e = "/object/announcements/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
-    
-    // Make the API request
-    return makeApiRequest<CommonResponse, AnnouncementRequest>({
-      r: this.r,
-      e,
-      m: DELETE,
-      p: payload,
-      g: gamertag,
-      w: true
-    });
-  }
+  // Make the API request
+  return makeApiRequest<CommonResponse, AnnouncementRequest>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
 }

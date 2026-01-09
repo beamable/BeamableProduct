@@ -24,6 +24,7 @@ public class SetAllFederationsCommand
 {
 	public SetAllFederationsCommand() : base("set", "Set all federations for a particular service")
 	{
+		IsHidden = true;
 	}
 
 	public override void Configure()
@@ -66,64 +67,8 @@ public class SetAllFederationsCommand
 			});
 	}
 
-	public override async Task<SetAllFederationsCommandOutput> GetResult(SetAllFederationsCommandArgs args)
+	public override Task<SetAllFederationsCommandOutput> GetResult(SetAllFederationsCommandArgs args)
 	{
-		{ // validations
-			// validate that if the --clear flag was given, there are no --fed-ids given
-			if (args.clear && (args.FederationIds.Count > 0 || args.FederationInterfaces.Count > 0))
-			{
-				throw new CliException("cannot pass both --clear flag and federations.");
-			}
-
-			if (!args.clear && (args.FederationIds.Count == 0 || args.FederationInterfaces.Count == 0))
-			{
-				throw new CliException("must pass federations, or pass the --clear flag to erase all");
-			}
-		}
-		
-		var manifest = args.BeamoLocalSystem.BeamoManifest;
-
-		// Make sure the selected service exists.
-		var selectedService = manifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == args.BeamoId);
-		if (selectedService == null)
-		{
-			var err = $"Service {args.BeamoId} was not found.";
-			err += "Make sure the id of the service correctly matches an existing service.";
-
-			var possibleServices = string.Join('\n', manifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).Select(sd => sd.BeamoId));
-			err += $"Here's a list of possible services:\n{possibleServices}";
-			throw new CliException(err, 3, true);
-		}
-
-		// clear the configuration, because we are about to completely set it.
-		selectedService.FederationsConfig.Federations.Clear();
-
-		if (!args.clear)
-		{
-			var dict = new Dictionary<string, List<FederationInstanceConfig>>();
-			for (var i = 0; i < args.FederationIds.Count; i++)
-			{
-				var id = args.FederationIds[i];
-				var type = args.FederationInterfaces[i];
-				if (!dict.TryGetValue(id, out var existing))
-				{
-					dict[id] = existing = new List<FederationInstanceConfig>();
-				}
-				existing.Add(new FederationInstanceConfig
-				{
-					Interface = type
-				});
-			}
-
-			foreach (var kvp in dict)
-			{
-				selectedService.FederationsConfig.Federations.Add(kvp.Key, kvp.Value.ToArray());
-			}
-		}
-		
-		// Serialize the updated source gen config to disk
-		await ProjectContextUtil.SerializeSourceGenConfigToDisk(args.ConfigService.BaseDirectory, selectedService);
-
-		return new SetAllFederationsCommandOutput();
+		throw new CliException("This command is obsolete as now federations are auto-managed by the Microservices declarations and added to the OpenApi Specs");
 	}
 }

@@ -14,8 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _tags:
   - base
-  Icon:
+  icon:
     m_AssetGUID: f819a6beb22c04c8d9f8222f930252b5
     m_SubObjectName: 
+    m_SubObjectType: 
+    m_EditorAssetChanged: 0
   clientPermission:
-    write_self: 0
+    writeSelf: 0
+  startingAmount: 0
+  federation:
+    HasValue: 0
+    Value:
+      Service: 
+      Namespace: 

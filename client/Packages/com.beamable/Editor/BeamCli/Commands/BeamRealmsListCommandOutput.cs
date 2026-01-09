@@ -9,6 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string CustomerAlias;
         public string Cid;
-        public BeamOrgRealmData VisibleRealms;
+        public BeamOrgRealmData[] VisibleRealms;
     }
 }

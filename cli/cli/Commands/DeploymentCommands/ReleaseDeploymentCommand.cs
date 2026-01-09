@@ -142,7 +142,9 @@ public class ReleaseDeploymentCommand
 		var confirmationText = hasChanges
 			? "Are you sure you want to release the changes?"
 			: "You can still deploy the services, which will roll existing services. Do you want to continue?";
-		var confirm = args.Quiet || AnsiConsole.Confirm(confirmationText);
+
+		confirmationText += "\nType 'yes' to continue.";
+		var confirm = args.Quiet || string.Equals("yes", AnsiConsole.Prompt(new TextPrompt<string>(confirmationText)), StringComparison.InvariantCultureIgnoreCase);
 		if (!confirm)
 		{
 			return;

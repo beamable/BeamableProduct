@@ -284,7 +284,10 @@ namespace Beamable.Player
 			(_topScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
 			(_friendScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
 
-			_nearbyScores.playerId = _userContext.UserId;
+			if (_nearbyScores != null)
+			{
+				_nearbyScores.playerId = _userContext.UserId;
+			}
 			(_nearbyScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
 		}
 

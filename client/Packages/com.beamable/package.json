@@ -4,13 +4,16 @@
   "displayName": "Beamable",
   "description": "A better way to build games in Unity\n\nWe provide an SDK that enables game makers to easily add social, commerce and content management features to their games with drag-and-drop prefabs inside Unity.",
   "unity": "2019.4",
-  "changelogUrl": "https://github.com/beamable/Changelogs/blob/ci/com-beamable-changelog.md",
-  "documentationUrl": "https://docs.beamable.com/docs",
+  "changelogUrl": "https://changes.beamable.com/?unity",
+  "documentationUrl": "https://help.beamable.com/Unity-Latest/",
   "keywords": [
     "beamable",
     "engine"
   ],
   "author": "Beamable <info@beamable.com> (https://www.beamable.com)",
+  "repository": {
+    "url": "https://github.com/beamable/BeamableProduct"
+  },
   "license": "ISC",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
@@ -37,7 +40,7 @@
       "subText": "development",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/AdminPortal_Violet@3x.png",
       "relativeMainAssetPath": "AdminFlow.prefab",
-      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/admin-feature-overview"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/user-reference/editor-systems/admin-overview/"
     },
     {
       "displayName": "Inventory Management",
@@ -46,7 +49,7 @@
       "subText": "inventory",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Currency_Violet@3x.png",
       "relativeMainAssetPath": "Sample_InventoryManager.unity",
-      "docsUrl": "https://docs.beamable.com/docs/inventory-feature-overview"
+      "docsUrl": "https://help.beamable.com/Unity-4.0/unity/user-reference/beamable-services/game-economy/inventory-overview/-overview"
     },
     {
       "displayName": "Friends Management",
@@ -55,7 +58,7 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Serve_Violet@3x.png",
       "relativeMainAssetPath": "Sample_FriendsManager.unity",
-      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/friends-management"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-account/"
     },
     {
       "displayName": "Lobby Management",
@@ -64,7 +67,7 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/BattleTested_Violet@3x.png",
       "relativeMainAssetPath": "Sample_LobbyManager.unity",
-      "docsUrl": "https://docs.beamable.com/docs/lobbies-feature-overview"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/lobbies/"
     },
     {
       "displayName": "Loot Box",

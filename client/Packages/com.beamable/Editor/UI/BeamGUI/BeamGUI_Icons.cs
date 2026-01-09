@@ -1,3 +1,7 @@
+using System.Linq;
+using Beamable.Common.Content;
+using Beamable.Content;
+using Beamable.Modules.Content;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -23,6 +27,27 @@ namespace Beamable.Editor.Util
 		public static Texture iconLogoHeader;
 		public static Texture iconShadowSoftA;
 		public static Texture iconLocked;
+		public static Texture iconPlus;
+		public static Texture iconCheck;
+		public static Texture iconUpload;
+		public static Texture iconDownload;
+		public static Texture iconMenuOptions;
+		public static Texture iconTag;
+		public static Texture iconType;
+		public static Texture iconStatus;
+		public static Texture iconDelete;
+		public static Texture iconStatusModified;
+		public static Texture iconStatusAdded;
+		public static Texture iconStatusDeleted;
+		public static Texture iconStatusConflicted;
+		public static Texture iconRotate;
+		public static Texture iconSync;
+		public static Texture iconPublish;
+		public static Texture iconRevertAction;
+		public static Texture iconStatusInvalid;
+		public static Texture iconContentEditorIcon;
+		public static Texture iconContentSnapshotColor;
+		public static Texture iconContentSnapshotWhite;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -42,6 +67,14 @@ namespace Beamable.Editor.Util
 		
 		public static void LoadAllIcons()
 		{
+			var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+			var allTypes = reflectionCache.GetAll().ToList();
+			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration?.TextureConfigurations?.Count != allTypes.Count)
+			{
+				ContentConfiguration.Instance.ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+			}
+			
+			
 			if (unitySpinnerTextures == null)
 			{
 				unitySpinnerTextures = new Texture[]
@@ -149,8 +182,7 @@ namespace Beamable.Editor.Util
 			
 			if (iconRefresh == null)
 			{
-				iconRefresh = EditorResources.Load<Texture>(
-					"Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
+				iconRefresh = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Refresh.png");
 			}
 			
 			if (iconSettings == null)
@@ -186,6 +218,112 @@ namespace Beamable.Editor.Util
 			if (iconPlay == null)
 			{
 				iconPlay = EditorGUIUtility.FindTexture("PlayButton");
+			}
+
+			if (iconPlus == null)
+			{
+				iconPlus = EditorGUIUtility.IconContent("d_Toolbar Plus@2x").image;
+			}
+
+			if (iconCheck == null)
+			{
+				// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
+			}
+
+			if (iconUpload == null)
+			{
+				iconUpload = EditorGUIUtility.IconContent("Update-Available@2x").image;
+			}
+			
+			if (iconDownload == null)
+			{
+				iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
+			}
+
+			if (iconMenuOptions == null)
+			{
+				iconMenuOptions = EditorGUIUtility.IconContent("d__Menu@2x").image;
+			}
+
+			if (iconTag == null)
+			{
+				iconTag = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Tag.png");
+			}
+
+			if (iconType == null)
+			{
+				iconType = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Type.png");
+			}
+
+			if (iconStatus == null)
+			{
+				iconStatus = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Statuses.png");
+			}
+
+			if (iconDelete == null)
+			{
+				iconDelete = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Delete.png");
+			}
+
+			if (iconStatusModified == null)
+			{
+				iconStatusModified = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Modified.png");
+			}
+
+			if (iconStatusAdded == null)
+			{
+				iconStatusAdded = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Added.png");
+			}
+
+			if (iconStatusDeleted == null)
+			{
+				iconStatusDeleted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Deleted.png");
+			}
+
+			if (iconStatusConflicted == null)
+			{
+				iconStatusConflicted = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
+			}
+
+			if (iconStatusInvalid == null)
+			{
+				iconStatusInvalid = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Invalid.png");
+			}
+
+			if (iconRotate == null)
+			{
+				iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
+			}
+			
+			if (iconSync == null)
+			{
+				iconSync = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Sync.png");
+			}
+			
+			if (iconPublish == null)
+			{
+				iconPublish = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Publish.png");
+			}
+
+			if (iconRevertAction == null)
+			{
+				iconRevertAction = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconAction_Revert.png");
+			}
+
+			if (iconContentEditorIcon == null)
+			{
+				iconContentEditorIcon = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ItemFallback.png");
+			}
+			
+			if (iconContentSnapshotWhite == null)
+			{
+				iconContentSnapshotWhite = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconsWhite_ContentSnapshot.png");
+			}
+			
+			if (iconContentSnapshotColor == null)
+			{
+				iconContentSnapshotColor = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ContentSnapshot.png");
 			}
 		}
 	}

@@ -14,7 +14,7 @@ export interface BeamEnvironmentConfig {
 }
 
 /** Built-in environment names */
-export type BuiltInEnv = 'Dev' | 'Stg' | 'Prod';
+export type BuiltInEnv = 'dev' | 'stg' | 'prod';
 
 /**
  * Any legal Beamable environment name.

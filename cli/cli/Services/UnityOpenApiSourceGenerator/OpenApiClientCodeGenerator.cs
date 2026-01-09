@@ -26,6 +26,7 @@ namespace Beamable.Server.Generator
 			ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
 
 		private const string COMPONENT_IS_HIDDEN_METHOD_KEY = ServiceConstants.METHOD_SKIP_CLIENT_GENERATION_KEY;
+		private const string COMPONENT_METHOD_NAME_KEY = ServiceConstants.PATH_CALLABLE_METHOD_NAME_KEY;
 
 		private const string SCHEMA_QUALIFIED_NAME_KEY =
 			ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME;
@@ -93,6 +94,17 @@ namespace Beamable.Server.Generator
 				},
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
+			
+			targetClass.Members.Add(new CodeConstructor()
+			{
+				Attributes = MemberAttributes.Public,
+				Parameters =
+				{
+					new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(IDependencyProvider)),
+						"provider")
+				},
+				BaseConstructorArgs = { new CodeArgumentReferenceExpression("provider") }
+			});
 
 			var parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
@@ -117,15 +129,19 @@ namespace Beamable.Server.Generator
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
 			};
 			registrationMethod.CustomAttributes.Add(
-				new CodeAttributeDeclaration(new CodeTypeReference(typeof(RegisterBeamableDependenciesAttribute))));
+				new CodeAttributeDeclaration(new CodeTypeReference(typeof(RegisterBeamableDependenciesAttribute)), new CodeAttributeArgument(new CodeSnippetExpression("50")), new CodeAttributeArgument(new CodeSnippetExpression("Beamable.Common.Dependencies.RegistrationOrigin.EDITOR | Beamable.Common.Dependencies.RegistrationOrigin.RUNTIME"))));
 			registrationMethod.Name = "RegisterService";
 			registrationMethod.Parameters.Add(
 				new CodeParameterDeclarationExpression(typeof(IDependencyBuilder), "builder"));
+
+			registrationMethod.Statements.Add(
+				new CodeVariableDeclarationStatement($"System.Func<Beamable.Common.Dependencies.{nameof(IDependencyProvider)}, {TargetClassName}>", "factory", new CodeSnippetExpression($"p => new {TargetClassName}(p)")));
 			registrationMethod.Statements.Add(new CodeMethodInvokeExpression
 			{
 				Method = new CodeMethodReferenceExpression(
 					new CodeArgumentReferenceExpression("builder"),
-					nameof(IDependencyBuilder.AddScoped), new CodeTypeReference(TargetClassName))
+					nameof(IDependencyBuilder.AddScoped), new CodeTypeReference(TargetClassName)),
+				Parameters = { new CodeVariableReferenceExpression("factory") }
 			});
 
 			var extensionMethod = new CodeMemberMethod()
@@ -179,8 +195,21 @@ namespace Beamable.Server.Generator
 				{
 					continue;
 				}
-
+				
 				string methodName = path.Replace("/", string.Empty);
+				string pathName = path[0] == '/' ? path.Substring(1) : path;
+				if (item.Extensions.TryGetValue(COMPONENT_METHOD_NAME_KEY, out var methodNameExt) && methodNameExt is OpenApiString methodNameExtStr)
+				{
+					methodName = methodNameExtStr.Value;
+				}
+				
+				if (item.Extensions.TryGetValue(ServiceConstants.PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY, out var methodNamePrefix) 
+				    && methodNamePrefix is OpenApiString methodNamePrefixStr
+				    && !string.IsNullOrEmpty(methodNamePrefixStr.Value))
+				{
+					methodName = methodNamePrefixStr.Value + "_" + methodName;
+				}
+				
 				foreach ((OperationType _, OpenApiOperation operation) in item.Operations)
 				{
 					if (!operation.Extensions.TryGetValue(ServiceConstants.OPERATION_CALLABLE_METHOD_TYPE_KEY,
@@ -215,7 +244,7 @@ namespace Beamable.Server.Generator
 							itemValue => itemValue.Value.GetEffective(document));
 					}
 					
-					AddCallableMethod(targetClass, methodName, parameters, responseType, addedParameters);
+					AddCallableMethod(targetClass, methodName, pathName, parameters, responseType, addedParameters);
 				}
 			}
 
@@ -293,7 +322,7 @@ namespace Beamable.Server.Generator
 			parameterClass.Members.Add(wrapper);
 		}
 
-		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName,
+		private void AddCallableMethod(CodeTypeDeclaration targetClass, string methodName, string servicePath,
 			IDictionary<string, OpenApiSchema> parameters, OpenApiMediaType returnMediaType,
 			Dictionary<string, string> paramsTypeName)
 		{
@@ -353,8 +382,6 @@ namespace Beamable.Server.Generator
 
 			// Declaring a return statement for method ToString.
 			var returnStatement = new CodeMethodReturnStatement();
-
-			string servicePath = methodName;
 
 			// servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidentally stop out an existing service.
 
@@ -529,6 +556,7 @@ namespace Beamable.Server.Generator
 		{
 			return (schema.Type, schema.Format) switch
 			{
+				("integer", "int16") => typeof(short).GetTypeString(),
 				("integer", "int32") => typeof(int).GetTypeString(),
 				("integer", "int64") => typeof(long).GetTypeString(),
 				("integer", _) => typeof(int).GetTypeString(),

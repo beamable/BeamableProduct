@@ -3,17 +3,22 @@ import { HttpRequest } from './types/HttpRequest';
 import { HttpResponse } from './types/HttpResponse';
 import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { TokenStorage } from '@/platform/types/TokenStorage';
-import { AuthApi } from '@/__generated__/apis';
+import { authPostTokenBasic } from '@/__generated__/apis';
 import {
   RefreshAccessTokenError,
   NoRefreshTokenError,
   BeamError,
 } from '@/constants/Errors';
+import { DELETE, GET, HEADERS } from '@/constants';
+import { HttpMethod } from '@/network/http/types/HttpMethod';
+import { getPathAndQuery } from '@/utils/getPathAndQuery';
+import { createHash } from '@/utils/createHash';
+import { BeamBase } from '@/core/BeamBase';
 
 type BeamRequesterConfig = {
   inner: HttpRequester;
   tokenStorage: TokenStorage;
-  cid: string;
+  useSignedRequest: boolean;
   pid: string;
 };
 
@@ -23,17 +28,19 @@ type BeamRequesterConfig = {
  * - Serializes request bodies using `BeamJsonUtils.replacer` (supports BigInt, Date, etc.).
  * - Deserializes JSON response bodies using `BeamJsonUtils.reviver`.
  * - Leaves non-JSON bodies (e.g., FormData) untouched.
+ * - Automatically attaches the Bearer token to the `Authorization` header for authenticated requests.
+ * - Signs requests with a signature header when `useSignedRequest` is enabled.
  */
 export class BeamRequester implements HttpRequester {
   private readonly inner: HttpRequester;
-  private readonly tokenStorage: TokenStorage;
-  private readonly cid: string;
+  private readonly tokenStorage?: TokenStorage;
+  private readonly useSignedRequest?: boolean;
   private readonly pid: string;
 
   constructor(config: BeamRequesterConfig) {
     this.inner = config.inner;
     this.tokenStorage = config.tokenStorage;
-    this.cid = config.cid;
+    this.useSignedRequest = config.useSignedRequest;
     this.pid = config.pid;
   }
 
@@ -63,18 +70,63 @@ export class BeamRequester implements HttpRequester {
       }
     }
 
-    const newReq: HttpRequest<any> = { ...req, body };
+    if (this.useSignedRequest) {
+      const body = this.getBodyToSign(req.method ?? GET, req.body);
+      // add the signature to the request headers
+      req.headers = {
+        ...req.headers,
+        [HEADERS.BEAM_SIGNATURE]: this.generateSignature(req.url, body),
+      };
+    } else if (req.withAuth) {
+      await this.attachAuthHeader(req);
+    }
+
+    // add the routing key to the request headers if it exists
+    if (BeamBase.env.BEAM_ROUTING_KEY) {
+      req.headers = {
+        ...req.headers,
+        [HEADERS.ROUTING_KEY]: BeamBase.env.BEAM_ROUTING_KEY,
+      };
+    }
+
+    const newReq: HttpRequest = { ...req, body };
     let response = await this.inner.request<TRes, any>(newReq);
 
-    if (response.status === 401) {
+    const errorKeys = [
+      'InvalidCredentialsError',
+      'InvalidRefreshTokenError',
+      'TokenValidationError',
+    ] as const;
+
+    const hasKnownError =
+      typeof response.body === 'string' &&
+      errorKeys.some((key) => (response.body as string).includes(key));
+
+    if (response.status === 401 && !this.useSignedRequest && !hasKnownError) {
       await this.handleRefresh();
-      response = await this.inner.request<TRes, TReq>(req);
+      // Re-attach Authorization header with the updated access token
+      await this.attachAuthHeader(newReq);
+      response = await this.inner.request<TRes, TReq>(newReq);
     }
 
     // throw a beam error if the response is not successful
     if (response.status < 200 || response.status >= 300) {
       throw new BeamError(
         `Request to '${req.url}' failed with status ${response.status}: ${response.body}`,
+        {
+          context: {
+            request: {
+              url: newReq.url,
+              method: newReq.method,
+              headers: newReq.headers,
+              body: newReq.body,
+            },
+            response: {
+              status: response.status,
+              message: response.body,
+            },
+          },
+        },
       );
     }
 
@@ -90,30 +142,61 @@ export class BeamRequester implements HttpRequester {
     return { ...response, body: newBody };
   }
 
-  setBaseUrl(url: string): void {
-    this.inner.setBaseUrl(url);
+  set baseUrl(url: string) {
+    this.inner.baseUrl = url;
   }
 
-  setDefaultHeader(key: string, value?: string): void {
-    this.inner.setDefaultHeader(key, value);
+  set defaultHeaders(headers: Record<string, string>) {
+    this.inner.defaultHeaders = headers;
   }
 
-  setTokenProvider(provider: () => Promise<string> | string): void {
-    this.inner.setTokenProvider(provider);
+  private getBodyToSign(method: HttpMethod, body: unknown): string | null {
+    if (method === GET || method === DELETE) return null;
+    if (body == null) return null;
+    if (typeof body === 'string') return body;
+    return JSON.stringify(body, BeamJsonUtils.replacer);
+  }
+
+  private generateSignature(url: string, body: string | null): string {
+    const version = '1';
+    const secret = BeamBase.env.BEAM_REALM_SECRET;
+    if (!secret) {
+      throw new BeamError(
+        '`BEAM_REALM_SECRET` environment variable is not set. Assign `BeamServer.env.BEAM_REALM_SECRET = process.env.BEAM_REALM_SECRET` to enable signed requests.',
+      );
+    }
+
+    let data = `${secret}${this.pid}${version}${getPathAndQuery(url)}`;
+    if (body) data += body;
+
+    // hash using md5 to base64 string
+    return createHash('md5').update(data).digest('base64');
+  }
+
+  private async attachAuthHeader(req: HttpRequest<any>): Promise<void> {
+    const data = await this.tokenStorage?.getTokenData();
+    const token = data?.accessToken ?? null;
+    if (token) {
+      req.headers = {
+        ...req.headers,
+        [HEADERS.AUTHORIZATION]: `Bearer ${token}`,
+      };
+    }
   }
 
   private async handleRefresh(): Promise<void> {
-    const refreshToken = await this.tokenStorage.getRefreshToken();
+    const tokenData = await this.tokenStorage?.getTokenData();
+    const refreshToken = tokenData?.refreshToken ?? null;
     if (!refreshToken) {
       throw new NoRefreshTokenError();
     }
 
-    const response = await new AuthApi(this).postAuthToken({
+    const response = await authPostTokenBasic(this, {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     });
     if (response.status !== 200) {
-      await this.tokenStorage.removeRefreshToken();
+      await this.tokenStorage?.setTokenData({ refreshToken: null });
       throw new RefreshAccessTokenError();
     }
 
@@ -123,16 +206,12 @@ export class BeamRequester implements HttpRequester {
       expires_in: newExpiresIn,
     } = response.body;
 
-    if (newAccessToken) {
-      await this.tokenStorage.setAccessToken(newAccessToken);
-    }
-
-    if (newRefreshToken) {
-      await this.tokenStorage.setRefreshToken(newRefreshToken);
-    }
-
-    if (newExpiresIn) {
-      await this.tokenStorage.setExpiresIn(Date.now() + Number(newExpiresIn));
+    const update: any = {};
+    if (newAccessToken) update['accessToken'] = newAccessToken;
+    if (newRefreshToken) update['refreshToken'] = newRefreshToken;
+    if (newExpiresIn) update['expiresIn'] = Date.now() + Number(newExpiresIn);
+    if (Object.keys(update).length > 0) {
+      await this.tokenStorage?.setTokenData(update);
     }
   }
 }

@@ -44,7 +44,9 @@ namespace Beamable.Editor.ToolbarExtender
 		/// <summary>
 		/// Callback for toolbar OnGUI method.
 		/// </summary>
-		public static Action OnToolbarGUI;
+		public static Action<IMGUIContainer> OnToolbarGUI;
+
+		private static IMGUIContainer _container;
 
 		static BeamableToolbarCallbacks()
 		{
@@ -53,7 +55,6 @@ namespace Beamable.Editor.ToolbarExtender
 
 		static void OnUpdate()
 		{
-			
 			if (!BeamEditor.IsInitialized) return;
 			
 			// Relying on the fact that toolbar is ScriptableObject and gets deleted when layout changes
@@ -70,13 +71,11 @@ namespace Beamable.Editor.ToolbarExtender
 					var mRoot = rawRoot as VisualElement;
 					
 					// This IMGUI Container is what draws the toolbar extension
-					var container = new IMGUIContainer();
-					container.style.flexGrow = 1;
-					container.onGUIHandler += OnGUI;
-					container.focusable = false;
-					container.style.position = Position.Absolute;
-					container.style.top = 0;
-					container.style.left = 0;
+					_container = new IMGUIContainer();
+					_container.onGUIHandler += OnGUI;
+					_container.focusable = false;
+					_container.style.flexGrow = 0;
+					_container.style.marginRight = 2;
 					
 					// In Unity 2021.3 LTS, the IMGUIContainer is not capturing events by default when placed inside the toolbar. This is likely to do with how the
 					// internals of the Toolbar component have changed from Unity 2020. To solve this, we manually forward the event from any clicks of the toolbar into
@@ -88,29 +87,17 @@ namespace Beamable.Editor.ToolbarExtender
 					mRoot?.RegisterCallback<MouseDownEvent>(evt =>
 					{
 #if UNITY_2022_1_OR_NEWER
-						_ = (bool) m_SendEventToIMGUI.Invoke(container, new object[]{evt, true, false});
+						_ = (bool) m_SendEventToIMGUI.Invoke(_container, new object[]{evt, true, false});
 #else
-						container.HandleEvent(evt);
+						_container.HandleEvent(evt);
 #endif
 						
 					});
-					container.RegisterCallback<MouseDownEvent>(evt =>
+					_container.RegisterCallback<MouseDownEvent>(evt =>
 					{
-						_ = (bool) m_SendEventToIMGUI.Invoke(container, new object[]{evt, true, false});
+						_ = (bool) m_SendEventToIMGUI.Invoke(_container, new object[]{evt, true, false});
 					});
 
-					// Adds the configured container to the Toolbar VisualElement list.  
-					mRoot?.Add(container);
-					
-#if UNITY_2022_1_OR_NEWER
-					BeamableVersionButton versionButton = new BeamableVersionButton();
-					versionButton.Init();
-
-					var toolbarZoneRightAlign = GetTargetToolbar(mRoot);
-					toolbarZoneRightAlign?.Add(versionButton);
-#endif
-
-#else
 #if UNITY_2020_1_OR_NEWER
                     var windowBackend = m_windowBackend.GetValue(m_currentToolbar);
 
@@ -121,48 +108,45 @@ namespace Beamable.Editor.ToolbarExtender
 					var visualTree = (VisualElement)m_viewVisualTree.GetValue(m_currentToolbar, null);
 #endif
 
-					// Get first child which 'happens' to be toolbar IMGUIContainer
-					var container = (IMGUIContainer)visualTree[0];
-
-					// (Re)attach handler
-					var handler = (Action)m_imguiContainerOnGui.GetValue(container);
+					// I found this ID by using the UIToolkit debugger.
+					#if UNITY_6000_3_OR_NEWER
+					var rightAlign =
+						visualTree.Q<VisualElement>(className: "unity-overlay-container__after-spacer-container")
+						          .Q<VisualElement>(className: "unity-overlay-container__content");
+					#else
+					const string UnityToolbarRightAreaId = "ToolbarZoneRightAlign";
+					var rightAlign = visualTree.Q<VisualElement>(UnityToolbarRightAreaId);
+#endif
+					// add some classes to inherit the styles of the toolbar.
+					_container.AddToClassList("unity-editor-toolbar-element");
+					_container.AddToClassList("unity-toolbar-button");
+					_container.style.alignSelf = Align.Center;
+					rightAlign.Add(_container);
+					
+					var handler = (Action)m_imguiContainerOnGui.GetValue(_container);
 					handler -= OnGUI;
 					handler += OnGUI;
-					m_imguiContainerOnGui.SetValue(container, handler);
+					m_imguiContainerOnGui.SetValue(_container, handler);
 #endif
 				}
 			}
 		}
 
-#if UNITY_2022_1_OR_NEWER
-		private static VisualElement GetTargetToolbar(VisualElement root)
-		{
-			var rootChildren = root?.Children().ToList();
-			if (rootChildren?.Count > 0)
-			{
-				VisualElement firstElement = rootChildren[0];
-				var firstElementChildren = firstElement?.Children().ToList();
-
-				if (firstElementChildren?.Count > 0)
-				{
-					var toolbarContainerContent = firstElementChildren[0];
-					var toolbarContainerChildren = toolbarContainerContent?.Children().ToList();
-
-					if (toolbarContainerChildren?.Count > 0)
-					{
-						return toolbarContainerChildren.Last();
-					}
-				}
-			}
-
-			return null;
-		}
-#endif
 
 		static void OnGUI()
 		{
 			var handler = OnToolbarGUI;
-			if (handler != null) handler();
+			if (handler != null)
+			{
+				try
+				{
+					handler(_container);
+				}
+				catch (Exception ex)
+				{
+					Debug.LogError(ex);
+				}
+			}
 		}
 	}
 }

@@ -1,4 +1,9 @@
-import { AnnouncementState } from './AnnouncementState';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { AnnouncementState } from './AnnouncementState';
 
 export type AnnouncementRawResponse = { 
   announcements: Record<string, AnnouncementState>; 

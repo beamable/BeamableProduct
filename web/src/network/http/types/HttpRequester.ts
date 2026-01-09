@@ -15,18 +15,8 @@ export interface HttpRequester {
   ): Promise<HttpResponse<TRes>>;
 
   /** Overrides the base URL used for all subsequent requests. */
-  setBaseUrl(url: string): void;
+  set baseUrl(url: string);
 
-  /** Sets or removes a default header included on every request. */
-  setDefaultHeader(key: string, value?: string): void;
-
-  /**
-   * Sets the token provider callback used by custom HTTP requesters to obtain the authorization token.
-   * The provided function will be invoked whenever a token is needed, allowing custom requester
-   * implementation to retrieve the current token and include it in the
-   * `Authorization` header of each request that requires auth.
-   * @param provider - A function that returns the authorization token, either directly as a string
-   *                   or asynchronously as a Promise that resolves to a string.
-   */
-  setTokenProvider(provider: () => Promise<string> | string): void;
+  /** Sets the default headers to include on every request. */
+  set defaultHeaders(header: Record<string, string>);
 }

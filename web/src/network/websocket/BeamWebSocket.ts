@@ -4,23 +4,26 @@ import {
   promiseWithResolvers,
   PromiseWithResolversPolyfill,
 } from '@/utils/promiseWithResolvers';
-import { BeamApi } from '@/core/BeamApi';
+import {
+  authPostTokensRefreshToken,
+  realmsGetClientDefaultsBasic,
+} from '@/__generated__/apis';
+import { HttpRequester } from '@/network/http/types/HttpRequester';
 
-interface BeamWebSocketConnect {
-  api: BeamApi;
-  url: string;
+interface BeamWebSocketConnectParams {
+  requester: HttpRequester;
   cid: string;
   pid: string;
   refreshToken: string;
 }
 
 export class BeamWebSocket {
+  private url = '';
+  private cid = '';
+  private pid = '';
+  private refreshToken = '';
   private socket?: WebSocket;
-  private api?: BeamApi;
-  private url?: string;
-  private cid?: string;
-  private pid?: string;
-  private refreshToken?: string;
+  private requester?: HttpRequester;
   private connectPromiseWithResolvers?: PromiseWithResolversPolyfill;
   private isDisconnecting = false;
   private isReconnecting = false;
@@ -28,8 +31,19 @@ export class BeamWebSocket {
   private maxRetries = 3;
 
   private async initWebSocket(): Promise<void> {
-    // Fetch the access token for the new connection
-    const accessToken = await this.getAccessToken();
+    let accessToken: string | null = null;
+    try {
+      const [token] = await Promise.all([
+        this.getAccessToken(),
+        this.setWebSocketUrl(),
+      ]);
+      accessToken = token;
+    } catch (error) {
+      if (error instanceof BeamWebSocketError) {
+        return this.connectPromiseWithResolvers?.reject(error);
+      }
+    }
+
     if (!accessToken) {
       return this.connectPromiseWithResolvers?.reject(
         new BeamWebSocketError(
@@ -45,56 +59,86 @@ export class BeamWebSocket {
     this.socket = socket;
 
     // Web socket open event handler
-    socket.onopen = () => {
-      this.reconnectAttempts = 0;
-      this.connectPromiseWithResolvers?.resolve();
-    };
-
+    socket.onopen = () => this.handleOpen();
     // Web socket error event handler
-    socket.onerror = async (e) => {
-      console.error('WebSocket error:', e);
-      if (
-        socket.readyState === WebSocket.OPEN ||
-        socket.readyState === WebSocket.CONNECTING
-      ) {
-        // If the socket is still open or connecting, we can try to reconnect
-        socket.close();
-      } else {
-        this.connectPromiseWithResolvers?.reject(
-          new BeamWebSocketError('WebSocket error occurred'),
-        );
-      }
-    };
-
+    socket.onerror = (event) => this.handleError(event);
     // Web socket close event handler
-    this.socket.onclose = async (e) => {
-      // if explicitly called disconnect(), don't reconnect
-      if (this.isDisconnecting) return;
+    socket.onclose = (event) => this.handleClose(event);
+  }
 
-      console.warn('WebSocket closed:', e.code, e.reason);
-      if (this.reconnectAttempts < this.maxRetries) {
-        await this.reconnect();
-      } else {
-        this.connectPromiseWithResolvers?.reject(
-          new BeamWebSocketError(
-            'Maximum web socket reconnect attempts reached',
-          ),
-        );
-      }
-    };
+  private handleOpen() {
+    this.reconnectAttempts = 0;
+    this.connectPromiseWithResolvers?.resolve();
+  }
+
+  private handleError(e: Event) {
+    if (
+      this.socket?.readyState === WebSocket.OPEN ||
+      this.socket?.readyState === WebSocket.CONNECTING
+    ) {
+      // If the socket is still open or connecting, we can try to reconnect
+      this.socket.close();
+    } else {
+      this.connectPromiseWithResolvers?.reject(
+        new BeamWebSocketError('WebSocket error occurred', { cause: e }),
+      );
+    }
+  }
+
+  private async handleClose(e: CloseEvent) {
+    // if explicitly called disconnect(), don't reconnect
+    if (this.isDisconnecting) return;
+
+    console.warn('WebSocket closed:', e.code, e.reason);
+    if (this.reconnectAttempts < this.maxRetries) {
+      await this.reconnect();
+    } else {
+      this.connectPromiseWithResolvers?.reject(
+        new BeamWebSocketError(
+          'Maximum web socket reconnect attempts reached',
+          { cause: e },
+        ),
+      );
+    }
+  }
+
+  private async setWebSocketUrl(): Promise<void> {
+    if (!this.requester) throw new BeamWebSocketError('No requester provided');
+
+    if (this.url) return; // URL already set
+
+    const realmConfigResponse = await realmsGetClientDefaultsBasic(
+      this.requester,
+    );
+    const realmConfig = realmConfigResponse.body;
+    if (realmConfig.websocketConfig.provider === 'pubnub') {
+      // Web SDK does not support pubnub
+      throw new BeamWebSocketError(
+        'Unsupported websocket provider. Configure your Realm in portal to include: namespace=notification, key=publisher, value=beamable.',
+      );
+    }
+
+    const url = realmConfig.websocketConfig.uri;
+    if (!url) throw new BeamWebSocketError('No websocket URL found');
+
+    this.url = url;
   }
 
   private async getAccessToken(): Promise<string | null> {
-    if (!this.api) return null;
+    if (!this.requester) return null;
 
     try {
-      const accessTokenResponse = await this.api.auth.postAuthRefreshTokenV2({
-        customerId: this.cid,
-        realmId: this.pid,
-        refreshToken: this.refreshToken,
-      });
+      // Fetch the access token for the new connection
+      const accessTokenResponse = await authPostTokensRefreshToken(
+        this.requester,
+        {
+          customerId: this.cid,
+          realmId: this.pid,
+          refreshToken: this.refreshToken,
+        },
+      );
       return accessTokenResponse.body.accessToken ?? null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -106,15 +150,14 @@ export class BeamWebSocket {
   /**
    * Opens a WebSocket connection to the Beamable server.
    *
-   * @param {BeamWebSocketConnect} param - The connection parameters.
+   * @param {BeamWebSocketConnectParams} params - The connection parameters.
    * @returns {Promise<void>}
    */
-  async connect(param: BeamWebSocketConnect): Promise<void> {
-    this.api = param.api;
-    this.url = param.url;
-    this.cid = param.cid;
-    this.pid = param.pid;
-    this.refreshToken = param.refreshToken;
+  async connect(params: BeamWebSocketConnectParams): Promise<void> {
+    this.requester = params.requester;
+    this.cid = params.cid;
+    this.pid = params.pid;
+    this.refreshToken = params.refreshToken;
     this.isDisconnecting = false;
     this.reconnectAttempts = 0;
     this.connectPromiseWithResolvers = promiseWithResolvers();
@@ -124,6 +167,7 @@ export class BeamWebSocket {
 
   private async reconnect(): Promise<void> {
     if (this.isReconnecting) return;
+
     this.isReconnecting = true;
     this.reconnectAttempts++;
     const jitter = Math.random() * 500; // up to 0.5 seconds of randomness
@@ -131,6 +175,7 @@ export class BeamWebSocket {
     await wait(delay); // pause before the next attempt
 
     if (this.isDisconnecting) return;
+
     await this.initWebSocket();
     this.isReconnecting = false;
   }

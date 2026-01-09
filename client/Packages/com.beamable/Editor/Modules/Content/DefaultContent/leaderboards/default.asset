@@ -15,4 +15,14 @@ MonoBehaviour:
   _tags:
   - base
   permissions:
-    write_self: 0
+    writeSelf: 0
+  partitioned:
+    HasValue: 0
+    Value: 0
+  max_entries:
+    HasValue: 0
+    Value: 0
+  cohortSettings:
+    HasValue: 0
+    Value:
+      cohorts: []

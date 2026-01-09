@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using Beamable.Config;
 using UnityEngine;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
@@ -41,6 +42,13 @@ namespace Beamable.Api
 		string Host { get; }
 		PackageVersion PackageVersion { get; }
 	}
+
+	public class DefaultPlatformRequesterHostResolver :IPlatformRequesterHostResolver
+	{
+		public string Host { get; set; }
+		public PackageVersion PackageVersion { get; set; }
+	}
+
 
 	public interface IServiceRoutingResolution
 	{
@@ -103,7 +111,7 @@ namespace Beamable.Api
 		private IServiceRoutingResolution _routingKeyResolution;
 		private bool _disposed;
 		private bool internetConnectivity;
-		public string Host { get; set; }
+		public string Host => _resolver.Host;
 		public string Cid { get; set; }
 		public string Pid { get; set; }
 
@@ -159,13 +167,13 @@ namespace Beamable.Api
 		}
 
 		private readonly OfflineCache _offlineCache;
+		private IPlatformRequesterHostResolver _resolver;
 
 		public PlatformRequester(IDependencyProvider provider)
 		{
-			var resolver = provider.GetService<IPlatformRequesterHostResolver>();
+			_resolver = provider.GetService<IPlatformRequesterHostResolver>();
 			_provider = provider;
-			Host = resolver.Host;
-			_beamableVersion = resolver.PackageVersion;
+			_beamableVersion = _resolver.PackageVersion;
 			accessTokenStorage = provider.GetService<AccessTokenStorage>();
 			_connectivityService = provider.GetService<IConnectivityService>();
 			_offlineCache = provider.GetService<OfflineCache>();
@@ -178,7 +186,11 @@ namespace Beamable.Api
 
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
-			Host = host;
+			_resolver = new DefaultPlatformRequesterHostResolver
+			{
+				Host = host,
+				PackageVersion = beamableVersion
+			};
 			_beamableVersion = beamableVersion;
 			this.accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
@@ -270,10 +282,14 @@ namespace Beamable.Api
 			return UnityWebRequest.EscapeURL(url);
 		}
 
-		public void DeleteToken()
+		public void DeleteToken(bool eraseFromDisk=true)
 		{
-			Token?.Delete();
-			Token?.DeleteAsCustomerScoped();
+			if (eraseFromDisk)
+			{
+				Token?.Delete();
+				Token?.DeleteAsCustomerScoped();
+			}
+
 			Token = null;
 		}
 

@@ -1,11 +1,11 @@
 {
   "name": "beamable-sdk",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Beamable Web SDK",
-  "main": "dist/node/index.js",
+  "main": "dist/node/index.cjs",
   "module": "dist/node/index.mjs",
-  "unpkg": "dist/browser/index.browser.global.js",
-  "types": "dist/node/index.d.ts",
+  "unpkg": "dist/browser/index.iife.js",
+  "types": "dist/types/index.d.ts",
   "author": "Beamable",
   "license": "MIT",
   "packageManager": "pnpm@10.8.0",
@@ -14,29 +14,30 @@
   },
   "scripts": {
     "setup-project": "node setup.mjs",
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
     "format": "prettier --write .",
-    "doc": "typedoc",
-    "changeset": "changeset",
-    "release": "changeset version && pnpm build"
+    "doc": "node ./generateDocs.mjs",
+    "release": "node ./update-version.mjs && pnpm build",
+    "prepublishOnly": "pnpm build"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.0",
-    "@eslint/js": "^9.24.0",
+    "@eslint/js": "^9.39.1",
     "@types/node": "^22.15.19",
-    "@typescript-eslint/eslint-plugin": "^8.29.1",
-    "@typescript-eslint/parser": "^8.29.1",
-    "eslint": "^9.24.0",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
-    "tsup": "^8.4.0",
+    "semver": "^7.7.3",
+    "tsdown": "^0.16.5",
     "typedoc": "^0.28.5",
+    "typedoc-plugin-markdown": "^4.8.1",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.1.1"
+    "vitest": "^4.0.10"
   },
   "files": [
     "dist"
@@ -44,18 +45,23 @@
   "exports": {
     ".": {
       "browser": {
-        "types": "./dist/browser/index.browser.d.ts",
-        "require": "./dist/browser/index.browser.global.js",
-        "import": "./dist/browser/index.browser.mjs"
+        "types": "./dist/types/index.d.ts",
+        "require": "./dist/browser/index.iife.js",
+        "import": "./dist/browser/index.mjs"
       },
-      "types": "./dist/node/index.d.ts",
-      "require": "./dist/node/index.js",
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/node/index.cjs",
       "import": "./dist/node/index.mjs"
     },
     "./schema": {
-      "types": "./dist/schema.d.ts",
-      "require": "./dist/schema.js",
+      "types": "./dist/types/schema.d.ts",
+      "require": "./dist/schema.cjs",
       "import": "./dist/schema.mjs"
+    },
+    "./api": {
+      "types": "./dist/types/api.d.ts",
+      "require": "./dist/api.cjs",
+      "import": "./dist/api.mjs"
     }
   },
   "keywords": [

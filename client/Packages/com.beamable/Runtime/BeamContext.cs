@@ -19,13 +19,11 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Common.Util;
-using Beamable.Config;
 using Beamable.Connection;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
 using Beamable.Player.CloudSaving;
-using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -144,7 +142,7 @@ namespace Beamable
 		public string Cid => _requester.Cid;
 
 		public string Pid => _requester.Pid; // TODO: rename to rid
-
+		
 		public AccessToken AccessToken => _requester.Token;
 
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
@@ -260,12 +258,14 @@ namespace Beamable
 		private IAuthService _authService;
 		private IContentApi _contentService;
 		private IConnectivityService _connectivityService;
-		private IConnectivityChecker _connectivityChecker;
 		private NotificationService _notification;
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
+		private RealmsBasicRealmConfiguration _realmConfig;
+
+		
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
 #if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
 		private static string DefaultPlayerCode { get; set; } = string.Empty;
@@ -455,7 +455,7 @@ namespace Beamable
 
 			oldScope?.Hydrate(_serviceScope);
 
-			var config = _serviceScope.GetService<IRuntimeConfigProvider>();
+			var config = Beam.RuntimeConfigProvider;
 			InitServices(config.Cid, config.Pid);
 			_behaviour.Initialize(this);
 			_initPromise = new Promise();
@@ -535,25 +535,41 @@ namespace Beamable
 			_requester.Cid = cid;
 			_requester.Pid = pid;
 
-			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
-			if (ServiceProvider.CanBuildService<IConnectivityChecker>())
-			{
-				_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
-			}
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_sessionService = ServiceProvider.GetService<ISessionService>();
-			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
+			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
 
 			var _ = _serviceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 		}
 
+		private async Promise UpdateAndSaveToken()
+		{
+			var oldToken = _requester.Token;
+			await _beamableApiRequester.RefreshToken();
+			var token = _beamableApiRequester.Token;
+			ClearToken(eraseFromDisk: false);
+			_requester.Token = token;
+			_beamableApiRequester.Token = token;
+			var settings = _serviceScope.GetService<ITokenEventSettings>();
+			if (settings.EnableTokenAnalytics)
+			{
+				var analytics = _serviceScope.GetService<IAnalyticsTracker>();
+				analytics.TrackEvent(
+					TokenEvent.ChangingToken(playerId: PlayerId,
+					                         newAccessToken: token?.Token,
+					                         newRefreshToken: token?.RefreshToken,
+					                         oldAccessToken: oldToken?.Token,
+					                         oldRefreshToken: oldToken?.RefreshToken), true);
+			}
+			_ = _beamableApiRequester.Token.Save();
+		}
 
 		private async Promise SaveToken(TokenResponse rsp)
 		{
-			ClearToken();
 			var oldToken = _requester.Token;
+			ClearToken(eraseFromDisk: false);
 			var token = new AccessToken(_tokenStorage,
 										Cid,
 										Pid,
@@ -578,15 +594,19 @@ namespace Beamable
 			await _requester.Token.Save();
 		}
 
-		private void ClearToken()
+		private void ClearToken(bool eraseFromDisk=true)
 		{
-			_requester.DeleteToken();
+			_requester.DeleteToken(eraseFromDisk);
 		}
 
 		private async Promise InitStep_StartPubnub()
 		{
 			try
 			{
+				// when using pubnub, 
+				//  the heartbeat is required to keep a presence connection alive to beamable.
+				_heartbeatService = _serviceScope.GetService<IHeartbeatService>();
+				
 				var pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
 				pubnubSubscriptionManager.UnsubscribeAll();
 				await pubnubSubscriptionManager.SubscribeToProvider();
@@ -602,15 +622,18 @@ namespace Beamable
 			// Need to get this in order to subscribe the message callbacks.
 			var _ = _serviceScope.GetService<BeamableSubscriptionManager>();
 			var connection = _serviceScope.GetService<IBeamableConnection>();
+			
+			// the connection doubles as
+			//  - the legacy heartbeat concept.
+			_heartbeatService = connection;
+			
 			await connection.Connect(socketUri);
 		}
 
 
 		private async Promise InitProcedure(bool silent = false)
 		{
-
 			#region resolve routing key
-
 			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
 			{
 				var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
@@ -623,15 +646,29 @@ namespace Beamable
 			_beamableApiRequester.Token = _requester.Token;
 			#endregion
 
-			#region wait for connectivity...
-			var hasInternet = await _connectivityChecker.ForceCheck();
-			#endregion
 
 			#region make decisions about the current account
 			var hasNoToken = AccessToken == null;
 			var hasOfflineToken = AccessToken?.Token == Constants.Commons.OFFLINE;
 			var needsToken = hasNoToken || hasOfflineToken;
 			#endregion
+
+			#region wait for connectivity...
+			var checker = _serviceScope.GetService<IConnectivityChecker>();
+			checker.ConnectivityCheckingEnabled = true;
+			var hasInternet = _connectivityService.HasConnectivity;
+			if (hasInternet)
+			{
+				var baseUserJob = GetBaseUser();
+				var configJob = SetupGetConfigRealms();
+				await Promise.Sequence(baseUserJob, configJob).RecoverFromNoConnectivity(_ =>
+				{
+					hasInternet = false;
+					return new List<Unit>();
+				});
+			}
+			#endregion
+
 
 			if (!hasInternet)
 			{
@@ -651,16 +688,12 @@ namespace Beamable
 					Debug.LogWarning("Lost internet during Beamable initiation. unpredictable behaviour may occur.");
 				}
 			}
+			
 
-			async Promise SetupBeamableNotificationChannel()
+			async Promise SetupBeamableNotificationChannel(RealmsBasicRealmConfiguration config)
 			{
-				RealmConfiguration config = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults();
-
-				string provider = config.websocketConfig.provider ?? "pubnub";
-				if (provider != "pubnub")
+				if (config.IsUsingBeamableNotifications())
 				{
-					// Let's make sure that we get a fresh new JWT before attempting to connect.
-					await _beamableApiRequester.RefreshToken();
 					await InitStep_StartWebsocket(config.websocketConfig.uri);
 				}
 				else
@@ -674,15 +707,20 @@ namespace Beamable
 				var user = await _authService.GetUser();
 				AuthorizedUser.Value = user;
 			}
-
-			async Promise SetupNewSession()
+			
+			async Promise SetupNewSession(RealmsBasicRealmConfiguration config)
 			{
-				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
+				string id = await AdvertisingIdentifier.GetIdentifier();
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, id);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
-				if (CoreConfiguration.Instance.SendHeartbeat)
+
+				bool sendHeartbeat = config.IsUsingPubnubNotifications();
+				if (CoreConfiguration.Instance.SendLegacyHeartbeat.TryGet(out var overrideSendHeartbeat))
 				{
-					// this breakpoint only hit one time, so the session isn't restarting? But also, the id is bad???
+					sendHeartbeat = overrideSendHeartbeat;
+				} 
+				if (sendHeartbeat)
+				{
 					_heartbeatService.Start();
 				}
 			}
@@ -705,11 +743,19 @@ namespace Beamable
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(new DummyPurchaser());
 				}
 			}
+			
+			
+			async Promise SetupGetConfigRealms()
+			{
+				var realmConfiguration = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults(false);
+				_realmConfig = realmConfiguration;
+			}
 
 			void SetupEmitEvents()
 			{
 				if (silent) return;
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
+				// allow the content refs to update
+				ContentApi.Instance.CompleteSuccess(Content);
 				OnReloadUser?.Invoke();
 			}
 
@@ -748,25 +794,28 @@ namespace Beamable
 				SetupEmitEvents();
 			}
 
-			async Promise SetupWithConnection()
+			async Promise GetBaseUser()
 			{
 				if (needsToken)
 				{
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
-				else if (AccessToken.IsExpired)
-				{
-					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
-					await SaveToken(rsp);
-				}
+				
+				// Let's make sure that we get a fresh new JWT before attempting to connect.
+				await UpdateAndSaveToken();
+			}
 
-				await SetupGetUser();
-				var connection = SetupBeamableNotificationChannel();
-				var session = SetupNewSession();
+			async Promise SetupWithConnection()
+			{
+				Promise userInfo = SetupGetUser();
+				var connection = SetupBeamableNotificationChannel(_realmConfig);
 				var purchase = SetupPurchaser();
-				await Promise.Sequence(connection, session, purchase);
+				
+				await userInfo;
 
+				var session = SetupNewSession(_realmConfig);
+				await Promise.Sequence( connection, session, purchase);
 				SetupEmitEvents();
 			}
 		}
@@ -871,8 +920,19 @@ namespace Beamable
 		/// </summary>
 		public async Promise Stop()
 		{
+		
+			
 			if (_isStopped) return;
 
+			// when there are no running contexts, there can be no
+			//  assigned content singleton proxy. When a new context
+			//  gets started, this will be re-assigned to the new context's
+			//  content api.
+			if (ContentApi.Instance.GetResult() == Content)
+			{
+				ContentApi.Instance = new Promise<IContentApi>();
+			}
+			
 			_isStopped = true;
 
 			// clear all events...
@@ -900,7 +960,7 @@ namespace Beamable
 		/// </summary>
 		public async Promise ClearPlayerAndStop()
 		{
-			ClearToken();
+			ClearToken(eraseFromDisk: true);
 			await Stop();
 		}
 
@@ -951,7 +1011,7 @@ namespace Beamable
 		string IDependencyScopeNameProvider.DependencyScopeName => PlayerId.ToString();
 		int IBeamableDisposableOrder.DisposeOrder => 100;
 	}
-
+	
 	[Serializable]
 	public class BeamContextInitException : Exception
 	{

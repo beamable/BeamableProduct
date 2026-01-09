@@ -7,19 +7,19 @@ import { deepFreeze } from '@/utils/deepFreeze';
 
 /** A mapping of Beamable built-in environment names to their configurations. */
 const defaultEnvironments: Record<BuiltInEnv, BeamEnvironmentConfig> = {
-  Dev: {
+  dev: {
     apiUrl: 'https://dev.api.beamable.com',
     portalUrl: 'https://dev-portal.beamable.com',
     beamMongoExpressUrl: 'https://dev.storage.beamable.com',
     dockerRegistryUrl: 'https://dev-microservices.beamable.com/v2/',
   },
-  Stg: {
+  stg: {
     apiUrl: 'https://staging.api.beamable.com',
     portalUrl: 'https://staging-portal.beamable.com',
     beamMongoExpressUrl: 'https://staging.storage.beamable.com',
     dockerRegistryUrl: 'https://staging-microservices.beamable.com/v2/',
   },
-  Prod: {
+  prod: {
     apiUrl: 'https://api.beamable.com',
     portalUrl: 'https://portal.beamable.com',
     beamMongoExpressUrl: 'https://storage.beamable.com',

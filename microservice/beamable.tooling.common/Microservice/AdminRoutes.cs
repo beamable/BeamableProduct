@@ -6,6 +6,7 @@ using Beamable.Server;
 using Beamable.Server.Api.Usage;
 using Beamable.Server.Editor;
 using Beamable.Tooling.Common.OpenAPI;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
@@ -20,12 +21,13 @@ namespace microservice.Common
 	   /// <summary>
 	   /// Microservice associated with the administrative routes.
 	   /// </summary>
+	   [Obsolete("This type is no longer bound")]
 	   public Type MicroserviceType { get; set; }
 
 	   /// <summary>
 	   /// MicroserviceAttribute associated with the administrative routes.
 	   /// </summary>
-	   public MicroserviceAttribute MicroserviceAttribute { get; set; }
+	   public IMicroserviceAttributes MicroserviceAttribute { get; set; }
 	   
 	   /// <summary>
 	   /// List of pre-generated federation component data
@@ -40,7 +42,7 @@ namespace microservice.Common
 	   /// <summary>
 	   /// The dependency provider for the entire service
 	   /// </summary>
-	   public IServiceProvider GlobalProvider { get; set; }
+	   public IDependencyProvider GlobalProvider { get; set; }
 	   
 	   public string sdkVersionBaseBuild { get; set; }
 	   public string sdkVersionExecution { get; set; }
@@ -63,7 +65,7 @@ namespace microservice.Common
       /// A simple method to check if the microservice can send and receive network traffic.
       /// </summary>
       /// <returns>The word "responsive" if all is well.</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       public string HealthCheck()
       {
          return "responsive";
@@ -78,21 +80,22 @@ namespace microservice.Common
       /// The summary, remarks, returns, and parameter tags are supported.
       /// </remarks>
       /// <returns>A json OpenAPI document</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       [CustomResponseSerializationAttribute]
       public string Docs()
       {
 	      var docs = new ServiceDocGenerator();
-	      var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(MicroserviceType.Assembly.GetExportedTypes(), out var typesMissingAttribute).Select(t => t.type).ToArray();
-	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this, false, extraSchemas);
-
+	      var ctx = GlobalProvider.GetService<StartupContext>();
+	      var doc = docs.Generate(ctx, GlobalProvider);
+	     
 	      if (!string.IsNullOrEmpty(PublicHost))
 	      {
 		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
 	      }
-	      
-	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 
+	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+	      
+	      
 	      return outputString;
       }
 
@@ -108,7 +111,7 @@ namespace microservice.Common
       /// </para>
       /// </remarks>
       /// <returns>Metadata for the service</returns>
-      [Callable]
+      [Callable(flags:CallableFlags.SkipGenerateClientFiles)]
       public MicroserviceRuntimeMetadata Metadata()
       {
 	      var version = BeamAssemblyVersionUtil.GetVersion<AdminRoutes>();

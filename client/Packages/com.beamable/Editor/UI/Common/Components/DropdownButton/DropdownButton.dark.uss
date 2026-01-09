@@ -1,3 +1,0 @@
-﻿#dropDownImg{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
-}

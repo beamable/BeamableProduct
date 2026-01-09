@@ -1,12 +1,19 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
+using Beamable.Editor.Util;
+using Beamable.Editor.ContentService;
+using Beamable.Editor.UI.ContentWindow;
 using System;
+using System.Collections;
 using System.Linq;
 using System.Reflection;
+using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using ContentFilterType = Beamable.Common.Content.ContentFilterType;
 
 namespace Beamable.Editor.Content.UI
 {
@@ -15,42 +22,239 @@ namespace Beamable.Editor.Content.UI
 	[CustomEditor(typeof(ContentObject), true)]
 	public class ContentObjectEditor : UnityEditor.Editor
 	{
+		private const float HEADER_HEIGHT = 60f;
+		private const float BUTTONS_HEADER_HEIGHT = 90f;
+		private EditorCoroutine _updateNameCoroutine;
+		private EditorCoroutine _updateTagCoroutine;
 
 		protected override void OnHeaderGUI()
 		{
-			base.OnHeaderGUI();
-
-			var leftMargin = 45;
-			var rightMargin = 56;
-			Rect lastRect = GUILayoutUtility.GetLastRect();
-			Rect r = new Rect(lastRect.x + leftMargin, lastRect.height - 25, lastRect.width - (leftMargin + rightMargin),
-			   20);
-
-
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			var isEditingMultiple = targets.Length > 1;
 
-			if (contentObject.ContentName == null)
-				contentObject.SetContentName(contentObject.name);
+			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 
-			if (ContentNameValidationException.HasNameValidationErrors(contentObject, contentObject.ContentName, out var nameErrors))
+			var boldLabelFieldStyle =
+				new GUIStyle(EditorStyles.boldLabel) {fixedHeight = EditorGUIUtility.singleLineHeight};
+
+			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted;
+			var isInConflict = contentObject.IsInConflict;
+
+			var headerHeight = (isModified || isInConflict) && !isEditingMultiple ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
+			
+			GUIStyle headerStyle = new GUIStyle(GUI.skin.box)
 			{
-				var errorText = string.Join(",", nameErrors.Select(n => n.Message));
-				var idValidationRect = new Rect(lastRect.x, lastRect.y, 4, lastRect.height);
-				EditorGUI.DrawRect(idValidationRect, Color.red);
+				padding = new RectOffset(10, 10, 0, 10), 
+				margin = new RectOffset(0, 0, 5, 5)
+			};
+			GUILayout.BeginVertical(headerStyle);
+			{
+				var headerRect = EditorGUILayout.GetControlRect(GUILayout.Height(headerHeight));
+				GUILayout.BeginHorizontal();
+				Texture texture = ContentConfiguration.Instance.ContentTextureConfiguration.GetTextureForType(
+					contentObject.ContentType);
+				float iconSize = 40f;
+				var iconRect = new Rect(headerRect.x, headerRect.y + iconSize/2f, iconSize, iconSize);
+				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
-				var redStyle = new GUIStyle(GUI.skin.label);
-				redStyle.normal.textColor = Color.red;
-				redStyle.fontSize = 8;
-				EditorGUI.LabelField(new Rect(lastRect.x + leftMargin, lastRect.y, lastRect.width - leftMargin, 12), $"({errorText})", redStyle);
+				Rect contentRect = new Rect(
+					iconRect.xMax + 10f,
+					headerRect.y + 10,
+					headerRect.width - iconRect.width,
+					EditorGUIUtility.singleLineHeight * 3);
 
+				if (isEditingMultiple)
+				{
+					EditorGUI.LabelField(contentRect, "Editing multiple content files...", EditorStyles.miniLabel);
+					GUILayout.EndHorizontal();
+					GUILayout.EndVertical();
+					return;
+				}
+				
+				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
+				{
+					var statusIconSize = 15f;
+					var statusIconRect = new Rect(
+						iconRect.xMin,
+						iconRect.yMin,
+						statusIconSize,
+						statusIconSize);
+					var icon = ContentWindow.GetIconForStatus(contentObject.IsInConflict, contentObject.ContentStatus);
+					GUI.DrawTexture(statusIconRect, icon, ScaleMode.ScaleToFit);
+					if (contentService.IsContentInvalid(contentObject.Id))
+					{
+						var invalidIconRect = new Rect(
+							iconRect.xMax - statusIconSize/2f, 
+							iconRect.yMin, 
+							statusIconSize, 
+							statusIconSize);
+						GUI.DrawTexture(invalidIconRect, BeamGUI.iconStatusInvalid, ScaleMode.ScaleToFit);
+					}
+				}
+
+				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
+				{
+					SettingsService.OpenProjectSettings("Project/Beamable/Content");
+				}
+
+				
+				DrawHeaderFields(contentRect, boldLabelFieldStyle, contentObject, contentService);
+
+				DrawNameValidator(contentObject, headerRect);
+
+				GUILayout.EndHorizontal();
+				if (isModified || isInConflict)
+				{
+					Rect buttonsRect = new Rect(
+						headerRect.xMin + 5,
+						contentRect.yMax + 5,
+						headerRect.width - 10,
+						headerRect.height - contentRect.height - 10);
+					DrawContentButtons(contentObject, buttonsRect, contentService);
+				}
+			}
+		GUILayout.EndVertical();
+		}
+
+		private void DrawContentButtons(ContentObject content, Rect buttonsRect, CliContentService contentService)
+		{
+			var modifiedButtonWidth = 80f;
+			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button)
+			{
+				alignment = TextAnchor.MiddleLeft,     
+				padding = new RectOffset(10, 5, 5, 5),
+			};
+			bool hasModifiedButton = content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
+			bool hasConflictSolveButton = content.IsInConflict;
+			if (hasModifiedButton)
+			{
+				var revertContent = new GUIContent("Revert");
+				
+				var revertButtonRect = new Rect(
+					buttonsRect.xMin,
+					buttonsRect.y,
+					modifiedButtonWidth,
+					buttonsRect.height);
+				if (GUI.Button(revertButtonRect, revertContent, buttonStyle))
+				{
+					if (EditorUtility.DisplayDialog("Revert Content", 
+					                                "Are you sure you want to revert this content?", "Revert", "Cancel"))
+					{
+						_ = contentService.SyncContentsWithProgress(true, true, true, true, content.Id, ContentFilterType.ExactIds);
+					}
+					
+				}
+
+				float iconSize = 16;
+				var iconRect = new Rect(
+					revertButtonRect.xMax - iconSize - 10,
+					revertButtonRect.y + (revertButtonRect.height - iconSize) / 2,
+					iconSize,
+					iconSize);
+				GUI.DrawTexture(iconRect, BeamGUI.iconRevertAction);
 			}
 
+			if (hasConflictSolveButton)
+			{
+				var conflictContent = new GUIContent("Solve Conflict");
+				var extraInitPos = hasModifiedButton ? modifiedButtonWidth + 5 : 0;
+				var conflictSolveButtonRect = new Rect(
+					buttonsRect.xMin + extraInitPos,
+					buttonsRect.y,
+					120f,
+					buttonsRect.height);
+				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
+				{
+					GenericMenu conflictResolveMenu = new GenericMenu();
+					if (contentService.IsContentInvalid(content.Id))
+					{
+						conflictResolveMenu.AddDisabledItem(new GUIContent("Use local", "Cannot resolve using local because it is invalid"));
+					}
+					else
+					{
+						conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
+						{
+							contentService.ResolveConflict(content.Id, true);
+						});	
+					}
+					conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
+					{
+						contentService.ResolveConflict(content.Id, true);
+					});
+					conflictResolveMenu.AddItem(new GUIContent("Use Realm"), false, () =>
+					{
+						contentService.ResolveConflict(content.Id, false);
+					});
+					conflictResolveMenu.ShowAsContext();
+				}
+
+				float iconSize = 16;
+				var iconRect = new Rect(
+					conflictSolveButtonRect.xMax - iconSize - 10,
+					conflictSolveButtonRect.y + (conflictSolveButtonRect.height - iconSize) / 2,
+					iconSize,
+					iconSize);
+				GUI.DrawTexture(iconRect, BeamGUI.iconCheck);
+			}
+		}
+
+		private void DrawHeaderFields(Rect contentRect, GUIStyle boldLabelFieldStyle, ContentObject contentObject, CliContentService contentService)
+		{
+			Rect idRect = new Rect(
+				contentRect.x,
+				contentRect.y,
+				contentRect.width,
+				EditorGUIUtility.singleLineHeight);
+			var idContent = new GUIContent("Id: ");
+			EditorGUI.LabelField(idRect, idContent, boldLabelFieldStyle);
+			var idFieldSize = boldLabelFieldStyle.CalcSize(idContent);
+			idRect.x += idFieldSize.x;
+			EditorGUI.LabelField(idRect, contentObject.Id);
+					
+			Rect nameRect = new Rect(
+				contentRect.x,
+				idRect.yMax,
+				contentRect.width -5,
+				EditorGUIUtility.singleLineHeight);
+			var nameContent = new GUIContent("Name: ");
+			EditorGUI.LabelField(nameRect, nameContent, boldLabelFieldStyle);
+			var nameFieldSize = boldLabelFieldStyle.CalcSize(nameContent);
+			nameRect.xMin += nameFieldSize.x;
 			EditorGUI.BeginChangeCheck();
+			if (contentObject.ContentStatus is ContentStatus.Deleted)
+			{
+				EditorGUI.LabelField(nameRect, contentObject.ContentName);
+			}
+			else
+			{
+				string newName = EditorGUI.DelayedTextField(nameRect, contentObject.ContentName);
+				if (EditorGUI.EndChangeCheck())
+				{
+					if (_updateNameCoroutine != null)
+					{
+						EditorCoroutineUtility.StopCoroutine(_updateNameCoroutine);
+					}
 
-			var oldFieldWith = EditorGUIUtility.labelWidth;
+					_updateNameCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						contentService.RenameContent(contentObject.Id, newName);
+						contentObject.SetContentName(newName);
+						EditorUtility.SetDirty(contentObject);
+					}), contentObject);
 
-			var value = GetTagString(contentObject.Tags);
+
+				}
+			}
+
+			Rect tagsRect = new Rect(
+				contentRect.x, 
+				nameRect.yMax, 
+				contentRect.width - 5, 
+				EditorGUIUtility.singleLineHeight);
+			
+			
+			var tagsValue = GetTagString(contentObject.Tags);
 			if (targets.Length > 1)
 			{
 				for (var i = 0; i < targets.Length; i++)
@@ -58,61 +262,90 @@ namespace Beamable.Editor.Content.UI
 					var otherContentObject = targets[i] as ContentObject;
 					if (otherContentObject == null) continue;
 					var otherValue = GetTagString(otherContentObject.Tags);
-					if (otherValue != value)
+					if (otherValue != tagsValue)
 					{
-						value = "-";
+						tagsValue = "-";
 						break;
 					}
 				}
 			}
-
-			EditorGUIUtility.labelWidth = 75;
-			var edit = EditorGUI.TextField(r, "Content Tag", value);
-			EditorGUIUtility.labelWidth = oldFieldWith;
-
-			if (EditorGUI.EndChangeCheck())
+					
+			var contentTagLabel = new GUIContent("Content Tag: ");
+			EditorGUI.LabelField(tagsRect, contentTagLabel, boldLabelFieldStyle);
+			var contentTagLabelSize = boldLabelFieldStyle.CalcSize(contentTagLabel);
+			tagsRect.xMin += contentTagLabelSize.x;
+			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
-				SetTagAt = EditorApplication.timeSinceStartup + .25; // debounce time
-				latestDebounceId++;
-				var debounceId = latestDebounceId;
-				EditorApplication.delayCall += () => DebounceTagSet(debounceId, edit);
-
+				EditorGUI.LabelField(tagsRect, tagsValue);
 			}
-		}
-
-		private double SetTagAt = 0;
-		private long latestDebounceId = 0;
-		void DebounceTagSet(long id, string edit)
-		{
-			if (id != latestDebounceId) return; // a more recent debounce is scheduled. this one can die.
-
-			if (EditorApplication.timeSinceStartup < SetTagAt)
+			else
 			{
-				EditorApplication.delayCall += () => DebounceTagSet(id, edit); // try again.
-				return;
-			}
-
-			var tags = GetTagsFromString(edit);
-			Undo.RecordObjects(targets, "Change Content Tag");
-			foreach (Object obj in targets)
-			{
-				var otherContentObject = obj as ContentObject;
-				if (otherContentObject != null)
+				EditorGUI.BeginChangeCheck();
+				var newTags = EditorGUI.TextField(tagsRect, tagsValue);
+				if (EditorGUI.EndChangeCheck())
 				{
-					otherContentObject.Tags = tags.ToArray(); // copy.
+					if (_updateTagCoroutine != null)
+					{
+						EditorCoroutineUtility.StopCoroutine(_updateTagCoroutine);
+					}
 
-					otherContentObject.ForceValidate();
-					EditorUtility.SetDirty(otherContentObject);
+					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						var tags = GetTagsFromString(newTags);
+						contentService.SetContentTags(contentObject.Id, tags);
+						contentObject.Tags = tags.ToArray();
+						EditorUtility.SetDirty(contentObject);
+					}), contentObject);
+
 				}
 			}
 		}
 
+		private IEnumerator DelayedActionEditorRoutine(double delay, Action onDelayComplete)
+		{
+			double baseTime = EditorApplication.timeSinceStartup;
+			double elapsed = 0d;
+	      
+			while (elapsed < delay)
+			{
+				elapsed = EditorApplication.timeSinceStartup - baseTime;
+				yield return null;
+			}
+	      
+			onDelayComplete?.Invoke();
+		}
+
+		private static void DrawNameValidator(ContentObject contentObject, Rect headerRect)
+		{
+			if (contentObject.ContentName == null)
+				contentObject.SetContentName(contentObject.name);
+
+			if (ContentNameValidationException.HasNameValidationErrors(contentObject, contentObject.ContentName, out var nameErrors))
+			{
+				var errorText = string.Join(",", nameErrors.Select(n => n.Message));
+				var idValidationRect = new Rect(headerRect.x - 5, headerRect.y, 4, headerRect.height);
+				EditorGUI.DrawRect(idValidationRect, Color.red);
+					
+				var redStyle = new GUIStyle(GUI.skin.label);
+				redStyle.normal.textColor = Color.red;
+				redStyle.fontSize = 8;
+				EditorGUI.LabelField(new Rect(headerRect.x, headerRect.y - 8, headerRect.width, 12), $"({errorText})", redStyle);
+					
+			}
+		}
+		
+
 
 		public override void OnInspectorGUI()
 		{
-
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+
+			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
+			{
+				EditorGUILayout.HelpBox("This content has been deleted.", MessageType.Info);
+				return;
+			}
 
 			if (contentObject.SerializeToConsoleRequested)
 			{
@@ -136,7 +369,7 @@ namespace Beamable.Editor.Content.UI
 				rect = new Rect(rect.x, rect.y - 6, rect.width, rect.height);
 				GUI.Box(new Rect(0, rect.y, contextWidth, rect.height), "", "In BigTitle Post");
 
-				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentIO.ComputeChecksum(contentObject)}", checksumStyle);
+				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentUtils.ComputeChecksum(contentObject)}", checksumStyle);
 			}
 
 			base.OnInspectorGUI();

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Common.CronExpression;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.CronExpression
@@ -10,11 +11,5 @@ namespace Beamable.CronExpression
 
 		[SerializeField] private CronLocale defaultLocalization = CronLocale.en_US;
 		[SerializeField] private List<CronLocalizationData> supportedLocalizations = null;
-	}
-
-	public enum CronLocale
-	{
-		en_US,
-		pl_PL
 	}
 }

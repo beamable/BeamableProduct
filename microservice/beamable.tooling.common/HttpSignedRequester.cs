@@ -62,8 +62,8 @@ public class HttpSignedRequester : ISignedRequester
     private IUserContext _userContext;
 
     public IAccessToken AccessToken { get; private set; }
-    public string Cid { get; }
-    public string Pid { get; }
+    public string Cid { get; private set; }
+    public string Pid { get; private set; }
     
     public HttpSignedRequester(ISignedRequesterConfig config, IRealmInfo realmInfo, IUserContext userContext)
     {
@@ -234,5 +234,11 @@ public class HttpSignedRequester : ISignedRequester
             (int)response.StatusCode, rawResponse);
         throw ex;
     }
-    
+
+    public void SetRealmInfo(string cid, string pid, string secret)
+    {
+	    Cid = cid;
+	    Pid = pid;
+	    _secret = secret;
+    }
 }

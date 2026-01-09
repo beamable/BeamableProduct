@@ -1,4 +1,9 @@
-import { CurrencyArchetype } from './CurrencyArchetype';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { CurrencyArchetype } from './CurrencyArchetype';
 
 export type CurrencyContentResponse = { 
   content: CurrencyArchetype[]; 

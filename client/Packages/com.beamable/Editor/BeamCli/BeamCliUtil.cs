@@ -1,78 +1,36 @@
 using Beamable.Common;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.UI.OptionDialogWindow;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli
 {
 	public static class BeamCliUtil
 	{
-		static bool USE_SRC
-		{
-			get
-			{
-				var config = EditorConfiguration.Instance;
-				if (config == null || !config.AdvancedCli.HasValue) return false;
-
-				return config.AdvancedCli.Value.UseFromSource.HasValue;
-			}
-		}
 
 		public static string CLI_VERSION
 		{
 			get
 			{
-				if (USE_SRC) return "0.0.123"; 
 				return BeamableEnvironment.NugetPackageVersion;
 			}
 		}
 
-		private static string CLI_VERSIONED_HOME
+		public static string OWNER => Path.GetFullPath("Library/BeamableEditor/BeamCL").ToLowerInvariant();
+		static string InstalledVersion
 		{
-			get
-			{
-				if (USE_SRC)
-				{
-					return SessionState.GetString(SRC_BEAM, string.Empty);
-				}
-
-				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
-				return Path.Combine(CLI_LIBRARY, CLI_VERSION);
-			}
-		}
-
-		public static string CLI => USE_SRC ? Path.GetFullPath(CLI_VERSIONED_HOME) : EXEC;
-
-		public static string CLI_PATH
-		{
-			get
-			{
-				if (USE_SRC)
-				{
-					return CLI_VERSIONED_HOME;
-				}
-
-				return Path.Combine(CLI_VERSIONED_HOME, EXEC);
-			}
-		}
-		public static string OWNER => Path.GetFullPath(CLI_PATH).ToLowerInvariant();
-
-		const string SRC_BEAM = "BUILDED_BEAM";
-
-		private const string EXEC = "beam";
-
-
-		[System.Diagnostics.Conditional("SPEW_ALL")]
-		static void VerboseLog(string log)
-		{
-			BeamableLogger.Log($"<b>[{nameof(BeamCliUtil)}]</b> {log}");
+			get => SessionState.GetString(nameof(InstalledVersion), string.Empty);
+			set => SessionState.SetString(nameof(InstalledVersion), value);
 		}
 
 		/// <summary>
@@ -80,186 +38,217 @@ namespace Beamable.Editor.BeamCli
 		/// </summary>
 		public static void InitializeBeamCli()
 		{
-			// we need dotnet before we can initialize the CLI
-			DotnetUtil.InitializeDotnet();
-
-			if (USE_SRC)
-			{
-				if (CheckForBuildedSource())
-				{
-					return;
-				}
-
-				BuildTool();
-				if (CheckForBuildedSource(outputNotFoundError: true))
-				{
-					return;
-				}
-			}
-
-			// need to install the CLI
-			var installResult = InstallTool();
-
-			if (!installResult)
-			{
-				throw new Exception("Beamable could not install the Beam CLI");
-			}
-		}
-
-		private static bool CheckForBuildedSource(bool outputNotFoundError = false)
-		{
-			if (!USE_SRC)
-			{
-				SessionState.EraseString(SRC_BEAM);
-				return false;
-			}
-
-			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource!.Value;
-			VerboseLog("Check for built source");
-
-			if (!File.Exists(configPath))
-			{
-				VerboseLog($"CLI project file specified in config({configPath} ) does not exist, returning false");
-				SessionState.EraseString(SRC_BEAM);
-				return false;
-			}
-
 			try
 			{
-				var cliRelativePath = Path.GetDirectoryName(configPath);
-				var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
-				var cliBuildPath = Path.Combine(cliAbsolutePath, "bin");
+				// we need dotnet before we can initialize the CLI
+				DotnetUtil.InitializeDotnet();
 
-				if (Directory.Exists(cliBuildPath))
+				// need to install the CLI
+				var installResult = InstallTool();
+				if (!installResult)
 				{
-					var cliBuildArtifacts = Directory.EnumerateFiles(
-						cliBuildPath,
-						"Beamable.Tools.dll",
-						SearchOption.AllDirectories
-					);
-
-					var exeFile = cliBuildArtifacts.FirstOrDefault();
-					if (!string.IsNullOrWhiteSpace(exeFile))
-					{
-						VerboseLog($"Found Beamable.Tools.dll at {exeFile[0]}");
-						SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile));
-						return true;
-					}
-				}
-
-				if (outputNotFoundError)
-				{
-					BeamableLogger.LogError($"Beamable.Tools.dll (CLI artifact) not found in '{cliBuildPath}'. Please build dll from CLI solution, or change EditorConfiguration to use global installed cli binary.");
+					throw new Exception("Beamable could not install the Beam CLI");
 				}
 			}
-			catch (Exception e)
+			catch (Exception ex)
 			{
-				Debug.LogException(e);
+				Debug.LogError("Failed to init beam cli");
+				Debug.LogError(ex);
+				throw;
 			}
-
-			SessionState.EraseString(SRC_BEAM);
-			return false;
 		}
 
-		static void BuildTool()
+		/// <summary>
+		/// this exists for CI jobs. This function should be run before hand. 
+		/// </summary>
+		public static void InstallToolFromLocalPackageSource()
 		{
-			VerboseLog("Building CLI from source...");
-
-			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value;
-			var cliRelativePath = Path.GetDirectoryName(configPath);
-			var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
-
-			if (!Directory.Exists(cliAbsolutePath))
+			var path = "BeamableNugetSource";
+			if (!Directory.Exists(path))
 			{
-				BeamableLogger.LogError($"Failed to build CLI from source. Working directory '{cliAbsolutePath}' does not exist.");
+				Debug.Log("------ No package source exists...");
 				return;
 			}
 
-			var proc = new Process();
-			proc.StartInfo = new ProcessStartInfo
+			var files = Directory.GetFiles(path);
+			Debug.Log($"------ Found {files?.Length} files at path package source=[{Path.GetFullPath(path)}]");
+			foreach (var file in files)
 			{
-				FileName = "dotnet",
-				WorkingDirectory = cliAbsolutePath,
-				Arguments = "build -c Release -f net6.0",
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			proc.StartInfo.CreateNoWindow = true;
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			var stdErr = "";
-			var stdOut = "";
-			proc.OutputDataReceived += (sender, args) =>
-			{
-				if (!string.IsNullOrEmpty(args.Data))
-				{
-					stdOut += args.Data;
-				}
-			};
-			proc.ErrorDataReceived += (sender, args) =>
-			{
-				if (!string.IsNullOrEmpty(args.Data))
-				{
-					stdErr += args.Data;
-				}
-			};
-
-			proc.Start();
-			proc.BeginErrorReadLine();
-			proc.BeginOutputReadLine();
-			proc.WaitForExit();
-
-
-			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
-			{
-				var output = "";
-				output += string.IsNullOrEmpty(stdErr) ? "" : $"stderr: {stdErr}\n";
-				BeamableLogger.LogError($"Failed to build CLI from source.\n{output}");
-			}
-			VerboseLog($"Building CLI completed with exit code '{proc.ExitCode}'.");
-		}
-
-		static bool InstallTool()
-		{
-			if (string.IsNullOrEmpty(CLI_VERSIONED_HOME))
-			{
-				BeamableLogger.LogError("Unable to install BeamCLI from package: the provided cli home directory is blank.");
-				return false;
-			}
-
-			if (!DotnetUtil.InstallLocalManifest(out var manifestPath))
-			{
-				BeamableLogger.LogError("Unable to install BeamCLI from package: couldn't create a local manifest for the project.");
-				return false;
+				Debug.Log($"----- file=[{file}]");
 			}
 			
-			var proc = new Process();
-			var installCommand = $"tool install beamable.tools --tool-manifest \"{manifestPath}\"";
-			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
+			
+			Debug.Log("------ INSTALL TOOL FROM LOCAL PACKAGE SOURCE");
+			var process = new Process();
+			process.StartInfo.FileName = "dotnet";
+			process.StartInfo.Arguments = $"nuget add source {Path.GetFullPath(path)} --name BeamableNugetSource";
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+
+			process.Start();
+			Debug.Log("------ INSTALL LOGS TOOL FROM LOCAL PACKAGE SOURCE");
+			Debug.Log(process.StandardOutput.ReadToEnd());
+			Debug.LogError(process.StandardError.ReadToEnd());
+			if (!process.WaitForExit(10 * 1000))
 			{
-				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
+				Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE EXPIRED");
 			}
-			proc.StartInfo = new ProcessStartInfo
+			Debug.Log("------ INSTALLED TOOL FROM LOCAL PACKAGE SOURCE");
+			
+			process = new Process();
+			process.StartInfo.FileName = "dotnet";
+			process.StartInfo.Arguments = "nuget list source";
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+
+			process.Start();
+			Debug.Log("------ LIST LOCAL SOURCES LOGS");
+			Debug.Log(process.StandardOutput.ReadToEnd());
+			Debug.LogError(process.StandardError.ReadToEnd());
+			if (!process.WaitForExit(10 * 1000))
 			{
-				FileName = "dotnet",
-				WorkingDirectory = Path.GetFullPath("."),
-				Arguments = installCommand,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			};
-			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			proc.Start();
-			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
-			{
-				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
+				Debug.Log("------  LIST LOCAL SOURCES EXPIRED");
 			}
-			return proc.ExitCode == 0;
+			
+			BeamCliUtil.InitializeBeamCli();
+			Debug.Log("------  BEAM CLI FINISHED");
+			
+			System.Environment.SetEnvironmentVariable("BEAM_UNITY_TEST_CI", "true");
+		}
+
+		public static object _installLock = new object();
+		
+		static bool InstallTool()
+		{
+			lock (_installLock)
+			{
+				if (EditorConfiguration.Instance.IgnoreCliVersionRequirement)
+				{
+					// the developer has opted out of the cli version requirement. 
+					return true;
+				}
+
+				if (InstalledVersion.Equals(BeamableEnvironment.NugetPackageVersion))
+				{
+					return true;
+				}
+
+				var proc = new Process();
+				var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed --allow-downgrade";
+
+				if (Application.isBatchMode)
+				{
+					installCommand += " --add-source BeamableNugetSource ";
+				}
+
+				if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
+				{
+					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
+				}
+				else
+				{
+					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
+				}
+
+				proc.StartInfo = new ProcessStartInfo
+				{
+					FileName = "dotnet",
+					WorkingDirectory = Path.GetFullPath("."),
+					Arguments = installCommand,
+					UseShellExecute = false,
+					CreateNoWindow = true,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				};
+				proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+				TryRunWithTimeout(1);
+
+				const string errorGuide =
+					"Please try installing manually by https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing or contact Beamable for further support.";
+
+				var output = proc.StandardOutput.ReadToEnd();
+				var error = proc.StandardError.ReadToEnd();
+				if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
+				{
+					StringBuilder message = new StringBuilder("Unable to install BeamCLI");
+					if (!string.IsNullOrEmpty(output))
+					{
+						message.AppendLine($"Output: {output}");
+					}
+
+					message.AppendLine($"Error: {error}");
+					message.Append(errorGuide);
+					Debug.LogError(message.ToString());
+					var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Try Again",
+						OnClick = () => true,
+						Color = new Color(0.08f, 0.44f, 0.82f)
+					};
+					var closeUnityButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Close Unity",
+						OnClick = () => false,
+						Color = Color.gray,
+					};
+					var openDocsButtonInfo = new OptionDialogWindow.ButtonInfo()
+					{
+						Name = "Close Unity & Open Docs",
+						OnClick = () =>
+						{
+							Application.OpenURL(
+								"https://help.beamable.com/CLI-Latest/cli/guides/getting-started/#installing");
+							return false;
+						},
+						Color = Color.gray,
+					};
+					if (!OptionDialogWindow.ShowModal("Error when Installing BeamCLI", message.ToString(),
+					                                  tryAgainButtonInfo, closeUnityButtonInfo, openDocsButtonInfo))
+					{
+						EditorApplication.Exit(0);
+					}
+				}
+
+				if (proc.ExitCode == 0)
+				{
+					InstalledVersion = BeamableEnvironment.NugetPackageVersion;
+				}
+
+				return proc.ExitCode == 0;
+
+				bool TryRunWithTimeout(int currentTry)
+				{
+					proc.Start();
+					if (proc.WaitForExit(10 * 1000 * currentTry))
+					{
+						return true;
+					}
+
+					Debug.LogError(
+						"dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
+					const int maxRetries = 5;
+					if (currentTry > maxRetries)
+					{
+						string message =
+							$"The BeamCLI installation could not be completed because the command did not finish in time. It timed out after {maxRetries} retries. {errorGuide}";
+						Debug.LogError(message);
+						bool result =
+							EditorUtility.DisplayDialog("Error when Installing BeamCLI", message, "Try Again",
+							                            "Close Unity");
+						if (!result)
+						{
+							EditorApplication.Exit(0);
+						}
+
+						return false;
+					}
+
+					return TryRunWithTimeout(++currentTry);
+
+				}
+			}
 		}
 	}
 }

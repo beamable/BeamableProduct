@@ -19,6 +19,8 @@ namespace Beamable.Common.Api.Realms
 		/// <param name="cidOrAlias">A string that is either a CID or an ALIAS</param>
 		/// <returns>A structure that has an optional Alias and an optional Cid</returns>
 		Promise<AliasResolve> Resolve(string cidOrAlias);
+		
+		public IRequester Requester { get; set; }
 	}
 
 	public class AliasResolve
@@ -29,11 +31,11 @@ namespace Beamable.Common.Api.Realms
 
 	public class AliasService : IAliasService
 	{
-		private readonly IRequester _httpRequester;
+		public IRequester Requester { get; set; }
 
 		public AliasService(IRequester httpRequester)
 		{
-			_httpRequester = httpRequester;
+			Requester = httpRequester;
 		}
 
 		public async Promise<AliasResolve> Resolve(string cidOrAlias)
@@ -57,12 +59,13 @@ namespace Beamable.Common.Api.Realms
 			};
 		}
 
+
 		async Promise<AliasResolveResponse> MapAliasToCid(string alias)
 		{
 			AliasHelper.ValidateAlias(alias);
 
 			var url = $"/basic/realms/customer/alias/available?alias={alias}";
-			var res = await _httpRequester.BeamableRequest<AliasResolveResponse>(
+			var res = await Requester.BeamableRequest<AliasResolveResponse>(
 				new SDKRequesterOptions<AliasResolveResponse>
 				{
 					includeAuthHeader = false,

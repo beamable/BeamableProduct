@@ -3,6 +3,7 @@ using Beamable.Config;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.OptionDialogWindow;
+using Beamable.Editor.ContentService;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,7 +50,7 @@ namespace Beamable.Editor
 			}
 
 #if !BEAMABLE_NO_CONTENT_WARNINGS_ON_BUILD
-			var hasLocalContentChangesPromise = ContentIO.HasLocalChanges();
+			var hasLocalContentChangesPromise = CliContentService.HasLocalChanges();
 			if (hasLocalContentChangesPromise.IsCompleted)
 			{
 				var hasLocalContentChanges = hasLocalContentChangesPromise.GetResult();
@@ -84,7 +85,7 @@ namespace Beamable.Editor
 					Name = "Apply Editor Values and Continue",
 					OnClick = () =>
 					{
-						BeamEditorContext.Default.WriteConfig();
+						BeamEditorContext.Default.CommitConfigDefaults();
 						return true;
 					},
 					Color = new Color(0.29f, 1f, 0.31f),
@@ -98,7 +99,7 @@ namespace Beamable.Editor
 
 			if (ContentConfiguration.Instance.BakeContentOnBuild)
 			{
-				await ContentIO.BakeContent(skipCheck: true);
+				await ContentBaker.BakeContent(skipCheck: true);
 			}
 			if (CoreConfiguration.Instance.PreventCodeStripping)
 			{

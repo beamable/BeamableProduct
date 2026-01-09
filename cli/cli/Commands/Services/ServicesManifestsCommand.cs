@@ -1,4 +1,5 @@
 ﻿using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
 
@@ -8,7 +9,7 @@ public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, Ser
 {
 	private BeamoService _beamoService;
 
-	public ServicesManifestsCommand() : base("manifests", "Outputs manifests json to console")
+	public ServicesManifestsCommand() : base("manifests", ServicesDeletionNotice.REMOVED_PREFIX + "Outputs manifests json to console")
 	{
 	}
 	public override void Configure()
@@ -19,53 +20,9 @@ public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, Ser
 
 	public override async Task<ServiceManifestOutput> GetResult(ServicesManifestsArgs args)
 	{
-		_beamoService = args.BeamoService;
-
-		List<CliServiceManifest> response = await AnsiConsole.Status()
-										.Spinner(Spinner.Known.Default)
-										.StartAsync("Sending Request...", async ctx =>
-										{
-											var manifests = await _beamoService.GetManifests();
-											return manifests?.Select(x => new CliServiceManifest
-											{
-												comments = x.comments,
-												created = x.created,
-												createdByAccountId = x.createdByAccountId,
-												id = x.id,
-												manifest = x.manifest?.Select(m => new CliServiceReference
-												{
-													serviceName = m.serviceName,
-													checksum = m.checksum,
-													comments = m.comments,
-													containerHealthCheckPort = m.containerHealthCheckPort,
-													enabled = m.enabled,
-													imageId = m.imageId,
-													templateId = m.templateId,
-													components = m.components?.Select(c => new CliServiceComponent
-													{
-														name = c.name
-													}).ToList(),
-													dependencies = m.dependencies?.Select(d => new CliServiceDependency
-													{
-														id = d.id,
-														storageType = d.storageType
-													}).ToList()
-												}).ToList(),
-												storageReference = x.storageReference?.Select(m => new CliServiceStorageReference
-												{
-													id = m.id,
-													enabled = m.enabled,
-													storageType = m.storageType,
-													checksum = m.checksum,
-													templateId = m.templateId,
-												}).ToList()
-											})
-												.ToList();
-										});
-		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
-
-		var result = new ServiceManifestOutput { manifests = response };
-		return result;
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.TITLE);
+		AnsiConsole.MarkupLine(ServicesDeletionNotice.MANIFEST_MESSAGE);
+		throw CliExceptions.COMMAND_NO_LONGER_SUPPORTED;
 	}
 }
 

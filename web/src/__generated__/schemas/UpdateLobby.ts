@@ -1,5 +1,10 @@
-import { UpdateData } from './UpdateData';
-import { LobbyRestriction } from './enums/LobbyRestriction';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { UpdateData } from './UpdateData';
+import type { LobbyRestriction } from './enums/LobbyRestriction';
 
 export type UpdateLobby = { 
   data?: UpdateData; 

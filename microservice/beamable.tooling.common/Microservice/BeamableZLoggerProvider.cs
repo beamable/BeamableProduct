@@ -12,9 +12,13 @@ namespace Beamable.Server
 
     public static class Log
     {
-        
         public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
         public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
+
+        public static IDisposable BeginScope(Dictionary<string, string> scope)
+        {
+            return Default.BeginScope(scope);
+        }
         
         public static void Debug(string message)
         {
@@ -42,27 +46,52 @@ namespace Beamable.Server
             Default.LogError(ex, message);
         }
 
-        
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(string message)
         {
             Default.LogCritical(message);
         }
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(Exception ex, string message)
         {
             Default.LogCritical(ex, message);
         }
-        
+        [Obsolete("Use Critical Instead")]
         public static void Fatal(string message, params object[] args)
+        {
+            Default.LogCritical(message, args);
+        }
+        public static void Critical(string message)
+        {
+            Default.LogCritical(message);
+        }
+        public static void Critical(Exception ex, string message)
+        {
+            Default.LogCritical(ex, message);
+        }
+        public static void Critical(string message, params object[] args)
         {
             Default.LogCritical(message, args);
         }
 
         
+        public static void Trace(string message)
+        {
+            Default.LogTrace(message);
+        }
+        
+        public static void Trace(string message, params object[] args)
+        {
+            Default.LogTrace(message, args);
+        }
+        
+        [Obsolete("Use Trace Instead")]
         public static void Verbose(string message)
         {
             Default.LogTrace(message);
         }
         
+        [Obsolete("Use Trace Instead")]
         public static void Verbose(string message, params object[] args)
         {
             Default.LogTrace(message, args);
@@ -92,6 +121,13 @@ namespace Beamable.Server
         public static void Write(LogLevel level, string message)
         {
             Default.Log(level, message);
+        }
+        
+        public static void WriteSkippingTelemetry(LogLevel level, string message)
+        {
+	        // The ignore attribute will be used later to filter the log record by using the attributes dictionary
+	        // And DON'T send it to OTEL
+	        Default.ZLog(level, $"{Constants.IGNORE_TELEMETRY_ATTRIBUTE}{message}");
         }
     }
     

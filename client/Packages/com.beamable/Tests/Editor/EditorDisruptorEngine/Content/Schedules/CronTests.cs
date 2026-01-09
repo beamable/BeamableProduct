@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Common.CronExpression;
 using Beamable.CronExpression;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace Beamable.Editor.Tests.Content
 			var output = ExpressionDescriptor.GetDescription(cronString, new Options { Locale = locale }, out var errorData);
 			Assert.IsFalse(errorData.IsError, "Error flag should be false");
 			Assert.IsTrue(output.ToLower().Equals(expectedResult.ToLower()), $"Output is \"{output}\" but should be \"{expectedResult}\"");
+			
 		}
 
 		[TestCase("", "Error: Field 'expression' not found.")]
@@ -34,7 +36,13 @@ namespace Beamable.Editor.Tests.Content
 		[TestCase("* * * * *", "Error: Expression has 5 parts. Exactly 7 parts are required.")]
 		[TestCase("* * * * * *", "Error: Expression has 6 parts. Exactly 7 parts are required.")]
 		[TestCase("* * * * * * * *", "Error: Expression has 8 parts. Exactly 7 parts are required.")]
-		[TestCase("*/ * * * * * *")]
+		public void CRON_Wrong_Description_Result(string cronString, string expectedResult = "Error: CRON validation is invalid. CRON supports only numbers [0-9] and special characters [,-*/]", CronLocale locale = CronLocale.en_US)
+		{
+			var output = ExpressionDescriptor.GetDescription(cronString, new Options { Locale = locale }, out var errorData);
+			Assert.IsTrue(errorData.IsError, "Error flag should be true");
+			Assert.IsTrue(output.Equals(expectedResult), $"Output is \"{output}\" but should be \"{expectedResult}\"");
+		}
+		
 		[TestCase("* * * * * 8 *")]
 		[TestCase("-1 * * * * * *")]
 		[TestCase("-1 * * * * * *")]
@@ -54,11 +62,11 @@ namespace Beamable.Editor.Tests.Content
 		[TestCase("* * * * * * -1")]
 		[TestCase("* * * * * * 999")]
 		[TestCase("* * * * * * 10000")]
-		public void CRON_Wrong_Description_Result(string cronString, string expectedResult = "Error: CRON validation is not passing. CRON supports only numbers [0-9] and special characters [,-*]", CronLocale locale = CronLocale.en_US)
+		public void CRON_Wrong_Description_Result_DayOfWeek(string cronString, string expectedResult = "Error: CRON validation is invalid", CronLocale locale = CronLocale.en_US)
 		{
 			var output = ExpressionDescriptor.GetDescription(cronString, new Options { Locale = locale }, out var errorData);
 			Assert.IsTrue(errorData.IsError, "Error flag should be true");
-			Assert.IsTrue(output.Equals(expectedResult), $"Output is \"{output}\" but should be \"{expectedResult}\"");
+			Assert.IsTrue(output.Contains(expectedResult), $"Output is \"{output}\" but should be \"{expectedResult}\"");
 		}
 
 		[Test]
@@ -121,7 +129,7 @@ namespace Beamable.Editor.Tests.Content
 				dayOfWeek = dayOfWeek,
 				year = year
 			};
-			var output = ExpressionDescriptor.ScheduleDefinitionToCron(scheduleDefinition);
+			var output = ExpressionParser.ScheduleDefinitionToCron(scheduleDefinition);
 			Assert.IsTrue(output.Equals(expectedResult), $"Output is \"{output}\" but should be \"{expectedResult}\"");
 		}
 
@@ -146,6 +154,16 @@ namespace Beamable.Editor.Tests.Content
 				new List<string> { "*" },
 				new List<string> { "*" },
 				"30 2 5 1-3,6-7 * * *");
+			
+			yield return new TestCaseData(
+				new List<string> { "29" },
+				new List<string> { "7" },
+				new List<string> { "9" },
+				new List<string> { "1", "2", "3", "4", "/2", "7" },
+				new List<string> { "*" },
+				new List<string> { "*" },
+				new List<string> { "*" },
+				"29 7 9 1-4/2,7 * * *");
 
 			yield return new TestCaseData(
 				new List<string> { "30" },

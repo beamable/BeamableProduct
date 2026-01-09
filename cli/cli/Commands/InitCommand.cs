@@ -8,6 +8,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using Command = System.CommandLine.Command;
 
@@ -21,11 +22,20 @@ public class InitCommandArgs : LoginCommandArgs
 	public string path;
 	public List<string> addExtraPathsToFile = new List<string>();
 	public List<string> pathsToIgnore = new List<string>();
+	public bool ignoreExistingPid;
+}
+
+[Serializable]
+public class InvalidCidError : ErrorOutput
+{
+	
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	IStandaloneCommand,
 	IHaveRedirectionConcerns<InitCommandArgs>,
+	IReportException<LoginFailedError>,
+	IReportException<InvalidCidError>,
 	ISkipManifest
 {
 	private readonly LoginCommand _loginCommand;
@@ -57,6 +67,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
+		AddOption(new Option<bool>("--ignore-pid", "Ignore the existing pid while initializing"),
+			(args, i) => args.ignoreExistingPid = i);
 		AddOption(
 			new Option<List<string>>(new string[] { "--save-extra-paths" }, () => new List<string>(),
 				"Overwrite the stored extra paths for where to find projects")
@@ -68,7 +80,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				args.addExtraPathsToFile = i;
 			});
-
+		
 		AddOption(
 			new Option<List<string>>(new string[] { "--paths-to-ignore" }, () => new List<string>(),
 				"Paths to ignore when searching for services")
@@ -98,6 +110,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				return false;
 			}
+			// If the config file does not exist, we should be handling this workspace as a new one and require the full-login process to happen.
+			else if (args.ConfigService.GetConfigString("cid") == null || args.ConfigService.GetConfigString("pid") == null)
+			{
+				return false;
+			}
 		}
 
 		{ // handle confirmation step to let people know they are not creating a new workspace!
@@ -117,7 +134,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		{ // set the host string from existing value or given parameter, and then reset cid/pid
-			host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
+			host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 			await _ctx.Set(string.Empty, string.Empty, host);
 		}
 		
@@ -134,11 +151,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				}
 				catch (RequesterException)
 				{
-					throw new CliException($"Organization not found for cid='{cid}', try again");
+					throw new CliException<InvalidCidError>($"Organization not found for cid='{cid}', try again");
 				}
 				catch (AliasService.AliasDoesNotExistException)
 				{
-					throw new CliException($"Organization not found for alias='{cid}', try again");
+					throw new CliException<InvalidCidError>($"Organization not found for alias='{cid}', try again");
 				}
 				catch (Exception e)
 				{
@@ -147,7 +164,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				}
 				
 			}
-			_configService.SetConfigString(Constants.CONFIG_CID, cid);
+			else
+			{
+				// need to validate that cid actually exists...
+				
+			}
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		}
 
 		{ // resolve the new PID
@@ -168,6 +190,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		_configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
 		_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
 	}
+
 
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
@@ -207,6 +230,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");
 			}
+			
+			if(_configService.TryGetProjectBeamableCLIVersion(out var cliVersion))
+				_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CLI_VERSION, cliVersion);
 		}
 
 		SaveExtraPathFiles(args);
@@ -214,7 +240,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
-		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
+		var host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 		var cid = await GetCid(args);
 		await _ctx.Set(cid, string.Empty, host);
 
@@ -238,7 +264,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 		}
 
-		_configService.SetConfigString(Constants.CONFIG_CID, cid);
+		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		var success = await GetPidAndAuth(args, cid, host);
 		if (!success)
 		{
@@ -263,20 +289,30 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		return new InitCommandResult()
 		{
-			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
-			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
-			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
+			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),
+			cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID),
+			pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID)
 		};
 	}
 
 	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)
 	{
+		var didCidChange = cid != _ctx.Cid;
+		var ignoreExistingPid = args.ignoreExistingPid;
+		if (didCidChange)
+		{
+			// if the given CID is different than the CID stored on disk, 
+			//  then it is unlikely that the PID on disk should be re-used. 
+			ignoreExistingPid = true;
+		}
+		
 		// [Tech_debt] This is quite hard to read, lots of duplication calls, could use some refactor, also it does way more stuff
 		//  then just returning the pid and auth
-		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
+		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid) && !ignoreExistingPid)
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, _ctx.Pid);
 			_configService.FlushConfig();
 			_configService.CreateIgnoreFile();
 
@@ -289,15 +325,15 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.pid))
 		{
 			await _ctx.Set(cid, args.pid, host);
-
+			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
 			
 			var didLogin = !args.SaveToFile || await Login(args);
 			if (didLogin)
 			{
 				_configService.SetWorkingDir(_ctx.WorkingDirectory);
-				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
 				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
+				return true;
 			}
 			else
 			{
@@ -315,11 +351,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			throw new CliException("Failed to find a realm to target.");
 
 		await _ctx.Set(cid, pid, host);
-		_configService.SetConfigString(Constants.CONFIG_PID, pid);
+		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, pid);
 		_configService.FlushConfig();
 		
 		// Whenever we swap realms using init, we also clear the local override for the selected realm.
-		_configService.DeleteLocalOverride(Constants.CONFIG_PID);
+		_configService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
 		_configService.FlushLocalOverrides();
 		
 		return await Login(args);
@@ -348,27 +384,53 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
-		var gameSelection = args.Quiet ? gameChoices.First() : AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
-				.Title("What [green]game[/] are you using?")
-				.AddChoices(gameChoices)
-				.AddBeamHightlight()
-		);
+		var gameSelection = args.Quiet
+			? gameChoices.First()
+			: AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("What [green]game[/] are you using?")
+					.AddChoices(gameChoices)
+					.AddBeamHightlight()
+			);
 		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
 
 		var realms = await _realmsApi.GetRealms(game).ShowLoading("Fetching realms...");
 		var realmChoices = realms
 			.Where(r => !r.Archived)
 			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
-		var realmSelection = args.Quiet ? 
-			realms.Where(r => r.Depth == 2).OrderBy(r =>r.Pid).Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}").First() :
-			AnsiConsole.Prompt(new SelectionPrompt<string>()
+		var realmSelection = args.Quiet
+			?	FindBestDefaultRealm()
+			: AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
 				.AddBeamHightlight()
-		);
-		var realm = realms.FirstOrDefault(g => realmSelection.StartsWith(g.DisplayName.Replace("[", "").Replace("]", "")));
+			);
+		var realm = realms.FirstOrDefault(g => realmSelection.Contains(g.Pid) && !g.Archived) ?? realms.First(g => g.IsDev);
 		return realm.Pid;
+
+		string FindBestDefaultRealm(int allowedDepth=2) // a depth of 2 signals a "dev" realm. 
+		{
+			if (allowedDepth < 0)
+			{
+				// the min depth is zero (a production realm), so at this point, there are NO realms left to use as the default.
+				throw new CliException(
+					"There are no valid default realms. Please select a realm manually with the --pid option");
+			}
+			
+			var realmsAtDepth = realms.Where(r => !r.Archived && r.Depth >= allowedDepth).ToList();
+			if (realmsAtDepth.Count == 0)
+			{
+				// uh oh, there are no non-archived realms at this depth. 
+				//  it isn't ideal, but try looking for realms at a lower depth (staging, and production)
+				return FindBestDefaultRealm(allowedDepth - 1);
+			}
+
+			// order the realms by PID, because PIDs are sequentially issued (higher pids mean later creation date)
+			return realmsAtDepth
+				.OrderBy(r => r.Pid)
+				.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}")
+				.First();
+		}
 	}
 
 	public void ValidationRedirection(InvocationContext context, Command command, InitCommandArgs args, StringBuilder errorStream,
@@ -415,17 +477,22 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		const string staging = "staging";
 		const string dev = "dev";
 		const string custom = "custom";
-		var env = !string.IsNullOrEmpty(args.selectedEnvironment)
-			? args.selectedEnvironment
-			: AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("What Beamable [green]environment[/] would you like to use?")
-					.AddChoices(prod, staging, dev, custom)
-					.AddBeamHightlight()
-			);
+
+		var env = !string.IsNullOrEmpty(args.selectedEnvironment) ? args.selectedEnvironment : "prod";
+		if (!args.Quiet)
+		{
+			env = !string.IsNullOrEmpty(args.selectedEnvironment)
+				? args.selectedEnvironment
+				: AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("What Beamable [green]environment[/] would you like to use?")
+						.AddChoices(prod, staging, dev, custom)
+						.AddBeamHightlight()
+				);
+		}
 
 		// If we were given a host that is a path, let's just return it.
-		if (env.StartsWith("https"))
+		if (env.StartsWith("http"))
 			return env;
 
 		// Otherwise, we try to convert it into a valid URL.

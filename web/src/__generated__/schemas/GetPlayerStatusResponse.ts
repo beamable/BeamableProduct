@@ -1,4 +1,9 @@
-import { PlayerStatus } from './PlayerStatus';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { PlayerStatus } from './PlayerStatus';
 
 export type GetPlayerStatusResponse = { 
   statuses: PlayerStatus[]; 

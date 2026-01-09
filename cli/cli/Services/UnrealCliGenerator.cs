@@ -121,8 +121,6 @@ void U₢{nameof(CommandName)}₢Command::HandleStreamCompleted(FBeamOperationHa
 	}}
 }}
 ";
-	
-	
 }
 
 public struct UnrealCliStreamDataDeclaration
@@ -238,15 +236,16 @@ public struct UnrealCliStreamDeclaration
 	public const string STREAM_PARSE_IMPL = $@"
 	if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
 	{{
-		₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
-		Data->OuterOwner = this;
-		Data->BeamDeserializeProperties(DataJson);
-
-		₢{nameof(StreamName)}₢Stream.Add(Data);
-		₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
-		
-		AsyncTask(ENamedThreads::GameThread, [this, Op]
+		AsyncTask(ENamedThreads::GameThread, [this, DataJson, Timestamp, Op]
 		{{
+			₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
+			Data->OuterOwner = this;
+			Data->BeamDeserializeProperties(DataJson);
+
+			₢{nameof(StreamName)}₢Stream.Add(Data);
+			₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
+		
+		
 			On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
 		}});
 		
@@ -259,8 +258,7 @@ public class UnrealCliGenerator : ICliGenerator
 	public List<GeneratedFileDescriptor> Generate(CliGeneratorContext context)
 	{
 		// the following commands are more complicated and either use nullables or enums
-		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate", 
-			"beam deployment", "beam deployment" };
+		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate", "beam deployment", "beam deployment" };
 		var invalidCommandPallets = new string[] { "beam deployment" };
 
 		var files = new List<GeneratedFileDescriptor>();
@@ -269,7 +267,7 @@ public class UnrealCliGenerator : ICliGenerator
 		{
 			if (!command.hasValidOutput && command.executionPath != "beam") continue;
 			if (invalidCommands.Contains(command.executionPath)) continue;
-			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p))) 
+			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p)))
 				continue;
 
 			var nonBeamCommandNames = command.executionPath.Substring(command.executionPath.IndexOf(" ", StringComparison.Ordinal) + 1);
@@ -303,10 +301,7 @@ public class UnrealCliGenerator : ICliGenerator
 
 					return new UnrealCliStreamDeclaration()
 					{
-						CommandName = commandName,
-						RawStreamName = rs.channel,
-						StreamName = streamChannel,
-						RootDataTypes = new() { streamRootDataDeclaration },
+						CommandName = commandName, RawStreamName = rs.channel, StreamName = streamChannel, RootDataTypes = new() { streamRootDataDeclaration },
 					};
 				}).ToList()
 			};
@@ -316,13 +311,11 @@ public class UnrealCliGenerator : ICliGenerator
 			cliCommandDeclaration.IntoProcessDict(dict);
 			files.Add(new GeneratedFileDescriptor()
 			{
-				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h",
-				Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict)
+				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h", Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict)
 			});
 			files.Add(new GeneratedFileDescriptor()
 			{
-				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp",
-				Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict)
+				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp", Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict)
 			});
 		}
 
@@ -334,8 +327,7 @@ public class UnrealCliGenerator : ICliGenerator
 			var dataName = unrealCliStreamDataDeclaration.NamespacedStreamDataName;
 			files.Add(new GeneratedFileDescriptor()
 			{
-				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/StreamData/{dataName}.h",
-				Content = UnrealCliStreamDataDeclaration.HEADER_DATA_TEMPLATE.ProcessReplacement(dataTypesDict)
+				FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/StreamData/{dataName}.h", Content = UnrealCliStreamDataDeclaration.HEADER_DATA_TEMPLATE.ProcessReplacement(dataTypesDict)
 			});
 			dataTypesDict.Clear();
 		}
@@ -379,13 +371,14 @@ public class UnrealCliGenerator : ICliGenerator
 				var typeName = GetStreamDataUnrealType(fieldInfo.FieldType, streamChannel);
 				return new UnrealPropertyDeclaration()
 				{
-					PropertyName = fieldInfo.Name.Capitalize(),
+					PropertyName = UnrealPropertyDeclaration.GetSanitizedPropertyName(fieldInfo.Name.Capitalize()),
+					PropertyDisplayName = UnrealPropertyDeclaration.GetSanitizedPropertyDisplayName(fieldInfo.Name.Capitalize()),
+					AsParameterName = UnrealPropertyDeclaration.GetSanitizedParameterName(fieldInfo.Name.Capitalize()),
 					PropertyUnrealType = typeName,
 					PropertyNamespacedType = typeName.AsNamespacedType(),
 					NonOptionalTypeName = typeName,
 					NonOptionalTypeNameRelevantTemplateParam = GetStreamDataUnrealType(underlyingFieldType, streamChannel),
 					RawFieldName = fieldInfo.Name,
-					PropertyDisplayName = fieldInfo.Name.Capitalize(),
 					SemTypeSerializationType = GetStreamDataUnrealType(typeof(string), streamChannel),
 				};
 			})

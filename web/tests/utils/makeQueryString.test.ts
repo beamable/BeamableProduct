@@ -25,4 +25,9 @@ describe('makeQueryString()', () => {
     const qs = makeQueryString({ arr: [1, 2, 3] });
     expect(qs).toBe('?arr=1%2C2%2C3');
   });
+
+  it('should return empty string for all undefined values', () => {
+    const qs = makeQueryString({ a: undefined, b: undefined });
+    expect(qs).toBe('');
+  });
 });

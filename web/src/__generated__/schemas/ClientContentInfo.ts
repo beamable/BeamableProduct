@@ -1,4 +1,9 @@
-import { ContentType } from './enums/ContentType';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { ContentType } from './enums/ContentType';
 
 export type ClientContentInfo = { 
   contentId: string; 
@@ -7,4 +12,6 @@ export type ClientContentInfo = {
   uri: string; 
   version: string; 
   checksum?: string; 
+  createdAt?: bigint | string; 
+  updatedAt?: bigint | string; 
 };

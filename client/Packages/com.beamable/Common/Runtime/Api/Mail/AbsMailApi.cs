@@ -114,24 +114,26 @@ namespace Beamable.Common.Api.Mail
 
 							if (c.rewards.HasValue)
 							{
+								var currencies = c.rewards.Value.currencies != null ? c.rewards.Value.currencies.Select(cur => new CurrencyChange()
+								{
+									amount = cur.amount,
+									symbol = cur.symbol
+								}).ToList() : new List<CurrencyChange>();
+								var items = c.rewards.Value.items != null ? c.rewards.Value.items.Select(it =>
+								{
+									var dict = new Dictionary<string, string>();
+									foreach (ItemProperty itemProperty in it.properties)
+									{
+										dict.Add(itemProperty.name, itemProperty.value);
+									}
+									var properties = new SerializableDictionaryStringToString(dict);
+									return new ItemCreateRequest() { contentId = it.contentId, properties =  properties};
+								}).ToList() : new List<ItemCreateRequest>();
 								rewards = new MailRewards()
 								{
 									applyVipBonus = c.rewards.Value.applyVipBonus,
-									currencies = c.rewards.Value.currencies.Select(cur => new CurrencyChange()
-									{
-										amount = cur.amount,
-										symbol = cur.symbol
-									}).ToList(),
-									items = c.rewards.Value.items.Select(it =>
-									{
-										var dict = new Dictionary<string, string>();
-										foreach (ItemProperty itemProperty in it.properties)
-										{
-											dict.Add(itemProperty.name, itemProperty.value);
-										}
-										var properties = new SerializableDictionaryStringToString(dict);
-										return new ItemCreateRequest() { contentId = it.contentId, properties =  properties};
-									}).ToList()
+									currencies = currencies,
+									items = items
 								};
 							}
 
@@ -140,6 +142,7 @@ namespace Beamable.Common.Api.Mail
 							{
 								expires = c.expires.Value.ToString();
 							}
+
 
 							return new MailMessage
 							{

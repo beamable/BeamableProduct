@@ -8,9 +8,9 @@ import type { BeamEnvironmentConfig } from '@/configs/BeamEnvironmentConfig';
 describe('BeamEnvironmentRegistry – default instance', () => {
   it('exposes the three built-in environments', () => {
     const list = BeamEnvironment.list();
-    expect(list.Dev).toBeDefined();
-    expect(list.Stg).toBeDefined();
-    expect(list.Prod).toBeDefined();
+    expect(list.dev).toBeDefined();
+    expect(list.stg).toBeDefined();
+    expect(list.prod).toBeDefined();
   });
 });
 

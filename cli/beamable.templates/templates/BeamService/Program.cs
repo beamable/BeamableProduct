@@ -10,11 +10,10 @@ namespace Beamable.BeamService
 		/// </summary>
 		public static async Task Main()
 		{
-			// inject data from the CLI.
-			await MicroserviceBootstrapper.Prepare<BeamService>();
-			
-			// run the Microservice code
-			await MicroserviceBootstrapper.Start<BeamService>();
+			await BeamServer
+				.Create()
+				.IncludeRoutes<BeamService>(routePrefix: "")
+				.RunForever();
 		}
 	}
 }

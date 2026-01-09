@@ -1,8 +1,5 @@
 using Beamable.Server;
-using cli.Services;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 
 namespace cli.OtelCommands;
 
@@ -25,7 +22,7 @@ public class StopCollectorCommand : AppCommand<StopCollectorCommandArgs>
 
 	public override async Task Handle(StopCollectorCommandArgs args)
 	{
-
+		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		var port = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_PORT");
 		if(string.IsNullOrEmpty(port))
 		{
@@ -37,16 +34,9 @@ public class StopCollectorCommand : AppCommand<StopCollectorCommandArgs>
 			throw new Exception("Invalid value for port");
 		}
 
-		var host = Environment.GetEnvironmentVariable("BEAM_COLLECTOR_DISCOVERY_HOST");
-
-		if(string.IsNullOrEmpty(host))
-		{
-			throw new Exception("There is no host configured for the collector discovery");
-		}
-
 		Log.Information($"Starting listening to otel collector in port [{portNumber}]...");
 
-		var socket = CollectorManager.GetSocket(host, portNumber, BeamableZLoggerProvider.LogContext.Value);
+		var socket = CollectorManager.GetSocket(portNumber, BeamableZLoggerProvider.LogContext.Value);
 
 		var status = await CollectorManager.IsCollectorRunning(socket, args.Lifecycle.Source.Token, BeamableZLoggerProvider.LogContext.Value);
 

@@ -23,7 +23,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['9.0.x' ]
+        dotnet-version: ['10.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -44,6 +44,11 @@ jobs:
           name: Microservice Nuget Package
           path: ./nuget-build
           retention-days: 1
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -53,7 +58,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['9.0.x' ]
+        dotnet-version: ['10.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -82,7 +87,7 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        dotnet-version: ['9.0.x' ]
+        dotnet-version: ['10.0.x' ]
         runners: [ windows-latest, ubuntu-latest ]
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
@@ -103,6 +108,11 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Install local packages
         working-directory: ./
         shell: bash
@@ -119,6 +129,35 @@ jobs:
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Test
         run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true
+  testSourceGen:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: src-gen-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
+      cancel-in-progress: true
+    strategy:
+      max-parallel: 1
+      matrix:
+        dotnet-version: [ '10.0.x' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Install dependencies
+        run: dotnet restore templates/SourceGen/MicroserviceSourceGen.Tests
+      - name: Build
+        run: dotnet build --configuration Release --no-restore templates/SourceGen/MicroserviceSourceGen.Tests
+      - name: Test
+        run: dotnet test --configuration Release --no-build templates/SourceGen/MicroserviceSourceGen.Tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -138,6 +177,10 @@ jobs:
           - 2021.3.29f1
           - 2022.3.7f1
           - 6000.0.37f1
+          - 6000.2.8f1
+          - 6000.3.0f1
+        gameCiVersion:
+          - 3.1.0
         include:
           - unityVersion: 2022.3.7f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
@@ -151,6 +194,13 @@ jobs:
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
+    env:
+      GAME_CI_VERSION: >-
+        ${{
+          matrix.unityVersion == '6000.2.8f1' && '3.2.0' ||
+          matrix.unityVersion == '6000.3.0f1' && '3.2.1' ||
+          matrix.gameCiVersion
+        }}
     steps:
       - uses: actions/checkout@v4
 
@@ -177,13 +227,19 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
+            10.0.x
             9.0.x
             8.0.302
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
           ./setup.sh
-          SKIP_GENERATION=true ./dev.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -194,6 +250,21 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
+      
+      - name: Apply CLI Versions 
+        run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Review Unity version-default file
+        run: |
+          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+      
+      - name: Copy the nuget packages into unity
+        working-directory: ./
+        run: |
+          mkdir -p client/BeamableNugetSource/
+          ls BeamableNugetSource
+          cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
+      
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -201,24 +272,43 @@ jobs:
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
         env:
+          DOTNET_CLI_UI_LANGUAGE: en
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
           BEAM_UNITY_TEST_CI: "true"
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-3.1.0
-          customParameters: -warnaserror+
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
+          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
@@ -271,13 +361,18 @@ jobs:
       - name: Setup .NET Core SDK 
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
@@ -312,15 +407,21 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - name: Free Disk Space for Android
-        run: |
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          sudo apt clean
-          docker rmi $(docker images -q) || true
-          docker system prune -af || true
-          rm -rf /opt/hostedtoolcache
-          df -h
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:

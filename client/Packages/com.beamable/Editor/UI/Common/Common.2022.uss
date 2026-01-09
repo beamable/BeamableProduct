@@ -1,6 +1,0 @@
-
-.beamableErrorLabel.beamableErrorHidden {
-    position: absolute;
-    left: 0px;
-    display: none;
-}

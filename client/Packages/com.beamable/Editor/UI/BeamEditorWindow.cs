@@ -1,12 +1,16 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Beamable.Editor.Login.UI;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Editor.Accounts;
+using Beamable.Editor.Content;
+using Beamable.Editor.Library;
+using Beamable.Editor.Microservice.UI2;
+using Beamable.Editor.UI.ContentWindow;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
 using UnityEditor.PackageManager.UI;
@@ -100,7 +104,7 @@ namespace Beamable.Editor.UI
 			var requireLoggedUser = config.RequireLoggedUser;
 			if (requireLoggedUser)
 			{
-				var loginPromise = LoginWindow.CheckLogin();
+				// var loginPromise = LoginWindow.CheckLogin();
 			}
 
 			// If it was already instantiated -- destroy the existing window.
@@ -120,13 +124,6 @@ namespace Beamable.Editor.UI
 
 		public virtual void OnEnable()
 		{
-			// TODO: render for loading
-
-			if (ShowLoading)
-			{
-				ShowFullWindowLoading();
-			}
-
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
@@ -200,9 +197,6 @@ namespace Beamable.Editor.UI
 		protected virtual async Promise BuildSetup()
 		{
 			await Load();
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-
 			await BuildAsync();
 		}
 		
@@ -255,33 +249,28 @@ namespace Beamable.Editor.UI
 			BeamGUI.CreateButtonStyles();
 			
 			titleContent = new GUIContent(InitializedConfig.Title, BeamGUI.iconBeamableSmall);
-			var root = this.GetRootVisualContainer();
-
+			
 			var ctx = ActiveContext;
 			if (ctx == null)
 			{
-				root.Clear();
 				DrawNoContextGui();
 				return;
 			}
 			
 			if (!ctx.InitializePromise.IsCompleted)
 			{
-				root.Clear();
 				DrawWaitingForContextGui();
 				return;
 			}
 
 			if (InitializedConfig.RequireLoggedUser && !ctx.IsAuthenticated)
 			{
-				root.Clear();
 				DrawNotLoggedInGui();
 				return;
 			}
 			
-			if (InitializedConfig.RequirePid && ctx.CurrentRealm?.Pid == null)
+			if (InitializedConfig.RequirePid && ctx.BeamCli?.Pid == null)
 			{
-				root.Clear();
 				DrawNoRealmGui();
 				return;
 			}
@@ -293,14 +282,6 @@ namespace Beamable.Editor.UI
 		protected virtual void DrawGUI()
 		{
 			
-		}
-
-		protected virtual void ShowFullWindowLoading()
-		{
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-			var label = new Label("Loading...");
-			root.Add(label);
 		}
 
 		protected void RunDelayedActions()
@@ -341,7 +322,7 @@ namespace Beamable.Editor.UI
 			EditorGUILayout.LabelField("There is no Realm selected. Please select a Realm. ");
 		}
 
-		protected void DrawBlockLoading(string message)
+		protected virtual void DrawBlockLoading(string message)
 		{
 			BeamGUI.DrawHeaderSection(this, ActiveContext, () => { }, () => { }, () => { }, () => { });
 			EditorGUILayout.Space(12, false);
@@ -355,32 +336,8 @@ namespace Beamable.Editor.UI
 			{
 				margin = new RectOffset(12, 12, 12, 12)
 			});
-			
-			var logo = BeamGUI.iconLogoHeader;
 
-			{ // draw the back-shadow and logo
-				var logoRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(50),
-				                                        GUILayout.ExpandWidth(true));
-				var logoAspect = logo.width / (float)logo.height;
-				var shadowWidth = logoAspect * logoRect.height;
-
-				var shadowRect = new Rect(logoRect.x + logoRect.width * .5f - shadowWidth * .5f, logoRect.y,
-				                          shadowWidth, logoRect.height);
-
-				const int shadowYOffset = 6;
-				var leftShadowRect = new Rect(shadowRect.x - 12, shadowRect.y + shadowYOffset, 20, shadowRect.height);
-				var rightShadowRect =
-					new Rect(shadowRect.xMax - 20, shadowRect.y + shadowYOffset, 12, shadowRect.height);
-				var centerShadowRect = new Rect(leftShadowRect.xMax, shadowRect.y + shadowYOffset,
-				                                (rightShadowRect.xMin - leftShadowRect.xMax), shadowRect.height);
-				
-				// draw the shadow as 3 parts to avoid texture stretching
-				GUI.DrawTextureWithTexCoords(leftShadowRect, BeamGUI.iconShadowSoftA, new Rect(0, 0, .2f, 1f));
-				GUI.DrawTextureWithTexCoords(rightShadowRect, BeamGUI.iconShadowSoftA, new Rect(.8f, 0, .2f, 1f));
-				GUI.DrawTextureWithTexCoords(centerShadowRect, BeamGUI.iconShadowSoftA, new Rect(.2f, 0, .6f, 1f));
-
-				GUI.DrawTexture(logoRect, BeamGUI.iconLogoHeader, ScaleMode.ScaleToFit);
-			}
+			BeamGUI.DrawLogoBanner();
 
 			EditorGUILayout.Space(12, false);
 			
@@ -396,7 +353,22 @@ namespace Beamable.Editor.UI
 			{ // draw button to open
 				if (BeamGUI.PrimaryButton(new GUIContent("Log in")))
 				{
-					var _ = LoginWindow.CheckLogin();
+
+					Action onQuit = BeamLibraryWindow.Init;
+					string onQuitMessage = "Open Library";
+					switch (this)
+					{
+						case UsamWindow:
+							onQuit = UsamWindow.Init;
+							onQuitMessage = "Open Services";
+							break;
+						case ContentWindow.ContentWindow:
+							onQuit = () => _ = ContentWindow.ContentWindow.Init();
+							onQuitMessage = "Open Content";
+							break;
+					}
+					AccountWindow.Init(this, onQuitMessage, onQuit);
+					// var _ = LoginWindow.CheckLogin();
 				}
 			}
 

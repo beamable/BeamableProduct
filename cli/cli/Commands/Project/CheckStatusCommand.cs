@@ -36,6 +36,7 @@ public class ServiceStatus
 	public string service;
 	public string serviceType;
 	public string[] groups;
+	public string[] storages;
 	public List<ServicesForRouteCollection> availableRoutes = new List<ServicesForRouteCollection>();
 }
 
@@ -59,6 +60,7 @@ public class ServiceInstance
 	public DockerServiceDescriptor latestDockerEvent;
 	public HostServiceDescriptor latestHostEvent;
 	public RemoteServiceDescriptor latestRemoteEvent;
+	public RemoteStorageDescriptor latestRemoteStorageEvent;
 }
 
 public static class ServiceInstanceExtensions
@@ -226,6 +228,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			if (instance?.latestHostEvent != null) originValue = "local";
 			if (instance?.latestDockerEvent != null) originValue = "docker";
 			if (instance?.latestRemoteEvent != null) originValue = "remote";
+			if (instance?.latestRemoteStorageEvent != null) originValue = "remote";
 			table.AddRow(
 				service.service,
 				service.serviceType,
@@ -249,9 +252,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				if (route.instances != null)
 				{
-					foreach (var instance in route.instances)
+					if (route.knownToBeRunning)
 					{
-						AddRow(service, route, instance);
+						foreach (var instance in route.instances)
+						{
+							AddRow(service, route, instance);
+						}
 					}
 				}
 			}
@@ -302,12 +308,15 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		{
 			if (!definition.IsLocal) continue;
 			if (serviceFilter != null && !serviceFilter.Contains(definition.BeamoId)) continue;
+			
+			var isMicroservice = manifest.HttpMicroserviceLocalProtocols.TryGetValue(definition.BeamoId, out var http);
 			if (!result.TryGetStatus(definition.BeamoId, out var status))
 			{
 				status = new ServiceStatus
 				{
 					service = definition.BeamoId,
 					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+					storages = isMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
 						new()
@@ -346,17 +355,20 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		{
 			if (serviceFilter != null && !serviceFilter.Contains(discoveryEvent.Service)) continue;
 
+			var isLocalMicroservice = manifest.HttpMicroserviceLocalProtocols.TryGetValue(discoveryEvent.Service, out var http);
 			if (!result.TryGetStatus(discoveryEvent.Service, out var status))
 			{
 				status = new ServiceStatus
 				{
 					service = discoveryEvent.Service,
 					serviceType = discoveryEvent.ServiceType,
+					storages = isLocalMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					groups = discoveryEvent switch
 					{
 						DockerServiceEvent dockerServiceEvent => dockerServiceEvent.descriptor.groups,
 						HostServiceEvent hostServiceEvent => hostServiceEvent.descriptor.groups,
 						RemoteServiceEvent remoteServiceEvent => remoteServiceEvent.descriptor.groups,
+						RemoteStorageEvent remoteStorageEvent => remoteStorageEvent.descriptor.groups,
 						_ => throw new ArgumentOutOfRangeException(nameof(discoveryEvent))
 					},
 					availableRoutes = new List<ServicesForRouteCollection>()
@@ -375,6 +387,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 						DockerServiceEvent dockerEvt => dockerEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						RemoteServiceEvent remoteEvt => remoteEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
+						RemoteStorageEvent => new List<FederationInstance>(),
 						_ => throw new ArgumentOutOfRangeException()
 					}
 				};
@@ -407,6 +420,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					case RemoteServiceEvent remoteEvt:
 						instance.latestRemoteEvent = remoteEvt.descriptor;
 						instance.latestRemoteEvent.routingKey ??= "";
+						break;
+					case RemoteStorageEvent remoteStorageEvt:
+						instance.latestRemoteStorageEvent = remoteStorageEvt.descriptor;
 						break;
 				}
 

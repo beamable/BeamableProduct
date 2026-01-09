@@ -8,6 +8,14 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
+        /// <summary>Defines if after publish the Content System should take snapshots of the content.
+        ///None => Will not save any snapshot after publishing
+        ///LocalOnly => Will save the snapshot under `.beamable/temp/content-snapshots/[PID]` folder
+        ///SharedOnly => Will save the snapshot under `.beamable/content-snapshots/[PID]` folder
+        ///Both => Will save two snapshots, under local and shared folders</summary>
+        public Beamable.Common.BeamCli.Contracts.AutoSnapshotType autoSnapshotType;
+        /// <summary>Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot</summary>
+        public int maxLocalSnapshots;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -21,6 +29,16 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--manifest-ids=" + this.manifestIds[i]));
                 }
+            }
+            // If the autoSnapshotType value was not default, then add it to the list of args.
+            if ((this.autoSnapshotType != default(Beamable.Common.BeamCli.Contracts.AutoSnapshotType)))
+            {
+                genBeamCommandArgs.Add(("--auto-snapshot-type=" + this.autoSnapshotType));
+            }
+            // If the maxLocalSnapshots value was not default, then add it to the list of args.
+            if ((this.maxLocalSnapshots != default(int)))
+            {
+                genBeamCommandArgs.Add(("--max-local-snapshots=" + this.maxLocalSnapshots));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -56,6 +74,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public virtual ContentPublishWrapper OnStreamContentPublishResult(System.Action<ReportDataPoint<BeamContentPublishResult>> cb)
         {
             this.Command.On("stream", cb);
+            return this;
+        }
+        public virtual ContentPublishWrapper OnProgressStreamContentProgressUpdateData(System.Action<ReportDataPoint<BeamContentProgressUpdateData>> cb)
+        {
+            this.Command.On("progressStream", cb);
             return this;
         }
     }

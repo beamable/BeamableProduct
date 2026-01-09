@@ -31,6 +31,16 @@ public class TsProperty : TsNode
 	public TsExpression Initializer { get; private set; }
 
 	/// <summary>
+	/// Whether the property is a const assertion.
+	/// </summary>
+	public bool IsConstAssertion { get; private set; }
+
+	/// <summary>
+	/// The comments preceding the property.
+	/// </summary>
+	public List<TsComment> Comments { get; } = new();
+
+	/// <summary>
 	/// The modifiers of the property.
 	/// </summary>
 	public TsModifier Modifiers { get; private set; } = TsModifier.None;
@@ -39,12 +49,26 @@ public class TsProperty : TsNode
 	/// Creates a typescript property.
 	/// </summary>
 	/// <param name="name">The name of the property.</param>
-	/// <param name="type">The type of the property.</param>
-	public TsProperty(string name, TsType type)
+	/// <param name="type">The type of the property. If not specified it defaults to <see cref="TsType.Any"/>.</param>
+	public TsProperty(string name, TsType type = null, bool emitJavaScript = false)
 	{
 		Name = name;
-		Type = type;
+		Type = type ?? TsType.Any;
 		Identifier = new TsIdentifier(name);
+		EmitJavaScript = emitJavaScript;
+	}
+
+	/// <summary>
+	/// Adds a comment before the property.
+	/// </summary>
+	/// <param name="comment">
+	/// The comment to add.
+	/// </param>
+	/// <returns>The current <see cref="TsProperty"/> instance for chaining.</returns>
+	public TsProperty AddComment(TsComment comment)
+	{
+		Comments.Add(comment);
+		return this;
 	}
 
 	/// <summary>
@@ -75,6 +99,16 @@ public class TsProperty : TsNode
 	}
 
 	/// <summary>
+	/// Makes the property a const assertion.
+	/// </summary>
+	/// <returns>The current <see cref="TsProperty"/> instance for chaining.</returns>
+	public TsProperty AsConstAssertion()
+	{
+		IsConstAssertion = true;
+		return this;
+	}
+
+	/// <summary>
 	/// Sets the initializer of the property.
 	/// </summary>
 	/// <param name="initializer">The initializer expression of the property.</param>
@@ -88,6 +122,9 @@ public class TsProperty : TsNode
 	public override void Write(TsCodeWriter writer)
 	{
 		ValidateModifiers();
+
+		foreach (TsComment comment in Comments)
+			comment.Write(writer);
 
 		if (Modifiers.HasFlag(TsModifier.Public))
 			writer.Write($"{TsModifierExtensions.Public} ");
@@ -116,14 +153,20 @@ public class TsProperty : TsNode
 		if (IsOptional)
 			writer.Write("?");
 
-		writer.Write(": ");
-		Type.Write(writer);
+		if (!EmitJavaScript && !IsConstAssertion)
+		{
+			writer.Write(": ");
+			Type.Write(writer);
+		}
 
 		if (Initializer != null && !Modifiers.HasFlag(TsModifier.Abstract))
 		{
 			writer.Write(" = ");
 			Initializer.Write(writer);
 		}
+
+		if (!EmitJavaScript && IsConstAssertion)
+			writer.Write(" as const");
 
 		writer.WriteLine(";");
 	}

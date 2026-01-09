@@ -100,7 +100,7 @@ namespace Beamable.Editor.Config
 								var missingConfigs =
 									string.Join(",\n", ConfigManager.MissingConfigurations.Select(d => $" - {d.Name}"));
 								var lbl = new Label() { text = $"Welcome to Beamable! These configurations need to be created:\n{missingConfigs}" };
-								lbl.AddTextWrapStyle();
+								// lbl.AddTextWrapStyle();
 								rootElement.Add(lbl);
 								rootElement.Add(createButton);
 							}

@@ -1,4 +1,9 @@
-import { JobDefinition } from './JobDefinition';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { JobDefinition } from './JobDefinition';
 
 export type ApiSchedulerJobsGetSchedulerResponse = JobDefinition[] & { 
 };

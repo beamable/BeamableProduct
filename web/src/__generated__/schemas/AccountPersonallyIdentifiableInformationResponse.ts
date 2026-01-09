@@ -1,6 +1,11 @@
-import { Account } from './Account';
-import { ListAuditResponse } from './ListAuditResponse';
-import { StatsResponse } from './StatsResponse';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { Account } from './Account';
+import type { ListAuditResponse } from './ListAuditResponse';
+import type { StatsResponse } from './StatsResponse';
 
 export type AccountPersonallyIdentifiableInformationResponse = { 
   account: Account; 

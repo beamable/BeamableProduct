@@ -3,9 +3,10 @@
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
         <BeamableTool>beam</BeamableTool>
-
+        <BeamProjectType>service</BeamProjectType>
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>false</GenerateClientCode>
+        <BeamDisableCollectorResolution>true</BeamDisableCollectorResolution>
     </PropertyGroup>
 
     <!-- Standard dotnet settings-->
@@ -13,7 +14,7 @@
         <OutputType>Exe</OutputType>
 
         <!-- As of Beamable 1.0, net6.0 is required. -->
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <!-- Advanced C# Features are disabled by default. The Unity SDK does not support these features. 
              If you enable them, it will be harder to copy/paste code between the service and Unity. -->
         <ImplicitUsings>disable</ImplicitUsings>
@@ -28,8 +29,15 @@
              API descriptions. The OpenAPI page will break if there is no `serviceDocs.xml` file. -->
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <BeamableVersion>0.0.123.1</BeamableVersion>
+        <BeamEnableCollectorResolution>false</BeamEnableCollectorResolution>
     </PropertyGroup>
     
+    <ItemGroup Label="Nuget References">
+        <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+        <PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />
+    </ItemGroup>
+
     <!-- Nuget references -->
     <!-- <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.*" />
@@ -45,11 +53,11 @@
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
     </ItemGroup> -->
-    <ItemGroup>
+    <!-- <ItemGroup>
       <ProjectReference Include="..\..\..\..\cli\beamable.common\beamable.common.csproj" />
       <ProjectReference Include="..\..\..\..\cli\beamable.server.common\beamable.server.common.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\microservice\microservice.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
-    </ItemGroup>
+    </ItemGroup> -->
 
 </Project>

@@ -1,6 +1,11 @@
-import { LobbyPlayer } from './LobbyPlayer';
-import { MatchType } from './MatchType';
-import { LobbyRestriction } from './enums/LobbyRestriction';
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { LobbyPlayer } from './LobbyPlayer';
+import type { MatchType } from './MatchType';
+import type { LobbyRestriction } from './enums/LobbyRestriction';
 
 export type Lobby = { 
   created?: Date | null; 

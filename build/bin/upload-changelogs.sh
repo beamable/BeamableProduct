@@ -3,6 +3,7 @@
 echo Branch is $BRANCH
 echo Should Copy Unity SDK=$COPY_UNITY_SDK
 echo Should Copy CLI=$COPY_CLI
+echo Should Copy Web SDK=$COPY_WEB_SDK
 
 echo "--PWD---"
 pwd
@@ -44,6 +45,11 @@ then
 cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
 cp -f ../BeamableProduct/BeamableProduct/microservice/microservice/CHANGELOG.md ./beamable-server-changelog.md || true
 fi 
+
+if [ "$COPY_WEB_SDK" = "true" ]
+then 
+cp -f ../../BeamableProduct/BeamableProduct/web/CHANGELOG.md ./beamable-web-sdk-changelog.md || true
+fi
 
 git add .
 git status

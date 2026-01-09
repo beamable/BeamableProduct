@@ -18,6 +18,12 @@ MonoBehaviour:
     m_AssetGUID: 
     m_SubObjectName: 
     m_SubObjectType: 
+    m_EditorAssetChanged: 0
   clientPermission:
     writeSelf: 1
   startingAmount: 100
+  federation:
+    HasValue: 0
+    Value:
+      Service: 
+      Namespace: 

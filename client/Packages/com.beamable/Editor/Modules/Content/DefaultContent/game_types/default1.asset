@@ -34,5 +34,12 @@ MonoBehaviour:
   matchingIntervalSecs:
     HasValue: 0
     Value: 0
+  newFederatedGameServerNamespace:
+    HasValue: 0
+    Value:
+      Name: 
+  federatedGameServerNamespace:
+    HasValue: 0
+    Value: 
   leaderboardUpdates: []
   rewards: []

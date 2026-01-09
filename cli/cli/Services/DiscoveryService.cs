@@ -105,15 +105,18 @@ public class DiscoveryService
 		IsDiscovering = true;
 		try
 		{
-			var adminSelfTask = args.Provider.GetService<IAccountsApi>().GetAdminMe();
+			var adminSelfTask = args.Provider.GetService<IAccountsApi>().GetAdminMe ();
 			var childCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(token);
 
 			var hostDiscoveryQueue = new ConcurrentQueue<HostServiceEvent>();
 			var dockerDiscoveryQueue = new ConcurrentQueue<DockerServiceEvent>();
 			var remoteDiscoveryQueue = new ConcurrentQueue<RemoteServiceEvent>();
+			var remoteStorageQueue = new ConcurrentQueue<RemoteStorageEvent>();
 
 			// start getting the list of registered services in the entire realm 
-			var realmRegisteredServicesTask = args.Provider.GetService<IBeamoApi>().PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery());
+			var beamoApi = args.Provider.GetService<IBeamoApi>();
+			var realmRegisteredServicesTask = beamoApi.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery());
+			var currentManifestTask = beamoApi.GetManifestCurrent();
 			// we must wait for the current user account before continuing
 			_adminSelf = await adminSelfTask;
 
@@ -123,6 +126,34 @@ public class DiscoveryService
 			// seed the event table with the services that are known to be running
 			//  this can happen while the other detector systems are starting
 
+
+			currentManifestTask.Then(manifest =>
+			{
+				if (!manifest.manifest.storageReference.TryGet(out var storages))
+				{
+					return;
+				}
+
+				foreach (var storage in storages)
+				{
+					var groups = Array.Empty<string>();
+					if (_localSystem.BeamoManifest.TryGetDefinition(storage.id, out var definition))
+					{
+						groups = definition.ServiceGroupTags;
+					}
+					remoteStorageQueue.Enqueue(new RemoteStorageEvent()
+					{
+						type = storage.enabled ? ServiceEventType.Running : ServiceEventType.Stopped,
+						descriptor = new RemoteStorageDescriptor
+						{
+							groups = groups,
+							storage = storage.id
+						}
+					});
+
+				}
+			});
+			
 			var _ = realmRegisteredServicesTask.Then(result =>
 			{
 				foreach (var registration in result.registrations)
@@ -230,6 +261,11 @@ public class DiscoveryService
 				}
 
 				while (remoteDiscoveryQueue.Count > 0 && remoteDiscoveryQueue.TryDequeue(out var evt))
+				{
+					yield return evt;
+				}
+
+				while (remoteStorageQueue.Count > 0 && remoteStorageQueue.TryDequeue(out var evt))
 				{
 					yield return evt;
 				}
@@ -805,6 +841,13 @@ public class RemoteServiceDescriptor
 	public string PKey => $"remote-{service}-{startedByAccountId}-{routingKey}";
 }
 
+public class RemoteStorageDescriptor
+{
+	public string storage;
+	public string[] groups;
+	public string PKey => $"remote-storage-{storage}";
+}
+
 public interface IDiscoveryEvent
 {
 	public ServiceEventType Type { get; }
@@ -843,4 +886,15 @@ public class RemoteServiceEvent : DiscoveryService.ServiceEvent<RemoteServiceDes
 	public string ServiceType => "service"; // storages do not get broadcast
 	public string RoutingKey => descriptor.routingKey;
 	public string PrimaryKey => $"remote-{descriptor.service}-{descriptor.routingKey}";
+}
+
+public class RemoteStorageEvent : DiscoveryService.ServiceEvent<RemoteStorageDescriptor>, IDiscoveryEvent
+{
+	public ServiceEventType Type => ServiceEventType.Running;
+	
+	public long StartedByAccountId { get; }
+	public string Service => descriptor.storage;
+	public string ServiceType => "storage";
+	public string RoutingKey => "";
+	public string PrimaryKey => descriptor.PKey;
 }

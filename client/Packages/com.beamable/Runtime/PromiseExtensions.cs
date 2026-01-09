@@ -64,7 +64,7 @@ namespace Beamable
 
 					if (promise.IsFailed)
 					{
-						Debug.LogWarning($"Failed promise index=[{index}]");
+						// Debug.LogWarning($"Failed promise index=[{index}]");
 						promise.Error(ex =>
 						{
 							seq.ReportEntryError(index, ex);

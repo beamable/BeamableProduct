@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
@@ -8,6 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+#if UNITY_EDITOR
+using Unity.EditorCoroutines.Editor;
+using UnityEditor;
+#endif
 
 namespace Beamable.Common.Content
 {
@@ -33,7 +38,7 @@ namespace Beamable.Common.Content
 	/// - See Beamable.Experimental.Common.Calendars.CalendarContent script reference
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-feature">Content</a> feature documentation
+	/// - See the <a target="_blank" href="https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/profile-storage/content/content-overview/">Content</a> feature documentation
 	/// - See Beamable.Content.ContentService script reference
 	///
 	/// ![img beamable-logo]
@@ -223,6 +228,7 @@ namespace Beamable.Common.Content
 		public string Created { get; private set; }
 		public long LastChanged { get; set; }
 		public ContentCorruptedException ContentException { get; set; }
+		
 		public bool IsDeprecated => Version == Constants.Features.Content.CONTENT_DEPRECATED;
 		/// <summary>
 		/// Set the %id and %version
@@ -242,12 +248,13 @@ namespace Beamable.Common.Content
 
 			if (!string.Equals(_contentTypeName, typeName))
 				_contentTypeName = typeName;
-
+	
+#if BEAMABLE_ENABLE_EXTRA_CONTENT_ID_CHECK
 			if (!id.StartsWith(typeName))
 			{
 				throw new Exception($"Content type of [{typeName}] cannot use id=[{id}]");
 			}
-
+#endif
 			SetContentName(id.Substring(typeName.Length + 1)); // +1 for the dot.
 
 			if (!string.Equals(Version, version))
@@ -272,13 +279,13 @@ namespace Beamable.Common.Content
 		{
 			if (!string.Equals(ContentName, newContentName))
 				ContentName = newContentName;
-
+#if BEAMABLE_ENABLE_EXTRA_CONTENT_ID_CHECK
 			if (Application.isPlaying)
 			{
 				if (!string.Equals(name, newContentName))
 					name = newContentName; // only set the SO name if we are in-game. Internally, Beamable does not depend on the SO name, but a gameMaker may want to use it.
 			}
-
+#endif
 			return this;
 		}
 
@@ -347,14 +354,23 @@ namespace Beamable.Common.Content
 
       public event Action<List<ContentException>> OnValidationChanged;
       public event Action OnEditorValidation;
+	  [NonSerialized, IgnoreContentField, HideInInspector]
+      public Action OnEditorChanged;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
+      private EditorCoroutine _validateCoroutine;
+
       public Guid ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
+	
+      
+      public ContentStatus ContentStatus { get; set; }
+      public bool IsInConflict { get; set; }
+
 
       [SerializeField]
-      private string _serializedValidationGUID { get; set; }
+      private string _serializedValidationGUID;
       
       private static readonly int[] _guidByteOrder =
 	      new[] { 15, 14, 13, 12, 11, 10, 9, 8, 6, 7, 4, 5, 0, 1, 2, 3 };
@@ -385,25 +401,48 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-	      
-         if (ValidationContext == null)
-         {
-	         // if we have no validation context assigned yet, then we cannot possibly validate.
-	         return;
-         }
-         OnEditorValidation?.Invoke();
-         
-         if (HasValidationExceptions(ValidationContext, out var exceptions))
-         {
-            _hadValidationErrors = true;
-            OnValidationChanged?.Invoke(exceptions);
 
-         }
-         else if (_hadValidationErrors)
-         {
-            _hadValidationErrors = false;
-            OnValidationChanged?.Invoke(null);
-         }
+	      if (_validateCoroutine != null)
+	      {
+		      EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+	      }
+	      _validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+	      
+
+	      if (ValidationContext == null)
+	      {
+		      // if we have no validation context assigned yet, then we cannot possibly validate.
+		      return;
+	      }
+	      OnEditorValidation?.Invoke();
+         
+	      if (HasValidationExceptions(ValidationContext, out var exceptions))
+	      {
+		      _hadValidationErrors = true;
+		      OnValidationChanged?.Invoke(exceptions);
+
+	      }
+	      else if (_hadValidationErrors)
+	      {
+		      _hadValidationErrors = false;
+		      OnValidationChanged?.Invoke(null);
+	      }
+      }
+
+      private IEnumerator DelayedValidate()
+      {
+	      double baseTime = EditorApplication.timeSinceStartup;
+	      double elapsed = 0d;
+	      double delay = 0.3d;
+	      
+	      while (elapsed < delay)
+	      {
+		     elapsed = EditorApplication.timeSinceStartup - baseTime;
+		     yield return null;
+	      }
+	      
+	      OnEditorChanged?.Invoke();
+	      _validateCoroutine = null;
       }
 
       public void ForceValidate()
@@ -541,10 +580,9 @@ namespace Beamable.Common.Content
 
 					foreach (var attribute in field.GetCustomAttributes<ValidationAttribute>())
 					{
+						var wrapper = new ValidationFieldWrapper(field, obj);
 						try
 						{
-							var wrapper = new ValidationFieldWrapper(field, obj);
-
 							if (typeof(IList).IsAssignableFrom(field.FieldType))
 							{
 								var value = field.GetValue(obj) as IList;
@@ -561,7 +599,20 @@ namespace Beamable.Common.Content
 						}
 						catch (ContentValidationException e)
 						{
-							errors.Add(e);
+							string[] errorMessages = e.Message.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None)
+								.Where(item => !string.IsNullOrEmpty(item)).ToArray();
+							if (errorMessages.Length > 1)
+							{
+								foreach (string errorMessage in errorMessages)
+								{
+									errors.Add(new ContentValidationException(this, wrapper, errorMessage));
+								}
+							}
+							else
+							{
+								errors.Add(e);	
+							}
+							
 						}
 					}
 

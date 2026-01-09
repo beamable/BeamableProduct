@@ -1,149 +1,164 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterAll } from 'vitest';
+import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
+import { ContentService } from '@/services/ContentService';
+
+// Use mock WebSocket for realtime connection
+vi.mock('@/network/websocket/BeamWebSocket', () => ({
+  BeamWebSocket: MockBeamWebSocket,
+}));
+
 import { Beam } from '@/core/Beam';
 import * as BeamUtils from '@/core/BeamUtils';
-import { MockBeamWebSocket } from '../network/websocket/MockBeamWebSocket';
-import { RealmsApi } from '@/__generated__/apis/RealmsApi';
+import { AuthService } from '@/services/AuthService';
+import { AccountService } from '@/services/AccountService';
+import { BeamConfig } from '@/configs/BeamConfig';
+import { TokenStorage } from '@/platform/types/TokenStorage';
 
 describe('Beam', () => {
-  describe('ready', () => {
-    const dummyTokenResponse = {
-      access_token: 'access',
-      refresh_token: 'refresh',
-      expires_in: 123,
-    };
-    const dummyPlayer = {
-      id: 'playerId',
-      deviceIds: [],
-      scopes: [],
-      thirdPartyAppAssociations: [],
-      email: '',
-      external: [],
-      language: '',
-    };
-
-    let beam: Beam;
-    let storage: any;
-    let saveTokenSpy: any;
+  describe('init', () => {
+    const mockSaveToken = vi.spyOn(BeamUtils, 'saveToken');
+    const mockLoginAsGuest = vi.spyOn(AuthService.prototype, 'loginAsGuest');
+    const mockRefreshAuthToken = vi.spyOn(
+      AuthService.prototype,
+      'refreshAuthToken',
+    );
+    const mockAccountCurrent = vi.spyOn(AccountService.prototype, 'current');
+    const mockSyncContentManifests = vi.spyOn(
+      ContentService.prototype,
+      'syncContentManifests',
+    );
+    let config: BeamConfig;
 
     beforeEach(() => {
-      storage = {
-        getAccessToken: vi.fn(),
-        getRefreshToken: vi.fn(),
-        getExpiresIn: vi.fn(),
-        setAccessToken: vi.fn(),
-        setRefreshToken: vi.fn(),
-        setExpiresIn: vi.fn(),
-        removeAccessToken: vi.fn(),
-        removeRefreshToken: vi.fn(),
-        removeExpiresIn: vi.fn(),
-        isExpired: false,
-        clear: vi.fn(),
-        dispose: vi.fn(),
-      };
-      beam = new Beam({
-        environment: 'Dev',
-        cid: 'cid',
-        pid: 'pid',
-        tokenStorage: storage,
-      });
-      // Use mock WebSocket for realtime connection
-      (beam as any).ws = new MockBeamWebSocket();
-      // Stub realms client defaults for setupRealtimeConnection
-      vi.spyOn(
-        RealmsApi.prototype,
-        'getRealmsClientDefaults',
-      ).mockResolvedValue({
-        body: {
-          websocketConfig: { provider: 'beamable', uri: 'wss://test.com' },
-        },
-      } as any);
-      // Default refresh token for setupRealtimeConnection
-      storage.getRefreshToken.mockResolvedValue('refresh-token');
-      saveTokenSpy = vi.spyOn(BeamUtils, 'saveToken').mockResolvedValue();
-      vi.spyOn(beam.auth, 'signInAsGuest').mockResolvedValue(
-        dummyTokenResponse as any,
-      );
-      vi.spyOn(beam.auth, 'refreshAuthToken').mockResolvedValue(
-        dummyTokenResponse as any,
-      );
+      mockSaveToken.mockClear();
+      mockLoginAsGuest.mockClear();
+      mockRefreshAuthToken.mockClear();
+      mockAccountCurrent.mockClear();
+      mockSyncContentManifests.mockClear();
     });
 
-    afterEach(() => {
+    afterAll(() => {
       vi.restoreAllMocks();
     });
 
-    it('signs in as guest when no access token exists', async () => {
-      storage.getAccessToken.mockResolvedValue(null);
-      beam.auth.signInAsGuest = vi
-        .fn()
-        .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
+    it('should initialize Beam and login as guest if no token exists', async () => {
+      config = {
+        cid: 'test-cid',
+        pid: 'test-pid',
+        tokenStorage: {
+          getTokenData: async () => ({
+            accessToken: null,
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
+          isExpired: false,
+          setTokenData: async () => {},
+          clear: async () => {},
+        } as unknown as TokenStorage,
+      };
 
-      await beam.ready();
-
-      expect(beam.auth.signInAsGuest).toHaveBeenCalled();
-      expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
-      expect(beam.player.account).toEqual(dummyPlayer);
-    });
-
-    it('refreshes token when access token expired and refresh-token exists', async () => {
-      storage.getAccessToken.mockResolvedValue('access');
-      storage.isExpired = true;
-      storage.getRefreshToken.mockResolvedValue('refreshToken');
-      beam.auth.refreshAuthToken = vi
-        .fn()
-        .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
-
-      await beam.ready();
-
-      expect(beam.auth.refreshAuthToken).toHaveBeenCalledWith({
-        refreshToken: 'refreshToken',
+      mockLoginAsGuest.mockResolvedValue({
+        access_token: 'guest-token',
+        refresh_token: 'guest-refresh',
+        expires_in: '3600',
+        token_type: 'Bearer',
+        scopes: [],
       });
-      expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
-      expect(beam.player.account).toEqual(dummyPlayer);
+      mockAccountCurrent.mockResolvedValue({
+        id: 'player-id',
+        deviceIds: [],
+        scopes: [],
+        thirdPartyAppAssociations: [],
+      });
+      mockSyncContentManifests.mockResolvedValue();
+
+      const beam = await Beam.init(config);
+
+      expect(beam).toBeInstanceOf(Beam);
+      expect(mockLoginAsGuest).toHaveBeenCalled();
+      expect(mockSaveToken).toHaveBeenCalledWith(
+        config.tokenStorage,
+        expect.objectContaining({ access_token: 'guest-token' }),
+      );
+      expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
 
-    it('falls back to guest sign-in when refresh token does not exist', async () => {
-      storage.getAccessToken.mockResolvedValue('access');
-      storage.isExpired = true;
-      storage.getRefreshToken.mockResolvedValueOnce(null);
-      beam.auth.signInAsGuest = vi
-        .fn()
-        .mockResolvedValue(dummyTokenResponse as any);
-      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
+    it('should initialize Beam and refresh token if access token is expired', async () => {
+      config = {
+        cid: 'test-cid',
+        pid: 'test-pid',
+        tokenStorage: {
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
+          isExpired: true,
+          setTokenData: async () => {},
+          clear: async () => {},
+        } as unknown as TokenStorage,
+      };
 
-      await beam.ready();
+      mockRefreshAuthToken.mockResolvedValue({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: '3600',
+        token_type: 'Bearer',
+        scopes: [],
+      });
+      mockAccountCurrent.mockResolvedValue({
+        id: 'player-id',
+        deviceIds: [],
+        scopes: [],
+        thirdPartyAppAssociations: [],
+      });
+      mockSyncContentManifests.mockResolvedValue();
 
-      expect(beam.auth.signInAsGuest).toHaveBeenCalled();
-      expect(saveTokenSpy).toHaveBeenCalledWith(storage, dummyTokenResponse);
-      expect(beam.player.account).toEqual(dummyPlayer);
+      const beam = await Beam.init(config);
+
+      expect(beam).toBeInstanceOf(Beam);
+      expect(mockRefreshAuthToken).toHaveBeenCalledWith({
+        refreshToken: 'refresh-token',
+      });
+      expect(mockSaveToken).toHaveBeenCalledWith(
+        config.tokenStorage,
+        expect.objectContaining({ access_token: 'new-access-token' }),
+      );
+      expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
 
-    it('only sets player account when token exists and not expired', async () => {
-      storage.getAccessToken.mockResolvedValue('access');
-      storage.isExpired = false;
-      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
-      await beam.ready();
-      expect(beam.auth.signInAsGuest).not.toHaveBeenCalled();
-      expect(saveTokenSpy).not.toHaveBeenCalled();
-      expect(beam.player.account).toEqual(dummyPlayer);
-    });
+    it('should initialize Beam and use existing token if not expired', async () => {
+      config = {
+        cid: 'test-cid',
+        pid: 'test-pid',
+        tokenStorage: {
+          getTokenData: async () => ({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            expiresIn: null,
+          }),
+          isExpired: false,
+          setTokenData: async () => {},
+          clear: async () => {},
+        } as unknown as TokenStorage,
+      };
 
-    it('isReadyPromise resolves to true when setup is complete', async () => {
-      storage.getAccessToken.mockResolvedValue('access');
-      storage.isExpired = false;
-      beam.account.current = vi.fn().mockResolvedValue(dummyPlayer as any);
+      mockAccountCurrent.mockResolvedValue({
+        id: 'player-id',
+        deviceIds: [],
+        scopes: [],
+        thirdPartyAppAssociations: [],
+      });
+      mockSyncContentManifests.mockResolvedValue();
 
-      await beam.ready();
+      const beam = await Beam.init(config);
 
-      expect(beam.isReady).toBe(true);
-    });
-
-    it('isReadyPromise resolves to false when setup fails', async () => {
-      storage.getAccessToken.mockRejectedValue(new Error('Setup failed'));
-      await expect(beam.ready()).rejects.toThrow('Setup failed');
-      expect(beam.isReady).toBe(false);
+      expect(beam).toBeInstanceOf(Beam);
+      expect(mockLoginAsGuest).not.toHaveBeenCalled();
+      expect(mockAccountCurrent).toHaveBeenCalled();
+      expect(mockSyncContentManifests).toHaveBeenCalled();
     });
   });
 });

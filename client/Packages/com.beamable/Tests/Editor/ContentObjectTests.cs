@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
@@ -11,13 +12,16 @@ namespace Beamable.Editor.Tests
 		{
 			var sampleValidationCtx = new ValidationContext();
 
-			var testContent = new TestContent(0);
+			var testContent = ScriptableObject.CreateInstance<TestContent>();
+			testContent.number = 0;
 			Assert.DoesNotThrow(() => testContent.Validate(sampleValidationCtx));
 
-			testContent = new TestContent(20);
+			testContent = ScriptableObject.CreateInstance<TestContent>();
+			testContent.number = 20;
 			Assert.DoesNotThrow(() => testContent.Validate(sampleValidationCtx));
 
-			testContent = new TestContent(-32);
+			testContent = ScriptableObject.CreateInstance<TestContent>();
+			testContent.number = -32;
 			Assert.Throws<AggregateContentValidationException>(() => testContent.Validate(sampleValidationCtx));
 		}
 
@@ -26,7 +30,9 @@ namespace Beamable.Editor.Tests
 		{
 			var sampleValidationCtx = new ValidationContext();
 
-			var content = new PoorlyConfiguredContent("boo!", -32);
+			var content = ScriptableObject.CreateInstance<PoorlyConfiguredContent>();
+			content.s = "boo!";
+			content.number = -32;
 			Assert.Throws<AggregateContentValidationException>(() => content.Validate(sampleValidationCtx));
 		}
 	}

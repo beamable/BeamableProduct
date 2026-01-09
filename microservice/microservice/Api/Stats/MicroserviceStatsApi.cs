@@ -55,24 +55,29 @@ namespace Beamable.Server.Api.Stats
         {
 	        return DeleteStats(domain, access, userId, new[] { key });
         }
+
+        private async Promise<(long, Dictionary<string, string>)> GetStatsForGamerTag(string prefix, long tag, string[] stats = null)
+        {
+	        var v = await BaseGetStats(prefix, stats);
+
+	        return (tag, v);
+        }
         
         protected override Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
         {
-	        string queryString = "";
+	        var promises = new List<Promise<(long tag, Dictionary<string, string> stats)>>();
+
 	        for (int i = 0; i < gamerTags.Count; i++)
 	        {
-		        if (i > 0)
-		        {
-			        queryString += ",";
-		        }
-		        queryString += $"{prefix}{gamerTags[i]}";
+		        long tag = gamerTags[i];
+		        var fullPrefix = $"{prefix}{tag}";
+		        promises.Add(GetStatsForGamerTag(fullPrefix, tag));
 	        }
 
-	        return Requester.Request<BatchReadStatsResponse>(
-		        Method.GET,
-		        $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-		        useCache: true
-	        ).Map(rsp => rsp.ToDictionary());
+	        return Promise.Sequence(promises).Map(allStats =>
+	        {
+		        return allStats.ToDictionary(p => p.tag, p => p.stats);
+	        });;
         }
 
         #region Obsolete Methods
