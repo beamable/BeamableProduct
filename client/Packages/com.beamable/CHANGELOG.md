@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Unity 6.3 Support
 - Dotnet 10 Support
+- Add `LogFormat` and `LogWarningFormat` to BeamableLogger, to parallel the existing `LogErrorFormat` method
 
 ### Changed
 - Update CLI to 7.0.0
