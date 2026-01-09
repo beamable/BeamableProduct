@@ -451,7 +451,6 @@ public class ConfigService
 			// Ie.: If your curr build number is 0.0.123.10, if the cliVersion is 0.0.123.9, this code will run.
 			new Migration(PackageVersion.FromSemanticVersionString("0.0.123"), (configPath, config) =>
 			{
-				Log.Warning("Cooll");
 				// TODO: Write any code you want here to test migration logic for the next version.
 			})
 		};
