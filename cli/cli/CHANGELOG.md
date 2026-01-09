@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [7.0.0]
 ### Added
 - `net10` support
+- typed `ResolveAll` method for resolving content refs
 
 ### Fixed
 - possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
