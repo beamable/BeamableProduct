@@ -225,7 +225,6 @@ public class App
 		services.AddSingleton<BeamoLocalSystem>();
 		services.AddSingleton<ContentService, ContentService>();
 		services.AddSingleton<DeveloperUserManagerService, DeveloperUserManagerService>();
-		services.AddSingleton<CliEnvironment>();
 		services.AddSingleton<SwaggerService>();
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		services.AddSingleton<UnitySourceGenerator>();
@@ -466,7 +465,6 @@ public class App
 		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
 		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton(PidOption.Instance);
-		Commands.AddSingleton<ConfigDirOption>();
 		Commands.AddSingleton<HostOption>();
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
@@ -506,7 +504,6 @@ public class App
 			root.AddGlobalOption(DockerPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
-			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
@@ -600,10 +597,6 @@ public class App
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
-		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
-		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
-		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
-		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
 		
@@ -1112,7 +1105,7 @@ public class App
 				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
 		
 				// Check if the .beamable folder exists
-				string beamableDirectory = Path.Combine(configService.BaseDirectory, ".beamable");
+				string beamableDirectory = Path.Combine(configService.BeamableWorkspace, ".beamable");
 				
 				bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
 				

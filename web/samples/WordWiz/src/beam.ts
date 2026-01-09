@@ -19,7 +19,8 @@ export async function setupBeam(): Promise<Beam> {
 
   try {
     // Register required services with the Beam instance
-    beam.use(AuthService).use(AccountService).use(StatsService);
+    // beam.use(AuthService).use(AccountService).use(StatsService);
+    beam.use([AuthService, AccountService, StatsService]);
     return beam;
   } catch (error) {
     console.error('Beam Error:', error);
@@ -38,8 +39,7 @@ export async function getAndComputePlayerStats(
     });
 
     const dailyStreak = DAILY_STREAK in stats ? stats[DAILY_STREAK] : '0';
-    const endlessStreak =
-      ENDLESS_STREAK in stats ? stats[ENDLESS_STREAK] : '0';
+    const endlessStreak = ENDLESS_STREAK in stats ? stats[ENDLESS_STREAK] : '0';
 
     store.stats = {
       [DAILY_STREAK]: dailyStreak,

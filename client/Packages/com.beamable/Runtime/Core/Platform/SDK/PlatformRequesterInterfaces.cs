@@ -16,7 +16,7 @@ namespace Beamable.Api
 		string Language { get; set; }
 
 		IAuthApi AuthService { set; }
-		void DeleteToken();
+		void DeleteToken(bool eraseFromDisk=true);
 	}
 
 	public interface IPlatformRequesterFactory

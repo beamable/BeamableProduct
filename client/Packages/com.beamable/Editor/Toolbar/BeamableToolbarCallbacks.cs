@@ -109,12 +109,18 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 					// I found this ID by using the UIToolkit debugger.
+					#if UNITY_6000_3_OR_NEWER
+					var rightAlign =
+						visualTree.Q<VisualElement>(className: "unity-overlay-container__after-spacer-container")
+						          .Q<VisualElement>(className: "unity-overlay-container__content");
+					#else
 					const string UnityToolbarRightAreaId = "ToolbarZoneRightAlign";
 					var rightAlign = visualTree.Q<VisualElement>(UnityToolbarRightAreaId);
-				
+#endif
 					// add some classes to inherit the styles of the toolbar.
 					_container.AddToClassList("unity-editor-toolbar-element");
 					_container.AddToClassList("unity-toolbar-button");
+					_container.style.alignSelf = Align.Center;
 					rightAlign.Add(_container);
 					
 					var handler = (Action)m_imguiContainerOnGui.GetValue(_container);

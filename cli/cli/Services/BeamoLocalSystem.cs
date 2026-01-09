@@ -91,8 +91,7 @@ public partial class BeamoLocalSystem
 			.CreateClient();
 
 		// Load or create the local runtime data
-		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, () =>
-			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
+		BeamoRuntime = new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8)};
 
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
 		_dockerListeningThreadCancel = new CancellationTokenSource();
@@ -248,9 +247,9 @@ public partial class BeamoLocalSystem
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
 
-		var relativeProjectPath = _configService.GetRelativeToBeamableFolderPath(project.ProjectDirectory);
+		var relativeProjectPath = _configService.GetRelativeToBeamableWorkspacePath(project.ProjectDirectory);
 		var projectPath = Path.Combine(relativeProjectPath, $"{project.BeamoId}.csproj");
-		var dependencyPath = Path.Combine(_configService.GetRelativeToBeamableFolderPath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+		var dependencyPath = Path.Combine(_configService.GetRelativeToBeamableWorkspacePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
 
 		var command = $"remove {projectPath.EnquotePath()} reference {dependencyPath.EnquotePath()}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
@@ -269,7 +268,7 @@ public partial class BeamoLocalSystem
 	/// <param name="dependency">The storage to be the microservice dependency</param>
 	public async Task AddProjectDependency(BeamoServiceDefinition project, string relativePath)
 	{
-		var projectPath = _configService.BeamableRelativeToExecutionRelative(project.ProjectDirectory);
+		var projectPath = _configService.GetRelativeToExecutionPath(project.ProjectDirectory);
 		var dependencyPath = relativePath;
 		var command = $"add {projectPath.EnquotePath()} reference {dependencyPath.EnquotePath()}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);

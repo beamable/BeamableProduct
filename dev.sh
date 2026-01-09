@@ -15,7 +15,8 @@
 #  5. invalidate the nuget cache for local beamable dev packages, which
 #     means that downstream projects will need to run a `dotnet restore`.
 
-echo "Hello, you stalwart Beamable"
+compliment=$(awk 'BEGIN{srand()} {a[NR]=$0} END{print a[int(rand()*NR)+1]}' compliments.txt)
+echo "$compliment"
 
 # the .dev.env file hosts some common variables
 source ./.dev.env
@@ -62,7 +63,7 @@ PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
 dotnet build $SOLUTION $BUILD_ARGS
-dotnet build cli/beamable.common -f net8.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY
+dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
