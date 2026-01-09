@@ -181,19 +181,30 @@ namespace Beamable.Server
 
     }
 
+    public class DuplicateTelemetryAttributeException : Exception
+    {
+        public DuplicateTelemetryAttributeException(string attrName)
+            : base($"There cannot be duplicated telemetry attributes in the same collection. Duplicate name=[{attrName}]")
+        {
+        }
+    }
+    
     public class TelemetryAttributeCollection
     {
-        public List<TelemetryAttribute> attributes = new List<TelemetryAttribute>();
-
+        public Dictionary<string, TelemetryAttribute> attributeNameMap = new Dictionary<string, TelemetryAttribute>();
+        
         public void Add(TelemetryAttribute attr)
         {
             if (attr.type == TelemetryAttributeType.STRING && attr.stringValue == null) return;
-            attributes.Add(attr);
+            if (!attributeNameMap.TryAdd(attr.name, attr))
+            {
+                throw new DuplicateTelemetryAttributeException(attr.name);
+            }
         }
 
         public TelemetryAttributeCollection With(TelemetryAttribute attr)
         {
-            attributes.Add(attr);
+            Add(attr);
             return this;
         }
 
@@ -205,9 +216,9 @@ namespace Beamable.Server
         public Dictionary<string, object> ToDictionary(Dictionary<string, object> results)
         {
             results ??= new Dictionary<string, object>();
-            foreach (var attr in attributes)
+            foreach (var (name, attr) in attributeNameMap)
             {
-                if (string.IsNullOrEmpty(attr.name)) continue;
+                if (string.IsNullOrEmpty(name)) continue;
                 switch (attr.type)
                 {
                     case TelemetryAttributeType.LONG:
