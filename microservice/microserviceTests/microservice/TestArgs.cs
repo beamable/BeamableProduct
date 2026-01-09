@@ -28,7 +28,7 @@ namespace microserviceTests.microservice
 			_provider = provider;
 		}
 
-		public async Task Start<T>(TestArgs dudArgs=null) where T : Microservice
+		public async Task Start<T>(TestArgs dudArgs=null, Action<IDependencyBuilder> configurator=null) where T : Microservice
 		{
 			var args = new TestArgs();
 		
@@ -71,6 +71,7 @@ namespace microserviceTests.microservice
 					
 					builder.RemoveIfExists<IContentResolver>();
 					builder.AddSingleton(_resolver);
+					configurator?.Invoke(builder);
 
 				})
 				.OverrideConfig(c =>
