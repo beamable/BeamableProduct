@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Sudden account switching no longer accidentally happens when unpredictable errors happen during account switching [4321](https://github.com/beamable/BeamableProduct/issues/4321)
+- Fixed unexpected GC allocation on Unity Editor during Domain Reloads from GetUnparsedCrashLogs function [4425](https://github.com/beamable/BeamableProduct/issues/4425)
 
 ## [4.0.2] - 2025-11-20
 ### Changed
