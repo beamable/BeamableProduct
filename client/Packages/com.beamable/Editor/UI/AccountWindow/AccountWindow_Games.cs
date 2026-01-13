@@ -16,6 +16,8 @@ namespace Beamable.Editor.Accounts
 
 		[NonSerialized]
 		public string[] realmNames;
+		[NonSerialized]
+		public BeamOrgRealmData[] availableRealms; // parallel to realmNames
 		
 		[NonSerialized]
 		private Promise _realmCommandPromise;
@@ -108,7 +110,7 @@ namespace Beamable.Editor.Accounts
 					
 					if (wasClicked)
 					{
-						var _ = context.SwitchRealm(_visibleRealms[realmSelectionIndex].Pid);
+						var _ = context.SwitchRealm(availableRealms[realmSelectionIndex].Pid);
 						needsGameSelection = false;
 					}
 				}
@@ -149,7 +151,14 @@ namespace Beamable.Editor.Accounts
 				{
 					var data = dp.data;
 					_visibleRealms = data.VisibleRealms;
-					realmNames = data.VisibleRealms.Where(x => x.ProjectName == cli.latestGames.VisibleGames[gameSelectionIndex].ProjectName).Select(x => $"{x.RealmName} - {x.Pid}").ToArray();
+					availableRealms = data.VisibleRealms
+					            .Where(x => x.ProjectName ==
+					                        cli.latestGames.VisibleGames[gameSelectionIndex].ProjectName).ToArray();
+					realmNames = new string[availableRealms.Length];
+					for (var i = 0; i < availableRealms.Length; i++)
+					{
+						realmNames[i] = $"{availableRealms[i].RealmName} - {availableRealms[i].Pid}";
+					}
 				});
 
 				_realmCommandPromise = _realmsCommand.Run();
