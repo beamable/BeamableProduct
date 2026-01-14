@@ -226,7 +226,7 @@ public class ServiceDocGenerator
 		{
 			var callableAttrs = method.Method.GetCustomAttributes(typeof(CallableAttribute), true);
 
-			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
+			Log.Trace("Adding to Docs method {MethodName}", method.Method.Name);
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 
