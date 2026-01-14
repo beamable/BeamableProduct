@@ -101,17 +101,56 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 
 			if (shouldInstallCore || shouldInstallOss)
 			{
+				BeamableLogger.Log("Updating '.uproject' file with Beamable Plugin(s)...\n" +
+				                   "-------------------------------------------------------\n");
+				
 				uprojectJsonStr = Json.Serialize(uproject, new StringBuilder());
 				uprojectJsonStr = Json.FormatJson(uprojectJsonStr);
 				File.WriteAllText(args.UProjectFilePath, uprojectJsonStr);
-				BeamableLogger.Log("Updated uproject file with Beamable Plugin(s).");
+				BeamableLogger.Log("Updated uproject file with Beamable Plugin(s).\n\n");
 			}
 		}
 
-
-		// If we have the BeamableCore plugin installed, delete it and then copy it in.
+		// We start by copying the "global.json" file so that we check for the minimum version of .NET.
 		var unrealRootPath = Path.GetDirectoryName(args.UProjectFilePath)!;
 		{
+			var gameMakerBeamableGlobalJsonPath = Path.Combine(unrealRootPath, "global.json");
+			var sdkBeamableGlobalJsonPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "global.json");
+
+			/*
+			{
+				"sdk": {
+					"version": "8.0.302",
+					"rollForward": "latestMinor",
+					"allowPrerelease": false
+				}
+			}
+			*/
+			var globalJsonStr = File.ReadAllText(sdkBeamableGlobalJsonPath);
+			var globalJson = Json.Deserialize(globalJsonStr) as ArrayDict;
+			
+			var fullySupportedVersion = (globalJson!["sdk"] as ArrayDict)!["version"] as string;
+			var partiallySupportedMinorVersion = fullySupportedVersion![..fullySupportedVersion.IndexOf('.')];
+			BeamableLogger.Log("\nCopying 'global.json' file to enforce .NET version.\n" +
+			                   "-------------------------------------------------------\n" +
+			                   $"Full Support Version: {fullySupportedVersion}\n" +
+			                   $"Partial Support Version: {partiallySupportedMinorVersion}\n\n" +
+			                   $"Fully Supported Version is the .NET version we develop on and it is fully QA'd.\n" +
+			                   $"Partially Supported Versions should work normally, but .NET may have undocumented breaking changes that break things from under us (unfortunately, this has happened before). \n\n" +
+			                   $"Please report any such issues to us so we can quickly address them.\n\n");
+			
+			// Clean up the existing game maker global json on every init run, if it is there.
+			if(File.Exists(gameMakerBeamableGlobalJsonPath)) File.Delete(gameMakerBeamableGlobalJsonPath);
+			
+			File.Copy(sdkBeamableGlobalJsonPath, gameMakerBeamableGlobalJsonPath);
+			BeamableLogger.Log("Configured .NET's 'global.json' file.\n\n");
+		}
+
+		// If we have the BeamableCore plugin installed, delete it and then copy it in.
+		{
+			BeamableLogger.Log("Installing BeamableCore plugin...\n" +
+			                   "-------------------------------------------------------\n");
+		
 			var gameMakerBeamablePluginPath = Path.Combine(unrealRootPath, "Plugins", "BeamableCore");
 			var sdkBeamablePluginPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "Plugins", "BeamableCore");
 			if (Directory.Exists(gameMakerBeamablePluginPath))
@@ -121,12 +160,15 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 			}
 
 			CopyDirectory(sdkBeamablePluginPath, gameMakerBeamablePluginPath);
-			BeamableLogger.Log("Installed BeamableCore plugin.");
+			BeamableLogger.Log("Installed BeamableCore plugin.\n\n");
 		}
 
 		// If we have the OnlineSubsystem plugin installed, delete ONLY the non-Customer parts of it then copy it in.
 		if (args.IsInstallingOnlineSubsystem)
 		{
+			BeamableLogger.Log("Installing OnlineSubsystemBeamable plugin...\n" +
+			                   "-------------------------------------------------------\n");
+			
 			var gameMakerOssPath = Path.Combine(unrealRootPath, "Plugins", "OnlineSubsystemBeamable");
 			var sdkBeamablePluginPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "Plugins", "OnlineSubsystemBeamable");
 
@@ -193,7 +235,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				CopyDirectory(sdkBeamablePluginPath, gameMakerOssPath);
 			}
 
-			BeamableLogger.Log("Installed OnlineSubsystemBeamable plugin.");
+			BeamableLogger.Log("Installed OnlineSubsystemBeamable plugin.\n\n");
 		}
 
 
