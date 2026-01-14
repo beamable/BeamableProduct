@@ -51,6 +51,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Beamable.Server.Common;
 using Beamable.Tooling.Common;
+using cli.AICommands;
 using cli.CheckCommands;
 using cli.Commands.OtelCommands.Grafana;
 using cli.Commands.Project.Logs;
@@ -525,6 +526,8 @@ public class App
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 
+		Commands.AddRootCommand<McpCommand, McpCommandArgs>();
+		
 		Commands.AddRootCommand<OtelCommand>();
 		Commands.AddSubCommandWithHandler<GetClickhouseCredentials, GetClickhouseCredentialsArgs, OtelCommand>();
 		Commands.AddSubCommandWithHandler<PushTelemetryCommand, PushTelemetryCommandArgs, OtelCommand>();
