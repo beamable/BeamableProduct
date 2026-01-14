@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unpublished]
+### Fixed
+- setup.sh was relying on a fixed Go version; we now support Go 1.24.x.
 
-## [Unreleased]
+## [7.0.0]
 ### Added
 - `net10` support
+- typed `ResolveAll` method for resolving content refs
+
+### Fixed
+- possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
+- common projects no longer attempt to resolve Beamable Otel Collector
+- do not log into archived realm as default selection with --ignore-pid is given to `beam init` [4245](https://github.com/beamable/BeamableProduct/issues/4245)
 
 ## [6.2.2]
 ### Changed

@@ -344,10 +344,10 @@ public class DefaultAppContext : IAppContext
 	{
 		_host = host;
 
+		var service = _provider.GetService<IAliasService>();
+		service.Requester = new NoAuthHttpRequester(host);
 		if (!string.IsNullOrEmpty(cid))
 		{
-			var service = _provider.GetService<IAliasService>();
-			service.Requester = new NoAuthHttpRequester(host);
 			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
 		}

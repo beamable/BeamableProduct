@@ -5,13 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.0.0]
 ### Added
 - Unity 6.3 Support
 - Dotnet 10 Support
+- Add `LogFormat` and `LogWarningFormat` to BeamableLogger, to parallel the existing `LogErrorFormat` method
 
 ### Changed
 - Update CLI to 7.0.0
+
+### Fixed
+- Sudden account switching no longer accidentally happens when unpredictable errors happen during account switching [4321](https://github.com/beamable/BeamableProduct/issues/4321)
+- Fixed unexpected GC allocation on Unity Editor during Domain Reloads from GetUnparsedCrashLogs function [4425](https://github.com/beamable/BeamableProduct/issues/4425)
+- Editor allows user to switch between Beamable games [4456](https://github.com/beamable/BeamableProduct/issues/4456)
 
 ## [4.0.2] - 2025-11-20
 ### Changed

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `net10` support
 
+### Fixed
+- Cannot add duplicate custom telemetry attributes [4352](https://github.com/beamable/BeamableProduct/issues/4352)
+
 ## [6.1.0] - 2025-10-31
 ### Fixed
 - Call for `Services.Stats.GetStats( StatsDomainType.Game, StatsAccessType.Private, Context.UserId)` no longer yields `NoReadAccess`error
