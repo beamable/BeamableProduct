@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unexpected GC allocation on Unity Editor during Domain Reloads from GetUnparsedCrashLogs function [4425](https://github.com/beamable/BeamableProduct/issues/4425)
 - Editor allows user to switch between Beamable games [4456](https://github.com/beamable/BeamableProduct/issues/4456)
 - Serialize ConsoleFlow fields on all targets even when they are used only on Android, reduces issues with headless builds
+- Telemetry only pushes up to 10 log files at a time.
 
 ## [4.0.2] - 2025-11-20
 ### Changed
