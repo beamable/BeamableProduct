@@ -340,6 +340,8 @@ namespace Beamable.Editor.ContentService
 				AddContentToCache(entry);
 			}
 
+			ManifestChangedCount++;
+
 			BeamUnityFileUtils.RenameFile(originalPath, fullName);
 			
 			return newFullId;
