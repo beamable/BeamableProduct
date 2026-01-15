@@ -1,4 +1,5 @@
 using Beamable.Server;
+using Beamable.Server.Api.Notifications;
 using cli.Utils;
 using System.IO.Compression;
 
@@ -6,6 +7,17 @@ namespace cli.Services.PortalExtension;
 
 public class PortalExtensionDiscoveryService : Microservice
 {
+	[InitializeServices]
+	public static void Initialize(IServiceInitializer initializer)
+	{
+		var observer = initializer.Provider.GetService<PortalExtensionObserver>();
+		var notification = initializer.Provider.GetService<IMicroserviceNotificationsApi>();
+		var attributes = initializer.Provider.GetService<MicroserviceAttribute>();
+
+		observer.ConfigureServiceData(notification, attributes);
+	}
+
+
 	[ClientCallable]
 	public string RequestPortalExtensionData()
 	{
@@ -26,6 +38,8 @@ public class PortalExtensionObserver
 	private string _appPath;
 	private bool _hasChanges = true;
 	private CancellationTokenSource _cancelToken;
+	private IMicroserviceNotificationsApi _notificationsApi;
+	private IMicroserviceAttributes _attributes;
 
 	public string AppFilesPath
 	{
@@ -49,9 +63,19 @@ public class PortalExtensionObserver
 		}
 	}
 
+	public PortalExtensionObserver()
+	{
+	}
+
 	public void CancelDiscovery()
 	{
 		_cancelToken.Cancel();
+	}
+
+	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes)
+	{
+		_notificationsApi = notificationApi;
+		_attributes = attributes;
 	}
 
 	public bool TryGetNewAppBuild(out string bundle)
@@ -147,6 +171,16 @@ public class PortalExtensionObserver
 		}
 
 		Log.Information($"Change detected in file: {e.Name}");
+
+		_notificationsApi.NotifyServer(true, "notify-portalextension",
+			new PortalExtensionNotifyPayload() { serviceName = _attributes.MicroserviceName });
+
 		_hasChanges = true;
+	}
+
+	[Serializable]
+	public class PortalExtensionNotifyPayload
+	{
+		public string serviceName;
 	}
 }

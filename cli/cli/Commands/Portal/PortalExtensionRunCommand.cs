@@ -14,7 +14,7 @@ public class PortalExtensionRunCommandArgs : CommandArgs
 public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArgs>
 {
 	private CancellationTokenSource _tokenSource;
-	private string ComputedMicroserviceName;
+	private string _computedMicroserviceName;
 
 	public PortalExtensionRunCommand() : base("run", "Runs the specified Portal Extension project")
 	{
@@ -115,19 +115,21 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 
 	private string GetMicroName(string appName)
 	{
-		if (!string.IsNullOrEmpty(ComputedMicroserviceName))
+		if (!string.IsNullOrEmpty(_computedMicroserviceName))
 		{
-			return ComputedMicroserviceName;
+			return _computedMicroserviceName;
 		}
 
-		return $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
+		_computedMicroserviceName = $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
+
+		return _computedMicroserviceName;
 	}
 
 	private bool TryBuildPortalUrl(PortalExtensionRunCommandArgs args, out string portalUrl)
 	{
 		var cid = args.AppContext.CustomerID;
 		var pid = args.AppContext.Pid;
-		var microName = "micro_" + GetMicroName(args.AppName);
+		var microName = GetMicroName(args.AppName);
 		var refreshToken = args.AppContext.RefreshToken;
 
 		if (string.IsNullOrEmpty(refreshToken))
@@ -177,8 +179,6 @@ public class OverrideLogger : ILogger
 {
 	private Action _readyForTraffic;
 
-	public bool SupportScopes => false;
-
 	public OverrideLogger(Action readyForTraffic = null)
 	{
 		if (readyForTraffic != null)
@@ -196,7 +196,7 @@ public class OverrideLogger : ILogger
 			Console.WriteLine($"\nTEST Exception: {exception.Message}");
 		}
 
-
+		Console.WriteLine($"\nTEST: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
