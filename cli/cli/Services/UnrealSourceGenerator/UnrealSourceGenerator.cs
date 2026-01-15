@@ -2396,7 +2396,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					: UNREAL_MAP + $"<{UNREAL_STRING}, {dataType}>");
 			}
 			case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
-				throw new Exception("Object fields must either reference some other schema or must be a map/dictionary!");
+				if (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema))
+				{
+					return GetUnrealTypeForField(out nonOverridenType, context, parentDoc, innerSchema, fieldDeclarationHandle, flags);
+				}
+				throw new Exception(
+					"Object fields must either reference some other schema or must be a map/dictionary!");
 			case ("array", _, _, _):
 			{
 				var isReference = schema.Items.Reference != null;
