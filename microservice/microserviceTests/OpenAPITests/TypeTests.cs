@@ -175,11 +175,21 @@ public class TypeTests
 	/// </summary>
 	public class SampleGenericField
 	{
+		/// <summary>
+		/// This is a field description
+		/// </summary>
 		public Result<string> theOnlyField;
 	}
 
+	/// <summary>
+	/// A generic result class
+	/// </summary>
+	/// <typeparam name="T">Type of the field</typeparam>
 	public class Result<T>
 	{
+		/// <summary>
+		/// Description of the generic field
+		/// </summary>
 		public T Field;
 	}
 

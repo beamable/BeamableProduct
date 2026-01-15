@@ -281,12 +281,21 @@ public class SchemaGenerator
 				return new OpenApiSchema { Type = "number", Format = "float" };
 
 			case { } x when x == typeof(short):
-				return new OpenApiSchema { Type = "integer", Format = "int16" };
+				return new OpenApiSchema { Type = "integer", Format = "int16", Minimum = short.MinValue, Maximum = short.MaxValue };
+			case { } x when x == typeof(ushort):
+				return new OpenApiSchema { Type = "integer", Format = "int16", Minimum = ushort.MinValue, Maximum = ushort.MaxValue };
 			case { } x when x == typeof(int):
 				return new OpenApiSchema { Type = "integer", Format = "int32" };
+			case { } x when x == typeof(uint):
+				return new OpenApiSchema { Type = "integer", Format = "int32", Minimum = uint.MinValue, Maximum = uint.MaxValue };
 			case { } x when x == typeof(long):
 				return new OpenApiSchema { Type = "integer", Format = "int64" };
+			case { } x when x == typeof(ulong):
+				return new OpenApiSchema { Type = "integer", Format = "int64", Minimum = ulong.MinValue, Maximum = ulong.MaxValue };
 
+			case { } x when x == typeof(short):
+				return new OpenApiSchema { Type = "integer", Format = "int32" };
+			
 			case { } x when x == typeof(bool):
 				return new OpenApiSchema { Type = "boolean" };
 			case { } x when x == typeof(decimal):
@@ -294,8 +303,12 @@ public class SchemaGenerator
 
 			case { } x when x == typeof(string):
 				return new OpenApiSchema { Type = "string" };
+			case { } x when x == typeof(char):
+				return new OpenApiSchema { Type = "string", MaxLength = 1, MinLength = 1};
 			case { } x when x == typeof(byte):
-				return new OpenApiSchema { Type = "string", Format = "byte" };
+				return new OpenApiSchema { Type = "string", Format = "byte", Minimum = byte.MinValue, Maximum = byte.MaxValue};
+			case { } x when x == typeof(sbyte):
+				return new OpenApiSchema { Type = "string", Format = "byte", Minimum = sbyte.MinValue, Maximum = sbyte.MaxValue };
 			case { } x when x == typeof(Guid):
 				return new OpenApiSchema { Type = "string", Format = "uuid" };
 
@@ -316,6 +329,24 @@ public class SchemaGenerator
 					Type = "object",
 					AdditionalPropertiesAllowed = true,
 					AdditionalProperties = Convert(x.GetGenericArguments()[1], ref requiredTypes,depth - 1, sanitizeGenericType),
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName())
+					}
+				};
+			case Type x when IsDictionary(x):
+				var das= GetDictionaryTypes(x);
+				return new OpenApiSchema
+				{
+					Type = "object",
+					AdditionalPropertiesAllowed = true,
+					
+					AdditionalProperties = Convert(das.Value.ValueType, ref requiredTypes,depth - 1, sanitizeGenericType),
 					Extensions = new Dictionary<string, IOpenApiExtension>
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
@@ -408,6 +439,40 @@ public class SchemaGenerator
 	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{
-		return runtimeType.GetSanitizedFullName().Replace("+", ".");
+		return Uri.EscapeUriString(runtimeType.GetSanitizedFullName());
+	}
+	static bool IsDictionary(Type type)
+	{
+		if (type == null) return false;
+
+		return type.GetInterfaces().Any(i => 
+			       i.IsGenericType && 
+			       i.GetGenericTypeDefinition() == typeof(IDictionary<,>)) 
+		       || IsSubclassOfRawGeneric(typeof(Dictionary<,>), type);
+	}
+	static bool IsSubclassOfRawGeneric(Type generic, Type toCheck) {
+		while (toCheck != null && toCheck != typeof(object)) {
+			var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+			if (generic == cur) {
+				return true;
+			}
+			toCheck = toCheck.BaseType;
+		}
+		return false;
+	}
+	static (Type KeyType, Type ValueType)? GetDictionaryTypes(Type type)
+	{
+		// Look for the IDictionary<TKey, TValue> interface
+		var dictionaryIntf = type.GetInterfaces()
+			.FirstOrDefault(i => i.IsGenericType && 
+			                     i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+		if (dictionaryIntf != null)
+		{
+			var args = dictionaryIntf.GetGenericArguments();
+			return (args[0], args[1]);
+		}
+
+		return null;
 	}
 }
