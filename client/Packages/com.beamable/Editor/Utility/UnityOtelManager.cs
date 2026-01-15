@@ -146,7 +146,7 @@ namespace Beamable.Editor.Utility
 			TryToFlushUnityLogs();
 		}
 
-		public async Promise PublishLogs()
+		public async Promise PublishLogs(int maxLogFileCount = 10)
 		{
 			_lastTimePublished = EditorApplication.timeSinceStartup;
 			try
@@ -154,7 +154,7 @@ namespace Beamable.Editor.Utility
 				await FlushUnityLogsAsync();
 				if (Directory.Exists(UnityOtelLogsFolder))
 				{
-					string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
+					string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder).Take(maxLogFileCount).ToArray();
 					if (allFiles.Length > 0)
 					{
 						List<TelemetryReportStatus> reportStatusList = new();
