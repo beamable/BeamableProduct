@@ -39,11 +39,11 @@ namespace Beamable.Console
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
-#pragma warning disable CS0649
-        [SerializeField] private RectTransform consolePortrait;
-        [SerializeField] private RectTransform consoleLandscape;
-#pragma warning restore CS0649
 #endif
+#pragma warning disable CS0649
+		[SerializeField] private RectTransform consolePortrait;
+		[SerializeField] private RectTransform consoleLandscape;
+#pragma warning restore CS0649
 
 #pragma warning disable CS0414
 		[Space]
