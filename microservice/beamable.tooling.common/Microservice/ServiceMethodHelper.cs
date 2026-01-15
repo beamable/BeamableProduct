@@ -246,8 +246,7 @@ namespace Beamable.Server
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            Log.Debug($"Skipped {method.Name}");
-	            continue;
+	            Verbose($"Skipped {method.Name}");	            continue;
             }
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
@@ -268,8 +267,7 @@ namespace Beamable.Server
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;
 
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
-            
+            Log.Verbose("Found {method} for {path}", method.Name, servicePath);            
             var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
             var isVoid = method.ReturnType == typeof(void);
             if (isAsync && isVoid)
