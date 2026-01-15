@@ -65,7 +65,7 @@ public class SchemaGenerator
 
 			// We don't want to emit generic types for documentation, because the generic aspect will be covered by the openAPI schema itself
 			// No arrays, dictionaries and collections because the OAPI has its own definitions for those (so we don't need to include them as Schemas)
-			shouldEmit &= !Type.IsGenericType;
+			shouldEmit &= !Type.IsGenericType || Type.IsAssignableTo(typeof(IContentRef));
 			shouldEmit &= !Type.IsArray;
 
 			// Nullables are not supported, use optional instead
@@ -358,10 +358,44 @@ public class SchemaGenerator
 					}
 				};
 
+			case Type x when x.IsAssignableTo(typeof(IContentRef)):
+			{
+				var c = DocsLoader.GetTypeComments(runtimeType);
 
+				string t = runtimeType.GetSanitizedFullName();
+				var idSchema = Convert(typeof(string), ref requiredTypes, 0);
+				idSchema.Description = "id of the content";
+				return new OpenApiSchema
+				{
+					Description = c.Summary,
+					Type = "object",
+					AdditionalPropertiesAllowed = false,
+					Title = t,
+					Properties = new Dictionary<string, OpenApiSchema>()
+					{
+						{"id", idSchema}
+					},
+					Required = new SortedSet<string> { "id" },
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(t),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetSanitizedFullName() : GetQualifiedReferenceName(runtimeType)),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+					}
+				};
+			}
 			case Type _ when depth <= 0:
-				requiredTypes.Add(runtimeType);
-				return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
+				if (!ServiceDocGenerator.IsEmptyResponseType(runtimeType))
+				{
+					requiredTypes.Add(runtimeType);				
+					return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
+				}
+				else
+				{
+					return new OpenApiSchema {  };
+				}
 
 			case { IsEnum: true }:
 				var enumNames = Enum.GetNames(runtimeType);
@@ -439,7 +473,7 @@ public class SchemaGenerator
 	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{
-		return Uri.EscapeUriString(runtimeType.GetSanitizedFullName());
+		return Uri.EscapeDataString(runtimeType.GetSanitizedFullName());
 	}
 	static bool IsDictionary(Type type)
 	{

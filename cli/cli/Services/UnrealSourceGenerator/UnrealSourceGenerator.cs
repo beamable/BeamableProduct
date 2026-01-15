@@ -2396,7 +2396,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					: UNREAL_MAP + $"<{UNREAL_STRING}, {dataType}>");
 			}
 			case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
-				if (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema))
+				if (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema) || parentDoc.Components.Schemas.TryGetValue( Uri.EscapeDataString(schema.Title), out innerSchema))
 				{
 					return GetUnrealTypeForField(out nonOverridenType, context, parentDoc, innerSchema, fieldDeclarationHandle, flags);
 				}
