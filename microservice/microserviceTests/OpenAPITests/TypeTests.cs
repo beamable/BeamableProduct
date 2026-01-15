@@ -65,7 +65,7 @@ public class TypeTests
 	{
 		var requiredField = new HashSet<Type>();
 		var schema = SchemaGenerator.Convert(runtimeType, ref requiredField);
-		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Sample", Uri.UnescapeDataString(schema.Items.Reference.Id));
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Sample", Uri.UnescapeDataString(schema.Items.Reference.Id));
 	}
 
 	[Test]
@@ -112,7 +112,7 @@ public class TypeTests
 		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
 		
-		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Tuna", Uri.UnescapeDataString(schema.Properties[nameof(Sample.fish)].Reference.Id));
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Tuna", Uri.UnescapeDataString(schema.Properties[nameof(Sample.fish)].Reference.Id));
 		Assert.AreEqual("a fish", schema.Properties[nameof(Sample.fish)].Description);
 		Assert.AreEqual(requiredField.Count, 1, "It should be missing Sample type definition");
 	}
@@ -156,7 +156,7 @@ public class TypeTests
 		Assert.AreEqual(1, schema.Properties.Count);
 
 		var prop = schema.Properties[nameof(FishThing.type)];
-		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Fish", Uri.UnescapeDataString(prop.Reference.Id));
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Fish", Uri.UnescapeDataString(prop.Reference.Id));
 	}
 
 

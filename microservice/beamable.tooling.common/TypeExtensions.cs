@@ -27,7 +27,7 @@ public static class TypeExtensions
 			var genericArgs = type.GetGenericArguments();
 			string args = string.Join(", ", genericArgs.Select(GetSanitizedFullName));
 
-			return $"{typeName}<{args}>";
+			return $"{typeName}<{args}>".Replace("+",".");
 		}
 		if(type.IsBasicType() && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
 		{
@@ -36,12 +36,12 @@ public static class TypeExtensions
 
 		if (type.FullName == null)
 		{
-			return type.Name;
+			return type.Name.Replace("+",".");
 		}
 
 		if(type.FullName.Contains("`"))
-			return type.FullName.Split('`')[0];
-		return type.FullName;
+			return type.FullName.Split('`')[0].Replace("+",".");
+		return type.FullName.Replace("+",".");
 	}
 	
 	public static bool IsBasicType(this Type t)
