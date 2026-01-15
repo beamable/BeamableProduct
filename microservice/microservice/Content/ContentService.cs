@@ -90,18 +90,25 @@ namespace Beamable.Server.Content
 
    public class UnreliableContentService : ContentService
    {
+	   public static bool didEmitWarning;
 	   public UnreliableContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache) : base(requester, socket, contentResolver, reflectionCache)
 	   {
 	   }
 
 	   public override Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
 	   {
-		   BeamableLogger.LogWarning("The content=[{contentId}] may be unreliable. When the Microservice's {attributeName} " +
-		                             "is enabled, the Microservice will never receive content updates. " +
-		                             "This means that you may resolve content, but after the first time you do so, " +
-		                             "the content will never ever change until the Microservice instance stops and restarts. " +
-		                             "It is highly recommend that you do not use the Content service at all when the configuration is set.",
-			   contentId, nameof(MicroserviceAttribute.DisableAllBeamableEvents));
+		   if (!didEmitWarning)
+		   {
+			   didEmitWarning = true;
+			   BeamableLogger.LogWarning(
+				   "The content=[{contentId}] may be unreliable. When the Microservice's {attributeName} " +
+				   "is enabled, the Microservice will never receive content updates. " +
+				   "This means that you may resolve content, but after the first time you do so, " +
+				   "the content will never ever change until the Microservice instance stops and restarts. " +
+				   "It is highly recommend that you do not use the Content service at all when the configuration is set.",
+				   contentId, nameof(MicroserviceAttribute.DisableAllBeamableEvents));
+		   }
+
 		   return base.GetContent(contentId, contentType, manifestID);
 	   }
    }
