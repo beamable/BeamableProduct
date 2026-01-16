@@ -40,8 +40,8 @@ jobs:
         working-directory: ./
         shell: bash
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev
       - name: Check for Changes
         run: echo "any=$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)" >> $GITHUB_OUTPUT
         id: changes

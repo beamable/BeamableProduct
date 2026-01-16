@@ -54,8 +54,8 @@ jobs:
       - name: Install CLI
         working-directory: ./
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev
 
       - name: Check CLI
         run: beam version

@@ -35,8 +35,8 @@ jobs:
       - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev --skip_unreal --skip_unity
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev --skip_unreal --skip_unity
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Restore tool

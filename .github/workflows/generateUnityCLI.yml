@@ -51,7 +51,7 @@ jobs:
         run: ls -a
       - name: Build CLI
         run: |
-          ./Setup.cs dev
+          dotnet run Setup.cs dev
       - name: Delete Trash Files
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |

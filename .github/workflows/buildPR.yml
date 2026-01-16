@@ -117,8 +117,8 @@ jobs:
         working-directory: ./
         shell: bash
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev
       - name: Check CLI
         run: |
           cat ./build-number.txt
@@ -237,8 +237,8 @@ jobs:
       - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev --skip_unreal
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev --skip_unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -374,8 +374,8 @@ jobs:
       - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          ./Setup.cs setup
-          ./Setup.cs dev --skip_unreal
+          dotnet run Setup.cs setup
+          dotnet run Setup.cs dev --skip_unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
