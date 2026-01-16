@@ -52,7 +52,7 @@ void Setup(SetupSettingsOptions cfg)
     // Load environment variables from .dev.env file
     LoadDevEnvironment();
     string root = GetRootDirectory();
-    string sourceFolderPath = Path.Combine(root, Environment.GetEnvironmentVariable("SOURCE_FOLDER") ?? "");
+    string sourceFolderPath = Path.Combine(root, Environment.GetEnvironmentVariable("SOURCE_FOLDER") ?? "").Replace("\\", "/");
 
 
     if (File.Exists(Path.Combine(root, "build-number.txt")) && !AnsiConsole.Confirm("Looks like the installation was attempted before. Continue with installation?"))
