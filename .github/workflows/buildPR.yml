@@ -3,12 +3,12 @@ name: PR Build
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'staging'
-      - 'productio*'
+      - "main"
+      - "staging"
+      - "productio*"
     paths-ignore:
-      - 'rfc/**'
-      - 'client_installer/**'
+      - "rfc/**"
+      - "client_installer/**"
 
 env:
   DOCKER_REGISTRY: ghcr.io
@@ -23,7 +23,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['10.0.x' ]
+        dotnet-version: ["10.0.x"]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -58,7 +58,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['10.0.x' ]
+        dotnet-version: ["10.0.x"]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -87,12 +87,12 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        dotnet-version: ['10.0.x' ]
-        runners: [ windows-latest, ubuntu-latest ]
+        dotnet-version: ["10.0.x"]
+        runners: [windows-latest, ubuntu-latest]
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
     steps:
-      - name: Check Docker 
+      - name: Check Docker
         run: docker version
       - name: Check concurrency
         run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}'
@@ -117,8 +117,8 @@ jobs:
         working-directory: ./
         shell: bash
         run: |
-          ./setup.sh
-          ./dev.sh
+          ./Setup.cs setup
+          ./Setup.cs dev
       - name: Check CLI
         run: |
           cat ./build-number.txt
@@ -138,7 +138,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: [ '10.0.x' ]
+        dotnet-version: ["10.0.x"]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -213,7 +213,7 @@ jobs:
 
       - name: Create Unity Mapped Values
         id: unityMap
-        env: 
+        env:
           UNITY_MODE: >-
             ${{ fromJson('{
               "playmode": "player",
@@ -221,7 +221,6 @@ jobs:
             }')[matrix.testMode] }}
         run: |
           echo "UNITY_MODE=$UNITY_MODE" >> "$GITHUB_OUTPUT"
-
 
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v4
@@ -235,11 +234,11 @@ jobs:
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build and Install BEAM CLI 
+      - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          ./setup.sh
-          SKIP_GENERATION=true ./dev.sh --skip-unreal
+          ./Setup.cs setup
+          ./Setup.cs dev --skip_unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -250,21 +249,21 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
-      
-      - name: Apply CLI Versions 
+
+      - name: Apply CLI Versions
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
 
       - name: Review Unity version-default file
         run: |
           cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
-      
+
       - name: Copy the nuget packages into unity
         working-directory: ./
         run: |
           mkdir -p client/BeamableNugetSource/
           ls BeamableNugetSource
           cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
-      
+
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -279,7 +278,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
@@ -343,10 +342,10 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      
+
       - name: Create Unity Mapped Values
         id: unityMap
-        env: 
+        env:
           UNITY_PLATFORM: >-
             ${{ fromJson('{
               "Android": "android",
@@ -357,11 +356,10 @@ jobs:
         run: |
           echo "UNITY_PLATFORM=$UNITY_PLATFORM" >> "$GITHUB_OUTPUT"
 
-
-      - name: Setup .NET Core SDK 
+      - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -373,11 +371,11 @@ jobs:
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build and Install BEAM CLI 
+      - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          ./setup.sh
-          SKIP_GENERATION=true ./dev.sh
+          ./Setup.cs setup
+          ./Setup.cs dev --skip_unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -386,7 +384,7 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         run: |
           ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
-      
+
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
@@ -413,7 +411,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
@@ -440,4 +438,3 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-

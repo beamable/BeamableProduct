@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: write   
+      contents: write
       packages: read
     concurrency:
       group: release-unity-sdk
@@ -72,9 +72,9 @@ jobs:
           echo patch=${{ inputs.patch }}
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
-         
+
       - uses: actions/checkout@v4
-        with: 
+        with:
           ref: ${{ github.event.inputs.commit }}
 
       - name: Log in to the Container registry
@@ -91,9 +91,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-            
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Update npm
         run: npm install -g npm@latest
       - name: Check Npm version
@@ -118,36 +118,36 @@ jobs:
 
       - name: Add collector version
         run: |
-            sh ./build/bin/set-collector-version-property.sh
+          sh ./build/bin/set-collector-version-property.sh
 
       - name: Install CLI
         working-directory: ./
         run: |
-          bash ./setup.sh
-          bash ./dev.sh 
+          ./Setup.cs setup
+          ./Setup.cs dev
 
       - name: Check CLI
         run: beam version
 
       - name: Get Version Number (Nightly)
-        if: ${{ inputs.releaseType == 'nightly' }} 
+        if: ${{ inputs.releaseType == 'nightly' }}
         run: beam version construct 0 0 0 --nightly > version.txt
-      
+
       - name: Get Version Number (RC)
-        if: ${{ inputs.releaseType == 'rc' }} 
+        if: ${{ inputs.releaseType == 'rc' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
-      
+
       - name: Get Version Number (Exp)
-        if: ${{ inputs.releaseType == 'exp' }} 
+        if: ${{ inputs.releaseType == 'exp' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
-      
+
       - name: Get Version Number (Prod)
-        if: ${{ inputs.releaseType == 'production' }} 
+        if: ${{ inputs.releaseType == 'production' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
-      
+
       - name: Store version number as output
         id: version
-        env: 
+        env:
           NPM_TAG: >-
             ${{ fromJson('{
               "nightly": "--tag nightly",
@@ -191,7 +191,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
-          
+
       - name: Apply Nuget Version to Unity SDK
         run: |
           beam unity download-all-nuget-packages ./client --logs v
@@ -199,7 +199,7 @@ jobs:
       - name: Prepare Unity Samples
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
-      
+
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
@@ -220,7 +220,6 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-      
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -228,7 +227,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
@@ -274,7 +273,7 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/build/package_dist/
-        env: 
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
@@ -290,18 +289,18 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable.server
-        env: 
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }} 
+        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
         env:
-          COPY_UNITY_SDK: 'true'
-          COPY_CLI: 'false'
-          COPY_WEB_SDK: 'false'
+          COPY_UNITY_SDK: "true"
+          COPY_CLI: "false"
+          COPY_WEB_SDK: "false"
           VERSION: ${{ steps.version.outputs.VERSION }}
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
@@ -315,7 +314,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        if: ${{ inputs.dryRun == false }} 
+        if: ${{ inputs.dryRun == false }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
