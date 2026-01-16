@@ -52,13 +52,13 @@ void Setup(SetupSettingsOptions cfg)
     // Load environment variables from .dev.env file
     LoadDevEnvironment();
     string root = GetRootDirectory();
-    string sourceFolderPath = Path.Combine(root, Environment.GetEnvironmentVariable("SOURCE_FOLDER") ?? "").Replace("\\", "/");
 
 
     if (File.Exists(Path.Combine(root, "build-number.txt")) && !AnsiConsole.Confirm("Looks like the installation was attempted before. Continue with installation?"))
     {
         return;
     }
+    string sourceFolderPath = Path.GetFullPath(Path.Combine(root, Environment.GetEnvironmentVariable("SOURCE_FOLDER") ?? ""));
 
 
     AnsiConsole.Status()
@@ -73,7 +73,7 @@ void Setup(SetupSettingsOptions cfg)
             await RunProcessAsync("dotnet", $"tool restore --tool-manifest ./cli/cli/.config/dotnet-tools.json");
             ctx.Status($"Setting up {feedName} at {sourceFolderPath}");
             await SetupNuGetSource(sourceFolderPath, feedName);
-            AnsiConsole.Write($"Setting up {feedName} at {sourceFolderPath} complete");
+            AnsiConsole.WriteLine($"Setting up {feedName} at {sourceFolderPath} complete");
             ctx.Status("Building otel-collector");
             await BuildOtel(goPath);
 
@@ -226,15 +226,8 @@ static async Task SetupNuGetSource(string sourceFolderPath, string feedName)
     Directory.CreateDirectory(sourceFolderPath);
 
     // Remove old NuGet source
-    AnsiConsole.Write("Removing old source (if none exists, you'll see an error 'Unable to find any package', but that is okay)");
-    try
-    {
-        await RunProcessAsync("dotnet", $"nuget remove source {feedName}");
-    }
-    catch
-    {
-        // Ignore errors when removing non-existent source
-    }
+    AnsiConsole.Write("Removing old nuget sources");
+    await RunProcessAsync("dotnet", $"nuget remove source {feedName}", true);
 
     // Add new source
     AnsiConsole.Write("Adding new source!");
