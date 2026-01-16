@@ -7,17 +7,6 @@ namespace cli.Services.PortalExtension;
 
 public class PortalExtensionDiscoveryService : Microservice
 {
-	[InitializeServices]
-	public static void Initialize(IServiceInitializer initializer)
-	{
-		var observer = initializer.Provider.GetService<PortalExtensionObserver>();
-		var notification = initializer.Provider.GetService<IMicroserviceNotificationsApi>();
-		var attributes = initializer.Provider.GetService<MicroserviceAttribute>();
-
-		observer.ConfigureServiceData(notification, attributes);
-	}
-
-
 	[ClientCallable]
 	public string RequestPortalExtensionData()
 	{

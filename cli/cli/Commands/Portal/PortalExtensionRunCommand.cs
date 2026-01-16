@@ -1,5 +1,6 @@
 using Beamable.Common.Api;
 using Beamable.Server;
+using Beamable.Server.Api.Notifications;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using System.CommandLine;
@@ -53,6 +54,14 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 			//TODO put this into a background worker, show the portal URL to the extensions page
 			await BeamServer
 				.Create()
+				.InitializeServices((provider) =>
+				{
+					var observer = provider.GetService<PortalExtensionObserver>();
+					var notification = provider.GetService<IMicroserviceNotificationsApi>();
+					var attributes = provider.GetService<MicroserviceAttribute>();
+
+					observer.ConfigureServiceData(notification, attributes);
+				})
 				.ConfigureServices((dependency) =>
 				{
 					var observer = new PortalExtensionObserver();
