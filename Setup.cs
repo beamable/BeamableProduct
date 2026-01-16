@@ -226,11 +226,11 @@ static async Task SetupNuGetSource(string sourceFolderPath, string feedName)
     Directory.CreateDirectory(sourceFolderPath);
 
     // Remove old NuGet source
-    AnsiConsole.Write("Removing old nuget sources");
+    AnsiConsole.WriteLine("Removing old nuget sources");
     await RunProcessAsync("dotnet", $"nuget remove source {feedName}", true);
 
     // Add new source
-    AnsiConsole.Write("Adding new source!");
+    AnsiConsole.WriteLine("Adding new source!");
     await RunProcessAsync("dotnet", $"nuget add source \"{sourceFolderPath}\" --name {feedName}");
 }
 
@@ -567,19 +567,19 @@ static async Task<(bool Success, string GoPath)> InstallGo()
         }
         catch
         {
-            AnsiConsole.Write("Chocolatey is not installed, please install it before running this script!");
+            AnsiConsole.WriteLine("Chocolatey is not installed, please install it before running this script!");
             Environment.Exit(1);
         }
 
         try
         {
             await RunProcessAsync("choco", $"install golang --version={GO_VERSION} -y");
-            AnsiConsole.Write($"GO with version {GO_VERSION} was successfully installed!");
+            AnsiConsole.WriteLine($"GO with version {GO_VERSION} was successfully installed!");
             return (true, "C:\\Go\\bin\\go.exe");
         }
         catch
         {
-            AnsiConsole.Write($"Failed to install GO using Chocolatey!");
+            AnsiConsole.WriteLine($"Failed to install GO using Chocolatey!");
         }
     }
 
