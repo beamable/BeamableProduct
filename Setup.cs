@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using Spectre.Console;
 
+const string GO_VERSION = "1.24";
 
 return clapnet.CommandBuilder.New()
     .With(Setup, "Setup")
@@ -16,6 +17,7 @@ return clapnet.CommandBuilder.New()
     .With(SyncRiderUnity, "Sync Rider Settings for Unity(shortcut command)", "sync-unity")
     .With(SyncRiderUnreal, "Sync Rider Settings for Unreal(shortcut command)", "sync-unreal")
     .Run(args);
+
 
 void Setup(SetupSettingsOptions cfg)
 {
@@ -28,15 +30,15 @@ void Setup(SetupSettingsOptions cfg)
     Console.WriteLine("Creating build number file");
     File.WriteAllText(Path.Combine(root, "build-number.txt"), "0");
     var feedName = Environment.GetEnvironmentVariable("FEED_NAME") ?? "BeamableNugetSource";
-    var goCheck = CheckAndInstallGo(cfg.accept_any_go_version);
+    var goCheck = CheckAndInstallGo(cfg.acceptAnyGoVersion);
     var dotnetConfigRestore = RunProcessAsync("dotnet", $"tool restore --tool-manifest ./cli/cli/.config/dotnet-tools.json");
     var configCreationTask = SetupTemplateDotNetConfig();
     Console.WriteLine($"Setting up {feedName} at {sourceFolderPath}");
     SetupNuGetSource(sourceFolderPath, feedName).Wait();
-    goCheck.Wait(1000 * 60 * 5);
+    var (goInstalled, goPath) = goCheck.Result;
     configCreationTask.Wait(1000 * 60 * 5);
     dotnetConfigRestore.Wait(1000 * 60 * 5);
-    BuildOtel().Wait(1000 * 60 * 60);
+    BuildOtel(goPath).Wait(1000 * 60 * 60);
 }
 
 int SyncRiderUnity(SyncSettingsOptions cfg, string pathToWorkingDirectory = "", string pathToRestoreDirectory = "")
@@ -64,10 +66,11 @@ int SyncRiderSettings(SyncSettingsOptions cfg, string targetEngine, string pathT
     cfg.VerboseLog(baseDir);
 
     // Handle PathToWorkingDirectory
-    if (isUnity && string.IsNullOrEmpty(pathToWorkingDirectory))
+    if (string.IsNullOrEmpty(pathToWorkingDirectory))
     {
         pathToWorkingDirectory = Path.Combine(baseDir, "client");
     }
+
     pathToWorkingDirectory = pathToWorkingDirectory.Replace("\\", "/");
 
     // Set default PathToRestoreDirectory for UNREAL
@@ -223,14 +226,18 @@ static async Task<string> RunProcessAsync(string fileName, string arguments)
     return output;
 }
 
-static async Task BuildOtel()
+static async Task BuildOtel(string goPath)
 {
     var currentDirectory = Directory.GetCurrentDirectory();
+    var goBinDir = Path.GetDirectoryName(goPath);
     try{
-        Directory.SetCurrentDirectory("otel-collector");
+        Directory.SetCurrentDirectory(Path.Combine(currentDirectory,"otel-collector"));
         var bashPath = SyncSettingsOptions.GetDefaultUnixShell();
         AnsiConsole.WriteLine("Building Otel Collector...");
-        await RunProcessAsync(bashPath, "build.sh --version 0.0.123");
+        var pathExport = string.IsNullOrEmpty(goBinDir) 
+        ? "" 
+        : $"export PATH=\"$PATH:{goBinDir}\" && ";
+    await RunProcessAsync(bashPath, $"{pathExport} build.sh --version 0.0.123");
         AnsiConsole.WriteLine("Building Otel Collector done.");
     }
     finally {
@@ -238,9 +245,8 @@ static async Task BuildOtel()
     }
 }
 
-static async Task CheckAndInstallGo(bool acceptAnyGoVersion)
+static async Task<(bool Installed, string GoPath)> CheckAndInstallGo(bool acceptAnyGoVersion)
 {
-    string goVersion = "1.24.1";
     bool goInstalled = false;
 
     // Check if Go is installed
@@ -253,7 +259,7 @@ static async Task CheckAndInstallGo(bool acceptAnyGoVersion)
             string installedVersion = match.Groups[1].Value;
             Console.WriteLine($"Go is installed with version: {installedVersion}");
 
-            if (installedVersion == goVersion)
+            if (installedVersion.Contains(GO_VERSION))
             {
                 goInstalled = true;
                 Console.WriteLine("Found GO installation with correct version!");
@@ -261,7 +267,7 @@ static async Task CheckAndInstallGo(bool acceptAnyGoVersion)
             else
             {
                 goInstalled = true;
-                Console.WriteLine($"This script needs GO with version {goVersion}, instead found {installedVersion}");
+                Console.WriteLine($"This script needs GO with version {GO_VERSION}, instead found {installedVersion}");
                 if(!acceptAnyGoVersion)
                 {
                     Environment.Exit(1);
@@ -276,11 +282,16 @@ static async Task CheckAndInstallGo(bool acceptAnyGoVersion)
 
     if (!goInstalled)
     {
-        await InstallGo(goVersion);
+        var (success, goPath) = await InstallGo();
+        if (success)
+        {
+            return (true, goPath);
+        }
     }
+    return (goInstalled, "go");
 }
 
-static async Task InstallGo(string goVersion)
+static async Task<(bool Success, string GoPath)> InstallGo()
 {
     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
     {
@@ -299,17 +310,13 @@ static async Task InstallGo(string goVersion)
 
         try
         {
-            await RunProcessAsync("brew", $"install go@{goVersion}");
-            Console.WriteLine($"GO with version {goVersion} was successfully installed!");
-
-            // Add to PATH
-            string newPath = $"/opt/homebrew/bin:/usr/local/bin:{Environment.GetEnvironmentVariable("PATH")}";
-            Environment.SetEnvironmentVariable("PATH", newPath);
+            await RunProcessAsync("brew", $"install go@{GO_VERSION}");
+            Console.WriteLine($"GO with version {GO_VERSION} was successfully installed!");
+            return (true, "/opt/homebrew/bin/go");
         }
         catch
         {
-            Console.WriteLine("Failed to install GO using Homebrew!");
-            Environment.Exit(1);
+            Console.WriteLine($"Failed to install GO using Homebrew!");
         }
     }
     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -328,17 +335,13 @@ static async Task InstallGo(string goVersion)
 
         try
         {
-            await RunProcessAsync("choco", $"install golang --version={goVersion} -y");
-            Console.WriteLine($"GO with version {goVersion} was successfully installed!");
-
-            // Add to PATH
-            string newPath = $"{Environment.GetEnvironmentVariable("PATH")};C:\\Go\\bin";
-            Environment.SetEnvironmentVariable("PATH", newPath);
+            await RunProcessAsync("choco", $"install golang --version={GO_VERSION} -y");
+            Console.WriteLine($"GO with version {GO_VERSION} was successfully installed!");
+            return (true, "C:\\Go\\bin\\go.exe");
         }
         catch
         {
-            Console.WriteLine("Failed to install GO using Chocolatey!");
-            Environment.Exit(1);
+            Console.WriteLine($"Failed to install GO using Chocolatey!");
         }
     }
     else
@@ -346,6 +349,7 @@ static async Task InstallGo(string goVersion)
         Console.WriteLine($"Unsupported OS");
         Environment.Exit(1);
     }
+    return (false, "");
 }
 
 static string GetRootDirectory()
@@ -390,7 +394,7 @@ static string EscapeXmlAttribute(string value)
 
 class SetupSettingsOptions {
     public bool Verbose = false;
-    public bool accept_any_go_version = false;
+    public bool acceptAnyGoVersion = false;
 
     public void VerboseLog(string message)
     {
