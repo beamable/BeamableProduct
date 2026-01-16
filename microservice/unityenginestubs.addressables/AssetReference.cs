@@ -8,6 +8,10 @@ namespace UnityEngine.AddressableAssets
       {
          AssetGUID = guid;
       }
+      
+      public AssetReference()
+      {
+      }
    }
 
    public class AssetReferenceT<TObject> : AssetReference

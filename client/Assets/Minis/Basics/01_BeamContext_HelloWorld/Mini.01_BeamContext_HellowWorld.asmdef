@@ -1,0 +1,19 @@
+{
+    "name": "Mini.01_BeamContext_HellowWorld",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.LightBeams",
+        "Unity.Beamable.Runtime.Common"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

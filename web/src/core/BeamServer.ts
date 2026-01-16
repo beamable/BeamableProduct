@@ -38,6 +38,7 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
     beamServer.serverEventsConfig = config.serverEvents;
     if (beamServer.isServerEventEnabled) await beamServer.connect();
     beamServer.isInitialized = true;
+    config.services?.(beamServer);
     return beamServer;
   }
 
@@ -61,27 +62,50 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
     return BeamBase.env;
   }
 
-  use<T extends ApiService>(Service: ApiServiceCtor<T>): this;
-  use<T extends BeamMicroServiceClient>(
-    Client: BeamMicroServiceClientCtor<T>,
+  use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctors: readonly T[],
   ): this;
-  use(Ctor: any): this {
-    if (this.isApiService(Ctor)) {
-      const svc = new Ctor({ beam: this });
-      (this.serverServices as any)[svc.serviceName] = (userId: string) => {
-        svc.userId = userId;
-        return svc;
-      };
-    } else if (this.isMicroServiceClient(Ctor)) {
-      const client = new Ctor(this);
-      const serviceName = client.serviceName;
-      const serviceNameIdentifier =
-        serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
-      const clientName = `${serviceNameIdentifier}Client`;
-      (this as any)[clientName] = client;
+  use<T extends ApiServiceCtor<any> | BeamMicroServiceClientCtor<any>>(
+    ctor: T,
+  ): this;
+  use(ctorOrCtors: any): this {
+    const ctors = Array.isArray(ctorOrCtors) ? ctorOrCtors : [ctorOrCtors];
+
+    if (this.isApiService(ctors[0])) {
+      ctors.forEach((c) => this.registerApiService(c));
+      return this;
+    }
+
+    if (this.isMicroServiceClient(ctors[0])) {
+      ctors.forEach((c) => this.registerMicroClient(c));
+      return this;
     }
 
     return this;
+  }
+
+  /** Registers an API service with the BeamServer instance. */
+  private registerApiService<T extends ApiService>(Ctor: ApiServiceCtor<T>) {
+    const svc = new Ctor({ beam: this });
+
+    (this.serverServices as any)[svc.serviceName] = (userId: string) => {
+      svc.userId = userId;
+      return svc;
+    };
+  }
+
+  /** Registers a microservice client with the BeamServer instance. */
+  private registerMicroClient<T extends BeamMicroServiceClient>(
+    Ctor: BeamMicroServiceClientCtor<T>,
+  ) {
+    const client = new Ctor(this);
+    const serviceName = client.serviceName;
+
+    const identifier =
+      serviceName.charAt(0).toLowerCase() + serviceName.slice(1);
+    const clientName = `${identifier}Client`;
+
+    (this as any)[clientName] = client;
   }
 
   /** Connects the server SDK to the Beamable gateway to listen for server-events. This method is called automatically during `BeamServer.init()` if `enableServerEvents` is set to `true`. */

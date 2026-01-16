@@ -14,7 +14,7 @@
         <OutputType>Exe</OutputType>
 
         <!-- As of Beamable 1.0, net6.0 is required. -->
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <!-- Advanced C# Features are disabled by default. The Unity SDK does not support these features. 
              If you enable them, it will be harder to copy/paste code between the service and Unity. -->
         <ImplicitUsings>disable</ImplicitUsings>
