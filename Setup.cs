@@ -589,37 +589,7 @@ static async Task<(bool Success, string GoPath)> InstallGo()
             AnsiConsole.Write($"Failed to install GO using Chocolatey!");
         }
     }
-    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-    {
-        try
-        {
-            await RunProcessAsync("apt-get", "--version");
-            AnsiConsole.WriteLine("apt-get is available");
-        }
-        catch
-        {
-            AnsiConsole.WriteLine("apt-get is not available, trying with sudo...");
-        }
 
-        try
-        {
-            await RunProcessAsync("wget", $"https://go.dev/dl/go{GO_VERSION}.linux-amd64.tar.gz");
-            AnsiConsole.WriteLine($"GO with version {GO_VERSION} was successfully downloaded!");
-            await RunProcessAsync("sudo", $"rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go{GO_VERSION}.linux-amd64.tar.gz");
-            await RunProcessAsync("rm", $"go{GO_VERSION}.linux-amd64.tar.gz");
-            AnsiConsole.WriteLine($"GO with version {GO_VERSION} was successfully installed!");
-            return (true, "/usr/local/go/bin/go");
-        }
-        catch
-        {
-            AnsiConsole.WriteLine($"Failed to install GO using wget!");
-        }
-    }
-    else
-    {
-        AnsiConsole.Write($"Unsupported OS");
-        Environment.Exit(1);
-    }
     return (false, "");
 }
 
