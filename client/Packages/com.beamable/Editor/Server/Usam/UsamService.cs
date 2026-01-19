@@ -814,7 +814,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		void StopStorage(BeamManifestStorageEntry storage)
 		{
-			var stopCommand = _cli.ServicesStop(new ServicesStopArgs()
+			var stopCommand = _cli.ProjectStop(new ()
 			{
 				ids = new string[] {storage.beamoId},
 			});
