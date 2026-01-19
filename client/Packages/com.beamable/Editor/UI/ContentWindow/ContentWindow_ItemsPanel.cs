@@ -746,18 +746,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
 					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 					{
-						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
-						{
-							var duplicatedObject = Instantiate(contentObject);
-							string baseName = $"{contentObject.ContentName}_Copy";
-							int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
-							                                            .Count(item => item.Name.StartsWith(baseName));
-							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-							duplicatedObject.ContentStatus = ContentStatus.Created;
-							_contentService.SaveContent(duplicatedObject);
-							Selection.activeObject = duplicatedObject;
-						}
-
+						DuplicateContent(entry);
 					});
 
 					menu.AddItem(new GUIContent("Rename Item"), false, () =>
@@ -786,7 +775,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					});
 				}
 
-				if (entry.StatusEnum is not ContentStatus.UpToDate)
+				if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
 				{
 					menu.AddItem(new GUIContent("Revert Item"), false,
 					             () =>
@@ -873,6 +862,22 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			menu.DropDown(new Rect(menuPosition, Vector2.zero));
+		}
+
+		private void DuplicateContent(LocalContentManifestEntry entry)
+		{
+			if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
+			{
+				var duplicatedObject = Instantiate(contentObject);
+				string baseName = $"{contentObject.ContentName}_Copy";
+				int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
+				                                            .Count(item => item.Name.StartsWith(baseName));
+				duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+				duplicatedObject.ContentStatus = ContentStatus.Created;
+				duplicatedObject.Tags = entry.Tags;
+				_contentService.SaveContent(duplicatedObject);
+				Selection.activeObject = duplicatedObject;
+			}
 		}
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)
