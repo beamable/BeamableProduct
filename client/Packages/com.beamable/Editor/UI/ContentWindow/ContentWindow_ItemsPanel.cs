@@ -690,14 +690,21 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				if (shouldShowMenu)
 				{
-					// AddDelayedAction(() =>
 					var evt = Event.current;
-					var mousePosition = evt.mousePosition;
+					var screenMousePosition = GUIUtility.GUIToScreenPoint(evt.mousePosition);
 					Event.current.Use();
 					Repaint();
-					ShowItemOptionsMenu(mousePosition);
+					// Fix: https://github.com/beamable/BeamableProduct/issues/4479
+					// We need to do a double-delay call to ensure that the ActiveSelected items will be properly drawn as
+					// selected, the second delay is necessary because when setting the Selection.activeObject Unity forces
+					// a repaint, but the IMGUI can still access the old selection state.
+					// So we need to wait another frame to make it right
+					EditorApplication.delayCall += () =>
+					{
+						Repaint();
+						EditorApplication.delayCall += () => ShowItemOptionsMenu(screenMousePosition);
+					};
 					return;
-
 				}
 
 				
@@ -714,7 +721,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			Repaint();
 		}
 
-		private void ShowItemOptionsMenu(Vector2 menuPosition)
+		private void ShowItemOptionsMenu(Vector2 screenPosition)
 		{
 			GenericMenu menu = new GenericMenu();
 
@@ -861,7 +868,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 			}
 
-			menu.DropDown(new Rect(menuPosition, Vector2.zero));
+			menu.DropDown(new Rect(GUIUtility.ScreenToGUIPoint(screenPosition), Vector2.zero));
 		}
 
 		private void DuplicateContent(LocalContentManifestEntry entry)
