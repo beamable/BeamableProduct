@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry only pushes up to 10 log files at a time.
 - Fixed an issue when duplicating a content it was not properly duplicating the content tags.
 - Fixed an issue when right-clicking the content it was not highlighting it.
+- Ensure that AccountWindow has the minimum width when logged in.
 
 ## [4.0.2] - 2025-11-20
 ### Changed
