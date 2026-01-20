@@ -2,7 +2,7 @@ import { mount, unmount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 
-const APP_NAMESPACE = 'TestingApp';
+const APP_NAMESPACE = 'PortalExtensionApp';
 
 window[APP_NAMESPACE] = {
   mount: (targetElement, props = {}) => {
