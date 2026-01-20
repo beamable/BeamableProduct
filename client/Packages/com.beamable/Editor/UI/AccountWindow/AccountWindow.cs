@@ -19,7 +19,8 @@ namespace Beamable.Editor.Accounts
 		public BeamEditorContext context;
 
 		private GUIStyle _errorStyle;
-		private static readonly Vector2 WindowMinSize = new(300, 660);
+		private static readonly Vector2 LoggedWindowMinSize = new(630, 660);
+		private static readonly Vector2 WindowMinSize = new(330, 660);
 
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -96,7 +97,7 @@ namespace Beamable.Editor.Accounts
 				}
 				else
 				{
-					minSize = WindowMinSize;
+					minSize = LoggedWindowMinSize;
 					Draw_SignedIn();
 				}
 			}
