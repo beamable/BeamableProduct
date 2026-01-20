@@ -97,10 +97,10 @@ namespace Beamable.Editor.ContentService
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
-			SaveContent(selectedContentObject.Id, propertiesJson);
+			SaveContent(selectedContentObject.Id, propertiesJson, () => SetContentTags(selectedContentObject.Id, selectedContentObject.Tags));
 		}
 
-		public void SaveContent(string contentId, string contentPropertiesJson)
+		public void SaveContent(string contentId, string contentPropertiesJson, Action onCompleted = null)
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
@@ -108,7 +108,7 @@ namespace Beamable.Editor.ContentService
 				contentIds = new[] {contentId},
 				contentProperties = new[] {contentPropertiesJson}
 			});
-			saveCommand.Run();
+			saveCommand.Run().Then(_ => { onCompleted?.Invoke(); });
 		}
 		
 		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
@@ -340,6 +340,8 @@ namespace Beamable.Editor.ContentService
 				AddContentToCache(entry);
 			}
 
+			ManifestChangedCount++;
+
 			BeamUnityFileUtils.RenameFile(originalPath, fullName);
 			
 			return newFullId;
@@ -387,12 +389,6 @@ namespace Beamable.Editor.ContentService
 		{
 			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;
-
-			if (_contentWatcher != null)
-			{
-				_contentWatcher.Cancel();
-				_contentWatcher = null;
-			}
 			
 			try
 			{

@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editor allows user to switch between Beamable games [4456](https://github.com/beamable/BeamableProduct/issues/4456)
 - Serialize ConsoleFlow fields on all targets even when they are used only on Android, reduces issues with headless builds
 - Telemetry only pushes up to 10 log files at a time.
+- Fixed an issue when duplicating a content it was not properly duplicating the content tags.
+- Fixed an issue when right-clicking the content it was not highlighting it.
+- Ensure that AccountWindow has the minimum width when logged in.
+- Issue which Service Storage Editor couldn't stop Storage from running.
 
 ## [4.0.2] - 2025-11-20
 ### Changed
