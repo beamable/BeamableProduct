@@ -973,7 +973,10 @@ public class ConfigService
 
 			// Flush the config
 			var json = JsonConvert.SerializeObject(config, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
-
+			if (json == "null")
+			{
+				throw new Exception("Beamable config json panic! A 'null' value should never be written to disk, so this command is terminating. Please report this error to Beamable immediately. ");
+			}
 
 			if (!Directory.Exists(path))
 			{
@@ -1445,8 +1448,21 @@ public class ConfigService
 		}
 
 		var content = File.ReadAllText(fullPath);
-		result = JsonConvert.DeserializeObject<JObject>(content);
+		
+		var read = JsonConvert.DeserializeObject<JObject>(content);
+		if (read == null)
+		{
+			// do not set the result to a null value, ever. 
+			
+			if (isOptional)
+			{
+				return true;
+			}
+			BeamableLogger.LogWarning($"Config file was empty at {fullPath}!");
+			return false;
+		}
 
+		result = read;
 		return true;
 	}
 
