@@ -1238,15 +1238,10 @@ public class App
 								federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
 							if (provider.CanBuildService<CliRequester>())
 							{
-								var realmsApi = provider.GetService<IRealmsApi>();
-								var currentRealm = await realmsApi.GetRealm();
-								if (!currentRealm.IsProduction)
-								{
-									var requester = provider.GetService<CliRequester>();
-									Log.Debug($"Setting routing header=[{routeMap}]");
-									requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] =
-										routeMap;
-								}
+								var requester = provider.GetService<CliRequester>();
+								Log.Debug($"Setting routing header=[{routeMap}]");
+								requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] =
+									routeMap;
 							}
 						}
 					}
