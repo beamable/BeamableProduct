@@ -3,11 +3,11 @@ name: Perf Test Microservices
 on:
   pull_request:
     branches:
-      - "main"
+      - 'main'
     paths-ignore:
-      - "rfc/**"
-      - ".github/**"
-      - "client_installer/**"
+      - 'rfc/**'
+      - '.github/**'
+      - 'client_installer/**'
 jobs:
   runPerfTest:
     timeout-minutes: 15
@@ -32,11 +32,11 @@ jobs:
       - name: Install Dotnet Counters
         run: |
           dotnet tool install --global dotnet-counters --version 7.0.447801
-      - name: Build and Install BEAM CLI
+      - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          dotnet run Setup.cs setup
-          dotnet run Setup.cs dev --skip_unreal --skip_unity
+          ./setup.sh
+          ./dev.sh --skip-unity --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Restore tool
@@ -46,17 +46,17 @@ jobs:
       - name: Check BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet beam config -q --logs v
-
+          dotnet beam config -q --logs v 
+      
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
           dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
-
+      
       - name: Update Nuget
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet restore
+          dotnet restore 
 
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
@@ -66,16 +66,16 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net10.0
-
+      
 
           echo "starting counters"
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
-
+          
           echo "starting service"
           mkdir ../../../../logs
           BEAM_DISABLE_STANDARD_OTEL=1 LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
-
+          
           echo "starting profiler"
           cd ../../../..
           echo '{"a":3,"b":4}' > payload.json
@@ -89,7 +89,7 @@ jobs:
           echo "showing logs"
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
-      - name: Save Profiler Data
+      - name: Save Profiler Data 
         uses: actions/upload-artifact@v4
         with:
           name: profiler

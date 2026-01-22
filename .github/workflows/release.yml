@@ -1,4 +1,4 @@
-name: Release Custom SDK and CLI
+name: Release Custom SDK and CLI 
 
 on:
   workflow_dispatch:
@@ -26,9 +26,9 @@ jobs:
         run: |
           echo dryRun=${{ inputs.dryRun }}
           echo commit=${{ inputs.commit }}
-
+         
       - uses: actions/checkout@v4
-        with:
+        with: 
           ref: ${{ github.event.inputs.commit }}
 
       - name: Setup .NET Core SDK
@@ -38,9 +38,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: '20.x'
           registry-url: https://nexus.beamable.com/nexus/content/repositories/unity-dev
-
+        
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -49,23 +49,23 @@ jobs:
 
       - name: Add collector version
         run: |
-          sh ./build/bin/set-collector-version-property.sh
+            sh ./build/bin/set-collector-version-property.sh
 
       - name: Install CLI
         working-directory: ./
         run: |
-          dotnet run Setup.cs setup
-          dotnet run Setup.cs dev
+          bash ./setup.sh
+          bash ./dev.sh 
 
       - name: Check CLI
         run: beam version
 
-      - name: Get Version Number
+      - name: Get Version Number 
         run: beam version construct 0 0 0 --nightly > ./version.txt
-
+      
       - name: Store version number as output
         id: version
-        env:
+        env: 
           BUILD_ENV: dev
         run: |
           echo "VERSION=$(cat version.txt | jq -r .data.versionString)" >> "$GITHUB_OUTPUT"
@@ -94,7 +94,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
-
+      
       - name: Apply Nuget Version
         run: jq --arg nextVersion ${{ steps.version.outputs.VERSION }} '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
 
@@ -114,7 +114,7 @@ jobs:
       - name: Prepare Unity Samples
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
-
+      
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
@@ -136,7 +136,7 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish
         working-directory: ./client/Packages/com.beamable
-        env:
+        env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
@@ -144,6 +144,6 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish
         working-directory: ./client/Packages/com.beamable.server
-        env:
+        env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}

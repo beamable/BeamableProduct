@@ -60,9 +60,9 @@ jobs:
           echo patch=${{ inputs.patch }}
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
-
+          
       - uses: actions/checkout@v4
-        with:
+        with: 
           ref: ${{ github.event.inputs.commit }}
 
       - name: Setup .NET Core SDK
@@ -72,7 +72,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: '20.x'
           registry-url: >-
             ${{ fromJson('{
               "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
@@ -80,7 +80,7 @@ jobs:
               "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
               "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
             }')[github.event.inputs.releaseType] }}
-
+        
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -100,13 +100,13 @@ jobs:
 
       - name: Add collector version
         run: |
-          sh ./build/bin/set-collector-version-property.sh
+            sh ./build/bin/set-collector-version-property.sh
 
       - name: Install CLI
         working-directory: ./
         run: |
-          dotnet run Setup.cs setup
-          dotnet run Setup.cs dev
+          bash ./setup.sh
+          bash ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
@@ -116,25 +116,25 @@ jobs:
           beam version construct 0 0 0 --nightly --logs v
 
       - name: Get Version Number (Nightly)
-        if: ${{ inputs.releaseType == 'nightly' }}
+        if: ${{ inputs.releaseType == 'nightly' }} 
         run: |
           beam version construct 0 0 0 --nightly > version.txt
-
+      
       - name: Get Version Number (RC)
-        if: ${{ inputs.releaseType == 'rc' }}
+        if: ${{ inputs.releaseType == 'rc' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
-
+      
       - name: Get Version Number (Exp)
-        if: ${{ inputs.releaseType == 'exp' }}
+        if: ${{ inputs.releaseType == 'exp' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
-
+      
       - name: Get Version Number (Prod)
-        if: ${{ inputs.releaseType == 'production' }}
+        if: ${{ inputs.releaseType == 'production' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
-
+      
       - name: Store version number as output
         id: version
-        env:
+        env: 
           BUILD_ENV: >-
             ${{ fromJson('{
               "nightly": "dev",
@@ -155,6 +155,7 @@ jobs:
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
+
       - name: Compress Collector Files
         working-directory: otel-bin
         run: find . -type f ! -name '*.gz' -exec gzip -k -9 {} \;
@@ -164,21 +165,22 @@ jobs:
         working-directory: otel-bin
         run: |
           AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.VERSION }}  --exclude "*" --include "*.gz" --acl public-read
-
+      
       # Invalidate the CDN for collector builds
-      - name: Prepare Cloudfront Invalidation
+      - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E3S54OWVMS4PQH
           CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
           echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
-      - name: Preview Cloudfront Invalidation
+      - name: Preview Cloudfront Invalidation 
         run: |
           cat cloudfront-invalidation.json
       - name: Do Cloudfront Invalidation
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
 
+
       - name: Publish Nuget Packages
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false }} 
         run: sh ./build/bin/release-nuget.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
@@ -188,12 +190,12 @@ jobs:
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
       - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false }} 
         run: sh ./build/bin/upload-changelogs.sh
         env:
-          COPY_UNITY_SDK: "false"
-          COPY_CLI: "true"
-          COPY_WEB_SDK: "false"
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'true'
+          COPY_WEB_SDK: 'false'
           VERSION: ${{ steps.version.outputs.VERSION }}
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
@@ -207,7 +209,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false }} 
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
