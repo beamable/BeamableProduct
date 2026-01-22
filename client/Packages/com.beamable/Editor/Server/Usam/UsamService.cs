@@ -392,6 +392,8 @@ namespace Beamable.Server.Editor.Usam
 		
 		public void ListenForStatus()
 		{
+			if (_ctx.BeamCli.IsLoggedOut) return;
+			
 			if (_watchCommand != null)
 			{
 				_watchCommand.Cancel();

@@ -35,7 +35,8 @@ namespace Beamable.Editor.Utility
 		private ConcurrentDictionary<string, CliOtelLogRecord> _cachedLogs = new();
 		private ConcurrentDictionary<string, List<string>> _cachedTimestamps = new();
 		private readonly BeamCommands _cli;
-		
+		private readonly BeamEditorContext _ctx;
+
 		private List<string> BeamableNamespaces = new()
 		{
 			"Beamable.Editor",
@@ -69,9 +70,10 @@ namespace Beamable.Editor.Utility
 
 		public static string UnityOtelLogsFolder => Path.Join(Application.temporaryCachePath, "OtelLogs");
 		
-		public UnityOtelManager(BeamCommands cli)
+		public UnityOtelManager(BeamCommands cli, BeamEditorContext ctx)
 		{
 			_cli = cli;
+			_ctx = ctx;
 			EditorApplication.update += HandleUpdate;
 			Application.logMessageReceived += OnUnityLogReceived;
 			Application.wantsToQuit += OnUnityQuitting;
@@ -148,6 +150,8 @@ namespace Beamable.Editor.Utility
 
 		public async Promise PublishLogs(int maxLogFileCount = 10)
 		{
+			if (_ctx.BeamCli.IsLoggedOut) return;
+			
 			_lastTimePublished = EditorApplication.timeSinceStartup;
 			try
 			{
