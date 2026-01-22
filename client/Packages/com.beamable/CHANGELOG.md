@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update CLI to 7.0.0
+- CLI Debugger windows shows _Created_ status for commands that have not been started yet
 
 ### Fixed
 - Sudden account switching no longer accidentally happens when unpredictable errors happen during account switching [4321](https://github.com/beamable/BeamableProduct/issues/4321)
