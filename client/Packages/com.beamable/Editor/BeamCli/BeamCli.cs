@@ -148,29 +148,7 @@ namespace Beamable.Editor.BeamCli
 				ReconstituteUser();
 			});
 
-			_realmsInvoke?.Cancel();
-			_realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
-			_realmsInvoke.OnError(dp =>
-			{
-				Debug.LogError($"failed to fetch realms err=[{dp.data.message}]");
-			});
-			_realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
-			{
-				latestRealmInfo = dp.data;
-				latestAlias = latestRealmInfo.CustomerAlias;
-				ReconstituteRealmData();
-			});
-
-			_gamesInvoke?.Cancel();
-			_gamesInvoke = Command.OrgGames(new OrgGamesArgs());
-			_gamesInvoke.OnError(dp =>
-			{
-				Debug.LogError($"failed to fetch games. err=[{dp.data.message}]");
-			});
-			_gamesInvoke.OnStreamGameListCommandResults(dp =>
-			{
-				latestGames = dp.data;
-			});
+			
 
 			_routesInvoke?.Cancel();
 			_routesInvoke = Command.ConfigRoutes(new ConfigArgs());
@@ -206,6 +184,30 @@ namespace Beamable.Editor.BeamCli
 			}
 			else
 			{
+				_realmsInvoke?.Cancel();
+				_realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
+				_realmsInvoke.OnError(dp =>
+				{
+					Debug.LogError($"failed to fetch realms err=[{dp.data.message}]");
+				});
+				_realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
+				{
+					latestRealmInfo = dp.data;
+					latestAlias = latestRealmInfo.CustomerAlias;
+					ReconstituteRealmData();
+				});
+
+				_gamesInvoke?.Cancel();
+				_gamesInvoke = Command.OrgGames(new OrgGamesArgs());
+				_gamesInvoke.OnError(dp =>
+				{
+					Debug.LogError($"failed to fetch games. err=[{dp.data.message}]");
+				});
+				_gamesInvoke.OnStreamGameListCommandResults(dp =>
+				{
+					latestGames = dp.data;
+				});
+				
 				var realmsPromise = _realmsInvoke.Run();
 				var gamesPromise = _gamesInvoke.Run();
 				await realmsPromise;
