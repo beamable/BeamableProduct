@@ -371,7 +371,7 @@ public class ProjectService
 
 		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
 		
-		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()}", out var buffer);
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} --format sln", out var buffer);
 
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
