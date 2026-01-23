@@ -127,10 +127,9 @@
   <ItemGroup>
     <None Remove="Docs\**\*.md" />
     <EmbeddedResource Include="Docs\**\*.md" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Resources\" />
+    
+    <!-- Automatically add any files ending in .oapi.json in the /Resources folder. -->
+    <EmbeddedResource Include="openapi/**/*.oapi.json" />
   </ItemGroup>
 
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">

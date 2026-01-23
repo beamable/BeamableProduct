@@ -1,3 +1,4 @@
+using System.Reflection;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using cli.Unreal;
@@ -30,7 +31,7 @@ public class SwaggerService
 
 		// behold the list of Beamable scala Apis
 		BeamableApis.BasicService("content"),
-		BeamableApis.BasicService("beamo"),
+		BeamableApis.HardcodedBasicService("beamo", "beamo_basic_jan_23_2026.oapi.json"),
 		BeamableApis.ObjectService("event-players"),
 		BeamableApis.BasicService("events"),
 		BeamableApis.ObjectService("events"),
@@ -52,7 +53,7 @@ public class SwaggerService
 		BeamableApis.ObjectService("payments"),
 		BeamableApis.BasicService("push"),
 		BeamableApis.BasicService("notification"),
-		BeamableApis.BasicService("realms"),
+		BeamableApis.HardcodedBasicService("realms", "realms_basic_jan_16_2026.oapi.json"),
 		BeamableApis.BasicService("social"),
 		// TODO: At the moment, this relies on pubnub and we are moving away from it; add this back in once done.
 		BeamableApis.ObjectService("chatV2").WithoutSDKs(TARGET_ENGINE_NAME_UNITY, TARGET_ENGINE_NAME_UNREAL, TARGET_ENGINE_NAME_WEB),
@@ -523,6 +524,37 @@ public class SwaggerService
 		return combinedDocument;
 	}
 
+	public static async Task<(string url, string content)> GetOapiStringReader(
+		IAppContext context, 
+		ISwaggerStreamDownloader downloader, 
+		BeamableApiDescriptor api)
+	{
+		switch (api.Location)
+		{
+			case BeamableApiLocation.Web:
+			{
+				var url = $"{context.Host}/{api.RelativeUrl}";
+				Log.Information("Downloading OAPI: {url}", url);
+				var stream = await downloader.GetStreamAsync(url);
+				var sr = new StreamReader(stream);
+				var content = await sr.ReadToEndAsync();
+				return new(url, content);
+			}
+			case BeamableApiLocation.Embedded:
+			{
+				var assembly = Assembly.GetExecutingAssembly();
+				var resourceName = "cli.openapi." + api.RelativeUrl;
+				Log.Information("Unpacking OAPI: {url}", resourceName);
+				using var stream = assembly.GetManifestResourceStream(resourceName);
+				using var reader = new StreamReader(stream!);
+				var content = await reader.ReadToEndAsync();
+				return (resourceName, content);
+			}
+			default:
+				throw new NotImplementedException();
+		}
+	}
+	
 	/// <summary>
 	/// Download a set of open api documents given the <see cref="openApiUrls"/>
 	/// </summary>
@@ -537,14 +569,10 @@ public class SwaggerService
 			var pinnedApi = api;
 			tasks.Add(Task.Run(async () =>
 			{
-				var url = $"{_context.Host}/{api.RelativeUrl}";
-				Log.Information("Downloading OAPI: {url}", url);
 				try
 				{
-					var stream = await downloader.GetStreamAsync(url);
-					var sr = new StreamReader(stream);
-					var content = await sr.ReadToEndAsync();
-
+					var (url, content) = await GetOapiStringReader(_context, downloader, api);
+					
 					foreach (var (oldName, newName) in pinnedApi.schemaRenames)
 					{
 						content = content.Replace(oldName, newName);
@@ -571,7 +599,7 @@ public class SwaggerService
 				}
 				catch (Exception ex)
 				{
-					Log.Error(url + " / " + ex.Message);
+					Log.Error(api.RelativeUrl + " / " + ex.Message);
 					throw;
 				}
 			}));
@@ -1253,6 +1281,7 @@ public class SwaggerService
 public class BeamableApiDescriptor
 {
 	public BeamableApiSource Source;
+	public BeamableApiLocation Location = BeamableApiLocation.Web;
 	public string RelativeUrl;
 	public string Service;
 	public string[] SkippedSDKs = Array.Empty<string>();
@@ -1341,6 +1370,11 @@ public static class BeamableApis
 	{
 		return new BeamableApiDescriptor { Source = BeamableApiSource.PLAT_THOR_BASIC, RelativeUrl = $"basic/{service}/platform/docs", Service = service };
 	}
+
+	public static BeamableApiDescriptor HardcodedBasicService(string service, string embeddedPath)
+	{
+		return new BeamableApiDescriptor { Source = BeamableApiSource.PLAT_THOR_BASIC, RelativeUrl = embeddedPath, Service = service, Location = BeamableApiLocation.Embedded};
+	}
 }
 
 [Flags]
@@ -1349,6 +1383,19 @@ public enum BeamableApiSource
 	PLAT_THOR_OBJECT = 1,
 	PLAT_THOR_BASIC = 2,
 	PLAT_PROTO = 4
+}
+
+public enum BeamableApiLocation
+{
+	/// <summary>
+	/// When the oapi document is fetched via HTTPs from the currently deployed server stack.
+	/// </summary>
+	Web,
+	
+	/// <summary>
+	/// When the oapi document is hardcoded as an embedded resource
+	/// </summary>
+	Embedded
 }
 
 public static class BeamableApiSourceExtensions
