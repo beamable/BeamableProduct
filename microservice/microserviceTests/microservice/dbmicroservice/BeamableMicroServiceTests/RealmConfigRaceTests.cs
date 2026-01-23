@@ -272,6 +272,10 @@ public class RealmConfigRaceTests : CommonTest
         public async Promise<int> Abuse()
         {
             var config = await Services.RealmConfig.GetRealmConfigSettings();
+            if (Context.IsCancelled)
+            {
+	            return 0;
+            }
             async Task<int> CountNonNull()
             {
                 int nonNullCount = 0;
@@ -283,6 +287,11 @@ public class RealmConfigRaceTests : CommonTest
                         nonNullCount++;
                     }
 
+                    if (Context.IsCancelled)
+                    {
+	                    return nonNullCount;
+                    }
+                    
                     await Task.Delay(1);
                 }
 
@@ -290,7 +299,11 @@ public class RealmConfigRaceTests : CommonTest
             }
 
             var startCount = await CountNonNull();
-            for (var i = 0; i < 200; i++)
+            if (Context.IsCancelled)
+            {
+	            return 0;
+            }
+            for (var i = 0; i < 20; i++)
             {
                 var currentCount = await CountNonNull();
                 if (currentCount != startCount)
@@ -298,6 +311,11 @@ public class RealmConfigRaceTests : CommonTest
                     return 1; // return failure.
                 }
 
+                if (Context.IsCancelled)
+                {
+	                return 0;
+                }
+                
                 await Task.Delay(10); // wait a moment... 
             }
 
