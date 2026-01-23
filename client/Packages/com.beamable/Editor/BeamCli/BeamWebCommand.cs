@@ -96,13 +96,13 @@ namespace Beamable.Editor.BeamCli
 		public BeamWebCommandFactory(
 			BeamableDispatcher dispatcher, 
 			BeamWebCliCommandHistory history, 
-			BeamWebCommandFactoryOptions options)
+			BeamWebCommandFactoryOptions options, BeamCli beamCli)
 		{
 			this.dispatcher = dispatcher;
 			_history = history;
 			_options = options;
 			processFactory = new BeamCommandFactory(dispatcher);
-			processCommands = new BeamCommands(processFactory);
+			processCommands = new BeamCommands(processFactory, beamCli);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
 			
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
