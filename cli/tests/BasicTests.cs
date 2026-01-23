@@ -17,6 +17,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Beamable.Common.Dependencies;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZLogger;
 using tests.Examples;
 
@@ -293,11 +295,7 @@ public class Tests : CLITest
 	[Test]
 	public void GenerateBeamo()
 	{
-		Mock<ISwaggerStreamDownloader>(mock =>
-		{
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("beamo"))))
-				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.BeamoBasic));
-		});
+		// no mocking is required, because the beamo service is now hardcoded. 
 		var status = Run("oapi", "generate", "--filter", "beamo,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
