@@ -97,6 +97,7 @@
 
     <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
     <PackageReference Include="Dapper" Version="2.1.66"/>
+    <PackageReference Include="spkl.Diffs" Version="2.1.0" />
     
   </ItemGroup>
 

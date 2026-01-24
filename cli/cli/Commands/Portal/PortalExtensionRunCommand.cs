@@ -61,6 +61,8 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 					var attributes = provider.GetService<MicroserviceAttribute>();
 
 					observer.ConfigureServiceData(notification, attributes);
+					observer.InstallDeps();
+					observer.BuildExtension();
 				})
 				.ConfigureServices((dependency) =>
 				{

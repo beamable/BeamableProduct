@@ -2,30 +2,59 @@ using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Utils;
 using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace cli.Services.PortalExtension;
+
+[Serializable]
+public class ExtensionBuildData
+{
+	public bool IsFullBuild;
+	public string FullData;
+
+	public DiffInstructions DiffInstructionsJs;
+	public DiffInstructions DiffInstructionsCss;
+
+	public string CurrentHash;
+}
 
 public class PortalExtensionDiscoveryService : Microservice
 {
 	[ClientCallable]
-	public string RequestPortalExtensionData()
+	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
 
-		if (observer.TryGetNewAppBuild(out string build))
-		{
-			return build;
-		}
+		ExtensionBuildData buildData = observer.GetAppBuild(currentHash);
 
-		return string.Empty;
+		return new ExtensionBuildData
+		{
+			IsFullBuild = buildData.IsFullBuild,
+			FullData = buildData.FullData,
+			DiffInstructionsJs = buildData.DiffInstructionsJs,
+			DiffInstructionsCss = buildData.DiffInstructionsCss,
+			CurrentHash = buildData.CurrentHash
+		};
 	}
 }
 
 public class PortalExtensionObserver
 {
+	public class ExtensionCurrentData
+	{
+		public string[] previousLinesJs;
+		public string[] previousLinesCss;
+
+		public string previousBuildHash;
+	}
+
+
 	private bool _alreadyStarted;
 	private string _appPath;
-	private bool _hasChanges = true;
+
+	private ExtensionCurrentData _currentExtensionData;
+
 	private CancellationTokenSource _cancelToken;
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
@@ -52,10 +81,6 @@ public class PortalExtensionObserver
 		}
 	}
 
-	public PortalExtensionObserver()
-	{
-	}
-
 	public void CancelDiscovery()
 	{
 		_cancelToken.Cancel();
@@ -67,15 +92,26 @@ public class PortalExtensionObserver
 		_attributes = attributes;
 	}
 
-	public bool TryGetNewAppBuild(out string bundle)
+	public void BuildExtension() //TODO: improve this with more error handling
 	{
-		if (!_hasChanges)
+		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
+		if (result.exit != 0)
 		{
-			bundle = string.Empty;
-			return false;
+			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
 		}
+	}
 
+	public void InstallDeps() //TODO: improve this with more error handling
+	{
+		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: _appPath);
+		if (result.exit != 0)
+		{
+			Log.Error($"Failed to generate portal extension dependencies. Check errors: \n{result.stderr}".Trim());
+		}
+	}
 
+	public ExtensionBuildData GetAppBuild(string clientHash)
+	{
 		var mainJsPath = Path.Combine(_appPath, "assets", "main.js");
 		var mainCssPath = Path.Combine(_appPath, "assets", "main.css");
 
@@ -84,9 +120,69 @@ public class PortalExtensionObserver
 			throw new CliException($"Could not find the portal extension built files. These should exist: [\"{mainJsPath}\", \"{mainCssPath}\"]");
 		}
 
-		bundle = ConvertBuiltFiles(new string[]{mainJsPath, mainCssPath});
-		_hasChanges = false;
-		return true;
+		string[] currentJsLines = File.ReadLines(mainJsPath).ToArray();
+		string[] currentCssLines = File.ReadLines(mainCssPath).ToArray();
+
+		var computedHash = GetBuildHash(currentJsLines, currentCssLines);
+
+
+		// no sender hash, no stored previous hash or different hash than expected, means that we need to send the full build and sync the hashes
+		if (string.IsNullOrEmpty(clientHash) || _currentExtensionData == null || !clientHash.Equals(_currentExtensionData.previousBuildHash))
+		{
+			_currentExtensionData = new ExtensionCurrentData
+			{
+				previousLinesJs = currentJsLines,
+				previousLinesCss = currentCssLines,
+				previousBuildHash = computedHash,
+			};
+
+			var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath});
+
+			return new ExtensionBuildData()
+			{
+				IsFullBuild = true,
+				CurrentHash = computedHash,
+				FullData = bundle
+			};
+		}
+
+		var diffJs = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesJs, currentJsLines);
+		var diffCss = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesCss, currentCssLines);
+
+		var result = new ExtensionBuildData()
+		{
+			CurrentHash = computedHash,
+			IsFullBuild = false,
+			DiffInstructionsJs = diffJs,
+			DiffInstructionsCss = diffCss
+		};
+
+		_currentExtensionData.previousLinesJs = currentJsLines;
+		_currentExtensionData.previousLinesCss = currentCssLines;
+		_currentExtensionData.previousBuildHash = computedHash;
+
+		return result;
+	}
+
+	private static string GetBuildHash(string[] fileA, string[] fileB)
+	{
+		var sequenceA = fileA.Select((val, index) => new KeyValuePair<string, string>($"A:{index}", val));
+
+		var sequenceB = fileB.Select((val, index) => new KeyValuePair<string, string>($"B:{index}", val));
+
+		var combined = sequenceA.Concat(sequenceB);
+
+		StringBuilder sb = new StringBuilder();
+		foreach (var item in combined)
+		{
+			sb.Append($"[{item.Key},{item.Value}]");
+		}
+
+		using (SHA256 sha256 = SHA256.Create())
+		{
+			byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
+			return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+		}
 	}
 
 	public async Task StartExtensionFileWatcher(CancellationToken token = default)
@@ -147,24 +243,18 @@ public class PortalExtensionObserver
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
-		if (e.Name != null && e.Name.Contains("assets/main"))
+		if (e.Name != null && (e.Name.Contains("assets/main") || e.Name.Contains("node_modules/")))
 		{
 			return; // this case we ignore because these are the build files
 		}
 
-		// run a build in case there was changes
-		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
-		if (result.exit != 0)
-		{
-			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
-		}
+		// build the app since there are new changes in the src files
+		BuildExtension();
 
 		Log.Information($"Change detected in file: {e.Name}");
 
 		_notificationsApi.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload() { serviceName = _attributes.MicroserviceName });
-
-		_hasChanges = true;
 	}
 
 	[Serializable]
