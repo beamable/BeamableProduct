@@ -300,7 +300,7 @@ public class LightBeamBooter : MonoBehaviour
 			// need to create the game first.
 			// TODO: make this a hidden realm
 			Debug.Log("Creating sample game...");
-			await realmApi.PostGame(new NewGameRequest()
+			await realmApi.PostGame(new RealmsBasicNewGameRequest()
 			{
 				gameName = "BeamSample"
 			});
