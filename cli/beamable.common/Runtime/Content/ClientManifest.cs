@@ -28,6 +28,10 @@ namespace Beamable.Common.Content
 		public List<ClientContentInfo> entries = new List<ClientContentInfo>();
 
 		/// <summary>
+		/// The unique identifier for this manifest.
+		/// </summary>
+		public Optional<string> uid = null;
+		/// <summary>
 		/// Use a <see cref="ContentQuery"/> to filter the <see cref="entries"/> and get a new <see cref="ClientManifest"/>.
 		/// This method will not mutate the <i>current</i> <see cref="ClientManifest"/>. Instead, it allocates a new one.
 		/// </summary>
