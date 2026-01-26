@@ -1,20 +1,20 @@
 <script>
-  import { Beam } from 'beamable-sdk';
+  import { Beam } from 'beamable-sdk'
 
   let loading = false
   let error = null
   let playerData = null
 
   async function init(){
-    loading = true;
-    error = null;
+    loading = true
+    error = null
 
     try{
       const beam = await Beam.init({
         cid: 'a-real-cid',
         pid: 'a-real-pid',
         environment: 'dev', //or prod, or empty
-      });
+      })
 
       playerData = {
         cid: beam.cid,
@@ -22,10 +22,10 @@
         playerId: beam.player.id
       }
     } catch (err) {
-      console.error('Failed to init player:', err);
-      error = err.message;
+      console.error('Failed to init player:', err)
+      error = err.message
     } finally {
-      loading = false;
+      loading = false
     }
   }
 
