@@ -235,7 +235,7 @@ public class CliRequester : IRequester
 	
 	private static HttpClient GetClient(string host, bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
 	{
-		var handler = new HttpClientHandler();
+		var handler = new HttpClientHandler(){SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13};
 		handler.ServerCertificateCustomValidationCallback = (message, _, _, _) =>
 		{
 			if (message?.RequestUri == null) return false;
@@ -254,6 +254,9 @@ public class CliRequester : IRequester
 		};
 
 		var client = new HttpClient(handler);
+		// Force HTTP/1.1
+		client.DefaultRequestVersion = System.Net.HttpVersion.Version11;
+		client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 
