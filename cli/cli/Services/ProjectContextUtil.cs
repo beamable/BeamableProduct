@@ -90,7 +90,7 @@ public static class ProjectContextUtil
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
 
-		var allPortalExtensions = FindPortalExtensionProjects(configService.BaseDirectory, searchPaths, pathsToIgnore);
+		var allPortalExtensions = FindPortalExtensionProjects(configService.BeamableWorkspace, searchPaths, pathsToIgnore);
 
 		sw.Stop();
 		Log.Verbose($"Gathering portal extension apps took {sw.Elapsed.TotalMilliseconds} ");

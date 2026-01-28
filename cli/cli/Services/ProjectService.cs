@@ -276,7 +276,7 @@ public class ProjectService
 		// check that we have the templates available
 		await EnsureCanUseTemplates(usedVersion);
 
-		var outputPath = Path.Combine(_configService.BaseDirectory, "extensions");
+		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions");
 
 		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
 		await RunDotnetCommand($"new portalextensionapp -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
