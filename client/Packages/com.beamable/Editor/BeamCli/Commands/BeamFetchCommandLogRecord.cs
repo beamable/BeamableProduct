@@ -11,5 +11,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string LogLevel;
         public string ServiceName;
         public string Message;
+        public System.Collections.Generic.Dictionary<string, string> LogAttributes;
     }
 }
