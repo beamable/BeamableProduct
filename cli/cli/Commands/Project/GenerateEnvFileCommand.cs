@@ -28,6 +28,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public bool autoDeploy;
 	public bool includeSecret;
 	public bool excludeOtelCreds;
+	public bool useRemoteDeps;
 	public int autoRemoveInstancesExceptProcessId;
 }
 
@@ -48,6 +49,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
 		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
 		AddOption(new Option<bool>("--include-secret", () => false, "When enabled, includes the legacy SECRET realm secret environment variable"), (args, i) => args.includeSecret = i);
+		AddOption(new Option<bool>("--use-remote-deps", () => false, "When enabled, prevents any connection strings from being added to the environment"), (args, i) => args.useRemoteDeps = i);
 		AddOption(new Option<int>("--remove-all-except-pid",  "When enabled, automatically stop all other local instances of this service"), (args, i) => args.autoRemoveInstancesExceptProcessId = i);
 	}
 
@@ -217,7 +219,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 
 			try
 			{
-				await AppendDependencyVars(deps);
+				if (!args.useRemoteDeps)
+				{
+					await AppendDependencyVars(deps);
+				}
 			}
 			catch (Exception) when (args.autoDeploy)
 			{
