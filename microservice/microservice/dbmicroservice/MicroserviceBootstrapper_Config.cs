@@ -31,6 +31,7 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
     Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
+    Action<BeamCliInvocation> IBeamServiceConfig.LocalEnvModifier { get; set; } = _ => { };
 }
 
 public static class BeamServiceConfigExtensions
@@ -123,6 +124,8 @@ public static class BeamServiceConfigExtensions
 public interface IBeamServiceConfig
 {
     IMicroserviceArgs Args { get; set; }
+    
+    [Obsolete("Please use the " + nameof(LocalEnvModifier) + " instead.")]
     string LocalEnvCustomArgs { get; set; }
     IMicroserviceAttributes Attributes { get; set; }
     List<BeamRouteSource> RouteSources { get; set; }
@@ -130,6 +133,8 @@ public interface IBeamServiceConfig
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
     Func<ILogger> LogFactory { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
+    Action<BeamCliInvocation> LocalEnvModifier { get; set; }
+    
 }
 
 public static class BeamServer
@@ -238,10 +243,25 @@ public static class MicroserviceResultExtensions
 
 public static class IBeamServiceConfigExtensions
 {
+	public static BeamServiceConfigBuilder ForceRemoteStorage(this BeamServiceConfigBuilder builder)
+	{
+		var conf = builder.Config as IBeamServiceConfig;
+		conf.LocalEnvModifier += invocation =>
+		{
+			invocation.AddArgIfNotExist(new BeamCliPart("--use-remote-deps"));
+			invocation.RemoveKey("--auto-deploy");
+		};
+		return builder;
+	}
+
+	
 	public static BeamServiceConfigBuilder UseRealmSecretAuth(this BeamServiceConfigBuilder builder)
 	{
 		var conf = builder.Config as IBeamServiceConfig;
-		conf.LocalEnvCustomArgs = " . --auto-deploy --include-prefix ";
+		conf.LocalEnvModifier += invocation =>
+		{
+			invocation.AddArgIfNotExist(new BeamCliPart("--include-secret"));
+		};
 		return builder;
 	}
 	
