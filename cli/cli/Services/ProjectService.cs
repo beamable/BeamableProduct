@@ -11,7 +11,9 @@ using System.Text.RegularExpressions;
 using Beamable.Server;
 using microservice.Extensions;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using Beamable.Common;
 
 namespace cli.Services;
 
@@ -354,6 +356,17 @@ public class ProjectService
 	{
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 
+		await RunDotnetCommand("--version", out var versionBuffer);
+		var validVersion = PackageVersion.TryFromSemanticVersionString(versionBuffer.ToString(), out var dotnetVersion);
+
+		// Starting in 10.0.102 (patch version what the heck: https://github.com/dotnet/sdk/pull/51861/changes )
+		//  the default sln format changes to slnx, and a --format flag exists to request the older sln format. 
+		//  we can only safely set this option when the user is at 102 or above. 
+		var formatOption = validVersion 
+		                   && dotnetVersion >= "10.0.102"
+			? " --format sln "
+			: " ";
+		
 		if (Directory.Exists(solutionPath))
 		{
 			if (Directory.EnumerateFiles(solutionPath, "*sln").ToArray().Length > 0)
@@ -371,7 +384,7 @@ public class ProjectService
 
 		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
 		
-		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} --format sln", out var buffer);
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} {formatOption}", out var buffer);
 
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
