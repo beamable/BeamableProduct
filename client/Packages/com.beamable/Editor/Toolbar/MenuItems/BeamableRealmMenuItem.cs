@@ -48,6 +48,7 @@ namespace Beamable.Editor.ToolbarExtender
 			var sameEditorAndBuildPids = buildPid == editor.BeamCli?.Pid;
 			foreach (var proj in projects)
 			{
+				var capturedProj = proj;
 				var enabled = proj.Pid == editor.BeamCli?.Pid;
 				
 				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.GetDisplayName()} [build]" : proj.GetDisplayName();
@@ -57,7 +58,7 @@ namespace Beamable.Editor.ToolbarExtender
 				}
 				menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
 				{
-					var _ = editor.SwitchRealm(proj).Then(_ =>
+					var _ = editor.SwitchRealm(capturedProj).Then(_ =>
 					{
 						GUI.changed = true;
 					});

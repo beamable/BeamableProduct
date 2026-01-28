@@ -76,7 +76,7 @@ EOF
 
 
 
-GO_VERSION="1.24.1"
+GO_VERSION="1.24"
 CURRENT_OS="windows"
 
 GO_INSTALLED=0
@@ -84,7 +84,7 @@ GO_INSTALLED=0
 if command -v go &> /dev/null; then
     INSTALLED_GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
     echo "Go is installed with version: $INSTALLED_GO_VERSION"
-    if [[ "$INSTALLED_GO_VERSION" == "$GO_VERSION" ]]; then
+    if [[ "$INSTALLED_GO_VERSION" == *"$GO_VERSION"* ]]; then
         GO_INSTALLED=1
         echo "Found GO installation with correct version!"
     else

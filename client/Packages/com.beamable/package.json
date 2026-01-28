@@ -2,8 +2,8 @@
   "name": "com.beamable",
   "version": "0.0.0",
   "displayName": "Beamable",
-  "description": "A better way to build games in Unity\n\nWe provide an SDK that enables game makers to easily add social, commerce and content management features to their games with drag-and-drop prefabs inside Unity.",
-  "unity": "2019.4",
+  "description": "A better way to build games in Unity\n",
+  "unity": "2021.3",
   "changelogUrl": "https://changes.beamable.com/?unity",
   "documentationUrl": "https://help.beamable.com/Unity-Latest/",
   "keywords": [
@@ -11,6 +11,9 @@
     "engine"
   ],
   "author": "Beamable <info@beamable.com> (https://www.beamable.com)",
+  "repository": {
+    "url": "https://github.com/beamable/BeamableProduct"
+  },
   "license": "ISC",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",

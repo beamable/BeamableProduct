@@ -59,11 +59,11 @@ namespace Beamable.Tests.Runtime
 			return ObjectPost?.Invoke(objectId, gsReq, includeAuthHeader);
 		}
 
-		public delegate Promise<CommonResponse> ObjectPutProxy(long objectId,
-															   InventoryUpdateRequest gsRequest,
-															   bool includeAuthHeader);
+		public delegate Promise<InventoryUpdateResponse> ObjectPutProxy(long objectId,
+		                                                                InventoryUpdateRequest gsRequest,
+		                                                                bool includeAuthHeader);
 		public ObjectPutProxy ObjectPut { get; set; }
-		Promise<CommonResponse> IInventoryApi.ObjectPut(long objectId, InventoryUpdateRequest gsReq, bool includeAuthHeader)
+		Promise<InventoryUpdateResponse> IInventoryApi.ObjectPut(long objectId, InventoryUpdateRequest gsReq, bool includeAuthHeader)
 		{
 			return ObjectPut?.Invoke(objectId, gsReq, includeAuthHeader);
 		}

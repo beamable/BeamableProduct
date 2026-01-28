@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0]
+### Added
+- `net10` support
+
+### Changed
+- Lowered log level of `/docs` endpoint from `DEBUG` to `TRACE` [4461](https://github.com/beamable/BeamableProduct/issues/4461)
+
+### Fixed
+- Cannot add duplicate custom telemetry attributes [4352](https://github.com/beamable/BeamableProduct/issues/4352)
+- Warning log is only printed _once_ when a Microservice sets the `DisableAllBeamableEvents` flag.  
 
 ## [6.1.0] - 2025-10-31
 ### Fixed

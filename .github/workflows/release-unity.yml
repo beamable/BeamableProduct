@@ -43,13 +43,25 @@ on:
         default: false
 
 run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
+env:
+  DOCKER_REGISTRY: ghcr.io
 jobs:
   nuget:
-    timeout-minutes: 10
+    timeout-minutes: 60
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write   
+      packages: read
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
+    strategy:
+      matrix:
+        unityVersion:
+          - 6000.3.0f1
+        gameCiVersion:
+          - 3.2.1
     steps:
       - name: review options
         run: |
@@ -65,22 +77,28 @@ jobs:
         with: 
           ref: ${{ github.event.inputs.commit }}
 
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: >-
-            ${{ fromJson('{
-              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
-              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
-              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
-            }')[github.event.inputs.releaseType] }}
-        
+          registry-url: 'https://registry.npmjs.org'
+            
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Check Npm version
+        run: npm --version
+
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -130,6 +148,20 @@ jobs:
       - name: Store version number as output
         id: version
         env: 
+          NPM_TAG: >-
+            ${{ fromJson('{
+              "nightly": "--tag nightly",
+              "rc": "--tag rc",
+              "exp": "--tag exp",
+              "production": ""
+            }')[github.event.inputs.releaseType] }}
+          NEXUS_REG: >-
+            ${{ fromJson('{
+              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
+              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
+            }')[github.event.inputs.releaseType] }}
           BUILD_ENV: >-
             ${{ fromJson('{
               "nightly": "dev",
@@ -142,6 +174,8 @@ jobs:
           echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
           echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
           echo "BUILD_ENV=$BUILD_ENV" >> "$GITHUB_OUTPUT"
+          echo "NEXUS_REG=$NEXUS_REG" >> "$GITHUB_OUTPUT"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
       - name: review version
         run: |
@@ -149,6 +183,8 @@ jobs:
           echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
+          echo nexus-reg=${{steps.version.outputs.NEXUS_REG}}
+          echo npm-tag=${{steps.version.outputs.NPM_TAG}}
 
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
@@ -167,10 +203,14 @@ jobs:
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Update UPM Version (com.beamable.server)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Review Unity SDK Files
         run: |
@@ -181,21 +221,79 @@ jobs:
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
       
-      - name: Release com.beamable UPM Package
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - uses: game-ci/unity-builder@v4
+        timeout-minutes: 60
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          DOTNET_CLI_UI_LANGUAGE: en
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable
+          gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: client
+          allowDirtyBuild: true
+          versioning: Custom
+          version: ${{ steps.version.outputs.VERSION }}
+
+      - name: Review Output
+        run: |
+          ls -Ra client/build/package_dist
+          file client/build/package_dist/com.beamable
+
+      - name: Fix permissions
+        run: |
+          sudo chown -R $USER:$USER client/build
+
+      - name: Copy npmRC over
+        run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
+
+      - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
-        run: npm publish
-        working-directory: ./client/Packages/com.beamable
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
+        working-directory: ./client/build/package_dist/
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
+
+      - name: Release com.beamable UPM Package to Public
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
+        working-directory: ./client/build/package_dist/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Release com.beamable.server UPM Package
         if: ${{ inputs.dryRun == false }}
-        run: npm publish
+        run: npm publish ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable.server
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }} 

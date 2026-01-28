@@ -29,7 +29,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Server;
-using System.Diagnostics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
@@ -547,14 +546,10 @@ namespace Beamable
 
 		private async Promise UpdateAndSaveToken()
 		{
-			// var secondStopWatch = new Stopwatch();
-			// secondStopWatch.Start();
 			var oldToken = _requester.Token;
 			await _beamableApiRequester.RefreshToken();
-			// var callTime = secondStopWatch.Elapsed.TotalSeconds;
-			// Debug.Log($"Refreshing token took: {callTime}");
 			var token = _beamableApiRequester.Token;
-			ClearToken();
+			ClearToken(eraseFromDisk: false);
 			_requester.Token = token;
 			_beamableApiRequester.Token = token;
 			var settings = _serviceScope.GetService<ITokenEventSettings>();
@@ -573,8 +568,8 @@ namespace Beamable
 
 		private async Promise SaveToken(TokenResponse rsp)
 		{
-			ClearToken();
 			var oldToken = _requester.Token;
+			ClearToken(eraseFromDisk: false);
 			var token = new AccessToken(_tokenStorage,
 										Cid,
 										Pid,
@@ -599,9 +594,9 @@ namespace Beamable
 			await _requester.Token.Save();
 		}
 
-		private void ClearToken()
+		private void ClearToken(bool eraseFromDisk=true)
 		{
-			_requester.DeleteToken();
+			_requester.DeleteToken(eraseFromDisk);
 		}
 
 		private async Promise InitStep_StartPubnub()
@@ -638,9 +633,6 @@ namespace Beamable
 
 		private async Promise InitProcedure(bool silent = false)
 		{
-			var stopWatch = new Stopwatch();
-			stopWatch.Start();
-
 			#region resolve routing key
 			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
 			{
@@ -674,7 +666,6 @@ namespace Beamable
 					hasInternet = false;
 					return new List<Unit>();
 				});
-				Debug.Log($"Beamable init internet check: {stopWatch.Elapsed.TotalSeconds}");
 			}
 			#endregion
 
@@ -709,7 +700,6 @@ namespace Beamable
 				{
 					await InitStep_StartPubnub();
 				}
-				Debug.Log($"Beamable init SetupBeamableNotificationChannel, got channel: {stopWatch.Elapsed.TotalSeconds}");
 			}
 
 			async Promise SetupGetUser()
@@ -733,7 +723,6 @@ namespace Beamable
 				{
 					_heartbeatService.Start();
 				}
-				Debug.Log($"Beamable init SetupNewSession, got session: {stopWatch.Elapsed.TotalSeconds}");
 			}
 
 			async Promise SetupPurchaser()
@@ -824,13 +813,10 @@ namespace Beamable
 				var purchase = SetupPurchaser();
 				
 				await userInfo;
-				Debug.Log($"Beamable init SetupWithConnection, got user info: {stopWatch.Elapsed.TotalSeconds}");
 
 				var session = SetupNewSession(_realmConfig);
 				await Promise.Sequence( connection, session, purchase);
 				SetupEmitEvents();
-				stopWatch.Stop();
-				Debug.Log($"Beamable init SetupWithConnection, got session, connection and purchaser: {stopWatch.Elapsed.TotalSeconds}, ticks: {stopWatch.ElapsedTicks}");
 			}
 		}
 
@@ -974,7 +960,7 @@ namespace Beamable
 		/// </summary>
 		public async Promise ClearPlayerAndStop()
 		{
-			ClearToken();
+			ClearToken(eraseFromDisk: true);
 			await Stop();
 		}
 

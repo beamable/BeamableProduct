@@ -7,6 +7,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -20,28 +21,16 @@ using Object = System.Object;
 
 namespace Beamable.Common.Content
 {
+	
 	public abstract class ContentSerializer<TContentBase>
 	{
 
-		class FieldInfoWrapper
+		private ReadOnlyCollection<TypeFieldInfoReflectionCache.FieldInfoWrapper> GetFieldInfos(Type type,
+			bool useIgnoreField = false)
 		{
-			public FieldInfo RawField;
-			public string SerializedName;
-			public bool IsBackingField;
-			public string BackingFieldSerializedName => $"<{SerializedName}>k__BackingField";
-			public string[] FormerlySerializedAs;
-			public Type FieldType => RawField.FieldType;
-
-			public void SetValue(object obj, object value)
-			{
-				if (!FieldType.IsAssignableFrom(value?.GetType())) return;
-
-				RawField.SetValue(obj, value);
-			}
-			public object GetValue(object obj) => RawField.GetValue(obj);
+			return ContentTypeReflectionCache.Instance.GetTypeFieldsCache().GetFieldInfos(type, useIgnoreField);
 		}
-
-		protected string GetNullStringForType(Type argType)
+ 		protected string GetNullStringForType(Type argType)
 		{
 			if (typeof(IList).IsAssignableFrom(argType))
 			{
@@ -188,7 +177,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		protected object DeserializeResult(object preParsedValue, Type type)
+		protected object DeserializeResult(object preParsedValue, Type type, StringBuilder stringBuilder)
 		{
 			if (typeof(Optional).IsAssignableFrom(type))
 			{
@@ -206,7 +195,7 @@ namespace Beamable.Common.Content
 
 					if (!skip)
 					{
-						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+						var value = DeserializeResult(preParsedValue, optional.GetOptionalType(), stringBuilder);
 						if (!optional.GetOptionalType().IsAssignableFrom(value?.GetType()))
 						{
 							value = Activator.CreateInstance(optional.GetOptionalType());
@@ -218,14 +207,14 @@ namespace Beamable.Common.Content
 				return optional;
 			}
 
-			//if (typeof(IContentLink).IsAssignableFrom())
-
-
-			var json = Json.Serialize(preParsedValue, new StringBuilder());
-
 			if (typeof(Unit).IsAssignableFrom(type))
 			{
 				return PromiseBase.Unit;
+			}
+
+			if (preParsedValue == null)
+			{
+				return null;
 			}
 
 			bool TryGetElementType(IList list, Type baseType, out Type elementType)
@@ -260,12 +249,18 @@ namespace Beamable.Common.Content
 			IContentRef contentRef;
 			IContentLink contentLink;
 			type = Nullable.GetUnderlyingType(type) ?? type;
+			if (typeof(Enum).IsAssignableFrom(type))
+			{
+				switch (preParsedValue)
+				{
+					case string stringEnumValue:
+						return Enum.Parse(type, stringEnumValue);
+					case long longEnumValue:
+						return Enum.ToObject(type, (int)longEnumValue);
+				}
+			}
 			switch (preParsedValue)
 			{
-				case null:
-					return null;
-
-
 				/* REFERENCE TYPES */
 				case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
 					contentLink = (IContentLink)Activator.CreateInstance(type);
@@ -291,24 +286,20 @@ namespace Beamable.Common.Content
 					return contentRef;
 
 				/* PRIMITIVES TYPES */
-				case string stringEnumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.Parse(type, stringEnumValue);
-				case long longEnumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.ToObject(type, (int)longEnumValue);
 				case string _:
 					return preParsedValue;
 				case float _:
-					return Convert.ChangeType(float.Parse(json, CultureInfo.InvariantCulture), type);
+					return Convert.ChangeType(float.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
 				case long _:
-					return Convert.ChangeType(long.Parse(json, CultureInfo.InvariantCulture), type);
+					return Convert.ChangeType(long.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
 				case double _:
-					return Convert.ChangeType(double.Parse(json, CultureInfo.InvariantCulture), type);
+					return Convert.ChangeType(double.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
 				case bool _:
-					return Convert.ChangeType(bool.Parse(json), type);
+					return Convert.ChangeType(bool.Parse(Json.Serialize(preParsedValue, stringBuilder)), type);
 				case int _:
 					if (type == typeof(Char))
-						return (char)int.Parse(json, CultureInfo.InvariantCulture);
-					return Convert.ChangeType(int.Parse(json, CultureInfo.InvariantCulture), type);
+						return (char)int.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture);
+					return Convert.ChangeType(int.Parse(Json.Serialize(preParsedValue, stringBuilder), CultureInfo.InvariantCulture), type);
 
 
 				case ArrayDict dictionary when typeof(IDictionaryWithValue).IsAssignableFrom(type):
@@ -328,7 +319,7 @@ namespace Beamable.Common.Content
 
 					foreach (var kvp in dictionary)
 					{
-						var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
+						var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType, stringBuilder);
 						dictInst.Add(kvp.Key, convertedValue);
 					}
 
@@ -338,7 +329,7 @@ namespace Beamable.Common.Content
 					var fieldType = type.GetElementType();
 					for (var index = 0; index < list.Count; index++)
 					{
-						output[index] = DeserializeResult(list[index], fieldType);
+						output[index] = DeserializeResult(list[index], fieldType, stringBuilder);
 					}
 
 					return output;
@@ -359,7 +350,7 @@ namespace Beamable.Common.Content
 
 					foreach (var elem in list)
 					{
-						var elemValue = DeserializeResult(elem, listElementType);
+						var elemValue = DeserializeResult(elem, listElementType, stringBuilder);
 						outputList.Add(elemValue);
 					}
 
@@ -375,126 +366,32 @@ namespace Beamable.Common.Content
 					}
 
 					return assetRef;
-
-
 				case ArrayDict dict:
-
 					var fields = GetFieldInfos(type, true);
 					var instance = Activator.CreateInstance(type);
 					foreach (var field in fields)
 					{
-						object fieldValue = null;
-						if (dict.TryGetValue(field.SerializedName, out var property))
+						if (!field.TryGetPropertyForField(dict.Keys, out string key))
 						{
-							fieldValue = DeserializeResult(property, field.FieldType);
-						}
-						else if (field.IsBackingField && dict.TryGetValue(field.BackingFieldSerializedName, out property))
-						{
-							fieldValue = DeserializeResult(property, field.FieldType);
-						}
-						else
-						{
-							// check for the formerly serialized options...
-							var foundFormerly = false;
-							for (var i = 0; i < field.FormerlySerializedAs.Length; i++)
+							if (typeof(Optional).IsAssignableFrom(field.FieldType))
 							{
-								if (dict.TryGetValue(field.FormerlySerializedAs[i], out property))
-								{
-									// we found the field!!!
-									foundFormerly = true;
-									fieldValue = DeserializeResult(property, field.FieldType);
-									break;
-								}
+								var optional = Activator.CreateInstance(field.FieldType);
+								field.TrySetValue(instance, optional);
 							}
-
-							if (!foundFormerly)
-							{
-								fieldValue = DeserializeResult(null, field.FieldType);
-							}
+							continue;
 						}
-
-						field.SetValue(instance, fieldValue);
-
+						if (!dict.TryGetValue(key, out var dictValue))
+						{
+							continue;
+						}
+						object fieldValue = DeserializeResult(dictValue, field.FieldType, stringBuilder);
+						field.TrySetValue(instance, fieldValue);
 					}
 
 					return instance;
 				default:
 					throw new Exception($"Cannot deserialize type [{type.Name}]");
 			}
-		}
-
-		private List<FieldInfoWrapper> GetFieldInfos(Type type, bool useIgnoreField = false)
-		{
-			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
-			{
-				var wrapper = new FieldInfoWrapper();
-				var attr = field.GetCustomAttribute<ContentFieldAttribute>();
-				if (attr != null && !string.IsNullOrEmpty(attr.SerializedName))
-				{
-					wrapper.SerializedName = attr.SerializedName;
-				}
-				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
-				{
-					wrapper.IsBackingField = true;
-					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
-				}
-				else
-				{
-					wrapper.SerializedName = field.Name;
-				}
-
-				if (attr != null && attr.FormerlySerializedAs != null)
-				{
-					wrapper.FormerlySerializedAs = attr.FormerlySerializedAs;
-				}
-				else
-				{
-					wrapper.FormerlySerializedAs = new string[] { };
-				}
-
-				wrapper.RawField = field;
-
-				return wrapper;
-			}
-
-			List<FieldInfo> GetAllPrivateFields(Type currentType)
-			{
-				// base case.
-				var isNull = currentType == null;
-				var isObjectType = currentType == typeof(System.Object);
-				var isScriptableObjectType = currentType == typeof(ScriptableObject);
-				var isContentObject = currentType == typeof(ContentObject);
-
-				// XXX: Revisit this check when we allow customers to only implement IContentObject instead of subclass ContentObject
-				var isCustomContentObject = currentType.BaseType == typeof(System.Object) &&
-											currentType.GetInterfaces().Contains(typeof(IContentObject));
-				if (isNull || isObjectType || isScriptableObjectType || isContentObject || isCustomContentObject)
-				{
-					return new List<FieldInfo>();
-				}
-
-				// private fields are only available via reflection on the target type, and any base type fields will need to be gathered by manually walking the type tree.
-				var privateFields = currentType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-				   .ToList();
-				privateFields.AddRange(GetAllPrivateFields(currentType.BaseType));
-				return privateFields;
-			}
-
-			var listOfPublicFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).ToList();
-			var listOfPrivateFields = GetAllPrivateFields(type).Where(field =>
-			{
-				return field.GetCustomAttributes<SerializeField>() != null || field.GetCustomAttribute<ContentFieldAttribute>() != null;
-			});
-
-			var serializableFields = listOfPublicFields.Union(listOfPrivateFields).ToList();
-			var notIgnoredFields = serializableFields.Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null);
-
-			var ll = useIgnoreField ? serializableFields.Select(CreateFieldWrapper) : notIgnoredFields.Select(CreateFieldWrapper);
-
-
-			ll = ll.OrderBy(n => n.SerializedName);
-
-			return ll.ToList();
 		}
 
 		[Obsolete("content serializer options are no longer supported.")]
@@ -636,14 +533,16 @@ namespace Beamable.Common.Content
 			return json;
 		}
 
-
 		protected abstract TContent CreateInstance<TContent>() where TContent : TContentBase, IContentObject, new();
+		protected abstract TContentBase CreateInstanceWithType(Type type);
 		public TContentBase DeserializeByType(string json, Type contentType, bool disableExceptions = false)
 		{
-			return (TContentBase)GetType()
-			   .GetMethod(nameof(Deserialize))
-			   .MakeGenericMethod(contentType)
-			   .Invoke(this, new object[] { json, disableExceptions });
+			var deserializedResult = Json.Deserialize(json);
+			var root = deserializedResult as ArrayDict;
+			if (root == null) throw new ContentDeserializationException(json);
+			var instance = CreateInstanceWithType(contentType);
+			return (TContentBase)BaseConvertType(root, disableExceptions, instance as IContentObject, contentType, out _);
+			
 		}
 		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
@@ -655,33 +554,32 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, bool disableExceptions = false)
+		public IContentObject DeserializeFromCli(string json, IContentObject instanceToDeserialize, string instanceId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
+			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(instanceId);
 
-			return BaseConvertType(root, disableExceptions, instanceToDeserialize, instanceId);
+			return BaseConvertType(root, disableExceptions, instanceToDeserialize, type, out schemaIsDifferent, instanceId);
 		}
 
 		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
-			return (TContent)BaseConvertType(root, disableExceptions, instance);
+			return (TContent)BaseConvertType(root, disableExceptions, instance,  typeof(TContent), out _);
 		}
 
-		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, string itemId = null)
+		private IContentObject BaseConvertType(ArrayDict root, bool disableExceptions, IContentObject instance, Type contentType, out SchemaDifference schemaIsDifferent, string itemId = null)
 		{
+			schemaIsDifferent = SchemaDifference.None;
 			var fields = GetFieldInfos(instance.GetType(), true);
 
 			var id = itemId ?? root["id"].ToString();
 
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
-			var typeName = "";
-
-			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(id);
-			if (!ContentTypeReflectionCache.Instance.TryGetName(type, out typeName))
+			if (!ContentTypeReflectionCache.Instance.TryGetName(contentType, out string typeName))
 			{
 				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
@@ -693,40 +591,46 @@ namespace Beamable.Common.Content
 
 			var properties = root["properties"] as ArrayDict;
 			instance.SetIdAndVersion(id, version);
+			var stringBuilder = new StringBuilder();
 
+			// track all the keys in the json. If we visit them, we'll remove them. 
+			// if any are left over, then the schema is different. 
+			var jsonPropertyKeys = new HashSet<string>();
+			if (properties != null)
+			{
+				foreach (var kvp in properties)
+				{
+					jsonPropertyKeys.Add(kvp.Key);
+				}
+			}
 
 			foreach (var field in fields)
 			{
-				if (field.IsBackingField && properties.TryGetValue(field.BackingFieldSerializedName, out var property))
+				if (!field.TryGetPropertyForField(properties.Keys, out string key))
 				{
-					field.SerializedName = field.BackingFieldSerializedName;
+					bool isOptional = typeof(Optional).IsAssignableFrom(field.FieldType);
+					if (isOptional)
+					{
+						var optional = Activator.CreateInstance(field.FieldType);
+						field.TrySetValue(instance, optional);
+					}
+					
+					bool isIgnored = field.RawField.GetCustomAttribute<IgnoreContentFieldAttribute>() != null;
+					if (!isOptional && !isIgnored)
+					{
+						schemaIsDifferent |= SchemaDifference.MissingFieldsInJson;
+					}
+					continue;
 				}
-				if (!properties.TryGetValue(field.SerializedName, out property))
+				
+				jsonPropertyKeys.Remove(key);
+
+				if (!properties.TryGetValue(key, out var property))
 				{
-					// mark empty optional, if exists.
 					if (typeof(Optional).IsAssignableFrom(field.FieldType))
 					{
 						var optional = Activator.CreateInstance(field.FieldType);
-						field.SetValue(instance, optional);
-					}
-
-					// no property exists for this field. Maybe we should check the formerly known fields.
-					var foundFormerlySerializedAs = false;
-					for (var i = 0; i < field.FormerlySerializedAs.Length; i++)
-					{
-						if (properties.TryGetValue(field.FormerlySerializedAs[i], out property))
-						{
-							// ah ha! We found the field...
-							foundFormerlySerializedAs = true;
-							field.SerializedName = field.FormerlySerializedAs[i];
-							break;
-						}
-					}
-
-					if (!foundFormerlySerializedAs)
-					{
-						continue; // there is no property for this field...
-
+						field.TrySetValue(instance, optional);
 					}
 				}
 
@@ -736,8 +640,8 @@ namespace Beamable.Common.Content
 					{
 						try
 						{
-							var hackResult = DeserializeResult(dataValue, field.FieldType);
-							field.SetValue(instance, hackResult);
+							var hackResult = DeserializeResult(dataValue, field.FieldType, stringBuilder);
+							field.TrySetValue(instance, hackResult);
 							if (hackResult is ISerializationCallbackReceiver rec &&
 							    !(hackResult is IIgnoreSerializationCallbacks))
 								rec.OnAfterDeserialize();
@@ -746,13 +650,13 @@ namespace Beamable.Common.Content
 						{
 							if (!disableExceptions)
 							{
-								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
+								Debug.LogError($"Failed to deserialize field. type=[{contentType.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
 								throw;
 							}
 							else
 							{
 								instance.ContentException = new ContentCorruptedException(e.Message);
-								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
+								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{contentType.Name}] exception=[{e.Message}]");
 							}
 						}
 					}
@@ -767,13 +671,13 @@ namespace Beamable.Common.Content
 							var link = (IContentLink)Activator.CreateInstance(field.FieldType);
 							link.SetId(fieldId);
 							link.OnCreated();
-							field.SetValue(instance, link);
+							field.TrySetValue(instance, link);
 						}
 						else if (isContentRef)
 						{
 							var contentRef = (IContentRef)Activator.CreateInstance(field.FieldType);
 							contentRef.SetId(fieldId);
-							field.SetValue(instance, contentRef);
+							field.TrySetValue(instance, contentRef);
 						}
 						else
 						{
@@ -821,11 +725,18 @@ namespace Beamable.Common.Content
 							}
 						}
 
-						field.SetValue(instance, links);
+						field.TrySetValue(instance, links);
 
 					}
 				}
 			}
+			
+			// If there are extra keys in the JSON that aren't in the class, the schema is different
+			if (jsonPropertyKeys.Count > 0)
+			{
+				schemaIsDifferent |= SchemaDifference.UnknownFieldsInJson;
+			}
+			
 			if (instance is ISerializationCallbackReceiver receiver)
 				receiver.OnAfterDeserialize();
 
@@ -848,4 +759,12 @@ namespace Beamable.Common.Content
 			return rawJson;
 		}
 	}
+	
+	[Flags]
+	public enum SchemaDifference
+	{
+		None = 0,
+		MissingFieldsInJson = 1 << 0,
+		UnknownFieldsInJson = 1 << 1,
+	};
 }

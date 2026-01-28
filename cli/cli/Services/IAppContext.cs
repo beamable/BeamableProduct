@@ -85,9 +85,7 @@ public class DefaultAppContext : IAppContext
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
 	private readonly LogOption _logOption;
-	private readonly ConfigDirOption _configDirOption;
 	private readonly ConfigService _configService;
-	private readonly CliEnvironment _environment;
 	private readonly ShowRawOutput _showRawOption;
 	private readonly ShowPrettyOutput _showPrettyOption;
 	private readonly BeamLogSwitch _logSwitch;
@@ -146,7 +144,7 @@ public class DefaultAppContext : IAppContext
 			"temp",
 			"logs",
 			$"beamCliLog-{_logTime.ToFileTime()}.txt");
-		logFile = _configService.BeamableRelativeToExecutionRelative(subPath);
+		logFile = _configService.GetRelativeToExecutionPath(subPath);
 		
 		return true;
 	}
@@ -173,8 +171,8 @@ public class DefaultAppContext : IAppContext
 	public BeamLogSwitch LogSwitch => _logSwitch;
 
 	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, EngineCallerOption engineOption, EngineVersionOption engineVersionOption, EngineSdkVersionOption engineSdkVersionOption,PidOption pidOption, HostOption hostOption,
-		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
+		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
+		ConfigService configService, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
 		PreferRemoteFederationOption routeMapOption, IDependencyProvider provider)
@@ -191,9 +189,7 @@ public class DefaultAppContext : IAppContext
 		_accessTokenOption = accessTokenOption;
 		_refreshTokenOption = refreshTokenOption;
 		_logOption = logOption;
-		_configDirOption = configDirOption;
 		_configService = configService;
-		_environment = environment;
 		_showRawOption = showRawOption;
 		_showPrettyOption = showPrettyOption;
 		_logSwitch = logSwitch;
@@ -261,20 +257,8 @@ public class DefaultAppContext : IAppContext
 		// Configure log level from option
 		{
 			var logLevelOption = _bindingContext.ParseResult.GetValueForOption(_logOption);
-
-			if (string.IsNullOrEmpty(logLevelOption))
-			{
-				// do nothing.
-			}
-			else if (LogUtil.TryParseSystemLogLevel(logLevelOption, out var level))
-			{
+			if (!string.IsNullOrEmpty(logLevelOption) && LogUtil.TryParseSystemLogLevel(logLevelOption, out var level)) 
 				_logSwitch.Level = level;
-			}
-			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
-					 LogUtil.TryParseSystemLogLevel(_environment.LogLevel, out level))
-			{
-				_logSwitch.Level = level;
-			}
 		}
 	}
 
@@ -340,7 +324,7 @@ public class DefaultAppContext : IAppContext
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
-		if (_configService.ReadTokenFromFile(out var response))
+		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
 		{
 			if (response.ExpiresAt > DateTime.Now)
 			{

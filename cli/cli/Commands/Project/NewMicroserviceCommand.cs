@@ -165,6 +165,7 @@ public class SpecificVersionOption : Option<PackageVersion>
 public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public bool GenerateCommon;
+	public string TargetFramework;
 }
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
@@ -190,6 +191,23 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 	public override void Configure()
 	{
+		AddOption(
+			new Option<string>(new string[] { "--target-framework", "-f" },
+				() =>
+				{
+					var currentVersion = AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
+					var currentVersionDouble = double.Parse(currentVersion);
+					if (currentVersionDouble < 8.0)
+					{
+						currentVersion = "8.0";
+					}
+					return "net" + currentVersion;
+				},
+				"The target framework to use for the new project. Defaults to the current dotnet runtime framework"),
+			(args, i) =>
+			{
+				args.TargetFramework = i;
+			});
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		SolutionCommandArgs.Configure(this);
 		var serviceDeps = new Option<List<string>>("--link-to", "The name of the storage to link this service to")

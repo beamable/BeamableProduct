@@ -15,76 +15,6 @@ using System.Xml.Linq;
 
 namespace cli.Services;
 
-public class ProjectData
-{
-	public HashSet<string> unityProjectsPaths = new HashSet<string>();
-
-	public HashSet<Unreal> unrealProjectsPaths = new HashSet<Unreal>();
-
-	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
-	{
-		/// <summary>
-		/// Name for the project's core module (the module every other module has access to).
-		/// This will be used to generate the ______API UE Macros for the generated types.
-		/// </summary>
-		public string CoreProjectName;
-
-		/// <summary>
-		/// Name for the project's blueprint nodes module (the module every other module has access to).
-		/// This will be used to generate the ______API UE Macros for the generated blueprint nodes types.
-		///
-		/// This is always <see cref="CoreProjectName"/> + "BlueprintNodes".
-		/// </summary>
-		public string BlueprintNodesProjectName;
-
-		/// <summary>
-		/// Path to the entire project folder from the .beamableFolder.
-		/// </summary>
-		public string Path;
-
-		/// <summary>
-		/// Path, relative to <see cref="Path"/>, to the "Source" directory of the project.
-		/// </summary>
-		public string SourceFilesPath;
-
-		/// <summary>
-		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for header files.
-		/// </summary>
-		public string MsCoreHeaderPath;
-
-		/// <summary>
-		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for cpp files.
-		/// </summary>
-		public string MsCoreCppPath;
-
-		/// <summary>
-		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for header blueprint node files.
-		/// </summary>
-		public string MsBlueprintNodesHeaderPath;
-
-		/// <summary>
-		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for cpp blueprint node files.
-		/// </summary>
-		public string MsBlueprintNodesCppPath;
-
-		/// <summary>
-		/// Path to the <see cref="PreviousGenerationPassesData"/> for the client's current plugin.
-		/// </summary>
-		public string BeamableBackendGenerationPassFile;
-
-		public bool Equals(string other) => Path.Equals(other);
-		public bool Equals(Unreal other) => Path == other.Path;
-
-		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-		                                           (obj is string unrealPath && Equals(unrealPath));
-
-		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
-
-		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
-		public static bool operator !=(Unreal left, Unreal right) => !(left == right);
-	}
-}
-
 public class ProjectService
 {
 	private const string UNINSTALL_COMMAND = "new --uninstall";
@@ -92,7 +22,7 @@ public class ProjectService
 	private readonly VersionService _versionService;
 	private readonly IAppContext _app;
 
-	private ProjectData _projects;
+	private EngineProjectData _engineProjects;
 
 	public bool? ConfigFileExists { get; }
 
@@ -102,23 +32,23 @@ public class ProjectService
 		_versionService = versionService;
 		_app = app;
 		ConfigFileExists = _configService.DirectoryExists;
-		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
+		_engineProjects = configService.GetLinkedEngineProjects();
 	}
 
 	public List<string> GetLinkedUnityProjects()
 	{
-		return _projects.unityProjectsPaths.ToList();
+		return _engineProjects.unityProjectsPaths.Select(u => u.Path).ToList();
 	}
 
-	public List<ProjectData.Unreal> GetLinkedUnrealProjects()
+	public List<EngineProjectData.Unreal> GetLinkedUnrealProjects()
 	{
-		return _projects.unrealProjectsPaths.ToList();
+		return _engineProjects.unrealProjectsPaths.ToList();
 	}
 
 	public void AddUnityProject(string relativePath)
 	{
-		_projects.unityProjectsPaths.Add(relativePath);
-		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
+		_engineProjects.unityProjectsPaths.Add(new EngineProjectData.Unity(){Path = relativePath});
+		_configService.SetLinkedEngineProjects(_engineProjects);
 	}
 
 	public void AddUnrealProject(string projectPath, string microservicePluginName, string microservicePluginNameBp)
@@ -134,7 +64,7 @@ public class ProjectService
 		projectPath = projectPath.StartsWith(".") ? projectPath.Substring(1) : projectPath;
 		projectPath = projectPath.StartsWith("/") ? projectPath.Substring(1) : projectPath;
 
-		var projData = new ProjectData.Unreal() { };
+		var projData = new EngineProjectData.Unreal() { };
 
 		var pathToBackendGenerationJson = $"Plugins/BeamableCore/Source/{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json";
 		projData.Path = projectPath;
@@ -151,8 +81,8 @@ public class ProjectService
 
 		projData.BeamableBackendGenerationPassFile = projectPath + pathToBackendGenerationJson;
 
-		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
+		_engineProjects.unrealProjectsPaths.Add(projData);
+		_configService.SetLinkedEngineProjects(_engineProjects);
 	}
 
 	private static DirectoryInfo EnsureUnrealRootPath(string projectPath)
@@ -334,7 +264,7 @@ public class ProjectService
 		}
 
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var path = _configService.GetRelativeToBeamableFolderPath(Path.Combine(rootServicesPath, beamId));
+		var path = _configService.GetRelativeToBeamableWorkspacePath(Path.Combine(rootServicesPath, beamId));
 		return path;
 	}
 
@@ -369,7 +299,7 @@ public class ProjectService
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
 
-		if (!_configService.IsPathInBeamableDirectory(microserviceInfo.SolutionPath))
+		if (!_configService.IsInBeamableWorkspace(microserviceInfo.SolutionPath))
 		{
 			throw new CliException(
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
@@ -403,7 +333,7 @@ public class ProjectService
 		}
 
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
-		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()}");
+		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()} --no-update-check --TargetFrameworkOverride {args.targetFramework}");
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath.EnquotePath()} add {microserviceInfo.ServicePath.EnquotePath()}");
 
 		await args.BeamoLocalSystem.InitManifest();
@@ -429,13 +359,13 @@ public class ProjectService
 			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
 		}
 
-		if (!_configService.IsPathInBeamableDirectory(microserviceInfo.SolutionPath))
+		if (!_configService.IsInBeamableWorkspace(microserviceInfo.SolutionPath))
 		{
 			throw new CliException(
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon, args.TargetFramework);
 		return microserviceInfo;
 	}
 
@@ -460,7 +390,7 @@ public class ProjectService
 
 		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
 		
-		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()}", out var buffer);
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} --format sln", out var buffer);
 
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
@@ -560,7 +490,7 @@ public class ProjectService
 		// }
 	}
 
-	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon, string targetFramework)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -570,7 +500,7 @@ public class ProjectService
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 
 		// create the beam microservice project
-		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()}");
+		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()} --no-update-check --TargetFrameworkOverride {targetFramework}");
 
 		// restore the microservice tools
 		await RunDotnetCommand(
@@ -580,7 +510,7 @@ public class ProjectService
 		await RunDotnetCommand($"sln {solutionPath.EnquotePath()} add {projectPath.EnquotePath()}");
 		
 		// If we are linked to an Unreal project, we should add the property to turn on UE-Specific static analyses.
-		if ((_projects?.unrealProjectsPaths?.Count ?? 0) > 0)
+		if ((_engineProjects?.unrealProjectsPaths?.Count ?? 0) > 0)
 		{
 			var csprojPath = Path.Combine(projectPath, $"{projectName}.csproj");
 			var doc = XDocument.Load(csprojPath);

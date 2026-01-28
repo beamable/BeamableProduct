@@ -392,6 +392,8 @@ namespace Beamable.Server.Editor.Usam
 		
 		public void ListenForStatus()
 		{
+			if (_ctx.BeamCli.IsLoggedOut) return;
+			
 			if (_watchCommand != null)
 			{
 				_watchCommand.Cancel();
@@ -814,7 +816,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		void StopStorage(BeamManifestStorageEntry storage)
 		{
-			var stopCommand = _cli.ServicesStop(new ServicesStopArgs()
+			var stopCommand = _cli.ProjectStop(new ()
 			{
 				ids = new string[] {storage.beamoId},
 			});
