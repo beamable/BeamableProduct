@@ -255,14 +255,11 @@ namespace Beamable.Editor.ContentService
 
 		public void SetContentTags(string contentId, string[] tags)
 		{
-			if (!EntriesCache.TryGetValue(contentId, out var entry))
+			if (EntriesCache.TryGetValue(contentId, out var entry))
 			{
-				Debug.LogError($"No Entry found with id: {contentId}");
-				return;
+				entry.Tags = tags;
+				EntriesCache[contentId] = entry;
 			}
-
-			entry.Tags = tags;
-			EntriesCache[contentId] = entry;
 
 			if (tags.Length == 0)
 			{
@@ -287,7 +284,30 @@ namespace Beamable.Editor.ContentService
 				});
 				setContentTagCommand.Run();
 			}
-			
+
+		}
+
+		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
+		{
+			if (TryGetContentObject(entry.FullId, out var contentObject))
+			{
+				duplicatedObject = Object.Instantiate(contentObject);
+				string baseName = $"{contentObject.ContentName}_Copy";
+				int itemsWithBaseNameCount = GetContentsFromType(contentObject.GetType())
+				                                            .Count(item => item.Name.StartsWith(baseName));
+				duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+				duplicatedObject.ContentStatus = ContentStatus.Created;
+				duplicatedObject.Tags = entry.Tags;
+				entry.Name = duplicatedObject.ContentName;
+				entry.FullId = duplicatedObject.Id;
+				entry.TypeName = duplicatedObject.ContentType;
+				AddContentToCache(entry);
+				SaveContent(duplicatedObject);
+				return true;
+			}
+
+			duplicatedObject = null;
+			return false;
 		}
 
 		public string RenameContent(string contentId, string newName)
@@ -301,6 +321,9 @@ namespace Beamable.Editor.ContentService
 			if(entry.Name == newName)
 				return contentId;
 
+			// Prevents the user to rename the content with spaces
+			newName = newName.Replace(' ', '_');
+			
 			if (!ValidateNewContentName(newName))
 			{
 				Debug.LogError(
@@ -722,10 +745,18 @@ namespace Beamable.Editor.ContentService
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
-			if (!TypeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
+			var entryType = _contentTypeReflectionCache.GetTypeFromId(entry.FullId);
+			var typeName = _contentTypeReflectionCache.TypeToName(entryType);
+			
+			if (!TypeContentCache.TryGetValue(typeName, out var typeContentList))
 			{
-				TypeContentCache[entry.TypeName] = typeContentList = new List<LocalContentManifestEntry>();;
+				TypeContentCache[typeName] = typeContentList = new List<LocalContentManifestEntry>();;
 			}
+			
+			// Before using the new CliContent on Unity we supported Content names with dots.
+			// So before caching the content data that comes from Cli we need to fix any names that might came wrong by applying it again using the real contentTypeName
+			entry.TypeName = typeName;
+			entry.Name = entry.FullId.Substring(typeName.Length + 1);
 			
 			typeContentList.Add(entry);
 
