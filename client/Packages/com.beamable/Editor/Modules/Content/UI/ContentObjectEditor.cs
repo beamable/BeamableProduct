@@ -45,8 +45,8 @@ namespace Beamable.Editor.Content.UI
 
 			ContentNameValidationException.HasNameValidationErrors(contentObject, contentObject.ContentName,
 			                                                       out var nameErrors);
-			headerHeight += nameErrors.Count * 5;
-			var topPadding = (nameErrors.Count + 1) * 5;
+			headerHeight += (nameErrors?.Count ?? 0) * 5;
+			var topPadding = ((nameErrors?.Count ?? 0) + 1) * 5;
 			
 			GUIStyle headerStyle = new GUIStyle(GUI.skin.box)
 			{
