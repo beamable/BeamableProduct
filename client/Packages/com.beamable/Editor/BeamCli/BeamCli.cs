@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine;
@@ -106,13 +107,29 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Refresh()
 		{
 			_addPathsInvoke?.Cancel();
-			_addPathsInvoke = Command.ProjectAddPaths(new ProjectAddPathsArgs
+			var configPath = Path.Combine(latestConfig?.configPath ?? ".beamable", "config.beam.json");
+			BeamConfigFile file = new BeamConfigFile();
+			if (File.Exists(configPath))
+			{
+				var configJson = File.ReadAllText(configPath);
+				file = JsonUtility.FromJson<BeamConfigFile>(configJson);
+			}
+
+			
+			var args = new ProjectAddPathsArgs
 			{
 				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray(),
 				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
-			});
-			var addPathsPromise = _addPathsInvoke.Run();
-			
+			};
+			var pathsToIgnoreMatch =
+				new HashSet<string>(args.pathsToIgnore).IsSubsetOf(new HashSet<string>(file.ignoredProjectPaths));
+			var pathsToAddMatch =
+				new HashSet<string>(args.saveExtraPaths).IsSubsetOf(new HashSet<string>(file.additionalProjectPaths));
+			if (!pathsToAddMatch || !pathsToIgnoreMatch)
+			{
+				_addPathsInvoke = Command.ProjectAddPaths(args);
+				await _addPathsInvoke.Run();
+			}
 			var regeneratePromise = Command.ProjectOpen(new ProjectOpenArgs
 			{
 				onlyGenerate = true,
@@ -172,7 +189,6 @@ namespace Beamable.Editor.BeamCli
 			await mePromise;
 			await routePromise;
 			await linkPromise;
-			await addPathsPromise;
 			await regeneratePromise;
 			
 			
@@ -415,5 +431,19 @@ namespace Beamable.Editor.BeamCli
 
 		string IBeamDeveloperAuthProvider.AccessToken => latestToken.Token;
 		string IBeamDeveloperAuthProvider.RefreshToken => latestToken.RefreshToken;
+
+		[Serializable]
+		public class BeamConfigFile
+		{
+			public List<string> additionalProjectPaths = new List<string>();
+
+			public List<string> ignoredProjectPaths = new List<string>();
+			// "additionalProjectPaths": [],
+			// "ignoredProjectPaths": [
+			// "Packages/com.beamable",
+			// "Library/PackageCache/com.beamable",
+			// "Library/PackageCache/com.beamable.server"
+			// ],
+		}
 	}
 }
