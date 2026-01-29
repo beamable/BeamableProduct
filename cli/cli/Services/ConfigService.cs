@@ -754,15 +754,18 @@ public class ConfigService
 
 	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, JObject config)
 	{
-		var value = config?.SelectToken(key);
-		if (value != null)
+		lock (_configLock)
 		{
-			return value switch
+			var value = config?.SelectToken(key);
+			if (value != null)
 			{
-				JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
-				JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
-				_ => value.Value<T>()
-			};
+				return value switch
+				{
+					JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
+					JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
+					_ => value.Value<T>()
+				};
+			}
 		}
 
 		return defaultValue;
@@ -772,8 +775,11 @@ public class ConfigService
 
 	public T SetConfig<T>(string path, [CanBeNull] T newValue, JObject target)
 	{
-		AddPropertyAtSubPath(target, path, newValue);
-		return newValue;
+		lock (_configLock)
+		{
+			AddPropertyAtSubPath(target, path, newValue);
+			return newValue;
+		}
 
 		static void AddPropertyAtSubPath(JObject json, string path, object value)
 		{
@@ -890,7 +896,10 @@ public class ConfigService
 
 	public bool DeleteConfig(string path, JObject config)
 	{
-		return DeletePropertyAtSubPath(config, path);
+		lock (_configLock)
+		{
+			return DeletePropertyAtSubPath(config, path);
+		}
 
 		/// <summary>
 		/// Deletes a property or element at a specified JSON path.
@@ -959,6 +968,7 @@ public class ConfigService
 	public void FlushLocalOverrides() => FlushConfig(_configLocalOverrides, ConfigLocalDirectoryPath, false);
 
 	private static object _flushConfigLock = new();
+	private static object _configLock = new();
 	private void FlushConfig(JObject config, string path, bool createSubDirs)
 	{
 		// Because we have the CLI server, this block of code that writes to the config file must be guarded so that it 
