@@ -213,7 +213,8 @@ jobs:
           NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Normalize line endings
-        run: sh ./build/bin/fix-line-endings.sh client/Packages/com.beamable
+        shell: bash
+        run: ./build/bin/fix-line-endings.sh client/Packages/com.beamable
 
       - name: Review Unity SDK Files
         run: |
