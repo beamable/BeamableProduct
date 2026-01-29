@@ -923,6 +923,12 @@ public class ConfigService
 			// This case should only happen if we try to delete the root JObject itself, which is not allowed
 			if (parent == null) return false;
 
+			if (parent is JProperty parentProp)
+			{
+				parentProp.Remove();
+				return true;
+			}
+			
 			// Remove from JObject by property name
 			if (parent is JObject parentObject)
 			{
@@ -930,7 +936,7 @@ public class ConfigService
 				var propertyName = ((JProperty)tokenToRemove.Parent)!.Name;
 				return parentObject.Remove(propertyName);
 			}
-
+			
 			// Remove from JArray by value/reference
 			if (parent is JArray)
 			{
