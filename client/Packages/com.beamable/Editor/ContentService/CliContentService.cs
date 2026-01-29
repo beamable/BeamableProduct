@@ -746,7 +746,11 @@ namespace Beamable.Editor.ContentService
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
 			var entryType = _contentTypeReflectionCache.GetTypeFromId(entry.FullId);
-			var typeName = _contentTypeReflectionCache.TypeToName(entryType);
+			if (!_contentTypeReflectionCache.TryGetName(entryType, out var typeName))
+			{
+				//Fallback to CLI Value
+				typeName = entry.TypeName;
+			}
 			
 			if (!TypeContentCache.TryGetValue(typeName, out var typeContentList))
 			{
