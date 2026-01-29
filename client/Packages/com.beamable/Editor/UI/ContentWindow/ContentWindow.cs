@@ -64,7 +64,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				_contentService = Scope.GetService<CliContentService>();
 				_ = _contentService.Reload().Then(_ =>
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					if (_windowStatus == ContentWindowStatus.Building)
+					{
+						ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					}
+
 					Build();
 				});
 				return;

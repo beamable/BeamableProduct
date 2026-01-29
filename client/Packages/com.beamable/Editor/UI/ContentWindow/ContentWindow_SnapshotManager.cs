@@ -185,7 +185,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void FinishSnapshotCreationMode(bool shouldCreate)
 		{
-			if (shouldCreate && _currentSnapshotCreationMode.HasValue)
+			if (shouldCreate && _currentSnapshotCreationMode.HasValue && !string.IsNullOrEmpty(_snapshotNameFieldValue))
 			{
 				_gatheringSnapshots = true;
 				_contentService.TakeSnapshot(_snapshotNameFieldValue, _currentSnapshotCreationMode.Value == ContentSnapshotType.Local).Then(unit => _ = CacheSnapshots());
@@ -235,7 +235,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 
 				if ((Event.current.type == EventType.MouseDown && !fieldRect.Contains(Event.current.mousePosition)) ||
-				    Event.current.isKey && Event.current.keyCode == KeyCode.Return)
+				    Event.current.isKey && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter))
 				{
 					FinishSnapshotCreationMode(true);
 				}

@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue when right-clicking the content it was not highlighting it.
 - Ensure that AccountWindow has the minimum width when logged in.
 - Issue which Service Storage Editor couldn't stop Storage from running.
+- Now content names support dots as previous content manager versions.
+- All spaces in a content name during a rename operation will be replaces by underscores.
+- 
 
 ## [4.0.2] - 2025-11-20
 ### Changed
