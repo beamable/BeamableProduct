@@ -117,7 +117,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents)
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}
