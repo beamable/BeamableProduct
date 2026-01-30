@@ -2,6 +2,7 @@ using Beamable.Common.Api.Realms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Common;
 using Beamable.Config;
 using Beamable.Editor.BeamCli;
 using UnityEditor;
@@ -14,7 +15,6 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableRealmMenuItem : BeamableToolbarMenuItem
 	{
-	
 		public override void ContextualizeMenu(BeamEditorContext editor, GenericMenu menu)
 		{
 			var rootDisplay = RenderLabel(editor);
@@ -46,23 +46,31 @@ namespace Beamable.Editor.ToolbarExtender
 			var buildPid = editor.ServiceScope.GetService<ConfigDatabaseProvider>()?.Pid ?? "";
 			var buildName = buildPid.ToString();
 			var sameEditorAndBuildPids = buildPid == editor.BeamCli?.Pid;
-			foreach (var proj in projects)
+			if (editor.IsSwitchingRealms)
 			{
-				var capturedProj = proj;
-				var enabled = proj.Pid == editor.BeamCli?.Pid;
-				
-				var display = !sameEditorAndBuildPids && buildPid == proj.Pid ? $"{proj.GetDisplayName()} [build]" : proj.GetDisplayName();
-				if (buildPid == proj.Pid)
+				menu.AddDisabledItem(new GUIContent(rootDisplay.text + "/(Switching Realms...)"));
+			}
+			else
+			{
+
+				foreach (var proj in projects)
 				{
-					buildName = proj.ProjectName;
-				}
-				menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
-				{
-					var _ = editor.SwitchRealm(capturedProj).Then(_ =>
+					var capturedProj = proj;
+					var enabled = proj.Pid == editor.BeamCli?.Pid;
+
+					var display = !sameEditorAndBuildPids && buildPid == proj.Pid
+						? $"{proj.GetDisplayName()} [build]"
+						: proj.GetDisplayName();
+					if (buildPid == proj.Pid)
 					{
-						GUI.changed = true;
+						buildName = proj.ProjectName;
+					}
+
+					menu.AddItem(new GUIContent(rootDisplay.text + "/" + display), enabled, () =>
+					{
+						var _ = editor.SwitchRealm(capturedProj).Then(_ => { GUI.changed = true; });
 					});
-				});
+				}
 			}
 
 			if (projects.Count > 0)

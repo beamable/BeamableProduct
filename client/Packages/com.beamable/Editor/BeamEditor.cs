@@ -690,20 +690,30 @@ namespace Beamable
 				ServiceScope.GetService<ConfigDatabaseProvider>().Reload();
 			}
 		}
-		
+
+		public Promise changeRealmPromise;
+		public bool IsSwitchingRealms => !(changeRealmPromise == null || changeRealmPromise.IsCompleted);
 		public async Promise SwitchRealm(RealmView realm)
 		{
 			await SwitchRealm(realm.Pid);
 		}
 		public async Promise SwitchRealm(string pid)
 		{
-			await BeamCli.SwitchRealms(pid);
-			
-			ApplyRequesterToken();
+			changeRealmPromise = new Promise();
+			try
+			{
+				await BeamCli.SwitchRealms(pid);
 
-			await CliContentService.Reload();
-			
-			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
+				ApplyRequesterToken();
+
+				await CliContentService.Reload();
+
+				OnRealmChange?.Invoke(BeamCli.CurrentRealm);
+			}
+			finally
+			{
+				changeRealmPromise.CompleteSuccess();
+			}
 		}
 
 		public static async Task StopAll()

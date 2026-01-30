@@ -122,7 +122,17 @@ namespace Beamable.Editor.ToolbarExtender
 				var badgeRect = new Rect(buttonRect.x, buttonRect.y-1, badgeWidth, buttonRect.height+2);
 				
 				var iconRect = new Rect(buttonRect.x+3, buttonRect.y-1, 20, 18);
-				GUI.DrawTexture(iconRect, BeamGUI.iconBeamableSmall);
+
+				if (_editorAPI.IsSwitchingRealms || !_editorAPI.OnReady.IsCompleted)
+				{
+					var inset = 3;
+					GUI.DrawTexture(new Rect(iconRect.x + inset, iconRect.y + inset, iconRect.width - inset*2, iconRect.height - inset*2), BeamGUI.GetSpinner());
+				}
+				else
+				{
+					GUI.DrawTexture(iconRect, BeamGUI.iconBeamableSmall);
+				}
+				
 				EditorGUI.DrawRect(badgeRect, badgeColor);
 			}
 			finally
