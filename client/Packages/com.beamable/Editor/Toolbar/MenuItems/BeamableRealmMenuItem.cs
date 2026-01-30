@@ -18,7 +18,10 @@ namespace Beamable.Editor.ToolbarExtender
 		public override void ContextualizeMenu(BeamEditorContext editor, GenericMenu menu)
 		{
 			var rootDisplay = RenderLabel(editor);
-
+			if (string.IsNullOrEmpty(rootDisplay?.text))
+			{
+				return;
+			}
 			var projects = new List<RealmView>();
 
 			
