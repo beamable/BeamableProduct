@@ -123,7 +123,7 @@ namespace Beamable.Editor.ToolbarExtender
 				
 				var iconRect = new Rect(buttonRect.x+3, buttonRect.y-1, 20, 18);
 
-				if (_editorAPI.IsSwitchingRealms || !_editorAPI.OnReady.IsCompleted)
+				if (_editorAPI.IsSwitchingRealms)
 				{
 					var inset = 3;
 					GUI.DrawTexture(new Rect(iconRect.x + inset, iconRect.y + inset, iconRect.width - inset*2, iconRect.height - inset*2), BeamGUI.GetSpinner());

@@ -616,6 +616,7 @@ namespace Beamable
 		/// </param>
 		public void Logout(bool clearRealmPid)
 		{
+			changeRealmPromise?.CompleteSuccess();
 			BeamCli.Logout().Then(_ =>
 			{
 				OnUserChange?.Invoke(null);
@@ -691,14 +692,30 @@ namespace Beamable
 			}
 		}
 
-		public Promise changeRealmPromise;
-		public bool IsSwitchingRealms => !(changeRealmPromise == null || changeRealmPromise.IsCompleted);
+		
+		
+		private Promise changeRealmPromise;
+
+		public bool IsSwitchingRealms
+		{
+			get
+			{
+				if (changeRealmPromise == null) return false;
+				if (changeRealmPromise.IsCompleted) return false;
+				if (changeRealmPromise.IsFailed) return false;
+				return true;
+			}
+		} 
 		public async Promise SwitchRealm(RealmView realm)
 		{
 			await SwitchRealm(realm.Pid);
 		}
 		public async Promise SwitchRealm(string pid)
 		{
+			if (changeRealmPromise != null)
+			{
+				changeRealmPromise.CompleteSuccess();
+			}
 			changeRealmPromise = new Promise();
 			try
 			{

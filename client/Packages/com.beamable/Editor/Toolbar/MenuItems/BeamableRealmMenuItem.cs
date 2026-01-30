@@ -22,6 +22,7 @@ namespace Beamable.Editor.ToolbarExtender
 			{
 				return;
 			}
+
 			var projects = new List<RealmView>();
 
 			
@@ -92,6 +93,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
 		{
+			if (!beamableApi.IsAuthenticated) return null;
 			var realmName = beamableApi?.BeamCli?.CurrentRealm?.DisplayName;
 			if (string.IsNullOrEmpty(realmName))
 			{
