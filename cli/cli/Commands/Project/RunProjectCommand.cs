@@ -144,18 +144,22 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		
 		foreach (var service in args.services)
 			SendUpdate(service, "resolving...", -MIN_PROGRESS * .7f);
+
+		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
+		Dictionary<string, BeamoServiceDefinition> serviceDefinitions = beamoLocalManifest.ServiceDefinitions.ToDictionary(def => def.BeamoId, def => def);
 		
 		// Build out the list of services we'll actually want to start.
-		var serviceTable = new Dictionary<string, HttpMicroserviceLocalProtocol>();
+		var serviceTable = new Dictionary<string, BeamoServiceDefinition>();
 		foreach (var serviceName in args.services)
 		{
 			// If the service is not defined locally (as in, we can't run it locally for whatever reason)
-			if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceName, out var service))
+			
+			if (!serviceDefinitions.TryGetValue(serviceName, out var serviceDefinition ))
 			{
 				throw new CliException($"No service definition available locally for service=[{serviceName}]");
 			}
 
-			serviceTable[serviceName] = service;
+			serviceTable.Add(serviceName, serviceDefinition);
 		}
 		
 		foreach (var service in args.services)
@@ -165,36 +169,45 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		var runTasks = new List<Task>();
 		var failedTasks = new ConcurrentDictionary<string, RunProjectBuildErrorStream>();
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
-		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
+		foreach ((string serviceName, BeamoServiceDefinition serviceDef) in serviceTable)
 		{
 			var name = serviceName;
 
 			var buildFlags = args.disableClientCodeGen ? ProjectService.BuildFlags.DisableClientCodeGen : ProjectService.BuildFlags.None;
 			var runFlags = args.detach ? ProjectService.RunFlags.Detach : ProjectService.RunFlags.None;
-			
-			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags, data =>
+
+			switch (serviceDef.Protocol)
 			{
-				if (data.IsJson)
-				{
-					Log.Write(data.JsonLogLevel, data.JsonLogMessage);
-				} 
-				else if (data.forcedLogLevel.HasValue)
-				{
-					Log.Write(data.forcedLogLevel.Value, data.rawLogMessage);
-				}
-				else
-				{
-					Log.Information(data.rawLogMessage);
-				}
-			}, (errorReport, exitCode) =>
-			{
-				var error = new RunProjectBuildErrorStream { serviceId = name, report = errorReport };
-				failedTasks[name] = error;
-				this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(error);
-			}, (progress, message) =>
-			{
-				SendUpdate(name, message, progress);
-			}));
+				case BeamoProtocolType.HttpMicroservice:
+					runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags, data =>
+					{
+						if (data.IsJson)
+						{
+							Log.Write(data.JsonLogLevel, data.JsonLogMessage);
+						} 
+						else if (data.forcedLogLevel.HasValue)
+						{
+							Log.Write(data.forcedLogLevel.Value, data.rawLogMessage);
+						}
+						else
+						{
+							Log.Information(data.rawLogMessage);
+						}
+					}, (errorReport, exitCode) =>
+					{
+						var error = new RunProjectBuildErrorStream { serviceId = name, report = errorReport };
+						failedTasks[name] = error;
+						this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(error);
+					}, (progress, message) =>
+					{
+						SendUpdate(name, message, progress);
+					}));
+					break;
+				case BeamoProtocolType.EmbeddedMongoDb:
+					runTasks.Add(args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
+						beamoLocalManifest.EmbeddedMongoDbLocalProtocols[serviceDef.BeamoId]));
+					break;
+			}
 		}
 		
 		await Task.WhenAll(runTasks);
