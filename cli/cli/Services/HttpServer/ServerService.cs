@@ -356,10 +356,6 @@ public class ServerService
 		sw.Start();
 		app.Configure(builder =>
 		{
-			// inject the existing config service into the sub-app.
-			builder.RemoveIfExists<ConfigService>();
-			builder.AddSingleton<ConfigService>(args.ConfigService);
-			
 			builder.Remove<IDataReporterService>();
 			builder.AddSingleton<IDataReporterService, ServerReporterService>(provider => new ServerReporterService(provider, response));
 		}, overwriteLogger: false);

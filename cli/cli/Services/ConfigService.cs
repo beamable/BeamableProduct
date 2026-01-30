@@ -138,24 +138,12 @@ public class ConfigService
 	public string ConfigLocalDirectoryPath { get; private set; }
 
 
-	/// <summary>
-	/// Data from the <see cref="CFG_FILE_NAME"/>.
-	/// </summary>
-	private JObject _config;
-
-	/// <summary>
-	/// Data from the <see cref="CFG_FILE_NAME"/> that lives inside the <see cref="ConfigLocalDirectoryPath"/>.
-	/// </summary>
-	private JObject _configLocalOverrides;
-
 	private BindingContext _bindingCtx;
 
 	public ConfigService(BindingContext bindingCtx)
 	{
 		_bindingCtx = bindingCtx;
 
-		_config = new();
-		_configLocalOverrides = new();
 	}
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
@@ -177,8 +165,6 @@ public class ConfigService
 
 			RunMigrations();
 
-			_ = ReadConfigFile(ConfigDirectoryPath, false, true, out _config);
-			_ = ReadConfigFile(ConfigLocalDirectoryPath, true, false, out _configLocalOverrides);
 		}
 	}
 
@@ -720,37 +706,69 @@ public class ConfigService
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option and, if we can't, get it from the loaded config file.		
-		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString(option.OptionName, defaultValue);
+		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString2(option.OptionName, defaultValue);
 		return !string.IsNullOrEmpty(value);
 	}
 
-	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
-
-	[CanBeNull]
-	public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
-		GetConfig<string>(key, defaultValue);
-
-	[CanBeNull]
-	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig<string>(key, defaultValue, true);
-
-	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
+	public string PrettyPrint()
 	{
-		var value = _configLocalOverrides?.SelectToken(key);
-		if (value != null)
+		if (ReadConfigFile(ConfigDirectoryPath, true, false, out var config))
 		{
-			if (!ignoreOverride)
-			{
-				return value switch
-				{
-					JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
-					JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
-					_ => value.Value<T>()
-				};
-			}
+			return JsonConvert.SerializeObject(config, Formatting.Indented);
 		}
 
-		return GetConfig(key, defaultValue, _config);
+		return "";
+	} 
+
+	// [CanBeNull]
+	// public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
+	// 	GetConfig<string>(key, defaultValue);
+	//
+	public string GetConfigString2(string key, [CanBeNull] string defaultValue = null) =>
+		GetConfig2<string>(key, defaultValue);
+
+	[CanBeNull]
+	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig2<string>(key, defaultValue, true);
+
+	public T GetConfig2<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
+	{
+		if (!ignoreOverride)
+		{
+			if (ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var localConfig))
+			{
+				if (TryGetConfig(key, defaultValue, localConfig, out var value))
+				{
+					return value;
+				}
+			}
+		}
+		
+		if (!ReadConfigFile(ConfigDirectoryPath, true, false, out var config))
+		{
+			return defaultValue;
+		}
+
+		TryGetConfig(key, defaultValue, config, out var currentValue);
+		return currentValue; 
 	}
+	// public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
+	// {
+	// 	var value = _configLocalOverrides?.SelectToken(key);
+	// 	if (value != null)
+	// 	{
+	// 		if (!ignoreOverride)
+	// 		{
+	// 			return value switch
+	// 			{
+	// 				JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
+	// 				JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
+	// 				_ => value.Value<T>()
+	// 			};
+	// 		}
+	// 	}
+	//
+	// 	return GetConfig(key, defaultValue, _config);
+	// }
 
 	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, JObject config)
 	{
@@ -770,10 +788,53 @@ public class ConfigService
 
 		return defaultValue;
 	}
+	
+	
+	public bool TryGetConfig<T>(string key, [CanBeNull] T defaultValue, JObject config, out T currentValue)
+	{
+		lock (_configLock)
+		{
+			var value = config?.SelectToken(key);
+			if (value == null)
+			{
+				currentValue = defaultValue;
+				return false;
+			}
+			
+			currentValue = value switch
+			{
+				JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
+				JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
+				_ => value.Value<T>()
+			};
+			return true;
+		}
+	}
 
-	public T SetConfig<T>(string path, [CanBeNull] T newValue, bool isOverride = false) => SetConfig(path, newValue, isOverride ? _configLocalOverrides : _config);
+	public void WriteConfig(Action<JObject> modifier, bool isOverride = false)
+	{
+		var configFolder = isOverride
+			? ConfigLocalDirectoryPath
+			: ConfigDirectoryPath;
 
-	public T SetConfig<T>(string path, [CanBeNull] T newValue, JObject target)
+		ReadConfigFile(configFolder, true, false, out var config);
+		modifier(config);
+		FlushConfig(config, configFolder, !isOverride);
+		
+	}
+	public T WriteConfig<T>(string path, [CanBeNull] T newValue, bool isOverride=false)
+	{
+		T nextValue = default;
+		WriteConfig(config =>
+		{
+			nextValue = SetConfig(path, newValue, config);
+		}, isOverride);
+		return nextValue;
+	}
+
+	// public T SetConfig<T>(string path, [CanBeNull] T newValue, bool isOverride = false) => SetConfig(path, newValue, isOverride ? _configLocalOverrides : _config);
+
+	public static T SetConfig<T>(string path, [CanBeNull] T newValue, JObject target)
 	{
 		lock (_configLock)
 		{
@@ -892,7 +953,16 @@ public class ConfigService
 		}
 	}
 
-	public bool DeleteConfig(string path, bool fromOverride = false) => DeleteConfig(path, fromOverride ? _configLocalOverrides : _config);
+	public bool DeleteConfig(string path, bool fromOverride = false)
+	{
+		//DeleteConfig(path, fromOverride ? _configLocalOverrides : _config);
+		bool success = false;
+		WriteConfig(config =>
+		{
+			success = DeleteConfig(path, config);
+		}, fromOverride);
+		return success;
+	} 
 
 	public bool DeleteConfig(string path, JObject config)
 	{
@@ -951,27 +1021,12 @@ public class ConfigService
 	/// <summary>
 	/// Use this in conjunction with <see cref="FlushLocalOverrides"/> to flush a configuration setting that will NOT be version controlled AND takes precedence over the <see cref="CFG_FILE_NAME"/>.
 	/// </summary>
-	public string SetLocalOverride(string key, string value) => SetConfig(key, value, true);
+	// public string SetLocalOverride(string key, string value) => SetConfig(key, value, true);
+	// public string WriteLocalOverride(string key, string value) => WriteConfig(key, value, true);
 
-	/// <summary>
-	/// Use this along with <see cref="FlushLocalOverrides"/> to remove a local override with the given key. 
-	/// </summary>
 	public bool DeleteLocalOverride(string key) => DeleteConfig(key, true);
 
-	/// <summary>
-	/// Use this along with <see cref="FlushConfig"/> to flush a configuration setting that WILL be Version Controlled AND is overriden by files in <see cref="Constants.CONFIG_LOCAL_OVERRIDES_DIRECTORY"/>.
-	/// </summary>
-	public string SetConfigString(string key, string value) => SetConfig(key, value);
-
-	/// <summary>
-	/// Calling this function allows you to set the local config (VCS).
-	/// </summary>
-	public void FlushConfig() => FlushConfig(_config, ConfigDirectoryPath, true);
-
-	/// <summary>
-	/// Calling this function allows you to set the local config overrides (ignore by VCS).
-	/// </summary>
-	public void FlushLocalOverrides() => FlushConfig(_configLocalOverrides, ConfigLocalDirectoryPath, false);
+	public string WriteConfigString(string key, string value) => WriteConfig(key, value);
 
 	private static object _flushConfigLock = new();
 	private static object _configLock = new();
@@ -1235,7 +1290,7 @@ public class ConfigService
 
 	public OtelConfig LoadOtelConfigFromFile()
 	{
-		var config = GetConfig(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
+		var config = GetConfig2(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
 		if (string.IsNullOrEmpty(config.BeamCliTelemetryLogLevel))
 		{
 			config.BeamCliTelemetryLogLevel = nameof(LogLevel.Warning);
@@ -1251,21 +1306,20 @@ public class ConfigService
 
 	public void SaveOtelConfigToFile(OtelConfig config)
 	{
-		SetConfig(CFG_JSON_FIELD_OBJ_OTEL, config);
-		FlushConfig();
+		WriteConfig(CFG_JSON_FIELD_OBJ_OTEL, config);
 	}
 
-	public bool ExistsOtelConfig() => GetConfig<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
+	public bool ExistsOtelConfig() => GetConfig2<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
 
 	#endregion
 
 	#region Helpers - Microservice Parsing Settings
 
-	public List<string> LoadExtraPathsFromFile() => GetConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+	public List<string> LoadExtraPathsFromFile() => GetConfig2(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 
 	public List<string> LoadPathsToIgnoreFromFile()
 	{
-		var paths = GetConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var paths = GetConfig2(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		return paths
 			.Select(GetRelativeToExecutionPath)
 			.Select(Path.GetFullPath)
@@ -1274,21 +1328,21 @@ public class ConfigService
 
 	public void SaveExtraPathsToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
-		SetConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, currentPaths.Distinct().ToList());
+		WriteConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public void SavePathsToIgnoreToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
-		SetConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, currentPaths.Distinct().ToList());
+		WriteConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public string GetProjectRootPath()
 	{
-		var relativePath = GetConfig<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
+		var relativePath = GetConfig2<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
 		var fullPath = Path.Combine(BeamableWorkspace, relativePath);
 		return new DirectoryInfo(fullPath).FullName;
 	}
@@ -1359,12 +1413,11 @@ public class ConfigService
 
 	#region Helpers - Microservice Codegen Settings
 
-	public EngineProjectData GetLinkedEngineProjects() => GetConfig(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
+	public EngineProjectData GetLinkedEngineProjects() => GetConfig2(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
 
 	public void SetLinkedEngineProjects(EngineProjectData data)
 	{
-		_ = SetConfig(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, data);
-		FlushConfig();
+		_ = WriteConfig(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, data);
 	}
 
 	#endregion
