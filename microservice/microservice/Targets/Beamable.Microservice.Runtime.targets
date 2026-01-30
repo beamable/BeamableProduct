@@ -81,6 +81,30 @@
         </ItemGroup>
     </Target>
 
+    <!--
+        Pre-build validation (Windows only): detect if any files in the output
+        folder are locked and abort the build with a helpful message.
+        This helps users who try to build while the microservice is still running.
+        To skip this check set the MSBuild property: /p:BeamDisableOutputLockCheck=true
+    -->
+    <Target Name="BeamablePreBuildOutputLockCheck" BeforeTargets="BeforeBuild" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPlatform)'=='win' AND '$(BeamDisableOutputLockCheck)'!='true'">
+        <PropertyGroup>
+            <ActualOutputDir>$(OutputPath)</ActualOutputDir>
+            <ActualOutputDir Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</ActualOutputDir>
+        </PropertyGroup>
+
+        <Message Importance="normal" Text="Checking output folder for locked files: [$(ActualOutputDir)]"/>
+
+        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="powershell -NoProfile -Command &quot;&amp; { $ErrorActionPreference='Stop'; $targetPath='$(TargetPath)'; $out='$(ActualOutputDir)'; $found=$false; if (Test-Path $targetPath) { $paths=@($targetPath) } elseif (Test-Path $out) { $paths=Get-ChildItem -Path $out -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.dll', '.exe' } | Select-Object -ExpandProperty FullName } else { $paths=@() }; foreach ($p in $paths) { try { $s=[System.IO.File]::Open($p,[System.IO.FileMode]::Open,[System.IO.FileAccess]::ReadWrite,[System.IO.FileShare]::None); $s.Close() } catch { $found=$true; break } }; if ($found) { exit 1 } else { exit 0 } }&quot;">
+            <Output TaskParameter="ExitCode" PropertyName="BeamOutputLockCheckExitCode"/>
+        </Exec>
+        <Message Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Importance="high" Text="ERROR: The output folder appears to be in use (a service may be running)."/>
+        <Message Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Importance="high" Text="Run: dotnet beam project ps to list running services"/>
+        <Message Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Importance="high" Text="Then stop this service with: dotnet beam project stop --ids $(BeamId)"/>
+        <Error Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Text="Output folder is locked."/>
+    </Target>
+
     <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamProjectType)'=='service' AND '$(BeamDisableCollectorResolution)'!='true'">
 
         <PropertyGroup>
