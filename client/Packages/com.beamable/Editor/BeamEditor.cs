@@ -200,7 +200,10 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+			// Initialize toolbar
+			BeamableToolbarExtender.LoadToolbarExtender();
+#endif
 			initializeAttemptCount++;
 
 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
@@ -361,11 +364,6 @@ namespace Beamable
 #endif
 
 					IsInitialized = true;
-
-#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-					// Initialize toolbar
-					BeamableToolbarExtender.LoadToolbarExtender();
-#endif
 
 				}
 				catch (Exception ex)
