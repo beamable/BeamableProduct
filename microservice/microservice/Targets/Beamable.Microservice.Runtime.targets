@@ -93,33 +93,59 @@
             <ActualOutputDir Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</ActualOutputDir>
         </PropertyGroup>
 
-        <Message Importance="normal" Text="Checking for running Beam service with id: [$(BeamId)]"/>
-        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="powershell -NoProfile -Command &quot;&amp; { $ErrorActionPreference='Stop'; $beamId='$(BeamId)'; $ps=dotnet beam project ps 2&gt;$null; if ($ps -match [Regex]::Escape($beamId)) { dotnet beam project stop --ids $beamId | Out-Null } }&quot;" />
+        <PropertyGroup>
+            <BeamOutputDirFullPath>$([System.IO.Path]::GetFullPath('$(ActualOutputDir)', '$(MSBuildProjectDirectory)'))</BeamOutputDirFullPath>
+            <BeamOutputDirNormalized>$([System.IO.Path]::TrimEndingDirectorySeparator('$(BeamOutputDirFullPath)'))</BeamOutputDirNormalized>
+            <BeamOutputDirNormalized Condition="'$(BeamOutputDirNormalized)'==''">$(BeamOutputDirFullPath)</BeamOutputDirNormalized>
+        </PropertyGroup>
 
-        <Message Importance="normal" Text="Checking output folder for locked files: [$(ActualOutputDir)]"/>
         <PropertyGroup>
             <BeamOutputLockCheckExitCode>0</BeamOutputLockCheckExitCode>
+            <BeamHasLockedFiles>false</BeamHasLockedFiles>
+            <BeamAfterHasLockedFiles>false</BeamAfterHasLockedFiles>
         </PropertyGroup>
 
-        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="powershell -NoProfile -Command &quot;&amp; { $ErrorActionPreference='Stop'; $outDir='$(ActualOutputDir)'; $pattern='*.dll'; $args = @('beam','checks','locked-files',$outDir,'--pattern',$pattern); $raw = (&amp; dotnet @args 2&gt;&amp;1 | Out-String); $data=$null; try { $data=$raw | ConvertFrom-Json } catch { $data=$null }; $hasLocks = ($raw -match 'LockingFiles' -or $raw -match 'ProcessId'); if ($hasLocks) { if ($data -and $data.ProcessLockedFiles) { $pids = ($data.ProcessLockedFiles | ForEach-Object { $_.ProcessId }) -join ','; if ($pids) { Write-Host ('BEAM_LOCKED_PIDS={0}' -f $pids) } } ; Write-Host 'BEAM_LOCKED=1' } else { Write-Host 'BEAM_LOCKED=0' } }&quot;">
+        <Message Importance="normal" Text="Checking output folder for locked files: [$(BeamOutputDirNormalized)]"/>
+        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off" ConsoleToMSBuild="true" StandardOutputImportance="Low" StandardErrorImportance="Low"
+              Command="dotnet beam checks locked-files &quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
             <Output TaskParameter="ConsoleOutput" PropertyName="BeamLockCheckOutput"/>
         </Exec>
-
         <PropertyGroup>
-            <BeamHasLockedFiles Condition="$(BeamLockCheckOutput.Contains('BEAM_LOCKED=1'))">true</BeamHasLockedFiles>
+            <BeamHasLockedFiles Condition="$([System.String]::Copy('$(BeamLockCheckOutput)').Contains('LockingFiles')) Or $([System.String]::Copy('$(BeamLockCheckOutput)').Contains('ProcessId'))">true</BeamHasLockedFiles>
+        </PropertyGroup>
+        
+        <Message Condition="'$(BeamHasLockedFiles)'=='true'" Importance="high" Text="Locked files detected. Stopping service and re-checking output folder."/>
+
+        <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="dotnet beam project stop --ids $(BeamId) --reason &quot;Stopped service to generate new build.&quot;" />
+
+        <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off" ConsoleToMSBuild="true" StandardOutputImportance="Low" StandardErrorImportance="Low"
+              Command="dotnet beam checks locked-files &quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
+            <Output TaskParameter="ConsoleOutput" PropertyName="BeamLockCheckAfterOutput"/>
+        </Exec>
+        <PropertyGroup Condition="'$(BeamHasLockedFiles)'=='true'">
+            <BeamAfterHasLockedFiles Condition="$([System.String]::Copy('$(BeamLockCheckAfterOutput)').Contains('LockingFiles')) Or $([System.String]::Copy('$(BeamLockCheckAfterOutput)').Contains('ProcessId'))">true</BeamAfterHasLockedFiles>
         </PropertyGroup>
 
-        <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="dotnet beam project stop --ids $(BeamId) --reason 'Stopped service to generate new build.'" />
+        
 
-        <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="powershell -NoProfile -Command &quot;&amp; { $ErrorActionPreference='Stop'; $outDir='$(ActualOutputDir)'; $pattern='*.dll'; $args = @('beam','checks','locked-files',$outDir,'--pattern',$pattern); $raw = (&amp; dotnet @args 2&gt;&amp;1 | Out-String); $data=$null; try { $data=$raw | ConvertFrom-Json } catch { $data=$null }; $hasLocks = ($raw -match 'LockingFiles' -or $raw -match 'ProcessId'); if ($hasLocks) { if ($data -and $data.ProcessLockedFiles) { foreach ($proc in $data.ProcessLockedFiles) { Write-Host ('Locked files under output folder by processId {0} ran by command: {1}' -f $proc.ProcessId, $proc.CommandLine) } } else { Write-Host 'Locked files under output folder (details unavailable).'; Write-Host $raw } ; exit 1 } else { exit 0 } }&quot;">
-            <Output TaskParameter="ExitCode" PropertyName="BeamOutputLockCheckExitCode"/>
-        </Exec>
+        <PropertyGroup Condition="'$(BeamAfterHasLockedFiles)'=='true'">
+            <BeamLockProcId>$([System.Text.RegularExpressions.Regex]::Match('$(BeamLockCheckAfterOutput)','\"ProcessId\"\s*:\s*(\d+)').Groups[1].Value)</BeamLockProcId>
+            <BeamLockCommandLine>$([System.Text.RegularExpressions.Regex]::Match('$(BeamLockCheckAfterOutput)','\"CommandLine\"\s*:\s*\"((?:[^\"\\]|\\.)*)\"').Groups[1].Value)</BeamLockCommandLine>
+        </PropertyGroup>
+        <PropertyGroup Condition="'$(BeamAfterHasLockedFiles)'=='true' AND '$(BeamLockProcId)'==''">
+            <BeamLockProcId>unknown</BeamLockProcId>
+        </PropertyGroup>
+        <PropertyGroup Condition="'$(BeamAfterHasLockedFiles)'=='true' AND '$(BeamLockCommandLine)'==''">
+            <BeamLockCommandLine>unknown</BeamLockCommandLine>
+        </PropertyGroup>
+        <PropertyGroup Condition="'$(BeamAfterHasLockedFiles)'=='true'">
+            <BeamLockDetails>Some files in the output folder ($(ActualOutputDir)) are locked by the process: $(BeamLockProcId). (command line: $(BeamLockCommandLine))</BeamLockDetails>
+            <BeamOutputLockCheckExitCode>1</BeamOutputLockCheckExitCode>
+        </PropertyGroup>
 
-        <Error Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Text="ERROR: Some files in the output folder are locked"/>
+        <Error Condition="'$(BeamOutputLockCheckExitCode)'!='0'" Text="$(BeamLockDetails)"/>
+        <Error Condition="'$(BeamOutputLockCheckExitCode)'!='0' AND '$(BeamLockDetails)'==''" Text="Some files in the output folder are locked."/>
     </Target>
 
     <Target Name="ResolveAndCopyCollectorFiles" BeforeTargets="Build;Publish" Condition="'$(BeamProjectType)'=='service' AND '$(BeamDisableCollectorResolution)'!='true'">
