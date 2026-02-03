@@ -93,6 +93,10 @@
             <ActualOutputDir Condition="'$(BeamPublish)' == 'true'">$(PublishDir)</ActualOutputDir>
         </PropertyGroup>
 
+        <Message Importance="normal" Text="Checking for running Beam service with id: [$(BeamId)]"/>
+        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="powershell -NoProfile -Command &quot;&amp; { $ErrorActionPreference='Stop'; $beamId='$(BeamId)'; $ps=dotnet beam project ps 2&gt;$null; if ($ps -match [Regex]::Escape($beamId)) { dotnet beam project stop --ids $beamId | Out-Null } }&quot;" />
+
         <Message Importance="normal" Text="Checking output folder for locked files: [$(ActualOutputDir)]"/>
 
         <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
