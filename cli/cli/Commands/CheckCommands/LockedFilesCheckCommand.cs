@@ -35,12 +35,8 @@ public class LockedFilesCheckCommand : StreamCommand<LockedFilesCheckCommandArgs
 
 	public override void Configure()
 	{
-		var folderPath = new Argument<string>(nameof(LockedFilesCheckCommandArgs.folderPath))
-		{
-			Description = "The folder path to check for locked files"
-		};
-
-		AddArgument(folderPath, (args, i) => args.folderPath = i);
+		AddOption(new Option<string>("--folderPath", "The folder path to check for locked files"),
+			(args, i) => args.folderPath = i);
 		AddOption(
 			new Option<string>($"--pattern", () => "*",
 				"The file pattern to check for"), (args, i) => args.filePattern = i);
@@ -50,7 +46,7 @@ public class LockedFilesCheckCommand : StreamCommand<LockedFilesCheckCommandArgs
 	{
 	    if (string.IsNullOrWhiteSpace(args.folderPath))
 	    {
-		    throw new CliException($"Missing value on argument: {args.folderPath}");
+		    args.folderPath = args.AppContext.WorkingDirectory;
 	    }
 	
 	    if (!Directory.Exists(args.folderPath))
