@@ -35,7 +35,7 @@ namespace Beamable.Editor.ToolbarExtender
 				BeamableToolbarCallbacks.m_toolbarType.GetMethod("RepaintToolbar", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
 			};
 
-			BeamGUI.LoadNonConfigurableIcons();
+			BeamGUI.LoadNonConfigurableIcons(silentError: true);
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 
