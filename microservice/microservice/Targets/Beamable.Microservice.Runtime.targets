@@ -107,7 +107,7 @@
 
         <Message Importance="normal" Text="Checking output folder for locked files: [$(BeamOutputDirNormalized)]"/>
         <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off" ConsoleToMSBuild="true" StandardOutputImportance="Low" StandardErrorImportance="Low"
-              Command="dotnet beam checks locked-files &quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
+              Command="dotnet beam checks locked-files --folderPath=&quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
             <Output TaskParameter="ConsoleOutput" PropertyName="BeamLockCheckOutput"/>
         </Exec>
         <PropertyGroup>
@@ -120,7 +120,7 @@
               Command="dotnet beam project stop --ids $(BeamId) --reason &quot;Stopped service to generate new build.&quot;" />
 
         <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off" ConsoleToMSBuild="true" StandardOutputImportance="Low" StandardErrorImportance="Low"
-              Command="dotnet beam checks locked-files &quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
+              Command="dotnet beam checks locked-files --folderPath=&quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">
             <Output TaskParameter="ConsoleOutput" PropertyName="BeamLockCheckAfterOutput"/>
         </Exec>
         <PropertyGroup Condition="'$(BeamHasLockedFiles)'=='true'">
