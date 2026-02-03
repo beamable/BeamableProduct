@@ -64,16 +64,9 @@ namespace Beamable.Editor.Util
 			var spinnerIndex = (int)( ((Time.realtimeSinceStartup*12f)+offset) % BeamGUI.unitySpinnerTextures.Length);
 			return unitySpinnerTextures[spinnerIndex];
 		}
-		
-		public static void LoadAllIcons()
+
+		public static void LoadNonConfigurableIcons()
 		{
-			var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
-			var allTypes = reflectionCache.GetAll().ToList();
-			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration?.TextureConfigurations?.Count != allTypes.Count)
-			{
-				ContentConfiguration.Instance.ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
-			}
-			
 			
 			if (unitySpinnerTextures == null)
 			{
@@ -325,6 +318,22 @@ namespace Beamable.Editor.Util
 			{
 				iconContentSnapshotColor = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ContentSnapshot.png");
 			}
+		}
+
+		public static void LoadConfigurableIcons()
+		{
+			var reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
+			var allTypes = reflectionCache.GetAll().ToList();
+			if (ContentConfiguration.Instance.ContentTextureConfiguration == null || ContentConfiguration.Instance.ContentTextureConfiguration?.TextureConfigurations?.Count != allTypes.Count)
+			{
+				ContentConfiguration.Instance.ContentTextureConfiguration = new  ContentTextureConfiguration(allTypes);
+			}
+		}
+		
+		public static void LoadAllIcons()
+		{
+			LoadConfigurableIcons();
+			LoadNonConfigurableIcons();
 		}
 	}
 }
