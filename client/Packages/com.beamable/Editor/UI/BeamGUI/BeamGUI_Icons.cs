@@ -70,11 +70,6 @@ namespace Beamable.Editor.Util
 		{
 			try
 			{
-				// do not attempt to load the icons if the beamable editor is not initialized. 
-				//  it is a good proxy for, "is the asset database ready", 
-				//  and if it is not, then trying to import these assets will surely fail. 
-				if (!BeamEditor.IsInitialized) return;
-				
 				if (unitySpinnerTextures == null)
 				{
 					unitySpinnerTextures = new Texture[]
@@ -93,6 +88,12 @@ namespace Beamable.Editor.Util
 						EditorGUIUtility.IconContent("WaitSpin11").image,
 					};
 				}
+				
+				// do not attempt to load the icons if the beamable editor is not initialized. 
+				//  it is a good proxy for, "is the asset database ready", 
+				//  and if it is not, then trying to import these assets will surely fail. 
+				if (!BeamEditor.IsInitialized) return;
+				
 
 
 				if (artGameServers == null)
