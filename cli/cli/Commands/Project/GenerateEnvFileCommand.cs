@@ -119,7 +119,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 					await manifestTask;
 					await StopProjectCommand.DiscoverAndStopServices(args,
 						new HashSet<string>(new string[] { args.serviceId.Value }),
-						true, TimeSpan.FromMilliseconds(500), output =>
+						"generate-env command",true, TimeSpan.FromMilliseconds(500), output =>
 						{
 							Log.Information($"Stopping other service key=[{output.instance.primaryKey}]");
 						}, filter: (instance) =>
