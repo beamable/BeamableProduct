@@ -106,6 +106,7 @@
 
     <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
     <PackageReference Include="Dapper" Version="2.1.66"/>
+    <PackageReference Include="System.Management" Version="6.0.0"/>
     
   </ItemGroup>
 

@@ -524,6 +524,7 @@ public class App
 		
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
+		Commands.AddSubCommand<LockedFilesCheckCommand, LockedFilesCheckCommandArgs, CheckCommandCommandGroup>();
 
 		Commands.AddRootCommand<OtelCommand>();
 		Commands.AddSubCommandWithHandler<GetClickhouseCredentials, GetClickhouseCredentialsArgs, OtelCommand>();
