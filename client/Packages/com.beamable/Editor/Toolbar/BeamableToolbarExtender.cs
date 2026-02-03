@@ -35,14 +35,16 @@ namespace Beamable.Editor.ToolbarExtender
 				BeamableToolbarCallbacks.m_toolbarType.GetMethod("RepaintToolbar", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
 			};
 
+			BeamGUI.LoadAllIcons();
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 
 			if (!BeamEditor.IsInitialized)
 			{
-				Debug.LogError("Beamable Toolbar cannot load because Beamable is not initialized. ");
+				// Debug.LogError("Beamable Toolbar cannot load because Beamable is not initialized. ");
 				return;
 			}
+			
 
 			var api = BeamEditorContext.Default;
 			_editorAPI = api;
@@ -61,11 +63,16 @@ namespace Beamable.Editor.ToolbarExtender
 
 		}
 
+		private const string LAST_REALM_SESSION_KEY = "beam-toolbar-last-realm-name";
 		static void OnGUI(IMGUIContainer container)
 		{
-			if (_editorAPI == null) return;
+			// if (_editorAPI == null) return;
 			
-			BeamGUI.LoadAllIcons();
+			if (_editorAPI == null && BeamEditor.IsInitialized)
+			{
+				LoadToolbarExtender();
+				
+			}
 
 			EditorGUILayout.BeginHorizontal(new GUIStyle
 			{
@@ -75,31 +82,42 @@ namespace Beamable.Editor.ToolbarExtender
 			try
 			{
 				var badgeColor = new Color(0,0,0,.3f);
-				if (_editorAPI.BeamCli.CurrentRealm?.IsProduction ?? false)
+				if (_editorAPI?.BeamCli.CurrentRealm?.IsProduction ?? false)
 				{
 					badgeColor = new Color(1, 0, 0, .5f);
 				}
-				else if (_editorAPI.BeamCli.CurrentRealm?.IsStaging ?? false)
+				else if (_editorAPI?.BeamCli.CurrentRealm?.IsStaging ?? false)
 				{
 					badgeColor = new Color(1, .5f, 0, .5f);
 				}
 
-				var realmDisplay = _editorAPI.BeamCli.CurrentRealm?.DisplayName ?? "<no realm>";
-				var versionDisplay = _editorAPI.BeamCli.PackageVersion.ToString();
-				if (_editorAPI.BeamCli.PackageVersion.IsNightly)
+				var realmDisplay = _editorAPI?.BeamCli.CurrentRealm?.DisplayName ?? "<no realm>";
+				if (_editorAPI == null)
+				{
+					realmDisplay = SessionState.GetString(LAST_REALM_SESSION_KEY, "<loading>");
+				}
+				else
+				{
+					SessionState.SetString(LAST_REALM_SESSION_KEY, realmDisplay);
+				}
+				
+				var versionDisplay = BeamableEnvironment.SdkVersion.ToString();
+				if (BeamableEnvironment.SdkVersion.IsNightly)
 				{
 					versionDisplay = "nightly";
 				}
 				var titleContent = new GUIContent(realmDisplay + " (" + versionDisplay + ")");
 
+				GUI.enabled = _editorAPI != null;
 				var didClick = GUILayout.Button(titleContent, new GUIStyle(EditorStyles.toolbarButton)
 				{
 					alignment = TextAnchor.MiddleLeft,
 					padding = new RectOffset(24, 0, 0, 0),
 					fixedHeight = EditorStyles.toolbarButton.fixedHeight - 4,
 				});
+				GUI.enabled = true;
 				var buttonRect = GUILayoutUtility.GetLastRect();
-				if (didClick)
+				if (didClick && _editorAPI != null)
 				{
 					// create the menu and add items to it
 					var menu = new GenericMenu();
@@ -122,7 +140,17 @@ namespace Beamable.Editor.ToolbarExtender
 				var badgeRect = new Rect(buttonRect.x, buttonRect.y-1, badgeWidth, buttonRect.height+2);
 				
 				var iconRect = new Rect(buttonRect.x+3, buttonRect.y-1, 20, 18);
-				GUI.DrawTexture(iconRect, BeamGUI.iconBeamableSmall);
+
+				if (_editorAPI == null || _editorAPI.IsSwitchingRealms)
+				{
+					var inset = 3;
+					GUI.DrawTexture(new Rect(iconRect.x + inset, iconRect.y + inset, iconRect.width - inset*2, iconRect.height - inset*2), BeamGUI.GetSpinner());
+				}
+				else
+				{
+					GUI.DrawTexture(iconRect, BeamGUI.iconBeamableSmall);
+				}
+				
 				EditorGUI.DrawRect(badgeRect, badgeColor);
 			}
 			finally
