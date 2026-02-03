@@ -35,7 +35,7 @@ public class LockedFilesCheckCommand : StreamCommand<LockedFilesCheckCommandArgs
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--folderPath", "The folder path to check for locked files"),
+		AddOption(new Option<string>("--folder-path", "The folder path to check for locked files"),
 			(args, i) => args.folderPath = i);
 		AddOption(
 			new Option<string>($"--pattern", () => "*",
