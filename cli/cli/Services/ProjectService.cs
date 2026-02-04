@@ -596,7 +596,7 @@ public class ProjectService
 		Detach
 	}
 	
-	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport)
+	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport, string serviceStopReason = "")
 	{
 		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
 		if (!localServices.TryGetValue(serviceName, out var service))
@@ -620,7 +620,6 @@ public class ProjectService
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var commandStr = $"build {projectPath.EnquotePath()} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
-
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
 		{
 			commandStr += " -p:GenerateClientCode=false";
@@ -628,8 +627,13 @@ public class ProjectService
 		
 		using var cts = new CancellationTokenSource();
 
+		var envVars = new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", };
+		if (!string.IsNullOrWhiteSpace(serviceStopReason))
+		{
+			envVars.Add("BEAM_STOP_SERVICE_REASON", serviceStopReason.Replace("\"", ""));
+		}
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
+			.WithEnvironmentVariables(envVars)
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
 				Log.Information(line);
