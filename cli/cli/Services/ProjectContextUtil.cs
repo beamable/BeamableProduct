@@ -285,38 +285,45 @@ public static class ProjectContextUtil
 	private static Dictionary<string, DateTime> _pathToLastWriteTime = new Dictionary<string, DateTime>();
 	private static Dictionary<string, CsharpProjectMetadata> _pathToMetadata =
 		new Dictionary<string, CsharpProjectMetadata>();
+
+	private static object _cacheLock = new object();
 	
 	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
 	{
 		metadata = null;
-
-		if (!_pathToLastWriteTime.TryGetValue(path, out var cachedWriteTime))
+		lock (_cacheLock)
 		{
-			// we've never seen this file before!
-			return false;
-		}
-		
-		var lastWriteTime = File.GetLastWriteTime(path);
-		if (lastWriteTime >= cachedWriteTime)
-		{
-			// the file has been modified since we last looked at it, so we should break the cache
-			return false;
-		}
+			if (!_pathToLastWriteTime.TryGetValue(path, out var cachedWriteTime))
+			{
+				// we've never seen this file before!
+				return false;
+			}
 
-		if (!_pathToMetadata.TryGetValue(path, out metadata))
-		{
-			// unexpected, but if we don't have the associated metadata, then obviously break the cache.
-			return false;
-		}
+			var lastWriteTime = File.GetLastWriteTime(path);
+			if (lastWriteTime >= cachedWriteTime)
+			{
+				// the file has been modified since we last looked at it, so we should break the cache
+				return false;
+			}
 
-		// the metadata has been retrieved from the cache!
-		return true;
+			if (!_pathToMetadata.TryGetValue(path, out metadata))
+			{
+				// unexpected, but if we don't have the associated metadata, then obviously break the cache.
+				return false;
+			}
+
+			// the metadata has been retrieved from the cache!
+			return true;
+		}
 	}
 
 	static void CacheProjectNow(string path, CsharpProjectMetadata metadata)
 	{
-		_pathToLastWriteTime[path] = DateTime.Now;
-		_pathToMetadata[path] = metadata;
+		lock (_cacheLock)
+		{
+			_pathToLastWriteTime[path] = DateTime.Now;
+			_pathToMetadata[path] = metadata;
+		}
 	}
 
 	public static HashSet<string> FindIgnoredBeamoIds(List<string> searchPaths)
