@@ -1537,7 +1537,7 @@ public partial class DeployUtil
 		if (!useSequentialBuild)
 		{
 			// when using a sequential build; we'll fall back to one at a time
-			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true, serviceStopReason: "Stopped service to generate Release Plan.");
+			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
 		}
 
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
@@ -1663,8 +1663,7 @@ public partial class DeployUtil
 					}, progressMessage: progress =>
 					{
 						progressHandler?.Invoke(progressName, progress.Ratio, serviceName: definition.BeamoId);
-					},
-					serviceStopReason: stopServiceReason);
+					});
 				progressHandler?.Invoke(progressName, 1);
 				imageId = report.ShortImageId;
 			}
