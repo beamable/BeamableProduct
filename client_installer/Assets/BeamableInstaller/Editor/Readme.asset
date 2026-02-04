@@ -53,7 +53,7 @@ MonoBehaviour:
   - heading: Got Feedback?
     text: Let us know what you think or ask any questions you might have.
     linkText: Contact Us
-    url: https://docs.beamable.com/discuss
+    url: https://github.com/orgs/beamable/discussions
     Action: 0
   loadedLayout: 1
   headerMaterial: {fileID: 2100000, guid: ae788a52059ff456f88cccb4a2765fe0, type: 2}

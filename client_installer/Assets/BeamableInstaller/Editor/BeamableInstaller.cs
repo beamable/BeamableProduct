@@ -43,7 +43,7 @@ namespace Beamable.Installer.Editor
         public const string BeamableMenuPath = "Window/Beamable/Utilities/SDK Installer/";
 
         /// True if `com.beamable` is installed in any version
-        public static bool Installed => string.IsNullOrWhiteSpace(InstalledVersion);
+        public static bool Installed => !string.IsNullOrWhiteSpace(InstalledVersion);
         /// Installed version of `com.beamable` package
         public static string InstalledVersion => SessionState.GetString(BeamableVersionKey, string.Empty);
         
@@ -220,7 +220,7 @@ namespace Beamable.Installer.Editor
                 {
                     PrefetchPackageManifestFile(registry, BeamableServerPackageName, beamableVersion, serverManifest =>
                     {
-                        var isServerObsolete = serverManifest["displayName"]?.ToString()?.ToLowerInvariant()
+                        var isServerObsolete = serverManifest["description"]?.ToString()?.ToLowerInvariant()
                             .Contains("obsolete") ?? false;
                         InstallPackageHelper(!isServerObsolete);
                     });
