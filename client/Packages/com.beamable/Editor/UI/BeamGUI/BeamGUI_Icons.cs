@@ -65,6 +65,87 @@ namespace Beamable.Editor.Util
 			var spinnerIndex = (int)( ((Time.realtimeSinceStartup*12f)+offset) % BeamGUI.unitySpinnerTextures.Length);
 			return unitySpinnerTextures[spinnerIndex];
 		}
+
+		public static void LoadUnityIcons()
+		{
+			if (iconLocked == null)
+			{
+				iconLocked = EditorGUIUtility.IconContent("Locked").image;
+			}
+			
+			if (iconHelp == null)
+			{
+				iconHelp = EditorGUIUtility.IconContent("_Help").image;
+			}
+
+			if (iconRefresh == null)
+			{
+				iconRefresh = EditorGUIUtility.IconContent("Refresh").image;
+			}
+
+			if (iconSettings == null)
+			{
+				iconSettings = EditorGUIUtility.IconContent("Settings").image;
+			}
+
+			if (iconFolder == null)
+			{
+				iconFolder = EditorGUIUtility.IconContent("Folder Icon").image;
+			}
+
+
+			if (iconOpenApi == null)
+			{
+				iconOpenApi = EditorGUIUtility.IconContent("BuildSettings.Web.Small").image;
+			}
+
+			if (iconOpenProject == null)
+			{
+				iconOpenProject = EditorGUIUtility.FindTexture("cs Script Icon");
+			}
+
+			if (iconMoreOptions == null)
+			{
+				iconMoreOptions = EditorGUIUtility.IconContent("pane options@2x").image;
+			}
+
+			if (iconPlay == null)
+			{
+				iconPlay = EditorGUIUtility.FindTexture("PlayButton");
+			}
+
+			if (iconPlus == null)
+			{
+				iconPlus = EditorGUIUtility.IconContent("d_Toolbar Plus@2x").image;
+			}
+
+			if (iconCheck == null)
+			{
+				// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
+				iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
+			}
+
+			if (iconUpload == null)
+			{
+				iconUpload = EditorGUIUtility.IconContent("Update-Available@2x").image;
+			}
+
+			if (iconDownload == null)
+			{
+				iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
+			}
+
+			if (iconMenuOptions == null)
+			{
+				iconMenuOptions = EditorGUIUtility.IconContent("d__Menu@2x").image;
+			}
+
+			if (iconRotate == null)
+			{
+				iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
+			}
+
+		}
 		
 		public static void LoadNonConfigurableIcons(bool silentError=false)
 		{
@@ -137,13 +218,7 @@ namespace Beamable.Editor.Util
 							"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
 				}
 
-
-				if (iconLocked == null)
-				{
-					iconLocked = EditorGUIUtility.IconContent("Locked").image;
-				}
-
-
+				
 				if (iconLogoHeader == null)
 				{
 					iconLogoHeader =
@@ -180,80 +255,11 @@ namespace Beamable.Editor.Util
 						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/storage.png", true);
 				}
 
-				if (iconHelp == null)
-				{
-					iconHelp = EditorResources.Load<Texture>(
-						"Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_Light.png");
-				}
-
-				if (iconRefresh == null)
-				{
-					iconRefresh =
-						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Refresh.png");
-				}
-
-				if (iconSettings == null)
-				{
-					iconSettings = EditorGUIUtility.IconContent("Settings").image;
-				}
-
-				if (iconFolder == null)
-				{
-					iconFolder = EditorGUIUtility.IconContent("Folder Icon").image;
-				}
-
-
-				if (iconOpenApi == null)
-				{
-					iconOpenApi = EditorGUIUtility.IconContent("BuildSettings.Web.Small").image;
-				}
-
 				if (iconOpenMongoExpress == null)
 				{
 					iconOpenMongoExpress =
 						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png",
 						                              true);
-				}
-
-				if (iconOpenProject == null)
-				{
-					iconOpenProject = EditorGUIUtility.FindTexture("cs Script Icon");
-				}
-
-				if (iconMoreOptions == null)
-				{
-					iconMoreOptions = EditorGUIUtility.IconContent("pane options@2x").image;
-				}
-
-				if (iconPlay == null)
-				{
-					iconPlay = EditorGUIUtility.FindTexture("PlayButton");
-				}
-
-				if (iconPlus == null)
-				{
-					iconPlus = EditorGUIUtility.IconContent("d_Toolbar Plus@2x").image;
-				}
-
-				if (iconCheck == null)
-				{
-					// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
-					iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
-				}
-
-				if (iconUpload == null)
-				{
-					iconUpload = EditorGUIUtility.IconContent("Update-Available@2x").image;
-				}
-
-				if (iconDownload == null)
-				{
-					iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
-				}
-
-				if (iconMenuOptions == null)
-				{
-					iconMenuOptions = EditorGUIUtility.IconContent("d__Menu@2x").image;
 				}
 
 				if (iconTag == null)
@@ -312,11 +318,6 @@ namespace Beamable.Editor.Util
 					iconStatusInvalid =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Invalid.png");
-				}
-
-				if (iconRotate == null)
-				{
-					iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
 				}
 
 				if (iconSync == null)
@@ -378,6 +379,7 @@ namespace Beamable.Editor.Util
 		
 		public static void LoadAllIcons()
 		{
+			LoadUnityIcons();
 			LoadConfigurableIcons();
 			LoadNonConfigurableIcons();
 		}

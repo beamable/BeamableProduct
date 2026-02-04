@@ -41,16 +41,16 @@ namespace Beamable.Editor.Util
 				EditorGUILayout.Space(1, true);
 
 				{ // draw the right buttons
-					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh ?? GetSpinner(),
+					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh,
 					                                      width: 30,
 					                                      padding: 4,
-					                                      iconPadding: -5,
+					                                      iconPadding: 3,
 					                                      drawBorder: false);
 
-					clickedHelp = BeamGUI.HeaderButton(null, iconHelp ?? GetSpinner(),
+					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
 					                                   width: 30,
 					                                   padding: 4,
-					                                   iconPadding: 5,
+					                                   iconPadding: 1,
 					                                   drawBorder: false);
 				}
 
