@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool exactIds;
         /// <summary>Kill the task instead of sending a graceful shutdown signal via the socket</summary>
         public bool killTask;
+        /// <summary>The reason for stopping the service</summary>
+        public string reason;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -35,6 +37,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.killTask != default(bool)))
             {
                 genBeamCommandArgs.Add(("--kill-task=" + this.killTask));
+            }
+            // If the reason value was not default, then add it to the list of args.
+            if ((this.reason != default(string)))
+            {
+                genBeamCommandArgs.Add(("--reason=" + this.reason));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
