@@ -24,6 +24,11 @@
         <BeamCollectorExists Condition="Exists($(BeamCollectorBinaryFilepath))">true</BeamCollectorExists>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <BeamStopServiceReason>$([System.Environment]::GetEnvironmentVariable('BEAM_STOP_SERVICE_REASON'))</BeamStopServiceReason>
+        <BeamStopServiceReason Condition="'$(BeamStopServiceReason)'==''">Stopped service to generate new build.</BeamStopServiceReason>
+    </PropertyGroup>
+
     <!-- This imports customer specific csproj files in the .beamable/temp/localDev project -->
     <Import Label="Load Beamable Local Developer Settings"
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
@@ -117,7 +122,7 @@
         <Message Condition="'$(BeamHasLockedFiles)'=='true'" Importance="high" Text="Locked files detected. Stopping service and re-checking output folder."/>
 
         <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="dotnet beam project stop --ids $(BeamId) --reason &quot;Stopped service to generate new build.&quot;" />
+              Command="dotnet beam project stop --ids $(BeamId) --reason &quot;$(BeamStopServiceReason)&quot;" />
 
         <Exec Condition="'$(BeamHasLockedFiles)'=='true'" EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off" ConsoleToMSBuild="true" StandardOutputImportance="Low" StandardErrorImportance="Low"
               Command="dotnet beam checks locked-files --folder-path=&quot;$(BeamOutputDirNormalized)&quot; --pattern=&quot;*.dll&quot;">

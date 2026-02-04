@@ -1537,7 +1537,7 @@ public partial class DeployUtil
 		if (!useSequentialBuild)
 		{
 			// when using a sequential build; we'll fall back to one at a time
-			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
+			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true, serviceStopReason: "Stopped service to generate Release Plan.");
 		}
 
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
@@ -1639,6 +1639,7 @@ public partial class DeployUtil
 	{
 		string imageId = null;
 		BuildImageOutput report = default;
+		string stopServiceReason = "Stopped service to generate Release Plan.";
 		if (definition.ShouldBeEnabledOnRemote)
 		{
 			var progressName = BUILD_PROGRESS_PREFIX + definition.BeamoId;
@@ -1662,7 +1663,8 @@ public partial class DeployUtil
 					}, progressMessage: progress =>
 					{
 						progressHandler?.Invoke(progressName, progress.Ratio, serviceName: definition.BeamoId);
-					});
+					},
+					serviceStopReason: stopServiceReason);
 				progressHandler?.Invoke(progressName, 1);
 				imageId = report.ShortImageId;
 			}
@@ -1700,7 +1702,8 @@ public partial class DeployUtil
 						["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
 						["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
 						["OPEN_API_OUTPUT_PATH"] = Path.Combine(definition.ProjectDirectory, "bin", "Release",
-							targetFramework, "unix-x64")
+							targetFramework, "unix-x64"),
+						["BEAM_STOP_SERVICE_REASON"] = stopServiceReason
 					}
 				)
 				.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
