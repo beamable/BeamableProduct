@@ -106,7 +106,12 @@ namespace Beamable.Editor.ToolbarExtender
 				{
 					versionDisplay = "nightly";
 				}
-				var titleContent = new GUIContent(realmDisplay + " (" + versionDisplay + ")");
+
+				var loggedOutText = _editorAPI?.BeamCli?.IsLoggedOut ?? false
+					? "[Logged out] "
+					: "";
+				
+				var titleContent = new GUIContent(loggedOutText + realmDisplay + " (" + versionDisplay + ")");
 
 				GUI.enabled = _editorAPI != null;
 				var didClick = GUILayout.Button(titleContent, new GUIStyle(EditorStyles.toolbarButton)
