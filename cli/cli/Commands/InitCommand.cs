@@ -64,7 +64,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 
 		// Options to allow for re-initializing a project to a different host/cid/pid and user
-		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
+		AddOption(HostOption.Instance, (args, i) => args.selectedEnvironment = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
 		AddOption(new Option<bool>("--ignore-pid", "Ignore the existing pid while initializing"),
