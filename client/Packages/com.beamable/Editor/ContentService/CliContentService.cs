@@ -23,10 +23,10 @@ namespace Beamable.Editor.ContentService
 	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
-		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete";
+		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete. {1}/{2} items synced.";
 		private const string SYNC_OPERATION_ERROR_BASE_MESSAGE = "Error when syncing content {0}. Error message: {1}";
 		private const string PUBLISH_OPERATION_TITLE = "Publish Contents";
-		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published";
+		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published. {1}/{2} items published.";
 		private const string ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE = "Error when publishing content {0}. Discarding publishes changes. Error message: {1}";
 
 		public string manifestIdOverride;
@@ -911,7 +911,7 @@ namespace Beamable.Editor.ContentService
 					return;
 				case 1: // Sync Complete
 				case 2: // Publish Complete
-					description = string.Format(onSuccessBaseMessage, data.contentName);
+					description = string.Format(onSuccessBaseMessage, data.contentName, countItem, data.totalItems);
 					break;
 				case 3: // Update Processed item count
 					countItem = data.processedItems;
