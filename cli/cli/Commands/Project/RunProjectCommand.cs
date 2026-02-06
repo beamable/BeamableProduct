@@ -205,7 +205,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:
 					runTasks.Add(args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
-						beamoLocalManifest.EmbeddedMongoDbLocalProtocols[serviceDef.BeamoId]));
+						beamoLocalManifest.EmbeddedMongoDbLocalProtocols[serviceDef.BeamoId], () =>
+						{
+							SendUpdate(name, progress: 1f);
+						}));
 					break;
 			}
 		}
