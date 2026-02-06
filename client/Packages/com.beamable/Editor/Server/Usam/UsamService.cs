@@ -830,9 +830,9 @@ namespace Beamable.Server.Editor.Usam
 		
 		void StartStorage(BeamManifestStorageEntry storage)
 		{
-			var runCommand = _cli.ServicesRun(new ServicesRunArgs
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs()
 			{
-				ids = new string[]{storage.beamoId},
+				ids = new[]{storage.beamoId},
 			});
 			var action = SetServiceAction(storage.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(storage.beamoId, out var log) && log.logView.clearOnPlay)
@@ -840,9 +840,10 @@ namespace Beamable.Server.Editor.Usam
 				log.logs.Clear();
 				log.logView.RebuildView();
 			}
-			runCommand.OnLocal_progressServiceRunProgressResult(cb =>
+
+			runCommand.OnStreamRunProjectResultStream(cb =>
 			{
-				action.progressRatio = (float)cb.data.LocalDeployProgress;
+				action.progressRatio = cb.data.progressRatio;
 			});
 			
 			runCommand.OnLog(cb =>
