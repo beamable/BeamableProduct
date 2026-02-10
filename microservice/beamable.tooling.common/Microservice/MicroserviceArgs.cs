@@ -46,6 +46,7 @@ namespace Beamable.Server
 		public LogOutputType LogOutputType { get; set; }
 		public string LogOutputPath { get; set; }
 		public bool EnableDangerousDeflateOptions { get; set; }
+		public bool DisableOutboundWsCompression { get; set; }
 		public string MetadataUrl { get; set; }
 		public string RefreshToken { get; set; }
 		public long AccountId { get; set; }
@@ -108,6 +109,7 @@ namespace Beamable.Server
 				LogOutputType = args.LogOutputType,
 				LogOutputPath = args.LogOutputPath,
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
+				DisableOutboundWsCompression = args.DisableOutboundWsCompression,
 				MetadataUrl = args.MetadataUrl,
 				AccountId = args.AccountId,
 				AccountEmail = args.AccountEmail,
@@ -302,6 +304,7 @@ namespace Beamable.Server
 		public string SdkVersionBaseBuild => BeamAssemblyVersionUtil.GetVersion<MicroserviceArgs>();
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
+		public bool DisableOutboundWsCompression => IsEnvironmentVariableTrue("WS_DISABLE_OUTBOUND_COMPRESSION");
 		public bool UseLocalOtel => IsEnvironmentVariableTrue("BEAM_LOCAL_OTEL");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
 		

@@ -41,6 +41,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public LogOutputType LogOutputType { get; }
     public string LogOutputPath { get; }
     public bool EnableDangerousDeflateOptions { get; }
+    public bool DisableOutboundWsCompression { get; }
     public string MetadataUrl { get; }
     public string RefreshToken { get; }
     public string AccountEmail { get; }
