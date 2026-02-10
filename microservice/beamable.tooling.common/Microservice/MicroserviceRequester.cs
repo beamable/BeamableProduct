@@ -213,7 +213,17 @@ namespace Beamable.Server
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
-		         await connection.SendMessage(message, sw);
+		         // Use compression if negotiated and message is large enough
+		         var codec = Daemon?.NegotiatedCodec;
+		         if (codec != null && SocketCompression.ShouldCompress(message))
+		         {
+			         var compressed = SocketCompression.Compress(message, codec);
+			         await connection.SendBinaryMessage(compressed, sw);
+		         }
+		         else
+		         {
+			         await connection.SendMessage(message, sw);
+		         }
 		         return;
 	         }
 	         catch (Exception ex)

@@ -20,6 +20,8 @@ namespace Beamable.Server
 
 		Task SendMessage(string message, Stopwatch sw = null);
 
+		Task SendBinaryMessage(byte[] data, Stopwatch sw = null);
+
 		IConnection OnConnect(Action<IConnection> onConnect);
 
 		IConnection OnDisconnect(Action<IConnection, bool> onDisconnect);
