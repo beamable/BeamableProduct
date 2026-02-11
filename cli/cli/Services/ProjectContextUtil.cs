@@ -393,12 +393,15 @@ public static class ProjectContextUtil
 
 				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
 
+				if (!info.IsPortalExtension) continue;
+
 				var dir = Path.GetDirectoryName(filePath);
 
 				projects.Add(new PortalExtensionDefinition()
 				{
 					Name = info.Name,
 					Version = info.Version,
+					Type = info.PortalExtensionType,
 					RelativePath = Path.GetRelativePath(rootFolder, dir),
 					AbsolutePath = Path.GetFullPath(dir)
 				});

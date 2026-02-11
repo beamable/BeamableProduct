@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System.Text.Json.Serialization;
 
 namespace cli.Services;
@@ -6,16 +7,18 @@ public partial class BeamoLocalSystem
 {
 
 
-	[Serializable]
 	public class PortalExtensionPackageInfo
 	{
-		[JsonPropertyName("name")]
+		[JsonProperty("name")]
 		public string Name { get; set; }
 
-		[JsonPropertyName("version")]
+		[JsonProperty("version")]
 		public string Version { get; set; }
 
-		[JsonPropertyName("beamPortalExtension")]
-		public string IsPortalExtension { get; set; }
+		[JsonProperty("beamPortalExtension")]
+		public bool IsPortalExtension { get; set; }
+
+		[JsonProperty("portalExtensionType")]
+		public string PortalExtensionType { get; set; }
 	}
 }

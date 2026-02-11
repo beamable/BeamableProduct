@@ -8,7 +8,7 @@ using System.Text;
 namespace cli.Services.PortalExtension;
 
 [Serializable]
-public class ExtensionBuildData
+public class ExtensionBuildData //TODO make this have a diff version number so we know if the diff algorithm changed
 {
 	public bool IsFullBuild;
 	public string FullData;
@@ -19,8 +19,22 @@ public class ExtensionBuildData
 	public string CurrentHash;
 }
 
+[Serializable]
+public class ExtensionBuildMetaData
+{
+	public string ExtensionName;
+	public string ExtensionType;
+}
+
+public enum PortalExtensionType
+{
+	TestPage,
+	PlayerPage
+}
+
 public class PortalExtensionDiscoveryService : Microservice
 {
+
 	[ClientCallable]
 	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
 	{
@@ -36,6 +50,13 @@ public class PortalExtensionDiscoveryService : Microservice
 			DiffInstructionsCss = buildData.DiffInstructionsCss,
 			CurrentHash = buildData.CurrentHash
 		};
+	}
+
+	[ClientCallable]
+	public ExtensionBuildMetaData RequestMetaData()
+	{
+		var observer = Provider.GetService<PortalExtensionObserver>();
+		return observer.ExtensionMetaData;
 	}
 }
 
@@ -53,6 +74,10 @@ public class PortalExtensionObserver
 	private bool _alreadyStarted;
 	private string _appPath;
 
+	private ExtensionBuildMetaData _metaData;
+
+	//TODO have this have a sorted list of data+hash (with a max size of 10 maybe), and try to find the one that matches and calculate the
+	// diff between that one and the latest build, on each build we add the to the list and remove the oldest one
 	private ExtensionCurrentData _currentExtensionData;
 
 	private CancellationTokenSource _cancelToken;
@@ -78,6 +103,28 @@ public class PortalExtensionObserver
 			}
 
 			_appPath = value;
+		}
+	}
+
+	public ExtensionBuildMetaData ExtensionMetaData
+	{
+		get
+		{
+			if (_metaData == null)
+			{
+				throw new Exception("The property ExtensionMetaData needs a valid path");
+			}
+
+			return _metaData;
+		}
+		set
+		{
+			if (value is null)
+			{
+				throw new Exception("Value for this property cannot be null");
+			}
+
+			_metaData = value;
 		}
 	}
 
@@ -254,12 +301,19 @@ public class PortalExtensionObserver
 		Log.Information($"Change detected in file: {e.Name}");
 
 		_notificationsApi.NotifyServer(true, "notify-portalextension",
-			new PortalExtensionNotifyPayload() { serviceName = _attributes.MicroserviceName });
+			new PortalExtensionNotifyPayload()
+			{
+				serviceName = _attributes.MicroserviceName ,
+				extensionName = _metaData.ExtensionName,
+				extensionType = _metaData.ExtensionType
+			});
 	}
 
 	[Serializable]
 	public class PortalExtensionNotifyPayload
 	{
 		public string serviceName;
+		public string extensionName;
+		public string extensionType;
 	}
 }

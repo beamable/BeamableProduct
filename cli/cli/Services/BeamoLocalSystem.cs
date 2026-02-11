@@ -550,6 +550,7 @@ public class PortalExtensionDefinition
 {
 	public string Name;
 	public string Version;
+	public string Type;
 
 	public string RelativePath;
 	public string AbsolutePath;

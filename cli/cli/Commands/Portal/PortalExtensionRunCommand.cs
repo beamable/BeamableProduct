@@ -1,6 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
+using cli.Services;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using System.CommandLine;
@@ -44,10 +45,10 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 		}
 
 		// run a microservice that will be feeding portal with new builds of the portal extension app
-		await RunMicroserviceForever(service.AbsolutePath, args);
+		await RunMicroserviceForever(service, args);
 	}
 
-	private async Task RunMicroserviceForever(string fullPath, PortalExtensionRunCommandArgs args)
+	private async Task RunMicroserviceForever(PortalExtensionDefinition extension, PortalExtensionRunCommandArgs args)
 	{
 		try
 		{
@@ -66,8 +67,18 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 				})
 				.ConfigureServices((dependency) =>
 				{
+					if (!Enum.TryParse(extension.Type, out PortalExtensionType type))
+					{
+						throw new CliException(
+							$"Extension type = [{type}] could not be deserialized. The valid values for it are: [{string.Join(", ", Enum.GetNames(typeof(PortalExtensionType)))}]");
+					}
+
 					var observer = new PortalExtensionObserver();
-					observer.AppFilesPath = fullPath;
+					observer.AppFilesPath = extension.AbsolutePath;
+					observer.ExtensionMetaData = new ExtensionBuildMetaData()
+					{
+						ExtensionName = extension.Name, ExtensionType = type.ToString()
+					};
 
 					// Get the file observation started
 					_tokenSource = new CancellationTokenSource();
