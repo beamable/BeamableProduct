@@ -276,7 +276,11 @@ public class MicroserviceAuthenticationDaemon
 			throw new BeamableWebsocketAuthException(authRes.result);
 		}
 
-		NegotiatedCodec = SocketCompression.GetPreferredCodec(authRes.codecs);
+		if (authRes.codecs?.Length > 0)
+		{
+			NegotiatedCodec = SocketCompression.GetPreferredCodec(authRes.codecs);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Using websocket codec {NegotiatedCodec}");
+		}
 
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 	}
