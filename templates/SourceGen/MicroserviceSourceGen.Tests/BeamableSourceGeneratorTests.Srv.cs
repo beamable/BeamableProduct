@@ -437,6 +437,11 @@ public partial class MyMicroservice : Microservice
 	{
 		return NonSerializableEnum.None;
 	}
+
+	[ClientCallable]
+	public void CallWithWrongArgument(object {|#3:wrongArgument|})
+	{
+	}
 }
 
 public struct {|#0:DTO_AsyncTest|}
@@ -482,6 +487,10 @@ public enum OtherNonSerializableEnum {
 			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
 				.WithLocation(2)
 				.WithArguments("DTO_BeamGenSchemaAttribute"));
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeForArgument)
+				.WithLocation(3)
+				.WithArguments("Object", "wrongArgument"));
 		
 		PrepareForRun(ctx, UserCode);
 		
