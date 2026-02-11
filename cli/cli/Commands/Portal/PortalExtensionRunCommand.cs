@@ -151,27 +151,12 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 	{
 		var cid = args.AppContext.CustomerID;
 		var pid = args.AppContext.Pid;
-		var microName = GetMicroName(args.AppName);
-		var refreshToken = args.AppContext.RefreshToken;
 
-		if (string.IsNullOrEmpty(refreshToken))
-		{
-			Log.Verbose("not generating portal url, because no refresh token exists.");
-			portalUrl = "";
-			return false;
-		}
-
-		var queryArgs = new List<string>
-		{
-			$"refresh_token={refreshToken}",
-			$"routingKey={ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine()}"
-		};
-		var joinedQueryString = string.Join("&", queryArgs);
 		var treatedHost = args.AppContext.Host.Replace("/socket", "")
 			.Replace("wss", "https")
 			.Replace("dev.", "dev-")
 			.Replace("api", "portal");
-		portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/extensions?{joinedQueryString}";
+		portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/extensions";
 
 		return true;
 	}
