@@ -135,12 +135,12 @@ namespace Beamable.Common
 
 		public static bool operator <(PackageVersion a, PackageVersion b)
 		{
-			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) || (a.Major <= b.Minor && a.Minor <= b.Minor && (a.Patch < b.Patch));
+			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) || (a.Major <= b.Major && a.Minor <= b.Minor && (a.Patch < b.Patch));
 		}
 
 		public static bool operator >(PackageVersion b, PackageVersion a)
 		{
-			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) || (a.Major <= b.Minor && a.Minor <= b.Minor && a.Patch < b.Patch);
+			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) || (a.Major <= b.Major && a.Minor <= b.Minor && a.Patch < b.Patch);
 		}
 
 		public static bool operator ==(PackageVersion a, PackageVersion b)
