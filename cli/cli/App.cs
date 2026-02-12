@@ -465,7 +465,7 @@ public class App
 		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
 		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton(PidOption.Instance);
-		Commands.AddSingleton<HostOption>();
+		Commands.AddSingleton(HostOption.Instance);
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();

@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Newtonsoft.Json;
 using System.CommandLine;
+using System.CommandLine.Binding;
 
 namespace cli;
 
@@ -52,9 +53,20 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 			{
 				args.ConfigService.WriteConfig(config =>
 				{
-					ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_HOST, args.AppContext.Host, config);
-					ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_CID, args.AppContext.Cid, config);
-					ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_PID, args.AppContext.Pid, config);
+					// only set overrides when they are explicitly passed as flags. 
+					var binding = args.DependencyProvider.GetService<BindingContext>();
+					var selectedCid = binding.ParseResult.GetValueForOption(CidOption.Instance);
+					var selectedPid = binding.ParseResult.GetValueForOption(PidOption.Instance);
+					var selectedHost = binding.ParseResult.GetValueForOption(HostOption.Instance);
+					
+					if (selectedHost != null)
+						ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_HOST, selectedHost, config);
+					
+					if (selectedCid != null)
+						ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_CID, selectedCid, config);
+					
+					if (selectedPid != null)
+						ConfigService.SetConfig(ConfigService.CFG_JSON_FIELD_PID, selectedPid, config);
 				}, true);
 				
 				// if (args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_HOST) != args.AppContext.Host)

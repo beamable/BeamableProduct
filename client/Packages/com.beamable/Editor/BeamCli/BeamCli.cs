@@ -194,9 +194,10 @@ namespace Beamable.Editor.BeamCli
 			
 			if (IsLoggedOut)
 			{
-				pidToRealm.Clear();
-				latestRealms.Clear();
-				latestRealmInfo = default;
+				// pidToRealm.Clear();
+				// latestRealms.Clear();
+				// latestRealmInfo = default;
+				ReconstituteRealmData();
 			}
 			else
 			{
@@ -283,7 +284,7 @@ namespace Beamable.Editor.BeamCli
 			}).ToList();
 			
 			latestRealms = RealmsService.ProcessProjects(latestRealmInfo.VisibleRealms[0].Cid, dtos);
-				
+			
 			pidToRealm = latestRealms.ToDictionary(realm => realm.Pid);
 		}
 		
@@ -318,7 +319,6 @@ namespace Beamable.Editor.BeamCli
 			
 			var initArgs = new InitArgs
 			{
-				host = host,
 				email = email,
 				password = password,
 				ignorePid = true,
