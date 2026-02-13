@@ -819,11 +819,11 @@ public class SwaggerService
 
 			
 			
-			// the original version of beamo was written as a basic scala service.
-			//  for legacy reasons, the code-gen for that service must remain for a while.
-			//  and the NEW version of beamo exists as an actor in ProtoActor.
-			//  The actor's schemas need to be unique from the old scala schemas, otherwise
-			//  there are potential breaking changes. 
+			// This extractor is used when a legacy service and a new ProtoActor-based service
+			// need to coexist. For backward compatibility, the original service's codegen and
+			// schemas must remain available, while the ProtoActor service defines new schemas.
+			// To avoid schema name collisions (and resulting breaking changes), the ProtoActor
+			// service's schemas are renamed with a distinct prefix.
 
 			string ConvertSchemaName(string oldName) => newPrefix + oldName;
 
