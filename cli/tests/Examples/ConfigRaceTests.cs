@@ -18,14 +18,14 @@ public partial class BeamInitFlows
     public async Task ConfigFileContention_Patching(string initArg)
     {
         // it isn't great to pass null here, but we don't need to care about the binding context yet.
-        var config = new ConfigService(null);
-        config.SetWorkingDir(initArg);
+        
         InEmptyDirectory(initArg);
         ResetConfigurator();
 
         var t = Task.Run(() =>
             {
-
+                var config = new ConfigService(null);
+                config.SetWorkingDir(initArg);
                 config.WriteConfig(c =>
                 {
                     // the config is READ now...
@@ -39,7 +39,8 @@ public partial class BeamInitFlows
 
         var t2 = Task.Run(() =>
             {
-
+                var config = new ConfigService(null);
+                config.SetWorkingDir(initArg);
                 // at a similar time, try to set a to b. 
                 config.WriteConfigString("a", "b");
             })
@@ -55,10 +56,55 @@ public partial class BeamInitFlows
         Assert.IsTrue(jObj.TryGetValue("c", out var dToken), "there should be a key for 'c'");
         Assert.AreEqual("d", dToken.Value<string>(), "and it should have the value 'd'");
         
-        
         Assert.IsTrue(jObj.TryGetValue("a", out var bToken), "there should be a key for 'a'");
         Assert.AreEqual("b", bToken.Value<string>(), "and it should have the value 'b'");
     }
+    
+    [TestCase(".")]
+    public async Task ConfigFileContention_Patching_Deletions(string initArg)
+    {
+        // it isn't great to pass null here, but we don't need to care about the binding context yet.
+        
+        InEmptyDirectory(initArg);
+        ResetConfigurator();
+
+        var t = Task.Run(() =>
+            {
+                var config = new ConfigService(null);
+                config.SetWorkingDir(initArg);
+                config.WriteConfig(c =>
+                {
+                    // the config is READ now...
+                    Thread.Sleep(100);
+
+                    // and after the sleep, we set something...
+                    ConfigService.SetConfig("c", "d", c);
+                });
+            })
+            ;
+
+        var t2 = Task.Run(() =>
+            {
+                var config = new ConfigService(null);
+                config.SetWorkingDir(initArg);
+                // at a similar time, try to remove the pid
+                config.DeleteConfig("pid");
+            })
+            ;
+
+        await t;
+        await t2;
+        var configPath = Path.Combine(initArg, ".beamable/config.beam.json");
+        var configJson = File.ReadAllText(configPath);
+        var jObj = JsonConvert.DeserializeObject<JObject>(configJson);
+        Console.WriteLine(configJson);
+
+        Assert.IsTrue(jObj.TryGetValue("c", out var dToken), "there should be a key for 'c'");
+        Assert.AreEqual("d", dToken.Value<string>(), "and it should have the value 'd'");
+        
+        Assert.IsFalse(jObj.TryGetValue("pid", out _), "there should not be a key for 'pid'");
+    }
+
     
     [TestCase(".")]
     public async Task ConfigFileContention(string initArg)
@@ -85,10 +131,5 @@ public partial class BeamInitFlows
             var exitCode = await t;
             Assert.AreEqual(0, exitCode, "all tasks should have a successful exit code.");
         }
-        
-        var configJson = File.ReadAllText(configPath);
-        var jObj = JsonConvert.DeserializeObject<JObject>(configJson);
-        
-        // TODO: make assertions about the jObj
     }
 }

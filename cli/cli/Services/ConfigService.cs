@@ -1196,7 +1196,6 @@ public class ConfigService
 				try
 				{
 					LockedWrite(fullPath, json);
-					// File.WriteAllText(fullPath, json);
 					written = true;
 				}
 				catch (IOException e)
@@ -1606,13 +1605,14 @@ public class ConfigService
 
 	public static void LockedWrite(string path, string content, int allowedAttempts = 10, int retryDelayMs = 25)
 	{
-		for (var i = 0; i<= allowedAttempts; i++)
+		for (var i = 0; i < allowedAttempts; i++)
 		{
 			try
 			{
 				using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
 				using var writer = new StreamWriter(stream);
 				writer.Write(content);
+				writer.Flush();
 			}
 			catch (IOException) when (i < allowedAttempts)
 			{
@@ -1622,7 +1622,7 @@ public class ConfigService
 	}
 	public static string LockedRead(string path, int allowedAttempts=10, int retryDelayMs=25)
 	{
-		for (var i = 0; i <= allowedAttempts ; i ++)
+		for (var i = 0; i < allowedAttempts ; i ++)
 		{
 			try
 			{
