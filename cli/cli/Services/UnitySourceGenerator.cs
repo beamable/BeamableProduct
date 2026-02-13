@@ -1449,7 +1449,7 @@ public static class UnityHelper
 
 		for (var i = propKey.Length - 2; i >= 0; i--)
 		{
-			if (propKey[i] == '-' || propKey[i] == '/' || propKey[i] == '$')
+			if (propKey[i] == '-' || propKey[i] == '/' || propKey[i] == '$' || propKey[i] == '#')
 			{
 				if (i + 2 >= propKey.Length)
 				{
