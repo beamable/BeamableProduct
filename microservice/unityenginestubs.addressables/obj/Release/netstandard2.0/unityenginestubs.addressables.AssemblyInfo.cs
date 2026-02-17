@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("\n            The Beamable.UnityEngine.Addressables code contains mock classes tha" +
     "t act as psuedo replacements for Unity addressable types.\n        "))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+43c684412f55a43130a669a6d742274ca5435edf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+09ba971fe45ae29cf3138ab34adc6a14224ceb1a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Unity.Addressables")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Unity.Addressables")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

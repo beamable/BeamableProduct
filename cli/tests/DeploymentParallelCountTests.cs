@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using cli;
 using cli.Commands.Project;
+using cli.DeploymentCommands;
 using cli.Services;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
@@ -102,7 +103,7 @@ public class DeploymentParallelCountTests
 	{
 		// This test validates that the default value is 8
 		// The default should be set when the property is not explicitly initialized
-		var args = new cli.DeploymentCommands.PlanDeploymentCommandArgs();
+		var args = new PlanDeploymentCommandArgs();
 
 		// The default value should be 0 (C# default) until set by the command option
 		// The command option has a default of 8, so we verify that the option definition matches
@@ -119,7 +120,7 @@ public class DeploymentParallelCountTests
 	{
 		// This test validates that the value can be customized
 		var customValue = 5;
-		var args = new cli.DeploymentCommands.PlanDeploymentCommandArgs
+		var args = new PlanDeploymentCommandArgs
 		{
 			MaxParallelCount = customValue
 		};
