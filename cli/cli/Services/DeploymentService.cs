@@ -1568,6 +1568,18 @@ public partial class DeployUtil
 					{
 						await buildTask;
 					}
+					else
+					{
+						// Throttle Docker builds to avoid excessive memory usage
+						// Wait for at least one task to complete if we've reached the limit
+						while (true)
+						{
+							var incompleteTasks = pendingTasks.Where(t => !t.IsCompleted).ToList();
+							if (incompleteTasks.Count < maxParallelCount)
+								break;
+							await Task.WhenAny(incompleteTasks);
+						}
+					}
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:
 					storages[storageIndex++] = CreateStorageReference(
