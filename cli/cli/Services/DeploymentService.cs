@@ -1537,7 +1537,7 @@ public partial class DeployUtil
 		if (!useSequentialBuild)
 		{
 			// when using a sequential build; we'll fall back to one at a time
-			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
+			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true, maxParallelCount: maxParallelCount);
 		}
 
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
@@ -1567,18 +1567,6 @@ public partial class DeployUtil
 					if (useSequentialBuild)
 					{
 						await buildTask;
-					}
-					else
-					{
-						// Throttle parallel builds to avoid memory exhaustion
-						// Wait for at least one task to complete if we've reached the limit
-						while (true)
-						{
-							var incompleteTasks = pendingTasks.Where(t => !t.IsCompleted).ToList();
-							if (incompleteTasks.Count < maxParallelCount)
-								break;
-							await Task.WhenAny(incompleteTasks);
-						}
 					}
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:

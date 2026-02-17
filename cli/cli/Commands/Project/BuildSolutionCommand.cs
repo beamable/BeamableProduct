@@ -61,7 +61,8 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
 
     public static async Task<Dictionary<string, BuildImageSourceOutput>> Build<TArgs>(TArgs args, 
         bool forDeployment=true,
-        bool forceCpu=true)
+        bool forceCpu=true,
+        int maxParallelCount=8)
         where TArgs : CommandArgs, IHasSolutionFileArg
     {
         var beamo = args.BeamoLocalSystem;
@@ -105,6 +106,7 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                         $"--verbosity minimal " +
                         $"--no-self-contained {runtimeArg} " +
                         $"--configuration Release " +
+                        $"-maxcpucount:{maxParallelCount} " +
 
                         // make sure the builds produce a deterministic output so that docker imageIds end up being the same.
                         $"-p:Deterministic=\"True\" " +
