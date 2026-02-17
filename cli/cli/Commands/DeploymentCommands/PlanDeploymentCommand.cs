@@ -18,8 +18,8 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	public bool UseLatestDeployedManifest { get; set; }
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
-	bool UseSequentialBuild { get; set; }
-	int MaxParallelCount { get; set; }
+	public bool UseSequentialBuild { get; set; }
+	public int MaxParallelCount { get; set; }
 }
 
 public interface IHasDockerComposeArgs
