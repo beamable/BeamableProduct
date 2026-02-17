@@ -1572,9 +1572,11 @@ public partial class DeployUtil
 					{
 						// Throttle parallel builds to avoid memory exhaustion
 						// Wait for at least one task to complete if we've reached the limit
-						while (pendingTasks.Count(t => !t.IsCompleted) >= maxParallelCount)
+						var incompleteTasks = pendingTasks.Where(t => !t.IsCompleted).ToList();
+						while (incompleteTasks.Count >= maxParallelCount)
 						{
-							await Task.WhenAny(pendingTasks.Where(t => !t.IsCompleted));
+							await Task.WhenAny(incompleteTasks);
+							incompleteTasks = pendingTasks.Where(t => !t.IsCompleted).ToList();
 						}
 					}
 					break;
