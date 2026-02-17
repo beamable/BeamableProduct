@@ -178,4 +178,5 @@ web/.idea
 web/dist
 web/docs
 web/node_modules
-web/temp
+web/tempmicroservice/unityenginestubs.addressables/bin/
+microservice/unityenginestubs.addressables/obj/
