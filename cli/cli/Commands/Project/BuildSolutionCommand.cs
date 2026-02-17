@@ -106,7 +106,7 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
                         $"--verbosity minimal " +
                         $"--no-self-contained {runtimeArg} " +
                         $"--configuration Release " +
-                        $"-maxcpucount:{maxParallelCount} " +
+                        $"-m:{maxParallelCount} " +
 
                         // make sure the builds produce a deterministic output so that docker imageIds end up being the same.
                         $"-p:Deterministic=\"True\" " +
