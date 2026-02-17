@@ -1065,7 +1065,7 @@ public partial class DeployUtil
 				throw CliExceptions.DOCKER_NOT_RUNNING;
 			}
 
-			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild, maxParallelCount: args.MaxParallelCount);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		remote = await remoteTask;
@@ -1521,7 +1521,7 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, bool useSequentialBuild=false)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, bool useSequentialBuild=false, int maxParallelCount=8)
 		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -1567,6 +1567,15 @@ public partial class DeployUtil
 					if (useSequentialBuild)
 					{
 						await buildTask;
+					}
+					else
+					{
+						// Throttle parallel builds to avoid memory exhaustion
+						// Wait for at least one task to complete if we've reached the limit
+						while (pendingTasks.Count(t => !t.IsCompleted) >= maxParallelCount)
+						{
+							await Task.WhenAny(pendingTasks.Where(t => !t.IsCompleted));
+						}
 					}
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:
