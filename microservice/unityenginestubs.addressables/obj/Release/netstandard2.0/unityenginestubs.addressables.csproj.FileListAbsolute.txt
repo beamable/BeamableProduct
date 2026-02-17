@@ -1,0 +1,17 @@
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/Unity.Addressables.deps.json
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/Unity.Addressables.dll
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/Unity.Addressables.pdb
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/Unity.Addressables.xml
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/UnityEngine.dll
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/UnityEngine.pdb
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/bin/Release/netstandard2.0/UnityEngine.xml
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.csproj.AssemblyReference.cache
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.AssemblyInfoInputs.cache
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.AssemblyInfo.cs
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.csproj.CoreCompileInputs.cache
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityenginestubs.addressables.sourcelink.json
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/unityeng.06D34E30.Up2Date
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/Unity.Addressables.dll
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/Unity.Addressables.xml
+/home/runner/work/BeamableProduct/BeamableProduct/microservice/unityenginestubs.addressables/obj/Release/netstandard2.0/Unity.Addressables.pdb
