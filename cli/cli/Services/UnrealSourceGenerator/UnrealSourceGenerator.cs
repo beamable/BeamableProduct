@@ -456,8 +456,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
 			};
 		}));
 
@@ -478,8 +477,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
 			};
 		}));
 
@@ -521,8 +519,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
 				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, },
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
 			};
@@ -569,28 +566,40 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			var beamFlowNodeCpp = UnrealEndpointDeclaration.BEAM_FLOW_BP_NODE_CPP.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
+			decl.IntoProcessMap(processDictionary, ueGenOutput.JsonSerializableTypes);
+			var beamFederationBpNodes = UnrealFederationDeclaration.FEDERATION_BP_NODE_HEADER.ProcessReplacement(processDictionary);
+			processDictionary.Clear();
 
-			return (decl, endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp);
+			return (decl, endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp, beamFederationBpNodes);
 		});
 		outputFiles.AddRange(subsystemEndpointsCode.SelectMany((sc, i) =>
 		{
 			return new[]
 			{
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader
-				},
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader },
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.cpp", Content = sc.endpointCpp },
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp
-				},
+				new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader },
+				new GeneratedFileDescriptor { FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp },
 			};
 		}));
+
+		// Only generate federations when generating microservice clients.
+		if (genType == GenerationType.Microservice)
+		{
+			var federations = ueGenOutput.SubsystemDeclarations.SelectMany(sd => sd.DeclaredFederations).ToList();
+			var federationsCode = federations.Select(decl =>
+			{
+				decl.IntoProcessMap(processDictionary);
+				var beamFederationBpNodes = UnrealFederationDeclaration.FEDERATION_BP_NODE_HEADER.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+
+				return (decl, beamFederationBpNodes);
+			});
+			outputFiles.AddRange(federationsCode.SelectMany((sc, i) =>
+			{
+				return new[] { new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.OwnerMicroserviceName}/K2BeamNode_Federations_{(sc.decl.OwnerMicroserviceName)}_{sc.decl.FederationType}_{sc.decl.SanitizedFederationId}.h", Content = sc.beamFederationBpNodes } };
+			}));
+		}
 
 		// Prints out all the identified semtype declarations
 		foreach ((string key, string value) in newGeneratedUnrealTypes)
@@ -1062,11 +1071,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var handle = GetEndpointFieldHandle(context, serviceName, serviceType, operationType, endpointPath, param.Name);
 						context.FieldRequiredMap.TryAdd(handle, param.Required);
-						if (!param.Required) Log.Debug(GetLog(logHeader, $"Found optional usage for type in endpoint. ServiceName=[{serviceName}]," +
-						                                                 $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]," +
-						                                                 $" FieldHandle=[{handle}]"));
+						if (!param.Required)
+							Log.Debug(GetLog(logHeader, $"Found optional usage for type in endpoint. ServiceName=[{serviceName}]," +
+							                            $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]," +
+							                            $" FieldHandle=[{handle}]"));
 					}
-					
+
 					Log.Debug(GetLog(logHeader, $"Finished parsing endpoint for building required field map. ServiceName=[{serviceName}]," +
 					                            $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]"));
 				}
@@ -1246,6 +1256,61 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				Log.Debug(GetLog(logHeader, $"We had already found a different type of this service. Will append the endpoints of onto the same subsystem." +
 				                            $" ServiceName=[{serviceName}], ServiceType=[{serviceType}], SubsystemName=[{unrealServiceDecl.SubsystemName}]"));
 			}
+
+
+			// Find existing federations
+			{
+				unrealServiceDecl.DeclaredFederations ??= new();
+				if (openApiDocument.Extensions.TryGetValue("x-beamable-federated-components-v2", out var federationExtension))
+				{
+					if (federationExtension is OpenApiArray federationsArray)
+					{
+						var federationCount = federationsArray.Count;
+						unrealServiceDecl.DeclaredFederations.EnsureCapacity(federationCount);
+
+						foreach (var federationArrayItem in federationsArray)
+						{
+							if (federationArrayItem is OpenApiObject federationObj)
+							{
+								var federationDeclaration = new UnrealFederationDeclaration();
+								federationDeclaration.OwnerMicroserviceName = serviceName;
+								if (federationObj.TryGetValue("interface", out var fedInterface))
+								{
+									// Extract just the type name -- not the namespace
+									// "Beamable.Common.IFederatedLogin" => "FederatedLogin"
+									if (fedInterface is OpenApiString fedInterfaceStr)
+										federationDeclaration.FederationType =  fedInterfaceStr.Value[(fedInterfaceStr.Value.LastIndexOf('.') + 2)..];
+									else
+										throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								else
+								{
+									throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+
+								if (federationObj.TryGetValue("federationId", out var fedId))
+								{
+									if (fedId is OpenApiString fedIdStr)
+										federationDeclaration.FederationId = fedIdStr.Value;
+									else
+										throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								else
+								{
+									throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								
+								unrealServiceDecl.DeclaredFederations.Add(federationDeclaration);
+							}
+							else
+							{
+								throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+							}
+						}
+					}
+				}
+			}
+
 
 			// Get the number of endpoints so we can pre-allocate the correct list sizes.
 			var endpointCount = openApiDocument.Paths.SelectMany(endpoint => endpoint.Value.Operations).Count();
