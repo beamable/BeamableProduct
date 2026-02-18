@@ -52,9 +52,7 @@ namespace Beamable.Editor.Util
 			var isHover = rect.Contains(e.mousePosition);
 			var buttonClicked = isHover && e.rawType == EventType.MouseDown;
 
-			bool clicked = false;
-			clicked = GUI.Button(rect, content, style);
-
+			buttonClicked |= GUI.Button(rect, content, style);
 
 			var isEnterHit = allowEnterKeyToClick && e.type == EventType.KeyDown &&
 			                 (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter);
@@ -68,13 +66,8 @@ namespace Beamable.Editor.Util
 			{
 				EditorGUI.DrawRect(rect, new Color(1, 1, 1, .1f));
 			}
-			else
-			{
-				// EditorGUI.DrawTextureTransparent(rect, style.onNormal.background);
-
-				// clicked = GUI.Button(rect, content, style);
-			}
-			return clicked;
+			
+			return buttonClicked;
 		}
 
 	
