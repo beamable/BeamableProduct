@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Now content names support dots as previous content manager versions.
 - All spaces in a content name during a rename operation will be replaces by underscores.
 - Warnings related to `Unity.Beamable.Customer.Common.asmdef` not being compiled because no scripts are associated
+- Hitting the `Return` automatically accepts the primary button in the editor sign in flow.
 
 ## [4.0.2] - 2025-11-20
 ### Changed
