@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <DefineConstants>DB_MICROSERVICE</DefineConstants>
+        <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
+
+        <PackageId>Beamable.UnrealEngine</PackageId>
+        <OutputType>Library</OutputType>
+        <AssemblyName>Beamable.Tools</AssemblyName>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+        <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+        <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+        <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+        <Description>
+            The Beamable.UnityEngine code contains mock classes that act as psuedo replacements for Unreal primitive types.
+        </Description>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+        <AssemblyName>UnrealEngine</AssemblyName>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>8</LangVersion>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
+
+</Project>
