@@ -326,10 +326,8 @@ public class DefaultAppContext : IAppContext
 		string defaultRefreshToken = string.Empty;
 		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
 		{
-			if (response.ExpiresAt > DateTime.Now)
-			{
-				defaultAccessToken = response.Token;
-			}
+			// We shouldn't ignore the token if it is expired, because the CLI can use the refresh token to get a new access token. So we will pass the expired access token to the CLI and let the CLI handle it.
+			defaultAccessToken = response.Token;
 			defaultRefreshToken = response.RefreshToken;
 		}
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
@@ -363,6 +361,11 @@ public class DefaultAppContext : IAppContext
 	public void SetToken(TokenResponse tokenResponse)
 	{
 		_token = new CliToken(tokenResponse, _cid, _pid);
+	}
+
+	public void SaveCurrentTokenToFile()
+	{
+		_configService.SaveTokenToFile(_token);
 	}
 
 	string IRealmInfo.CustomerID => _cid;

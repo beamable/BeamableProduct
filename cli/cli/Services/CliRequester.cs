@@ -17,6 +17,7 @@ public class CliRequester : IRequester
 
 	private readonly int ProgressiveDelayIncreaser = 5;
 	private readonly IRequesterInfo _requesterInfo;
+	
 	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
 	public string Cid => AccessToken.Cid;
@@ -185,8 +186,10 @@ public class CliRequester : IRequester
 		TokenResponse tokenResponse = await authService.LoginRefreshToken(AccessToken.RefreshToken);
 		Log.Debug(
 			$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
+		
 		_requesterInfo.SetToken(tokenResponse);
-
+		_requesterInfo.SaveCurrentTokenToFile();
+		
 		return await InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, ++retryCount);
 	}
 
