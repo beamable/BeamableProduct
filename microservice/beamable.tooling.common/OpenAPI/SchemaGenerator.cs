@@ -4,11 +4,13 @@ using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
 using UnityEngine;
+using ZLogger;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Tooling.Common.OpenAPI;
@@ -63,7 +65,7 @@ public class SchemaGenerator
 
 			// We don't want to emit generic types for documentation, because the generic aspect will be covered by the openAPI schema itself
 			// No arrays, dictionaries and collections because the OAPI has its own definitions for those (so we don't need to include them as Schemas)
-			shouldEmit &= !Type.IsGenericType;
+			shouldEmit &= !Type.IsGenericType || Type.IsAssignableTo(typeof(IContentRef));
 			shouldEmit &= !Type.IsArray;
 
 			// Nullables are not supported, use optional instead
@@ -174,6 +176,51 @@ public class SchemaGenerator
 	}
 
 	/// <summary>
+	/// Generates a dictionary of schemas that can be used to populate the OpenAPI docs.
+	/// </summary>
+	/// <param name="oapiTypes"></param>
+	/// <param name="requiredTypes"></param>
+	/// <returns>Dictionary of OpenApiSchemas</returns>
+	public static Dictionary<string,OpenApiSchema> ToOpenApiSchemasDictionary(IList<OAPIType> oapiTypes, ref HashSet<Type> requiredTypes)
+	{
+		var result = new Dictionary<string,OpenApiSchema>(oapiTypes.Count);
+		var toSkip = new HashSet<int>(oapiTypes.Count);
+		for (int i = 0; i < oapiTypes.Count; i++)
+		{
+			if(toSkip.Contains(i))
+				continue;
+			var shouldGenerateClientCode = !oapiTypes[i].ShouldNotGenerateClientCode();
+
+			for (int j = i + 1; j < oapiTypes.Count; j++)
+			{
+				if (oapiTypes[j].Type != oapiTypes[i].Type)
+				{
+					continue;
+				}
+
+				toSkip.Add(j);
+
+				if (!shouldGenerateClientCode && !oapiTypes[j].ShouldNotGenerateClientCode())
+				{
+					shouldGenerateClientCode = true;
+				}
+			}
+			
+			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
+			// If all usages of this type (within a sub-graph of types starting from a ServiceMethod) is set to NOT generate the client code, we won't.
+			// Otherwise, even if just a single usage of the type wants the client code to be generated, we do generate it.
+			// That's what this thing does.
+			var type = oapiTypes[i].Type;
+			var key = GetQualifiedReferenceName(type);
+			var schema = Convert(type, ref requiredTypes);
+			schema.AddExtension(METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(shouldGenerateClientCode));
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}, WillGenClient={shouldGenerateClientCode}");
+			result.Add(key, schema);
+		}
+		return result;
+	}
+
+	/// <summary>
 	/// Traverses the type hierarchy starting from the specified type <typeparamref name="T"/>.
 	/// </summary>
 	/// <typeparam name="T">The type from which to start the traversal.</typeparam>
@@ -190,32 +237,65 @@ public class SchemaGenerator
 		yield return runtimeType;
 	}
 
+	public static bool TryAddMissingSchemaTypes(ref OpenApiDocument oapiDoc, HashSet<Type> requiredTypes)
+	{
+		var newRequiredTypes = new HashSet<Type>();
+		foreach (Type requiredType in requiredTypes)
+		{
+			if (requiredType.IsBasicType())
+			{
+				continue;
+			}
+			var key = requiredType.GetSanitizedFullName();
+			if(oapiDoc.Components.Schemas.ContainsKey(key))
+				continue;
+			var schema = Convert(requiredType, ref newRequiredTypes);
+			oapiDoc.Components.Schemas.Add(key, schema);
+		}
+
+		if (newRequiredTypes.Count > 0)
+		{
+			return TryAddMissingSchemaTypes(ref oapiDoc, newRequiredTypes);
+		}
+
+		return true;
+	}
+
 	/// <summary>
 	/// Converts a runtime type into an OpenAPI schema.
 	/// </summary>
-	public static OpenApiSchema Convert(Type runtimeType, int depth = 1, bool sanitizeGenericType = false)
+	public static OpenApiSchema Convert(Type runtimeType, ref HashSet<Type> requiredTypes, int depth = 1, bool sanitizeGenericType = false)
 	{
 		switch (runtimeType)
 		{
 			case { } x when x.IsAssignableTo(typeof(Optional)):
 				var instance = Activator.CreateInstance(runtimeType) as Optional;
-				return Convert(instance.GetOptionalType(), depth - 1);
+				return Convert(instance.GetOptionalType(), ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
-				return Convert(x.GetGenericArguments()[0], depth - 1);
+				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
-				return Convert(x.GetGenericArguments()[0], depth - 1);
+				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double" };
 			case { } x when x == typeof(float):
 				return new OpenApiSchema { Type = "number", Format = "float" };
 
 			case { } x when x == typeof(short):
-				return new OpenApiSchema { Type = "integer", Format = "int16" };
+				return new OpenApiSchema { Type = "integer", Format = "int16", Minimum = short.MinValue, Maximum = short.MaxValue };
+			case { } x when x == typeof(ushort):
+				return new OpenApiSchema { Type = "integer", Format = "int16", Minimum = ushort.MinValue, Maximum = ushort.MaxValue };
 			case { } x when x == typeof(int):
 				return new OpenApiSchema { Type = "integer", Format = "int32" };
+			case { } x when x == typeof(uint):
+				return new OpenApiSchema { Type = "integer", Format = "int32", Minimum = uint.MinValue, Maximum = uint.MaxValue };
 			case { } x when x == typeof(long):
 				return new OpenApiSchema { Type = "integer", Format = "int64" };
+			case { } x when x == typeof(ulong):
+				return new OpenApiSchema { Type = "integer", Format = "int64", Minimum = ulong.MinValue, Maximum = ulong.MaxValue };
 
+			case { } x when x == typeof(short):
+				return new OpenApiSchema { Type = "integer", Format = "int32" };
+			
 			case { } x when x == typeof(bool):
 				return new OpenApiSchema { Type = "boolean" };
 			case { } x when x == typeof(decimal):
@@ -223,19 +303,23 @@ public class SchemaGenerator
 
 			case { } x when x == typeof(string):
 				return new OpenApiSchema { Type = "string" };
+			case { } x when x == typeof(char):
+				return new OpenApiSchema { Type = "string", MaxLength = 1, MinLength = 1};
 			case { } x when x == typeof(byte):
-				return new OpenApiSchema { Type = "string", Format = "byte" };
+				return new OpenApiSchema { Type = "string", Format = "byte", Minimum = byte.MinValue, Maximum = byte.MaxValue};
+			case { } x when x == typeof(sbyte):
+				return new OpenApiSchema { Type = "string", Format = "byte", Minimum = sbyte.MinValue, Maximum = sbyte.MaxValue };
 			case { } x when x == typeof(Guid):
 				return new OpenApiSchema { Type = "string", Format = "uuid" };
 
 			// handle arrays
 			case Type x when x.IsArray:
 				var elemType = x.GetElementType();
-				OpenApiSchema arrayOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				OpenApiSchema arrayOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, ref requiredTypes, depth, true) : Convert(elemType, ref requiredTypes,depth - 1);
 				return new OpenApiSchema { Type = "array", Items = arrayOpenApiSchema };
 			case Type x when x.IsAssignableTo(typeof(IList)) && x.IsGenericType:
 				elemType = x.GetGenericArguments()[0];
-				OpenApiSchema listOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, 1, true) : Convert(elemType, depth - 1);
+				OpenApiSchema listOpenApiSchema = elemType is { IsGenericType: true } ? Convert(elemType, ref requiredTypes, depth, true) : Convert(elemType, ref requiredTypes,depth - 1);
 				return new OpenApiSchema { Type = "array", Items = listOpenApiSchema };
 
 			// handle maps
@@ -244,21 +328,74 @@ public class SchemaGenerator
 				{
 					Type = "object",
 					AdditionalPropertiesAllowed = true,
-					AdditionalProperties = Convert(x.GetGenericArguments()[1], depth - 1),
+					AdditionalProperties = Convert(x.GetGenericArguments()[1], ref requiredTypes,depth - 1, sanitizeGenericType),
 					Extensions = new Dictionary<string, IOpenApiExtension>
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
-						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetGenericQualifiedTypeName()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString()),
-						[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] = new OpenApiString(runtimeType.GetGenericSanitizedFullName())
+						[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName())
+					}
+				};
+			case Type x when IsDictionary(x):
+				var das= GetDictionaryTypes(x);
+				return new OpenApiSchema
+				{
+					Type = "object",
+					AdditionalPropertiesAllowed = true,
+					
+					AdditionalProperties = Convert(das.Value.ValueType, ref requiredTypes,depth - 1, sanitizeGenericType),
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString()),
+						[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName())
 					}
 				};
 
+			case Type x when x.IsAssignableTo(typeof(IContentRef)):
+			{
+				var c = DocsLoader.GetTypeComments(runtimeType);
 
+				string t = runtimeType.GetSanitizedFullName();
+				var idSchema = Convert(typeof(string), ref requiredTypes, 0);
+				idSchema.Description = "id of the content";
+				return new OpenApiSchema
+				{
+					Description = c.Summary,
+					Type = "object",
+					AdditionalPropertiesAllowed = false,
+					Title = t,
+					Properties = new Dictionary<string, OpenApiSchema>()
+					{
+						{"id", idSchema}
+					},
+					Required = new SortedSet<string> { "id" },
+					Extensions = new Dictionary<string, IOpenApiExtension>
+					{
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(t),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetSanitizedFullName() : GetQualifiedReferenceName(runtimeType)),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+					}
+				};
+			}
 			case Type _ when depth <= 0:
-				return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
+				if (!ServiceDocGenerator.IsEmptyResponseType(runtimeType))
+				{
+					requiredTypes.Add(runtimeType);				
+					return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
+				}
+				else
+				{
+					return new OpenApiSchema {  };
+				}
 
 			case { IsEnum: true }:
 				var enumNames = Enum.GetNames(runtimeType);
@@ -280,7 +417,7 @@ public class SchemaGenerator
 				var schema = new OpenApiSchema { };
 				var comments = DocsLoader.GetTypeComments(runtimeType);
 
-				string typeName = sanitizeGenericType ? runtimeType.GetGenericSanitizedFullName() : runtimeType.Name;
+				string typeName = sanitizeGenericType ? runtimeType.GetSanitizedFullName() : runtimeType.Name;
 
 				schema.Description = comments.Summary;
 				schema.Properties = new Dictionary<string, OpenApiSchema>();
@@ -292,23 +429,30 @@ public class SchemaGenerator
 				{
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(typeName),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetGenericQualifiedTypeName() : GetQualifiedReferenceName(runtimeType)),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetSanitizedFullName() : GetQualifiedReferenceName(runtimeType)),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 				};
 
+				if (runtimeType.GetCustomAttribute<ContentTypeAttribute>() is { } contentTypeAttribute)
+				{
+					schema.Extensions["x-beamable-content-type-name"] = new OpenApiString(contentTypeAttribute.TypeName);
+				}
 				if (sanitizeGenericType)
 				{
 					schema.Extensions[MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME] =
-						new OpenApiString(runtimeType.GetGenericSanitizedFullName());
+						new OpenApiString(runtimeType.GetSanitizedFullName());
 				}
 
-				if (depth == 0) return schema;
+				if (depth == 0) { 
+					requiredTypes.Add(runtimeType);
+					return schema;
+				}
 				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);
 				foreach (var member in members)
 				{
 					var name = member.Name;
-					var fieldSchema = Convert(member.FieldType, depth - 1);
+					var fieldSchema = Convert(member.FieldType,ref requiredTypes, depth - 1, sanitizeGenericType);
 
 					var comment = DocsLoader.GetMemberComments(member);
 					fieldSchema.Description = comment?.Summary;
@@ -329,6 +473,40 @@ public class SchemaGenerator
 	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{
-		return runtimeType.FullName.Replace("+", ".");
+		return Uri.EscapeDataString(runtimeType.GetSanitizedFullName());
+	}
+	static bool IsDictionary(Type type)
+	{
+		if (type == null) return false;
+
+		return type.GetInterfaces().Any(i => 
+			       i.IsGenericType && 
+			       i.GetGenericTypeDefinition() == typeof(IDictionary<,>)) 
+		       || IsSubclassOfRawGeneric(typeof(Dictionary<,>), type);
+	}
+	static bool IsSubclassOfRawGeneric(Type generic, Type toCheck) {
+		while (toCheck != null && toCheck != typeof(object)) {
+			var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+			if (generic == cur) {
+				return true;
+			}
+			toCheck = toCheck.BaseType;
+		}
+		return false;
+	}
+	static (Type KeyType, Type ValueType)? GetDictionaryTypes(Type type)
+	{
+		// Look for the IDictionary<TKey, TValue> interface
+		var dictionaryIntf = type.GetInterfaces()
+			.FirstOrDefault(i => i.IsGenericType && 
+			                     i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+		if (dictionaryIntf != null)
+		{
+			var args = dictionaryIntf.GetGenericArguments();
+			return (args[0], args[1]);
+		}
+
+		return null;
 	}
 }

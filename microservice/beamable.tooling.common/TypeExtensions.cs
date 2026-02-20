@@ -20,42 +20,53 @@ public static class TypeExtensions
 
 	public static string GetSanitizedFullName(this Type type)
 	{
-		if (type.FullName != null && type.FullName.Contains("`"))
-			return type.FullName.Split('`')[0];
-		return type.FullName;
+		if (type.IsGenericType)
+		{
+			string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
+		
+			var genericArgs = type.GetGenericArguments();
+			string args = string.Join(", ", genericArgs.Select(GetSanitizedFullName));
+
+			return $"{typeName}<{args}>".Replace("+",".");
+		}
+		if(type.IsBasicType() && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
+		{
+			return shortName;
+		}
+
+		if (type.FullName == null)
+		{
+			return type.Name.Replace("+",".");
+		}
+
+		if(type.FullName.Contains("`"))
+			return type.FullName.Split('`')[0].Replace("+",".");
+		return type.FullName.Replace("+",".");
 	}
 	
-	public static string GetGenericSanitizedFullName(this Type type)
+	public static bool IsBasicType(this Type t)
 	{
-		if (!type.IsGenericType)
+		switch (Type.GetTypeCode(t))
 		{
-			if(type.IsPrimitive && OpenApiUtils.OpenApiCSharpNameMap.TryGetValue(type.Name.ToLower(), out string shortName))
-				return shortName;
-			return type.FullName ?? type.Name;
+			case TypeCode.Boolean:
+			case TypeCode.Byte:
+			case TypeCode.SByte:
+			case TypeCode.Int16:
+			case TypeCode.UInt16:
+			case TypeCode.Int32:
+			case TypeCode.UInt32:
+			case TypeCode.Int64:
+			case TypeCode.UInt64:
+			case TypeCode.Single:
+			case TypeCode.Double:
+			case TypeCode.Decimal:
+			case TypeCode.String:
+			case TypeCode.Char:
+				return true;
+
+			default:
+				return t.IsPrimitive;
 		}
-		
-		string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
-		
-		var genericArgs = type.GetGenericArguments();
-		string args = string.Join(", ", genericArgs.Select(GetGenericSanitizedFullName));
-
-		return $"{typeName}<{args}>";
 	}
-
-	public static string GetGenericQualifiedTypeName(this Type type)
-	{
-		if (!type.IsGenericType)
-		{
-			return type.FullName ?? type.Name;
-		}
-		
-		string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];
-		
-		var genericArgs = type.GetGenericArguments();
-		string args = string.Join(", ", genericArgs.Select(GetGenericQualifiedTypeName));
-
-		return $"{typeName}.{args}";
-	}
-	
 	
 }
