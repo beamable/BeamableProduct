@@ -21,6 +21,7 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
+	public int MaxParallelCount { get; set; }
 	public string SlnFilePath;
 
 
