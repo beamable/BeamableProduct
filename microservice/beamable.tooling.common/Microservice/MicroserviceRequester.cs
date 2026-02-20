@@ -199,7 +199,7 @@ namespace Beamable.Server
          BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
       }
 
-      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
       {
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
@@ -213,7 +213,17 @@ namespace Beamable.Server
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
-		         await connection.SendMessage(message, sw);
+		         // Use compression if negotiated and message is large enough
+		         var codec = Daemon?.NegotiatedCodec;
+		         if (codec != null && !disableCompression && SocketCompression.ShouldCompress(message))
+		         {
+			         var compressed = SocketCompression.Compress(message, codec);
+			         await connection.SendBinaryMessage(compressed, sw);
+		         }
+		         else
+		         {
+			         await connection.SendMessage(message, sw);
+		         }
 		         return;
 	         }
 	         catch (Exception ex)
@@ -435,7 +445,7 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.SendMessageSafely(msg);
+         return _socketContext.SendMessageSafely(msg, disableCompression: _env.DisableOutboundWsCompression);
       }
 
       public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
@@ -520,7 +530,7 @@ namespace Beamable.Server
          var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
          BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
-         return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
+         return _socketContext.SendMessageSafely(msg, _waitForAuthorization, disableCompression: _env.DisableOutboundWsCompression).FlatMap(_ =>
             {
                requestActivity.StopAndDispose(ActivityStatusCode.Ok);
                

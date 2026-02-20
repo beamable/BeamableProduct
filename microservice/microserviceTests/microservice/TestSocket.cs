@@ -999,6 +999,16 @@ namespace Beamable.Microservice.Tests.Socket
             await HandleRequestWithResponders(message);
         }
 
+        public async Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
+        {
+            if (!MockIsConnectionOpen)
+            {
+                throw new Exception("Connection is not open");
+            }
+            var decompressed = SocketCompression.Decompress(data);
+            await HandleRequestWithResponders(decompressed);
+        }
+
         public IConnection OnConnect(Action<IConnection> onConnect)
         {
             MockOnConnect?.Invoke(onConnect);
