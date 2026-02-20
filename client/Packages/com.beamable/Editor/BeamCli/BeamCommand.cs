@@ -26,6 +26,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 		public Action<BeamArgs> argModifier = null;
 		public Stack<Action<BeamArgs>> argStackModifier = new Stack<Action<BeamArgs>>();
+		private readonly BeamCli _beamCli;
 
 		public void ModifierNextDefault(Action<BeamArgs> modifier) => argStackModifier.Push(modifier);
 		
@@ -43,9 +44,10 @@ namespace Beamable.Editor.BeamCli.Commands
 			}
 		}
 
-		public BeamCommands(IBeamCommandFactory factory)
+		public BeamCommands(IBeamCommandFactory factory, BeamCli beamCli)
 		{
 			_factory = factory;
+			_beamCli = beamCli;
 		}
 
 		public IBeamCommand CreateCustom(string args)
@@ -73,7 +75,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				emitLogStreams = true,
 				engine = "unity",
 				engineVersion = Application.unityVersion,
-				engineSdkVersion = BeamableEnvironment.SdkVersion.ToString()
+				engineSdkVersion = BeamableEnvironment.SdkVersion.ToString(),
+				preferRemoteFederation = _beamCli.CurrentRealm?.IsProduction ?? false
 			};
 			return beamArgs;
 		}

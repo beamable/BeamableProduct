@@ -123,6 +123,9 @@ jobs:
         run: |
           cat ./build-number.txt
           beam --version
+      - name: Check Dotnet Version 
+        working-directory: cli/tests
+        run: dotnet --info
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build

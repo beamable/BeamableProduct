@@ -48,10 +48,12 @@ namespace Beamable.Editor.BeamCli.UI
 		public CommandStatusFilterView completedFilter = new CommandStatusFilterView();
 		public CommandStatusFilterView errorFilter = new CommandStatusFilterView();
 		public CommandStatusFilterView lostFilter = new CommandStatusFilterView();
+		public CommandStatusFilterView createdFilter = new CommandStatusFilterView();
 
 
 		public enum CommandStatus
 		{
+			Created,
 			Running,
 			Completed,
 			Error,
@@ -60,6 +62,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private readonly Dictionary<CommandStatus, string> commandsStatusIconMap = new Dictionary<CommandStatus, string>()
 		{
+			{CommandStatus.Created, "sv_icon_dot0_sml"},
 			{CommandStatus.Running, "sv_icon_dot13_sml"},
 			{CommandStatus.Completed, "sv_icon_dot11_sml"},
 			{CommandStatus.Error, "sv_icon_dot14_sml"},
@@ -122,6 +125,7 @@ namespace Beamable.Editor.BeamCli.UI
 			DrawCommandStatusFilter(CommandStatus.Completed, completedFilter);
 			DrawCommandStatusFilter(CommandStatus.Error, errorFilter);
 			DrawCommandStatusFilter(CommandStatus.Lost, lostFilter);
+			DrawCommandStatusFilter(CommandStatus.Created, createdFilter);
 
 			EditorGUILayout.EndHorizontal();
 
@@ -327,6 +331,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public List<CommandDescriptionView> FilterCommands()
 		{
 			var lostCount = 0;
+			var createdCount = 0;
 			var completedCount = 0;
 			var runningCount = 0;
 			var errorCount = 0;
@@ -338,75 +343,92 @@ namespace Beamable.Editor.BeamCli.UI
 				var parsedCommand = ParseCommandString(commandDescriptor.commandString);
 				var status = GetCommandStatus(commandDescriptor);
 
-				if (status == CommandStatus.Error)
+				switch (status)
 				{
-					if (errorFilter.enabled)
+					case CommandStatus.Running:
 					{
-						filteredList.Add(new CommandDescriptionView()
+						if (runningFilter.enabled)
 						{
-							command = parsedCommand.command,
-							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
-							status = status,
-							id = commandDescriptor.id,
-						});
-					}
+							filteredList.Add(new CommandDescriptionView()
+							{
+								command = parsedCommand.command,
+								timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+								status = status,
+								id = commandDescriptor.id,
+							});
+						}
 
-					errorCount++;
-				}
-
-				if (status == CommandStatus.Running)
-				{
-					if (runningFilter.enabled)
+						runningCount++;
+					} break;
+					case CommandStatus.Created:
 					{
-						filteredList.Add(new CommandDescriptionView()
+						if (createdFilter.enabled)
 						{
-							command = parsedCommand.command,
-							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
-							status = status,
-							id = commandDescriptor.id,
-						});
-					}
+							filteredList.Add(new CommandDescriptionView()
+							{
+								command = parsedCommand.command,
+								timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+								status = status,
+								id = commandDescriptor.id,
+							});
+						}
 
-					runningCount++;
-				}
-
-				if (status == CommandStatus.Completed)
-				{
-					if (completedFilter.enabled)
+						createdCount++;
+					} break;
+					case CommandStatus.Error:
 					{
-						filteredList.Add(new CommandDescriptionView()
+						if (errorFilter.enabled)
 						{
-							command = parsedCommand.command,
-							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
-							status = status,
-							id = commandDescriptor.id,
-						});
-					}
+							filteredList.Add(new CommandDescriptionView()
+							{
+								command = parsedCommand.command,
+								timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+								status = status,
+								id = commandDescriptor.id,
+							});
+						}
 
-					completedCount++;
-				}
-
-				if (status == CommandStatus.Lost)
-				{
-					if (lostFilter.enabled)
+						errorCount++;
+					} break;
+					case CommandStatus.Lost:
 					{
-						filteredList.Add(new CommandDescriptionView()
+						if (lostFilter.enabled)
 						{
-							command = parsedCommand.command,
-							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
-							status = status,
-							id = commandDescriptor.id,
-						});
-					}
+							filteredList.Add(new CommandDescriptionView()
+							{
+								command = parsedCommand.command,
+								timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+								status = status,
+								id = commandDescriptor.id,
+							});
+						}
 
-					lostCount++;
+						lostCount++;
+					} break;
+					case CommandStatus.Completed:
+					{
+						if (completedFilter.enabled)
+						{
+							filteredList.Add(new CommandDescriptionView()
+							{
+								command = parsedCommand.command,
+								timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+								status = status,
+								id = commandDescriptor.id,
+							});
+						}
+
+						completedCount++;
+					} break;
 				}
+				
 			}
 
 			errorFilter.count = errorCount;
 			completedFilter.count = completedCount;
 			runningFilter.count = runningCount;
 			lostFilter.count = lostCount;
+			createdFilter.count = createdCount;
 
 			return filteredList;
 		}
@@ -479,6 +501,11 @@ namespace Beamable.Editor.BeamCli.UI
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
 				return command.errors.Count > 0 ? CommandStatus.Error : CommandStatus.Completed;
+			}
+
+			if (command.startTime < 0)
+			{
+				return CommandStatus.Created;
 			}
 
 			return CommandStatus.Running;

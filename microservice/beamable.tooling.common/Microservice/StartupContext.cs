@@ -1,3 +1,5 @@
+using System.Text;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -26,6 +28,7 @@ public class StartupContext
 
     public IMicroserviceAttributes attributes;
 
+    [Obsolete("Use the " + nameof(generateLocalEnvInvocationModifier) + " instead")]
     public string localEnvArgs;
 
     public List<Func<IDependencyProviderScope, Task>> initializers = new List<Func<IDependencyProviderScope, Task>>();
@@ -42,6 +45,7 @@ public class StartupContext
     public List<IBeamableService> services = new List<IBeamableService>();
     public readonly BeamStandardTelemetryAttributeProvider standardBeamTelemetryAttributes = new BeamStandardTelemetryAttributeProvider();
     public IDependencyBuilder serviceBuilder;
+    public Action<BeamCliInvocation> generateLocalEnvInvocationModifier;
 
 
     // public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
@@ -62,6 +66,64 @@ public class MicroserviceResult
 {
     public bool GeneratedClient { get; set; }
     public bool Success { get; set; }
+}
+
+public struct BeamCliPart
+{
+    public string key;
+    public OptionalString value;
+
+    public BeamCliPart(string key)
+    {
+        this.key = key;
+        value = OptionalString.None;
+    }
+
+    public BeamCliPart(string key, string value)
+    {
+        this.key = key;
+        this.value = OptionalString.FromString(value);
+    }
+}
+
+public class BeamCliInvocation
+{
+    public string command;
+    public List<BeamCliPart> args;
+
+    public void AddArgIfNotExist(BeamCliPart arg)
+    {
+        if (args.Any(x => string.Equals(x.key, arg.key, StringComparison.InvariantCultureIgnoreCase)))
+            return;
+        args.Add(arg);
+    }
+    
+    public string ToCommandString()
+    {
+        var sb = new StringBuilder();
+        ApplyCommandString(sb);
+        return sb.ToString();
+    }
+    public void ApplyCommandString(StringBuilder sb)
+    {
+        sb.Append(command);
+        for (var i = 0; i < args.Count; i++)
+        {
+            sb.Append(" ");
+            sb.Append(args[i].key);
+            if (args[i].value.TryGet(out var val))
+            {
+                sb.Append(" ");
+                sb.Append(val);
+            }
+        }
+    }
+
+    public void RemoveKey(string key)
+    {
+        args.RemoveAll(x =>
+            string.Equals(key, x.key, StringComparison.InvariantCultureIgnoreCase));
+    }
 }
 
 public delegate ServiceMethodInstanceData BeamRouteTypeActivator(

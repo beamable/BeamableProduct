@@ -324,7 +324,7 @@ public class DefaultAppContext : IAppContext
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
-		if (_configService.ReadTokenFromFile(out var response))
+		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
 		{
 			if (response.ExpiresAt > DateTime.Now)
 			{
@@ -344,10 +344,10 @@ public class DefaultAppContext : IAppContext
 	{
 		_host = host;
 
-		var service = _provider.GetService<IAliasService>();
-		service.Requester = new NoAuthHttpRequester(host);
 		if (!string.IsNullOrEmpty(cid))
 		{
+			var service = _provider.GetService<IAliasService>();
+			service.Requester = new NoAuthHttpRequester(host);
 			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
 		}

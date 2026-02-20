@@ -18,7 +18,9 @@ public class RequestCliCommandOutput
 	
 }
 
-public class RequestCliCommand : StreamCommand<RequestCliCommandArgs, RequestCliCommandOutput>
+public class RequestCliCommand 
+	: StreamCommand<RequestCliCommandArgs, RequestCliCommandOutput>
+	, IStandaloneCommand
 {
 	public override bool IsForInternalUse => true;
 

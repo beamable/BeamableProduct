@@ -200,7 +200,10 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+			// Initialize toolbar
+			BeamableToolbarExtender.LoadToolbarExtender();
+#endif
 			initializeAttemptCount++;
 
 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
@@ -361,11 +364,6 @@ namespace Beamable
 #endif
 
 					IsInitialized = true;
-
-#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-					// Initialize toolbar
-					BeamableToolbarExtender.LoadToolbarExtender();
-#endif
 
 				}
 				catch (Exception ex)
@@ -616,6 +614,7 @@ namespace Beamable
 		/// </param>
 		public void Logout(bool clearRealmPid)
 		{
+			changeRealmPromise?.CompleteSuccess();
 			BeamCli.Logout().Then(_ =>
 			{
 				OnUserChange?.Invoke(null);
@@ -690,20 +689,46 @@ namespace Beamable
 				ServiceScope.GetService<ConfigDatabaseProvider>().Reload();
 			}
 		}
+
 		
+		
+		private Promise changeRealmPromise;
+
+		public bool IsSwitchingRealms
+		{
+			get
+			{
+				if (changeRealmPromise == null) return false;
+				if (changeRealmPromise.IsCompleted) return false;
+				if (changeRealmPromise.IsFailed) return false;
+				return true;
+			}
+		} 
 		public async Promise SwitchRealm(RealmView realm)
 		{
 			await SwitchRealm(realm.Pid);
 		}
 		public async Promise SwitchRealm(string pid)
 		{
-			await BeamCli.SwitchRealms(pid);
-			
-			ApplyRequesterToken();
+			if (changeRealmPromise != null)
+			{
+				changeRealmPromise.CompleteSuccess();
+			}
+			changeRealmPromise = new Promise();
+			try
+			{
+				await BeamCli.SwitchRealms(pid);
 
-			await CliContentService.Reload();
-			
-			OnRealmChange?.Invoke(BeamCli.CurrentRealm);
+				ApplyRequesterToken();
+
+				await CliContentService.Reload();
+
+				OnRealmChange?.Invoke(BeamCli.CurrentRealm);
+			}
+			finally
+			{
+				changeRealmPromise.CompleteSuccess();
+			}
 		}
 
 		public static async Task StopAll()

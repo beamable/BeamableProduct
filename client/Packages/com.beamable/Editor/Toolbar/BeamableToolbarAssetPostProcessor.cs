@@ -1,6 +1,7 @@
 using Beamable.Editor.Reflection;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using Beamable.Editor.ToolbarExtender;
@@ -15,9 +16,6 @@ namespace Beamable.Editor
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
-			if (!BeamEditor.IsInitialized)
-				return;
-
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 			var toolbarExtendedRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))

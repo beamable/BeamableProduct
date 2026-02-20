@@ -23,10 +23,10 @@ namespace Beamable.Editor.ContentService
 	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
-		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete";
+		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete. {1}/{2} items synced.";
 		private const string SYNC_OPERATION_ERROR_BASE_MESSAGE = "Error when syncing content {0}. Error message: {1}";
 		private const string PUBLISH_OPERATION_TITLE = "Publish Contents";
-		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published";
+		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published. {1}/{2} items published.";
 		private const string ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE = "Error when publishing content {0}. Discarding publishes changes. Error message: {1}";
 
 		public string manifestIdOverride;
@@ -97,10 +97,10 @@ namespace Beamable.Editor.ContentService
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
-			SaveContent(selectedContentObject.Id, propertiesJson);
+			SaveContent(selectedContentObject.Id, propertiesJson, () => SetContentTags(selectedContentObject.Id, selectedContentObject.Tags));
 		}
 
-		public void SaveContent(string contentId, string contentPropertiesJson)
+		public void SaveContent(string contentId, string contentPropertiesJson, Action onCompleted = null)
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
@@ -108,7 +108,7 @@ namespace Beamable.Editor.ContentService
 				contentIds = new[] {contentId},
 				contentProperties = new[] {contentPropertiesJson}
 			});
-			saveCommand.Run();
+			saveCommand.Run().Then(_ => { onCompleted?.Invoke(); });
 		}
 		
 		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
@@ -255,14 +255,11 @@ namespace Beamable.Editor.ContentService
 
 		public void SetContentTags(string contentId, string[] tags)
 		{
-			if (!EntriesCache.TryGetValue(contentId, out var entry))
+			if (EntriesCache.TryGetValue(contentId, out var entry))
 			{
-				Debug.LogError($"No Entry found with id: {contentId}");
-				return;
+				entry.Tags = tags;
+				EntriesCache[contentId] = entry;
 			}
-
-			entry.Tags = tags;
-			EntriesCache[contentId] = entry;
 
 			if (tags.Length == 0)
 			{
@@ -287,7 +284,30 @@ namespace Beamable.Editor.ContentService
 				});
 				setContentTagCommand.Run();
 			}
-			
+
+		}
+
+		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
+		{
+			if (TryGetContentObject(entry.FullId, out var contentObject))
+			{
+				duplicatedObject = Object.Instantiate(contentObject);
+				string baseName = $"{contentObject.ContentName}_Copy";
+				int itemsWithBaseNameCount = GetContentsFromType(contentObject.GetType())
+				                                            .Count(item => item.Name.StartsWith(baseName));
+				duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+				duplicatedObject.ContentStatus = ContentStatus.Created;
+				duplicatedObject.Tags = entry.Tags;
+				entry.Name = duplicatedObject.ContentName;
+				entry.FullId = duplicatedObject.Id;
+				entry.TypeName = duplicatedObject.ContentType;
+				AddContentToCache(entry);
+				SaveContent(duplicatedObject);
+				return true;
+			}
+
+			duplicatedObject = null;
+			return false;
 		}
 
 		public string RenameContent(string contentId, string newName)
@@ -301,6 +321,9 @@ namespace Beamable.Editor.ContentService
 			if(entry.Name == newName)
 				return contentId;
 
+			// Prevents the user to rename the content with spaces
+			newName = newName.Replace(' ', '_');
+			
 			if (!ValidateNewContentName(newName))
 			{
 				Debug.LogError(
@@ -339,6 +362,8 @@ namespace Beamable.Editor.ContentService
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
 			}
+
+			ManifestChangedCount++;
 
 			BeamUnityFileUtils.RenameFile(originalPath, fullName);
 			
@@ -387,12 +412,6 @@ namespace Beamable.Editor.ContentService
 		{
 			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
 			publishedContents = 0;
-
-			if (_contentWatcher != null)
-			{
-				_contentWatcher.Cancel();
-				_contentWatcher = null;
-			}
 			
 			try
 			{
@@ -726,10 +745,22 @@ namespace Beamable.Editor.ContentService
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
-			if (!TypeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
+			var entryType = _contentTypeReflectionCache.GetTypeFromId(entry.FullId);
+			if (!_contentTypeReflectionCache.TryGetName(entryType, out var typeName))
 			{
-				TypeContentCache[entry.TypeName] = typeContentList = new List<LocalContentManifestEntry>();;
+				//Fallback to CLI Value
+				typeName = entry.TypeName;
 			}
+			
+			if (!TypeContentCache.TryGetValue(typeName, out var typeContentList))
+			{
+				TypeContentCache[typeName] = typeContentList = new List<LocalContentManifestEntry>();;
+			}
+			
+			// Before using the new CliContent on Unity we supported Content names with dots.
+			// So before caching the content data that comes from Cli we need to fix any names that might came wrong by applying it again using the real contentTypeName
+			entry.TypeName = typeName;
+			entry.Name = entry.FullId.Substring(typeName.Length + 1);
 			
 			typeContentList.Add(entry);
 
@@ -880,7 +911,7 @@ namespace Beamable.Editor.ContentService
 					return;
 				case 1: // Sync Complete
 				case 2: // Publish Complete
-					description = string.Format(onSuccessBaseMessage, data.contentName);
+					description = string.Format(onSuccessBaseMessage, data.contentName, countItem, data.totalItems);
 					break;
 				case 3: // Update Processed item count
 					countItem = data.processedItems;

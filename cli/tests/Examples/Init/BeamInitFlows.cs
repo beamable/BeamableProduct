@@ -13,7 +13,7 @@ using tests.MoqExtensions;
 
 namespace tests.Examples.Init;
 
-public class BeamInitFlows : CLITest
+public partial class BeamInitFlows : CLITest
 {
 
 	[TestCase("")]

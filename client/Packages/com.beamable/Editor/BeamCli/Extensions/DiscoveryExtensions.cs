@@ -8,8 +8,24 @@ namespace Beamable.Editor.BeamCli.Extensions
 	{
 		public static bool IsLocal(this BeamServiceInstance instance)
 		{
-			return instance.latestHostEvent != null || instance.latestDockerEvent != null;
+			return (instance.latestHostEvent != null && instance.latestHostEvent.IsValid()) ||
+			       (instance.latestDockerEvent != null && instance.latestDockerEvent.IsValid());
 		}
+
+		public static bool IsValid(this BeamDockerServiceDescriptor instance)
+		{
+			return !string.IsNullOrEmpty(instance.containerId) 
+			       || !string.IsNullOrEmpty(instance.routingKey)
+			       || !string.IsNullOrEmpty(instance.service)
+			       || !string.IsNullOrEmpty(instance.serviceType); 
+		}
+
+		public static bool IsValid(this BeamHostServiceDescriptor instance)
+		{
+			return !string.IsNullOrEmpty(instance.service)
+			       || !string.IsNullOrEmpty(instance.routingKey);
+		}
+		
 		public static bool IsRemote(this BeamServiceInstance instance)
 		{
 			return instance.latestRemoteEvent != null;

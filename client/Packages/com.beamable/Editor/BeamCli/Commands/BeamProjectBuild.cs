@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] ids;
         /// <summary>By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids</summary>
         public bool exactIds;
+        /// <summary>A message to send to the running service when it is terminated</summary>
+        public string stopReason;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -35,6 +37,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.exactIds != default(bool)))
             {
                 genBeamCommandArgs.Add(("--exact-ids=" + this.exactIds));
+            }
+            // If the stopReason value was not default, then add it to the list of args.
+            if ((this.stopReason != default(string)))
+            {
+                genBeamCommandArgs.Add(("--stop-reason=" + this.stopReason));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

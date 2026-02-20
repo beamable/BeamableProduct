@@ -35,8 +35,7 @@ public class ConfigSetCommand : AppCommand<ConfigSetCommandArgs>
 	{
 		_configService = args.ConfigService;
 
-		_configService.SetConfigString(args.name, args.value);
-		_configService.FlushConfig();
+		_configService.WriteConfigString(args.name, args.value);
 		return Task.CompletedTask;
 	}
 }

@@ -690,14 +690,21 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				if (shouldShowMenu)
 				{
-					// AddDelayedAction(() =>
 					var evt = Event.current;
-					var mousePosition = evt.mousePosition;
+					var screenMousePosition = GUIUtility.GUIToScreenPoint(evt.mousePosition);
 					Event.current.Use();
 					Repaint();
-					ShowItemOptionsMenu(mousePosition);
+					// Fix: https://github.com/beamable/BeamableProduct/issues/4479
+					// We need to do a double-delay call to ensure that the ActiveSelected items will be properly drawn as
+					// selected, the second delay is necessary because when setting the Selection.activeObject Unity forces
+					// a repaint, but the IMGUI can still access the old selection state.
+					// So we need to wait another frame to make it right
+					EditorApplication.delayCall += () =>
+					{
+						Repaint();
+						EditorApplication.delayCall += () => ShowItemOptionsMenu(screenMousePosition);
+					};
 					return;
-
 				}
 
 				
@@ -714,7 +721,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			Repaint();
 		}
 
-		private void ShowItemOptionsMenu(Vector2 menuPosition)
+		private void ShowItemOptionsMenu(Vector2 screenPosition)
 		{
 			GenericMenu menu = new GenericMenu();
 
@@ -746,18 +753,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
 					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
 					{
-						if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
-						{
-							var duplicatedObject = Instantiate(contentObject);
-							string baseName = $"{contentObject.ContentName}_Copy";
-							int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
-							                                            .Count(item => item.Name.StartsWith(baseName));
-							duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-							duplicatedObject.ContentStatus = ContentStatus.Created;
-							_contentService.SaveContent(duplicatedObject);
-							Selection.activeObject = duplicatedObject;
-						}
-
+						DuplicateContent(entry);
 					});
 
 					menu.AddItem(new GUIContent("Rename Item"), false, () =>
@@ -786,7 +782,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					});
 				}
 
-				if (entry.StatusEnum is not ContentStatus.UpToDate)
+				if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
 				{
 					menu.AddItem(new GUIContent("Revert Item"), false,
 					             () =>
@@ -872,7 +868,16 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 			}
 
-			menu.DropDown(new Rect(menuPosition, Vector2.zero));
+			menu.DropDown(new Rect(GUIUtility.ScreenToGUIPoint(screenPosition), Vector2.zero));
+		}
+
+		private void DuplicateContent(LocalContentManifestEntry entry)
+		{
+			if (_contentService.DuplicateContent(entry, out var duplicatedObject))
+			{
+				SetEntryIdAsSelected(duplicatedObject.Id);
+			}
+			
 		}
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)

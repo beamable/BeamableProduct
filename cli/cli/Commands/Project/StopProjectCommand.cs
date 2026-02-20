@@ -12,6 +12,7 @@ public class StopProjectCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
 	public bool taskKill;
+	public string reason;
 }
 
 public class StopProjectCommandOutput
@@ -35,16 +36,17 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				() => false,
 				"Kill the task instead of sending a graceful shutdown signal via the socket"),
 			(args, b) => args.taskKill = b);
+		AddOption(new Option<string>("--reason", () => "cli-request", "The reason for stopping the service"), (args, i) => args.reason = i);
 	}
 
 	public override async Task Handle(StopProjectCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		await DiscoverAndStopServices(args, new HashSet<string>(args.services),  args.taskKill, TimeSpan.FromSeconds(1),  SendResults);
+		await DiscoverAndStopServices(args, new HashSet<string>(args.services), args.reason, args.taskKill, TimeSpan.FromSeconds(1),  SendResults);
 	}
 
-	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter=null)
+	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, string reason, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter=null)
 	{
 		if (filter == null)
 		{
@@ -77,7 +79,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 
 		foreach (var (instance, service) in instancesToKill)
 		{
-			await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill: kill, evt =>
+			await StopRunningService(instance, args.BeamoLocalSystem, service.service, reason, kill: kill, evt =>
 			{
 				onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
 				stoppedInstances.Add(instance);
@@ -87,7 +89,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		Log.Information($"Stopped {stoppedInstances.Count} instances.");
 	}
 	
-	public static async Task StopRunningService(ServiceInstance instance, BeamoLocalSystem beamoLocalSystem, string serviceName, bool kill, Action<ServiceInstance> onServiceStopped = null)
+	public static async Task StopRunningService(ServiceInstance instance, BeamoLocalSystem beamoLocalSystem, string serviceName, string reason, bool kill, Action<ServiceInstance> onServiceStopped = null)
 	{
 		Log.Debug($"stopping service=[{serviceName}]");
 		if (instance.latestDockerEvent is not null)
@@ -116,19 +118,19 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 			}
 			else
 			{
-				await SendKillMessage(serviceName, hostEvt);
+				await SendKillMessage(serviceName, hostEvt, reason);
 			}
 			Log.Information($"stopped {serviceName}.");
 			onServiceStopped?.Invoke(instance);
 		}
 	}
 
-	public static async Task SendKillMessage(string service, HostServiceDescriptor host)
+	public static async Task SendKillMessage(string service, HostServiceDescriptor host, string reason)
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
 		Log.Verbose($"Sending kill event, host=[{JsonConvert.SerializeObject(host, Formatting.Indented)}]");
-		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/stop?reason=cli-request");
+		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/stop?reason={reason}");
 		var response = await client.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
 		{
