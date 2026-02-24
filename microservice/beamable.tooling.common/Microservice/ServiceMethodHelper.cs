@@ -8,7 +8,6 @@ using Newtonsoft.Json;
 
 using System.Text;
 using Beamable.Common.Dependencies;
-using beamable.tooling.common.Microservice;
 using ZLogger;
 using static Beamable.Common.Constants.Features.Services;
 
@@ -310,8 +309,13 @@ namespace Beamable.Server
 			   return Serialization.SmallerJSON.Json.Serialize(dict, new StringBuilder());
 		   }
 
-		   // or just peel off the quotes
-		   return json.Substring(1, json.Length - 2);
+		   // or just peel off the quotes if it starts of ends with them
+		   if (json.StartsWith("\"") && json.EndsWith("\""))
+		   {
+			   return json.Substring(1, json.Length - 2);
+		   }
+		   // if not just throw back the original string
+		   return json;
 	   }
 
 	   private static List<ServiceMethod> ScanType(IMicroserviceAttributes serviceAttribute, ServiceMethodProvider provider)
