@@ -77,6 +77,35 @@ namespace Beamable.Serialization.SmallerJSON
 				return obj;
 			}
 		}
+		
+		/// <summary>
+		/// Deserialize JSON into a concrete type. Unlike Unity JsonUtility, this supports
+		/// custom semantic wrapper types (ex: types implementing IBeamSemanticType<T>)
+		/// even when JSON contains only the primitive token (string/number).
+		/// </summary>
+		public static T Deserialize<T>(string json)
+		{
+			return (T)Deserialize(json, typeof(T));
+		}
+
+		/// <summary>
+		/// Deserialize JSON into a concrete type (runtime type overload).
+		/// </summary>
+		public static object Deserialize(string json, Type targetType)
+		{
+			if (json == null) return null;
+
+			// First parse into SmallerJSON's object model (ArrayDict/List/primitives).
+			object root;
+			using (var parser = new StringBasedParser(json))
+			{
+				root = parser.ParseValue();
+			}
+
+			// Then materialize into the requested type.
+			return ObjectMapper.ConvertToType(root, targetType);
+		}
+		
 
 		public static bool IsValidJson(string strInput)
 		{
@@ -1049,5 +1078,202 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 			}
 		}
+		
+		private static class ObjectMapper
+		{
+			private static readonly Type SerializeFieldType = typeof(SerializeField);
+			private static readonly Type CompilerGeneratedType = typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute);
+
+			// NOTE: We cannot reference Beamable.Common.Semantics directly from this folder.
+			// We detect semantic types via reflection by interface full name instead
+			private const string BeamSemanticInterfaceFullName = "Beamable.Common.Semantics.IBeamSemanticType`1";
+
+			public static object ConvertToType(object node, Type targetType)
+			{
+				if (targetType == null) throw new ArgumentNullException(nameof(targetType));
+
+				// Null handling
+				if (node == null)
+				{
+					targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+					return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+				}
+
+				// Unwrap nullable
+				targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+				// Semantic types: construct from primitive JSON tokens
+				if (TryGetSemanticPrimitiveType(targetType, out var primitiveType))
+				{
+					return ConstructSemantic(targetType, primitiveType, node);
+				}
+
+				// Direct assign
+				if (targetType.IsInstanceOfType(node))
+				{
+					return node;
+				}
+
+				// Enums
+				if (targetType.IsEnum)
+				{
+					if (node is string s) return Enum.Parse(targetType, s, ignoreCase: true);
+					if (node is long l) return Enum.ToObject(targetType, (int)l);
+				}
+
+				// Common scalars
+				if (targetType == typeof(string)) return node.ToString();
+				if (targetType == typeof(bool)) return Convert.ToBoolean(node);
+				if (targetType == typeof(long)) return Convert.ToInt64(node);
+				if (targetType == typeof(int)) return Convert.ToInt32(node);
+				if (targetType == typeof(double)) return Convert.ToDouble(node);
+				if (targetType == typeof(float)) return Convert.ToSingle(node);
+				if (targetType == typeof(decimal)) return Convert.ToDecimal(node);
+
+				// Dictionaries (only generic Dictionary<string, TValue> supported here)
+				if (typeof(IDictionary).IsAssignableFrom(targetType) && targetType.IsGenericType)
+				{
+					var genArgs = targetType.GetGenericArguments();
+					if (genArgs.Length == 2 && genArgs[0] == typeof(string) && node is ArrayDict dictNode)
+					{
+						var valueType = genArgs[1];
+						var dict = (IDictionary)Activator.CreateInstance(targetType);
+						foreach (var kvp in dictNode)
+						{
+							dict[kvp.Key] = ConvertToType(kvp.Value, valueType);
+						}
+						return dict;
+					}
+				}
+
+				// Arrays
+				if (targetType.IsArray && node is IList listNodeForArray)
+				{
+					var elemType = targetType.GetElementType();
+					var arr = Array.CreateInstance(elemType!, listNodeForArray.Count);
+					for (int i = 0; i < listNodeForArray.Count; i++)
+					{
+						arr.SetValue(ConvertToType(listNodeForArray[i], elemType!), i);
+					}
+					return arr;
+				}
+
+				// Lists
+				if (typeof(IList).IsAssignableFrom(targetType) && node is IList listNode)
+				{
+					var elemType = targetType.IsGenericType ? targetType.GetGenericArguments()[0] : typeof(object);
+					var list = (IList)Activator.CreateInstance(targetType);
+					foreach (var elem in listNode)
+					{
+						list.Add(ConvertToType(elem, elemType));
+					}
+					return list;
+				}
+
+				// POCO object
+				if (node is ArrayDict objNode)
+				{
+					var instance = Activator.CreateInstance(targetType);
+
+					// Mirror existing Serializer rules: fields only, allow [SerializeField] privates,
+					// skip [NonSerialized] and skip compiler generated backing fields.
+					var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+					for (int i = 0; i < fields.Length; i++)
+					{
+						var field = fields[i];
+
+						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
+						var isGeneratedByCompiler = field.GetCustomAttribute(CompilerGeneratedType) != null;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+						if (!canBeSerialized) continue;
+
+						if (!objNode.TryGetValue(field.Name, out var rawValue)) continue;
+
+						var converted = ConvertToType(rawValue, field.FieldType);
+						field.SetValue(instance, converted);
+					}
+
+					// If the target uses Unity callbacks, respect them (parity with existing Serializer behavior)
+					if (instance is ISerializationCallbackReceiver receiver)
+					{
+						receiver.OnAfterDeserialize();
+					}
+
+					return instance;
+				}
+
+				throw new InvalidOperationException(
+					$"SmallerJSON cannot convert node type [{node.GetType().FullName}] to [{targetType.FullName}].");
+			}
+
+			private static bool TryGetSemanticPrimitiveType(Type semanticType, out Type primitiveType)
+			{
+				var iface = semanticType.GetInterfaces()
+					.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition().FullName == BeamSemanticInterfaceFullName);
+
+				if (iface == null)
+				{
+					primitiveType = null;
+					return false;
+				}
+
+				primitiveType = iface.GetGenericArguments()[0];
+				return true;
+			}
+
+			private static object ConstructSemantic(Type semanticType, Type primitiveType, object node)
+			{
+				// Prefer ctor(string) when JSON is a string. Many long-backed semantic types accept string too
+				// and preserve formatting (leading zeros etc) or validate (ServiceName).
+				if (node is string s)
+				{
+					var stringCtor = semanticType.GetConstructor(new[] { typeof(string) });
+					if (stringCtor != null) return stringCtor.Invoke(new object[] { s });
+
+					if (primitiveType == typeof(long))
+					{
+						if (!long.TryParse(s, System.Globalization.NumberStyles.Integer,
+								System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+						{
+							throw new FormatException($"Cannot parse '{s}' as long for semantic type [{semanticType.FullName}].");
+						}
+
+						var longCtor = semanticType.GetConstructor(new[] { typeof(long) });
+						if (longCtor != null) return longCtor.Invoke(new object[] { parsed });
+					}
+
+					throw new MissingMethodException(
+						$"Semantic type [{semanticType.FullName}] has no public ctor(string) and cannot be built from JSON string.");
+				}
+
+				// If JSON is numeric and semantic primitive is long
+				if (primitiveType == typeof(long))
+				{
+					var l = Convert.ToInt64(node, System.Globalization.CultureInfo.InvariantCulture);
+					var longCtor = semanticType.GetConstructor(new[] { typeof(long) });
+					if (longCtor != null) return longCtor.Invoke(new object[] { l });
+
+					// Some semantic types might only expose ctor(string); allow numeric -> string as fallback.
+					var stringCtor = semanticType.GetConstructor(new[] { typeof(string) });
+					if (stringCtor != null) return stringCtor.Invoke(new object[] { l.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+
+					throw new MissingMethodException($"Semantic type [{semanticType.FullName}] must have ctor(long) or ctor(string).");
+				}
+
+				// If semantic primitive is string, coerce to string
+				if (primitiveType == typeof(string))
+				{
+					var stringCtor = semanticType.GetConstructor(new[] { typeof(string) });
+					if (stringCtor == null)
+						throw new MissingMethodException($"Semantic type [{semanticType.FullName}] must have ctor(string).");
+
+					return stringCtor.Invoke(new object[] { node.ToString() });
+				}
+
+				throw new NotSupportedException(
+					$"Semantic type [{semanticType.FullName}] uses unsupported primitive [{primitiveType.FullName}].");
+			}
+		}
+		
 	}
 }

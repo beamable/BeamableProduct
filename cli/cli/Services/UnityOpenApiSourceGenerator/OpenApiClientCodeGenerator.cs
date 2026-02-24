@@ -1,13 +1,19 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using Beamable.Server.Common;
+using Beamable.Tooling.Common.OpenAPI;
 using Beamable.Tooling.Common.OpenAPI.Utils;
 using cli;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 using TypeAttributes = System.Reflection.TypeAttributes;
 using ServiceConstants = Beamable.Common.Constants.Features.Services;
@@ -434,8 +440,43 @@ namespace Beamable.Server.Generator
 			targetClass.Members.Add(genMethod);
 		}
 
+		private bool IsSemanticType(OpenApiSchema schema, out string semanticType)
+		{
+			semanticType = string.Empty;
+			if (!schema.Extensions.TryGetValue(ServiceConstants.SCHEMA_SEMANTIC_TYPE_NAME_KEY,
+				    out var semanticTypeName) || semanticTypeName is not OpenApiString semanticTypeNameStr)
+			{
+				return false;
+			}
+			semanticType = semanticTypeNameStr.Value;
+			return true;
+		}
+
 		private string GetParsedType(OpenApiSchema schema, bool useFullName = false)
 		{
+
+			if (IsSemanticType(schema, out var semanticType))
+			{
+				switch (semanticType)
+				{
+					case "Cid":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamCid));
+					case "Pid":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamPid));
+					case "AccountId":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamAccountId));
+					case "GamerTag":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamGamerTag));
+					case "ContentManifestId":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamContentManifestId));
+					case "ContentId":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamContentId));
+					case "StatsType":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(BeamStats));
+					case "ServiceName":
+						return SchemaGenerator.GetQualifiedReferenceName(typeof(ServiceName));
+				}
+			}
 
 			if (schema.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_EXTENSION_BEAMABLE_FORCE_TYPE_NAME,
 				    out var extensionType) && extensionType is OpenApiString forcedTypeName)
@@ -554,6 +595,49 @@ namespace Beamable.Server.Generator
 
 		private string GetParameterTypeName(OpenApiSchema schema)
 		{
+			if (!IsSemanticType(schema, out var semanticType))
+			{
+				return (schema.Type, schema.Format) switch
+				{
+					("integer", "int16") => typeof(short).GetTypeString(),
+					("integer", "int32") => typeof(int).GetTypeString(),
+					("integer", "int64") => typeof(long).GetTypeString(),
+					("integer", _) => typeof(int).GetTypeString(),
+					("number", "float") => typeof(float).GetTypeString(),
+					("number", "double") => typeof(double).GetTypeString(),
+					("number", "decimal") => typeof(decimal).GetTypeString(),
+					("number", _) => typeof(decimal).GetTypeString(),
+					("string", "date") => typeof(DateTime).GetTypeString(),
+					("string", "date-time") => typeof(DateTime).GetTypeString(),
+					("string", "uuid") => typeof(Guid).GetTypeString(),
+					("string", "byte") => typeof(byte).GetTypeString(),
+					("string", _) => typeof(string).GetTypeString(),
+					("boolean", _) => typeof(bool).GetTypeString(),
+					("array", _) => GetParameterArrayTypeName(schema),
+					_ => GetObjectType(schema)
+				};
+			}
+
+			switch (semanticType)
+			{
+				case "Cid":
+					return nameof(BeamCid);
+				case "Pid":
+					return nameof(BeamPid);
+				case "AccountId":
+					return nameof(BeamAccountId);
+				case "GamerTag":
+					return nameof(BeamGamerTag);
+				case "ContentManifestId":
+					return nameof(BeamContentManifestId);
+				case "ContentId":
+					return nameof(BeamContentId);
+				case "StatsType":
+					return nameof(BeamStats);
+				case "ServiceName":
+					return nameof(ServiceName);
+			}
+
 			return (schema.Type, schema.Format) switch
 			{
 				("integer", "int16") => typeof(short).GetTypeString(),
