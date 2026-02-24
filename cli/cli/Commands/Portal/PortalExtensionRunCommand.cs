@@ -93,7 +93,6 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 					}
 
 					dependency.AddSingleton(observer);
-					Log.Information("Created the observer service");
 				})
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.OverrideConfig((config) =>

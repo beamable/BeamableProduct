@@ -403,7 +403,8 @@ public static class ProjectContextUtil
 					Version = info.Version,
 					Type = info.PortalExtensionType,
 					RelativePath = Path.GetRelativePath(rootFolder, dir),
-					AbsolutePath = Path.GetFullPath(dir)
+					AbsolutePath = Path.GetFullPath(dir),
+					MicroserviceDependencies = info.MicroserviceDependencies
 				});
 			}
 			catch (Exception e)

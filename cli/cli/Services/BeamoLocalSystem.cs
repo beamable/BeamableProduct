@@ -554,6 +554,7 @@ public class PortalExtensionDefinition
 
 	public string RelativePath;
 	public string AbsolutePath;
+	public List<string> MicroserviceDependencies;
 }
 
 public class BeamoServiceDefinition

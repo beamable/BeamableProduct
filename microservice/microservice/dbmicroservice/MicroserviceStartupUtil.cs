@@ -369,6 +369,16 @@ public static class MicroserviceStartupUtil
 	private static void ConfigureLogging(IBeamServiceConfig configurator, StartupContext ctx, bool includeOtel,
 		string otlpEndpoint)
 	{
+		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out var defaultLogLevel))
+		{
+			defaultLogLevel = LogLevel.Warning;
+		}
+
+		MicroserviceBootstrapper.ContextLogLevel.Value = defaultLogLevel;
+
+		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
+		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
+
 		ctx.logFactory = LoggerFactory.Create(builder =>
 		{
 			// TODO: handle per-route / config options
@@ -428,16 +438,6 @@ public static class MicroserviceStartupUtil
 			}
 
 		});
-
-		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out var defaultLogLevel))
-		{
-			defaultLogLevel = LogLevel.Warning;
-		}
-
-		MicroserviceBootstrapper.ContextLogLevel.Value = defaultLogLevel;
-
-		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
-		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
 
 		// use newtonsoft for JsonUtility
 		JsonUtilityConverter.Init();

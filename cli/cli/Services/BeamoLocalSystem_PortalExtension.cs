@@ -20,5 +20,8 @@ public partial class BeamoLocalSystem
 
 		[JsonProperty("portalExtensionType")]
 		public string PortalExtensionType { get; set; }
+
+		[JsonProperty("microserviceDependencies")]
+		public List<string> MicroserviceDependencies { get; set; }
 	}
 }
