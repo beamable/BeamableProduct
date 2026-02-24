@@ -76,9 +76,19 @@ namespace Beamable.Server.Common
 			// Handle object representation (when JSON is { "Value": value, "HasValue": true }
 			if (reader.TokenType == JsonToken.StartObject)
 			{
-				var jObject = JObject.Load(reader);
 				var fields = objectType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
+				var jObject = JObject.Load(reader);
+				
+				// validate that the jObject has exactly 2 fields, matching the Value/HasValue.
+				//  because the starting '{' character could just be the start of an optional object literal
+				if (!jObject.ContainsKey(nameof(Optional.HasValue)) ||
+				    !jObject.ContainsKey(nameof(Optional<int>.HasValue)))
+				{
+					var opt = jObject.ToObject(instance.GetOptionalType(), serializer);
+					instance.SetValue(opt);
+					return instance;
+				}
+				
 				foreach (var field in fields)
 				{
 					if (jObject.TryGetValue(field.Name, out var token))
@@ -87,10 +97,10 @@ namespace Beamable.Server.Common
 						field.SetValue(instance, fieldValue);
 					}
 				}
-
+			
 				return instance;
 			}
-
+			
 			// Handle direct value representation (when JSON is { "value": value }
 			var optionalType = instance.GetOptionalType();
 			var value = serializer.Deserialize(reader, optionalType);

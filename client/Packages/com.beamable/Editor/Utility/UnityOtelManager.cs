@@ -26,6 +26,7 @@ namespace Beamable.Editor.Utility
 		private const string ATTRIBUTES_EXTRA_TIMESTAMPS_KEY = "x-beam-extra-timestamps";
 		private const string LAST_CRASH_PARSE_TIMESTAMP_FILE_NAME = "last-crash-parse-timestamps.txt";
 		public const string SKIP_OTEL_LOG_KEY = "[SKIP_OTEL]";
+		private const string SESSION_CRASH_CHECK_KEY = "Beamable_Otel_CrashLogsChecked";
 
 		private double _lastTimePublished;
 		private double _lastTimeFlush;
@@ -34,7 +35,8 @@ namespace Beamable.Editor.Utility
 		private ConcurrentDictionary<string, CliOtelLogRecord> _cachedLogs = new();
 		private ConcurrentDictionary<string, List<string>> _cachedTimestamps = new();
 		private readonly BeamCommands _cli;
-		
+		private readonly BeamEditorContext _ctx;
+
 		private List<string> BeamableNamespaces = new()
 		{
 			"Beamable.Editor",
@@ -68,9 +70,10 @@ namespace Beamable.Editor.Utility
 
 		public static string UnityOtelLogsFolder => Path.Join(Application.temporaryCachePath, "OtelLogs");
 		
-		public UnityOtelManager(BeamCommands cli)
+		public UnityOtelManager(BeamCommands cli, BeamEditorContext ctx)
 		{
 			_cli = cli;
+			_ctx = ctx;
 			EditorApplication.update += HandleUpdate;
 			Application.logMessageReceived += OnUnityLogReceived;
 			Application.wantsToQuit += OnUnityQuitting;
@@ -78,7 +81,14 @@ namespace Beamable.Editor.Utility
 			CoreConfig.OnValidateCallback += OnCoreConfigChanged;
 			
 			_ = FetchOtelConfig();
-			_ = GetUnparsedCrashLogs();
+
+			// As UnityOtelManager is instantiated for each domain reload
+			// We only need to get UnparsedCrashLogs once per Unity session, doing it we prevent some performance issues.
+			if (!SessionState.GetBool(SESSION_CRASH_CHECK_KEY, false))
+			{
+				_ = GetUnparsedCrashLogs();
+				SessionState.SetBool(SESSION_CRASH_CHECK_KEY, true);
+			}
 			
 			
 			// Make sure to Publish on Init so we make sure that all missing logs that weren't published on last session
@@ -138,15 +148,17 @@ namespace Beamable.Editor.Utility
 			TryToFlushUnityLogs();
 		}
 
-		public async Promise PublishLogs()
+		public async Promise PublishLogs(int maxLogFileCount = 10)
 		{
+			if (_ctx.BeamCli.IsLoggedOut) return;
+			
 			_lastTimePublished = EditorApplication.timeSinceStartup;
 			try
 			{
 				await FlushUnityLogsAsync();
 				if (Directory.Exists(UnityOtelLogsFolder))
 				{
-					string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder);
+					string[] allFiles = Directory.GetFiles(UnityOtelLogsFolder).Take(maxLogFileCount).ToArray();
 					if (allFiles.Length > 0)
 					{
 						List<TelemetryReportStatus> reportStatusList = new();

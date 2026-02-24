@@ -87,7 +87,12 @@ public static class MicroserviceStartupUtil
 			args = configuredArgs,
 			routeSources = configurator.RouteSources.ToArray(),
 			attributes = configurator.Attributes,
+			
+#pragma warning disable CS0618 // Type or member is obsolete
 			localEnvArgs = configurator.LocalEnvCustomArgs,
+#pragma warning restore CS0618 // Type or member is obsolete
+			
+			generateLocalEnvInvocationModifier = configurator.LocalEnvModifier ?? (_ => { }),
 			initializers = configurator.ServiceInitializers.ToList()
 		};
 
@@ -894,17 +899,59 @@ public static class MicroserviceStartupUtil
 	public static async Task GetLocalEnvironment(StartupContext ctx)
 	{
 		var serviceName = ctx.attributes.MicroserviceName;
+		
+		BeamCliInvocation invocation = null;
+#pragma warning disable CS0618 // Type or member is obsolete
+		if (ctx.localEnvArgs == null)
+#pragma warning restore CS0618 // Type or member is obsolete
+		{
+			invocation = new BeamCliInvocation
+			{
+				command = "project generate-env",
+				args = new List<BeamCliPart>
+				{
+					new BeamCliPart(serviceName),
+					new BeamCliPart("."),
+					new BeamCliPart("--auto-deploy"),
+					new BeamCliPart("--quiet"),
+					new BeamCliPart("--logs", "v"),
+					new BeamCliPart("--pretty"),
+					new BeamCliPart("--no-log-file"),
+					new BeamCliPart("--remove-all-except-pid", Process.GetCurrentProcess().Id.ToString()),
+				}
+			};
+		}
+		else
+		{
+			invocation = new BeamCliInvocation
+			{
+				command = "project generate-env",
+				args = new List<BeamCliPart>
+				{
+					new BeamCliPart(serviceName),
+#pragma warning disable CS0618 // Type or member is obsolete
+					// this is jank, but the usage of that field in the past was to treat it as a giant arg string.
+					new BeamCliPart(ctx.localEnvArgs),
+#pragma warning restore CS0618 // Type or member is obsolete
+					new BeamCliPart("--quiet"),
+					new BeamCliPart("--logs", "v"),
+					new BeamCliPart("--pretty"),
+					new BeamCliPart("--no-log-file"),
+					new BeamCliPart("--remove-all-except-pid", Process.GetCurrentProcess().Id.ToString()),
+				}
+			};
+		}
 
-		var customArgs = ctx.localEnvArgs;
-		customArgs ??= ". --auto-deploy";
+		ctx.generateLocalEnvInvocationModifier?.Invoke(invocation);
 
+		var argString = invocation.ToCommandString();
 		using var process = new Process();
 
 		var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
 		var beamProgram = GetBeamProgram();
 
 		string arguments =
-			$"{beamProgram} project generate-env {serviceName} {customArgs} --quiet --logs v --pretty --no-log-file --remove-all-except-pid {Process.GetCurrentProcess().Id}";
+			$"{beamProgram} {argString}";
 		string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 
 		process.StartInfo.FileName = fileName;
