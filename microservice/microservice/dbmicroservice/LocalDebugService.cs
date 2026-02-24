@@ -68,8 +68,8 @@ namespace Beamable.Server {
 			{
 				Task.Run(async () =>
 				{
-					await Task.Delay(100);
 					Log.Information($"Stopping service through debug-server due to reason=[{reason}]");
+					await Task.Delay(100);
 					Environment.Exit(0);
 				});
 				return "stopping";

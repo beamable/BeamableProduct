@@ -392,6 +392,8 @@ namespace Beamable.Server.Editor.Usam
 		
 		public void ListenForStatus()
 		{
+			if (_ctx.BeamCli.IsLoggedOut) return;
+			
 			if (_watchCommand != null)
 			{
 				_watchCommand.Cancel();
@@ -814,7 +816,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		void StopStorage(BeamManifestStorageEntry storage)
 		{
-			var stopCommand = _cli.ServicesStop(new ServicesStopArgs()
+			var stopCommand = _cli.ProjectStop(new ()
 			{
 				ids = new string[] {storage.beamoId},
 			});
@@ -828,9 +830,9 @@ namespace Beamable.Server.Editor.Usam
 		
 		void StartStorage(BeamManifestStorageEntry storage)
 		{
-			var runCommand = _cli.ServicesRun(new ServicesRunArgs
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs()
 			{
-				ids = new string[]{storage.beamoId},
+				ids = new[]{storage.beamoId},
 			});
 			var action = SetServiceAction(storage.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(storage.beamoId, out var log) && log.logView.clearOnPlay)
@@ -838,9 +840,10 @@ namespace Beamable.Server.Editor.Usam
 				log.logs.Clear();
 				log.logView.RebuildView();
 			}
-			runCommand.OnLocal_progressServiceRunProgressResult(cb =>
+
+			runCommand.OnStreamRunProjectResultStream(cb =>
 			{
-				action.progressRatio = (float)cb.data.LocalDeployProgress;
+				action.progressRatio = cb.data.progressRatio;
 			});
 			
 			runCommand.OnLog(cb =>

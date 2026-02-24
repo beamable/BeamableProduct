@@ -64,7 +64,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				_contentService = Scope.GetService<CliContentService>();
 				_ = _contentService.Reload().Then(_ =>
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					if (_windowStatus == ContentWindowStatus.Building)
+					{
+						ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					}
+
 					Build();
 				});
 				return;
@@ -113,7 +117,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents)
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 			}

@@ -372,7 +372,7 @@ namespace Beamable.Common.Content
       public bool IsInConflict { get; set; }
 
 
-      [SerializeField]
+      [SerializeField, HideInInspector]
       private string _serializedValidationGUID;
       
       private static readonly int[] _guidByteOrder =

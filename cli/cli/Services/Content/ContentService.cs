@@ -867,13 +867,10 @@ public class ContentService
 				return saveResponse;
 			}).ToArray();
 
-		SaveContentResponse[] saveContentResponses = Array.Empty<SaveContentResponse>();
+		SaveContentResponse[] saveContentResponses;
 		try
 		{
-			for (int index = 0; index < saveContentRequestsTasks.Length; index++)
-			{
-				saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
-			}
+			saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
 		}
 		catch (Exception e)
 		{
@@ -2012,7 +2009,16 @@ public class SortedSnapshotConverter : JsonConverter<Dictionary<string, ContentF
 {
 	public override Dictionary<string, ContentFileSnapshot> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
-		return JsonSerializer.Deserialize<Dictionary<string, ContentFileSnapshot>>(ref reader, options);
+		// Make sure to remove this Converter from the list to prevent a loop situation as we're calling JsonSerializer.Deserialize again.
+		var copy = new JsonSerializerOptions(options);
+		for (var i = copy.Converters.Count - 1; i >= 0; i--)
+		{
+			if (copy.Converters[i] is SortedSnapshotConverter)
+			{
+				copy.Converters.RemoveAt(i);
+			}
+		}
+		return JsonSerializer.Deserialize<Dictionary<string, ContentFileSnapshot>>(ref reader, copy);
 	}
 
 	public override void Write(Utf8JsonWriter writer, Dictionary<string, ContentFileSnapshot> value, JsonSerializerOptions options)

@@ -331,7 +331,7 @@ namespace Beamable.Server
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipped {method.Name}");
+	            BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Skipped {method.Name}");
 	            continue;
             }
 
@@ -353,7 +353,7 @@ namespace Beamable.Server
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;
 
-            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Found {method.Name} for {servicePath}");
+            BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Found {method.Name} for {servicePath}");
 
             
             var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();

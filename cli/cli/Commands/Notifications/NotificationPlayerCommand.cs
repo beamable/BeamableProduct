@@ -69,7 +69,7 @@ Try setting the realm config to beam with this command,
 
 
 		var authApi = args.DependencyProvider.GetService<IBeamAuthApi>();
-		var tokenAuthResult = await authApi.PostRefreshToken(new RefreshTokenAuthRequest
+		var tokenAuthResult = await authApi.PostRefreshToken(new AuthV2RefreshTokenAuthRequest
 		{
 			customerId = new OptionalString(args.AppContext.Cid),
 			realmId = new OptionalString(args.AppContext.Pid),

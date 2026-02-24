@@ -4,6 +4,7 @@ using Beamable.Server;
 using cli.Services;
 using Spectre.Console;
 using System.CommandLine;
+using System.Text.RegularExpressions;
 
 namespace cli.OtelCommands;
 
@@ -30,6 +31,26 @@ public class FetchCommandLogRecord
 	public string LogLevel;
 	public string ServiceName;
 	public string Message;
+	public Dictionary<string, string> LogAttributes;
+
+	public string RenderMessage()
+	{
+		return Regex.Replace(
+			Message,
+			@"\{([^}]+)\}",
+			match =>
+			{
+				var key = match.Groups[1].Value.Trim();
+
+				if (LogAttributes != null && LogAttributes.TryGetValue(key, out var value) && value != null)
+				{
+					return value.ToString();
+				}
+
+				// no attribute → keep original "{key}"
+				return match.Value;
+			});
+	}
 }
 
 public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommandArgs, FetchTelemetryLogsResult>, ISkipManifest
@@ -81,7 +102,7 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 			var timestampMarkup = new Markup($"{log.Timestamp}");
 			var logLevelMarkup = new Markup($"{log.LogLevel}");
 			var serviceMarkup = new Markup($"{log.ServiceName}");
-			var messageMarkup = new Markup($"{Markup.Escape(log.Message)}");
+			var messageMarkup = new Markup($"{Markup.Escape(log.RenderMessage())}");
 
 			table.AddRow(new TableRow(new[] { timestampMarkup, logLevelMarkup, serviceMarkup, messageMarkup}));
 		}

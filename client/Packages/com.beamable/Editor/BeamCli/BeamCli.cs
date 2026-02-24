@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine;
@@ -106,13 +107,29 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Refresh()
 		{
 			_addPathsInvoke?.Cancel();
-			_addPathsInvoke = Command.ProjectAddPaths(new ProjectAddPathsArgs
+			var configPath = Path.Combine(latestConfig?.configPath ?? ".beamable", "config.beam.json");
+			BeamConfigFile file = new BeamConfigFile();
+			if (File.Exists(configPath))
+			{
+				var configJson = File.ReadAllText(configPath);
+				file = JsonUtility.FromJson<BeamConfigFile>(configJson);
+			}
+
+			
+			var args = new ProjectAddPathsArgs
 			{
 				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray(),
 				saveExtraPaths = BeamablePackages.GetManifestFileReferences().ToArray()
-			});
-			var addPathsPromise = _addPathsInvoke.Run();
-			
+			};
+			var pathsToIgnoreMatch =
+				new HashSet<string>(args.pathsToIgnore).IsSubsetOf(new HashSet<string>(file.ignoredProjectPaths));
+			var pathsToAddMatch =
+				new HashSet<string>(args.saveExtraPaths).IsSubsetOf(new HashSet<string>(file.additionalProjectPaths));
+			if (!pathsToAddMatch || !pathsToIgnoreMatch)
+			{
+				_addPathsInvoke = Command.ProjectAddPaths(args);
+				await _addPathsInvoke.Run();
+			}
 			var regeneratePromise = Command.ProjectOpen(new ProjectOpenArgs
 			{
 				onlyGenerate = true,
@@ -148,29 +165,7 @@ namespace Beamable.Editor.BeamCli
 				ReconstituteUser();
 			});
 
-			_realmsInvoke?.Cancel();
-			_realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
-			_realmsInvoke.OnError(dp =>
-			{
-				Debug.LogError($"failed to fetch realms err=[{dp.data.message}]");
-			});
-			_realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
-			{
-				latestRealmInfo = dp.data;
-				latestAlias = latestRealmInfo.CustomerAlias;
-				ReconstituteRealmData();
-			});
-
-			_gamesInvoke?.Cancel();
-			_gamesInvoke = Command.OrgGames(new OrgGamesArgs());
-			_gamesInvoke.OnError(dp =>
-			{
-				Debug.LogError($"failed to fetch games. err=[{dp.data.message}]");
-			});
-			_gamesInvoke.OnStreamGameListCommandResults(dp =>
-			{
-				latestGames = dp.data;
-			});
+			
 
 			_routesInvoke?.Cancel();
 			_routesInvoke = Command.ConfigRoutes(new ConfigArgs());
@@ -194,18 +189,42 @@ namespace Beamable.Editor.BeamCli
 			await mePromise;
 			await routePromise;
 			await linkPromise;
-			await addPathsPromise;
 			await regeneratePromise;
 			
 			
 			if (IsLoggedOut)
 			{
-				pidToRealm.Clear();
-				latestRealms.Clear();
-				latestRealmInfo = default;
+				// pidToRealm.Clear();
+				// latestRealms.Clear();
+				// latestRealmInfo = default;
+				ReconstituteRealmData();
 			}
 			else
 			{
+				_realmsInvoke?.Cancel();
+				_realmsInvoke = Command.OrgRealms(new OrgRealmsArgs());
+				_realmsInvoke.OnError(dp =>
+				{
+					Debug.LogError($"failed to fetch realms err=[{dp.data.message}]");
+				});
+				_realmsInvoke.OnStreamRealmsListCommandOutput(dp =>
+				{
+					latestRealmInfo = dp.data;
+					latestAlias = latestRealmInfo.CustomerAlias;
+					ReconstituteRealmData();
+				});
+
+				_gamesInvoke?.Cancel();
+				_gamesInvoke = Command.OrgGames(new OrgGamesArgs());
+				_gamesInvoke.OnError(dp =>
+				{
+					Debug.LogError($"failed to fetch games. err=[{dp.data.message}]");
+				});
+				_gamesInvoke.OnStreamGameListCommandResults(dp =>
+				{
+					latestGames = dp.data;
+				});
+				
 				var realmsPromise = _realmsInvoke.Run();
 				var gamesPromise = _gamesInvoke.Run();
 				await realmsPromise;
@@ -265,7 +284,7 @@ namespace Beamable.Editor.BeamCli
 			}).ToList();
 			
 			latestRealms = RealmsService.ProcessProjects(latestRealmInfo.VisibleRealms[0].Cid, dtos);
-				
+			
 			pidToRealm = latestRealms.ToDictionary(realm => realm.Pid);
 		}
 		
@@ -300,7 +319,6 @@ namespace Beamable.Editor.BeamCli
 			
 			var initArgs = new InitArgs
 			{
-				host = host,
 				email = email,
 				password = password,
 				ignorePid = true,
@@ -413,5 +431,19 @@ namespace Beamable.Editor.BeamCli
 
 		string IBeamDeveloperAuthProvider.AccessToken => latestToken.Token;
 		string IBeamDeveloperAuthProvider.RefreshToken => latestToken.RefreshToken;
+
+		[Serializable]
+		public class BeamConfigFile
+		{
+			public List<string> additionalProjectPaths = new List<string>();
+
+			public List<string> ignoredProjectPaths = new List<string>();
+			// "additionalProjectPaths": [],
+			// "ignoredProjectPaths": [
+			// "Packages/com.beamable",
+			// "Library/PackageCache/com.beamable",
+			// "Library/PackageCache/com.beamable.server"
+			// ],
+		}
 	}
 }

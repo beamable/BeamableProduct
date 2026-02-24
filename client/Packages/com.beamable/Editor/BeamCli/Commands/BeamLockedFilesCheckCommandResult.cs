@@ -5,9 +5,8 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamManifestProjectData
+    public partial class BeamLockedFilesCheckCommandResult
     {
-        public string PID;
-        public string RealmName;
+        public System.Collections.Generic.List<BeamProcessInfo> ProcessLockedFiles;
     }
 }

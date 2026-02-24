@@ -131,6 +131,9 @@ namespace Beamable.Common
 			BeamableLogProvider.Provider.Info(info, args);
 		}
 
+		public static void LogFormat(string format, params object[] args) =>
+			BeamableLogProvider.Provider.Error(string.Format(format, args));
+
 
 		public static void LogWarning(string warning)
 		{
@@ -138,11 +141,13 @@ namespace Beamable.Common
 
 		}
 
-
 		public static void LogWarning(string warning, params object[] args)
 		{
 			BeamableLogProvider.Provider.Warning(warning, args);
 		}
+
+		public static void LogWarningFormat(string format, params object[] args) =>
+			BeamableLogProvider.Provider.Warning(string.Format(format, args));
 
 
 		public static void LogException(Exception ex)
@@ -156,12 +161,10 @@ namespace Beamable.Common
 			BeamableLogProvider.Provider.Error(ex);
 		}
 
-
 		public static void LogError(string error)
 		{
 			BeamableLogProvider.Provider.Error(error);
 		}
-
 
 		public static void LogError(string error, params object[] args)
 		{
