@@ -1,5 +1,7 @@
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
+using cli.Portal;
+using cli.Services.Web;
 using cli.Utils;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -83,6 +85,7 @@ public class PortalExtensionObserver
 	private CancellationTokenSource _cancelToken;
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
+	private BeamoLocalManifest _manifest;
 
 	public string AppFilesPath
 	{
@@ -133,10 +136,11 @@ public class PortalExtensionObserver
 		_cancelToken.Cancel();
 	}
 
-	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes)
+	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamoLocalManifest manifest)
 	{
 		_notificationsApi = notificationApi;
 		_attributes = attributes;
+		_manifest = manifest;
 	}
 
 	public void BuildExtension() //TODO: improve this with more error handling
@@ -290,10 +294,13 @@ public class PortalExtensionObserver
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
-		if (e.Name != null && (e.Name.Contains("assets/main") || e.Name.Contains("node_modules/")))
+		if (e.Name != null && (e.Name.Contains("assets/main") || e.Name.Contains("node_modules/") || e.Name.Contains("beamable/clients")))
 		{
 			return; // this case we ignore because these are the build files
 		}
+
+		// generate microservice client files, in case a manually change happened to the package.json adding a new dep
+		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(_appPath, _manifest);
 
 		// build the app since there are new changes in the src files
 		BuildExtension();

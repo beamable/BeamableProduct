@@ -1,4 +1,5 @@
 using cli.Services;
+using cli.Services.Web;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
@@ -58,6 +59,10 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 				JToken.FromObject(extension.MicroserviceDependencies);
 
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+
+			//now generate the actual client code
+			GenerateDependenciesClients(extension.AbsolutePath, args.BeamoLocalSystem.BeamoManifest);
+
 		}
 		catch (Exception e)
 		{
@@ -66,5 +71,40 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 		}
 
 		return Task.CompletedTask;
+	}
+
+	public static void GenerateDependenciesClients(string extensionPath, BeamoLocalManifest manifest)
+	{ //TODO: could also use better error handling here
+		var dependencies = GetDependenciesFromPath(extensionPath);
+
+		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
+		{
+			if (!dependencies.Contains(beamId) || localProtocol.OpenApiDoc == null)
+			{
+				continue;
+			}
+
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "js");
+			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+			generator.GenerateClientCode(clientsOutputDirectory);
+		}
+	}
+
+	public static List<string> GetDependenciesFromPath(string extensionPath)
+	{
+		var packagePath = Path.Combine(extensionPath, "package.json");
+		string jsonContent = File.ReadAllText(packagePath);
+
+		JObject root = JObject.Parse(jsonContent);
+
+		JToken deps = root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_DEPENDENCIES_PROPERTY_NAME];
+
+		if (deps is { Type: JTokenType.Array })
+		{
+			// Convert the JArray directly to a List<string>
+			return deps.ToObject<List<string>>();
+		}
+
+		return new List<string>();
 	}
 }

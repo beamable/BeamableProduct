@@ -52,7 +52,6 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 	{
 		try
 		{
-			//TODO put this into a background worker, show the portal URL to the extensions page
 			await BeamServer
 				.Create()
 				.InitializeServices((provider) =>
@@ -61,9 +60,10 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 					var notification = provider.GetService<IMicroserviceNotificationsApi>();
 					var attributes = provider.GetService<MicroserviceAttribute>();
 
-					observer.ConfigureServiceData(notification, attributes);
+					observer.ConfigureServiceData(notification, attributes, args.BeamoLocalSystem.BeamoManifest);
 					observer.InstallDeps();
 					observer.BuildExtension();
+					PortalExtensionAddDependencyCommand.GenerateDependenciesClients(extension.AbsolutePath, args.BeamoLocalSystem.BeamoManifest);
 				})
 				.ConfigureServices((dependency) =>
 				{
