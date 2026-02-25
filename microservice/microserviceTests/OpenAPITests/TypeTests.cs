@@ -7,7 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common.Semantics;
-using System.Text.Json;using UnityEngine;
+using System.Text.Json;
+using UnityEngine;
 
 namespace microserviceTests.OpenAPITests;
 
@@ -169,7 +170,8 @@ public class TypeTests
 	[TestCase(typeof(ServiceName), "string", null)]
 	public void CheckSemanticTypes(Type type, string typeName, string format)
 	{
-		var schema = SchemaGenerator.Convert(type);
+		var requiredFields = new HashSet<Type>();
+		var schema = SchemaGenerator.Convert(type, ref requiredFields);
 		Assert.AreEqual(typeName, schema.Type);
 		Assert.AreEqual(format, schema.Format);
 	}

@@ -194,7 +194,7 @@ public class SchemaGenerator
 		{
 			if(toSkip.Contains(i))
 				continue;
-			var shouldGenerateClientCode = !oapiTypes[i].ShouldNotGenerateClientCode();
+			var shouldGenerateClientCode = !oapiTypes[i].ShouldSkipClientCodeGeneration();
 
 			for (int j = i + 1; j < oapiTypes.Count; j++)
 			{
@@ -205,7 +205,7 @@ public class SchemaGenerator
 
 				toSkip.Add(j);
 
-				if (!shouldGenerateClientCode && !oapiTypes[j].ShouldNotGenerateClientCode())
+				if (!shouldGenerateClientCode && !oapiTypes[j].ShouldSkipClientCodeGeneration())
 				{
 					shouldGenerateClientCode = true;
 				}
@@ -279,10 +279,10 @@ public class SchemaGenerator
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
 				return Convert(x.GetGenericArguments()[0], ref requiredTypes,depth - 1, sanitizeGenericType);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
-				return Convert(x.GetGenericArguments()[0], depth - 1);
+				return Convert(x.GetGenericArguments()[0], ref requiredTypes, depth - 1);
 			case { } x when x.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>)):
 				var semanticType = x.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
-				var semanticTypeSchema = Convert(semanticType.GetGenericArguments()[0], depth - 1);
+				var semanticTypeSchema = Convert(semanticType.GetGenericArguments()[0],  ref requiredTypes, depth - 1);
 				if (Activator.CreateInstance(runtimeType) is IBeamSemanticType semanticTypeInstance)
 				{
 					semanticTypeSchema.Extensions[SCHEMA_SEMANTIC_TYPE_NAME_KEY] =
