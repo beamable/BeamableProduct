@@ -77,7 +77,9 @@ dotnet nuget delete Beamable.Microservice.SourceGen $DELETE_ARGS
 dotnet nuget delete Beamable.Tooling.Common $DELETE_ARGS
 dotnet nuget delete Beamable.UnityEngine $DELETE_ARGS
 dotnet nuget delete Beamable.UnityEngine.Addressables $DELETE_ARGS
+dotnet nuget delete Beamable.UnrealEngine $DELETE_ARGS
 dotnet nuget delete Beamable.Tools $DELETE_ARGS
+
 
 
 # install the latest templates.

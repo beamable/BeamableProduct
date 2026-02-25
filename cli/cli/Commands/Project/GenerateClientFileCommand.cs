@@ -431,6 +431,7 @@ public class {unrealProjectData.CoreProjectName} : ModuleRules
 				""Core"",
 				""BeamableCore"",
 				""BeamableCoreRuntime"",
+				""GameplayTags"",
 
 				""Json"",
 				""JsonUtilities"",

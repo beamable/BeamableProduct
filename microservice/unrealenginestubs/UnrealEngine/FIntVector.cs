@@ -7,6 +7,7 @@ namespace UnrealEngine
 	///   <para>A vector in 3-D space composed of components (X, Y, Z) with integer precision.</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FIntVector : IEquatable<FIntVector>
 	{
 		/// <summary>

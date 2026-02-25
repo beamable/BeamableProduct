@@ -40,7 +40,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.microservice.otel.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.common", "beamable.otel.common\beamable.otel.common.csproj", "{343D6679-0ECA-478B-851D-95D570257958}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unrealenginestubs", "unrealenginestubs\unrealenginestubs.csproj", "{B22F9888-2485-40D3-A949-3821476C131D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unrealenginestubs", "..\microservice\unrealenginestubs\unrealenginestubs.csproj", "{3A7C8FE6-D91C-484A-BA0C-EA514788611F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -122,10 +122,10 @@ Global
 		{343D6679-0ECA-478B-851D-95D570257958}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B22F9888-2485-40D3-A949-3821476C131D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B22F9888-2485-40D3-A949-3821476C131D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B22F9888-2485-40D3-A949-3821476C131D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B22F9888-2485-40D3-A949-3821476C131D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A7C8FE6-D91C-484A-BA0C-EA514788611F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A7C8FE6-D91C-484A-BA0C-EA514788611F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A7C8FE6-D91C-484A-BA0C-EA514788611F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A7C8FE6-D91C-484A-BA0C-EA514788611F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EF261D57-B886-47CD-80E0-5AB36C5AC531} = {C7F833F5-4FC1-47A0-AE55-2EAACA51D519}

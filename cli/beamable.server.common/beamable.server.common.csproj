@@ -30,6 +30,7 @@
     
     <ItemGroup>
       <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+        <ProjectReference Include="..\..\microservice\unrealenginestubs\unrealenginestubs.csproj" />
       <ProjectReference Include="..\beamable.common\beamable.common.csproj" />
     </ItemGroup>
 

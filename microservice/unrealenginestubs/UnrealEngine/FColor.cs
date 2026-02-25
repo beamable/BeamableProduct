@@ -7,6 +7,7 @@ namespace UnrealEngine
 	///   <para>A color in RGBA format (each channel is a byte).</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FColor : IEquatable<FColor>
 	{
 		/// <summary>

@@ -9,6 +9,7 @@ namespace UnrealEngine
 	///   <para>A container for gameplay tags. Optimized for fast queries.</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FGameplayTagContainer : IEquatable<FGameplayTagContainer>
 	{
 		/// <summary>

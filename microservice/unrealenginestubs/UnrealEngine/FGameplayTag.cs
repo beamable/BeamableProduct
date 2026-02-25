@@ -7,6 +7,7 @@ namespace UnrealEngine
 	///   <para>A single gameplay tag, which represents a hierarchical name of the form x.y that is registered in the GameplayTagsManager.</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FGameplayTag : IEquatable<FGameplayTag>
 	{
 		/// <summary>

@@ -11,6 +11,7 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
+using Swan;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
@@ -28,6 +29,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_DOUBLE = new("double");
 	public static readonly UnrealType UNREAL_GUID = new("FGuid");
 	public static readonly UnrealType UNREAL_DATE_TIME = new("FDateTime");
+	public static readonly UnrealType UNREAL_VECTOR = new("FVector");
+	public static readonly UnrealType UNREAL_COLOR = new("FColor");
+	public static readonly UnrealType UNREAL_GAMEPLAY_TAG = new("FGameplayTag");
+	public static readonly UnrealType UNREAL_GAMEPLAY_TAG_CONTAINER = new("FGameplayTagContainer");
+	public static readonly UnrealType UNREAL_INT_VECTOR = new("FIntVector");
+	public static readonly UnrealType UNREAL_LINEAR_COLOR = new("FLinearColor");
+	public static readonly UnrealType UNREAL_SOFT_OBJECT_PATH = new("FSoftObjectPath");
 	public static readonly UnrealType UNREAL_JSON = new("TSharedPtr<FJsonObject>");
 	public static readonly UnrealType UNREAL_OPTIONAL = new("FOptional");
 	public static readonly UnrealType UNREAL_OPTIONAL_STRING = new($"{UNREAL_OPTIONAL}String");
@@ -40,6 +48,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_OPTIONAL_DOUBLE = new($"{UNREAL_OPTIONAL}Double");
 	public static readonly UnrealType UNREAL_OPTIONAL_GUID = new($"{UNREAL_OPTIONAL}Guid");
 	public static readonly UnrealType UNREAL_OPTIONAL_DATE_TIME = new($"{UNREAL_OPTIONAL}DateTime");
+	public static readonly UnrealType UNREAL_OPTIONAL_VECTOR = new($"{UNREAL_OPTIONAL}Vector");
+	public static readonly UnrealType UNREAL_OPTIONAL_COLOR = new($"{UNREAL_OPTIONAL}Color");
+	public static readonly UnrealType UNREAL_OPTIONAL_GAMEPLAY_TAG = new($"{UNREAL_OPTIONAL}GameplayTag");
+	public static readonly UnrealType UNREAL_OPTIONAL_GAMEPLAY_TAG_CONTAINER = new($"{UNREAL_OPTIONAL}GameplayTagContainer");
+	public static readonly UnrealType UNREAL_OPTIONAL_INT_VECTOR = new($"{UNREAL_OPTIONAL}IntVector");
+	public static readonly UnrealType UNREAL_OPTIONAL_LINEAR_COLOR = new($"{UNREAL_OPTIONAL}LinearColor");
+	public static readonly UnrealType UNREAL_OPTIONAL_SOFT_OBJECT_PATH = new($"{UNREAL_OPTIONAL}SoftObjectPath");
 	public static readonly UnrealType UNREAL_ARRAY = new("TArray");
 	public static readonly UnrealType UNREAL_OPTIONAL_ARRAY = new($"{UNREAL_OPTIONAL}ArrayOf");
 	public static readonly UnrealType UNREAL_WRAPPER_ARRAY = new("FArrayOf");
@@ -1372,7 +1387,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
 					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "auth");
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id is "auth" or "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -2198,11 +2213,29 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsUnrealDouble() => AsStr == UNREAL_DOUBLE;
 		public bool IsUnrealGuid() => AsStr == UNREAL_GUID;
 		public bool IsUnrealDateTime() => AsStr == UNREAL_DATE_TIME;
+		
+		public bool IsUnrealVector() => AsStr == UNREAL_VECTOR;
+		
+		public bool IsUnrealColor() => AsStr == UNREAL_COLOR;
+		
+		public bool ContainsUnrealGameplayTag() => AsStr.Contains(UNREAL_GAMEPLAY_TAG);
+		public bool IsUnrealGameplayTag() => AsStr == UNREAL_GAMEPLAY_TAG;
+
+		public bool IsUnrealGameplayTagContainer() => AsStr == UNREAL_GAMEPLAY_TAG_CONTAINER;
+
+		public bool IsUnrealIntVector() => AsStr == UNREAL_INT_VECTOR;
+
+		public bool IsUnrealLinearColor() => AsStr == UNREAL_LINEAR_COLOR;
+
+		public bool IsUnrealSoftObjectPath() => AsStr == UNREAL_SOFT_OBJECT_PATH;
+
 		public bool IsUnrealString() => AsStr == UNREAL_STRING;
 
 		public bool IsNumericPrimitive() => IsUnrealByte() || IsUnrealShort() || IsUnrealInt() || IsUnrealLong() || IsUnrealFloat() || IsUnrealDouble();
 
-		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool();
+		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool() || 
+		                                IsUnrealVector() || IsUnrealColor() || IsUnrealGameplayTag() || IsUnrealGameplayTagContainer() || 
+		                                IsUnrealIntVector() || IsUnrealLinearColor() || IsUnrealSoftObjectPath();
 
 		public bool IsUnrealArray() => AsStr.StartsWith(UNREAL_ARRAY);
 		public bool IsUnrealMap() => AsStr.StartsWith(UNREAL_MAP);
@@ -2394,6 +2427,20 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME);
 			case ("string", _, "System.Guid", _):
 				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
+			case ("object", _, "UnrealEngine.FVector", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_VECTOR : UNREAL_VECTOR;
+			case ("object", _, "UnrealEngine.FColor", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_COLOR : UNREAL_COLOR;
+			case ("object", _, "UnrealEngine.FGameplayTag", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GAMEPLAY_TAG : UNREAL_GAMEPLAY_TAG;
+			case ("object", _, "UnrealEngine.FGameplayTagContainer", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GAMEPLAY_TAG_CONTAINER : UNREAL_GAMEPLAY_TAG_CONTAINER;
+			case ("object", _, "UnrealEngine.FIntVector", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_INT_VECTOR : UNREAL_INT_VECTOR;
+			case ("object", _, "UnrealEngine.FLinearColor", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_LINEAR_COLOR : UNREAL_LINEAR_COLOR;
+			case ("object", _, "UnrealEngine.FSoftObjectPath", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_SOFT_OBJECT_PATH : UNREAL_SOFT_OBJECT_PATH;
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
 				var namespacedType = GetNamespacedTypeNameFromSchema(context, parentDoc, referenceId, isOptional);
@@ -2794,6 +2841,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.IsUnrealJson())
 				return @"#include ""Dom/JsonObject.h""";
+			
+			if(unrealType.ContainsUnrealGameplayTag())
+				return @"#include ""GameplayTagContainer.h""";
 
 			if (unrealType.IsRawPrimitive())
 				return @"#include ""Serialization/BeamJsonUtils.h""";
@@ -2874,7 +2924,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		return "";
 
-		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealEnum() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime();
+		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealEnum() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime() && !s.IsUnrealVector() && !s.IsUnrealColor() && !s.IsUnrealGameplayTag() && !s.IsUnrealGameplayTagContainer() && !s.IsUnrealIntVector() && !s.IsUnrealLinearColor() && !s.IsUnrealSoftObjectPath();
 	}
 }
 

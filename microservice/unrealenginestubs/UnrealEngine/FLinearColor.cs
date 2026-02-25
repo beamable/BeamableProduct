@@ -7,6 +7,7 @@ namespace UnrealEngine
 	///   <para>A linear, 32-bit/component floating point RGBA color.</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FLinearColor : IEquatable<FLinearColor>
 	{
 		/// <summary>

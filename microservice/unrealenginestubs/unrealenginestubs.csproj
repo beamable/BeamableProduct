@@ -12,7 +12,7 @@
         <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
         <Description>
-            The Beamable.UnityEngine code contains mock classes that act as psuedo replacements for Unreal primitive types.
+            The Beamable.UnrealEngine code contains mock classes that act as psuedo replacements for Unreal primitive types.
         </Description>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);1591</NoWarn>

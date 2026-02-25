@@ -7,6 +7,7 @@ namespace UnrealEngine
 	///   <para>A struct that contains a string reference to an object, either a top level asset or a subobject.</para>
 	/// </summary>
 	[JsonObject(MemberSerialization.Fields)]
+	[Serializable]
 	public struct FSoftObjectPath : IEquatable<FSoftObjectPath>
 	{
 		/// <summary>
