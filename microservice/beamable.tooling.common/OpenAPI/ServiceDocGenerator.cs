@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.Reflection;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using ZLogger;
 
 namespace Beamable.Tooling.Common.OpenAPI;
@@ -30,6 +31,7 @@ public class ServiceDocGenerator
 	private const string V2_COMPONENT_FEDERATION_CLASS_NAME = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY;
 	private const string SCHEMA_IS_OPTIONAL_KEY = Constants.Features.Services.SCHEMA_IS_OPTIONAL_KEY;
 	private const string SCHEMA_OPTIONAL_TYPE_KEY = Constants.Features.Services.SCHEMA_OPTIONAL_TYPE_NAME_KEY;
+	private const string SCHEMA_SEMANTIC_TYPE_NAME_KEY = Constants.Features.Services.SCHEMA_SEMANTIC_TYPE_NAME_KEY;
 
 
 	private static OpenApiSecurityScheme _userSecurityScheme = new OpenApiSecurityScheme
@@ -219,6 +221,8 @@ public class ServiceDocGenerator
 			{
 				returnJson.Extensions.Add(Constants.Features.Services.MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, new OpenApiString(returnType.GetSanitizedFullName()));
 			}
+			
+			
 
 			var response = new OpenApiResponse() { Description = comments.Returns ?? "", };
 			if (!IsEmptyResponseType(returnType))

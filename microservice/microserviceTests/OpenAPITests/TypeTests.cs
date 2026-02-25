@@ -6,8 +6,8 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
-using UnityEngine;
+using Beamable.Common.Semantics;
+using System.Text.Json;using UnityEngine;
 
 namespace microserviceTests.OpenAPITests;
 
@@ -157,6 +157,21 @@ public class TypeTests
 
 		var prop = schema.Properties[nameof(FishThing.type)];
 		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests.Fish", Uri.UnescapeDataString(prop.Reference.Id));
+	}
+	
+	[TestCase(typeof(BeamAccountId), "integer", "int64")]
+	[TestCase(typeof(BeamCid), "integer", "int64")]
+	[TestCase(typeof(BeamContentId), "string", null)]
+	[TestCase(typeof(BeamContentManifestId), "string", null)]
+	[TestCase(typeof(BeamGamerTag), "integer", "int64")]
+	[TestCase(typeof(BeamPid), "string", null)]
+	[TestCase(typeof(BeamStats), "string", null)]
+	[TestCase(typeof(ServiceName), "string", null)]
+	public void CheckSemanticTypes(Type type, string typeName, string format)
+	{
+		var schema = SchemaGenerator.Convert(type);
+		Assert.AreEqual(typeName, schema.Type);
+		Assert.AreEqual(format, schema.Format);
 	}
 
 
