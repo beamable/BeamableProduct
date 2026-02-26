@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("\r\n            The Beamable.UnrealEngine code contains mock classes that act as ps" +
     "uedo replacements for Unreal primitive types.\r\n        "))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f996a9f06e157ba408342cde68b1c65e8c87eb3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f697c5e8a5878c08bf8349b853462f4c801c93ff")]
 [assembly: System.Reflection.AssemblyProductAttribute("UnrealEngine")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UnrealEngine")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -324,18 +324,36 @@ public class DefaultAppContext : IAppContext
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
+		bool isExpiredToken = false;
 		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
 		{
-			// We shouldn't ignore the token if it is expired, because the CLI can use the refresh token to get a new access token. So we will pass the expired access token to the CLI and let the CLI handle it.
+			if (response.ExpiresAt < DateTime.Now)
+			{
+				isExpiredToken = true;
+			}
+			
 			defaultAccessToken = response.Token;
 			defaultRefreshToken = response.RefreshToken;
 		}
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
-
-		_token = new CliToken(accessToken, RefreshToken, cid, pid);
+		_token = new CliToken(accessToken, _refreshToken, cid, pid);;
+		
 		await Set(cid, pid, host);
+		
+		// if the token we got from the config file is expired, try to refresh it with the refresh token.
+		if (isExpiredToken)
+		{
+			TokenResponse tokenResponse = await _provider.GetService<IAuthApi>().LoginRefreshToken(response.RefreshToken);
+			
+			Log.Debug(
+				$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
+			
+			_token = new CliToken(tokenResponse.access_token, _refreshToken, cid, pid);
+			
+			_configService.SaveTokenToFile(_token);
+		}
 	}
 
 	public async Task Set(string cid, string pid, string host)
