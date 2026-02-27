@@ -1,2 +1,4 @@
 /nupkg
 nupkg.meta
+/**/bin/
+/**/obj/

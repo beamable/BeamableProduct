@@ -142,16 +142,16 @@ public class CliRequester : IRequester
 					}
 
 					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
-				case RequesterException e when e.RequestError.error is "TimeOutError":
+				case RequesterException { RequestError.error: "TimeOutError" }:
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
 						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
-				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
+				case RequesterException e when e.RequestError?.error is "ExpiredTokenError" ||
 				                               e.Status == 403 ||
 				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
 				                                AccessToken.ExpiresAt < DateTime.Now):
 					Log.Debug(
-						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
+						"Got failure for token " + AccessToken.Token + " because " + e.RequestError?.error);
 
 					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
 					{
