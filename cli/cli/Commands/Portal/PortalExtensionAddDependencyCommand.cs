@@ -1,6 +1,5 @@
 using cli.Services;
 using cli.Services.Web;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
 
@@ -52,6 +51,11 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 			string jsonContent = File.ReadAllText(packagePath);
 
 			JObject root = JObject.Parse(jsonContent);
+
+			if (extension.MicroserviceDependencies.Contains(microservice.BeamoId))
+			{
+				throw new CliException($"The microservice: [{microservice.BeamoId}] was already added to extension: [{args.ExtensionName}]");
+			}
 
 			extension.MicroserviceDependencies.Add(microservice.BeamoId);
 
