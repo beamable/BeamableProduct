@@ -18,7 +18,8 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	public bool UseLatestDeployedManifest { get; set; }
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
-	bool UseSequentialBuild { get; set; }
+	public bool UseSequentialBuild { get; set; }
+	public int MaxParallelCount { get; set; }
 }
 
 public interface IHasDockerComposeArgs
@@ -37,6 +38,7 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDo
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
+	public int MaxParallelCount { get; set; }
 	public string SlnFilePath;
 
 
