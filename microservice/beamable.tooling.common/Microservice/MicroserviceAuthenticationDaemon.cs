@@ -98,6 +98,11 @@ public class MicroserviceAuthenticationDaemon
 	private readonly MicroserviceRequester _requester;
 
 	/// <summary>
+	/// The preferred codec negotiated with the server during authentication, or null if none.
+	/// </summary>
+	public string NegotiatedCodec { get; private set; }
+
+	/// <summary>
 	/// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
 	/// </summary>
 	public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
@@ -217,8 +222,14 @@ public class MicroserviceAuthenticationDaemon
 			refresh_token = _env.RefreshToken
 		});
 		var accessToken = res.access_token.GetOrThrow();
-		
-		var req = new MicroserviceAuthRequestWithToken { cid = _env.CustomerID, pid = _env.ProjectName, token = accessToken };
+
+		var req = new MicroserviceAuthRequestWithToken
+		{
+			cid = _env.CustomerID,
+			pid = _env.ProjectName,
+			token = accessToken,
+			codecs = SocketCompression.SupportedCodecs
+		};
 		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 	}
 
@@ -235,7 +246,13 @@ public class MicroserviceAuthenticationDaemon
 		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
-		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
+		var req = new MicroserviceAuthRequest
+		{
+			cid = _env.CustomerID,
+			pid = _env.ProjectName,
+			signature = sig,
+			codecs = SocketCompression.SupportedCodecs
+		};
 		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 	}
 	
@@ -257,6 +274,12 @@ public class MicroserviceAuthenticationDaemon
 		{
 			BeamableZLoggerProvider.LogContext.Value.ZLogError($"Authorization failed. result=[{authRes.result}]");
 			throw new BeamableWebsocketAuthException(authRes.result);
+		}
+
+		if (authRes.codecs?.Length > 0)
+		{
+			NegotiatedCodec = SocketCompression.GetPreferredCodec(authRes.codecs);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Using websocket codec {NegotiatedCodec}");
 		}
 
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
