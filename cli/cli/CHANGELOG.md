@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
+- A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
+
 
 ## [7.0.0] - 2026-02-19
 ### Added
