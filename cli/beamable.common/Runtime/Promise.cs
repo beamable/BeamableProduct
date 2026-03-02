@@ -175,7 +175,7 @@ namespace Beamable.Common
 			
 			try
 			{
-				copyCallbacks?.Invoke(val);
+				copyCallbacks?.Invoke(_val);
 			}
 			catch (Exception e)
 			{
@@ -221,7 +221,7 @@ namespace Beamable.Common
 				}
 				else
 				{
-					copyErrBacks?.Invoke(ex);
+					copyErrBacks?.Invoke(err);
 				}
 			}
 			catch (Exception e)
@@ -243,14 +243,6 @@ namespace Beamable.Common
 				{
 					if (err == null)
 					{
-						try
-						{
-							// callback?.Invoke(_val);
-						}
-						catch (Exception e)
-						{
-							BeamableLogger.LogException(e);
-						}
 						shouldInvokeRightNow = true;
 					}
 					else
@@ -311,7 +303,6 @@ namespace Beamable.Common
 		public Promise<T> Error(Action<Exception> errback)
 		{
 			var shouldRunRightNow = false;
-			Action<Exception> copyErrback = null;
 			lock (_lock)
 			{
 				HadAnyErrbacks = true;
@@ -320,7 +311,6 @@ namespace Beamable.Common
 					if (err != null)
 					{
 						shouldRunRightNow = true;
-						copyErrback = errback;
 					}
 				}
 				else
@@ -333,7 +323,7 @@ namespace Beamable.Common
 			{
 				try
 				{
-					copyErrback?.Invoke(err);
+					errback?.Invoke(err);
 				}
 				catch (Exception e)
 				{
