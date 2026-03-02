@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 
+### Fixed
+- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
+
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
