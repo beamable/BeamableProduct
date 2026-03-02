@@ -14,7 +14,7 @@ public class RemoveReplacementTypeCommandArgs : CommandArgs
 }
 public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeCommandArgs>, IEmptyResult
 {
-	public RemoveReplacementTypeCommand() : base("remove-replacement-type", "Add a replacement type for all Unreal linked projects")
+	public RemoveReplacementTypeCommand() : base("remove-replacement-type", "Remove a replacement type for Unreal linked projects")
 	{
 	}
 

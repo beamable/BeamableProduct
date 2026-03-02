@@ -17,7 +17,7 @@ public class AddReplacementTypeCommandArgs : CommandArgs
 }
 public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArgs>, IEmptyResult
 {
-	public AddReplacementTypeCommand() : base("add-replacement-type", "Add a replacement type for all Unreal linked projects")
+	public AddReplacementTypeCommand() : base("add-replacement-type", "Add a replacement type for Unreal linked projects")
 	{
 	}
 
