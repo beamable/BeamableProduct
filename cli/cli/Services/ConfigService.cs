@@ -28,6 +28,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public const string CFG_FOLDER = ".beamable";
+	public const string BEAM_ROOT_FILE = ".beamroot";
 
 	public const string CFG_TOKEN_FILE_NAME = "auth.beam.json";
 	public const string CFG_TOKEN_FILE_DIR = $"{TEMP_FOLDER_NAME}/{CFG_TOKEN_FILE_NAME}";
@@ -1576,6 +1577,8 @@ public class ConfigService
 
 	/// <summary>
 	/// Utility function that goes up from the relative path looking for a folder with the name <see cref="CFG_FOLDER"/>.
+	/// Traversal stops if a <see cref="BEAM_ROOT_FILE"/> file is found in a parent directory, preventing the search
+	/// from escaping a designated root (e.g. a test output directory).
 	/// </summary>
 	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
@@ -1587,9 +1590,20 @@ public class ConfigService
 			return true;
 		}
 
+		if (File.Exists(Path.Combine(basePath, BEAM_ROOT_FILE)))
+		{
+			// this is the root.
+			return false;
+		}
+
 		var parentDir = Directory.GetParent(basePath);
 		while (parentDir != null)
 		{
+			if (File.Exists(Path.Combine(parentDir.FullName, BEAM_ROOT_FILE)))
+			{
+				return false;
+			}
+
 			var path = Path.Combine(parentDir.FullName, CFG_FOLDER);
 			if (Directory.Exists(path))
 			{
