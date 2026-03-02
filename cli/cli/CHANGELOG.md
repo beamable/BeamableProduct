@@ -5,14 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unpublished]
-### Added 
- - Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
+## Unreleased
+
+### Added
+- New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
+- Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
+- Semantic Types for Beamable Classes with custom serialization and deserialization
 
 ### Fixed
- - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
+- Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
+- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
 
-## [7.0.0]
+## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
 - typed `ResolveAll` method for resolving content refs
@@ -34,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated `LocalEnvCustomArgs`, use the `LocalEnvModifier` instead. 
 - Newer Beam Auth API schemas use AuthV2 prefix.
 
-## [6.2.2]
+## [6.2.2] - 2025-12-15
 ### Changed
 - Content Snapshots now produce sorted content ids and also sorts the properties; this makes viewing snapshots in VCS-diff-viewers easier.   
 

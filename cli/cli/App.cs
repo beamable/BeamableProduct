@@ -595,6 +595,10 @@ public class App
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 
 		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddReplacementTypeCommand, AddReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ListReplacementTypeCommand, ListReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
+		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();

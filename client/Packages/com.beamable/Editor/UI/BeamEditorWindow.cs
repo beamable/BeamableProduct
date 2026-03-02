@@ -351,7 +351,7 @@ namespace Beamable.Editor.UI
 			EditorGUILayout.Space(12, false);
 
 			{ // draw button to open
-				if (BeamGUI.PrimaryButton(new GUIContent("Log in")))
+				if (BeamGUI.PrimaryButton(new GUIContent("Log in"), allowEnterKeyToClick: true))
 				{
 
 					Action onQuit = BeamLibraryWindow.Init;
