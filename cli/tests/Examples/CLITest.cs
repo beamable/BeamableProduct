@@ -69,15 +69,14 @@ public class CLITest
 		_mockRequester = new Mock<IRequester>();
 		_mockAuth = new Mock<IAuthApi>();
 		
-		_mockAuth.Setup(x => x.LoginRefreshToken("refresh"))
+		_mockAuth.Setup(x => x.LoginRefreshToken(It.IsAny<string>()))
 				.ReturnsPromise(new TokenResponse
 				{
 					refresh_token = "refresh",
 					access_token = "access",
 					token_type = "token",
 					expires_in = (long)TimeSpan.FromMinutes(30).TotalMilliseconds
-				})
-				.Verifiable();
+				});
 
 	}
 

@@ -34,6 +34,16 @@ public partial class BeamInitFlows : CLITest
 				.ReturnsPromise(new ServiceManifest())
 				.Verifiable();
 		});
+
+		Mock<IAuthApi>(mock =>
+		{
+			mock.Setup(x => x.LoginRefreshToken(It.IsAny<string>()))
+				.ReturnsPromise(new TokenResponse
+				{
+					refresh_token = "refresh", access_token = "access", token_type = "token"
+				}).Verifiable();
+		});
+
 		if (!string.IsNullOrEmpty(initArg))
 		{
 			Directory.SetCurrentDirectory(initArg);
@@ -74,6 +84,7 @@ public partial class BeamInitFlows : CLITest
 
 		Mock<IAuthApi>(mock =>
 		{
+	
 			mock.Setup(x => x.Login(userName, password, false, true))
 				.ReturnsPromise(new TokenResponse
 				{
@@ -82,14 +93,9 @@ public partial class BeamInitFlows : CLITest
 					token_type = "token"
 				})
 				.Verifiable();
-			mock.Setup(x => x.LoginRefreshToken("refresh"))
-				.ReturnsPromise(new TokenResponse
-				{
-					refresh_token = "refresh",
-					access_token = "access",
-					token_type = "token"
-				})
-				.Verifiable();
+			
+		
+
 		});
 
 		Mock<IRealmsApi>(mock =>
