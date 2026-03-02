@@ -36,6 +36,84 @@ namespace microserviceTests.microservice.Content
          LoggingUtil.InitTestCorrelator();
       }
 
+      
+      
+      [Test]
+      public async Task FirstManifestBreaksWithAuth()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async (uri) =>
+         {
+            var content = new ItemContent();
+            content.SetContentName("foo");
+            
+            var serailizer = new MicroserviceContentSerializer();
+            var json = serailizer.Serialize(content);
+            return json;
+         });
+
+         TestSocket testSocket = null;
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            
+            // make the first request fail with an auth issue.
+            socket.AddMessageHandler(
+	            MessageMatcher
+		            .WithRouteContains("basic/content/manifest")
+		            .WithReqId(-1)
+		            .WithGet(),
+	            MessageResponder.AuthFailure(100),
+	            MessageFrequency.OnlyOnce()
+            );
+            
+            // but the second attempt succeeds!
+            //  -4 is the request id after the first failed content call, and the nonce and auth calls. 
+            socket.AddInitialContentMessageHandler(-4, new ContentReference
+            {
+               id = "items.foo",
+               version = "123",
+               uri = "items.foo",
+               visibility = "public"
+            });
+            socket.SetAuthentication(true);
+
+            // set up nonce and auth calls to be -2 and -3
+            socket.AddAuthMessageHandlers(1);
+
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+        
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) =
+	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(rc);
+         });
+
+
+         await contentService.Init();
+
+         var fetchPromise = contentService.GetContent("items.foo");
+         var fetchTask = Task.Run(async () => await fetchPromise);
+         fetchTask.Wait(1000);
+         Assert.IsTrue(fetchPromise.IsCompleted);
+         
+         Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      
       [Test]
       public void Simple()
       {
@@ -322,15 +400,20 @@ namespace microserviceTests.microservice.Content
          var tasks = new List<Task>();
          for (var i = 0; i < timesToGetContent; i++)
          {
-            tasks.Add(Task.Run(async () =>
-            {
-
-               var fetchPromise = contentService.GetContent("items.foo");
-               var fetchTask = Task.Run(async () => await fetchPromise);
-               fetchTask.Wait(10);
-               Assert.IsTrue(fetchPromise.IsCompleted);
-               Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
-            }));
+	         if (i == 1)
+	         {
+		         await Task.Delay(200); // simulate some time for all the requests to get started. 
+	         }
+	         var task = Task.Run(async () =>
+	         {
+		         var fetchPromise = contentService.GetContent("items.foo");
+		         var fetchTask = Task.Run(async () => await fetchPromise);
+		         fetchTask.Wait(10);
+		         Assert.IsTrue(fetchPromise.IsCompleted);
+		         Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+	         });
+            tasks.Add(task);
+            
          }
 
          await Task.WhenAll(tasks);
