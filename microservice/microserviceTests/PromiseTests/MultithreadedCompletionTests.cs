@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
-using microserviceTests.OpenAPITests;
 using NUnit.Framework;
 
 namespace microserviceTests.PromiseTests
