@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
 
 
+### Fixed
+- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
+
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support

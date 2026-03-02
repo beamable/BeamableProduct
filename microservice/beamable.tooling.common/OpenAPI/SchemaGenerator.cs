@@ -41,7 +41,7 @@ public class SchemaGenerator
 		public bool IsFromCallableWithNoClientGen() => IsFromCallable() && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
 
 		public bool IsBeamSemanticType() => Type.GetInterfaces()
-			.Any(i => i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
+			.Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
 		
 		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType()) && !IsFromBeamGenerateSchema();
 		
