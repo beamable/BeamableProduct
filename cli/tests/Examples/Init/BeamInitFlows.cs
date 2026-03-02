@@ -82,6 +82,14 @@ public partial class BeamInitFlows : CLITest
 					token_type = "token"
 				})
 				.Verifiable();
+			mock.Setup(x => x.LoginRefreshToken("refresh"))
+				.ReturnsPromise(new TokenResponse
+				{
+					refresh_token = "refresh",
+					access_token = "access",
+					token_type = "token"
+				})
+				.Verifiable();
 		});
 
 		Mock<IRealmsApi>(mock =>

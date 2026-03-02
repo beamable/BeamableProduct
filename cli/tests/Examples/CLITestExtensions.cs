@@ -86,6 +86,15 @@ public class CLITestExtensions : CLITest
 						expires_in = (long)TimeSpan.FromMinutes(30).TotalMilliseconds
 					})
 					.Verifiable();
+				mock.Setup(x => x.LoginRefreshToken("refresh"))
+					.ReturnsPromise(new TokenResponse
+					{
+						refresh_token = "refresh",
+						access_token = "access",
+						token_type = "token",
+						expires_in = (long)TimeSpan.FromMinutes(30).TotalMilliseconds
+					})
+					.Verifiable();
 			});
 
 		if (mockRealms)

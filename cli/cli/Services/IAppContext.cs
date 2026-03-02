@@ -160,6 +160,7 @@ public class DefaultAppContext : IAppContext
 	private string _refreshToken;
 	private BindingContext _bindingContext;
 	private IDependencyProvider _provider;
+	private IAuthApi _authApi;
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
@@ -172,7 +173,7 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, EngineCallerOption engineOption, EngineVersionOption engineVersionOption, EngineSdkVersionOption engineSdkVersionOption,PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
-		ConfigService configService, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
+		ConfigService configService, IAuthApi authApi, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, BeamLogSwitch logSwitch,
 		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption,
 		PreferRemoteFederationOption routeMapOption, IDependencyProvider provider)
@@ -190,6 +191,7 @@ public class DefaultAppContext : IAppContext
 		_refreshTokenOption = refreshTokenOption;
 		_logOption = logOption;
 		_configService = configService;
+		_authApi = authApi;
 		_showRawOption = showRawOption;
 		_showPrettyOption = showPrettyOption;
 		_logSwitch = logSwitch;
@@ -345,7 +347,7 @@ public class DefaultAppContext : IAppContext
 		// if the token we got from the config file is expired, try to refresh it with the refresh token.
 		if (isExpiredToken)
 		{
-			TokenResponse tokenResponse = await _provider.GetService<IAuthApi>().LoginRefreshToken(response.RefreshToken);
+			TokenResponse tokenResponse = await _authApi.LoginRefreshToken(response.RefreshToken);
 			
 			Log.Debug(
 				$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
