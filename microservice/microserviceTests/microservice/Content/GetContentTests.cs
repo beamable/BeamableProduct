@@ -48,8 +48,8 @@ namespace microserviceTests.microservice.Content
             var content = new ItemContent();
             content.SetContentName("foo");
             
-            var serailizer = new MicroserviceContentSerializer();
-            var json = serailizer.Serialize(content);
+            var serializer = new MicroserviceContentSerializer();
+            var json = serializer.Serialize(content);
             return json;
          });
 
