@@ -1082,7 +1082,6 @@ namespace Beamable.Serialization.SmallerJSON
 		private static class ObjectMapper
 		{
 			private static readonly Type SerializeFieldType = typeof(SerializeField);
-			private static readonly Type CompilerGeneratedType = typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute);
 
 			// NOTE: We cannot reference Beamable.Common.Semantics directly from this folder.
 			// We detect semantic types via reflection by interface full name instead
@@ -1176,15 +1175,14 @@ namespace Beamable.Serialization.SmallerJSON
 					var instance = Activator.CreateInstance(targetType);
 
 					// Mirror existing Serializer rules: fields only, allow [SerializeField] privates,
-					// skip [NonSerialized] and skip compiler generated backing fields.
+					// skip [NonSerialized] fields.
 					var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 					for (int i = 0; i < fields.Length; i++)
 					{
 						var field = fields[i];
 
 						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
-						var isGeneratedByCompiler = field.GetCustomAttribute(CompilerGeneratedType) != null;
-						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
 						if (!canBeSerialized) continue;
 
 						if (!objNode.TryGetValue(field.Name, out var rawValue)) continue;
