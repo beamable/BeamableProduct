@@ -583,8 +583,14 @@ namespace Beamable.Common.Content
 			{
 				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
-
+			
 			var name = ContentTypeReflectionCache.GetContentNameFromId(id);
+			if (!string.IsNullOrEmpty(itemId))
+			{
+				name = itemId.Substring(typeName.Length + 1);
+			}
+			
+			
 			id = string.Join(".", typeName, name);
 
 			var version = root.TryGetValue("version", out var rootVersion) ? rootVersion.ToString() : "";
