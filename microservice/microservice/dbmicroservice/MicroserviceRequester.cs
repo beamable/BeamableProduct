@@ -490,7 +490,7 @@ namespace Beamable.Server
             if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
             {
                // need to wait for authentication to finish...
-               BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
+               Log.Verbose(
                   $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
 
                _socketContext.Daemon.WakeAuthThread();
@@ -505,21 +505,13 @@ namespace Beamable.Server
             }
 
             _socketContext.Daemon.BumpRequestProcessedCounter();
-            activity.StopAndDispose(ex);
-            requestActivity.StopAndDispose(ex);
             throw ex;
          });
          
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization)
-            .FlatMap(_ =>
-            {
-               requestActivity.StopAndDispose(ActivityStatusCode.Ok);
-
-               return wrappedResult;
-            })
+            .FlatMap(_ => wrappedResult)
 	         .Then(_ =>
             {
-               activity.StopAndDispose(ActivityStatusCode.Ok);
                _socketContext.Daemon.BumpRequestProcessedCounter();
             });
       }
