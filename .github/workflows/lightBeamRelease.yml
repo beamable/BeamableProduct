@@ -56,6 +56,12 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
     steps:
+      - name: Check secret lengths
+        run: |
+          echo "UNITY_EMAIL length: ${#UNITY_EMAIL}"
+          echo "UNITY_PASSWORD length: ${#UNITY_PASSWORD}"
+          echo "UNITY_SERIAL length: ${#UNITY_SERIAL}"
+
       - name: Check if triggered by cron or manual
         id: isCronOrManual
         run: |
