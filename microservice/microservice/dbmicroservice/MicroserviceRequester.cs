@@ -484,28 +484,44 @@ namespace Beamable.Server
          var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
          Log.Debug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
-         return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
-	         {
-		         return firstAttempt.RecoverWith(ex =>
-			         {
-				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
-				         {
-					         // need to wait for authentication to finish...
-					         Log.Debug($"Request {{id}} and {truncatedMsg} failed with 403. Will reauth and and retry.", req.id);
+         
+         var wrappedResult = firstAttempt.RecoverWith(ex =>
+         {
+            if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+            {
+               // need to wait for authentication to finish...
+               BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
+                  $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
 
-					         _socketContext.Daemon.WakeAuthThread();
-					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
-					         return waitForAuth
-							         .FlatMap(x =>
-								         Request(method, uri, body, includeAuthHeader, parser, useCache))
-						         ;
-				         }
+               _socketContext.Daemon.WakeAuthThread();
+               var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+               return waitForAuth
+                     .FlatMap(x =>
+                     {
+                        return Request(method, uri, body, includeAuthHeader, parser, useCache);
 
-				         _socketContext.Daemon.BumpRequestProcessedCounter();
-				         throw ex;
-			         });
-	         })
-	         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
+                     })
+                  ;
+            }
+
+            _socketContext.Daemon.BumpRequestProcessedCounter();
+            activity.StopAndDispose(ex);
+            requestActivity.StopAndDispose(ex);
+            throw ex;
+         });
+         
+         return _socketContext.SendMessageSafely(msg, _waitForAuthorization)
+            .FlatMap(_ =>
+            {
+               requestActivity.StopAndDispose(ActivityStatusCode.Ok);
+
+               return wrappedResult;
+            })
+	         .Then(_ =>
+            {
+               activity.StopAndDispose(ActivityStatusCode.Ok);
+               _socketContext.Daemon.BumpRequestProcessedCounter();
+            });
       }
 
       /// <summary>
