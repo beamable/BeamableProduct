@@ -6,6 +6,11 @@ on:
       - '*'
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC (adjust to your desired schedule)
+  workflow_call:
+    inputs: 
+      customTag:
+        description: 'Custom tag for manual dispatch'
+        required: false
   workflow_dispatch:
     inputs:
       customTag:
@@ -40,6 +45,10 @@ jobs:
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "triggered=manual" >> $GITHUB_OUTPUT
             customTag="${{ github.event.inputs.customTag }}"
+            echo "customTag=${customTag}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_call" ]]; then
+            echo "triggered=manual" >> $GITHUB_OUTPUT
+            customTag="${{ inputs.customTag }}"
             echo "customTag=${customTag}" >> $GITHUB_OUTPUT
           else
             echo "triggered=tag" >> $GITHUB_OUTPUT
