@@ -41,26 +41,25 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      matrix:
-        targetPlatform:
-          - WebGL
-        unityVersion:
-          - 2022.3.7f1
-        projectPath:
-          - client
     env:
+      TARGET_PLATFORM: WebGL
+      UNITY_VERSION: 2022.3.7f1
+      PROJECT_PATH: client
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
       AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check secret lengths
         run: |
           echo "UNITY_EMAIL length: ${#UNITY_EMAIL}"
           echo "UNITY_PASSWORD length: ${#UNITY_PASSWORD}"
           echo "UNITY_SERIAL length: ${#UNITY_SERIAL}"
+          echo "GITHUB_TOKEN length: ${#GITHUB_TOKEN}"
+          echo "HOME=[$HOME]"
 
       - name: Check if triggered by cron or manual
         id: isCronOrManual
@@ -136,12 +135,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ${{ matrix.projectPath }}/Library
-            ${{ matrix.projectPath }}/Temp
-            ${{ matrix.projectPath }}/obj
-          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+            $PROJECT_PATH/Library
+            $PROJECT_PATH/Temp
+            $PROJECT_PATH/obj
+          key: Library-$PROJECT_PATH-$UNITY_VERSION-$TARGET_PLATFORM
           restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+            Library-$PROJECT_PATH-$UNITY_VERSION-$TARGET_PLATFORM
       - name: Clean the build directory
         continue-on-error: true
         run: |
@@ -159,15 +158,15 @@ jobs:
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
-          UNITY_EMAIL: $UNITY_EMAIL
-          UNITY_PASSWORD: $UNITY_PASSWORD
-          UNITY_SERIAL: $UNITY_SERIAL
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-webgl-3.1.0
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-$UNITY_VERSION-webgl-3.1.0
           customParameters: -LIGHTBEAM_BUILD_PATH dist
-          targetPlatform: ${{ matrix.targetPlatform }}
-          unityVersion: ${{ matrix.unityVersion }}
-          projectPath: ${{ matrix.projectPath }}
+          targetPlatform: $TARGET_PLATFORM
+          unityVersion: $UNITY_VERSION
+          projectPath: $PROJECT_PATH
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           allowDirtyBuild: true
           buildMethod: LightBeamBuilds.BuildAll
@@ -175,12 +174,12 @@ jobs:
       - name: Check Asset
         continue-on-error: true
         run: |
-          ls -a ${{ matrix.projectPath }}/dist
+          ls -a $PROJECT_PATH/dist
         shell: bash
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://$AWS_LIGHTBEAM_S3_BUCKET/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./$PROJECT_PATH/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
       - name: upload alias version
-        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://$AWS_LIGHTBEAM_S3_BUCKET/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./$PROJECT_PATH/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
       - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E3WCWLOU0CURK
@@ -190,4 +189,4 @@ jobs:
         run: |
           cat cloudfront-invalidation.json
       - name: Do Cloudfront Invalidation
-        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
