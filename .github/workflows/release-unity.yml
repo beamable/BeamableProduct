@@ -338,3 +338,11 @@ jobs:
     uses: ./.github/workflows/lightBeamRelease.yml
     with:
       customTag: ${{ needs.nuget.outputs.version }}
+    secrets:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

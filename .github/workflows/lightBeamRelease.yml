@@ -35,6 +35,14 @@ jobs:
           - 2022.3.7f1
         projectPath:
           - client
+    env:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check if triggered by cron or manual
         id: isCronOrManual
@@ -127,21 +135,22 @@ jobs:
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: $GITHUB_TOKEN
+          
 
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
-          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: $UNITY_EMAIL
+          UNITY_PASSWORD: $UNITY_PASSWORD
+          UNITY_SERIAL: $UNITY_SERIAL
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-webgl-3.1.0
           customParameters: -LIGHTBEAM_BUILD_PATH dist
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          githubToken: $GITHUB_TOKEN
           allowDirtyBuild: true
           buildMethod: LightBeamBuilds.BuildAll
 
@@ -151,9 +160,9 @@ jobs:
           ls -a ${{ matrix.projectPath }}/dist
         shell: bash
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://$AWS_LIGHTBEAM_S3_BUCKET/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
       - name: upload alias version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://$AWS_LIGHTBEAM_S3_BUCKET/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
       - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E3WCWLOU0CURK
@@ -163,4 +172,4 @@ jobs:
         run: |
           cat cloudfront-invalidation.json
       - name: Do Cloudfront Invalidation
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
+        run: AWS_ACCESS_KEY_ID=$AWS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
