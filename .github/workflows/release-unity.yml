@@ -62,6 +62,8 @@ jobs:
           - 6000.3.0f1
         gameCiVersion:
           - 3.2.1
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: review options
         run: |
@@ -330,3 +332,9 @@ jobs:
             Unity SDK Release ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ inputs.releaseType != 'production' }}
+
+  lightbeam:
+    needs: nuget
+    uses: ./.github/workflows/lightBeamRelease.yml
+    with:
+      customTag: ${{ needs.nuget.outputs.version }}
