@@ -11,6 +11,7 @@ on:
       customTag:
         description: 'Custom tag for manual dispatch'
         required: false
+        type: string
   workflow_dispatch:
     inputs:
       customTag:
