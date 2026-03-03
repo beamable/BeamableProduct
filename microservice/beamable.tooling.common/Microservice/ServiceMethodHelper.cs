@@ -246,7 +246,7 @@ namespace Beamable.Server
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            Log.Debug($"Skipped {method.Name}");
+	            Log.Verbose($"Skipped {method.Name}");
 	            continue;
             }
 
@@ -268,7 +268,7 @@ namespace Beamable.Server
             var requiredScopes = attribute.RequiredScopes;
             var requiredUser = attribute.RequireAuthenticatedUser;
 
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
+            Log.Verbose("Found {method} for {path}", method.Name, servicePath);
             
             var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
             var isVoid = method.ReturnType == typeof(void);

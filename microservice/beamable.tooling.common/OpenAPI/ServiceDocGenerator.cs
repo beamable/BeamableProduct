@@ -151,8 +151,7 @@ public class ServiceDocGenerator
 
 		foreach (var method in methods)
 		{
-			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
-			var comments = DocsLoader.GetMethodComments(method.Method);
+			Log.Verbose("Adding to Docs method {MethodName}", method.Method.Name);			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
