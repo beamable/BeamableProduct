@@ -33,7 +33,8 @@
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 
         <ProjectReference Include="..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
-      <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+        <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+        <ProjectReference Include="..\..\microservice\unrealenginestubs\unrealenginestubs.csproj" />
     </ItemGroup>
     <ItemGroup Label="Pack: custom targets">
         <None Include="Targets/Beamable.Common.*" PackagePath="build/netstandard2.0" Pack="True"/>

@@ -6,13 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
 ### Added
 - New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
+- Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
 
 
 ### Fixed
+- Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
 - Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
 
 ## [7.0.0] - 2026-02-19
