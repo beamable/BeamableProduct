@@ -36,9 +36,7 @@ public class CheckNBomberCommand : AtomicCommand<CheckNBomberCommandArgs, CheckP
 		var csv = File.ReadAllText(args.nBomberJsonFilePath);
 		var lines = CsvReader.ReadFromText(csv);
 		var warnings = new List<string>();
-		
-		BeamableLogger.Log("CSV BOMBER: "+ File.ReadAllText(args.nBomberJsonFilePath));
-		
+
 		foreach (var line in lines)
 		{
 			if (!double.TryParse(line["failed"], out var failCount))
