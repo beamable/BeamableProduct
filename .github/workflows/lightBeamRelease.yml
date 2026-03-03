@@ -55,7 +55,6 @@ jobs:
       AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check if triggered by cron or manual
         id: isCronOrManual
@@ -148,7 +147,7 @@ jobs:
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
-          password: $GITHUB_TOKEN
+          password: ${{ secrets.GITHUB_TOKEN }}
           
 
       - uses: game-ci/unity-builder@v4
@@ -163,7 +162,7 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
-          githubToken: $GITHUB_TOKEN
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
           allowDirtyBuild: true
           buildMethod: LightBeamBuilds.BuildAll
 
