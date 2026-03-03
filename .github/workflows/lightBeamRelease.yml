@@ -12,6 +12,21 @@ on:
         description: 'Custom tag for manual dispatch'
         required: false
         type: string
+    secrets:
+      UNITY_EMAIL:
+        required: true
+      UNITY_PASSWORD:
+        required: true
+      UNITY_SERIAL:
+        required: true
+      AWS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_LIGHTBEAM_S3_BUCKET:
+        required: true
+      GITHUB_TOKEN:
+        required: true
   workflow_dispatch:
     inputs:
       customTag:
