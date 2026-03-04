@@ -337,7 +337,7 @@ jobs:
     needs: nuget
     uses: ./.github/workflows/lightBeamRelease.yml
     with:
-      customTag: unity-sdk-${{ steps.version.outputs.VERSION }}
+      customTag: unity-sdk-${{ needs.nuget.outputs.version }}
     secrets:
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
