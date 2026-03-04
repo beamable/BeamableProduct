@@ -143,21 +143,23 @@ public class PortalExtensionObserver
 		_manifest = manifest;
 	}
 
-	public void BuildExtension() //TODO: improve this with more error handling
+	public void BuildExtension()
 	{
 		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
-			Log.Error($"Failed to generate portal extension build. Check errors: \n{result.stderr}".Trim());
+			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+				.Trim());
 		}
 	}
 
-	public void InstallDeps() //TODO: improve this with more error handling
+	public void InstallDeps()
 	{
 		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
-			Log.Error($"Failed to generate portal extension dependencies. Check errors: \n{result.stderr}".Trim());
+			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+				.Trim());
 		}
 	}
 
@@ -304,8 +306,6 @@ public class PortalExtensionObserver
 
 		// build the app since there are new changes in the src files
 		BuildExtension();
-
-		Log.Information($"Change detected in file: {e.Name}");
 
 		_notificationsApi.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload()

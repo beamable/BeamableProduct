@@ -1,4 +1,3 @@
-using Beamable.Common.Api;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Services;
@@ -118,6 +117,7 @@ public class PortalExtensionRunCommand : AppCommand<PortalExtensionRunCommandArg
 
 	private void SetLoggerProvider(ILoggingBuilder builder, PortalExtensionRunCommandArgs args)
 	{
+		//TODO should we keep this? Or just get rid of it?
 		Action readyForTraffic = () =>
 		{
 			if (TryBuildPortalUrl(args, out string portalUrl))
@@ -199,10 +199,12 @@ public class OverrideLogger : ILogger
 
 		if (exception != null)
 		{
-			Console.WriteLine($"\nTEST Exception: {exception.Message}");
+			throw new CliException(
+				$"An exception happened while running local Portal Extension. Message = [{exception.Message}]\n Stacktrace = [{exception.StackTrace}]");
 		}
 
-		Console.WriteLine($"\nTEST: {message}");
+		// Uncomment this to debug if something is going wrong with the local service
+		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
