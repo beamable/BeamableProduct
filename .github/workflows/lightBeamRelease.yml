@@ -135,12 +135,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ${PROJECT_PATH}/Library
-            ${PROJECT_PATH}/Temp
-            ${PROJECT_PATH}/obj
-          key: Library-${PROJECT_PATH}-${UNITY_VERSION}-${TARGET_PLATFORM}
+            ${{ env.PROJECT_PATH }}/Library
+            ${{ env.PROJECT_PATH }}/Temp
+            ${{ env.PROJECT_PATH }}/obj
+          key: Library-${{ env.PROJECT_PATH }}-${{ env.UNITY_VERSION }}-${{ env.TARGET_PLATFORM }}
           restore-keys: |
-            Library-${PROJECT_PATH}-${UNITY_VERSION}-${TARGET_PLATFORM}
+            Library-${{ env.PROJECT_PATH }}-${{ env.UNITY_VERSION }}-${{ env.TARGET_PLATFORM }}
       - name: Clean the build directory
         continue-on-error: true
         run: |
@@ -162,11 +162,11 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${UNITY_VERSION}-webgl-3.1.0
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ env.UNITY_VERSION }}-webgl-3.1.0
           customParameters: -LIGHTBEAM_BUILD_PATH dist
-          targetPlatform: ${TARGET_PLATFORM}
-          unityVersion: ${UNITY_VERSION}
-          projectPath: ${PROJECT_PATH}
+          targetPlatform: ${{ env.TARGET_PLATFORM }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          projectPath: ${{ env.PROJECT_PATH }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           allowDirtyBuild: true
           buildMethod: LightBeamBuilds.BuildAll
@@ -174,12 +174,12 @@ jobs:
       - name: Check Asset
         continue-on-error: true
         run: |
-          ls -a ${PROJECT_PATH}/dist
+          ls -a ${{ env.PROJECT_PATH }}/dist
         shell: bash
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${PROJECT_PATH}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
       - name: upload alias version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${PROJECT_PATH}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
       - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E3WCWLOU0CURK
