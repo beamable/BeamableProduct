@@ -1,17 +1,17 @@
 name: LightBeam Release
 
 on:
-  push:
-    tags:
-      - '*'
-  schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC (adjust to your desired schedule)
   workflow_call:
     inputs: 
       customTag:
         description: 'Custom tag for manual dispatch'
         required: false
         type: string
+      optionalAlias: 
+        description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
+        required: false
+        type: string
+
     secrets:
       UNITY_EMAIL:
         required: true
@@ -30,6 +30,10 @@ on:
       customTag:
         description: 'Custom tag for manual dispatch'
         required: false
+      optionalAlias: 
+        description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
+        required: false
+        type: string
 env:
   DOCKER_REGISTRY: ghcr.io
 
@@ -53,77 +57,33 @@ jobs:
       AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Check secret lengths
+      - name: Read Inputs
+        id: inputs
         run: |
-          echo "UNITY_EMAIL length: ${#UNITY_EMAIL}"
-          echo "UNITY_PASSWORD length: ${#UNITY_PASSWORD}"
-          echo "UNITY_SERIAL length: ${#UNITY_SERIAL}"
-          echo "GITHUB_TOKEN length: ${#GITHUB_TOKEN}"
-          echo "HOME=[$HOME]"
+          #!/bin/bash
 
-      - name: Check if triggered by cron or manual
-        id: isCronOrManual
-        run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "triggered=cron" >> $GITHUB_OUTPUT
-            datestring=nightly-$(date -u +"%Y%m%d%H%M%S")
-            echo "customTag=${datestring}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "triggered=manual" >> $GITHUB_OUTPUT
-            customTag="${{ github.event.inputs.customTag }}"
-            echo "customTag=${customTag}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_call" ]]; then
-            echo "triggered=manual" >> $GITHUB_OUTPUT
-            customTag="${{ inputs.customTag }}"
-            echo "customTag=${customTag}" >> $GITHUB_OUTPUT
-          else
-            echo "triggered=tag" >> $GITHUB_OUTPUT
-            tagname="${{ github.ref }}"
-            echo "customTag=${tagname/refs\/tags\//}" >> $GITHUB_OUTPUT
-          fi
-      - name: Set trigger context
-        id: setTriggerContext
-        run: |
-          if [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "cron" ]]; then
-            triggerContext="nightly"
-          elif [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "manual" ]]; then
-            triggerContext="manual"
-          elif [[ "${{ steps.isCronOrManual.outputs.customTag }}" == *"PREVIEW"* ]]; then
-            triggerContext="preview"
-          else
-            triggerContext="production"
-          fi
-          echo "triggerContext=${triggerContext}" >> $GITHUB_OUTPUT
+          # Merge customTag
+          CUSTOM_TAG="${{ inputs.customTag || github.event.inputs.customTag || '' }}"
+          OPTIONAL_ALIAS="${{ inputs.optionalAlias || github.event.inputs.optionalAlias || '' }}"
 
-      - name: Display Outputs
+          echo "Merged customTag: $CUSTOM_TAG"
+          echo "Merged optionalAlias: $OPTIONAL_ALIAS"
+
+          # Set outputs
+          echo "custom_tag=$CUSTOM_TAG" >> $GITHUB_OUTPUT
+          echo "optional_alias=$OPTIONAL_ALIAS" >> $GITHUB_OUTPUT
+
+      - name: Display Inputs
         run: |
-          if [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "cron" ]]; then
-            echo "Nightly Build Date String: ${{ steps.isCronOrManual.outputs.customTag }}"
-          elif [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "manual" ]]; then
-            echo "Custom Tag for Manual Dispatch: ${{ steps.isCronOrManual.outputs.customTag }}"
-          else
-            echo "Tag Pushed: ${{ steps.isCronOrManual.outputs.customTag }}"
-          fi
-      - name: Display Trigger Context
-        run: echo ${{steps.setTriggerContext.outputs.triggerContext}}
-      - name: Display Custom Tag
-        run: echo ${{ steps.isCronOrManual.outputs.customTag}}
-      - name: Display Triggered Type
-        run: echo ${{ steps.isCronOrManual.outputs.triggered}}
+          echo tag=[${{ steps.inputs.outputs.custom_tag }}]
+          echo alias=[${{ steps.inputs.outputs.optional_alias }}]
+
       - uses: actions/checkout@v4
-        name: Checkout Main
-        if: ${{ steps.isCronOrManualOrTag.outputs.triggered != 'tag' }}
+        name: Checkout Branch
         with:
           fetch-depth: 0
           lfs: true
-          ref: main
-      - uses: actions/checkout@v4
-        name: Checkout Tag
-        if: ${{ steps.isCronOrManualOrTag.outputs.triggered == 'tag' }}
-        with:
-          fetch-depth: 0
-          lfs: true
-          ref: ${{ steps.isCronOrManualOrTag.outputs.tagname }}
+          ref: ${{ steps.inputs.outputs.custom_tag }}
         
       - name: Prepare Config-Defaults
         run: |
@@ -176,15 +136,20 @@ jobs:
         run: |
           ls -a ${{ env.PROJECT_PATH }}/dist
         shell: bash
+
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
-      - name: upload alias version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.custom_tag }} --acl public-read
+      
+      - name: upload optional alias version
+        if: ${{ steps.inputs.outputs.optional_alias != '' }}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.optional_alias }} --acl public-read
+      
+
       - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E3WCWLOU0CURK
           CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
-          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/version/*"]}}}' >> cloudfront-invalidation.json
       - name: Preview Cloudfront Invalidation 
         run: |
           cat cloudfront-invalidation.json
