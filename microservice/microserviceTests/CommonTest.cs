@@ -106,9 +106,6 @@ public class CommonTest
 		localTime.Restart();
 		// set content static variables...
 		ContentApi.Instance = new Promise<IContentApi>();
-		
-		// set up logging
-		LoggingUtil.InitTestCorrelator();
 
 		// reset exit code to 0
 		Environment.ExitCode = 0;

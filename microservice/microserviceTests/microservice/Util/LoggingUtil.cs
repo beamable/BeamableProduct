@@ -15,20 +15,20 @@ namespace microserviceTests.microservice.Util
 	    public static ILogger testLogger;
 	    public static ILoggerFactory testFactory;
 	    
-	    public static void InitTestCorrelator(LogLevel logLevel=LogLevel.Trace)
-        {
-	        BeamableLogProvider.Provider = new BeamableZLoggerProvider();
-	        Debug.Instance = new MicroserviceDebug();
-	        testLogs = new TestLogs();
-	        testFactory = LoggerFactory.Create(builder =>
-	        {
-		        builder.SetMinimumLevel(logLevel);
-		        builder.AddZLoggerLogProcessor(testLogs);
-	        });
-	        testLogger = testFactory.CreateLogger<TestLogs>();
-	        
-	        BeamableZLoggerProvider.LogContext.Value = testLogger;
-        }
+	    // public static void InitTestCorrelator(LogLevel logLevel=LogLevel.Trace)
+     //    {
+	    //     BeamableLogProvider.Provider = new BeamableZLoggerProvider();
+	    //     Debug.Instance = new MicroserviceDebug();
+	    //     testLogs = new TestLogs();
+	    //     testFactory = LoggerFactory.Create(builder =>
+	    //     {
+		   //      builder.SetMinimumLevel(logLevel);
+		   //      builder.AddZLoggerLogProcessor(testLogs);
+	    //     });
+	    //     testLogger = testFactory.CreateLogger<TestLogs>();
+	    //
+	    //     BeamableZLoggerProvider.LogContext.Value = testLogger;
+     //    }
 
 	    public class TestLogs : IAsyncLogProcessor
 	    {

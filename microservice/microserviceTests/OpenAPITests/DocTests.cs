@@ -53,7 +53,6 @@ public class DocTests
 	[Test]
 	public void TestMethodScanning()
 	{
-		LoggingUtil.InitTestCorrelator();
 		var gen = new ServiceDocGenerator();
 
 		var builder = new DependencyBuilder();
