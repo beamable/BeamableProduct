@@ -32,7 +32,7 @@ namespace microserviceTests.microservice.Content
 
          var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
          _cache.GenerateReflectionCache(asms);
-         
+
          LoggingUtil.InitTestCorrelator();
       }
 

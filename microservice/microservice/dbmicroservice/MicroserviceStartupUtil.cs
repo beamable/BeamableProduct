@@ -451,6 +451,7 @@ public static class MicroserviceStartupUtil
 		Debug.Instance = new MicroserviceDebug();
 		ctx.logger = ctx.logFactory.CreateLogger<Microservice>();
 		BeamableZLoggerProvider.SetLogger(ctx.logger);
+		BeamableZLoggerProvider.LogContext.Value = ctx.logger;
 	}
 
 	private static void AddDefaultLoggerProviders(ILoggingBuilder builder, LogOutputType type, bool inDocker, string outputPath)
