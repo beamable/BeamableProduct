@@ -15,6 +15,20 @@ public class ProjectLogsService
 				var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 				if (parsed.message == null)
 				{
+					if (!logMessage.StartsWith("{"))
+					{
+						var index = logMessage.IndexOf('{');
+						if (index >= 0)
+						{
+							Log.Warning($"Truncating message to read json. Full=[{logMessage}] index=[{index}]");
+							logMessage = logMessage.Substring(index);
+						}
+						else
+						{
+							Log.Error($"Unable to parse log because it was not a JSON object. message=[{logMessage}]");
+							return;
+						}
+					}
 					var mongoParsed = JsonConvert.DeserializeObject<MongoLogMessage>(logMessage);
 					parsed.message = mongoParsed.message;
 					parsed.timeStamp = DateTimeOffset.Now.ToString("T");

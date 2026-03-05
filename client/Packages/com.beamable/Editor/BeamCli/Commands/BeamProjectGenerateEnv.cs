@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool autoDeploy;
         /// <summary>When enabled, includes the legacy SECRET realm secret environment variable</summary>
         public bool includeSecret;
+        /// <summary>When enabled, prevents any connection strings from being added to the environment</summary>
+        public bool useRemoteDeps;
         /// <summary>When enabled, automatically stop all other local instances of this service</summary>
         public int removeAllExceptPid;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -55,6 +57,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.includeSecret != default(bool)))
             {
                 genBeamCommandArgs.Add(("--include-secret=" + this.includeSecret));
+            }
+            // If the useRemoteDeps value was not default, then add it to the list of args.
+            if ((this.useRemoteDeps != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--use-remote-deps=" + this.useRemoteDeps));
             }
             // If the removeAllExceptPid value was not default, then add it to the list of args.
             if ((this.removeAllExceptPid != default(int)))

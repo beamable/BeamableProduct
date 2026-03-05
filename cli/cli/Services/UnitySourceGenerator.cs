@@ -12,6 +12,7 @@ using System.CodeDom.Compiler;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Server;
 
 namespace cli;
 
@@ -408,12 +409,24 @@ public static class UnityHelper
 				break;
 		}
 
-		if (!operation.Value.Responses.TryGetValue("200", out var response))
+		// TODO: if not 200, check for the first 20x
+		OpenApiResponse response = null;
+		for (var i = 200; i < 230; i++)
 		{
-			return null; // TODO: support application/csv for content
+			if (operation.Value.Responses.TryGetValue(i.ToString(), out response))
+			{
+				break;
+			}
+		}
+
+		if (response == null)
+		{
+			Log.Warning($"Cannot generate a method for path=[{pathName}] because there is no valid 20x response ");
+			return null; 
 		}
 
 		// bool isCsv = false;
+		// TODO: support application/csv for content
 		if (!response.Content.TryGetValue("application/json", out var mediaResponse))
 		{
 			// isCsv = true;
@@ -1436,7 +1449,7 @@ public static class UnityHelper
 
 		for (var i = propKey.Length - 2; i >= 0; i--)
 		{
-			if (propKey[i] == '-' || propKey[i] == '/' || propKey[i] == '$')
+			if (propKey[i] == '-' || propKey[i] == '/' || propKey[i] == '$' || propKey[i] == '#')
 			{
 				if (i + 2 >= propKey.Length)
 				{

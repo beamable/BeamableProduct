@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
@@ -13,7 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 using Microsoft.OpenApi.Services;
-using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace cli;
 
@@ -47,7 +48,7 @@ public class SwaggerService
 		BeamableApis.ObjectService("stats"),
 		BeamableApis.BasicService("tournaments"),
 		BeamableApis.ObjectService("tournaments"),
-		BeamableApis.BasicService("auth"),
+		BeamableApis.HardcodedBasicService("auth", "auth_basic_feb_12_2026.oapi.json"),
 		BeamableApis.BasicService("cloudsaving"),
 		BeamableApis.BasicService("payments"),
 		BeamableApis.ObjectService("payments"),
@@ -616,6 +617,7 @@ public class SwaggerService
 			(nameof(RewriteInlineResultSchemasAsReferences), RewriteInlineResultSchemasAsReferences),
 			(nameof(SplitTagsIntoSeparateDocuments), SplitTagsIntoSeparateDocuments),
 			(nameof(ExtractBeamoV2Names), ExtractBeamoV2Names),
+			(nameof(ExtractAuthV2Names), ExtractAuthV2Names),
 			(nameof(AddTitlesToAllSchemasIfNone), AddTitlesToAllSchemasIfNone),
 			(nameof(RewriteObjectEnumsAsStrings), RewriteObjectEnumsAsStrings),
 			(nameof(DetectNonSelfReferentialTypes), DetectNonSelfReferentialTypes),
@@ -803,43 +805,58 @@ public class SwaggerService
 		return output;
 	}
 
-	private static List<OpenApiDocumentResult> ExtractBeamoV2Names(OpenApiDocumentResult swagger)
+	private static Func<OpenApiDocumentResult, List<OpenApiDocumentResult>> BuildProtoActorV2Extractor(string docTitle, string newPrefix, string newTitle=null)
 	{
-		if (!string.Equals(swagger.Document.Info.Title, "Beamo Actor", StringComparison.InvariantCultureIgnoreCase))
+		return (swagger) =>
 		{
+			if (!string.Equals(swagger.Document.Info.Title, docTitle, StringComparison.InvariantCultureIgnoreCase))
+			{
+				return new List<OpenApiDocumentResult>
+				{
+					swagger
+				};
+			}
+
+			
+			
+			// This extractor is used when a legacy service and a new ProtoActor-based service
+			// need to coexist. For backward compatibility, the original service's codegen and
+			// schemas must remain available, while the ProtoActor service defines new schemas.
+			// To avoid schema name collisions (and resulting breaking changes), the ProtoActor
+			// service's schemas are renamed with a distinct prefix.
+
+			string ConvertSchemaName(string oldName) => newPrefix + oldName;
+
+			var next = Reserailize(swagger)[0];
+			if (newTitle != null)
+			{
+				next.Document.Info.Title = newTitle;
+			}
+			var doc = next.Document;
+
+			foreach (var (name, schema) in doc.Components.Schemas)
+			{
+				if (!string.IsNullOrEmpty(schema.Reference?.Id))
+				{
+					schema.Reference.Id = ConvertSchemaName(schema.Reference.Id);
+				}
+			}
+
+			doc.Components.Schemas = doc.Components.Schemas.ToDictionary(keySelector: kvp => ConvertSchemaName(kvp.Key),
+				elementSelector: kvp => kvp.Value);
+
+
 			return new List<OpenApiDocumentResult>
 			{
-				swagger
+				next
 			};
-		}
-		
-		// the original version of beamo was written as a basic scala service.
-		//  for legacy reasons, the code-gen for that service must remain for a while.
-		//  and the NEW version of beamo exists as an actor in ProtoActor.
-		//  The actor's schemas need to be unique from the old scala schemas, otherwise
-		//  there are potential breaking changes. 
-
-		string ConvertSchemaName(string oldName) => "BeamoV2" + oldName;
-		
-		var next = Reserailize(swagger)[0];
-		var doc = next.Document;
-		
-		foreach (var (name, schema) in doc.Components.Schemas)
-		{
-			if (!string.IsNullOrEmpty(schema.Reference?.Id))
-			{
-				schema.Reference.Id = ConvertSchemaName(schema.Reference.Id);
-			}
-		}
-
-		doc.Components.Schemas = doc.Components.Schemas.ToDictionary(keySelector: kvp => ConvertSchemaName(kvp.Key), elementSelector: kvp => kvp.Value);
-		
-		
-		return new List<OpenApiDocumentResult>
-		{
-			next
 		};
 	}
+
+	private static List<OpenApiDocumentResult> ExtractBeamoV2Names(OpenApiDocumentResult swagger) =>
+		BuildProtoActorV2Extractor("Beamo Actor", "BeamoV2")(swagger);
+	private static List<OpenApiDocumentResult> ExtractAuthV2Names(OpenApiDocumentResult swagger) =>
+		BuildProtoActorV2Extractor("Auth Actor", "AuthV2")(swagger);
 	
 	private static List<OpenApiDocumentResult> RewriteInlineResultSchemasAsReferences(OpenApiDocumentResult swagger)
 	{
@@ -1238,6 +1255,7 @@ public class SwaggerService
 	}
 
 
+	[DebuggerDisplay("[{Descriptor.Service}] {Document.Info.Title}")]
 	public class OpenApiDocumentResult
 	{
 		public OpenApiDocument Document;

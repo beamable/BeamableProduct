@@ -867,13 +867,10 @@ public class ContentService
 				return saveResponse;
 			}).ToArray();
 
-		SaveContentResponse[] saveContentResponses = Array.Empty<SaveContentResponse>();
+		SaveContentResponse[] saveContentResponses;
 		try
 		{
-			for (int index = 0; index < saveContentRequestsTasks.Length; index++)
-			{
-				saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
-			}
+			saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
 		}
 		catch (Exception e)
 		{

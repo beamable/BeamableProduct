@@ -330,9 +330,14 @@ namespace Beamable.Microservice.Tests.Socket
 	        return req => req.Succeed(generator());
         }
 
-        public static TestSocketResponseGenerator AuthFailure()
+        public static TestSocketResponseGeneratorAsync AuthFailure(int delayMs=0)
         {
-            return req => req.AuthFailure();
+            return async req =>
+            {
+                if (delayMs > 0)
+                    await Task.Delay(delayMs);
+                return req.AuthFailure();
+            };
         }
         
         public static TestSocketResponseGenerator TimeoutFailure()

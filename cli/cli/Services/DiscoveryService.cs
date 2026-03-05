@@ -405,6 +405,8 @@ public class DiscoveryService
 								return;
 							}
 
+							raw.ID ??= raw.Actor.ID;
+							
 							var service = await CreateEntryFromDocker(serviceDefinition, raw.ID);
 							if (isCreated)
 							{

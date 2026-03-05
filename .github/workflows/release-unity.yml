@@ -62,6 +62,8 @@ jobs:
           - 6000.3.0f1
         gameCiVersion:
           - 3.2.1
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: review options
         run: |
@@ -212,6 +214,10 @@ jobs:
         env:
           NPM_REGISTRY: https://registry.npmjs.org
 
+      - name: Normalize line endings
+        shell: bash
+        run: ./build/bin/fix-line-endings.sh client/Packages/com.beamable
+
       - name: Review Unity SDK Files
         run: |
           ls ./client/Packages/com.beamable/Runtime/Environment/Resources
@@ -326,3 +332,16 @@ jobs:
             Unity SDK Release ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ inputs.releaseType != 'production' }}
+
+  lightbeam:
+    needs: nuget
+    uses: ./.github/workflows/lightBeamRelease.yml
+    with:
+      customTag: unity-sdk-${{ needs.nuget.outputs.version }}
+    secrets:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_DEVOPS }}
+      AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
