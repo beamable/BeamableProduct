@@ -85,6 +85,11 @@ jobs:
           lfs: true
           ref: ${{ steps.inputs.outputs.custom_tag }}
         
+      - name: Get cloudfront function from the current branch
+        run: |
+          mkdir -p build-template
+          git show ${{ github.ref }}:build/lightbeam_cloudfront_alias_template.js > build/lightbeam_cloudfront_alias_template.js
+          
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
@@ -174,7 +179,7 @@ jobs:
           while read prefix; do
             name=$(basename "$prefix")
 
-            if [[ $name =~ ^unity-sdk-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            if [[ $name =~ ^version/unity-sdk-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               version=${BASH_REMATCH[1]}
               echo "$version" >> versions.txt
             fi
