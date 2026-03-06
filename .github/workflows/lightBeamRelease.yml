@@ -87,9 +87,12 @@ jobs:
         
       - name: Get cloudfront function from the current branch
         run: |
-          mkdir -p build-template
           git show ${{ github.ref }}:build/lightbeam_cloudfront_alias_template.js > build/lightbeam_cloudfront_alias_template.js
+      - name: confirm cloudfront function template exists
+        run: |
+          cat build/lightbeam_cloudfront_alias_template.js
           
+
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
