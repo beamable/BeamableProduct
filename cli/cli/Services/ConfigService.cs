@@ -819,16 +819,56 @@ public class ConfigService
 		var configFolder = isOverride
 			? ConfigLocalDirectoryPath
 			: ConfigDirectoryPath;
-
-		ReadConfigFile(configFolder, true, false, out var config);
-		var original = (JObject)config.DeepClone();
-		modifier(config);
-
-		var patch = DiffJObject(original, config);
 		
-		ReadConfigFile(configFolder, true, false, out var latestConfig);
-		ApplyDiff(latestConfig, patch);
-		FlushConfig(latestConfig, configFolder, !isOverride);
+		// Writing the new fields into the config file
+		{
+			ReadConfigFile(configFolder, true, false, out var config);
+			var original = (JObject)config.DeepClone();
+			modifier(config);
+
+			var patch = DiffJObject(original, config);
+		
+			ReadConfigFile(configFolder, true, false, out var latestConfig);
+			ApplyDiff(latestConfig, patch);
+			FlushConfig(latestConfig, configFolder, !isOverride);
+		}
+
+		// Removing fields from the override file if that is equal to the config file after the modification
+		{
+			ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var overrideConfig);
+			ReadConfigFile(ConfigDirectoryPath, true, false, out var originalConfig);
+			var patch = DiffConfig(originalConfig, overrideConfig);
+			ApplyDiff(overrideConfig, patch);
+			FlushConfig(overrideConfig, ConfigLocalDirectoryPath, false);
+		}
+
+		JObject DiffConfig(JObject originalConfig, JObject overrideConfig)
+		{
+			var remove = new JArray();
+
+			foreach (var prop in originalConfig.Properties())
+			{
+				var name = prop.Name;
+
+				if (!overrideConfig.TryGetValue(name, out var newValue))
+				{
+					continue;
+				}
+				
+				var oldValue = prop.Value;
+
+				if (JToken.DeepEquals(oldValue, newValue))
+				{
+					remove.Add(name);
+				}
+			}
+			
+			var diff = new JObject();
+			
+			if (remove.HasValues) diff["$remove"] = remove;
+
+			return diff;
+		}
 		
 		
 		// chat-gippity wrote these methods...
