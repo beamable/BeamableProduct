@@ -138,10 +138,18 @@ jobs:
         shell: bash
 
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.custom_tag }} --acl public-read
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.custom_tag }} --acl public-read
       
       - name: List valid semver versions from S3
         id: versions
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
         run: |
           set -e
 
@@ -188,6 +196,10 @@ jobs:
 
       - name: Generate CloudFront function
         id: cf_function
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
         run: |
           set -e
 
