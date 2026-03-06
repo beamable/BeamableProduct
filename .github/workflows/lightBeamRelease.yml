@@ -185,7 +185,7 @@ jobs:
             --prefix version/ \
             --delimiter '/' \
             --query 'CommonPrefixes[].Prefix' \
-            --output text | tr ' ' '\n' > prefixes.txt
+            --output text | tr '\t' '\n' | sed '/^$/d' > prefixes.txt
 
           echo "Raw prefixes found:"
           cat prefixes.txt
