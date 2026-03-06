@@ -107,7 +107,6 @@ public partial class BeamoLocalSystem
 			BeamoManifest = new BeamoLocalManifest
 			{
 				ServiceDefinitions = new List<BeamoServiceDefinition>(),
-				PortalExtensionDefinitions = new List<PortalExtensionDefinition>(),
 				HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
 				EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>()
 			};
@@ -490,11 +489,6 @@ public class BeamoLocalManifest
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
 	/// <summary>
-	/// This list contains all the <see cref="PortalExtensionDefinition"/> that the current project knows about.
-	/// </summary>
-	public List<PortalExtensionDefinition> PortalExtensionDefinitions;
-
-	/// <summary>
 	/// This list contains the concatenation of all found `.beamignore` files in the workspace.
 	/// Each element is a beamoId. 
 	/// </summary>
@@ -546,19 +540,21 @@ public class BeamoLocalManifest
 	}
 }
 
-public class PortalExtensionDefinition
-{
-	public string Name;
-	public string Version;
-	public string Type;
-
-	public string RelativePath;
-	public string AbsolutePath;
-	public List<string> MicroserviceDependencies;
-}
-
 public class BeamoServiceDefinition
 {
+	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
+	public class PortalExtensionDef
+	{
+		public string Name;
+		public string Version;
+		public string Type;
+
+		public string RelativePath;
+		public string AbsolutePath;
+		public List<string> MicroserviceDependencies;
+	}
+	public PortalExtensionDef PortalExtensionDefinition;
+
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
@@ -905,6 +901,9 @@ public enum BeamoProtocolType
 
 	// Current Mongo-based Data Storage
 	EmbeddedMongoDb,
+
+	// A svelte app
+	PortalExtension
 }
 
 public interface IBeamoLocalProtocol

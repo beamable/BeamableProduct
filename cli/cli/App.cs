@@ -640,9 +640,6 @@ public class App
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
 				PortalExtensionCommand>();
 		Commands
-			.AddSubCommandWithHandler<PortalExtensionRunCommand, PortalExtensionRunCommandArgs,
-				PortalExtensionCommand>();
-		Commands
 			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
 				PortalExtensionCommand>();
 

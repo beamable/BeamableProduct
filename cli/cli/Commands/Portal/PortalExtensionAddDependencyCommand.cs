@@ -28,8 +28,11 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 	public override Task Handle(PortalExtensionAddDependencyCommandArgs args)
 	{
-		var extension =
-			args.BeamoLocalSystem.BeamoManifest.PortalExtensionDefinitions.FirstOrDefault(p => p.Name == args.ExtensionName);
+		var extensions =
+			args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(p =>
+				p.Protocol == BeamoProtocolType.PortalExtension).Select(s => s.PortalExtensionDefinition);
+
+		var extension = extensions.FirstOrDefault(p => p.Name == args.ExtensionName);
 
 		if (extension == null)
 		{

@@ -105,7 +105,6 @@ public static class ProjectContextUtil
 		{
 			LocallyIgnoredBeamoIds = ignoreIds,
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
-			PortalExtensionDefinitions = allPortalExtensions,
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
@@ -159,6 +158,12 @@ public static class ProjectContextUtil
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());
+		}
+
+		foreach (var extension in allPortalExtensions)
+		{
+			var definition = ProjectContextUtil.ConvertPortalExtensionToServiceDefinition(extension);
+			manifest.ServiceDefinitions.Add(definition);
 		}
 		
 		
@@ -254,6 +259,13 @@ public static class ProjectContextUtil
 		
 		foreach (var definition in definitions)
 		{
+			//TODO: need to implement this for portal extensions
+			{
+				if (definition.Protocol == BeamoProtocolType.PortalExtension)
+				{
+					continue;
+				}
+			}
 			
 			// add all the groups for this definition
 			foreach (var group in definition.ServiceGroupTags)
@@ -358,7 +370,7 @@ public static class ProjectContextUtil
 		return beamoIdsToIgnore;
 	}
 
-	public static List<PortalExtensionDefinition> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
+	public static List<BeamoServiceDefinition.PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
 		var pathList = new List<string>();
 		foreach (var searchPath in searchPaths)
@@ -390,7 +402,7 @@ public static class ProjectContextUtil
 
 		var paths = filteredPaths.ToArray();
 
-		var projects = new List<PortalExtensionDefinition>();
+		var projects = new List<BeamoServiceDefinition.PortalExtensionDef>();
 
 		foreach (string filePath in paths)
 		{
@@ -404,7 +416,7 @@ public static class ProjectContextUtil
 
 				var dir = Path.GetDirectoryName(filePath);
 
-				projects.Add(new PortalExtensionDefinition()
+				projects.Add(new BeamoServiceDefinition.PortalExtensionDef()
 				{
 					Name = info.Name,
 					Version = info.Version,
@@ -855,6 +867,16 @@ public static class ProjectContextUtil
 		return definition;
 	}
 
+	public static BeamoServiceDefinition ConvertPortalExtensionToServiceDefinition(BeamoServiceDefinition.PortalExtensionDef def)
+	{
+		var definition = new BeamoServiceDefinition();
+		definition.PortalExtensionDefinition = def;
+		definition.BeamoId = def.Name;
+		definition.Protocol = BeamoProtocolType.PortalExtension;
+		//TODO do the rest of the conversion
+
+		return definition;
+	}
 
 
 	public class MsBuildProjectProperties
