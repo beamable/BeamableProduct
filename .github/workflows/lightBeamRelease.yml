@@ -185,7 +185,7 @@ jobs:
             --prefix version/ \
             --delimiter '/' \
             --query 'CommonPrefixes[].Prefix' \
-            --output tsv > prefixes.txt
+            --output text | tr ' ' '\n' > prefixes.txt
 
           echo "Raw prefixes found:"
           cat prefixes.txt
