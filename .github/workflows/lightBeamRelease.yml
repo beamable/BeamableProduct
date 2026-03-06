@@ -138,7 +138,7 @@ jobs:
 
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
-        if: ${{ steps.inputs.outputs.upload }}
+        if: ${{ steps.inputs.outputs.upload == 'true' }}
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -160,7 +160,7 @@ jobs:
         shell: bash
 
       - name: upload named version
-        if: ${{ steps.inputs.outputs.upload }}
+        if: ${{ steps.inputs.outputs.upload == 'true' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -185,7 +185,7 @@ jobs:
             --prefix version/ \
             --delimiter '/' \
             --query 'CommonPrefixes[].Prefix' \
-            --output text > prefixes.txt
+            --output tsv > prefixes.txt
 
           echo "Raw prefixes found:"
           cat prefixes.txt
