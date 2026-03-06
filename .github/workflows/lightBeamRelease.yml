@@ -182,8 +182,8 @@ jobs:
 
           while read prefix; do
             name=$(basename "$prefix")
-
-            if [[ $name =~ ^version/unity-sdk-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "checking=[$name]"
+            if [[ $name =~ ^unity-sdk-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               version=${BASH_REMATCH[1]}
               echo "$version" >> versions.txt
             fi
@@ -247,6 +247,10 @@ jobs:
           cat "$OUTPUT_FILE"
 
       - name: Deploy CloudFront function
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
         run: |
           set -e
 
