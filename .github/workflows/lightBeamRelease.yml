@@ -87,7 +87,7 @@ jobs:
         
       - name: Get cloudfront function from the current branch
         run: |
-          git fetch origin main:main
+          git fetch origin ${{ github.ref }}
           git show ${{ github.ref }}:build/lightbeam_cloudfront_alias_template.js > build/lightbeam_cloudfront_alias_template.js
       - name: confirm cloudfront function template exists
         run: |
