@@ -7,6 +7,10 @@ on:
         description: 'Custom tag for manual dispatch'
         required: false
         type: string
+      upload:
+        description: 'should upload built asset to s3?'
+        type: boolean
+        default: true
       optionalAlias: 
         description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
         required: false
@@ -30,6 +34,10 @@ on:
       customTag:
         description: 'Custom tag for manual dispatch'
         required: false
+      upload:
+        description: 'should upload built asset to s3?'
+        type: boolean
+        default: true
       optionalAlias: 
         description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
         required: false
@@ -65,18 +73,22 @@ jobs:
           # Merge customTag
           CUSTOM_TAG="${{ inputs.customTag || github.event.inputs.customTag || '' }}"
           OPTIONAL_ALIAS="${{ inputs.optionalAlias || github.event.inputs.optionalAlias || '' }}"
+          UPLOAD="${{ inputs.upload || github.event.inputs.upload || '' }}"
 
           echo "Merged customTag: $CUSTOM_TAG"
           echo "Merged optionalAlias: $OPTIONAL_ALIAS"
+          echo "Merged upload: $UPLOAD"
 
           # Set outputs
           echo "custom_tag=$CUSTOM_TAG" >> $GITHUB_OUTPUT
           echo "optional_alias=$OPTIONAL_ALIAS" >> $GITHUB_OUTPUT
+          echo "upload=$UPLOAD" >> $GITHUB_OUTPUT
 
       - name: Display Inputs
         run: |
           echo tag=[${{ steps.inputs.outputs.custom_tag }}]
           echo alias=[${{ steps.inputs.outputs.optional_alias }}]
+          echo upload=[${{ steps.inputs.outputs.upload }}]
 
       - uses: actions/checkout@v4
         name: Checkout Branch
@@ -126,6 +138,7 @@ jobs:
 
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
+        if: ${{ steps.inputs.outputs.upload }}
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -147,6 +160,7 @@ jobs:
         shell: bash
 
       - name: upload named version
+        if: ${{ steps.inputs.outputs.upload }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
