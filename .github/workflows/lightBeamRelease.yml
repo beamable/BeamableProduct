@@ -145,7 +145,7 @@ jobs:
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ env.UNITY_VERSION }}-webgl-3.1.0
-          customParameters: -LIGHTBEAM_BUILD_PATH dist
+          customParameters: -LIGHTBEAM_BUILD_PATH dist -LIGHTBEAM_TAG ${{ steps.inputs.outputs.custom_tag }}
           targetPlatform: ${{ env.TARGET_PLATFORM }}
           unityVersion: ${{ env.UNITY_VERSION }}
           projectPath: ${{ env.PROJECT_PATH }}
