@@ -66,6 +66,8 @@ user-token.json
 /microservice/unityEngineStubs.addressables/bin/
 /microservice/unityEngineStubs.addressables/obj/
 /microservice/unityEngineStubs.addressables/.idea/
+/microservice/unityenginestubs.addressables/bin/
+/microservice/unityenginestubs.addressables/obj/
 /microservice/microservice/bin/
 /microservice/microservice/obj/
 /microservice/microserviceTests/bin/
