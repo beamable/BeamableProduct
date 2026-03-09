@@ -837,43 +837,18 @@ public class ConfigService
 		{
 			ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var overrideConfig);
 			ReadConfigFile(ConfigDirectoryPath, true, false, out var originalConfig);
-			var patch = DiffConfig(originalConfig, overrideConfig);
-			ApplyDiff(overrideConfig, patch);
+			var patch = DiffJObject(originalConfig, overrideConfig);
+			ApplyDiff(overrideConfig, patch, true);
 			FlushConfig(overrideConfig, ConfigLocalDirectoryPath, false);
 		}
 
-		JObject DiffConfig(JObject originalConfig, JObject overrideConfig)
-		{
-			var remove = new JArray();
-
-			foreach (var prop in originalConfig.Properties())
-			{
-				var name = prop.Name;
-
-				if (!overrideConfig.TryGetValue(name, out var newValue))
-				{
-					continue;
-				}
-				
-				var oldValue = prop.Value;
-
-				if (JToken.DeepEquals(oldValue, newValue))
-				{
-					remove.Add(name);
-				}
-			}
-			
-			var diff = new JObject();
-			
-			if (remove.HasValues) diff["$remove"] = remove;
-
-			return diff;
-		}
+		
 		
 		
 		// chat-gippity wrote these methods...
 		JObject DiffJObject(JObject original, JObject modified)
 		{
+			var equal = new JArray();
 			var set = new JObject();
 			var remove = new JArray();
 			var children = new JObject();
@@ -904,6 +879,10 @@ public class ConfigService
 				{
 					set[name] = newValue.DeepClone();
 				}
+				else
+				{
+					equal.Add(name);	
+				}
 			}
 
 			// Detect added properties
@@ -920,10 +899,11 @@ public class ConfigService
 			if (set.HasValues) diff["$set"] = set;
 			if (remove.HasValues) diff["$remove"] = remove;
 			if (children.HasValues) diff["$children"] = children;
+			if (equal.HasValues) diff["$equal"] = equal;
 
 			return diff;
 		}
-		void ApplyDiff(JObject target, JObject diff)
+		void ApplyDiff(JObject target, JObject diff, bool removeEqualFields = false)
 		{
 			if (diff == null || !diff.HasValues)
 				return;
@@ -936,6 +916,16 @@ public class ConfigService
 					target.Remove(item.ToString());
 				}
 			}
+			
+			// Apply equal fields removal if specified
+			if (removeEqualFields && diff["$equal"] is JArray equalArray)
+			{
+				foreach (var item in equalArray)
+				{
+					target.Remove(item.ToString());
+				}
+			}
+			
 
 			// Apply sets
 			if (diff["$set"] is JObject setObj)
