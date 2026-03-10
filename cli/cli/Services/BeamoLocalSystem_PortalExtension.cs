@@ -41,7 +41,7 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(null, localSystem, appContext, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, appContext, token);
 	}
 
 	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, IAppContext appContext, CancellationToken token = default)
@@ -53,14 +53,23 @@ public partial class BeamoLocalSystem
 				.Create()
 				.InitializeServices((provider) =>
 				{
-					var observer = provider.GetService<PortalExtensionObserver>();
-					var notification = provider.GetService<IMicroserviceNotificationsApi>();
-					var attributes = provider.GetService<MicroserviceAttribute>();
+					try
+					{
+						var observer = provider.GetService<PortalExtensionObserver>();
+						var notification = provider.GetService<IMicroserviceNotificationsApi>();
+						var attributes = provider.GetService<MicroserviceAttribute>();
 
-					observer.ConfigureServiceData(notification, attributes, localSystem.BeamoManifest);
-					observer.InstallDeps();
-					observer.BuildExtension();
-					PortalExtensionAddDependencyCommand.GenerateDependenciesClients(extension.AbsolutePath, localSystem.BeamoManifest);
+						observer.ConfigureServiceData(notification, attributes, localSystem.BeamoManifest);
+						observer.InstallDeps();
+						observer.BuildExtension();
+						PortalExtensionAddDependencyCommand.GenerateDependenciesClients(extension.AbsolutePath,
+							localSystem.BeamoManifest);
+					}
+					catch (CliException e)
+					{
+						Log.Error($" Error while starting extension: {e.Message}. Stacktrace: {e.StackTrace}");
+					}
+
 				})
 				.ConfigureServices((dependency) =>
 				{
@@ -202,7 +211,7 @@ public class OverrideLogger : ILogger
 		}
 
 		// Uncomment this to debug if something is going wrong with the local service
-		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
+		Console.WriteLine($"Portal Extension Local Microservice: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
