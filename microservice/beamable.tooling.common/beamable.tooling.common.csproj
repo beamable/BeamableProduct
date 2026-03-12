@@ -35,6 +35,7 @@
       <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" />
       <PackageReference Include="System.Text.Json" Version="9.0.0" />
       <PackageReference Include="ZLogger" Version="2.5.10" />
+      <PackageReference Include="ZstdSharp.Port" Version="0.8.7" />
 
         <PackageReference Include="OpenTelemetry" Version="1.11.1" />
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.1" />
