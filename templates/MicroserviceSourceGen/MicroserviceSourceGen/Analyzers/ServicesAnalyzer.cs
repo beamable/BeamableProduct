@@ -55,7 +55,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute, Diagnostics.Srv.DictionaryKeyMustBeStringOnSerializableTypes,
 			Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromDictionary, Diagnostics.Srv.FieldOnSerializableTypeIsSubtypeFromList, 
 			Diagnostics.Srv.CallableMethodDeclarationTypeIsInvalidDictionary, Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromDictionary, 
-			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList, Diagnostics.Srv.InvalidGenericTypeOnMicroservice);
+			Diagnostics.Srv.CallableMethodDeclarationTypeIsSubtypeFromList, Diagnostics.Srv.InvalidGenericTypeOnMicroservice, Diagnostics.Srv.MissingSerializableAttributeForArgument);
 	
 	public override void Initialize(AnalysisContext context)
 	{
@@ -497,7 +497,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 			
 			ValidateNestedType(context.Compilation, context.ReportDiagnostic, parameterLocation, parameterSymbol.Type, methodSymbol.Name);
-			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, parameterLocation);
+			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, parameterLocation, parameterName: parameterSymbol.Name);
 			ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, isBlueprintCompatible, fallbackLocation: parameterLocation);
 			ValidateContentObjectType(context.ReportDiagnostic, parameterSymbol.Type, parameterLocation, $"parameter {parameterSymbol.Name}");
 			
@@ -582,7 +582,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	}
 
 	private static void ValidateSerializableAttributeOnSymbol(Compilation compilation, Action<Diagnostic> reportDiagnostic,
-		ITypeSymbol typeSymbol, Location fallbackLocation = null, HashSet<string> processedTypes = null)
+		ITypeSymbol typeSymbol, Location fallbackLocation = null, HashSet<string> processedTypes = null, string parameterName = null)
 	{
 		processedTypes ??= new HashSet<string>();
 		
@@ -637,9 +637,18 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			return;
 		}
 
+		Diagnostic diagnostic;
+
 		// Try to get type location, if not found because it is out of scope, try to get the fallback.
 		// If none fallback is passed, use Location.None so we don't throw any Exception.
-		var diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeOnType, location, typeSymbol.Name);
+		if (!string.IsNullOrWhiteSpace(parameterName))
+		{
+			diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeForArgument, location, typeSymbol.Name, parameterName);
+		}
+		else
+		{
+			diagnostic = Diagnostic.Create(Diagnostics.Srv.MissingSerializableAttributeOnType, location, typeSymbol.Name);
+		}
 		reportDiagnostic.Invoke(diagnostic);
 	}
 
