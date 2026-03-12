@@ -1176,7 +1176,7 @@ namespace Beamable.Serialization.SmallerJSON
 					var instance = Activator.CreateInstance(targetType);
 
 					// Mirror existing Serializer rules: fields only, allow [SerializeField] privates,
-					// skip [NonSerialized] and skip compiler generated backing fields.
+					// skip [NonSerialized] fields.
 					var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 					for (int i = 0; i < fields.Length; i++)
 					{

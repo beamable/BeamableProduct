@@ -6,6 +6,8 @@ public struct UnrealApiSubsystemDeclaration
 	public string ServiceName;
 	public string SubsystemName;
 
+	public List<UnrealFederationDeclaration> DeclaredFederations;
+
 	public List<string> IncludeStatements;
 
 	public List<UnrealEndpointDeclaration> EndpointRawFunctionDeclarations;
@@ -86,6 +88,14 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunctionDeclaration;
 		}));
 
+		var federations = string.Join("\n\t\t", DeclaredFederations.Select(d =>
+		{
+			d.IntoProcessMap(helperDict);
+			var federationsDeclarations = UnrealFederationDeclaration.FEDERATION_GETTERS_DEFINITION.ProcessReplacement(helperDict);
+			helperDict.Clear();
+			return federationsDeclarations;
+		}));
+
 		var isMsGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
@@ -104,6 +114,9 @@ public struct UnrealApiSubsystemDeclaration
 
 		helperDict.Add(nameof(EndpointUFunctionDeclarations), ufunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointUFunctionDeclarations), authUFunctions);
+
+		// Handle federations for microservices.
+		helperDict.Add(nameof(DeclaredFederations), !isMsGen ? "// This section is only used in microservice code generation." : federations);
 	}
 
 	public void IntoProcessMapCpp(Dictionary<string, string> helperDict)
@@ -222,6 +235,11 @@ private:
 
 	UPROPERTY()
 	UBeamResponseCache* ResponseCache;
+
+public:
+    ₢{nameof(DeclaredFederations)}₢
+
+private:
 
 	₢{nameof(EndpointRawFunctionDeclarations)}₢
 

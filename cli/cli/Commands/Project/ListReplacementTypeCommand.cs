@@ -18,7 +18,7 @@ public class ListReplacementTypeCommandOutput
 }
 public class ListReplacementTypeCommand : AtomicCommand<ListReplacementTypeCommandArgs, ListReplacementTypeCommandOutput>
 {
-	public ListReplacementTypeCommand() : base("list-replacement-type", "Add a replacement type for all Unreal linked projects")
+	public ListReplacementTypeCommand() : base("list-replacement-type", "List all replacement types for linked Unreal project")
 	{
 	}
 

@@ -215,7 +215,7 @@ public class ServiceDocGenerator
 
 			var returnType = GetTypeFromPromiseOrTask(method.Method.ReturnType);
 
-			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, ref requiredTypes,0);
+			OpenApiSchema openApiSchema = SchemaGenerator.Convert(returnType, ref requiredTypes, 0);
 			var returnJson = new OpenApiMediaType { Schema = openApiSchema };
 			if (openApiSchema.Reference != null && !doc.Components.Schemas.ContainsKey(openApiSchema.Reference.Id))
 			{
