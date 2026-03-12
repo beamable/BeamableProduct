@@ -463,7 +463,7 @@ public class App
 		Commands.AddSingleton(EngineSdkVersionOption.Instance);
 		Commands.AddSingleton(EngineVersionOption.Instance);
 		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
-		Commands.AddSingleton<QuietOption>();
+		Commands.AddSingleton(QuietOption.Instance);
 		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton(HostOption.Instance);
 		Commands.AddSingleton<LimitOption>();
@@ -490,7 +490,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<EngineSdkVersionOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EngineVersionOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
-			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
+			root.AddGlobalOption(QuietOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
@@ -595,6 +595,10 @@ public class App
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 
 		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddReplacementTypeCommand, AddReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ListReplacementTypeCommand, ListReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
+		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
@@ -1100,7 +1104,7 @@ public class App
 			//in case otel is enabled, check if otel data stored in files is too large
 			if (Otel.CliTracesEnabled())
 			{
-				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
+				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(QuietOption.Instance);
 				
 				var configService = provider.GetService<ConfigService>();
 				var otelDirectory = configService.ConfigTempOtelDirectoryPath;

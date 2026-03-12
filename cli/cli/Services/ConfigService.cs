@@ -28,6 +28,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public const string CFG_FOLDER = ".beamable";
+	public const string BEAM_ROOT_FILE = ".beamroot";
 
 	public const string CFG_TOKEN_FILE_NAME = "auth.beam.json";
 	public const string CFG_TOKEN_FILE_DIR = $"{TEMP_FOLDER_NAME}/{CFG_TOKEN_FILE_NAME}";
@@ -219,7 +220,9 @@ public class ConfigService
 		var newConfigFile = GetConfigPath(CFG_FILE_NAME);
 		if (File.Exists(newConfigFile))
 		{
-			var existingConfig = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(newConfigFile!));
+			var existingContent = LockedRead(newConfigFile!);
+			
+			var existingConfig = JsonConvert.DeserializeObject<JObject>(existingContent);
 
 			var existingConfigVersion = GetConfig(CFG_JSON_FIELD_CLI_VERSION, "0.0.123", existingConfig);
 			var existingPackageVersion = PackageVersion.FromSemanticVersionString(existingConfigVersion);
@@ -254,7 +257,7 @@ public class ConfigService
 				if (File.Exists(oldConfigFile)) File.Move(oldConfigFile, newConfigFile!);
 				else return;
 
-				var newConfig = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(newConfigFile!));
+				var newConfig = JsonConvert.DeserializeObject<JObject>(LockedRead(newConfigFile!));
 
 				// Check for additional projects file and ignored directory files and move their data over.
 				{
@@ -816,10 +819,146 @@ public class ConfigService
 		var configFolder = isOverride
 			? ConfigLocalDirectoryPath
 			: ConfigDirectoryPath;
+		
+		// Writing the new fields into the config file
+		{
+			ReadConfigFile(configFolder, true, false, out var config);
+			var original = (JObject)config.DeepClone();
+			modifier(config);
 
-		ReadConfigFile(configFolder, true, false, out var config);
-		modifier(config);
-		FlushConfig(config, configFolder, !isOverride);
+			var patch = DiffJObject(original, config);
+		
+			ReadConfigFile(configFolder, true, false, out var latestConfig);
+			ApplyDiff(latestConfig, patch);
+			FlushConfig(latestConfig, configFolder, !isOverride);
+		}
+
+		// Removing fields from the override file if that is equal to the config file after the modification
+		{
+			ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var overrideConfig);
+			ReadConfigFile(ConfigDirectoryPath, true, false, out var originalConfig);
+			var patch = DiffJObject(originalConfig, overrideConfig);
+			ApplyDiff(overrideConfig, patch, true);
+			FlushConfig(overrideConfig, ConfigLocalDirectoryPath, false);
+		}
+
+		
+		
+		
+		// chat-gippity wrote these methods...
+		JObject DiffJObject(JObject original, JObject modified)
+		{
+			var equal = new JArray();
+			var set = new JObject();
+			var remove = new JArray();
+			var children = new JObject();
+
+			// Detect removed and changed properties
+			foreach (var prop in original.Properties())
+			{
+				var name = prop.Name;
+
+				if (!modified.TryGetValue(name, out var newValue))
+				{
+					remove.Add(name);
+					continue;
+				}
+
+				var oldValue = prop.Value;
+
+				if (oldValue.Type == JTokenType.Object &&
+				    newValue.Type == JTokenType.Object)
+				{
+					var childDiff = DiffJObject((JObject)oldValue, (JObject)newValue);
+					if (childDiff.HasValues)
+					{
+						children[name] = childDiff;
+					}
+				}
+				else if (!JToken.DeepEquals(oldValue, newValue))
+				{
+					set[name] = newValue.DeepClone();
+				}
+				else
+				{
+					equal.Add(name);	
+				}
+			}
+
+			// Detect added properties
+			foreach (var prop in modified.Properties())
+			{
+				if (!original.ContainsKey(prop.Name))
+				{
+					set[prop.Name] = prop.Value.DeepClone();
+				}
+			}
+
+			var diff = new JObject();
+
+			if (set.HasValues) diff["$set"] = set;
+			if (remove.HasValues) diff["$remove"] = remove;
+			if (children.HasValues) diff["$children"] = children;
+			if (equal.HasValues) diff["$equal"] = equal;
+
+			return diff;
+		}
+		void ApplyDiff(JObject target, JObject diff, bool removeEqualFields = false)
+		{
+			if (diff == null || !diff.HasValues)
+				return;
+
+			// Apply removals
+			if (diff["$remove"] is JArray removeArray)
+			{
+				foreach (var item in removeArray)
+				{
+					target.Remove(item.ToString());
+				}
+			}
+			
+			// Apply equal fields removal if specified
+			if (removeEqualFields && diff["$equal"] is JArray equalArray)
+			{
+				foreach (var item in equalArray)
+				{
+					target.Remove(item.ToString());
+				}
+			}
+			
+
+			// Apply sets
+			if (diff["$set"] is JObject setObj)
+			{
+				foreach (var prop in setObj.Properties())
+				{
+					target[prop.Name] = prop.Value.DeepClone();
+				}
+			}
+
+			// Apply children recursively
+			if (diff["$children"] is JObject childrenObj)
+			{
+				foreach (var childProp in childrenObj.Properties())
+				{
+					var childName = childProp.Name;
+					var childDiff = (JObject)childProp.Value;
+
+					if (target[childName] is JObject childTarget)
+					{
+						ApplyDiff(childTarget, childDiff);
+					}
+					else
+					{
+						// If missing or not an object, create a new object
+						var newChild = new JObject();
+						ApplyDiff(newChild, childDiff);
+						target[childName] = newChild;
+					}
+				}
+			}
+		}
+
 		
 	}
 	public T WriteConfig<T>(string path, [CanBeNull] T newValue, bool isOverride=false)
@@ -1087,7 +1226,7 @@ public class ConfigService
 
 				try
 				{
-					File.WriteAllText(fullPath, json);
+					LockedWrite(fullPath, json);
 					written = true;
 				}
 				catch (IOException e)
@@ -1468,6 +1607,8 @@ public class ConfigService
 
 	/// <summary>
 	/// Utility function that goes up from the relative path looking for a folder with the name <see cref="CFG_FOLDER"/>.
+	/// Traversal stops if a <see cref="BEAM_ROOT_FILE"/> file is found in a parent directory, preventing the search
+	/// from escaping a designated root (e.g. a test output directory).
 	/// </summary>
 	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
@@ -1479,9 +1620,20 @@ public class ConfigService
 			return true;
 		}
 
+		if (File.Exists(Path.Combine(basePath, BEAM_ROOT_FILE)))
+		{
+			// this is the root.
+			return false;
+		}
+
 		var parentDir = Directory.GetParent(basePath);
 		while (parentDir != null)
 		{
+			if (File.Exists(Path.Combine(parentDir.FullName, BEAM_ROOT_FILE)))
+			{
+				return false;
+			}
+
 			var path = Path.Combine(parentDir.FullName, CFG_FOLDER);
 			if (Directory.Exists(path))
 			{
@@ -1493,6 +1645,41 @@ public class ConfigService
 		}
 
 		return false;
+	}
+
+	public static void LockedWrite(string path, string content, int allowedAttempts = 10, int retryDelayMs = 25)
+	{
+		for (var i = 0; i < allowedAttempts; i++)
+		{
+			try
+			{
+				using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+				using var writer = new StreamWriter(stream);
+				writer.Write(content);
+				writer.Flush();
+			}
+			catch (IOException) when (i < allowedAttempts)
+			{
+				Thread.Sleep(retryDelayMs);
+			}
+		}
+	}
+	public static string LockedRead(string path, int allowedAttempts=10, int retryDelayMs=25)
+	{
+		for (var i = 0; i < allowedAttempts ; i ++)
+		{
+			try
+			{
+				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var reader = new StreamReader(stream);
+				return reader.ReadToEnd();
+			}
+			catch (IOException) when (i < allowedAttempts)
+			{
+				Thread.Sleep(retryDelayMs);
+			}
+		}
+		throw new IOException($"Failed to read file after {allowedAttempts} attempts.");
 	}
 
 	/// <summary>
@@ -1516,23 +1703,33 @@ public class ConfigService
 			return false;
 		}
 
-		var content = File.ReadAllText(fullPath);
-		
-		var read = JsonConvert.DeserializeObject<JObject>(content);
-		if (read == null)
-		{
-			// do not set the result to a null value, ever. 
-			
-			if (isOptional)
-			{
-				return true;
-			}
-			BeamableLogger.LogWarning($"Config file was empty at {fullPath}!");
-			return false;
-		}
+		var content = LockedRead(fullPath);
+		// var content = File.ReadAllText(fullPath);
 
-		result = read;
-		return true;
+		try
+		{
+			var read = JsonConvert.DeserializeObject<JObject>(content);
+			if (read == null)
+			{
+				// do not set the result to a null value, ever. 
+
+				if (isOptional)
+				{
+					return true;
+				}
+
+				BeamableLogger.LogWarning($"Config file was empty at {fullPath}!");
+				return false;
+			}
+
+			result = read;
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex.Message);
+			throw;
+		}
 	}
 
 	/// <summary>
@@ -1644,6 +1841,10 @@ public class EngineProjectData
 	[Serializable]
 	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
 	{
+
+		public const string CORE_NAME_SUFFIX = "MicroserviceClients";
+		public const string BP_CORE_NAME_SUFFIX = "MicroserviceClientsBp";
+		
 		/// <summary>
 		/// Name for the project's core module (the module every other module has access to).
 		/// This will be used to generate the ______API UE Macros for the generated types.
@@ -1693,6 +1894,13 @@ public class EngineProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
+		public ReplacementTypeInfo[] ReplacementTypeInfos;
+
+		public string GetProjectName()
+		{
+			return CoreProjectName.Remove(CoreProjectName.Length - CORE_NAME_SUFFIX.Length);
+		}
+
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
 
@@ -1703,5 +1911,10 @@ public class EngineProjectData
 
 		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
 		public static bool operator !=(Unreal left, Unreal right) => !(left == right);
+		
+		public static string GetCoreName(string projectName) => $"{projectName}{CORE_NAME_SUFFIX}";
+		public static string GetBlueprintNodesProjectName(string projectName) => $"{projectName}{BP_CORE_NAME_SUFFIX}";
+		
+		
 	}
 }
