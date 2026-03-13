@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Coroutines;
@@ -16,9 +17,9 @@ namespace Beamable.Editor.Content
 		private readonly ContentConfiguration _config;
 		private readonly ContentDatabase _contentDatabase;
 
-		public LocalContentCache(Type contentType, CoroutineService coroutineService, ContentConfiguration config, ContentDatabase contentDatabase)
+		public LocalContentCache(CoroutineService coroutineService, ContentConfiguration config, ContentDatabase contentDatabase, IHttpRequester requester,
+		                         ContentService contentService) : base(requester, contentService)
 		{
-			_contentType = contentType;
 			_coroutineService = coroutineService;
 			_config = config;
 			_contentDatabase = contentDatabase;

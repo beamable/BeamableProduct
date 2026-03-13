@@ -53,6 +53,12 @@ namespace Beamable.Content
 			_reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
+		public virtual Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
+		{
+			var contentType = _reflectionCache.GetTypeFromId(requestedInfo.contentId);
+			return GetContentObject(requestedInfo, contentType);
+		}
+
 		public Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo, Type contentType)
 		{
 			return GetContent(requestedInfo, contentType).Map(content => (IContentObject)content);

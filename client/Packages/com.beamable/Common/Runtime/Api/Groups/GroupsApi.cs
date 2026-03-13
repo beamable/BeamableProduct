@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@4.3.0-PREVIEW.RC2
-// https://www.nuget.org/packages/Beamable.Common/4.3.0-PREVIEW.RC2
+// this file was copied from nuget package Beamable.Common@4.3.6-PREVIEW.RC1
+// https://www.nuget.org/packages/Beamable.Common/4.3.6-PREVIEW.RC1
 
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Pooling;
@@ -550,6 +550,10 @@ namespace Beamable.Common.Api.Groups
 		/// This will correlate to the resulting group's <see cref="Group.maxSize"/>.
 		/// <b>WARNING!</b> This field cannot be updated later.
 		/// </summary>
+		/// <remarks>
+		/// Maximum size of the group on the backend side is 50.
+		/// When the backend is called with bigger value, size of the created group would be 50.
+		/// </remarks>
 		public int maxSize;
 
 		public GroupCreateRequest(string name, string tag, string enrollmentType, long requirement, int maxSize)

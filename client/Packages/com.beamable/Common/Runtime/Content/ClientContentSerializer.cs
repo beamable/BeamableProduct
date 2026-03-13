@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@6.2.1
-// https://www.nuget.org/packages/Beamable.Common/6.2.1
+// this file was copied from nuget package Beamable.Common@4.3.6-PREVIEW.RC1
+// https://www.nuget.org/packages/Beamable.Common/4.3.6-PREVIEW.RC1
 
 using System;
 using UnityEngine;
