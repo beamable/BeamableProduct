@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
 
+### Changed
+- Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
