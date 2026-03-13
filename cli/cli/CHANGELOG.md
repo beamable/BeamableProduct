@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
 - Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm. 
 
+### Changed
+- Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
+
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
 - Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
