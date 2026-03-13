@@ -26,7 +26,8 @@ public class ContentPsCommand
 	, IResultSteam<ProgressStreamResultChannel, ContentPsProgressMessage>
 	, ISkipManifest
 {
-	public ContentPsCommand() : base("ps", "List the running status of local services not running in docker")
+	public ContentPsCommand() : base("ps", "Lists the current state of local contents relative to the published content. " +
+	                                       "Can be run in watch mode for continuous updates regarding file modifications and published content made by other developers in the same realm")
 	{
 	}
 

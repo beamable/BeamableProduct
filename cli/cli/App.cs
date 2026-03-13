@@ -743,6 +743,10 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistoryCommand, ContentHistoryCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncChangelistCommand, ContentHistorySyncChangelistCommandArgs, ContentHistoryCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncContentCommand, ContentHistorySyncContentCommandArgs, ContentHistoryCommand>();
+		
 		
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
