@@ -247,6 +247,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
 
+## [4.3.6] - 2026-03-13
+
+### Fixed
+- Backported content serialization performance improvements [4123](https://github.com/beamable/BeamableProduct/issues/4123)
+
 ## [4.3.5] - 2026-03-03
 ### Fixed
 - Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code

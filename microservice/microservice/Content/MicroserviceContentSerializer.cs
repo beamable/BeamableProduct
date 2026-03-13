@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Content;
+using System;
 
 namespace Beamable.Server.Content
 {
@@ -8,6 +9,11 @@ namespace Beamable.Server.Content
       protected override TContent CreateInstance<TContent>()
       {
          return new TContent();
+      }
+
+      protected override IContentObject CreateInstanceWithType(Type type)
+      {
+	      return (IContentObject)Activator.CreateInstance(type);
       }
    }
 }
