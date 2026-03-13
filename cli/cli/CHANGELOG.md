@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
-
+- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm. 
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use `ForceRemoteStorage` on C#MS builder instead of `MicroserviceBootstrapper.ForceUseRemoteDependencies`
 - Deprecated `LocalEnvCustomArgs`, use the `LocalEnvModifier` instead. 
 - Newer Beam Auth API schemas use AuthV2 prefix.
+
+
+### Issues
+- Newly created content published by other developers working on the same realm as you will appear as deleted instead of automatically being downloaded.
 
 ## [6.2.2] - 2025-12-15
 ### Changed
