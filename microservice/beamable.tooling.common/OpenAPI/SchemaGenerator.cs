@@ -183,8 +183,8 @@ public class SchemaGenerator
 	/// <summary>
 	/// Generates a dictionary of schemas that can be used to populate the OpenAPI docs.
 	/// </summary>
-	/// <param name="oapiTypes"></param>
-	/// <param name="requiredTypes"></param>
+	/// <param name="oapiTypes">The list of OAPI types whose underlying CLR types will be converted into OpenAPI schemas.</param>
+	/// <param name="requiredTypes">A set, passed by reference, that will be populated with additional CLR types referenced by the generated schemas but not yet converted.</param>
 	/// <returns>Dictionary of OpenApiSchemas</returns>
 	public static Dictionary<string,OpenApiSchema> ToOpenApiSchemasDictionary(IList<OAPIType> oapiTypes, ref HashSet<Type> requiredTypes)
 	{
