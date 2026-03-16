@@ -44,6 +44,15 @@ public static class TypeExtensions
 		return type.FullName.Replace("+",".");
 	}
 	
+	/// <summary>
+	/// Determines whether the specified <see cref="Type"/> represents a basic or primitive value type,
+	/// including common types such as <see cref="System.Int32"/>, <see cref="string"/>, <see cref="bool"/>,
+	/// numeric types, and characters.
+	/// </summary>
+	/// <param name="t">The <see cref="Type"/> to evaluate.</param>
+	/// <returns>
+	/// <c>true</c> if the given <paramref name="t"/> is considered a basic or primitive type; otherwise, <c>false</c>.
+	/// </returns>
 	public static bool IsBasicType(this Type t)
 	{
 		switch (Type.GetTypeCode(t))
