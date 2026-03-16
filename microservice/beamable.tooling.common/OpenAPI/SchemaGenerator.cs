@@ -242,6 +242,24 @@ public class SchemaGenerator
 		yield return runtimeType;
 	}
 
+	/// <summary>
+	/// Recursively adds OpenAPI schema definitions for all types in the specified
+	/// <paramref name="requiredTypes"/> set and any additional dependent types
+	/// discovered during schema generation to the provided <see cref="OpenApiDocument"/>.
+	/// </summary>
+	/// <param name="oapiDoc">
+	/// The <see cref="OpenApiDocument"/> whose <see cref="OpenApiComponents.Schemas"/>
+	/// collection will be populated with schema definitions for the required types.
+	/// </param>
+	/// <param name="requiredTypes">
+	/// A set of types that must have schema definitions present in the OpenAPI document.
+	/// Any additional types identified as dependencies while generating schemas are also
+	/// processed until no new schema types are required.
+	/// </param>
+	/// <returns>
+	/// <c>true</c> when all required types and their dependencies have been processed
+	/// and corresponding schema definitions have been added to the OpenAPI document.
+	/// </returns>
 	public static bool TryAddMissingSchemaTypes(ref OpenApiDocument oapiDoc, HashSet<Type> requiredTypes)
 	{
 		var newRequiredTypes = new HashSet<Type>();
