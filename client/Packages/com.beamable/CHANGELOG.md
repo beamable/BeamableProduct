@@ -131,7 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
 - New Validation for Cron Schedule Definition
 
-## [2.4.5] - 2026-03-16
+## [2.4.5] - 2026-03-17
 
 ### Changed
 
