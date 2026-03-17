@@ -253,6 +253,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
 
+## [4.3.6] - 2026-03-13
+
+### Fixed
+- Backported content serialization performance improvements [4123](https://github.com/beamable/BeamableProduct/issues/4123)
+
+## [4.3.5] - 2026-03-03
+### Fixed
+- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
+
+### Changed
+- Lowered log level of `/docs` endpoint from `DEBUG` to `Verbose` [4461](https://github.com/beamable/BeamableProduct/issues/4461)
+
+## [4.3.4] - 2025-08-01
+### Fixed
+- (backported from 5.2.0) - `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services.
+
+## [4.3.3] - 2025-07-23
+### Fixed
+- `beam deploy release` Task completion error.
+
 ## [4.3.1] - 2025-06-05
 
 no changes

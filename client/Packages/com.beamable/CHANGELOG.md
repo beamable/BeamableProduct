@@ -131,6 +131,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
 - New Validation for Cron Schedule Definition
 
+## [2.4.5] - 2026-03-17
+
+### Changed
+
+- Upgrade CLI to 4.3.6
+- Backported content serialization performance improvements [4123](https://github.com/beamable/BeamableProduct/issues/4123)
+
+## [2.4.4] - 2026-03-03
+
+### Changed
+
+- Upgrade CLI to 4.3.5
+
 ## [2.4.3] - 2025-08-01
 ### Fixed
 - TMP import infinite callback.
