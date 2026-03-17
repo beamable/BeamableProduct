@@ -396,7 +396,7 @@ public class ContentHistorySyncContentCommand : AtomicCommand<ContentHistorySync
 	{
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		AddOption(new Option<string>("--manifest-uid", "The manifest UID for the content to sync"), (args, s) => args.ManifestUid = s);
-		AddOption(new Option<List<string>>("--content-ids", "The content IDs to sync. If not provided, syncs all content in the manifest"), (args, s) => args.ContentIds = s);
+		AddOption(new Option<List<string>>("--content-ids", "The content IDs to sync. If not provided, syncs all content in the manifest") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, (args, s) => args.ContentIds = s);
 	}
 
 	public override async Task<ContentHistorySyncContentCommandOutput> GetResult(ContentHistorySyncContentCommandArgs args)
