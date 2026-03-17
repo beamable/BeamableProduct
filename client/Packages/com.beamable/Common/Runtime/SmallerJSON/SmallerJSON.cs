@@ -1186,7 +1186,8 @@ namespace Beamable.Serialization.SmallerJSON
 						var field = fields[i];
 
 						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
-						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
+						var isGeneratedByCompiler = field.GetCustomAttribute(CompilerGeneratedType) != null;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
 						if (!canBeSerialized) continue;
 
 						if (!objNode.TryGetValue(field.Name, out var rawValue)) continue;
