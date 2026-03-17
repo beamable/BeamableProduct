@@ -8,10 +8,8 @@ namespace Beamable.Server.Api.Events
 {
    public class MicroserviceEventsApi : AbsEventsApi, IMicroserviceEventsApi
    {
-      private BeamableGetApiResource<EventsGetResponse> _getter;
       public MicroserviceEventsApi(IEventPlayersApi eventPlayersApi, IUserContext ctx) : base(eventPlayersApi, ctx)
       {
-         _getter = new BeamableGetApiResource<EventsGetResponse>();
       }
 
       public override Promise<EventsGetResponse> GetCurrent(string scope = "")
