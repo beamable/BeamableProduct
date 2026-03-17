@@ -411,19 +411,20 @@ public static class ProjectContextUtil
 				string jsonContent = File.ReadAllText(filePath);
 
 				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
+				var properties = info.BeamableProperties;
 
-				if (!info.IsPortalExtension) continue;
+				if (!properties.IsPortalExtension) continue;
 
 				var dir = Path.GetDirectoryName(filePath);
 
 				projects.Add(new BeamoServiceDefinition.PortalExtensionDef()
 				{
 					Name = info.Name,
-					Version = info.Version,
-					Type = info.PortalExtensionType,
+					Version = properties.Version,
+					Type = properties.PortalExtensionType,
 					RelativePath = Path.GetRelativePath(rootFolder, dir),
 					AbsolutePath = Path.GetFullPath(dir),
-					MicroserviceDependencies = info.MicroserviceDependencies
+					MicroserviceDependencies = properties.MicroserviceDependencies
 				});
 			}
 			catch (Exception e)

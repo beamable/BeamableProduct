@@ -16,6 +16,12 @@ public partial class BeamoLocalSystem
 		[JsonProperty("name")]
 		public string Name { get; set; }
 
+		[JsonProperty("beamable")]
+		public PortalExtensionPackageProperties BeamableProperties { get; set; }
+	}
+
+	public class PortalExtensionPackageProperties
+	{
 		[JsonProperty("version")]
 		public string Version { get; set; }
 

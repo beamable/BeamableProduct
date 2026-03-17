@@ -3,9 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "beamPortalExtension": true,
-  "microserviceDependencies": [],
-  "portalExtensionType": "PlayerPage",
+  "beamable": {
+    "version": "1.0.0",
+    "beamPortalExtension": true,
+    "microserviceDependencies": [],
+    "portalExtensionType": "PlayerPage"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

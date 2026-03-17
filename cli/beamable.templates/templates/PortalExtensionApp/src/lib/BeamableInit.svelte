@@ -1,28 +1,28 @@
 <script>
   import { Beam } from '../store.js'
 
-  let loading = false
+	let loading = false
   let error = null
-  export let playerData = null
+	export let playerData = null
 
-  function init(){
-    loading = true
+	async function init(){
+		loading = true
     error = null
 
     try{
-
       playerData = {
         cid: $Beam.cid,
         pid: $Beam.pid,
         playerId: $Beam.player.id
       }
+
     } catch (err) {
-      console.error('Failed to use Beamable SDK:', err)
+      console.error('Failed to init player:', err)
       error = err.message
     } finally {
       loading = false
     }
-  }
+	}
 
 </script>
 
@@ -49,12 +49,19 @@
   </v-card-actions>
 
   {#if playerData}
-    <portal-extension-widget 
-      cid={playerData.cid}
-      pid={playerData.pid}
-      playerId={playerData.playerId}>
-      
-    </portal-extension-widget>
+    <v-data-table                                                                                                                                                                                                                                                                                                                             
+      headers={[                                                                                                                                                                                                                                                                                                                              
+        { text: 'Key',   value: 'key',   sortable: false },                                                                                                                                                                                                                                                                                   
+        { text: 'Value', value: 'value', sortable: false },                                                                                                                                                                                                                                                                                   
+      ]}                                                                                                                                                                                                                                                                                                                                      
+      items={[                                                                                                                                                                                                                                                                                                                                
+        { key: 'CID',       value: playerData.cid },                                                                                                                                                                                                                                                                                          
+        { key: 'PID',       value: playerData.pid },                                                                                                                                                                                                                                                                                          
+        { key: 'Player ID', value: playerData.playerId },                                                                                                                                                                                                                                                                                     
+      ]}                                                                                                                                                                                                                                                                                                                                      
+      dense                                                                                                                                                                                                                                                                                                                                   
+      hide-default-footer
+    ></v-data-table>  
   {:else}
     <p class="placeholder">Click the button to load player data.</p>
   {/if}

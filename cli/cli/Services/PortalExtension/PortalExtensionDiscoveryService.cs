@@ -148,7 +148,7 @@ public class PortalExtensionObserver
 		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
-			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+			Log.Error($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
 	}
@@ -158,7 +158,7 @@ public class PortalExtensionObserver
 		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
-			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+			Log.Error($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
 	}
