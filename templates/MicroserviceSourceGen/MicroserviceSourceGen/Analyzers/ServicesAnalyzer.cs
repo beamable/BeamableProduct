@@ -345,7 +345,12 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				methodSymbol.Locations.FirstOrDefault(), 
 				context.Compilation));
 
-			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute))
+			bool IsServerCallable(AttributeData data)
+			{
+				return data.AttributeClass is { Name: nameof(ServerCallableAttribute) };
+			}
+			
+			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute) || methodSymbol.GetAttributes().Any(IsServerCallable))
 			{
 				return;
 			}
