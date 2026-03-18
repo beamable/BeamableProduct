@@ -27,6 +27,7 @@
 
     <ItemGroup>
       <Folder Include="Mocks" />
+      <Folder Include="PortalExtensionTests\" />
     </ItemGroup>
 
 </Project>
