@@ -26,6 +26,12 @@ namespace Beamable.Server
 	/// <returns>A task representing the asynchronous execution of the method.</returns>
 	public delegate Task MethodInvocation(object target, object[] args);
 
+	public class ServiceEventMethod
+	{
+		public string EventName { get; set; }
+		public ServiceMethod Method { get; set; }
+	}
+	
 	/// <summary>
 	/// Represents a service method with its associated metadata and behavior.
 	/// </summary>

@@ -84,6 +84,7 @@ namespace Beamable.Server
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
       private const int EXIT_CODE_FAILED_AUTH = 12;
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
+      private const int EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK = 111;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private const int ShutdownMinCycleTimeMilliseconds = 100;
@@ -159,7 +160,10 @@ namespace Beamable.Server
       public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
 	      _startupContext = startupContext;
-	      if (HasInitialized) return;
+	      if (HasInitialized)
+	      {
+		      return;
+	      }
          
          _serviceAttribute = startupContext.attributes;
          _adminPrefix = _serviceAttribute.GetQualifiedName() + "/admin/";
@@ -170,6 +174,7 @@ namespace Beamable.Server
 	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
 	         {
 				// do we need instance specific services? They'd go here.
+				builder.AddSingleton(this);
 				builder.AddScoped(_socketRequesterContext);
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
@@ -519,11 +524,48 @@ namespace Beamable.Server
 	         var task = initializer?.Invoke(InstanceArgs.ServiceScope);
 	         if (task != null)
 	         {
-		         await task;
+		         try
+		         {
+			         await task;
+			         BeamableLogger.Log($"Custom service initializer succeeded.\n");
+		         }
+		         catch (Exception ex)
+		         {
+			         BeamableLogger.LogError($"Custom service initializer failed.\n" +
+			                                 $"{ex.Message}\n" +
+			                                 $"{{stacktrace}}", ex.StackTrace);
+
+			         BeamableLogger.LogException(ex);
+			         Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
+		         }
 	         }
          }
       }
 
+      private async Task RunServiceSetupCallbacks()
+      {
+	      foreach (var initializer in _startupContext.serviceSetupCallbacks)
+	      {
+		      var task = initializer?.Invoke(InstanceArgs.ServiceScope);
+		      if (task != null)
+		      {
+			      try
+			      {
+				      await task;
+				      BeamableLogger.Log($"Custom service setup initializer succeeded.\n");
+			      }
+			      catch (Exception ex)
+			      {
+				      BeamableLogger.LogError($"Custom service setup initializer failed.\n" +
+				                              $"{ex.Message}\n" +
+				                              $"{{stacktrace}}", ex.StackTrace);
+
+				      BeamableLogger.LogException(ex);
+				      Environment.Exit(EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK);
+			      }
+		      }
+	      }
+      }
 
 
       public Promise<IConnection> GetWebsocketPromise()
@@ -615,7 +657,27 @@ namespace Beamable.Server
 	      
 	      try
 	      {
-		      _socketRequesterContext.HandleMessage(ctx, activity);
+		     
+		      // give first dibbs to handling if the user has a custom event. 
+		      if (ctx.IsEvent && ServiceMethods.EventToHandlers.TryGetValue(ctx.EventName, out var handler))
+		      {
+			      // If the body element is a JSON string, it is double-escaped; GetString() unescapes it.
+			      // Otherwise (object/array), use GetRawText() directly.
+			      var raw = ctx.BodyElement.ValueKind == JsonValueKind.String
+				      ? ctx.BodyElement.GetString()
+				      : ctx.BodyElement.GetRawText();
+			      var parameterProvider = new EventParameterProvider(raw);
+			      // the response from an event handler is ignored.
+			      _ = await handler.Execute(ctx, parameterProvider);
+			    
+		      }
+		      else
+		      {
+			      // otherwise, let the default handlers take it away.
+			      _socketRequesterContext.HandleMessage(ctx, activity);
+		      }
+
+
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
@@ -955,6 +1017,8 @@ namespace Beamable.Server
 
       private async Promise ProvideService()
       {
+	      await RunServiceSetupCallbacks();
+	      
 	      var req = new MicroserviceServiceProviderRequest
 	      {
 		      type = "basic", 
@@ -978,12 +1042,27 @@ namespace Beamable.Server
 		      body: req.ToJson());
 	      _ = serviceProviderTask.Then(_ => Log.Debug(Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED));
 
-	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
-		      ? PromiseBase.SuccessfulUnit
-		      : _requester.InitializeSubscription().Then(res =>
-		      {
-			      Log.Debug(Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED);
-		      }).ToUnit();
+	      // var eventNames = new HashSet<string>(MicroserviceRequester.DefaultEventNames);
+	      var eventConfig = Provider.GetService<IEventSubscriptionConfiguration>();
+	      foreach (var evt in MicroserviceRequester.DefaultEventNames)
+	      {
+		      eventConfig.AddSubscription(evt, true);
+	      }
+	      var hook = Provider.GetService<IEventSubscriptionHook>();
+	      var args = new CreateSubscriptionArgs
+	      {
+		      Provider = Provider,
+		      Configuration = eventConfig,
+		      Attributes = _serviceAttribute, 
+		      Requester = _requester
+	      };
+	      var eventProvider = hook.CreateSubscription(args);
+	      // var eventProvider = _serviceAttribute.DisableAllBeamableEvents
+		     //  ? PromiseBase.SuccessfulUnit
+		     //  : _requester.InitializeSubscription().Then(res =>
+		     //  {
+			    //   Log.Debug(Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED);
+		     //  }).ToUnit();
 
 	      await serviceProviderTask;
 	      await RegisterFederation(routingKey);

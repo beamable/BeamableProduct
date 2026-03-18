@@ -87,6 +87,21 @@ namespace Beamable.Server
 	}
 
 	/// <summary>
+	/// auto-subscribes the microservice to an event. 
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Method)]
+	public class EventCallable : ServerCallableAttribute
+	{
+		public string EventName { get; set; }
+
+		public EventCallable(string eventName)
+			: base(flags: CallableFlags.SkipGenerateClientFiles)
+		{
+			EventName = eventName;
+		}
+	}
+
+	/// <summary>
 	/// This type defines the %Microservice method attribute for any
 	/// %Microservice method which can be called EITHER from the %Client or
 	/// a %Microservice by a User account of any type.

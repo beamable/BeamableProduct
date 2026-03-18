@@ -13,6 +13,15 @@ namespace Beamable.Server.Api.RealmConfig
 		void UpdateLogLevel();
 	}
 	
+	
+	[System.Serializable]
+	public class GetRealmConfigResponse
+	{
+		// ReSharper disable once InconsistentNaming
+		public Dictionary<string, string> config;
+	}
+
+	
    public class RealmConfigService : IRealmConfigService
    {
       private readonly IBeamableRequester _requester;
@@ -79,13 +88,6 @@ namespace Beamable.Server.Api.RealmConfig
       {
          var realmData = JsonConvert.DeserializeObject<GetRealmConfigResponse>(json);
          return realmData;
-      }
-
-      [System.Serializable]
-      private class GetRealmConfigResponse
-      {
-	      // ReSharper disable once InconsistentNaming
-	      public Dictionary<string, string> config;
       }
 
       private static bool TryExtract(KeyValuePair<string, string> kvp, out string nameSpace, out string setting, out string configValue)

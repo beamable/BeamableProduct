@@ -56,6 +56,58 @@
               EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath);MSBUILDTERMINALLOGGER=off"/>
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
+
+
+
+    <PropertyGroup>
+        <BeamGeneratedFiles>$(IntermediateOutputPath)/Generated</BeamGeneratedFiles>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Expose to referencing projects -->
+        <BeamGeneratedClientFile Include="$(MSBuildProjectDirectory)/$(BeamGeneratedFiles)/**/*.cs" />
+    </ItemGroup>
+    <!-- Generate the beam client file that other services can use to call this service -->
+    <Target Name="GenerateBeamClient" 
+            AfterTargets="generate-oapi" 
+            Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true' AND '$(BeamPreventOapiGen)'!='true' AND '$(BeamPreventClientGen)'!='true'"
+            Inputs="$(OutputPath)beam_openApi.json"
+            Outputs="$(BeamGeneratedClientFile)"
+    >
+        <MakeDir Directories="$(BeamGeneratedFiles)" />
+        <Message Importance="high" Text="Generating client: $(BeamGeneratedFiles) $(BeamId)"/>
+        <Exec EchoOff="true" IgnoreExitCode="true" EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="dotnet beam project generate-client-oapi --ids $(BeamId) --output-dir $(BeamGeneratedFiles) --server" />
+
+    </Target>
+    
+    <!-- Used by downstream project references, allow them to fetch the generated file paths. -->
+    <Target Name="BeamGetGeneratedClientFiles"
+            Returns="@(BeamGeneratedClientFile)">
+    </Target>
+
+    <!-- Before compiling, pull in generated client files from upstream projects.  -->
+    <Target Name="ConsumeGeneratedFromReferences"
+            BeforeTargets="CoreCompile"
+    >
+        <ItemGroup>
+            <ProjectWithGeneratedFiles Include="@(ProjectReference)"
+                                       Condition="'%(ProjectReference.GenerateBeamClient)' == 'true'" />
+        </ItemGroup>
+
+        <!-- Ask referenced projects to run a target and return items -->
+        <MSBuild Projects="@(ProjectWithGeneratedFiles)"
+                 Targets="BeamGetGeneratedClientFiles"
+                 BuildInParallel="true"
+                 ContinueOnError="true"
+        >
+            <Output TaskParameter="TargetOutputs"
+                    ItemName="_GeneratedFromRefs" />
+        </MSBuild>
+        <ItemGroup>
+            <Compile Include="@(_GeneratedFromRefs)" />
+        </ItemGroup>
+    </Target>
     
     <Target Name="BeamableBuildAttrs" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service' AND '$(BeamGenProps)'!='disable'">
         <Message Importance="high" Text="Bundling Beamable Properties..."/>

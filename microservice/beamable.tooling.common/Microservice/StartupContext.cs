@@ -32,6 +32,7 @@ public class StartupContext
     public string localEnvArgs;
 
     public List<Func<IDependencyProviderScope, Task>> initializers = new List<Func<IDependencyProviderScope, Task>>();
+    public List<Func<IDependencyProviderScope, Task>> serviceSetupCallbacks = new List<Func<IDependencyProviderScope, Task>>();
 
     public ReflectionCache reflectionCache;
     public IUsageApi ecsService;

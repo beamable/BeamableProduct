@@ -637,27 +637,27 @@ public class ContentService
 					if (latestManifestFromContent != null)
 					{
 						var diffChanges = await _contentApi.GetManifestDiffs(manifestId, fromUid: latestManifestFromContent.uid, toUid: latestManifest.uid);
-						var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest(Method.GET, diff.diffUrl, parser: JObject.Parse));
-						var parsedDiffs = await Task.WhenAll(getDiffTasks);
-
-						foreach (JObject parsedDiff in parsedDiffs)
-						{
-							// check if 'changes' child exists before continuing
-							// 'changes' contain all diff changes for each changed manifest
-							if (parsedDiff["changes"] is not JObject changes)
-							{
-								continue;
-							}
-							// Check each content changed individually, checking for any that the changeType is 'added'
-							foreach (JProperty contentItem in changes.Properties())
-							{
-								string changeType = contentItem.Value["changeType"]?.ToString();
-								if (changeType == "added")
-								{
-									newItemsOnRemote.Add(contentItem.Name);
-								}
-							}
-						}
+						// var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest(Method.GET, diff, parser: JObject.Parse));
+						// var parsedDiffs = await Task.WhenAll(getDiffTasks);
+						//
+						// foreach (JObject parsedDiff in parsedDiffs)
+						// {
+						// 	// check if 'changes' child exists before continuing
+						// 	// 'changes' contain all diff changes for each changed manifest
+						// 	if (parsedDiff["changes"] is not JObject changes)
+						// 	{
+						// 		continue;
+						// 	}
+						// 	// Check each content changed individually, checking for any that the changeType is 'added'
+						// 	foreach (JProperty contentItem in changes.Properties())
+						// 	{
+						// 		string changeType = contentItem.Value["changeType"]?.ToString();
+						// 		if (changeType == "added")
+						// 		{
+						// 			newItemsOnRemote.Add(contentItem.Name);
+						// 		}
+						// 	}
+						// }
 					}
 				}
 				

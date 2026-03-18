@@ -20,6 +20,8 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 		{
 			args.beamoIds = i;
 		});
+		AddOption(new Option<bool>("--server", "Instructs the generator to write code for a server, not a client"),
+			(args, i) => args.forServer = i);
 		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
 	}
 
@@ -50,11 +52,21 @@ public class GenerateClientOapiCommand : AtomicCommand<GenerateClientOapiCommand
 				Log.Warning($"Skipping client-gen for {beamoId} because no open-api doc was found. Please build the service first and try again.");
 				continue;
 			}
-			var generator = new OpenApiClientCodeGenerator(openApiDoc);
-
+			
 			Directory.CreateDirectory(args.outputDirectory);
 			var outputPath = Path.Combine(args.outputDirectory, $"{openApiDoc.Info.Title}Client.cs");
-			generator.GenerateCSharpCode(outputPath);
+
+			if (args.forServer)
+			{
+				var generator = new OpenApiServerCodeGenerator(openApiDoc);
+				generator.GenerateCSharpCode(outputPath);
+			}
+			else
+			{
+				var generator = new OpenApiClientCodeGenerator(openApiDoc);
+				generator.GenerateCSharpCode(outputPath);
+			}
+			
 			result.outputsPaths.Add(outputPath);
 		}
 
@@ -72,4 +84,5 @@ public class GenerateClientOapiCommandArgs : CommandArgs
 {
 	public string outputDirectory;
 	public List<string> beamoIds;
+	public bool forServer;
 }

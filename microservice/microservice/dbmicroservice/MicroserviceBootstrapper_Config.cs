@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
@@ -29,6 +30,10 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Action<IDependencyBuilder>> IBeamServiceConfig.ServiceConfigurations { get; set; } = new List<Action<IDependencyBuilder>>();
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
+
+    List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceSetupCallbacks { get; set; } =
+	    new List<Func<IDependencyProviderScope, Task>>();
+    
     Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
     Action<BeamCliInvocation> IBeamServiceConfig.LocalEnvModifier { get; set; } = _ => { };
@@ -118,6 +123,13 @@ public static class BeamServiceConfigExtensions
 		conf.ServiceInitializers.Add(initializer);
 		return conf;
 	}
+
+	public static IBeamServiceConfig OnServiceConnection(this IBeamServiceConfig conf,
+		Func<IDependencyProviderScope, Task> initializer)
+	{
+		conf.ServiceSetupCallbacks.Add(initializer);
+		return conf;
+	}
 	
 }
 
@@ -131,6 +143,7 @@ public interface IBeamServiceConfig
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
+    List<Func<IDependencyProviderScope, Task>> ServiceSetupCallbacks { get; set; }
     Func<ILogger> LogFactory { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
     Action<BeamCliInvocation> LocalEnvModifier { get; set; }
@@ -200,6 +213,34 @@ public class BeamServiceConfigBuilder
     public BeamServiceConfigBuilder InitializeServices(Action<IDependencyProviderScope> initializer)
     {
 	    return InitializeServices(scope =>
+	    {
+		    initializer(scope);
+		    return Task.CompletedTask;
+	    });
+    }
+    
+    public BeamServiceConfigBuilder SetupConnection(Func<Task> initializer)
+    {
+	    return SetupConnection(async _ =>
+	    {
+		    await initializer();
+	    });
+    }
+    
+    public BeamServiceConfigBuilder SetupConnection(Func<IDependencyProviderScope, Task> initializer)
+    {
+	    Config.OnServiceConnection(initializer);
+	    return this;
+    }
+
+    public BeamServiceConfigBuilder SetupConnection(Action initializer)
+    {
+	    return SetupConnection(_ => initializer());
+    }
+    
+    public BeamServiceConfigBuilder SetupConnection(Action<IDependencyProviderScope> initializer)
+    {
+	    return SetupConnection(scope =>
 	    {
 		    initializer(scope);
 		    return Task.CompletedTask;
