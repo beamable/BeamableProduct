@@ -145,7 +145,7 @@ public class PortalExtensionObserver
 
 	public void BuildExtension()
 	{
-		var result = StartProcessUtil.Run("npm", "run build", workingDirectoryPath: _appPath);
+		var result = StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
