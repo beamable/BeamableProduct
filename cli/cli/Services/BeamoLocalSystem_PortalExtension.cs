@@ -39,7 +39,7 @@ public partial class BeamoLocalSystem
 	/// Runs a portal extension locally
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, IAppContext appContext, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, IAppContext appContext, PortalExtensionConfig config, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -47,10 +47,10 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, appContext, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, appContext, config, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, IAppContext appContext, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, IAppContext appContext, PortalExtensionConfig config, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
 		try
@@ -91,6 +91,11 @@ public partial class BeamoLocalSystem
 					{
 						ExtensionName = extension.Name, ExtensionType = type.ToString()
 					};
+
+					if (config.fileExtensionsToObserve != null)
+					{
+						observer.FileExtensions =  config.fileExtensionsToObserve;
+					}
 
 					// Get the file observation started
 					try

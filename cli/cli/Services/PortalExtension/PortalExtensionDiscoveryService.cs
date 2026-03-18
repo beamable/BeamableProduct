@@ -64,6 +64,9 @@ public class PortalExtensionDiscoveryService : Microservice
 
 public class PortalExtensionObserver
 {
+	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "svelte", "js", "html" };
+
+
 	public class ExtensionCurrentData
 	{
 		public string[] previousLinesJs;
@@ -130,6 +133,8 @@ public class PortalExtensionObserver
 			_metaData = value;
 		}
 	}
+
+	public List<string> FileExtensions = new List<string>();
 
 	public void CancelDiscovery()
 	{
@@ -250,10 +255,15 @@ public class PortalExtensionObserver
 		using var watcher = new FileSystemWatcher(_appPath);
 
 		watcher.Filters.Clear();
-		watcher.Filters.Add("*.css");
-		watcher.Filters.Add("*.svelte");
-		watcher.Filters.Add("*.js");
-		watcher.Filters.Add("*.html");
+
+		var fileExtensions = _defaultFilesExtensionsToObserve.ToList();
+		fileExtensions.AddRange(FileExtensions);
+		fileExtensions = fileExtensions.Distinct().ToList();
+
+		foreach (var ext in fileExtensions)
+		{
+			watcher.Filters.Add($"*.{ext}");
+		}
 
 		watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
 
