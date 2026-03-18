@@ -50,6 +50,9 @@ public class DeployArgs
 		
 		command.AddOption(new Option<bool>(new string[] { "--build-sequentially", "-bs" }, "Build services sequentially instead of all together"),
 			(args, i) => args.UseSequentialBuild = i);
+		command.AddOption(
+			new Option<int>(new string[] { "--max-parallel-count", "-mpc" }, () => 8,
+				"Maximum number of parallel services builds"), (args, i) => args.MaxParallelTask = i);
 
 		
 		AddModeOption(command, (args, i) => args.DeployMode = i);

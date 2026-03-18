@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
+- Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
