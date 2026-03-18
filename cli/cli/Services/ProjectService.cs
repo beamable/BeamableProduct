@@ -283,8 +283,7 @@ public class ProjectService
 		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
 		await RunDotnetCommand($"new portalextensionapp -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
 
-		// Probably need this for finding all apps
-		//await args.BeamoLocalSystem.InitManifest();
+		await args.BeamoLocalSystem.InitManifest();
 
 		return portalExtensionInfo;
 	}
