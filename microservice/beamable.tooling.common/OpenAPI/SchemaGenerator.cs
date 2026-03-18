@@ -35,6 +35,7 @@ public class SchemaGenerator
 		}
 
 		public bool IsFromCallable() => SourceCallable != null && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true) != null;
+		public bool IsFromServerCallable() => SourceCallable != null && SourceCallable.Method.GetCustomAttribute<ServerCallableAttribute>(true) != null;
 		public bool IsFromFederation() => SourceCallable != null && SourceCallable.IsFederatedCallbackMethod;
 		public bool IsFromBeamGenerateSchema() => SourceCallable == null && Type.GetCustomAttribute<BeamGenerateSchemaAttribute>() != null;
 
@@ -43,7 +44,7 @@ public class SchemaGenerator
 		public bool IsBeamSemanticType() => Type.GetInterfaces()
 			.Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
 		
-		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType()) && !IsFromBeamGenerateSchema();
+		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType() || IsFromServerCallable()) && !IsFromBeamGenerateSchema();
 		
 		public bool IsPrimitive()
 		{
