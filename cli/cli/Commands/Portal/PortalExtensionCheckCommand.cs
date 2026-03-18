@@ -11,6 +11,7 @@ public class PortalExtensionCheckCommandArgs : CommandArgs
 
 public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckCommandArgs>, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
 	public PortalExtensionCheckCommand() : base("check", "Verifies that all dependencies required for a Portal Extension app exist")
 	{
 	}

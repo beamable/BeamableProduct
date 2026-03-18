@@ -317,6 +317,7 @@ public class PortalExtensionObserver
 		// build the app since there are new changes in the src files
 		BuildExtension();
 
+		//TODO: check this back once event subscriptions change
 		_notificationsApi.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload()
 			{

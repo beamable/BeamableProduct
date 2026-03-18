@@ -11,6 +11,8 @@ public class PortalExtensionCommandArgs : CommandArgs
 
 public class PortalExtensionCommand : AppCommand<PortalExtensionCommandArgs>
 {
+	public override bool IsForInternalUse => true;
+
 	public PortalExtensionCommand() : base("extension", "Gives access to all Portal Extensions related commands")
 	{
 	}

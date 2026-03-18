@@ -13,7 +13,7 @@ public class PortalExtensionAddDependencyCommandArgs : CommandArgs
 
 public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAddDependencyCommandArgs>, IEmptyResult
 {
-
+	public override bool IsForInternalUse => true;
 	public PortalExtensionAddDependencyCommand() : base("add-microservice", "Adds microservice as a dependency for the specified Portal Extension")
 	{
 	}

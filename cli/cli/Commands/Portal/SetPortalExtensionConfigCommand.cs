@@ -14,6 +14,7 @@ public class SetPortalExtensionConfigCommandResults
 
 public class SetPortalExtensionConfigCommand : AtomicCommand<SetPortalExtensionConfigCommandArgs, SetPortalExtensionConfigCommandResults>, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
 	public SetPortalExtensionConfigCommand() : base("set-config", "Sets configuration for Portal Extensions")
 	{
 	}
