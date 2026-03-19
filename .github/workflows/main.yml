@@ -1,0 +1,20 @@
+name: docNerd
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  docnerd:
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '@docNerd')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: beamable/docnerd@v1
+        with:
+          target-owner: ${{ secrets.DOCNERD_TARGET_OWNER }}
+          target-name: ${{ secrets.DOCNERD_TARGET_NAME }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          target-repo-token: ${{ secrets.DOCNERD_TARGET_REPO_TOKEN }}
+          anthropic-api-key: ${{ secrets.DOCNERD_ANTHROPIC_API_KEY }}
