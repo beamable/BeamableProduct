@@ -471,12 +471,10 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		});
 
 		var targetFramework = http.Metadata.msbuildProject.GetPropertyValue("TargetFramework");
-		var defaultBaseImageTag = GetDefaultBaseImageTag(targetFramework);
-
-		var fullDockerfilePath = http.AbsoluteDockerfilePath;
-		var dockerfileBaseImageTag = TryGetDockerfileBeamDotnetVersion(fullDockerfilePath);
-		var baseImageTag = string.IsNullOrEmpty(dockerfileBaseImageTag) ? defaultBaseImageTag : dockerfileBaseImageTag;
+		var containerFamily = http.Metadata.msbuildProject.GetPropertyValue("ContainerFamily");
+		var baseImageTag = GetBaseImageTag(targetFramework, containerFamily);
 		
+		var fullDockerfilePath = http.AbsoluteDockerfilePath;
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
@@ -642,50 +640,27 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	}
 
 	/// <summary>
-	/// Returns the default base image tag for the given target framework.
+	/// Returns the base image tag for the given target framework and container family.
+	/// The <paramref name="containerFamily"/> value is read from the MSBuild <c>ContainerFamily</c>
+	/// property and should be either "alpine" or "noble". Defaults to "alpine" when not set or
+	/// when an unrecognised value is provided.
 	/// </summary>
-	public static string GetDefaultBaseImageTag(string targetFramework)
+	public static string GetBaseImageTag(string targetFramework, string containerFamily)
 	{
-		if (targetFramework.Contains("net10.0"))
-			return "10.0-alpine";
-		return "8.0-alpine";
-	}
+		// Validate containerFamily against known supported values; fall back to "alpine".
+		var knownFamilies = new[] { "alpine", "noble" };
+		var family = knownFamilies.Contains(containerFamily, StringComparer.OrdinalIgnoreCase)
+			? containerFamily
+			: "alpine";
 
-	/// <summary>
-	/// Reads the Dockerfile at the given path and returns the default value of the
-	/// <c>ARG BEAM_DOTNET_VERSION</c> instruction, or an empty string if the ARG has
-	/// no default value (or the Dockerfile cannot be read).
-	/// Note: multi-line ARG declarations using backslash line continuation are not supported.
-	/// </summary>
-	public static string TryGetDockerfileBeamDotnetVersion(string dockerfilePath)
-	{
-		if (string.IsNullOrEmpty(dockerfilePath) || !File.Exists(dockerfilePath))
-			return string.Empty;
+		// Extract the dotnet version number from strings like "net8.0", "net10.0", etc.
+		// The TargetFramework moniker starts with "net" followed by the version number.
+		const string prefix = "net";
+		var version = targetFramework.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+			? targetFramework.Substring(prefix.Length)
+			: targetFramework;
 
-		foreach (var line in File.ReadLines(dockerfilePath))
-		{
-			var trimmed = line.Trim();
-			if (!trimmed.StartsWith("ARG", StringComparison.OrdinalIgnoreCase))
-				continue;
-
-			// Ensure there is content after "ARG"
-			if (trimmed.Length <= 3)
-				continue;
-
-			var rest = trimmed.Substring(3).TrimStart();
-			if (!rest.StartsWith("BEAM_DOTNET_VERSION", StringComparison.Ordinal))
-				continue;
-
-			// Found the ARG BEAM_DOTNET_VERSION line – extract its default value if present
-			var eqIndex = rest.IndexOf('=');
-			if (eqIndex < 0)
-				return string.Empty;
-
-			var value = rest.Substring(eqIndex + 1).Trim().Trim('"', '\'');
-			return value;
-		}
-
-		return string.Empty;
+		return $"{version}-{family}";
 	}
 
 	/// <summary>
