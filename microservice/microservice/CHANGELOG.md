@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
+- Zstandard (zstd) compression for WebSocket messages between microservices and the gateway, negotiated automatically during authentication
 
 ### Changed
 - Lowered log level of `/docs` endpoint from `DEBUG` to `TRACE` [4461](https://github.com/beamable/BeamableProduct/issues/4461)

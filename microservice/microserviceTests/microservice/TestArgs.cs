@@ -150,6 +150,7 @@ namespace microserviceTests.microservice
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
+      public bool DisableOutboundWsCompression => false;
       public string MetadataUrl { get; }
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
