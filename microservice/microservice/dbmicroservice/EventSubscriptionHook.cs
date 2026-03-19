@@ -79,9 +79,21 @@ public class DefaultEventSubscription : IEventSubscriptionHook
     }
 }
 
+/// <summary>
+/// An event description for Beamable's internal server communication system. 
+/// </summary>
+/// <typeparam name="TPayload"></typeparam>
 public class CustomEvent<TPayload>
 {
+    /// <summary>
+    /// A unique name for the event. 
+    /// </summary>
     public string EventName;
+    
+    /// <summary>
+    /// When true, the event is sent to all services listening for ANY events.
+    /// When false, the event is only sent to services that are listening for the given event name
+    /// </summary>
     public bool ToAll;
 
     public CustomEvent(string eventName, bool toAll)

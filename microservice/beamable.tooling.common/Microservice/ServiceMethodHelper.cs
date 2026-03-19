@@ -64,12 +64,10 @@ namespace Beamable.Server
 			params ServiceMethodProvider[] serviceMethodProviders)
 		{
 			var output = new List<ServiceMethod>();
-			var outputEvents = new List<ServiceEventMethod>();
 			foreach (var provider in serviceMethodProviders)
 			{
-				var (methods, events) = ScanType(serviceAttribute, provider);
+				var methods = ScanType(serviceAttribute, provider);
 				output.AddRange(methods);
-				outputEvents.AddRange(events);
 				if (provider.instanceType == typeof(AdminRoutes))
 				{
 					continue;
@@ -78,7 +76,7 @@ namespace Beamable.Server
 				output.AddRange(ScanTypeFederation(serviceAttribute, provider));
 			}
 
-			return new ServiceMethodCollection(output, outputEvents);
+			return new ServiceMethodCollection(output);
 		}
 
 		private static List<ServiceMethod> ScanTypeFederation(IMicroserviceAttributes serviceAttribute,
@@ -330,13 +328,12 @@ namespace Beamable.Server
 			return json;
 		}
 
-		private static (List<ServiceMethod>, List<ServiceEventMethod>) ScanType(
+		private static List<ServiceMethod> ScanType(
 			IMicroserviceAttributes serviceAttribute,
 			ServiceMethodProvider provider)
 		{
 			var type = provider.instanceType;
 			var output = new List<ServiceMethod>();
-			var events = new List<ServiceEventMethod>();
 			
 			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"{Logs.SCANNING_CLIENT_PREFIX} {type.Name}");
 
@@ -394,22 +391,12 @@ namespace Beamable.Server
 						{ ErrorCode = BeamableMicroserviceException.kBMS_ERROR_CODE_OVERLOADED_METHOD_UNSUPPORTED };
 
 				
-				if (attribute is EventCallable evtCallable)
-				{
-					events.Add(new ServiceEventMethod
-					{
-						EventName = evtCallable.EventName, 
-						Method = serviceMethod
-					});
-				}
-				else
-				{
-					output.Add(serviceMethod);
-				}
+				output.Add(serviceMethod);
+				
 
 			}
 
-			return (output, events);
+			return output;
 		}
 	}
 }

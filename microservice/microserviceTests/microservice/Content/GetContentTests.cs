@@ -97,7 +97,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc).Wait();
          });
 
 
@@ -159,7 +159,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc).Wait();
          });
 
 
@@ -235,7 +235,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc).Wait();
          });
 
 
@@ -309,7 +309,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc).Wait();
          });
 
 
@@ -391,7 +391,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc).Wait();
          });
 
 

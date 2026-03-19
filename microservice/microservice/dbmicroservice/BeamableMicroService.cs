@@ -657,27 +657,7 @@ namespace Beamable.Server
 	      
 	      try
 	      {
-		     
-		      // give first dibbs to handling if the user has a custom event. 
-		      if (ctx.IsEvent && ServiceMethods.EventToHandlers.TryGetValue(ctx.EventName, out var handler))
-		      {
-			      // If the body element is a JSON string, it is double-escaped; GetString() unescapes it.
-			      // Otherwise (object/array), use GetRawText() directly.
-			      var raw = ctx.BodyElement.ValueKind == JsonValueKind.String
-				      ? ctx.BodyElement.GetString()
-				      : ctx.BodyElement.GetRawText();
-			      var parameterProvider = new EventParameterProvider(raw);
-			      // the response from an event handler is ignored.
-			      _ = await handler.Execute(ctx, parameterProvider);
-			    
-		      }
-		      else
-		      {
-			      // otherwise, let the default handlers take it away.
-			      _socketRequesterContext.HandleMessage(ctx, activity);
-		      }
-
-
+		      await _socketRequesterContext.HandleMessage(ctx, activity);
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }

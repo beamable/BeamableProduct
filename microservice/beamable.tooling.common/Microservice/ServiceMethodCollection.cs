@@ -13,30 +13,21 @@ namespace Beamable.Server
    {
       private readonly List<ServiceMethod> _methods;
       private Dictionary<string, ServiceMethod> _pathToMethod;
-      private readonly List<ServiceEventMethod> _events;
-      public Dictionary<string, ServiceMethod> EventToHandlers { get; private set; }
 
       /// <summary>
       /// Initializes a new instance of the <see cref="ServiceMethodCollection"/> class.
       /// </summary>
       /// <param name="methods">The collection of service methods to be included in the collection.</param>
-      public ServiceMethodCollection(IEnumerable<ServiceMethod> methods, IEnumerable<ServiceEventMethod> events)
+      public ServiceMethodCollection(IEnumerable<ServiceMethod> methods)
       {
-         _events = events.ToList();
          _methods = methods.ToList();
          _pathToMethod = _methods.ToDictionary(method => method.Path.ToLower());
-
-         EventToHandlers = _events.ToDictionary(x => x.EventName, x => x.Method);
-         // _eventToHandlers = _events
-         //    .GroupBy(x => x.EventName)
-         //    .ToDictionary(grouping => grouping.Key, grouping => grouping.Select(x => x.Method).ToList());
       }
 
       /// <summary>
       /// Gets the list of service methods in the collection.
       /// </summary>
       public IEnumerable<ServiceMethod> Methods => _methods.ToList();
-      public IEnumerable<ServiceEventMethod> Events => _events.ToList();
       
       /// <summary>
       /// With a given request context, path, and parameter provider handle a request.

@@ -37,18 +37,19 @@ namespace Beamable.Server
 
    public interface IPlatformSubscription
    {
-      void Resolve(RequestContext ctx);
+      Task Resolve(RequestContext ctx);
    }
    public class PlatformSubscription<T> : IPlatformSubscription
    {
       public string EventName;
       public Action Unsubscribe;
-      public Action<T> OnEvent;
+      public Func<T, Task> OnEvent;
 
-      public void Resolve(RequestContext ctx)
+      public async Task Resolve(RequestContext ctx)
       {
          var data = JsonConvert.DeserializeObject<T>(ctx.Body, UnitySerializationSettings.Instance);
-         OnEvent?.Invoke(data);
+         if (OnEvent == null) return;
+         await OnEvent.Invoke(data);
       }
    }
 
@@ -252,11 +253,19 @@ namespace Beamable.Server
 
       public PlatformSubscription<T> Subscribe<T>(string eventName, Action<T> callback)
       {
+         return Subscribe<T>(eventName, data =>
+         {
+            callback?.Invoke(data);
+            return Task.CompletedTask;
+         });
+      }
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<T, Task> callback)
+      {
          var subscription = new PlatformSubscription<T>
          {
-            EventName = eventName
+            EventName = eventName,
+            OnEvent = callback
          };
-         subscription.OnEvent += callback;
 
          _subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
 
@@ -281,7 +290,7 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public void HandleMessage(RequestContext ctx, BeamActivity parentActivity=null)
+      public async Task HandleMessage(RequestContext ctx, BeamActivity parentActivity=null)
       {
          if (parentActivity == null)
          {
@@ -293,13 +302,12 @@ namespace Beamable.Server
             var eventName = ctx.Path.Substring("event/".Length);
             parentActivity.SetDisplay($"On{eventName}");
 
-            Log.Information("HANDLING EVENT MESSAGE: " + ctx.Body);
             if (TryGetEventSubscriptions(eventName, out var subscriptions))
             {
                var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
                for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
                {
-                  subscriptions[i].Resolve(ctx);
+                  await subscriptions[i].Resolve(ctx);
                }
             }
 

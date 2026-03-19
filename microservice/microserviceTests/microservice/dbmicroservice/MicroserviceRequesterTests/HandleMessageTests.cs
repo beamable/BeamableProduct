@@ -32,7 +32,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 			});
 			Task Launch(int threadNumber)
 			{
-				var task = Task.Run(() =>
+				var task = Task.Run(async () =>
 				{
 					try
 					{
@@ -41,7 +41,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 							var id = (threadNumber * cycleCount) + i;
 							var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1",
 								new HashSet<string>());
-							context.HandleMessage(rc);
+							await context.HandleMessage(rc);
 						}
 					}
 					catch (Exception ex)
