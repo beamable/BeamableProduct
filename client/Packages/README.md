@@ -23,7 +23,7 @@ This folder contains the Unity SDK package sources used to produce the Beamable 
 - For older Beamable 1.x projects you might have references to both `com.beamable` and `com.beamable.server`. Modern usage consolidates server types into `com.beamable`.
 
 ## For maintainers
-- To release Unity SDK packages, use the `Release Unity SDK` GitHub Actions workflow (`.github/workflows/release-unity.yml`). Do not use `dev.sh` for production releases.
+- To release Unity SDK packages, use the `Release Unity SDK` GitHub Actions workflow (`.github/workflows/release-unity.yml`).
 - Version bumping: follow the roadmap definitions for version numbers. For hotfixes, bump the minor (last) number based on the base version for that hotfix.
 
 ## Contributing 
