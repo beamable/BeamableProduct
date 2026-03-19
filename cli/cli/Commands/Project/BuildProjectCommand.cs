@@ -32,7 +32,7 @@ public class BuildProjectCommand : StreamCommand<BuildProjectCommandArgs, BuildP
 		AddOption(new Option<string>("--stop-reason", "A message to send to the running service when it is terminated"),
 			(args, i) => args.stopReason = i);
 		AddOption(
-			new Option<int>(new string[] { "--max-parallel-count", "-mpc" }, () => 8,
+			new Option<int>(new string[] { "--max-parallel-count", "-mpc" }, () => 0,
 				"Maximum number of parallel services builds"), (args, i) => args.MaxParallelTask = i);
 	}
 
