@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Deserialization issue with `properties` field in Score Items of Events
 
+### Changed
+- Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
+
 ## [5.0.0] - 2026-02-19
 ### Added
 - Unity 6.3 Support

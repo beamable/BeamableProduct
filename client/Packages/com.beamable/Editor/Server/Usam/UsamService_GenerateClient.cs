@@ -44,7 +44,12 @@ namespace Beamable.Server.Editor.Usam
 			//  ensures we have the latest client generated
 			AddLog(service.beamoId, CliLogMessage.FromStringNow(" building latest code..."));
 
-			await Build(new ProjectBuildArgs {ids = idArr, stopReason = "\"Stopped service to generate client code.\""});
+			var projectBuildArgs = new ProjectBuildArgs {ids = idArr, stopReason = "\"Stopped service to generate client code.\""};
+			if (_config.MaxParallelBuildCount.HasValue)
+			{
+				projectBuildArgs.maxParallelCount = _config.MaxParallelBuildCount.Value;
+			}
+			await Build(projectBuildArgs);
 
 			AddLog(service.beamoId, CliLogMessage.FromStringNow(" generating client code..."));
 			if (!ShouldServiceAutoGenerateClient(service.beamoId))
