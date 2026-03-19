@@ -66,7 +66,7 @@ public struct ChangedContentFile
 	public bool WasChanged() => !WasCreated() && !WasDeleted() && FullFilePath == OldFullFilePath;
 }
 
-public class ContentService
+public partial class ContentService
 {
 	/// <summary>
 	/// <see cref="PublishContent"/>
@@ -115,6 +115,10 @@ public class ContentService
 
 		_channelChangedContentFiles = Channel.CreateUnbounded<ChangedContentFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 		_channelRemoteContentPublishes = Channel.CreateUnbounded<RemoteContentPublished>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
+		
+		// Initialize local content-history channels used by the History partial class
+		_channelContentHistoryEntries = Channel.CreateUnbounded<ChangedContentHistoryEntryFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
+		_channelContentHistoryChangelists = Channel.CreateUnbounded<ChangedContentHistoryChangelistFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
 	}
 
 	private string RootContentPath => _config.GetConfigPath(ConfigService.CONTENT_DIR);
@@ -637,27 +641,16 @@ public class ContentService
 					if (latestManifestFromContent != null)
 					{
 						var diffChanges = await _contentApi.GetManifestDiffs(manifestId, fromUid: latestManifestFromContent.uid, toUid: latestManifest.uid);
-						// var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest(Method.GET, diff, parser: JObject.Parse));
-						// var parsedDiffs = await Task.WhenAll(getDiffTasks);
-						//
-						// foreach (JObject parsedDiff in parsedDiffs)
-						// {
-						// 	// check if 'changes' child exists before continuing
-						// 	// 'changes' contain all diff changes for each changed manifest
-						// 	if (parsedDiff["changes"] is not JObject changes)
-						// 	{
-						// 		continue;
-						// 	}
-						// 	// Check each content changed individually, checking for any that the changeType is 'added'
-						// 	foreach (JProperty contentItem in changes.Properties())
-						// 	{
-						// 		string changeType = contentItem.Value["changeType"]?.ToString();
-						// 		if (changeType == "added")
-						// 		{
-						// 			newItemsOnRemote.Add(contentItem.Name);
-						// 		}
-						// 	}
-						// }
+						var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest<ContentHistoryChangelist>(Method.GET, GetContentHistoryChangelistUrl(_requester.Cid, _requester.Pid, diff),
+							parser: (jsonString) => JsonSerializer.Deserialize<ContentHistoryChangelist>(jsonString, GetContentFileSerializationOptions())));
+						var parsedDiffs = await Task.WhenAll(getDiffTasks);
+
+						foreach (ContentHistoryChangelist parsedDiff in parsedDiffs)
+						{
+							// Check each content changed individually, checking for any that the changeType is 'added'
+							if (parsedDiff.Created == null) continue;
+							foreach (var contentItem in parsedDiff.Created.Keys) newItemsOnRemote.Add(contentItem);
+						}
 					}
 				}
 				
@@ -1644,7 +1637,15 @@ public class ContentService
 	/// </summary>
 	public static JsonSerializerOptions GetContentFileSerializationOptions(bool indent = true)
 	{
-		return new JsonSerializerOptions() { WriteIndented = indent, IncludeFields = true, Converters = { new SortedJsonElementConverter(), new SortedSnapshotConverter() } };
+		return new JsonSerializerOptions()
+		{
+			WriteIndented = indent,
+			IncludeFields = true,
+			Converters =
+			{
+				new SortedJsonElementConverter(), new SortedSnapshotConverter()
+			},
+		};
 	}
 
 	public async Task<bool> ContentExistByIds(string[] contentIds)

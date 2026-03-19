@@ -113,8 +113,12 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				_planArgs = new DeploymentPlanArgs
 				{
 					runHealthChecks = config.EnablePrePublishHealthCheck, 
-					merge = config.EnableMergeDeploy
+					merge = config.EnableMergeDeploy,
 				};
+				if (config.MaxParallelBuildCount.HasValue)
+				{
+					_planArgs.maxParallelCount = config.MaxParallelBuildCount.Value;
+				}
 				_planCommand = _ctx.Cli.DeploymentPlan(_planArgs);
 				_planCommand.OnProgressPlanReleaseProgress(cb =>
 				{

@@ -10,18 +10,21 @@ public class MicroserviceNonceResponse
 public class MicroserviceAuthRequest
 {
     public string cid, pid, signature;
+    public string[] codecs;
 }
 
 [Serializable]
 public class MicroserviceAuthRequestWithToken
 {
     public string cid, pid, token;
+    public string[] codecs;
 }
 
 [Serializable]
 public class MicroserviceAuthResponse
 {
     public string result;
+    public string[] codecs;
     public MicroserviceAuthResponse(){}
 }
 

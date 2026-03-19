@@ -57,6 +57,15 @@ public class ConfigService
 	public const string CONTENT_SNAPSHOTS_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 	public const string CONTENT_SNAPSHOTS_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 
+	public const string CONTENT_HISTORY_FOLDER_NAME = "contentHistory";
+	public const string CONTENT_HISTORY_ENTRIES_FOLDER_NAME = "entries";
+	public const string CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME = "changelists";
+	public const string CONTENT_HISTORY_CONTENT_FOLDER_NAME = "content";
+	public const string CONTENT_HISTORY_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_HISTORY_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_ENTRIES_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_ENTRIES_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CHANGELISTS_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CONTENT_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CONTENT_FOLDER_NAME}";
+	
 	public const string DEV_USER_FOLDER_NAME = "developerUser";
 	public const string DEV_USER_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
 	public const string DEV_USER_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
@@ -819,21 +828,36 @@ public class ConfigService
 		var configFolder = isOverride
 			? ConfigLocalDirectoryPath
 			: ConfigDirectoryPath;
-
-		ReadConfigFile(configFolder, true, false, out var config);
-		var original = (JObject)config.DeepClone();
-		modifier(config);
-
-		var patch = DiffJObject(original, config);
 		
-		ReadConfigFile(configFolder, true, false, out var latestConfig);
-		ApplyDiff(latestConfig, patch);
-		FlushConfig(latestConfig, configFolder, !isOverride);
+		// Writing the new fields into the config file
+		{
+			ReadConfigFile(configFolder, true, false, out var config);
+			var original = (JObject)config.DeepClone();
+			modifier(config);
+
+			var patch = DiffJObject(original, config);
+		
+			ReadConfigFile(configFolder, true, false, out var latestConfig);
+			ApplyDiff(latestConfig, patch);
+			FlushConfig(latestConfig, configFolder, !isOverride);
+		}
+
+		// Removing fields from the override file if that is equal to the config file after the modification
+		{
+			ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var overrideConfig);
+			ReadConfigFile(ConfigDirectoryPath, true, false, out var originalConfig);
+			var patch = DiffJObject(originalConfig, overrideConfig);
+			ApplyDiff(overrideConfig, patch, true);
+			FlushConfig(overrideConfig, ConfigLocalDirectoryPath, false);
+		}
+
+		
 		
 		
 		// chat-gippity wrote these methods...
 		JObject DiffJObject(JObject original, JObject modified)
 		{
+			var equal = new JArray();
 			var set = new JObject();
 			var remove = new JArray();
 			var children = new JObject();
@@ -864,6 +888,10 @@ public class ConfigService
 				{
 					set[name] = newValue.DeepClone();
 				}
+				else
+				{
+					equal.Add(name);	
+				}
 			}
 
 			// Detect added properties
@@ -880,10 +908,11 @@ public class ConfigService
 			if (set.HasValues) diff["$set"] = set;
 			if (remove.HasValues) diff["$remove"] = remove;
 			if (children.HasValues) diff["$children"] = children;
+			if (equal.HasValues) diff["$equal"] = equal;
 
 			return diff;
 		}
-		void ApplyDiff(JObject target, JObject diff)
+		void ApplyDiff(JObject target, JObject diff, bool removeEqualFields = false)
 		{
 			if (diff == null || !diff.HasValues)
 				return;
@@ -896,6 +925,16 @@ public class ConfigService
 					target.Remove(item.ToString());
 				}
 			}
+			
+			// Apply equal fields removal if specified
+			if (removeEqualFields && diff["$equal"] is JArray equalArray)
+			{
+				foreach (var item in equalArray)
+				{
+					target.Remove(item.ToString());
+				}
+			}
+			
 
 			// Apply sets
 			if (diff["$set"] is JObject setObj)

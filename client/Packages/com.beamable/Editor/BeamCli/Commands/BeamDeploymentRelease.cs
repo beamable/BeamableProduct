@@ -21,6 +21,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool redeploy;
         /// <summary>Build services sequentially instead of all together</summary>
         public bool buildSequentially;
+        /// <summary>Maximum number of parallel services builds</summary>
+        public int maxParallelCount;
         /// <summary>Create a Release that merges your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
         public bool merge;
         /// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
@@ -74,6 +76,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.buildSequentially != default(bool)))
             {
                 genBeamCommandArgs.Add(("--build-sequentially=" + this.buildSequentially));
+            }
+            // If the maxParallelCount value was not default, then add it to the list of args.
+            if ((this.maxParallelCount != default(int)))
+            {
+                genBeamCommandArgs.Add(("--max-parallel-count=" + this.maxParallelCount));
             }
             // If the merge value was not default, then add it to the list of args.
             if ((this.merge != default(bool)))
