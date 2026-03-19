@@ -346,20 +346,21 @@ namespace Beamable.Server
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
-            if (!InstanceArgs.DisableCustomInitializationHooks)
+            if (!_ranCustomUserInitializationHooks)
             {
-                // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-                // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-                if (!_ranCustomUserInitializationHooks)
-                {
-	                if (initContent)
-	                {
-		                await Provider.GetService<ContentService>().Init(preload:true);
-	                }
+	            _ranCustomUserInitializationHooks = true;
+	            if (!InstanceArgs.DisableCustomInitializationHooks)
+	            {
+		            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+		            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+		            if (initContent)
+		            {
+			            await Provider.GetService<ContentService>().Init(preload: true);
+		            }
 
-                    await ResolveCustomInitializationHook();
-                    _ranCustomUserInitializationHooks = true;
-                }
+		            await ResolveCustomInitializationHook();
+	            }
+				await RunServiceSetupCallbacks();
             }
 
             var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
@@ -544,7 +545,7 @@ namespace Beamable.Server
 
       private async Task RunServiceSetupCallbacks()
       {
-	      foreach (var initializer in _startupContext.serviceSetupCallbacks)
+	      foreach (var initializer in _startupContext.perServiceInitializers)
 	      {
 		      var task = initializer?.Invoke(InstanceArgs.ServiceScope);
 		      if (task != null)
@@ -997,8 +998,6 @@ namespace Beamable.Server
 
       private async Promise ProvideService()
       {
-	      await RunServiceSetupCallbacks();
-	      
 	      var req = new MicroserviceServiceProviderRequest
 	      {
 		      type = "basic", 

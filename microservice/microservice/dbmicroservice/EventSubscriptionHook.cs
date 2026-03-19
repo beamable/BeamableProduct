@@ -133,7 +133,7 @@ public static class EventExtensions
     
     public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll, EventHandler<T> handler)
     {
-        void SetupCallback(IDependencyProviderScope p)
+        Task SetupCallback(IDependencyProviderScope p)
         {
             var ctx = p.GetService<SocketRequesterContext>();
             var conf = p.GetService<IEventSubscriptionConfiguration>();
@@ -142,6 +142,7 @@ public static class EventExtensions
             {
                 handler?.Invoke(data);
             });
+            return Task.CompletedTask;
         }
         
         if (toAll)
@@ -152,7 +153,8 @@ public static class EventExtensions
         else
         {
             // if the event is only going to a single consumer, then we can receive it across any of our open connections. 
-            builder.SetupConnection(SetupCallback);
+            IBeamServiceConfig c = builder.Config;
+            c.PerServiceInitializers.Add(SetupCallback);
         }
         
         return builder;
