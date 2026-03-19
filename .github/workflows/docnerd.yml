@@ -16,4 +16,5 @@ jobs:
           target-owner: ${{ secrets.DOCNERD_TARGET_OWNER }}
           target-name: ${{ secrets.DOCNERD_TARGET_NAME }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          target-repo-token: ${{ secrets.DOCNERD_TARGET_REPO_TOKEN }}
           anthropic-api-key: ${{ secrets.DOCNERD_ANTHROPIC_API_KEY }}
