@@ -62,12 +62,7 @@
         <BeamClientGenOutputDir>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)BeamGenerated/', '$(MSBuildProjectDirectory)'))</BeamClientGenOutputDir>
     </PropertyGroup>
 
-    <!-- After the build completes, generate the OAPI spec for this Microservice.
-         When publishing for a foreign RuntimeIdentifier (e.g. unix-x64 on macOS), the
-         compiled binary targets a different OS and cannot be executed locally. In that case
-         we first build the project without a RID to get a locally-runnable binary, then use
-         it for OAPI generation. The OAPI file always lands in the non-RID output directory
-         so downstream projects can find it regardless of how they are being built. -->
+    <!-- After the build completes, generate the OAPI spec for this Microservice. -->
     <Target Name="generate-oapi" AfterTargets="AfterBuild"
             Condition="'$(BeamProjectType)'=='service' AND '$(BeamPreventOapiGen)'!='true' AND '$(BeamPublish)'!='true'" >
 
@@ -125,12 +120,6 @@
         Generate client .cs files from upstream OAPI specs into this project's own
         $(BeamClientGenOutputDir).  MSBuild incremental: re-runs only for OAPI files
         that are newer than their corresponding stamp file.
-
-        Skipped during:
-          - BeamPreventOapiGen=true  (local-runtime sub-build inside generate-oapi)
-          - BeamPublish=true         (beam deploy plan; client code not needed for packaging)
-        This prevents extension classes with [BeamContextSystem] from being compiled into
-        the service binary used for OAPI generation, avoiding unexpected type scanning.
     -->
     <Target Name="_BeamGenerateClientsFromRefs"
             DependsOnTargets="_BeamEnsureServiceOapi"
