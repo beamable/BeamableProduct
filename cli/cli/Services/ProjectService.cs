@@ -619,6 +619,10 @@ public class ProjectService
 		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var commandStr = $"build {projectPath.EnquotePath()} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		if (args.MaxParallelTask > 0)
+		{
+			commandStr += $" -maxcpucount:{args.MaxParallelTask}";
+		}
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
 		{
