@@ -470,19 +470,18 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			message = "starting docker build..."
 		});
 
-		var defaultBaseImageTag = "8.0-alpine";
 		var targetFramework = http.Metadata.msbuildProject.GetPropertyValue("TargetFramework");
-		if (targetFramework.Contains("net10.0"))
-		{
-			defaultBaseImageTag = "10.0-alpine";
-		}
+		var defaultBaseImageTag = GetDefaultBaseImageTag(targetFramework);
+
+		var fullDockerfilePath = http.AbsoluteDockerfilePath;
+		var dockerfileBaseImageTag = TryGetDockerfileBeamDotnetVersion(fullDockerfilePath);
+		var baseImageTag = string.IsNullOrEmpty(dockerfileBaseImageTag) ? defaultBaseImageTag : dockerfileBaseImageTag;
 		
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
-		var fullDockerfilePath = http.AbsoluteDockerfilePath;
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
-		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
+		                $"--build-arg BEAM_DOTNET_VERSION={baseImageTag} " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
@@ -640,6 +639,53 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			fullImageId = imageId,
 			sourceReport = report
 		};
+	}
+
+	/// <summary>
+	/// Returns the default base image tag for the given target framework.
+	/// </summary>
+	public static string GetDefaultBaseImageTag(string targetFramework)
+	{
+		if (targetFramework.Contains("net10.0"))
+			return "10.0-alpine";
+		return "8.0-alpine";
+	}
+
+	/// <summary>
+	/// Reads the Dockerfile at the given path and returns the default value of the
+	/// <c>ARG BEAM_DOTNET_VERSION</c> instruction, or an empty string if the ARG has
+	/// no default value (or the Dockerfile cannot be read).
+	/// Note: multi-line ARG declarations using backslash line continuation are not supported.
+	/// </summary>
+	public static string TryGetDockerfileBeamDotnetVersion(string dockerfilePath)
+	{
+		if (string.IsNullOrEmpty(dockerfilePath) || !File.Exists(dockerfilePath))
+			return string.Empty;
+
+		foreach (var line in File.ReadLines(dockerfilePath))
+		{
+			var trimmed = line.Trim();
+			if (!trimmed.StartsWith("ARG", StringComparison.OrdinalIgnoreCase))
+				continue;
+
+			// Ensure there is content after "ARG"
+			if (trimmed.Length <= 3)
+				continue;
+
+			var rest = trimmed.Substring(3).TrimStart();
+			if (!rest.StartsWith("BEAM_DOTNET_VERSION", StringComparison.Ordinal))
+				continue;
+
+			// Found the ARG BEAM_DOTNET_VERSION line – extract its default value if present
+			var eqIndex = rest.IndexOf('=');
+			if (eqIndex < 0)
+				return string.Empty;
+
+			var value = rest.Substring(eqIndex + 1).Trim().Trim('"', '\'');
+			return value;
+		}
+
+		return string.Empty;
 	}
 
 	/// <summary>

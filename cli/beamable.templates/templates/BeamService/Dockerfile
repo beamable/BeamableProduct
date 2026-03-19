@@ -1,4 +1,4 @@
-﻿ARG BEAM_DOTNET_VERSION="8.0-alpine"
+ARG BEAM_DOTNET_VERSION
 FROM mcr.microsoft.com/dotnet/runtime:${BEAM_DOTNET_VERSION}
 
 # These args are provided by the Beam CLI
