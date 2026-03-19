@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: beamable/docnerd@v2
+      - uses: beamable/docnerd@v3
         with:
           target-owner: ${{ secrets.DOCNERD_TARGET_OWNER }}
           target-name: ${{ secrets.DOCNERD_TARGET_NAME }}
