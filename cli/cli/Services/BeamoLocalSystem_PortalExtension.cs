@@ -55,6 +55,7 @@ public partial class BeamoLocalSystem
 		var extension = definition.PortalExtensionDefinition;
 		try
 		{
+			Environment.SetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE", "true");
 			await BeamServer
 				.Create()
 				.InitializeServices((provider) =>

@@ -106,9 +106,6 @@ namespace Beamable.Server.Common
 					case "beamid":
 						attributes.MicroserviceName = parts[1].Trim();
 						break;
-					case "portalextensiondiscoveryService":
-						attributes.MicroserviceName = parts[1].Trim();
-						break;
 					// TODO: add more?
 				}
 				
