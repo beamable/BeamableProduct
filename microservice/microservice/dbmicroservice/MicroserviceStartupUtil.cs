@@ -93,7 +93,8 @@ public static class MicroserviceStartupUtil
 #pragma warning restore CS0618 // Type or member is obsolete
 			
 			generateLocalEnvInvocationModifier = configurator.LocalEnvModifier ?? (_ => { }),
-			initializers = configurator.ServiceInitializers.ToList()
+			initializers = configurator.ServiceInitializers.ToList(),
+			perServiceInitializers = configurator.PerServiceInitializers.ToList()
 		};
 
 		ConfigureLogging(configurator, startupCtx, includeOtel: false, string.Empty);
@@ -600,6 +601,11 @@ public static class MicroserviceStartupUtil
 				.AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 				.AddSingleton<BeamScheduler>()
 				.AddSingleton<FederationMetadata>()
+				
+				// allow the developer to change how the event service is created. 
+				.AddSingleton<IEventSubscriptionHook, DefaultEventSubscription>()
+				.AddScoped<IEventSubscriptionConfiguration, DefaultEventSubscriptionConfiguration>()
+				
 				.AddSingleton<IUsageApi>(startupContext.ecsService)
 				.AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 				.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
@@ -775,10 +781,11 @@ public static class MicroserviceStartupUtil
 			return new EphemeralUserDataCache<RankEntry>(name, resolver);
 		}
 
-		IBeamableServices ExtractSdks(IServiceProvider provider)
+		IBeamableServices ExtractSdks(IDependencyProvider provider)
 		{
 			var services = new BeamableServices
 			{
+				Scope = provider.GetService<IDependencyProviderScope>(),
 				Analytics = provider.GetRequiredService<IMicroserviceAnalyticsService>(),
 				Auth = provider.GetRequiredService<IMicroserviceAuthApi>(),
 				Stats = provider.GetRequiredService<IMicroserviceStatsApi>(),

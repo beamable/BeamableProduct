@@ -164,6 +164,7 @@ namespace microserviceTests.microservice
 	  public bool OtelExporterStandardEnabled => false;
 	  public string OtelExporterRetryMaxSize { get; }
 	  public bool AllowStartupWithoutBeamableSettings => false;
+	  public int MaxUniqueEventBindingCount => 100;
 	  public bool SkipLocalEnv => true;
 	  public bool SkipAliasResolve => true;
 
