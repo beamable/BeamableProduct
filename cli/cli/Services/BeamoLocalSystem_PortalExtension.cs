@@ -222,7 +222,7 @@ public class OverrideLogger : ILogger
 		}
 
 		// Uncomment this to debug if something is going wrong with the local service
-		Console.WriteLine($"Portal Extension Local Microservice: {message}");
+		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
