@@ -5,14 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
 
 ### Changed
+- `Context.Headers` are not case-sensitive
 - Changed `Func<ILogger> IBeamServiceConfig.LogFactory` to `Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider`, which enables to override the C#MS logs to your own implementation of `ILoggerProvider`
 
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
+- Zstandard (zstd) compression for WebSocket messages between microservices and the gateway, negotiated automatically during authentication
 
 ### Changed
 - Lowered log level of `/docs` endpoint from `DEBUG` to `TRACE` [4461](https://github.com/beamable/BeamableProduct/issues/4461)

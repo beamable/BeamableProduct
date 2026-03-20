@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- Deserialization issue with `properties` field in Score Items of Events
+
+### Changed
+- Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
+
 ## [5.0.0] - 2026-02-19
 ### Added
 - Unity 6.3 Support
@@ -130,6 +137,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Content Manager window that uses CLI workflows and receives dynamic updates.
 - `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
 - New Validation for Cron Schedule Definition
+
+## [2.4.5] - 2026-03-17
+
+### Changed
+
+- Upgrade CLI to 4.3.6
+- Backported content serialization performance improvements [4123](https://github.com/beamable/BeamableProduct/issues/4123)
+
+## [2.4.4] - 2026-03-03
+
+### Changed
+
+- Upgrade CLI to 4.3.5
 
 ## [2.4.3] - 2025-08-01
 ### Fixed

@@ -46,6 +46,7 @@ namespace Beamable.Server
 		public LogOutputType LogOutputType { get; set; }
 		public string LogOutputPath { get; set; }
 		public bool EnableDangerousDeflateOptions { get; set; }
+		public bool DisableOutboundWsCompression { get; set; }
 		public string MetadataUrl { get; set; }
 		public string RefreshToken { get; set; }
 		public long AccountId { get; set; }
@@ -59,6 +60,7 @@ namespace Beamable.Server
 		public bool OtelExporterStandardEnabled { get; set; }
 		public string OtelExporterRetryMaxSize { get; set; }
 		public bool AllowStartupWithoutBeamableSettings { get; set; }
+		public int MaxUniqueEventBindingCount { get; set; }
 		public bool SkipLocalEnv { get; set; }
 		public bool SkipAliasResolve { get; set; }
 
@@ -108,6 +110,7 @@ namespace Beamable.Server
 				LogOutputType = args.LogOutputType,
 				LogOutputPath = args.LogOutputPath,
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
+				DisableOutboundWsCompression = args.DisableOutboundWsCompression,
 				MetadataUrl = args.MetadataUrl,
 				AccountId = args.AccountId,
 				AccountEmail = args.AccountEmail,
@@ -121,7 +124,8 @@ namespace Beamable.Server
 				OtelExporterRetryMaxSize = args.OtelExporterRetryMaxSize,
 				SkipLocalEnv = args.SkipLocalEnv,
 				SkipAliasResolve = args.SkipAliasResolve,
-				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings
+				MaxUniqueEventBindingCount = args.MaxUniqueEventBindingCount,
+				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings,
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -215,6 +219,9 @@ namespace Beamable.Server
 		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
 		public bool AllowStartupWithoutBeamableSettings => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
 
+		public int MaxUniqueEventBindingCount =>
+			GetIntFromEnvironmentVariable("BEAMABLE_MAX_UNIQUE_EVENT_BINDING_COUNT", 100);
+
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
 		{
@@ -302,6 +309,7 @@ namespace Beamable.Server
 		public string SdkVersionBaseBuild => BeamAssemblyVersionUtil.GetVersion<MicroserviceArgs>();
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
+		public bool DisableOutboundWsCompression => IsEnvironmentVariableTrue("WS_DISABLE_OUTBOUND_COMPRESSION");
 		public bool UseLocalOtel => IsEnvironmentVariableTrue("BEAM_LOCAL_OTEL");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
 		

@@ -37,18 +37,20 @@ namespace Beamable.Server
 
    public interface IPlatformSubscription
    {
-      void Resolve(RequestContext ctx);
+      Task Resolve(IUserScope scope);
    }
    public class PlatformSubscription<T> : IPlatformSubscription
    {
       public string EventName;
       public Action Unsubscribe;
-      public Action<T> OnEvent;
+      public Func<IUserScope, T, Task> OnEvent;
 
-      public void Resolve(RequestContext ctx)
+      public async Task Resolve(IUserScope scope)
       {
+         var ctx = scope.Context;
          var data = JsonConvert.DeserializeObject<T>(ctx.Body, UnitySerializationSettings.Instance);
-         OnEvent?.Invoke(data);
+         if (OnEvent == null) return;
+         await OnEvent.Invoke(scope, data);
       }
    }
 
@@ -199,7 +201,7 @@ namespace Beamable.Server
          BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
       }
 
-      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
       {
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
@@ -213,7 +215,17 @@ namespace Beamable.Server
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
-		         await connection.SendMessage(message, sw);
+		         // Use compression if negotiated and message is large enough
+		         var codec = Daemon?.NegotiatedCodec;
+		         if (codec != null && !disableCompression && SocketCompression.ShouldCompress(message))
+		         {
+			         var compressed = SocketCompression.Compress(message, codec);
+			         await connection.SendBinaryMessage(compressed, sw);
+		         }
+		         else
+		         {
+			         await connection.SendMessage(message, sw);
+		         }
 		         return;
 	         }
 	         catch (Exception ex)
@@ -252,11 +264,41 @@ namespace Beamable.Server
 
       public PlatformSubscription<T> Subscribe<T>(string eventName, Action<T> callback)
       {
+         return Subscribe<T>(eventName, (_, data) =>
+         {
+            callback?.Invoke(data);
+            return Task.CompletedTask;
+         });
+      }
+      
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<T, Task> callback)
+      {
+         return Subscribe<T>(eventName, async (_, data) =>
+         {
+            var res = callback?.Invoke(data);
+            if (res != null)
+            {
+               await res;
+            }
+         });
+      }
+      
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Action<IUserScope, T> callback)
+      {
+         return Subscribe<T>(eventName, (scope, data) =>
+         {
+            callback?.Invoke(scope, data);
+            return Task.CompletedTask;
+         });
+      }
+      
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<IUserScope, T, Task> callback)
+      {
          var subscription = new PlatformSubscription<T>
          {
-            EventName = eventName
+            EventName = eventName,
+            OnEvent = callback
          };
-         subscription.OnEvent += callback;
 
          _subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
 
@@ -281,7 +323,7 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public void HandleMessage(RequestContext ctx, BeamActivity parentActivity=null)
+      public async Task HandleMessage(IDependencyProvider provider, MicroserviceRequestContext ctx, BeamActivity parentActivity=null)
       {
          if (parentActivity == null)
          {
@@ -295,10 +337,26 @@ namespace Beamable.Server
 
             if (TryGetEventSubscriptions(eventName, out var subscriptions))
             {
+               var fork =
+                  provider == null
+                     ? new DependencyBuilder()
+                        .AddSingleton<RequestContext>(ctx)
+                        .AddSingleton<IBeamableRequester>(p => null)
+                        .AddSingleton<IBeamableServices>(p => null)
+                        .Build()
+                     : provider.Fork(b =>
+                     {
+                        b.RemoveIfExists<RequestContext>();
+                        b.RemoveIfExists<MicroserviceRequestContext>();
+                        b.AddScoped<RequestContext>(ctx);
+                        b.AddScoped<MicroserviceRequestContext>(ctx);
+                     });
+               
+               await using IUserScope scope = new UserRequestDataHandler(fork);
                var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
                for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
                {
-                  subscriptions[i].Resolve(ctx);
+                  await subscriptions[i].Resolve(scope);
                }
             }
 
@@ -368,6 +426,14 @@ namespace Beamable.Server
       }
 
 
+      public HashSet<string> EventNames
+      {
+         get
+         {
+            // TODO: handle locking? 
+            return new HashSet<string>(_subscriptions.Keys);
+         }
+      }
    }
 
    public class MicroserviceRequester : IRequester
@@ -435,18 +501,66 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.SendMessageSafely(msg);
+         return _socketContext.SendMessageSafely(msg, disableCompression: _env.DisableOutboundWsCompression);
       }
 
       public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 	      Func<string, T> parser = null, bool useCache = false)
       {
-// TODO: What do we do about includeAuthHeader?
-         // TODO: What do we do about useCache?
-          
-         
+         return BeamableRequest(new SDKRequesterOptions<T>
+         {
+            method = method,
+            uri = uri,
+            body = body,
+            includeAuthHeader = includeAuthHeader,
+            parser = parser, 
+            useCache = useCache
+         });
+      }
+
+      public static readonly string[] DefaultEventNames = new string[]
+      {
+         Constants.Features.Services.CONTENT_UPDATE_EVENT,
+         Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
+         Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT
+      };
+      /// <summary>
+      /// Each socket only needs to set up one subscription to the server.
+      /// All events will get piped to the client.
+      /// It's the client job to filter the events, and decide what is valuable.
+      /// </summary>
+      /// <returns></returns>
+      public Promise<EmptyResponse> InitializeSubscription()
+      {
+         return InitializeSubscription(DefaultEventNames, Array.Empty<string>());
+      }
+
+      public Promise<EmptyResponse> InitializeSubscription(IEnumerable<string> eventNames, IEnumerable<string> uniqueBindings)
+      {
+         var req = new MicroserviceEventProviderRequest
+         {
+            type = "event",
+            evtWhitelist = eventNames?.Distinct().ToArray() ?? Array.Empty<string>(),
+            evtUniqueBindings = uniqueBindings?.Distinct().ToArray() ?? Array.Empty<string>()
+         };
+         var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
+         return promise.Map(_ => new EmptyResponse());
+      }
+
+      public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
+      {
+         throw new NotImplementedException();
+      }
+
+      public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
+      {
+	      
          var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
+        
+         var uri = beamReq.uri;
+         var body = beamReq.body;
+         var method = beamReq.method;
          
          // peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
          if (uri.StartsWith('/'))
@@ -479,19 +593,23 @@ namespace Beamable.Server
             method = method.ToString().ToLower(),
             body = body,
             path = uri,
+            headers = new Dictionary<string, string>()
          };
-
+         if (beamReq.headerInterceptor != null)
+         {
+            req.headers = beamReq.headerInterceptor.Invoke(req.headers);
+         }
 
          if (_requestContext != null &&
              !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
                                                // the initialization process without an Microservice.AssumeUser call being made before.
              _requestContext.UserId > 0 && // '0' is not a valid playerId, and represents a null value.
-             includeAuthHeader)
+             beamReq.includeAuthHeader)
          {
             req.from = _requestContext.UserId;
          }
 
-         var firstAttempt = _socketContext.AddListener(req, uri, parser, activity);
+         var firstAttempt = _socketContext.AddListener(req, uri, beamReq.parser, activity);
 
          var dict = new ArrayDict
          {
@@ -499,7 +617,8 @@ namespace Beamable.Server
             [nameof(req.method)] = req.method,
             [nameof(req.path)] = req.path,
             [nameof(req.from)] = req.from,
-            [nameof(req.body)] = bodyWrapper
+            [nameof(req.body)] = bodyWrapper,
+            [nameof(req.headers)] = req.headers
          };
          activity.SetDisplay($"{method} {req.path} ({req.id})");
          activity.SetTags(new TelemetryAttributeCollection()
@@ -534,7 +653,8 @@ namespace Beamable.Server
                return waitForAuth
                      .FlatMap(x =>
                      {
-                        return Request(method, uri, body, includeAuthHeader, parser, useCache);
+                        return BeamableRequest<T>(beamReq);
+                        // return Request(method, uri, body, beamReq.includeAuthHeader, beamReq.parser, beamReq.useCache);
 
                      })
                   ;
@@ -546,7 +666,7 @@ namespace Beamable.Server
             throw ex;
          });
          
-         return _socketContext.SendMessageSafely(msg, _waitForAuthorization)
+         return _socketContext.SendMessageSafely(msg, _waitForAuthorization, disableCompression: _env.DisableOutboundWsCompression)
             .FlatMap(_ =>
             {
                requestActivity.StopAndDispose(ActivityStatusCode.Ok);
@@ -558,39 +678,8 @@ namespace Beamable.Server
                activity.StopAndDispose(ActivityStatusCode.Ok);
                _socketContext.Daemon.BumpRequestProcessedCounter();
             });
-      }
-
-      /// <summary>
-      /// Each socket only needs to set up one subscription to the server.
-      /// All events will get piped to the client.
-      /// It's the client job to filter the events, and decide what is valuable.
-      /// </summary>
-      /// <returns></returns>
-      public Promise<EmptyResponse> InitializeSubscription()
-      {
-         var req = new MicroserviceEventProviderRequest
-         {
-            type = "event",
-            evtWhitelist = new []
-            {
-	            Constants.Features.Services.CONTENT_UPDATE_EVENT,
-	            Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
-				Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT,
-            }
-         };
-         var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
-
-         return promise.Map(_ => new EmptyResponse());
-      }
-
-      public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
-      {
-         throw new NotImplementedException();
-      }
-
-      public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
-      {
-	      throw new NotImplementedException();
+         
+         
       }
 
       public string EscapeURL(string url)

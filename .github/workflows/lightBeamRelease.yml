@@ -7,6 +7,10 @@ on:
         description: 'Custom tag for manual dispatch'
         required: false
         type: string
+      upload:
+        description: 'should upload built asset to s3?'
+        type: boolean
+        default: true
       optionalAlias: 
         description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
         required: false
@@ -30,6 +34,10 @@ on:
       customTag:
         description: 'Custom tag for manual dispatch'
         required: false
+      upload:
+        description: 'should upload built asset to s3?'
+        type: boolean
+        default: true
       optionalAlias: 
         description: 'an extra alias to publish the lightbeam for. Useful to grouping patches under their minor. '
         required: false
@@ -65,18 +73,22 @@ jobs:
           # Merge customTag
           CUSTOM_TAG="${{ inputs.customTag || github.event.inputs.customTag || '' }}"
           OPTIONAL_ALIAS="${{ inputs.optionalAlias || github.event.inputs.optionalAlias || '' }}"
+          UPLOAD="${{ inputs.upload || github.event.inputs.upload || '' }}"
 
           echo "Merged customTag: $CUSTOM_TAG"
           echo "Merged optionalAlias: $OPTIONAL_ALIAS"
+          echo "Merged upload: $UPLOAD"
 
           # Set outputs
           echo "custom_tag=$CUSTOM_TAG" >> $GITHUB_OUTPUT
           echo "optional_alias=$OPTIONAL_ALIAS" >> $GITHUB_OUTPUT
+          echo "upload=$UPLOAD" >> $GITHUB_OUTPUT
 
       - name: Display Inputs
         run: |
           echo tag=[${{ steps.inputs.outputs.custom_tag }}]
           echo alias=[${{ steps.inputs.outputs.optional_alias }}]
+          echo upload=[${{ steps.inputs.outputs.upload }}]
 
       - uses: actions/checkout@v4
         name: Checkout Branch
@@ -85,6 +97,15 @@ jobs:
           lfs: true
           ref: ${{ steps.inputs.outputs.custom_tag }}
         
+      - name: Get cloudfront function from the current branch
+        run: |
+          git fetch origin main:main
+          git show main:build/lightbeam_cloudfront_alias_template.js > build/lightbeam_cloudfront_alias_template.js
+      - name: confirm cloudfront function template exists
+        run: |
+          cat build/lightbeam_cloudfront_alias_template.js
+          
+
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
@@ -117,13 +138,14 @@ jobs:
 
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
+        if: ${{ steps.inputs.outputs.upload == 'true' }}
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ env.UNITY_VERSION }}-webgl-3.1.0
-          customParameters: -LIGHTBEAM_BUILD_PATH dist
+          customParameters: -LIGHTBEAM_BUILD_PATH dist -LIGHTBEAM_TAG ${{ steps.inputs.outputs.custom_tag }}
           targetPlatform: ${{ env.TARGET_PLATFORM }}
           unityVersion: ${{ env.UNITY_VERSION }}
           projectPath: ${{ env.PROJECT_PATH }}
@@ -138,12 +160,155 @@ jobs:
         shell: bash
 
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.custom_tag }} --acl public-read
+        if: ${{ steps.inputs.outputs.upload == 'true' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.custom_tag }} --acl public-read
       
-      - name: upload optional alias version
-        if: ${{ steps.inputs.outputs.optional_alias != '' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ env.PROJECT_PATH }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.inputs.outputs.optional_alias }} --acl public-read
-      
+      - name: List valid semver versions from S3
+        id: versions
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: |
+          set -e
+
+          BUCKET=${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
+
+          echo "Listing version prefixes from bucket: $BUCKET"
+
+          aws s3api list-objects-v2 \
+            --bucket "$BUCKET" \
+            --prefix version/ \
+            --delimiter '/' \
+            --query 'CommonPrefixes[].Prefix' \
+            --output text | tr '\t' '\n' | sed '/^$/d' > prefixes.txt
+
+          echo "Raw prefixes found:"
+          cat prefixes.txt
+
+          echo "Filtering valid semver versions..."
+
+          > versions.txt
+
+          while read prefix; do
+            name=$(basename "$prefix")
+            echo "checking=[$name]"
+            if [[ $name =~ ^unity-sdk-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              version=${BASH_REMATCH[1]}
+              echo "$version" >> versions.txt
+            fi
+          done < prefixes.txt
+
+          echo "Valid versions detected:"
+          cat versions.txt
+
+          echo "Sorting versions (descending)..."
+
+          sort -Vr versions.txt > versions_sorted.txt
+
+          echo "Sorted versions:"
+          cat versions_sorted.txt
+
+          echo "versions<<EOF" >> $GITHUB_OUTPUT
+          cat versions_sorted.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate CloudFront function
+        id: cf_function
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: |
+          set -e
+
+          echo "Generating CloudFront function from template..."
+
+          TEMPLATE_FILE=./build/lightbeam_cloudfront_alias_template.js
+          OUTPUT_FILE=function.js
+
+          if [ ! -f "$TEMPLATE_FILE" ]; then
+            echo "ERROR: Template not found at $TEMPLATE_FILE"
+            exit 1
+          fi
+
+          # Read versions from previous step
+          VERSIONS="${{ steps.versions.outputs.versions }}"
+
+          echo "Versions to inject:"
+          echo "$VERSIONS"
+
+          # Create JS array literal
+          VERSION_ARRAY=""
+          first=true
+          while read v; do
+            if [ "$first" = true ]; then
+              VERSION_ARRAY="\"$v\""
+              first=false
+            else
+              VERSION_ARRAY="$VERSION_ARRAY, \"$v\""
+            fi
+          done <<< "$VERSIONS"
+
+          # Inject into template
+          sed "s|/\\* versions will be injected here by CI \\*/|$VERSION_ARRAY|" "$TEMPLATE_FILE" > "$OUTPUT_FILE"
+
+          echo "Generated CloudFront function:"
+          cat "$OUTPUT_FILE"
+
+      - name: Deploy CloudFront function
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: |
+          set -e
+
+          FUNCTION_NAME=lightbeam-version-resolver
+
+          echo "Deploying CloudFront function: $FUNCTION_NAME"
+
+          if aws cloudfront describe-function --name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            echo "Function exists — updating..."
+
+            ETAG=$(aws cloudfront describe-function \
+              --name "$FUNCTION_NAME" \
+              --query 'ETag' \
+              --output text)
+
+            echo "Current ETag: $ETAG"
+
+            aws cloudfront update-function \
+              --name "$FUNCTION_NAME" \
+              --if-match "$ETAG" \
+              --function-config Comment="Unity SDK version resolver",Runtime=cloudfront-js-1.0 \
+              --function-code fileb://function.js
+
+          else
+            echo "Function does not exist — creating..."
+
+            aws cloudfront create-function \
+              --name "$FUNCTION_NAME" \
+              --function-config Comment="Unity SDK version resolver",Runtime=cloudfront-js-1.0 \
+              --function-code fileb://function.js
+          fi
+
+          echo "Publishing function..."
+
+          ETAG=$(aws cloudfront describe-function \
+            --name "$FUNCTION_NAME" \
+            --query 'ETag' \
+            --output text)
+
+          aws cloudfront publish-function \
+            --name "$FUNCTION_NAME" \
+            --if-match "$ETAG"
+
+          echo "CloudFront function deployed successfully."
 
       - name: Prepare Cloudfront Invalidation 
         run: |

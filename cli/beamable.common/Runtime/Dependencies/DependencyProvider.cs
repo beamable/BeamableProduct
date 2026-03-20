@@ -9,6 +9,16 @@ using UnityEngine;
 namespace Beamable.Common.Dependencies
 {
 	/// <summary>
+	/// A interface that is meant to be implemented explicitly by classes looking to
+	/// offer a way of extension, without leaking the Provider as part of their public
+	/// symbols.
+	/// </summary>
+	public interface IHaveDependencyProvider
+	{
+		public IDependencyProviderScope Scope { get; }
+	}
+	
+	/// <summary>
 	/// The <see cref="IDependencyProvider"/> is a collection of services, built from a <see cref="IDependencyBuilder"/>.
 	/// Use the <see cref="GetService{T}"/> method to get services.
 	/// </summary>

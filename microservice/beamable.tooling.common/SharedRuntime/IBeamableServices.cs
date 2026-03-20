@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using Beamable.Common.Scheduler;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Analytics;
@@ -66,7 +67,7 @@ namespace Beamable.Server
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public interface IBeamableServices
+	public interface IBeamableServices : IHaveDependencyProvider
 	{
 		IMicroserviceAnalyticsService Analytics { get; }
 

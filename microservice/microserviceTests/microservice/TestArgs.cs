@@ -157,6 +157,7 @@ namespace microserviceTests.microservice
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
+      public bool DisableOutboundWsCompression => false;
       public string MetadataUrl { get; }
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
@@ -170,6 +171,7 @@ namespace microserviceTests.microservice
 	  public bool OtelExporterStandardEnabled => false;
 	  public string OtelExporterRetryMaxSize { get; }
 	  public bool AllowStartupWithoutBeamableSettings => false;
+	  public int MaxUniqueEventBindingCount => 100;
 	  public bool SkipLocalEnv => true;
 	  public bool SkipAliasResolve => true;
 

@@ -15,6 +15,7 @@ public class LightBeamBuilds
 	[Serializable]
 	public class LightBeamRealmConfigIndex
 	{
+		public string gitTag;
 		public List<LightBeamSceneEntry> scenes = new List<LightBeamSceneEntry>();
 	}
 
@@ -53,13 +54,14 @@ public class LightBeamBuilds
 			throw new Exception("LIGHTBEAM_NO_CONFIG");
 		}
 
-		BuildRealmConfigIndex(config);
+		BuildRealmConfigIndex(config, "main");
 	}
 	
-	public static void BuildRealmConfigIndex(LightBeamSceneConfigObject config)
+	public static void BuildRealmConfigIndex(LightBeamSceneConfigObject config, string lightBeamTag)
 	{
-		var json = JsonUtility.ToJson(new LightBeamRealmConfigIndex
+		var index = new LightBeamRealmConfigIndex
 		{
+			gitTag = lightBeamTag,
 			scenes = config.editorScenes.Select(x => new LightBeamSceneEntry
 			{
 				title = x.title,
@@ -68,7 +70,9 @@ public class LightBeamBuilds
 				includeInToc = x.includeInToc,
 				realmConfigFile = x.realmRequirements == null ? null : x.realmRequirements.name
 			}).ToList()
-		}, true);
+		};
+		
+		var json = JsonUtility.ToJson(index, true);
 		
 		FileUtil.DeleteFileOrDirectory("Assets/StreamingAssets/RealmConfigs");
 		Directory.CreateDirectory("Assets/StreamingAssets");
@@ -88,9 +92,8 @@ public class LightBeamBuilds
 		Debug.Log("LIGHTBEAM_CONFIG " + config.name);
 
 		var args = Environment.GetCommandLineArgs();
-		BuildRealmConfigIndex(config);
-		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
 		string outputDir = null;
+		var lightBeamTag = "main";
 		for (var i = 0; i < args.Length - 1; i++)
 		{
 			switch (args[i])
@@ -98,8 +101,15 @@ public class LightBeamBuilds
 				case "-LIGHTBEAM_BUILD_PATH":
 					outputDir = args[i + 1];
 					break;
+				case "-LIGHTBEAM_TAG":
+					lightBeamTag = args[i + 1];
+					break;
 			}
 		}
+		
+		BuildRealmConfigIndex(config, lightBeamTag);
+		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
+		
 
 		//If there was no outputDir coming from args, then use the default
 		if (string.IsNullOrEmpty(outputDir))
