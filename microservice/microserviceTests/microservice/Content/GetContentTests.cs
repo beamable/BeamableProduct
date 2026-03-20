@@ -12,6 +12,7 @@ using Beamable.Server.Content;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
 using microserviceTests.microservice.Util;
 
@@ -94,10 +95,11 @@ namespace microserviceTests.microservice.Content
          var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
          testSocket.Connect();
+         
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(null, rc).Wait();
          });
 
 
@@ -159,7 +161,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(null, rc).Wait();
          });
 
 
@@ -235,7 +237,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(null, rc).Wait();
          });
 
 
@@ -309,7 +311,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(null, rc).Wait();
          });
 
 
@@ -391,7 +393,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(null, rc).Wait();
          });
 
 

@@ -60,6 +60,7 @@ namespace Beamable.Server
 		public bool OtelExporterStandardEnabled { get; set; }
 		public string OtelExporterRetryMaxSize { get; set; }
 		public bool AllowStartupWithoutBeamableSettings { get; set; }
+		public int MaxUniqueEventBindingCount { get; set; }
 		public bool SkipLocalEnv { get; set; }
 		public bool SkipAliasResolve { get; set; }
 
@@ -123,7 +124,8 @@ namespace Beamable.Server
 				OtelExporterRetryMaxSize = args.OtelExporterRetryMaxSize,
 				SkipLocalEnv = args.SkipLocalEnv,
 				SkipAliasResolve = args.SkipAliasResolve,
-				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings
+				MaxUniqueEventBindingCount = args.MaxUniqueEventBindingCount,
+				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings,
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -216,6 +218,9 @@ namespace Beamable.Server
 
 		public string OtelExporterRetryMaxSize => Environment.GetEnvironmentVariable("BEAM_OTEL_RETRY_MAX_SIZE");
 		public bool AllowStartupWithoutBeamableSettings => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE"));
+
+		public int MaxUniqueEventBindingCount =>
+			GetIntFromEnvironmentVariable("BEAMABLE_MAX_UNIQUE_EVENT_BINDING_COUNT", 100);
 
 		public string OtelExporterOtlpHeaders => Environment.GetEnvironmentVariable("BEAM_OTEL_EXPORTER_OTLP_HEADERS");
 		public void SetResolvedCid(string resolvedCid)
