@@ -337,13 +337,21 @@ namespace Beamable.Server
 
             if (TryGetEventSubscriptions(eventName, out var subscriptions))
             {
-               var fork = provider.Fork(b =>
-               {
-                  b.RemoveIfExists<RequestContext>();
-                  b.RemoveIfExists<MicroserviceRequestContext>();
-                  b.AddScoped<RequestContext>(ctx);
-                  b.AddScoped<MicroserviceRequestContext>(ctx);
-               });
+               var fork =
+                  provider == null
+                     ? new DependencyBuilder()
+                        .AddSingleton<RequestContext>(ctx)
+                        .AddSingleton<IBeamableRequester>(p => null)
+                        .AddSingleton<IBeamableServices>(p => null)
+                        .Build()
+                     : provider.Fork(b =>
+                     {
+                        b.RemoveIfExists<RequestContext>();
+                        b.RemoveIfExists<MicroserviceRequestContext>();
+                        b.AddScoped<RequestContext>(ctx);
+                        b.AddScoped<MicroserviceRequestContext>(ctx);
+                     });
+               
                await using IUserScope scope = new UserRequestDataHandler(fork);
                var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
                for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
