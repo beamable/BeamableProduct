@@ -26,10 +26,9 @@
 
 </script>
 
-<v-card>
-
-  <v-card-actions >
-    <v-btn          
+<beam-card>
+  <beam-card-actions >
+    <beam-btn          
       on:click={init}
       disabled={loading || playerData ? true : null}
       loading={loading ? true : null}
@@ -41,15 +40,15 @@
       {:else}
         Initialize Player
       {/if}
-    </v-btn>
+    </beam-btn>
 
     {#if error}
       <p class="error">{error}</p>
     {/if}
-  </v-card-actions>
+  </beam-card-actions>
 
   {#if playerData}
-    <v-data-table                                                                                                                                                                                                                                                                                                                             
+    <beam-data-table                                                                                                                                                                                                                                                                                                                             
       headers={[                                                                                                                                                                                                                                                                                                                              
         { text: 'Key',   value: 'key',   sortable: false },                                                                                                                                                                                                                                                                                   
         { text: 'Value', value: 'value', sortable: false },                                                                                                                                                                                                                                                                                   
@@ -61,11 +60,11 @@
       ]}                                                                                                                                                                                                                                                                                                                                      
       dense                                                                                                                                                                                                                                                                                                                                   
       hide-default-footer
-    ></v-data-table>  
+    ></beam-data-table>  
   {:else}
     <p class="placeholder">Click the button to load player data.</p>
   {/if}
-</v-card>
+</beam-card>
 
 <style>
   .error {
