@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+- Changed `Func<ILogger> IBeamServiceConfig.LogFactory` to `Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider`, which enables to override the C#MS logs to your own implementation of `ILoggerProvider`
+
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
