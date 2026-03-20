@@ -13,15 +13,6 @@ namespace Beamable.Server.Api.RealmConfig
 		void UpdateLogLevel();
 	}
 	
-	
-	[System.Serializable]
-	public class GetRealmConfigResponse
-	{
-		// ReSharper disable once InconsistentNaming
-		public Dictionary<string, string> config;
-	}
-
-	
    public class RealmConfigService : IRealmConfigService
    {
       private readonly IBeamableRequester _requester;

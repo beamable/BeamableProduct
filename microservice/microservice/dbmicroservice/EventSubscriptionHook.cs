@@ -23,8 +23,14 @@ public interface IEventSubscriptionConfiguration
 
 public class DefaultEventSubscriptionConfiguration : IEventSubscriptionConfiguration
 {
+    private IMicroserviceArgs _args;
     public HashSet<string> EventNames { get; set; } = new HashSet<string>();
     public HashSet<string> UniqueBindings { get; set; } = new HashSet<string>();
+
+    public DefaultEventSubscriptionConfiguration(IMicroserviceArgs args)
+    {
+        _args = args;
+    }
     
     public void AddSubscription(string evtName, bool toAll)
     {
@@ -32,6 +38,12 @@ public class DefaultEventSubscriptionConfiguration : IEventSubscriptionConfigura
         if (!toAll)
         {
             UniqueBindings.Add(evtName);
+        }
+
+        if (_args.MaxUniqueEventBindingCount != 0 && _args.MaxUniqueEventBindingCount < UniqueBindings.Count)
+        {
+            throw new InvalidOperationException(
+                "Exceeded soft unique event binding count. Reach out to Beamable, or increase env var BEAMABLE_MAX_UNIQUE_EVENT_BINDING_COUNT ");
         }
     }
 
@@ -79,69 +91,43 @@ public class DefaultEventSubscription : IEventSubscriptionHook
     }
 }
 
-/// <summary>
-/// An event description for Beamable's internal server communication system. 
-/// </summary>
-/// <typeparam name="TPayload"></typeparam>
-public class CustomEvent<TPayload>
-{
-    /// <summary>
-    /// A unique name for the event. 
-    /// </summary>
-    public string EventName;
-    
-    /// <summary>
-    /// When true, the event is sent to all services listening for ANY events.
-    /// When false, the event is only sent to services that are listening for the given event name
-    /// </summary>
-    public bool ToAll;
-
-    public CustomEvent(string eventName, bool toAll)
-    {
-        EventName = eventName;
-        ToAll = toAll;
-    }
-}
-
-public static class StandardBeamableEvents
-{
-    public static readonly ContentRefreshEvent ContentRefreshEvent = ContentRefreshEvent.Instance;
-    public static readonly RealmConfigUpdateEvent RealmConfigUpdateEvent = RealmConfigUpdateEvent.Instance;
-}
-
-public class ContentRefreshEvent : CustomEvent<ContentManifestEvent>
-{
-    public static ContentRefreshEvent Instance { get; } = new ContentRefreshEvent();
-    private ContentRefreshEvent() : base(Constants.Features.Services.CONTENT_UPDATE_EVENT, true)
-    {
-    }
-}
-
-
-public class RealmConfigUpdateEvent : CustomEvent<GetRealmConfigResponse>
-{
-    public static RealmConfigUpdateEvent Instance { get; } = new RealmConfigUpdateEvent();
-    private RealmConfigUpdateEvent() : base(Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT, true)
-    {
-    }
-}
-
 
 public static class EventExtensions
 {
-    public delegate void EventHandler<T>(T payload);
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll,
+        Action<IUserScope, T> handler)
+    {
+        return HandleEvent<T>(builder, evt, toAll, (scope, payload) =>
+        {
+            handler(scope, payload);
+            return Task.CompletedTask;
+        });
+    }
     
-    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll, EventHandler<T> handler)
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll,
+        Action<T> handler)
+    {
+        return HandleEvent<T>(builder, evt, toAll, (_, payload) =>
+        {
+            handler(payload);
+            return Task.CompletedTask;
+        });
+    }
+    
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll,
+        Func<T, Task> handler)
+    {
+        return HandleEvent<T>(builder, evt, toAll, (_, payload) => handler(payload));
+    }
+    
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, string evt, bool toAll, Func<IUserScope, T, Task> handler)
     {
         Task SetupCallback(IDependencyProviderScope p)
         {
             var ctx = p.GetService<SocketRequesterContext>();
             var conf = p.GetService<IEventSubscriptionConfiguration>();
             conf.AddSubscription(evt, toAll);
-            ctx.Subscribe<T>(evt, data =>
-            {
-                handler?.Invoke(data);
-            });
+            ctx.Subscribe<T>(evt, handler);
             return Task.CompletedTask;
         }
         
@@ -160,7 +146,22 @@ public static class EventExtensions
         return builder;
     }
 
-    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, CustomEvent<T> evt, EventHandler<T> handler)
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, CustomEvent<T> evt,
+        Action<IUserScope, T> handler)
+    {
+        return builder.HandleEvent(evt.EventName, evt.ToAll, handler);
+    }
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, CustomEvent<T> evt,
+        Action<T> handler)
+    {
+        return builder.HandleEvent(evt.EventName, evt.ToAll, handler);
+    }
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, CustomEvent<T> evt,
+        Func<T, Task> handler)
+    {
+        return builder.HandleEvent(evt.EventName, evt.ToAll, handler);
+    }
+    public static BeamServiceConfigBuilder HandleEvent<T>(this BeamServiceConfigBuilder builder, CustomEvent<T> evt, Func<IUserScope, T, Task> handler)
     {
         return builder.HandleEvent(evt.EventName, evt.ToAll, handler);
     }

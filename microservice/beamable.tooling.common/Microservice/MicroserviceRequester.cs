@@ -37,19 +37,20 @@ namespace Beamable.Server
 
    public interface IPlatformSubscription
    {
-      Task Resolve(RequestContext ctx);
+      Task Resolve(IUserScope scope);
    }
    public class PlatformSubscription<T> : IPlatformSubscription
    {
       public string EventName;
       public Action Unsubscribe;
-      public Func<T, Task> OnEvent;
+      public Func<IUserScope, T, Task> OnEvent;
 
-      public async Task Resolve(RequestContext ctx)
+      public async Task Resolve(IUserScope scope)
       {
+         var ctx = scope.Context;
          var data = JsonConvert.DeserializeObject<T>(ctx.Body, UnitySerializationSettings.Instance);
          if (OnEvent == null) return;
-         await OnEvent.Invoke(data);
+         await OnEvent.Invoke(scope, data);
       }
    }
 
@@ -263,13 +264,35 @@ namespace Beamable.Server
 
       public PlatformSubscription<T> Subscribe<T>(string eventName, Action<T> callback)
       {
-         return Subscribe<T>(eventName, data =>
+         return Subscribe<T>(eventName, (_, data) =>
          {
             callback?.Invoke(data);
             return Task.CompletedTask;
          });
       }
+      
       public PlatformSubscription<T> Subscribe<T>(string eventName, Func<T, Task> callback)
+      {
+         return Subscribe<T>(eventName, async (_, data) =>
+         {
+            var res = callback?.Invoke(data);
+            if (res != null)
+            {
+               await res;
+            }
+         });
+      }
+      
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Action<IUserScope, T> callback)
+      {
+         return Subscribe<T>(eventName, (scope, data) =>
+         {
+            callback?.Invoke(scope, data);
+            return Task.CompletedTask;
+         });
+      }
+      
+      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<IUserScope, T, Task> callback)
       {
          var subscription = new PlatformSubscription<T>
          {
@@ -300,7 +323,7 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public async Task HandleMessage(RequestContext ctx, BeamActivity parentActivity=null)
+      public async Task HandleMessage(IDependencyProvider provider, MicroserviceRequestContext ctx, BeamActivity parentActivity=null)
       {
          if (parentActivity == null)
          {
@@ -314,10 +337,18 @@ namespace Beamable.Server
 
             if (TryGetEventSubscriptions(eventName, out var subscriptions))
             {
+               var fork = provider.Fork(b =>
+               {
+                  b.RemoveIfExists<RequestContext>();
+                  b.RemoveIfExists<MicroserviceRequestContext>();
+                  b.AddScoped<RequestContext>(ctx);
+                  b.AddScoped<MicroserviceRequestContext>(ctx);
+               });
+               await using IUserScope scope = new UserRequestDataHandler(fork);
                var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
                for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
                {
-                  await subscriptions[i].Resolve(ctx);
+                  await subscriptions[i].Resolve(scope);
                }
             }
 

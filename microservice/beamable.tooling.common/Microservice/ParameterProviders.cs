@@ -16,41 +16,6 @@ namespace Beamable.Server
       object[] GetParameters(ServiceMethod method, IDependencyProvider provider);
    }
 
-	public class EventParameterProvider : IParameterProvider
-	{
-		private string _rawBody;
-
-		public EventParameterProvider(string rawBody)
-		{
-			_rawBody = rawBody;
-		}
-
-		/// <inheritdoc />
-		public object[] GetParameters(ServiceMethod method, IDependencyProvider provider)
-		{
-			var args = new object[method.Deserializers.Count];
-
-			for (var i = 0; i < method.ParameterNames.Count; i++)
-			{
-				var parameter = method.ParameterInfos[i];
-				var parameterName = method.ParameterNames[i];
-				var source = method.ParameterSources[parameterName];
-
-				switch (source)
-				{
-					case ParameterSource.Body:
-						args[i] = method.Deserializers[i](_rawBody);
-						break;
-					case ParameterSource.Injection:
-						args[i] = provider.GetService(parameter.ParameterType);
-						break;
-				}
-			}
-
-			return args;
-		}
-	}
-
 	/// <summary>
 	/// Provides adaptive method parameters based on the microservice request context.
 	/// </summary>

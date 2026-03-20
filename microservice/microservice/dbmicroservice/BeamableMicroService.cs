@@ -553,7 +553,7 @@ namespace Beamable.Server
 			      try
 			      {
 				      await task;
-				      BeamableLogger.Log($"Custom service setup initializer succeeded.\n");
+				      Log.Debug($"Custom service setup initializer succeeded.\n");
 			      }
 			      catch (Exception ex)
 			      {
@@ -658,7 +658,7 @@ namespace Beamable.Server
 	      
 	      try
 	      {
-		      await _socketRequesterContext.HandleMessage(ctx, activity);
+		      await _socketRequesterContext.HandleMessage(Provider, ctx, activity);
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
@@ -703,7 +703,7 @@ namespace Beamable.Server
 	      }
 	      catch (MicroserviceException ex)
 	      {
-		      activity.SetStatus(ActivityStatusCode.Error);
+		      activity.SetException(ex);
 
 		      var failResponse = new GatewayErrorResponse
 		      {
@@ -722,6 +722,8 @@ namespace Beamable.Server
 	      catch (TargetInvocationException ex)
 	      {
 		      var inner = ex.InnerException;
+		      activity.SetException(inner);
+		      
 		      var failResponse = new GatewayResponse()
 		      {
 			      id = ctx.Id,
@@ -766,6 +768,7 @@ namespace Beamable.Server
 	      }
 	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
 	      {
+		      activity.SetException(ex);
 		      BeamableZLoggerProvider.Instance.Error(ex);
 		      // var failResponse = new GatewayErrorResponse
 		      // {
@@ -1021,7 +1024,7 @@ namespace Beamable.Server
 		      body: req.ToJson());
 	      _ = serviceProviderTask.Then(_ => Log.Debug(Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED));
 
-	      // var eventNames = new HashSet<string>(MicroserviceRequester.DefaultEventNames);
+	      
 	      var eventConfig = Provider.GetService<IEventSubscriptionConfiguration>();
 	      foreach (var evt in MicroserviceRequester.DefaultEventNames)
 	      {
@@ -1036,13 +1039,7 @@ namespace Beamable.Server
 		      Requester = _requester
 	      };
 	      var eventProvider = hook.CreateSubscription(args);
-	      // var eventProvider = _serviceAttribute.DisableAllBeamableEvents
-		     //  ? PromiseBase.SuccessfulUnit
-		     //  : _requester.InitializeSubscription().Then(res =>
-		     //  {
-			    //   Log.Debug(Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED);
-		     //  }).ToUnit();
-
+	      
 	      await serviceProviderTask;
 	      await RegisterFederation(routingKey);
 	      await eventProvider;
