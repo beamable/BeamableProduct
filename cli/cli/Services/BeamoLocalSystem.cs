@@ -542,6 +542,19 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
+	public class PortalExtensionDef
+	{
+		public string Name;
+		public string Version;
+		public string Type;
+
+		public string RelativePath;
+		public string AbsolutePath;
+		public List<string> MicroserviceDependencies;
+	}
+	public PortalExtensionDef PortalExtensionDefinition;
+
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
@@ -888,6 +901,9 @@ public enum BeamoProtocolType
 
 	// Current Mongo-based Data Storage
 	EmbeddedMongoDb,
+
+	// A svelte app
+	PortalExtension
 }
 
 public interface IBeamoLocalProtocol
