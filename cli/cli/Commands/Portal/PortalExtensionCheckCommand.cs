@@ -39,29 +39,44 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 
 	public static bool CheckPortalExtensionsDependencies()
 	{
-		var nodeCheck = CheckDependency("node", "-v", minVersion: new PackageVersion(22, 0, 0),
-			hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-		bool viteCheck = false;
+		
+		bool viteCheck;
+		bool nodeCheck;
 		if (isWindows)
 		{
+			nodeCheck = CheckDependency("cmd.exe", "/c node -v", minVersion: new PackageVersion(22, 0, 0),
+				hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
+			
 			viteCheck = CheckDependency("cmd.exe", "/c vite --version",
 				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
-
+			
+			if (!viteCheck)
+			{
+				viteCheck = CheckDependency("cmd.exe", "/c npx --yes vite --version",
+					hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
+				if (viteCheck)
+				{
+					Log.Information("Found Vite through npx installation");
+				}
+			}
 		}
 		else
 		{
+			nodeCheck = CheckDependency("node", "-v", minVersion: new PackageVersion(22, 0, 0),
+				hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
+			
 			viteCheck = CheckDependency("vite", "--version",
 				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
-		}
-
-		if (!viteCheck)
-		{
-			viteCheck = CheckDependency("npx", "--yes vite --version",
-				hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
-			if (viteCheck)
+			
+			if (!viteCheck)
 			{
-				Log.Information("Found Vite through npx installation");
+				viteCheck = CheckDependency("npx", "--yes vite --version",
+					hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
+				if (viteCheck)
+				{
+					Log.Information("Found Vite through npx installation");
+				}
 			}
 		}
 

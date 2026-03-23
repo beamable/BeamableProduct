@@ -150,7 +150,7 @@ public class PortalExtensionObserver
 
 	public void BuildExtension()
 	{
-		var result = StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: _appPath);
+		var result = StartProcessUtil.Run("cmd.exe", "/c npmrun beam-build", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -160,7 +160,7 @@ public class PortalExtensionObserver
 
 	public void InstallDeps()
 	{
-		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: _appPath);
+		var result = StartProcessUtil.Run("cmd.exe", "/c npm install", workingDirectoryPath: _appPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
