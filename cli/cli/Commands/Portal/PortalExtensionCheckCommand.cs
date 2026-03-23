@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Server;
 using cli.Utils;
+using System.Runtime.InteropServices;
 
 namespace cli.Portal;
 
@@ -40,9 +41,19 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 	{
 		var nodeCheck = CheckDependency("node", "-v", minVersion: new PackageVersion(22, 0, 0),
 			hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
+		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+		bool viteCheck = false;
+		if (isWindows)
+		{
+			viteCheck = CheckDependency("cmd.exe", "/c vite --version",
+				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
 
-		var viteCheck = CheckDependency("vite", "--version",
-			hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
+		}
+		else
+		{
+			viteCheck = CheckDependency("vite", "--version",
+				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
+		}
 
 		if (!viteCheck)
 		{
