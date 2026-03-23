@@ -44,6 +44,7 @@ public class ConfigService
 	public const string CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS = "additionalProjectPaths";
 	public const string CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS = "ignoredProjectPaths";
 	public const string CFG_JSON_FIELD_OBJ_OTEL = "otelConfig";
+	public const string CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION = "portalExtension";
 	public const string CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS = "linkedProjects";
 
 	public const string SHARED_FOLDER_NAME = "shared";
@@ -1461,6 +1462,26 @@ public class ConfigService
 
 	#endregion
 
+	#region Helpers - Portal Extensions
+
+	public void SavePortalExtensionConfig(PortalExtensionConfig config)
+	{
+		WriteConfig(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, config);
+	}
+
+	public PortalExtensionConfig LoadPortalExtensionConfig()
+	{
+		var config = GetConfig2(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, new PortalExtensionConfig());
+		if (config.fileExtensionsToObserve == null)
+		{
+			config.fileExtensionsToObserve = new List<string>();
+		}
+
+		return config;
+	}
+
+	#endregion
+
 	#region Helpers - Microservice Parsing Settings
 
 	public List<string> LoadExtraPathsFromFile() => GetConfig2(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
@@ -1817,6 +1838,12 @@ public class OtelConfig
 	public bool BeamCliAllowTelemetry;
 	public string BeamCliTelemetryLogLevel;
 	public long BeamCliTelemetryMaxSize;
+}
+
+[Serializable]
+public class PortalExtensionConfig
+{
+	public List<string> fileExtensionsToObserve;
 }
 
 [Serializable]

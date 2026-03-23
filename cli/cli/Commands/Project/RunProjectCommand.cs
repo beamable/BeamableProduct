@@ -210,6 +210,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 							SendUpdate(name, progress: 1f);
 						}));
 					break;
+				case BeamoProtocolType.PortalExtension:
+					var cToken = new CancellationTokenSource();
+
+					var portalExtensionConfig = args.ConfigService.LoadPortalExtensionConfig();
+
+					runTasks.Add(args.BeamoLocalSystem.RunLocalPortalExtension(serviceDef, args.BeamoLocalSystem, args.AppContext, portalExtensionConfig, cToken.Token));
+					break;
 			}
 		}
 		

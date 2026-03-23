@@ -375,15 +375,6 @@ public static class MicroserviceStartupUtil
 	private static void ConfigureLogging(IBeamServiceConfig configurator, StartupContext ctx, bool includeOtel,
 		string otlpEndpoint)
 	{
-		if (configurator.LogFactory != null)
-		{
-			BeamableLogProvider.Provider = new BeamableZLoggerProvider();
-			Debug.Instance = new MicroserviceDebug();
-			ctx.logger = configurator.LogFactory();
-			BeamableZLoggerProvider.SetLogger(ctx.logger);
-			return;
-		}
-
 		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out var defaultLogLevel))
 		{
 			defaultLogLevel = LogLevel.Warning;
@@ -393,12 +384,12 @@ public static class MicroserviceStartupUtil
 
 		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
 		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
-		
+
 		ctx.logFactory = LoggerFactory.Create(builder =>
 		{
 			// TODO: handle per-route / config options
 
-			// all logs are valid, but may not pass the filter. 
+			// all logs are valid, but may not pass the filter.
 			builder.SetMinimumLevel(LogLevel.Trace);
 
 			builder.AddFilter(level => level >= MicroserviceBootstrapper.ContextLogLevel.Value);
@@ -408,7 +399,7 @@ public static class MicroserviceStartupUtil
 			}
 
 			var shouldIncludeOtel = ctx.InDocker || ctx.args.UseLocalOtel;
-			
+
 			if (includeOtel && shouldIncludeOtel)
 			{
 				builder.AddOpenTelemetry(logging =>
@@ -443,34 +434,16 @@ public static class MicroserviceStartupUtil
 				});
 			}
 
-			switch (ctx.args.LogOutputType)
+			if (configurator.AddLoggerProvider != null)
 			{
-				case LogOutputType.DEFAULT when !ctx.InDocker:
-				case LogOutputType.UNSTRUCTURED:
-					builder.AddZLoggerConsole(opts => { opts.UsePlainTextFormatter(); });
-
-					break;
-
-				case LogOutputType.FILE:
-					builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
-					break;
-
-				case LogOutputType.STRUCTURED_AND_FILE:
-
-					builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
-					builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
-
-					break;
-				case LogOutputType.DEFAULT
-					: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
-				case LogOutputType.STRUCTURED:
-				default:
-					builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
-					break;
+				configurator.AddLoggerProvider(builder);
+			}
+			else
+			{
+				AddDefaultLoggerProviders(builder, ctx.args.LogOutputType, ctx.InDocker, ctx.args.LogOutputPath);
 			}
 
 		});
-
 
 		// use newtonsoft for JsonUtility
 		JsonUtilityConverter.Init();
@@ -479,6 +452,36 @@ public static class MicroserviceStartupUtil
 		Debug.Instance = new MicroserviceDebug();
 		ctx.logger = ctx.logFactory.CreateLogger<Microservice>();
 		BeamableZLoggerProvider.SetLogger(ctx.logger);
+		BeamableZLoggerProvider.LogContext.Value = ctx.logger;
+	}
+
+	private static void AddDefaultLoggerProviders(ILoggingBuilder builder, LogOutputType type, bool inDocker, string outputPath)
+	{
+		switch (type)
+		{
+			case LogOutputType.DEFAULT when !inDocker:
+			case LogOutputType.UNSTRUCTURED:
+				builder.AddZLoggerConsole(opts => { opts.UsePlainTextFormatter(); });
+
+				break;
+
+			case LogOutputType.FILE:
+				builder.AddZLoggerFile(outputPath ?? "./service.log");
+				break;
+
+			case LogOutputType.STRUCTURED_AND_FILE:
+
+				builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
+				builder.AddZLoggerFile(outputPath ?? "./service.log");
+
+				break;
+			case LogOutputType.DEFAULT
+				: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+			case LogOutputType.STRUCTURED:
+			default:
+				builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
+				break;
+		}
 	}
 
 	public static void ConfigureUnhandledError()

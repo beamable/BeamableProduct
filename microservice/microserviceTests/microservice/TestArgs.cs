@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using microserviceTests.microservice.Util;
 using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace microserviceTests.microservice
 {
@@ -77,7 +78,13 @@ namespace microserviceTests.microservice
 				.OverrideConfig(c =>
 				{
 					c.Args = args;
-					c.LogFactory = () => LoggingUtil.testLogger;
+					c.AddLoggerProvider = (builder) =>
+					{
+						builder.ClearProviders();
+						var testLogs = new LoggingUtil.TestLogs();
+						builder.SetMinimumLevel(LogLevel.Trace);
+						builder.AddZLoggerLogProcessor(testLogs);
+					};
 					c.FirstConnectionHandler = (service) =>
 					{
 						Service = service;
