@@ -27,7 +27,7 @@ public class GetLocalSettingsIFederatedGameServerCommandArgs : CommandArgs, Fede
 
 public class GetLocalSettingsIFederatedGameServerCommand : AtomicCommand<GetLocalSettingsIFederatedGameServerCommandArgs, LocalSettings_IFederatedGameServer>
 {
-	public GetLocalSettingsIFederatedGameServerCommand() : base(typeof(IFederatedGameServer<>).GetNameWithoutGenericArity(), $"Get the local settings for the {typeof(IFederatedGameServer<>)}  local routing key")
+	public GetLocalSettingsIFederatedGameServerCommand() : base(typeof(IFederatedGameServer<>).GetNameWithoutGenericArity(), $"Get the local settings for the {typeof(IFederatedGameServer<>)} local routing key")
 	{
 	}
 
@@ -82,7 +82,7 @@ public class SetLocalSettingsIFederatedGameServerCommandArgs : CommandArgs, Fede
 
 public class SetLocalSettingsIFederatedGameServerCommand : AtomicCommand<SetLocalSettingsIFederatedGameServerCommandArgs, LocalSettings_IFederatedGameServer>
 {
-	public SetLocalSettingsIFederatedGameServerCommand() : base(typeof(IFederatedGameServer<>).GetNameWithoutGenericArity(), $"Get the local settings for the {typeof(IFederatedGameServer<>)}  local routing key")
+	public SetLocalSettingsIFederatedGameServerCommand() : base(typeof(IFederatedGameServer<>).GetNameWithoutGenericArity(), $"Set the local settings for the {typeof(IFederatedGameServer<>)} local routing key")
 	{
 	}
 
