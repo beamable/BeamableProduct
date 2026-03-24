@@ -2102,3 +2102,138 @@ public struct ContentHistoryChangelistContentEntry
 	/// </summary>
 	public ContentStatus StatusEnum => (ContentStatus)ChangeStatus;
 }
+
+public partial class ContentService
+{
+	/// <summary>
+	/// Restores local content files from content history, overwriting them with the version stored in the specified manifest UID.
+	/// If content is not locally cached in history, it will be automatically downloaded.
+	/// The referenceManifestId of the local content file will be preserved (not replaced with the one from history).
+	/// </summary>
+	/// <param name="manifestUid">The manifest UID from history to restore content from</param>
+	/// <param name="contentIds">Optional collection of content IDs to restore; if null or empty, all content in the manifest UID will be restored</param>
+	/// <param name="manifestId">The manifest ID, defaults to "global"</param>
+	/// <param name="cancellationToken">Cancellation token to abort the restore operation</param>
+	/// <returns>A list of content IDs that were successfully restored</returns>
+	/// <remarks>
+	/// This function:
+	/// 1. Loads the changelist for the specified manifestUid to determine which content exists in that version
+	/// 2. Ensures all required history content files are downloaded (calls SyncContentHistoryContent if needed)
+	/// 3. For each content file, reads it from the history folder
+	/// 4. Reads the current local content file to get the original referenceManifestId
+	/// 5. Overwrites the local content file with the history version, preserving the original referenceManifestId
+	/// 6. Uses the file system semaphore to prevent race conditions with other content operations
+	/// </remarks>
+	public async Task<List<string>> RestoreContentFromHistory(string manifestUid, IEnumerable<string> contentIds = null, string manifestId = "global", CancellationToken cancellationToken = default)
+	{
+		var pid = _requester.Pid;
+		var restoredContentIds = new List<string>();
+
+		// Fetch the latest manifest to use as fallback for referenceManifestId
+		var latestManifestPromise = GetManifest(manifestId);
+
+		// Load the changelist for this manifestUid to determine what content exists
+		var changelists = await GetAllContentHistoryLocalChangelists(pid, manifestId, new[] { manifestUid });
+		if (changelists.Changelists == null || changelists.Changelists.Length == 0)
+		{
+			throw new CliException($"No changelist found for manifest UID: {manifestUid}");
+		}
+
+		var changelist = changelists.Changelists[0];
+		var latestManifest = await latestManifestPromise;
+
+		// Determine which content IDs we need to restore
+		var allContentInChangelist = new HashSet<string>();
+		if (changelist.Created != null) allContentInChangelist.UnionWith(changelist.Created.Keys);
+		if (changelist.Modified != null) allContentInChangelist.UnionWith(changelist.Modified.Keys);
+		if (changelist.Removed != null) allContentInChangelist.UnionWith(changelist.Removed.Keys);
+
+		// Filter to requested content IDs if specified
+		var targetContentIds = contentIds != null && contentIds.Any()
+			? allContentInChangelist.Intersect(contentIds).ToList()
+			: allContentInChangelist.ToList();
+
+		if (targetContentIds.Count == 0)
+		{
+			return restoredContentIds; // Nothing to restore
+		}
+
+		// Ensure all history content files are downloaded
+		await SyncContentHistoryContent(pid, manifestId, manifestUid, targetContentIds, cancellationToken);
+
+		// Get the path to the history content folder for this manifest UID
+		var historyContentPath = Path.Combine(ContentHistoryContentPath, pid, manifestId, manifestUid);
+
+		// Get the path to the local content folder
+		var localContentFolder = EnsureContentPathForRealmExists(out _, pid, manifestId);
+
+		// Acquire the file system semaphore to prevent race conditions
+		await _fileSystemOperationSemaphore.WaitAsync(cancellationToken);
+		try
+		{
+			foreach (var contentId in targetContentIds)
+			{
+				try
+				{
+					// Read the history content file
+					var historyFilePath = Path.Combine(historyContentPath, $"{contentId}.json");
+					if (!File.Exists(historyFilePath))
+					{
+						Log.Warning($"History content file not found for {contentId} in manifest {manifestUid}");
+						continue;
+					}
+
+					var historyJsonText = await File.ReadAllTextAsync(historyFilePath, cancellationToken);
+					var historyJson = JsonSerializer.Deserialize<JsonElement>(historyJsonText, GetContentFileSerializationOptions());
+
+					// Read the current local content file to get the original referenceManifestId
+					var localFilePath = Path.Combine(localContentFolder, $"{contentId}.json");
+					string originalReferenceManifestId = null;
+
+					if (File.Exists(localFilePath))
+					{
+						var localJsonText = await File.ReadAllTextAsync(localFilePath, cancellationToken);
+						var localJson = JsonSerializer.Deserialize<JsonElement>(localJsonText, GetContentFileSerializationOptions());
+
+						// Extract the original referenceManifestId
+						if (localJson.TryGetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID, out var refManifestIdElement))
+						{
+							originalReferenceManifestId = refManifestIdElement.GetString();
+						}
+					}
+
+					// If we don't have an original reference, use the latest published manifest uid
+					originalReferenceManifestId ??= latestManifest.uid.GetOrElse(manifestUid);
+
+					// Create a new JSON object with the history content but preserving the original referenceManifestId
+					var properties = historyJson.GetProperty(ContentFile.JSON_NAME_PROPERTIES);
+					var tags = historyJson.GetProperty(ContentFile.JSON_NAME_TAGS);
+
+					var restoredContentFile = new ContentFile
+					{
+						Id = contentId,
+						Properties = properties,
+						Tags = tags,
+						FetchedFromManifestUid = originalReferenceManifestId
+					};
+
+					// Save the restored content file to the local content folder
+					await SaveContentFile(localContentFolder, restoredContentFile, cancellationToken);
+
+					restoredContentIds.Add(contentId);
+					Log.Information($"Restored content {contentId} from history manifest {manifestUid}");
+				}
+				catch (Exception e)
+				{
+					Log.Error(e, $"Failed to restore content {contentId} from history");
+				}
+			}
+		}
+		finally
+		{
+			_fileSystemOperationSemaphore.Release();
+		}
+
+		return restoredContentIds;
+	}
+}
