@@ -112,10 +112,10 @@ public class ProjectCommand : CommandGroup
 				.Where(x =>
 				{
 					var hasLocalProjectFile = !string.IsNullOrEmpty(x.AbsoluteProjectPath);
-					var fitsTypeRequirement = includeStorage || x.Protocol == BeamoProtocolType.HttpMicroservice;
+					var fitsTypeRequirement = includeStorage || x.Protocol is BeamoProtocolType.HttpMicroservice or BeamoProtocolType.PortalExtension;
 					return hasLocalProjectFile && fitsTypeRequirement;
 				})
-				.Select(x => x.BeamoId)
+				.Select(x => x.Protocol is BeamoProtocolType.PortalExtension ? BeamoLocalSystem.ComputedPortalExtensionName(x.BeamoId) : x.BeamoId)
 				.ToList() ?? new List<string>();
 		}
 

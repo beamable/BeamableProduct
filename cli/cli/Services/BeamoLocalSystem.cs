@@ -558,7 +558,7 @@ public class BeamoServiceDefinition
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
-	public enum ProjectLanguage { CSharpDotnet, }
+	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
 
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.
