@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
@@ -18,21 +19,6 @@ public partial class BeamoLocalSystem
 
 		[JsonProperty("beamable")]
 		public PortalExtensionPackageProperties BeamableProperties { get; set; }
-	}
-
-	public class PortalExtensionPackageProperties
-	{
-		[JsonProperty("version")]
-		public string Version { get; set; }
-
-		[JsonProperty("beamPortalExtension")]
-		public bool IsPortalExtension { get; set; }
-
-		[JsonProperty("portalExtensionType")]
-		public string PortalExtensionType { get; set; }
-
-		[JsonProperty("microserviceDependencies")]
-		public List<string> MicroserviceDependencies { get; set; }
 	}
 
 	/// <summary>
@@ -80,17 +66,9 @@ public partial class BeamoLocalSystem
 				})
 				.ConfigureServices((dependency) =>
 				{
-					if (!Enum.TryParse(extension.Type, out PortalExtensionType type))
+					var observer = new PortalExtensionObserver
 					{
-						throw new CliException(
-							$"Extension type = [{type}] could not be deserialized. The valid values for it are: [{string.Join(", ", Enum.GetNames(typeof(PortalExtensionType)))}]");
-					}
-
-					var observer = new PortalExtensionObserver();
-					observer.AppFilesPath = extension.AbsolutePath;
-					observer.ExtensionMetaData = new ExtensionBuildMetaData()
-					{
-						ExtensionName = extension.Name, ExtensionType = type.ToString()
+						ExtensionMetaData = extension
 					};
 
 					if (config.fileExtensionsToObserve != null)
@@ -178,6 +156,34 @@ public partial class BeamoLocalSystem
 		return true;
 	}
 
+}
+
+[Serializable]
+public class PortalExtensionMountProperties
+{
+	[JsonProperty("page")] public string Page;
+
+	[JsonProperty("selector")] public string Selector;
+	[JsonProperty("navGroup")] public OptionalString NavGroup;
+	[JsonProperty("navLabel")] public OptionalString NavLabel;
+	[JsonProperty("navIcon")] public OptionalString NavIcon;
+	[JsonProperty("navGroupOrder")] public OptionalInt NavGroupOrder;
+	[JsonProperty("navLabelOrder")] public OptionalInt NavLabelOrder;
+
+	[JsonProperty("args")] public Dictionary<string, string> Args;
+}
+
+[Serializable]
+public class PortalExtensionPackageProperties
+{
+	[JsonProperty("version")] public string Version;
+
+	[JsonProperty("portalExtension")] public bool IsPortalExtension;
+
+	[JsonProperty("microserviceDependencies")]
+	public List<string> MicroserviceDependencies;
+
+	[JsonProperty("mount")] public PortalExtensionMountProperties Mount;
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider

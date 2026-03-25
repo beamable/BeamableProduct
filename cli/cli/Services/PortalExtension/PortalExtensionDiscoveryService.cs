@@ -24,8 +24,8 @@ public class ExtensionBuildData //TODO make this have a diff version number so w
 [Serializable]
 public class ExtensionBuildMetaData
 {
-	public string ExtensionName;
-	public string ExtensionType;
+	public string Name;
+	public PortalExtensionPackageProperties Properties;
 }
 
 public enum PortalExtensionType
@@ -58,7 +58,11 @@ public class PortalExtensionDiscoveryService : Microservice
 	public ExtensionBuildMetaData RequestMetaData()
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
-		return observer.ExtensionMetaData;
+		return new ExtensionBuildMetaData
+		{
+			Name = observer.ExtensionMetaData.Name,
+			Properties = observer.ExtensionMetaData.Properties
+		};
 	}
 }
 
@@ -77,9 +81,8 @@ public class PortalExtensionObserver
 
 
 	private bool _alreadyStarted;
-	private string _appPath;
 
-	private ExtensionBuildMetaData _metaData;
+	private PortalExtensionDef _metaData;
 
 	//TODO have this have a sorted list of data+hash (with a max size of 10 maybe), and try to find the one that matches and calculate the
 	// diff between that one and the latest build, on each build we add the to the list and remove the oldest one
@@ -90,29 +93,9 @@ public class PortalExtensionObserver
 	private IMicroserviceAttributes _attributes;
 	private BeamoLocalManifest _manifest;
 
-	public string AppFilesPath
-	{
-		get
-		{
-			if (_appPath == null)
-			{
-				throw new Exception("The property AppFilesPath needs a valid path");
-			}
+	public string AppFilesPath => _metaData.AbsolutePath;
 
-			return _appPath;
-		}
-		set
-		{
-			if (value is null)
-			{
-				throw new Exception("Value for this property cannot be null");
-			}
-
-			_appPath = value;
-		}
-	}
-
-	public ExtensionBuildMetaData ExtensionMetaData
+	public PortalExtensionDef ExtensionMetaData
 	{
 		get
 		{
@@ -150,7 +133,7 @@ public class PortalExtensionObserver
 
 	public void BuildExtension()
 	{
-		var result = StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: _appPath);
+		var result = StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -160,7 +143,7 @@ public class PortalExtensionObserver
 
 	public void InstallDeps()
 	{
-		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: _appPath);
+		var result = StartProcessUtil.Run("npm", "install", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -170,8 +153,8 @@ public class PortalExtensionObserver
 
 	public ExtensionBuildData GetAppBuild(string clientHash)
 	{
-		var mainJsPath = Path.Combine(_appPath, "assets", "main.js");
-		var mainCssPath = Path.Combine(_appPath, "assets", "main.css");
+		var mainJsPath = Path.Combine(AppFilesPath, "assets", "main.js");
+		var mainCssPath = Path.Combine(AppFilesPath, "assets", "main.css");
 
 		if (!File.Exists(mainJsPath) || !File.Exists(mainCssPath))
 		{
@@ -252,7 +235,7 @@ public class PortalExtensionObserver
 
 		_alreadyStarted = true;
 
-		using var watcher = new FileSystemWatcher(_appPath);
+		using var watcher = new FileSystemWatcher(AppFilesPath);
 
 		watcher.Filters.Clear();
 
@@ -312,7 +295,7 @@ public class PortalExtensionObserver
 		}
 
 		// generate microservice client files, in case a manually change happened to the package.json adding a new dep
-		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(_appPath, _manifest);
+		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(AppFilesPath, _manifest);
 
 		// build the app since there are new changes in the src files
 		BuildExtension();
@@ -322,8 +305,8 @@ public class PortalExtensionObserver
 			new PortalExtensionNotifyPayload()
 			{
 				serviceName = _attributes.MicroserviceName ,
-				extensionName = _metaData.ExtensionName,
-				extensionType = _metaData.ExtensionType
+				extensionName = _metaData.Name,
+				extensionProperties = _metaData.Properties
 			});
 	}
 
@@ -332,6 +315,6 @@ public class PortalExtensionObserver
 	{
 		public string serviceName;
 		public string extensionName;
-		public string extensionType;
+		public PortalExtensionPackageProperties extensionProperties;
 	}
 }
