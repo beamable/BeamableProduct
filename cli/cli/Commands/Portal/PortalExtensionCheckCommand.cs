@@ -2,6 +2,8 @@ using Beamable.Common;
 using Beamable.Server;
 using cli.Utils;
 using System.Runtime.InteropServices;
+using cli.Services;
+using CliWrap;
 
 namespace cli.Portal;
 
