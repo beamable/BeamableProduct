@@ -3,7 +3,8 @@ name: Perf Test Microservices
 on:
   pull_request:
     branches:
-      - 'main'
+      # TODO: Chris turned this off on March 25, 2026 due to some dev instability. 
+      - 'DISABLED'
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
