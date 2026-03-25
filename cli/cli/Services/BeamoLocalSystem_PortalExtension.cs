@@ -39,7 +39,7 @@ public partial class BeamoLocalSystem
 	/// Runs a portal extension locally
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, IAppContext appContext, PortalExtensionConfig config, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -47,10 +47,10 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, appContext, config, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, IAppContext appContext, PortalExtensionConfig config, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
 		try
@@ -74,7 +74,8 @@ public partial class BeamoLocalSystem
 					}
 					catch (CliException e)
 					{
-						Log.Error($" Error while starting extension: {e.Message}. Stacktrace: {e.StackTrace}");
+						Log.Error(e, $" Error while starting extension: {e.Message}. Stacktrace: {e.StackTrace}");
+						throw;
 					}
 
 				})
@@ -108,21 +109,18 @@ public partial class BeamoLocalSystem
 						throw new CliException(
 							$"Portal extension file observer failed. Error: [{e.Message}] StackTrace: [{e.StackTrace}]");
 					}
-
+					
 					dependency.AddSingleton(observer);
 				})
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
-				.OverrideConfig((config) =>
+				.OverrideConfig((microserviceConfig) =>
 				{
-					config.Attributes = new DefaultMicroserviceAttributes()
+					microserviceConfig.Attributes = new DefaultMicroserviceAttributes()
 					{
 						MicroserviceName = GetMicroName(extension.Name),
 					};
-
-					config.AddLoggerProvider = (builder) =>
-					{
-						SetLoggerProvider(builder, appContext);
-					};
+					
+					microserviceConfig.AddLoggerProvider = builder => SetLoggerProvider(builder, appContext);
 				})
 				.RunForever();
 		}
@@ -135,21 +133,8 @@ public partial class BeamoLocalSystem
 
 	private void SetLoggerProvider(ILoggingBuilder builder, IAppContext appContext)
 	{
-		//TODO should we keep this? Or just get rid of it?
-		Action readyForTraffic = () =>
-		{
-			if (TryBuildPortalUrl(appContext, out string portalUrl))
-			{
-				Console.WriteLine($"Portal URL: {portalUrl}");
-			}
-			else
-			{
-				Console.WriteLine("Couldn't generate Portal URL for extension app.");
-			}
-		};
-
 		builder.ClearProviders();
-		builder.AddProvider(new ExtensionAppLogProvider(readyForTraffic));
+		builder.AddProvider(new ExtensionAppLogProvider(appContext));
 	}
 
 	private string GetMicroName(string appName)
@@ -164,34 +149,20 @@ public partial class BeamoLocalSystem
 		return _computedMicroserviceName;
 	}
 
-	private bool TryBuildPortalUrl(IAppContext context, out string portalUrl)
-	{
-		var cid = context.CustomerID;
-		var pid = context.Pid;
-
-		var treatedHost = context.Host.Replace("/socket", "")
-			.Replace("wss", "https")
-			.Replace("dev.", "dev-")
-			.Replace("api", "portal");
-		portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/extensions";
-
-		return true;
-	}
-
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider
 {
-	private Action _onExtensionAppReady;
+	private readonly IAppContext _appContext;
 
-	public ExtensionAppLogProvider(Action onExtensionAppReady = null)
+	public ExtensionAppLogProvider(IAppContext appContext)
 	{
-		_onExtensionAppReady = onExtensionAppReady;
+		_appContext = appContext;
 	}
-
+	
 	public ILogger CreateLogger(string categoryName)
 	{
-		return (ILogger)new OverrideLogger(_onExtensionAppReady);
+		return new ExtensionLogger(_appContext);
 	}
 
 	public void Dispose()
@@ -200,34 +171,36 @@ public class ExtensionAppLogProvider : ILoggerProvider
 	}
 }
 
-public class OverrideLogger : ILogger
+public class ExtensionLogger : ILogger
 {
-	private Action _readyForTraffic;
-
-	public OverrideLogger(Action readyForTraffic = null)
+	private readonly IAppContext _appContext;
+	
+	public ExtensionLogger(IAppContext appContext)
 	{
-		if (readyForTraffic != null)
-		{
-			_readyForTraffic += readyForTraffic;
-		}
+		_appContext = appContext;
 	}
-
+	
 	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
 	{
 		string message = formatter(state, exception);
+		string parsedMessage = ParseMicroserviceLogMessages(message);
 
+		// We always write Exceptions.
 		if (exception != null)
 		{
-			throw new CliException(
-				$"An exception happened while running local Portal Extension. Message = [{exception.Message}]\n Stacktrace = [{exception.StackTrace}]");
+			Console.WriteLine(message);
+			return;
 		}
 
-		// Uncomment this to debug if something is going wrong with the local service
-		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
-
-		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
+		if (string.IsNullOrEmpty(parsedMessage))
 		{
-			_readyForTraffic?.Invoke();
+			return;
+		}
+
+		// Check if a non-microservice message matches the configured LogSwitch level.
+		if (_appContext.LogSwitch.Level <= logLevel)
+		{
+			Console.WriteLine(parsedMessage);
 		}
 	}
 
@@ -247,6 +220,26 @@ public class OverrideLogger : ILogger
 
 		public void Dispose()
 		{
+		}
+	}
+
+	private static string ParseMicroserviceLogMessages(string logMessage)
+	{
+		switch (logMessage)
+		{
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX): 
+				return "Portal extension started successfully and is now running.";
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.STARTING_PREFIX):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.SCANNING_CLIENT_PREFIX):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.STORAGE_READY):
+			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX):
+				return string.Empty;
+			default:
+				return logMessage;
 		}
 	}
 }
