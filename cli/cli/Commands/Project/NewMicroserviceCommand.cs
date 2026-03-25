@@ -201,7 +201,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				() =>
 				{
 					var currentVersion = AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
-					var currentVersionDouble = double.Parse(currentVersion);
+					var currentVersionDouble = double.Parse(currentVersion, System.Globalization.CultureInfo.InvariantCulture);
 					if (currentVersionDouble < 8.0)
 					{
 						currentVersion = "8.0";
