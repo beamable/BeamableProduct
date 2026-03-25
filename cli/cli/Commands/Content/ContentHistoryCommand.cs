@@ -494,3 +494,65 @@ public class ContentHistorySyncContentCommand : AtomicCommand<ContentHistorySync
 		return new ContentHistorySyncContentCommandOutput { ContentEntries = resultEntries.ToArray() };
 	}
 }
+
+[Serializable]
+public class ContentHistoryRestoreCommandArgs : CommandArgs
+{
+	public string ManifestId;
+	public string ManifestUid;
+	public List<string> ContentIds;
+}
+
+[Serializable]
+public class ContentHistoryRestoreCommandOutput
+{
+	public List<string> RestoredContentIds;
+}
+
+public class ContentHistoryRestoreCommand : AtomicCommand<ContentHistoryRestoreCommandArgs, ContentHistoryRestoreCommandOutput>
+	, ISkipManifest
+{
+	public ContentHistoryRestoreCommand() : base("restore-content",
+		"Restores local content files from history, overwriting them with the version from the specified manifest UID. If content IDs are not provided, restores all content in the manifest")
+	{
+	}
+
+	public override bool IsForInternalUse => true;
+
+	public override void Configure()
+	{
+		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
+		var manifestUidOption = new Option<string>("--manifest-uid", "The manifest UID from history to restore content from") { IsRequired = true };
+		AddOption(manifestUidOption, (args, s) => args.ManifestUid = s);
+		AddOption(new Option<List<string>>("--content-ids", "The content IDs to restore. If not provided, restores all content in the manifest") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, (args, s) => args.ContentIds = s);
+	}
+
+	public override async Task<ContentHistoryRestoreCommandOutput> GetResult(ContentHistoryRestoreCommandArgs args)
+	{
+		var pid = args.AppContext.Pid;
+		var manifestId = args.ManifestId ?? "global";
+		var manifestUid = args.ManifestUid;
+		var contentIds = args.ContentIds;
+
+		if (string.IsNullOrEmpty(manifestUid))
+		{
+			throw new CliException("ManifestUid is required");
+		}
+
+		var contentService = args.DependencyProvider.GetService<ContentService>();
+
+		// Pass null or empty list to restore all content, otherwise pass the specific content IDs
+		var contentIdsToRestore = (contentIds == null || contentIds.Count == 0) ? null : contentIds;
+
+		// Restore content from history
+		var restoredContentIds = await contentService.RestoreContentFromHistory(
+			manifestUid,
+			contentIdsToRestore,
+			manifestId,
+			args.Lifecycle.Source.Token);
+
+		Log.Information($"Restored {restoredContentIds.Count} content file(s) from history manifest {manifestUid}");
+
+		return new ContentHistoryRestoreCommandOutput { RestoredContentIds = restoredContentIds };
+	}
+}

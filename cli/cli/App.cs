@@ -757,8 +757,9 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentHistoryCommand, ContentHistoryCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentHistorySyncChangelistCommand, ContentHistorySyncChangelistCommandArgs, ContentHistoryCommand>();
 		Commands.AddSubCommandWithHandler<ContentHistorySyncContentCommand, ContentHistorySyncContentCommandArgs, ContentHistoryCommand>();
-		
-		
+		Commands.AddSubCommandWithHandler<ContentHistoryRestoreCommand, ContentHistoryRestoreCommandArgs, ContentHistoryCommand>();
+
+
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
