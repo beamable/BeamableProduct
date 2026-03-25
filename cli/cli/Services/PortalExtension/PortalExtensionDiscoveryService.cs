@@ -149,8 +149,8 @@ public class PortalExtensionObserver
 	{
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 		StartProcessResult result = isWindows
-			? StartProcessUtil.Run("cmd.exe", "/c npm install", workingDirectoryPath: _appPath):
-			StartProcessUtil.Run("npm ", "install", workingDirectoryPath: _appPath);
+			? StartProcessUtil.Run("cmd.exe", "/c npm install", workingDirectoryPath: AppFilesPath):
+			StartProcessUtil.Run("npm ", "install", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
 			Log.Error($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
