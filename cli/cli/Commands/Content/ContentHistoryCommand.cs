@@ -191,7 +191,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 							var evt = new ContentHistoryCommandEvent
 							{
 								EventType = ContentHistoryCommandEvent.EVT_TYPE_EntriesLoaded,
-								EntriesPage = new ContentHistoryEntriesPage { Entries = new List<ContentHistoryEntry>() },
+								EntriesPage = new ContentHistoryEntriesPage { ContainedManifestUids = Array.Empty<string>(), Entries = new List<ContentHistoryEntry>() },
 								ChangelistsPage = new ContentHistoryChangelistPage { Changelists = Array.Empty<ContentHistoryChangelist>() },
 								EntriesToRemove = new(),
 								ChangelistsToRemove = new()
@@ -245,7 +245,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 							var evt = new ContentHistoryCommandEvent
 							{
 								EventType = ContentHistoryCommandEvent.EVT_TYPE_ChangelistsLoaded,
-								EntriesPage = new ContentHistoryEntriesPage { Entries = new List<ContentHistoryEntry>() },
+								EntriesPage = new ContentHistoryEntriesPage { ContainedManifestUids = Array.Empty<string>(), Entries = new List<ContentHistoryEntry>() },
 								ChangelistsPage = new ContentHistoryChangelistPage { Changelists = Array.Empty<ContentHistoryChangelist>() },
 								EntriesToRemove = new(),
 								ChangelistsToRemove = new()
@@ -524,7 +524,8 @@ public class ContentHistoryRestoreCommand : AtomicCommand<ContentHistoryRestoreC
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		var manifestUidOption = new Option<string>("--manifest-uid", "The manifest UID from history to restore content from") { IsRequired = true };
 		AddOption(manifestUidOption, (args, s) => args.ManifestUid = s);
-		AddOption(new Option<List<string>>("--content-ids", "The content IDs to restore. If not provided, restores all content in the manifest") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, (args, s) => args.ContentIds = s);
+		AddOption(new Option<List<string>>("--content-ids", "The content IDs to restore. If not provided, restores all content in the manifest") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore },
+			(args, s) => args.ContentIds = s);
 	}
 
 	public override async Task<ContentHistoryRestoreCommandOutput> GetResult(ContentHistoryRestoreCommandArgs args)
