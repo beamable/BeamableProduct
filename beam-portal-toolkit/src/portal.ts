@@ -10,7 +10,7 @@ import { BeamBase } from "beamable-sdk";
 /**
  * Runtime context provided by the Beamable portal to every plugin on mount.
  */
-export interface PluginContext {
+export interface PluginContext extends Map<any, any> {
   realm: string;
   cid: string;
   beam: BeamBase;
