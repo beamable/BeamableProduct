@@ -1,7 +1,6 @@
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
-using cli.Services.Web;
 using cli.Utils;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -140,7 +139,7 @@ public class PortalExtensionObserver
 			: StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
-			Log.Error($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
 	}
@@ -153,7 +152,7 @@ public class PortalExtensionObserver
 			StartProcessUtil.Run("npm ", "install", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
-			Log.Error($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
 	}
