@@ -120,7 +120,7 @@ public partial class BeamoLocalSystem
 						MicroserviceName = GetMicroName(extension.Name),
 					};
 					
-					microserviceConfig.AddLoggerProvider = builder => SetLoggerProvider(builder, appContext);
+					microserviceConfig.AddLoggerProvider = builder => AddPortalExtensionProvider(builder, appContext);
 				})
 				.RunForever();
 		}
@@ -131,7 +131,7 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	private void SetLoggerProvider(ILoggingBuilder builder, IAppContext appContext)
+	private void AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext)
 	{
 		builder.ClearProviders();
 		builder.AddProvider(new ExtensionAppLogProvider(appContext));
@@ -188,7 +188,7 @@ public class ExtensionLogger : ILogger
 		// We always write Exceptions.
 		if (exception != null)
 		{
-			Console.WriteLine(message);
+			BeamableZLoggerProvider.GlobalLogger.Log(logLevel, parsedMessage);
 			return;
 		}
 
@@ -200,7 +200,7 @@ public class ExtensionLogger : ILogger
 		// Check if a non-microservice message matches the configured LogSwitch level.
 		if (_appContext.LogSwitch.Level <= logLevel)
 		{
-			Console.WriteLine(parsedMessage);
+			BeamableZLoggerProvider.GlobalLogger.Log(logLevel, parsedMessage);
 		}
 	}
 
