@@ -1,0 +1,748 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JetBrains/web-types/master/schema/web-types.json",
+  "name": "@beamable/portal-toolkit",
+  "version": "0.1.1",
+  "js-types-syntax": "typescript",
+  "description-markup": "markdown",
+  "contributions": {
+    "html": {
+      "elements": [
+        {
+          "name": "beam-btn",
+          "description": "A Material Design button. Supports outlined, text, icon, fab, and loading variants.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "Fill or text color. Accepts a CSS color or theme color name (e.g. `primary`, `secondary`, `error`).",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "Renders with a border and transparent background.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "text",
+              "description": "Renders as a flat text button with no background or border.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "block",
+              "description": "Expands the button to fill its container's full width.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "icon",
+              "description": "Renders as a square icon button sized to fit a single icon.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "fab",
+              "description": "Renders as a circular floating action button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "tile",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "rounded",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "depressed",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "loading",
+              "description": "Shows a loading spinner and disables the button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "href",
+              "description": "Renders the button as an anchor tag pointing to this URL.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "target",
+              "description": "The `target` attribute forwarded to the anchor tag when `href` is set.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "The HTML button `type` attribute: `button`, `submit`, or `reset`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "elevation",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-icon",
+          "description": "Renders a Material Design icon by name. Pass the icon name via the `icon` prop or as default slot content.",
+          "attributes": [
+            {
+              "name": "icon",
+              "description": "The Material Design icon name (e.g. `mdi-home`). Can also be passed as slot content.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "color",
+              "description": "Icon color. Accepts a CSS color or theme color name (e.g. `primary`, `error`).",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "left",
+              "description": "Adds right margin — use when the icon precedes inline text.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "right",
+              "description": "Adds left margin — use when the icon follows inline text.",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-chip",
+          "description": "A small label element used for tags, filters, or status indicators. Supports closeable, outlined, and pill variants.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "Fill color. Accepts a CSS color or theme color name (e.g. `primary`, `error`).",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "close",
+              "description": "Shows a dismiss icon on the chip. Listen for the `click:close` event to handle removal.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "Renders as a square chip rather than rounded.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "Renders with fully rounded (pill-shaped) ends.",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-alert",
+          "description": "Displays a contextual message to the user. Use the `type` prop for semantic variants: `success`, `info`, `warning`, or `error`.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "Fill color. Overrides the color implied by `type`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "Semantic variant: `success`, `info`, `warning`, or `error`. Sets icon and color automatically.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "text",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dismissible",
+              "description": "Shows a close button. Listen for the `input` event (emits `false`) to handle dismissal.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "icon",
+              "description": "Overrides the default icon for the current `type`. Pass `false` to remove the icon.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "border",
+              "description": "Adds a colored border on one side: `top`, `right`, `bottom`, or `left`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "elevation",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "prominent",
+              "description": "Increases the alert height and renders the icon at a larger size.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "tile",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card",
+          "description": "A surface container with elevation and rounded corners for grouping related content.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Shadow depth (0–24). Maps to the `elevation-N` CSS class.",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card-title",
+          "description": "The title region of a beam-card. Renders with card title typography.",
+          "attributes": []
+        },
+        {
+          "name": "beam-card-subtitle",
+          "description": "The subtitle region of a beam-card. Renders with card subtitle typography.",
+          "attributes": []
+        },
+        {
+          "name": "beam-card-text",
+          "description": "The body content region of a beam-card. Adds standard card padding.",
+          "attributes": []
+        },
+        {
+          "name": "beam-card-actions",
+          "description": "The actions region of a beam-card. Aligns action buttons at the bottom of the card.",
+          "attributes": []
+        },
+        {
+          "name": "beam-data-table",
+          "description": "A full-featured data table with sorting, pagination, filtering, and row selection.",
+          "attributes": [
+            {
+              "name": "headers",
+              "description": "Column definitions. Each item requires a `text` (display label) and `value` (row data key).",
+              "value": {
+                "type": "array"
+              }
+            },
+            {
+              "name": "items",
+              "description": "Array of row data objects. Each object's keys should match the `value` fields in `headers`.",
+              "value": {
+                "type": "array"
+              }
+            },
+            {
+              "name": "items-per-page",
+              "description": "Number of rows shown per page. Set to `-1` to show all rows. Defaults to `10`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loading",
+              "description": "Shows a loading bar above the table.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "search",
+              "description": "Filters visible rows to those matching this string.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "sort-by",
+              "description": "The column `value` key to sort by.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "sort-desc",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "multi-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "must-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "show-select",
+              "description": "Adds a checkbox column for row selection. Use `value` to read or set the selected rows.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "single-select",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The currently selected rows when `showSelect` is true.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "fixed-header",
+              "description": "Fixes the header row so only the body scrolls when `height` is set.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "height",
+              "description": "Sets a fixed height on the table. Required for `fixedHeader` to take effect.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hide-default-header",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "hide-default-footer",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "no-data-text",
+              "description": "Message shown when `items` is empty.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "no-results-text",
+              "description": "Message shown when `search` produces no matches.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "item-key",
+              "description": "The row property used as a unique key. Defaults to `id`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "item-class",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "page",
+              "description": "The current page number (1-based).",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "server-items-length",
+              "description": "Total number of items on the server. Required for server-side pagination.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disable-pagination",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disable-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "show-expand",
+              "description": "Adds an expand toggle column. Use `expanded` to read or set expanded rows.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "expanded",
+              "description": "Array of currently expanded row objects.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "group-by",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "group-desc",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "show-group-by",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "mobile-breakpoint",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loader-height",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loading-text",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "footer-props",
+              "description": "Props forwarded to the footer pagination control.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "header-props",
+              "description": "Props forwarded to the header row.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "calculate-widths",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "caption",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

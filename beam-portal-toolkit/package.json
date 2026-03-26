@@ -1,0 +1,55 @@
+{
+  "name": "@beamable/portal-toolkit",
+  "version": "0.1.1",
+  "description": "Beamable Portal Toolkit — utilities and web component types for the Beamable portal plugin system",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "customElements": "custom-elements.json",
+  "web-types": "src/generated/web-types.json",
+  "author": "Beamable",
+  "license": "MIT",
+  "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "files": [
+    "dist",
+    "custom-elements.json",
+    "src/generated"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "sync-components": "node scripts/sync-components.mjs",
+    "prepublishOnly": "pnpm sync-components --no-copy && pnpm build"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "./svelte": {
+      "types": "./dist/types/svelte-elements.d.ts"
+    },
+    "./custom-elements.json": "./custom-elements.json",
+    "./web-types.json": "./web-types.json"
+  },
+  "dependencies": {
+    "beamable-sdk": "0.6.0"
+  },
+  "peerDependencies": {
+    "svelte": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "svelte": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "svelte": "^5.0.0",
+    "tsdown": "^0.16.5",
+    "typescript": "^5.8.3"
+  }
+}

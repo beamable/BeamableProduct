@@ -1,0 +1,780 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JetBrains/web-types/master/schema/web-types.json",
+  "name": "@beamable/portal-toolkit",
+  "version": "0.1.0",
+  "js-types-syntax": "typescript",
+  "description-markup": "markdown",
+  "contributions": {
+    "html": {
+      "elements": [
+        {
+          "name": "beam-btn",
+          "description": "Wraps Vuetify `VBtn` as a shadow-DOM web component.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "text",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "block",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "icon",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "fab",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "tile",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "rounded",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "depressed",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "loading",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "href",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "target",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "elevation",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-icon",
+          "description": "",
+          "attributes": [
+            {
+              "name": "icon",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "color",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "left",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "right",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-chip",
+          "description": "Wraps Vuetify `VChip` as a shadow-DOM web component.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "close",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-alert",
+          "description": "Wraps Vuetify `VAlert` as a shadow-DOM web component.",
+          "attributes": [
+            {
+              "name": "color",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "outlined",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "text",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dismissible",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "icon",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "border",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "elevation",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "prominent",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "tile",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card",
+          "description": "Layout element that applies Vuetify CSS classes: `v-card`, `v-sheet`.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Vuetify elevation (0–24). Maps to `elevation-N` CSS class.",
+              "value": {
+                "type": "number | string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card-title",
+          "description": "Layout element that applies Vuetify CSS classes: `v-card__title`.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Vuetify elevation (0–24). Maps to `elevation-N` CSS class.",
+              "value": {
+                "type": "number | string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card-subtitle",
+          "description": "Layout element that applies Vuetify CSS classes: `v-card__subtitle`.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Vuetify elevation (0–24). Maps to `elevation-N` CSS class.",
+              "value": {
+                "type": "number | string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card-text",
+          "description": "Layout element that applies Vuetify CSS classes: `v-card__text`.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Vuetify elevation (0–24). Maps to `elevation-N` CSS class.",
+              "value": {
+                "type": "number | string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card-actions",
+          "description": "Layout element that applies Vuetify CSS classes: `v-card__actions`.",
+          "attributes": [
+            {
+              "name": "elevation",
+              "description": "Vuetify elevation (0–24). Maps to `elevation-N` CSS class.",
+              "value": {
+                "type": "number | string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-data-table",
+          "description": "Wraps Vuetify `VDataTable` as a shadow-DOM web component.",
+          "attributes": [
+            {
+              "name": "headers",
+              "description": "",
+              "value": {
+                "type": "array"
+              }
+            },
+            {
+              "name": "items",
+              "description": "",
+              "value": {
+                "type": "array"
+              }
+            },
+            {
+              "name": "items-per-page",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loading",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "search",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "sort-by",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "sort-desc",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "multi-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "must-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "show-select",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "single-select",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "value",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dense",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "fixed-header",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "height",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hide-default-header",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "hide-default-footer",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "no-data-text",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "no-results-text",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dark",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "item-key",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "item-class",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "page",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "server-items-length",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disable-pagination",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disable-sort",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "show-expand",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "expanded",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "group-by",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "group-desc",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "show-group-by",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "mobile-breakpoint",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loader-height",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "loading-text",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "footer-props",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "header-props",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "calculate-widths",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "caption",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
