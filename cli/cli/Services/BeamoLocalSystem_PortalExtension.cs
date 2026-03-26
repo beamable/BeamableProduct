@@ -178,7 +178,7 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
 	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
 
-	[JsonProperty("args")] public Dictionary<string, string> Args;
+	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
 }
 
 [Serializable]
