@@ -72,192 +72,238 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
 	{
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
-		{
 			throw new CliException("Not all required dependencies exist. Aborting.");
-		}
 
 		var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
-		var pages = config.mountSites
-			.ToDictionary(c => c.path);
+		BuildMountSiteIndex(config,
+			out var customPagePrefixes,
+			out var customPageConfigs,
+			out var componentPages);
 
-		var customPages = new HashSet<string>();
-		var customComponents = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
-		foreach (var c in config.mountSites)
+		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
+
+		var hasExplicitPage = !string.IsNullOrEmpty(args.mountPage);
+		var hasExplicitSelector = !string.IsNullOrEmpty(args.mountSelector);
+
+		if (hasExplicitPage && hasExplicitSelector)
 		{
-			if (c.path.EndsWith("!pathMatch"))
-			{
-				// remove the custom pathMatch part, so we can prompt the user for a page later...
-				customPages.Add(c.path.Substring(0, c.path.Length - "!pathMatch".Length));
-			}
-			else
-			{
-				customComponents[c.path] = c;
-			}
+			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
-		
-		
-		var validPage = false;
-		var validSelector = false;
-
-		RemotePortalConfiguration.MountSiteConfig mountPage = null;
-		RemotePortalConfiguration.MountSiteSelector selector = null;
-		while (!validPage || !validSelector)
+		else if (hasExplicitPage || hasExplicitSelector)
 		{
-			if (!string.IsNullOrEmpty(args.mountPage))
-			{
-				// check if it is a custom page...
-				var match = customPages.FirstOrDefault(c =>
-				{
-					return
-						// needs to be a prefix
-						args.mountPage.StartsWith(c)
-						// needs to have extra path information.
-						&& args.mountPage.Length > c.Length + 1;
-				});
-				
-				if (!string.IsNullOrEmpty(match))
-				{
-					// we found the custom page!
-					mountPage = pages[match];
-					args.mountPage = match;
-					
-					// use the default selector for this page.
-					args.mountSelector = mountPage.selectors[0].selector;
-				}
-			}
-			
-			
-			if (string.IsNullOrEmpty(args.mountPage) || !pages.TryGetValue(args.mountPage, out mountPage))
-			{
-				if (args.Quiet) throw new CliException("Must provider valid --mount-page when in quiet mode.");
-
-				// does the user want to create a page extension, or a component?
-				var typeChoice = AnsiConsole.Prompt(new SelectionPrompt<string>()
-					.Title("What [green]type[/] of extension do you need?")
-					.AddChoices(new string[]{"Page", "Component"})
-					.AddBeamHightlight());
-
-				if (typeChoice == "Page")
-				{
-					// show the pages that are full page extension.
-					var firstPart = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]page[/] on the Portal are you extending?")
-							.AddChoices(customPages)
-							.AddBeamHightlight()
-					);
-					
-					// get the actual route name
-					var secondPart = AnsiConsole.Ask<string>("What the new route for your page?");
-
-					args.mountPage = firstPart + secondPart;
-					continue; // skip back to the validation
-				}
-				else
-				{
-					// show the pages that have component extensions.
-					var pageChoices = customComponents.Select(x => x.Key).ToList();
-					args.mountPage = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]page[/] on the Portal are you extending?")
-							.AddChoices(pageChoices)
-							.AddBeamHightlight()
-					);
-					if (!pages.TryGetValue(args.mountPage, out mountPage))
-					{
-						throw new CliException("Invalid mount page. Please contact a Beamable Staff");
-					}
-				}
-			}
-
-			validPage = true;
-
-			var selectorTable = mountPage.selectors.ToDictionary(x => x.selector);
-			if (string.IsNullOrEmpty(args.mountSelector) ||!selectorTable.TryGetValue(args.mountSelector, out selector))
-			{
-				if (args.Quiet) throw new CliException("Must provider valid --mount-selector when in quiet mode.");
-
-				var selectorChoices = mountPage.selectors.Select(x => $"({x.type}) - {x.selector}").ToList();
-				// TODO: add fast-forward if there is only one option.
-				selectorChoices.Insert(0, "<-- (back)");
-
-				var choice = AnsiConsole.Prompt(
-					new SelectionPrompt<string>()
-						.Title("Which [green]selector[/] on the page?")
-						.AddChoices(selectorChoices)
-						.AddBeamHightlight()
-				);
-				var choiceIndex = selectorChoices.IndexOf(choice);
-				if (choiceIndex == 0)
-				{
-					args.mountPage = null;
-					validPage = false;
-					continue;
-				}
-
-				args.mountSelector = selectorChoices[choiceIndex];
-				
-				if (!selectorTable.TryGetValue(args.mountSelector, out selector))
-				{
-					throw new CliException("Invalid mount selector. Please contact a Beamable Staff");
-				}
-			}
-
-			validSelector = true;
+			throw new CliException("--mount-page and --mount-selector must both be provided together, or neither.");
+		}
+		else
+		{
+			if (args.Quiet) throw new CliException("Must provide --mount-page and --mount-selector when in quiet mode.");
+			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
 
-		// TODO: if it is a page, we need group/label
-		if (selector.type == "page")
+		if (resolvedSelector.type == "page")
 		{
 			if (string.IsNullOrEmpty(args.mountGroup))
 			{
-				if (args.Quiet) throw new CliException("Must provider valid --mount-group when in quiet mode.");
+				if (args.Quiet) throw new CliException("Must provide --mount-group when in quiet mode.");
 				args.mountGroup = AnsiConsole.Ask<string>("Nav Group:");
 			}
 			if (string.IsNullOrEmpty(args.mountLabel))
 			{
-				if (args.Quiet) throw new CliException("Must provider valid --mount-label when in quiet mode.");
+				if (args.Quiet) throw new CliException("Must provide --mount-label when in quiet mode.");
 				args.mountLabel = AnsiConsole.Ask<string>("Nav Label:");
 			}
 		}
 
 		await args.CreateConfigIfNeeded(_initCommand);
 		var newPortalExtensionInfo = await args.ProjectService.CreateNewPortalExtension(args);
-		
+
 		await args.BeamoLocalSystem.InitManifest();
-		
+
 		var extension = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x =>
-			(x.PortalExtensionDefinition?.Properties?.IsPortalExtension ?? false) && x.PortalExtensionDefinition.Name == args.ProjectName.Value);
+			(x.PortalExtensionDefinition?.Properties?.IsPortalExtension ?? false) &&
+			x.PortalExtensionDefinition.Name == args.ProjectName.Value);
 		if (extension == null)
-		{
 			throw new CliException("Unable to verify that package.json was created");
-		}
-		
+
 		var def = extension.PortalExtensionDefinition;
 		var packageJson = File.ReadAllText(def.AbsolutePackageJsonPath);
 		var jObj = JObject.Parse(packageJson);
-		
-		// pull out the beamable.mount options...
-		var mounts = jObj.SelectTokens("$..beamable.mount").ToList();
-		foreach (var mount in mounts)
+
+		foreach (var mount in jObj.SelectTokens("$..beamable.mount").OfType<JObject>().ToList())
 		{
-			if (mount is JObject obj)
+			mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
+			mount[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;
+
+			if (!string.IsNullOrEmpty(args.mountGroup))
+				mount[PortalExtensionMountProperties.KEY_NAV_GROUP] = args.mountGroup;
+			if (!string.IsNullOrEmpty(args.mountLabel))
+				mount[PortalExtensionMountProperties.KEY_NAV_LABEL] = args.mountLabel;
+			if (!string.IsNullOrEmpty(args.mountIcon))
+				mount[PortalExtensionMountProperties.KEY_NAV_ICON] = args.mountIcon;
+			if (args.mountGroupOrder > 0)
+				mount[PortalExtensionMountProperties.KEY_NAV_GROUP_ORDER] = args.mountGroupOrder;
+			if (args.mountLabelOrder > 0)
+				mount[PortalExtensionMountProperties.KEY_NAV_LABEL_ORDER] = args.mountLabelOrder;
+		}
+
+		File.WriteAllText(def.AbsolutePackageJsonPath, jObj.ToString(Newtonsoft.Json.Formatting.Indented));
+	}
+
+	private static void BuildMountSiteIndex(
+		RemotePortalConfiguration config,
+		out List<string> customPagePrefixes,
+		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	{
+		const string pathMatchSuffix = "!pathMatch";
+		customPagePrefixes = new List<string>();
+		customPageConfigs = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
+		componentPages = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
+
+		foreach (var site in config.mountSites)
+		{
+			if (site.path.EndsWith(pathMatchSuffix))
 			{
-				obj[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
-				obj[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;
-				
-				if (!string.IsNullOrEmpty(args.mountGroup))
-					obj[PortalExtensionMountProperties.KEY_NAV_GROUP] = args.mountGroup;
-				if (!string.IsNullOrEmpty(args.mountLabel))
-					obj[PortalExtensionMountProperties.KEY_NAV_LABEL] = args.mountLabel;
-				if (!string.IsNullOrEmpty(args.mountIcon))
-					obj[PortalExtensionMountProperties.KEY_NAV_ICON] = args.mountIcon;
-				if (args.mountGroupOrder > 0)
-					obj[PortalExtensionMountProperties.KEY_NAV_GROUP_ORDER] = args.mountGroupOrder;
-				if (args.mountLabelOrder > 0)
-					obj[PortalExtensionMountProperties.KEY_NAV_LABEL_ORDER] = args.mountLabelOrder;
+				var prefix = site.path[..^pathMatchSuffix.Length];
+				customPagePrefixes.Add(prefix);
+				customPageConfigs[prefix] = site;
+			}
+			else
+			{
+				componentPages[site.path] = site;
 			}
 		}
-		File.WriteAllText(def.AbsolutePath, jObj.ToString(Newtonsoft.Json.Formatting.Indented));
+	}
+
+	private static RemotePortalConfiguration.MountSiteSelector ValidateMountArgs(
+		NewPortalExtensionCommandArgs args,
+		List<string> customPagePrefixes,
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	{
+		// Check if --mount-page is a custom page extension (starts with a known prefix + has extra path)
+		var matchingPrefix = customPagePrefixes.FirstOrDefault(prefix =>
+			args.mountPage.StartsWith(prefix) && args.mountPage.Length > prefix.Length);
+
+		if (matchingPrefix != null)
+		{
+			var siteConfig = customPageConfigs[matchingPrefix];
+			var selector = siteConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
+			if (selector == null)
+				throw new CliException(
+					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'. " +
+					$"Valid selectors: {string.Join(", ", siteConfig.selectors.Select(s => s.selector))}");
+			return selector;
+		}
+
+		// Check if --mount-page is a component page
+		if (componentPages.TryGetValue(args.mountPage, out var componentConfig))
+		{
+			var selector = componentConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
+			if (selector == null)
+				throw new CliException(
+					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'. " +
+					$"Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
+			return selector;
+		}
+
+		throw new CliException(
+			$"Invalid --mount-page '{args.mountPage}'. " +
+			$"Must be a known component page or a custom route under: " +
+			string.Join(", ", customPagePrefixes.Select(p => $"{p}<route>")));
+	}
+
+	private static RemotePortalConfiguration.MountSiteSelector RunMountWizard(
+		NewPortalExtensionCommandArgs args,
+		List<string> customPagePrefixes,
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
+	{
+		const string back = "<-- (back)";
+
+		while (true)
+		{
+			var extensionType = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("What [green]type[/] of extension do you need?")
+					.AddChoices("Page", "Component")
+					.AddBeamHightlight());
+
+			if (extensionType == "Page")
+			{
+				// Build display list: empty-string prefix shown as "/"
+				const string rootDisplay = "/";
+				var prefixDisplays = customPagePrefixes
+					.Select(p => string.IsNullOrEmpty(p) ? rootDisplay : p)
+					.ToList();
+
+				var prefixDisplayChoice = AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("Which [green]page[/] on the Portal are you extending?")
+						.AddChoices(prefixDisplays.Prepend(back))
+						.AddBeamHightlight());
+
+				if (prefixDisplayChoice == back) continue;
+
+				var prefixChoice = prefixDisplayChoice == rootDisplay ? string.Empty : prefixDisplayChoice;
+
+				// Ask for the custom route segment to append
+				var customRoute = AnsiConsole.Ask<string>("What is the new route for your page?");
+
+				if (string.IsNullOrWhiteSpace(customRoute))
+				{
+					AnsiConsole.MarkupLine("[red]Route cannot be empty.[/]");
+					continue;
+				}
+
+				args.mountPage = prefixChoice + customRoute.TrimStart('/');
+
+				// Use the first selector from the !pathMatch config entry
+				var siteConfig = customPageConfigs[prefixChoice];
+				var selector = siteConfig.selectors[0];
+				args.mountSelector = selector.selector;
+				return selector;
+			}
+			else // Component
+			{
+				while (true)
+				{
+					var pageChoice = AnsiConsole.Prompt(
+						new SelectionPrompt<string>()
+							.Title("Which [green]page[/] on the Portal are you extending?")
+							.AddChoices(componentPages.Keys.Prepend(back))
+							.AddBeamHightlight());
+
+					if (pageChoice == back) break; // back to type selection
+
+					var siteConfig = componentPages[pageChoice];
+					args.mountPage = pageChoice;
+
+					// Auto-select if there is only one selector
+					if (siteConfig.selectors.Count == 1)
+					{
+						var onlySelector = siteConfig.selectors[0];
+						args.mountSelector = onlySelector.selector;
+						return onlySelector;
+					}
+
+					// Build display list keyed to original selectors
+					var selectorDisplays = siteConfig.selectors
+						.Select(s => $"({s.type}) {s.selector}")
+						.ToList();
+
+					var selectorChoice = AnsiConsole.Prompt(
+						new SelectionPrompt<string>()
+							.Title("Which [green]selector[/] on the page?")
+							.AddChoices(selectorDisplays.Prepend(back))
+							.AddBeamHightlight());
+
+					if (selectorChoice == back) continue; // back to page selection
+
+					var chosenSelector = siteConfig.selectors[selectorDisplays.IndexOf(selectorChoice)];
+					args.mountSelector = chosenSelector.selector;
+					return chosenSelector;
+				}
+			}
+		}
 	}
 }
