@@ -466,6 +466,7 @@ public class App
 		Commands.AddSingleton(QuietOption.Instance);
 		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton(HostOption.Instance);
+		Commands.AddSingleton(PortalUrlOption.Instance);
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
@@ -492,6 +493,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(QuietOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PortalUrlOption>());
 			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
@@ -645,6 +647,7 @@ public class App
 		Commands
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -757,8 +760,9 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentHistoryCommand, ContentHistoryCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentHistorySyncChangelistCommand, ContentHistorySyncChangelistCommandArgs, ContentHistoryCommand>();
 		Commands.AddSubCommandWithHandler<ContentHistorySyncContentCommand, ContentHistorySyncContentCommandArgs, ContentHistoryCommand>();
-		
-		
+		Commands.AddSubCommandWithHandler<ContentHistoryRestoreCommand, ContentHistoryRestoreCommandArgs, ContentHistoryCommand>();
+
+
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
