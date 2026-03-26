@@ -43,7 +43,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			if (!isChildOfProject)
 				return true;
 
-			var isPackageCached = csProjPath.StartsWith("Library/PackageCache");
+			var isPackageCached = csProjPath.StartsWith("Library/PackageCache") || csProjPath.StartsWith("Library\\PackageCache");
 			if (isPackageCached)
 				return true;
 
