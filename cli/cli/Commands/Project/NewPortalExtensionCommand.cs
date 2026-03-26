@@ -35,27 +35,27 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-page" },
-				description: "Specify the page that the portal extension should added."),
+				description: "Specify the page that the portal extension should added"),
 				binder: (args, i) => args.mountPage = i);
 		
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-selector" },
-				description: "Specify the place on the page that the portal extension should added."),
+				description: "Specify the place on the page that the portal extension should added"),
 			binder: (args, i) => args.mountSelector = i);
 		
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-group" },
-				description: "Specify the navigation group of the extension. This is only valid when the extension is a full page."),
+				description: "Specify the navigation group of the extension. This is only valid when the extension is a full page"),
 			binder: (args, i) => args.mountGroup = i);
 		
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-label" },
-				description: "Specify the navigation label of the extension. This is only valid when the extension is a full page."),
+				description: "Specify the navigation label of the extension. This is only valid when the extension is a full page"),
 			binder: (args, i) => args.mountLabel = i);
 		
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-icon" },
-				description: "Specify the Material Design Icon (mdi) that will be used for the extension's navigation. This is only valid when the extension is a full page."),
+				description: "Specify the Material Design Icon (mdi) that will be used for the extension's navigation. This is only valid when the extension is a full page"),
 			binder: (args, i) => args.mountIcon = i);
 		
 		AddOption(new Option<int>(
