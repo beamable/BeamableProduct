@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using cli.Utils;
 using microservice.Extensions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -820,6 +821,9 @@ public class PortalExtensionDef
 
 	public string RelativePath;
 	public string AbsolutePath;
+
+	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
+	
 	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
 	public PortalExtensionPackageProperties Properties;
 }

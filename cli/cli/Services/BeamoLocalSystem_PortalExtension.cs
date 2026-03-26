@@ -161,14 +161,22 @@ public partial class BeamoLocalSystem
 [Serializable]
 public class PortalExtensionMountProperties
 {
-	[JsonProperty("page")] public string Page;
+	public const string KEY_PAGE = "page";
+	public const string KEY_SELECTOR = "selector";
+	public const string KEY_NAV_GROUP = "navGroup";
+	public const string KEY_NAV_LABEL = "navLabel";
+	public const string KEY_NAV_ICON = "navIcon";
+	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
+	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
+	
+	[JsonProperty(KEY_PAGE)] public string Page;
 
-	[JsonProperty("selector")] public string Selector;
-	[JsonProperty("navGroup")] public OptionalString NavGroup;
-	[JsonProperty("navLabel")] public OptionalString NavLabel;
-	[JsonProperty("navIcon")] public OptionalString NavIcon;
-	[JsonProperty("navGroupOrder")] public OptionalInt NavGroupOrder;
-	[JsonProperty("navLabelOrder")] public OptionalInt NavLabelOrder;
+	[JsonProperty(KEY_SELECTOR)] public string Selector;
+	[JsonProperty(KEY_NAV_GROUP)] public OptionalString NavGroup;
+	[JsonProperty(KEY_NAV_LABEL)] public OptionalString NavLabel;
+	[JsonProperty(KEY_NAV_ICON)] public OptionalString NavIcon;
+	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
+	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args;
 }
@@ -229,7 +237,7 @@ public class OverrideLogger : ILogger
 		}
 
 		// Uncomment this to debug if something is going wrong with the local service
-		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
+		Console.WriteLine($"Portal Extension Local Microservice: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
