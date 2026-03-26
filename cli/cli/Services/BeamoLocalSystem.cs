@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using cli.Utils;
 using microservice.Extensions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -543,16 +544,6 @@ public class BeamoLocalManifest
 public class BeamoServiceDefinition
 {
 	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
-	public class PortalExtensionDef
-	{
-		public string Name;
-		public string Version;
-		public string Type;
-
-		public string RelativePath;
-		public string AbsolutePath;
-		public List<string> MicroserviceDependencies;
-	}
 	public PortalExtensionDef PortalExtensionDefinition;
 
 	public bool IsInRemote;
@@ -821,6 +812,20 @@ public class BeamoServiceDefinition
 		ProjectLanguage.CSharpDotnet => "sln",
 		_ => throw new ArgumentOutOfRangeException()
 	};
+}
+
+public class PortalExtensionDef
+{
+	public string Name;
+	public string Version => Properties.Version;
+
+	public string RelativePath;
+	public string AbsolutePath;
+
+	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
+	
+	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
+	public PortalExtensionPackageProperties Properties;
 }
 
 /// <summary>

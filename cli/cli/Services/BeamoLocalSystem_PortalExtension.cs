@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
@@ -18,21 +19,6 @@ public partial class BeamoLocalSystem
 
 		[JsonProperty("beamable")]
 		public PortalExtensionPackageProperties BeamableProperties { get; set; }
-	}
-
-	public class PortalExtensionPackageProperties
-	{
-		[JsonProperty("version")]
-		public string Version { get; set; }
-
-		[JsonProperty("beamPortalExtension")]
-		public bool IsPortalExtension { get; set; }
-
-		[JsonProperty("portalExtensionType")]
-		public string PortalExtensionType { get; set; }
-
-		[JsonProperty("microserviceDependencies")]
-		public List<string> MicroserviceDependencies { get; set; }
 	}
 
 	/// <summary>
@@ -80,17 +66,9 @@ public partial class BeamoLocalSystem
 				})
 				.ConfigureServices((dependency) =>
 				{
-					if (!Enum.TryParse(extension.Type, out PortalExtensionType type))
+					var observer = new PortalExtensionObserver
 					{
-						throw new CliException(
-							$"Extension type = [{type}] could not be deserialized. The valid values for it are: [{string.Join(", ", Enum.GetNames(typeof(PortalExtensionType)))}]");
-					}
-
-					var observer = new PortalExtensionObserver();
-					observer.AppFilesPath = extension.AbsolutePath;
-					observer.ExtensionMetaData = new ExtensionBuildMetaData()
-					{
-						ExtensionName = extension.Name, ExtensionType = type.ToString()
+						ExtensionMetaData = extension
 					};
 
 					if (config.fileExtensionsToObserve != null)
@@ -180,6 +158,42 @@ public partial class BeamoLocalSystem
 
 }
 
+[Serializable]
+public class PortalExtensionMountProperties
+{
+	public const string KEY_PAGE = "page";
+	public const string KEY_SELECTOR = "selector";
+	public const string KEY_NAV_GROUP = "navGroup";
+	public const string KEY_NAV_LABEL = "navLabel";
+	public const string KEY_NAV_ICON = "navIcon";
+	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
+	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
+	
+	[JsonProperty(KEY_PAGE)] public string Page;
+
+	[JsonProperty(KEY_SELECTOR)] public string Selector;
+	[JsonProperty(KEY_NAV_GROUP)] public OptionalString NavGroup;
+	[JsonProperty(KEY_NAV_LABEL)] public OptionalString NavLabel;
+	[JsonProperty(KEY_NAV_ICON)] public OptionalString NavIcon;
+	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
+	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
+
+	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+}
+
+[Serializable]
+public class PortalExtensionPackageProperties
+{
+	[JsonProperty("version")] public string Version;
+
+	[JsonProperty("portalExtension")] public bool IsPortalExtension;
+
+	[JsonProperty("microserviceDependencies")]
+	public List<string> MicroserviceDependencies;
+
+	[JsonProperty("mount")] public PortalExtensionMountProperties Mount;
+}
+
 public class ExtensionAppLogProvider : ILoggerProvider
 {
 	private Action _onExtensionAppReady;
@@ -223,7 +237,7 @@ public class OverrideLogger : ILogger
 		}
 
 		// Uncomment this to debug if something is going wrong with the local service
-		//Console.WriteLine($"Portal Extension Local Microservice: {message}");
+		Console.WriteLine($"Portal Extension Local Microservice: {message}");
 
 		if (message.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
 		{
