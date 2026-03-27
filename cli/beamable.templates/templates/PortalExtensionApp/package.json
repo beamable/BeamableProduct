@@ -5,9 +5,13 @@
   "type": "module",
   "beamable": {
     "version": "1.0.0",
-    "beamPortalExtension": true,
+    "portalExtension": true,
     "microserviceDependencies": [],
-    "portalExtensionType": "PlayerPage"
+    "mount": {
+      "page": "players/",
+      "selector": "#root",
+      "args": {}
+    }
   },
   "scripts": {
     "dev": "vite",
