@@ -117,7 +117,7 @@ public partial class BeamoLocalSystem
 					config.Attributes = new DefaultMicroserviceAttributes()
 					{
 						MicroserviceName = GetMicroName(extension.Name),
-						ServiceType = "PortalExtension"
+						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
 					};
 
 					config.AddLoggerProvider = (builder) =>
@@ -160,14 +160,9 @@ public partial class BeamoLocalSystem
 			return _computedMicroserviceName;
 		}
 
-		_computedMicroserviceName = ComputedPortalExtensionName(appName);
+		_computedMicroserviceName = $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
 
 		return _computedMicroserviceName;
-	}
-
-	public static string ComputedPortalExtensionName(string appName)
-	{
-		return $"BeamPortalExtension_{appName}";
 	}
 
 	private bool TryBuildPortalUrl(IAppContext context, out string portalUrl)

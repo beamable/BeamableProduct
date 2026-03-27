@@ -838,7 +838,7 @@ public static class MicroserviceStartupUtil
 			prefix = startupContext.args.NamePrefix,
 			serviceName = startupContext.attributes.MicroserviceName,
 			healthPort = startupContext.args.HealthPort,
-			serviceType = "service",
+			serviceType = startupContext.attributes.ServiceType,
 			startedByAccountId = startupContext.args.AccountId
 		};
 		var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
