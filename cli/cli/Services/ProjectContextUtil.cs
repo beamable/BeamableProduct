@@ -370,7 +370,7 @@ public static class ProjectContextUtil
 		return beamoIdsToIgnore;
 	}
 
-	public static List<BeamoServiceDefinition.PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
+	public static List<PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
 		var pathList = new List<string>();
 		foreach (var searchPath in searchPaths)
@@ -402,7 +402,7 @@ public static class ProjectContextUtil
 
 		var paths = filteredPaths.ToArray();
 
-		var projects = new List<BeamoServiceDefinition.PortalExtensionDef>();
+		var projects = new List<PortalExtensionDef>();
 
 		foreach (string filePath in paths)
 		{
@@ -417,14 +417,12 @@ public static class ProjectContextUtil
 
 				var dir = Path.GetDirectoryName(filePath);
 
-				projects.Add(new BeamoServiceDefinition.PortalExtensionDef()
+				projects.Add(new PortalExtensionDef()
 				{
 					Name = info.Name,
-					Version = properties.Version,
-					Type = properties.PortalExtensionType,
+					Properties = properties,
 					RelativePath = Path.GetRelativePath(rootFolder, dir),
 					AbsolutePath = Path.GetFullPath(dir),
-					MicroserviceDependencies = properties.MicroserviceDependencies
 				});
 			}
 			catch (Exception e)
@@ -868,7 +866,7 @@ public static class ProjectContextUtil
 		return definition;
 	}
 
-	public static BeamoServiceDefinition ConvertPortalExtensionToServiceDefinition(BeamoServiceDefinition.PortalExtensionDef def)
+	public static BeamoServiceDefinition ConvertPortalExtensionToServiceDefinition(PortalExtensionDef def)
 	{
 		var definition = new BeamoServiceDefinition();
 		definition.PortalExtensionDefinition = def;

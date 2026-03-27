@@ -55,7 +55,7 @@ public class PortalOpenCurrentAccountCommand : AppCommand<PortalOpenCurrentAccou
 		var playerId = await ResolvePlayerId(args);
 		
 		// players/1651742188351488
-		PortalCommand.GetPortalBaseUrl(args, out var url, out var qb);
+		PortalCommand.GetPortalRealmUrl(args, out var url, out var qb);
 		url = $"{url}/players/{playerId}/{qb}";
 		MachineHelper.OpenBrowser(url);
 

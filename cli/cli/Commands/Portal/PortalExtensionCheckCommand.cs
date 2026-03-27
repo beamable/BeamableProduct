@@ -2,6 +2,8 @@ using Beamable.Common;
 using Beamable.Server;
 using cli.Utils;
 using System.Runtime.InteropServices;
+using cli.Services;
+using CliWrap;
 
 namespace cli.Portal;
 
@@ -12,6 +14,10 @@ public class PortalExtensionCheckCommandArgs : CommandArgs
 
 public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckCommandArgs>, ISkipManifest
 {
+	private const string NodeVersionHint = "Install Node.js 22+ (includes npm & npx): https://nodejs.org/ or select a 22+ version with nvm use";
+	private const string ViteHint = "Install locally: npm i -D vite (recommended) or globally: npm i -g vite";
+	private const string ViteNpxHint = "Running via npx requires internet the first time; consider adding vite to devDependencies.";
+
 	public override bool IsForInternalUse => true;
 	public PortalExtensionCheckCommand() : base("check", "Verifies that all dependencies required for a Portal Extension app exist")
 	{
@@ -40,51 +46,42 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 	public static bool CheckPortalExtensionsDependencies()
 	{
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-		
-		bool viteCheck;
-		bool nodeCheck;
-		if (isWindows)
+
+		var nodeCommand = isWindows ? "cmd.exe" : "node";
+		var viteCommand = isWindows ? "cmd.exe" : "vite";
+		var npxCommand = isWindows ? "cmd.exe" : "npx";
+		var nodeArgs = isWindows ? "/c node -v" : "-v";
+		var viteArgs = isWindows ? "/c vite --version" : "--version";
+		var npxArgs = isWindows ? "/c npx --yes vite --version" : "--yes vite --version";
+
+		var nodeCheck = CheckDependency(
+			fileName: nodeCommand,
+			args: nodeArgs,
+			minVersion: new PackageVersion(22, 0, 0),
+			hint: NodeVersionHint);
+
+		var viteCheck = CheckDependency(
+			fileName: viteCommand,
+			args: viteArgs,
+			hint: ViteHint);
+
+		// Try get Vite Check from npx
+		if (!viteCheck)
 		{
-			nodeCheck = CheckDependency("cmd.exe", "/c node -v", minVersion: new PackageVersion(22, 0, 0),
-				hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
-			
-			viteCheck = CheckDependency("cmd.exe", "/c vite --version",
-				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
-			
-			if (!viteCheck)
+			Log.Information("Trying to get vite through npx installation");
+			viteCheck = CheckDependency(npxCommand, npxArgs, hint: ViteNpxHint);
+			if (viteCheck)
 			{
-				viteCheck = CheckDependency("cmd.exe", "/c npx --yes vite --version",
-					hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
-				if (viteCheck)
-				{
-					Log.Information("Found Vite through npx installation");
-				}
+				Log.Information("Found Vite through npx installation");
 			}
-		}
-		else
-		{
-			nodeCheck = CheckDependency("node", "-v", minVersion: new PackageVersion(22, 0, 0),
-				hint: "Install Node.js 22+ (includes npm & npx): https://nodejs.org/");
 			
-			viteCheck = CheckDependency("vite", "--version",
-				hint: "Install locally: npm i -D vite (recommended) or globally: npm i -g vite");
-			
-			if (!viteCheck)
-			{
-				viteCheck = CheckDependency("npx", "--yes vite --version",
-					hint: "Running via npx requires internet the first time; consider adding vite to devDependencies.");
-				if (viteCheck)
-				{
-					Log.Information("Found Vite through npx installation");
-				}
-			}
 		}
 
 		return nodeCheck && viteCheck;
 	}
 
 
-	private static bool CheckDependency(string fileName, string args, PackageVersion? minVersion = null, string? hint = null)
+	private static bool CheckDependency(string fileName, string args, PackageVersion minVersion = null, string hint = null)
 	{
 		try
 		{
@@ -98,19 +95,21 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 			string text = (result.stdout.Length > 0 ? result.stdout : result.stderr).Trim();
 			string verText = text.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? text.Substring(1) : text; //Node puts a "v" in front of the version
 
-			if (minVersion != null)
+			if (minVersion == null)
 			{
-				if (!TryParseVersion(verText, out var version))
-				{
-					Log.Error($"{fileName}: Could not parse version from '{verText}'.");
-					return true;
-				}
+				return true;
+			}
 
-				if (version < minVersion)
-				{
-					Log.Error($"{fileName} version {version} is less than required {minVersion}.", hint);
-					return false;
-				}
+			if (!TryParseVersion(verText, out var version))
+			{
+				Log.Error($"{fileName}: Could not parse version from '{verText}'.");
+				return true;
+			}
+
+			if (version < minVersion)
+			{
+				Log.Error($"{fileName} version {version} is less than required {minVersion}.", hint);
+				return false;
 			}
 
 			return true;
