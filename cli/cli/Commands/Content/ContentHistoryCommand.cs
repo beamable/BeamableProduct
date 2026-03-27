@@ -522,8 +522,7 @@ public class ContentHistoryRestoreCommand : AtomicCommand<ContentHistoryRestoreC
 	public override void Configure()
 	{
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
-		var manifestUidOption = new Option<string>("--manifest-uid", "The manifest UID from history to restore content from") { IsRequired = true };
-		AddOption(manifestUidOption, (args, s) => args.ManifestUid = s);
+		AddOption(new Option<string>("--manifest-uid", "The manifest UID from history to restore content from"), (args, s) => args.ManifestUid = s);
 		AddOption(new Option<List<string>>("--content-ids", "The content IDs to restore. If not provided, restores all content in the manifest") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore },
 			(args, s) => args.ContentIds = s);
 	}
