@@ -315,7 +315,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				status = new ServiceStatus
 				{
 					service = definition.BeamoId,
-					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+					serviceType = BeamoLocalSystem.GetServiceType(definition.Protocol),
 					storages = isMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
@@ -353,16 +353,22 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		await foreach (var discoveryEvent in discovery.StartDiscovery(args, timeout, token, mode))
 		{
-			if (serviceFilter != null && !serviceFilter.Contains(discoveryEvent.Service)) continue;
+			if (serviceFilter != null && !serviceFilter.Contains(discoveryEvent.Service) &&
+			    discoveryEvent.ServiceType != BeamoLocalSystem.GetServiceType(BeamoProtocolType.PortalExtension))
+			{
+				continue;
+			}
 
-			var isLocalMicroservice = manifest.HttpMicroserviceLocalProtocols.TryGetValue(discoveryEvent.Service, out var http);
+			var isLocalMicroservice =
+				manifest.HttpMicroserviceLocalProtocols.TryGetValue(discoveryEvent.Service, out var http);
 			if (!result.TryGetStatus(discoveryEvent.Service, out var status))
 			{
 				status = new ServiceStatus
 				{
 					service = discoveryEvent.Service,
 					serviceType = discoveryEvent.ServiceType,
-					storages = isLocalMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
+					storages =
+						isLocalMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					groups = discoveryEvent switch
 					{
 						DockerServiceEvent dockerServiceEvent => dockerServiceEvent.descriptor.groups,
@@ -384,9 +390,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					routingKey = discoveryEvent.RoutingKey ?? "",
 					federations = discoveryEvent switch
 					{
-						DockerServiceEvent dockerEvt => dockerEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
-						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
-						RemoteServiceEvent remoteEvt => remoteEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
+						DockerServiceEvent dockerEvt => dockerEvt.descriptor.federations?.ToList() ??
+						                                new List<FederationInstance>(),
+						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ??
+						                            new List<FederationInstance>(),
+						RemoteServiceEvent remoteEvt => remoteEvt.descriptor.federations?.ToList() ??
+						                                new List<FederationInstance>(),
 						RemoteStorageEvent => new List<FederationInstance>(),
 						_ => throw new ArgumentOutOfRangeException()
 					}
@@ -403,7 +412,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				// generate an instance to describe this event.
 				instance = new ServiceInstance
 				{
-					startedByAccountId = discoveryEvent.StartedByAccountId, primaryKey = discoveryEvent.PrimaryKey, startedByAccountEmail = await GetEmail(discoveryEvent.StartedByAccountId),
+					startedByAccountId = discoveryEvent.StartedByAccountId,
+					primaryKey = discoveryEvent.PrimaryKey,
+					startedByAccountEmail = await GetEmail(discoveryEvent.StartedByAccountId),
 				};
 
 				// only fill in the field that corresponds to the main data.
@@ -456,10 +467,13 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// the instance is running, and SOMETHING changed, but we don't know what it is.
 				// this is not supported yet.
-				Log.Error($"Service=[{discoveryEvent.Service}] updated but change detection is not implemented yet. Please report this to Beamable.");
+				Log.Error(
+					$"Service=[{discoveryEvent.Service}] updated but change detection is not implemented yet. Please report this to Beamable.");
 			}
 		}
 
 		await discovery.Stop();
 	}
+
+	
 }

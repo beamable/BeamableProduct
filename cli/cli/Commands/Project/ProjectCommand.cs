@@ -115,7 +115,7 @@ public class ProjectCommand : CommandGroup
 					var fitsTypeRequirement = includeStorage || x.Protocol is BeamoProtocolType.HttpMicroservice or BeamoProtocolType.PortalExtension;
 					return hasLocalProjectFile && fitsTypeRequirement;
 				})
-				.Select(x => x.Protocol is BeamoProtocolType.PortalExtension ? BeamoLocalSystem.ComputedPortalExtensionName(x.BeamoId) : x.BeamoId)
+				.Select(x => x.BeamoId)
 				.ToList() ?? new List<string>();
 		}
 
