@@ -26,7 +26,6 @@ public class ExtensionBuildMetaData
 {
 	public string Name;
 	public string ToolkitVersion;
-	public string WebSDKVersion;
 	public PortalExtensionPackageProperties Properties;
 }
 
@@ -60,10 +59,12 @@ public class PortalExtensionDiscoveryService : Microservice
 	public ExtensionBuildMetaData RequestMetaData()
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
+		var extensionDef = observer.ExtensionMetaData;
 		return new ExtensionBuildMetaData
 		{
-			Name = observer.ExtensionMetaData.Name,
-			Properties = observer.ExtensionMetaData.Properties
+			Name = extensionDef.Name,
+			ToolkitVersion = extensionDef.GetToolkitVersion(),
+			Properties = extensionDef.Properties
 		};
 	}
 }

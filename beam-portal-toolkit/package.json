@@ -1,6 +1,6 @@
 {
   "name": "@beamable/portal-toolkit",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Beamable Portal Toolkit — utilities and web component types for the Beamable portal plugin system",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -29,6 +29,16 @@
       "types": "./dist/types/index.d.ts",
       "require": "./dist/index.cjs",
       "import": "./dist/index.mjs"
+    },
+    "./vite": {
+      "types": "./dist/types/vite.d.ts",
+      "require": "./dist/vite.cjs",
+      "import": "./dist/vite.mjs"
+    },
+    "./rollup": {
+      "types": "./dist/types/rollup.d.ts",
+      "require": "./dist/rollup.cjs",
+      "import": "./dist/rollup.mjs"
     },
     "./svelte": {
       "types": "./dist/types/svelte-elements.d.ts"

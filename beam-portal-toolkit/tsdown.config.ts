@@ -1,9 +1,9 @@
 import { defineConfig } from 'tsdown';
 
 export default defineConfig([
-  // CJS + ESM build
+  // CJS + ESM build — runtime + build-tool entry points
   {
-    entry: ['src/index.ts'],
+    entry: ['src/index.ts', 'src/vite.ts', 'src/rollup.ts'],
     format: ['cjs', 'esm'],
     outDir: 'dist',
     clean: true,
@@ -14,7 +14,7 @@ export default defineConfig([
   },
   // Type declarations
   {
-    entry: ['src/index.ts'],
+    entry: ['src/index.ts', 'src/vite.ts', 'src/rollup.ts'],
     outDir: 'dist/types',
     clean: false,
     dts: {
