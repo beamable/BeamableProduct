@@ -5,11 +5,13 @@ using cli.Portal;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	public static readonly Regex PORTAL_EXTENSION_SERVICE_REGEX = new(@"^BeamPortalExtension_(?<serviceName>.+?)_(?<randomGuid>[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$", RegexOptions.Compiled);
 	private string _computedMicroserviceName;
 
 	public class PortalExtensionPackageInfo
@@ -63,7 +65,6 @@ public partial class BeamoLocalSystem
 						Log.Error(e, $" Error while starting extension: {e.Message}. Stacktrace: {e.StackTrace}");
 						throw;
 					}
-
 				})
 				.ConfigureServices((dependency) =>
 				{
