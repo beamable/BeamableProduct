@@ -1,4 +1,4 @@
-// Utility functions for the Beamable portal plugin system.
+// Utility functions for the Beamable portal extension system.
 // Add utility exports here as the toolkit grows.
 
 // Pull in global HTMLElementTagNameMap augmentations so that any consumer

@@ -25,6 +25,8 @@ public class ExtensionBuildData //TODO make this have a diff version number so w
 public class ExtensionBuildMetaData
 {
 	public string Name;
+	public string ToolkitVersion;
+	public string WebSDKVersion;
 	public PortalExtensionPackageProperties Properties;
 }
 

@@ -1,44 +1,44 @@
-// Portal plugin registration utilities.
+// Portal extension registration utilities.
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
-import { BeamBase } from "beamable-sdk";
+import { Beam, BeamBase } from "beamable-sdk";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 /**
- * Runtime context provided by the Beamable portal to every plugin on mount.
+ * Runtime context provided by the Beamable portal to every extension on mount.
  */
-export interface PluginContext extends Map<any, any> {
+export interface ExtensionContext extends Map<any, any> {
   realm: string;
   cid: string;
-  beam: BeamBase;
+  beam: Promise<Beam>;
 }
 
 /**
- * Options passed to {@link Portal.registerPlugin}.
+ * Options passed to {@link Portal.registerExtension}.
  */
-export interface RegisterPluginOptions {
+export interface RegisterExtensionOptions {
   /**
    * Unique name for the extension
    */
   beamId: string;
 
   /**
-   * Called when the portal mounts this plugin into the DOM.
+   * Called when the portal mounts this extension into the DOM.
    *
    * Render your UI into `container`. The portal guarantees that
    * `container` is attached to the document before this callback fires.
-   * 
-   * @returns some unique instance object for the service. The same instance will be given to the unmount call later. 
-   * @param container - The `HTMLElement` allocated for this plugin.
+   *
+   * @returns some unique instance object for the service. The same instance will be given to the unmount call later.
+   * @param container - The `HTMLElement` allocated for this extension.
    * @param context   - Runtime context supplied by the portal.
    */
-  onMount: (container: HTMLElement, context: PluginContext) => unknown | Promise<unknown>;
+  onMount: (container: HTMLElement, context: ExtensionContext) => unknown | Promise<unknown>;
 
   /**
-   * Called when the portal is about to remove this plugin from the DOM.
+   * Called when the portal is about to remove this extension from the DOM.
    *
    * Use this to tear down event listeners, timers, framework instances, etc.
    * The portal waits for a returned `Promise` to settle before removing
@@ -54,13 +54,27 @@ export interface RegisterPluginOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Registers a plugin with the Beamable portal.
+ * Registers an extension with the Beamable portal.
  *
+ * @example
+ * ```ts
+ * import { Portal } from '@beamable/portal-toolkit';
+ *
+ * Portal.registerExtension({
+ *   beamId: 'MyExtension',
+ *   onMount(container, context) {
+ *     container.innerHTML = `<p>Hello from ${context.realm}</p>`;
+ *   },
+ *   onUnmount(instance) {
+ *     // clean up
+ *   },
+ * });
+ * ```
  */
-function registerPlugin(options: RegisterPluginOptions): void {
+function registerExtension(options: RegisterExtensionOptions): void {
 
   (window as unknown as Record<string, unknown>)[options.beamId] = {
-    mount: (targetElement: HTMLElement, context: PluginContext) => {
+    mount: (targetElement: HTMLElement, context: ExtensionContext) => {
       return options.onMount(targetElement, context);
     },
     unmount: (instance: unknown) => {
@@ -80,9 +94,9 @@ function registerPlugin(options: RegisterPluginOptions): void {
  * @example
  * ```ts
  * import { Portal } from '@beamable/portal-toolkit';
- * Portal.registerPlugin({ ... });
+ * Portal.registerExtension({ ... });
  * ```
  */
 export const Portal = {
-  registerPlugin,
+  registerExtension,
 } as const;
