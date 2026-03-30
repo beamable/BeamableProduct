@@ -131,7 +131,7 @@ public class PortalExtensionObserver
 		_manifest = manifest;
 	}
 
-	public void BuildExtension()
+	public virtual void BuildExtension()
 	{
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 		StartProcessResult result = isWindows
@@ -211,7 +211,7 @@ public class PortalExtensionObserver
 		return result;
 	}
 
-	private static string GetBuildHash(string[] fileA, string[] fileB)
+	public static string GetBuildHash(string[] fileA, string[] fileB)
 	{
 		var sequenceA = fileA.Select((val, index) => new KeyValuePair<string, string>($"A:{index}", val));
 

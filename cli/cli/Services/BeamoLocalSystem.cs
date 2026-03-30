@@ -1,4 +1,4 @@
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
@@ -547,7 +547,16 @@ public class BeamoServiceDefinition
 	public PortalExtensionDef PortalExtensionDefinition;
 
 	public bool IsInRemote;
-	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
+
+	/// <summary>
+	/// Absolute path to the root directory of this service on the local filesystem.
+	/// Set for any protocol type that has local source. Used to determine <see cref="IsLocal"/>.
+	/// For dotnet protocols this equals <see cref="AbsoluteProjectDirectory"/>;
+	/// for portal extensions it is the directory containing package.json.
+	/// </summary>
+	public string WorkingDirectory;
+
+	public bool IsLocal => !string.IsNullOrEmpty(WorkingDirectory);
 
 	public enum ProjectLanguage { CSharpDotnet, }
 

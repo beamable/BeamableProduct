@@ -822,6 +822,7 @@ public static class ProjectContextUtil
 		definition.OpenApiPath = openApiPath;
 		definition.ProjectPath = project.relativePath;
 		definition.AbsoluteProjectPath = project.absolutePath;
+		definition.WorkingDirectory = definition.AbsoluteProjectDirectory;
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 
@@ -859,6 +860,7 @@ public static class ProjectContextUtil
 		definition.OpenApiPath = openApiPath;
 		definition.ProjectPath = project.relativePath;
 		definition.AbsoluteProjectPath = project.absolutePath;
+		definition.WorkingDirectory = definition.AbsoluteProjectDirectory;
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
@@ -872,7 +874,7 @@ public static class ProjectContextUtil
 		definition.PortalExtensionDefinition = def;
 		definition.BeamoId = def.Name;
 		definition.Protocol = BeamoProtocolType.PortalExtension;
-		//TODO do the rest of the conversion
+		definition.WorkingDirectory = def.AbsolutePath;
 
 		return definition;
 	}
