@@ -44,7 +44,7 @@
       "types": "./dist/types/svelte-elements.d.ts"
     },
     "./custom-elements.json": "./custom-elements.json",
-    "./web-types.json": "./web-types.json"
+    "./web-types.json": "./src/generated/web-types.json"
   },
   "peerDependencies": {
     "beamable-sdk": "0.6.0",
