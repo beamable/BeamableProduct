@@ -1,0 +1,32 @@
+storage: /verdaccio/storage
+auth:
+  htpasswd:
+    file: /verdaccio/conf/htpasswd
+    # -1 means no limit, allows unauthenticated publish for local dev
+    max_users: -1
+
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  '@beamable/*':
+    access: $all
+    publish: $all
+    # Do NOT proxy to npm for these — they must be published locally first.
+    # Comment out the proxy line if you want to fall back to npm for unpublished versions.
+
+  'beamable-sdk':
+    access: $all
+    publish: $all
+
+  '**':
+    access: $all
+    publish: $all
+    proxy: npmjs
+
+server:
+  keepAliveTimeout: 60
+
+logs:
+  - { type: stdout, format: pretty, level: http }
