@@ -295,7 +295,11 @@ public class PortalExtensionObserver
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
-		if (e.Name != null && (e.Name.Contains("assets/main") || e.Name.Contains("node_modules/") || e.Name.Contains("beamable/clients")))
+		string assetsFolder = $"assets{Path.DirectorySeparatorChar}"; 
+		string nodeModuleFolder = $"node_modules{Path.DirectorySeparatorChar}";
+		string beamableClients = Path.Combine("beamable", "clients");
+		
+		if (e.Name != null && (e.Name.Contains(assetsFolder) || e.Name.Contains(nodeModuleFolder) || e.Name.Contains(beamableClients)))
 		{
 			return; // this case we ignore because these are the build files
 		}
