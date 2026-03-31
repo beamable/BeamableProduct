@@ -12,6 +12,8 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	public static string GetBeamIdAsPortalExtension(string beamoId) => $"{beamoId}_portalExtension";
+	
 	public static readonly Regex PORTAL_EXTENSION_SERVICE_REGEX = new(@"^BeamPortalExtension_(?<serviceName>.+?)_(?<randomGuid>[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$", RegexOptions.Compiled);
 	private string _computedMicroserviceName;
 
