@@ -7,5 +7,5 @@
 // `pnpm sync-components` to refresh it from Portal's beam-components.json.
 import './generated/globals';
 
-export * from 'beamable-sdk';
+export * from '@beamable/sdk';
 export * from './portal';

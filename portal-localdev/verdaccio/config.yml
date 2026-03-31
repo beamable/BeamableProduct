@@ -16,10 +16,6 @@ packages:
     # Do NOT proxy to npm for these — they must be published locally first.
     # Comment out the proxy line if you want to fall back to npm for unpublished versions.
 
-  'beamable-sdk':
-    access: $all
-    publish: $all
-
   '**':
     access: $all
     publish: $all

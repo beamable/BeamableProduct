@@ -148,7 +148,11 @@ const server = http.createServer(async (req, res) => {
       }
 
       const meta = await metaRes.json()
-      const tarballUrl = meta.dist?.tarball
+      // Verdaccio may return a tarball URL using the public-facing hostname
+      // (e.g. localhost:4873). Inside Docker that hostname points to the
+      // container itself, not the host. Rewrite it to the internal service name.
+      const rawTarballUrl = meta.dist?.tarball
+      const tarballUrl = rawTarballUrl?.replace(/^https?:\/\/[^/]+/, VERDACCIO)
       if (!tarballUrl) {
         const err = new Error(`No tarball URL in metadata for ${pkg}@${version}`)
         err.status = 404

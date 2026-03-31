@@ -99,8 +99,10 @@ jobs:
       - name: Set package version
         run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
 
-      - name: Build
-        run: pnpm build
+      # prepublishOnly runs build automatically
+      - name: Publish to npm
+        if: ${{ inputs.dryRun == false }}
+        run: pnpm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}
@@ -120,6 +122,6 @@ jobs:
               "production": "production"
             }')[github.event.inputs.releaseType] }}
 
-      - name: Publish to npm
-        if: ${{ inputs.dryRun == false }}
-        run: pnpm publish --no-git-checks --provenance --tag ${{ steps.version.outputs.NPM_TAG }}
+      - name: Dry run build
+        if: ${{ inputs.dryRun == true }}
+        run: pnpm prepublishOnly

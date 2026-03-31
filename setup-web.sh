@@ -34,5 +34,16 @@ echo ""
 echo "Resetting web build number to 0"
 echo 0 > "$WEB_BUILD_NUMBER_FILE"
 
+# ---------------------------------------------------------------------------
+# Configure global npm/pnpm registry
+# ---------------------------------------------------------------------------
+echo ""
+echo "Pointing @beamable/* packages to local Verdaccio..."
+npm config set @beamable:registry http://localhost:4873
+npm config set //localhost:4873/:_authToken local
+echo "  Projects resolving '@beamable/*' packages will use local Verdaccio."
+echo "  All other packages continue to use the default npm registry."
+echo "  Run ./teardown-web.sh to remove this configuration."
+
 echo ""
 echo "Setup complete. Run ./dev-web.sh to build and publish packages."

@@ -5,7 +5,7 @@ Utilities and type definitions for building Beamable portal extensions.
 - **`Portal.registerExtension()`** — registers your extension with the portal host
 - **TypeScript types** for all Beamable web components (`beam-btn`, `beam-data-table`, etc.)
 - **Svelte element types** for `.svelte` template autocomplete
-- **Re-exports** of `beamable-sdk` types
+- **Re-exports** of `@beamable/sdk` types
 
 ---
 
@@ -13,18 +13,18 @@ Utilities and type definitions for building Beamable portal extensions.
 
 ```bash
 npm install @beamable/portal-toolkit
-# beamable-sdk is a peer dependency — install it too
-npm install beamable-sdk
+# @beamable/sdk is a peer dependency — install it too
+npm install @beamable/sdk
 ```
 
-Because `beamable-sdk` is injected as a global by the portal host at runtime, mark it external in your bundler:
+Because `@beamable/sdk` is injected as a global by the portal host at runtime, mark it external in your bundler:
 
 ```ts
 // vite.config.ts
 export default {
   build: {
     rollupOptions: {
-      external: ['beamable-sdk'],
+      external: ['@beamable/sdk'],
     },
   },
 };
@@ -174,7 +174,7 @@ You must be logged in to npm (`npm login`) with publish rights to the `@beamable
 
 | Import path | Contents |
 |---|---|
-| `@beamable/portal-toolkit` | `Portal` namespace, all `beamable-sdk` types, web component globals |
+| `@beamable/portal-toolkit` | `Portal` namespace, all `@beamable/sdk` types, web component globals |
 | `@beamable/portal-toolkit/svelte` | `SvelteHTMLElements` augmentations (triple-slash reference only) |
 | `@beamable/portal-toolkit/custom-elements.json` | CEM manifest |
 | `@beamable/portal-toolkit/web-types.json` | JetBrains web-types |

@@ -6,17 +6,17 @@
 # This script will be run many times as you develop web packages locally.
 # Each run:
 #   1. Increments the build number (stored in web-build-number.txt)
-#   2. Builds and publishes packages as version 0.0.123.<build_number>
+#   2. Builds and publishes packages as version 0.0.123-local<build_number>
 #      to the local Verdaccio registry (http://localhost:4873)
 #   3. Restarts local-unpkg to bust its in-memory file cache
 #
-# By default both the webSDK (beamable-sdk) and toolkit (@beamable/portal-toolkit)
+# By default both the webSDK (@beamable/sdk) and toolkit (@beamable/portal-toolkit)
 # are built and published. Use --skip-sdk to publish the toolkit only.
 #
-# When --skip-sdk is used the toolkit's peerDependencies.beamable-sdk is left
-# unchanged, so the Portal will load that SDK version from the real CDN.
-# When the SDK is also published the toolkit's peer dependency is updated to the
-# local version so the Portal loads both from localhost.
+# When --skip-sdk is used, the toolkit's package.json is left untouched —
+# the developer is responsible for the declared @beamable/sdk version.
+# When the SDK is also published, both peer and dev dependency are updated to
+# the local version so the Portal loads both from localhost.
 
 set -e
 
@@ -26,6 +26,28 @@ TOOLKIT_DIR="$SCRIPT_DIR/beam-portal-toolkit"
 LOCALDEV_DIR="$SCRIPT_DIR/portal-localdev"
 WEB_BUILD_NUMBER_FILE="$SCRIPT_DIR/web-build-number.txt"
 REGISTRY="http://localhost:4873"
+
+# ---------------------------------------------------------------------------
+# Cleanup trap — restores package.json files even if the script exits early
+# ---------------------------------------------------------------------------
+SDK_BACKUP=false
+TOOLKIT_BACKUP=false
+
+cleanup() {
+  local exit_code=$?
+  if [ "$SDK_BACKUP" = true ]; then
+    echo "  Restoring web/package.json..."
+    cp "$WEB_SDK_DIR/package.json.devbak" "$WEB_SDK_DIR/package.json" 2>/dev/null || true
+    rm -f "$WEB_SDK_DIR/package.json.devbak"
+  fi
+  if [ "$TOOLKIT_BACKUP" = true ]; then
+    echo "  Restoring beam-portal-toolkit/package.json..."
+    cp "$TOOLKIT_DIR/package.json.devbak" "$TOOLKIT_DIR/package.json" 2>/dev/null || true
+    rm -f "$TOOLKIT_DIR/package.json.devbak"
+  fi
+  exit $exit_code
+}
+trap cleanup EXIT
 
 # ---------------------------------------------------------------------------
 # Flags
@@ -58,8 +80,8 @@ PREVIOUS_BUILD_NUMBER=$NEXT_BUILD_NUMBER
 ((NEXT_BUILD_NUMBER += 1))
 echo $NEXT_BUILD_NUMBER > "$WEB_BUILD_NUMBER_FILE"
 
-VERSION="0.0.123.$NEXT_BUILD_NUMBER"
-PREVIOUS_VERSION="0.0.123.$PREVIOUS_BUILD_NUMBER"
+VERSION="0.0.123-local$NEXT_BUILD_NUMBER"
+PREVIOUS_VERSION="0.0.123-local$PREVIOUS_BUILD_NUMBER"
 
 echo ""
 echo "=== Beamable Web Local Dev ==="
@@ -71,19 +93,25 @@ echo ""
 # Publish webSDK
 # ---------------------------------------------------------------------------
 if [ "$SKIP_SDK" = false ]; then
-  echo "--- Building beamable-sdk ---"
+  echo "--- Building @beamable/sdk ---"
   cd "$WEB_SDK_DIR"
 
-  # Temporarily set the version, build, publish, then restore
-  SAVED_SDK_VERSION=$(node -p "require('./package.json').version")
+  cp package.json package.json.devbak
+  SDK_BACKUP=true
+
+  echo "  [cmd] pnpm install"
+  pnpm install
+  echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
   pnpm version "$VERSION" --no-git-tag-version
+  echo "  [cmd] pnpm build"
   pnpm build
+  echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
   pnpm publish --registry "$REGISTRY" --no-git-checks
 
-  # Restore the original version
-  pnpm version "$SAVED_SDK_VERSION" --no-git-tag-version
+  cp package.json.devbak package.json && rm package.json.devbak
+  SDK_BACKUP=false
 
-  echo "Published beamable-sdk@$VERSION"
+  echo "Published @beamable/sdk@$VERSION"
   cd "$SCRIPT_DIR"
 fi
 
@@ -94,34 +122,37 @@ echo ""
 echo "--- Building @beamable/portal-toolkit ---"
 cd "$TOOLKIT_DIR"
 
-# Temporarily set the toolkit version (and optionally peerDep), then restore
-SAVED_TOOLKIT_VERSION=$(node -p "require('./package.json').version")
-SAVED_TOOLKIT_PEER=$(node -p "require('./package.json').peerDependencies['beamable-sdk']")
-pnpm version "$VERSION" --no-git-tag-version
+cp package.json package.json.devbak
+TOOLKIT_BACKUP=true
 
-# If the SDK was also published locally, update the peer dependency to match
-# so the Portal knows to load both from localhost.
+# When the SDK is also published this run, update both devDependencies and
+# peerDependencies to the local version BEFORE pnpm install, so pnpm resolves
+# @beamable/sdk from Verdaccio correctly.
+# When --skip-sdk is passed, package.json is left untouched — the developer
+# is responsible for ensuring the declared version is available.
 if [ "$SKIP_SDK" = false ]; then
   node -e "
     const fs = require('fs');
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    pkg.peerDependencies['beamable-sdk'] = '$VERSION';
+    pkg.peerDependencies['@beamable/sdk'] = '$VERSION';
+    pkg.devDependencies['@beamable/sdk'] = '$VERSION';
     fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
   "
-  echo "Updated peerDependencies.beamable-sdk → $VERSION"
+  echo "  Updated @beamable/sdk → $VERSION"
 fi
 
+echo "  [cmd] pnpm install"
+pnpm install
+echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
+pnpm version "$VERSION" --no-git-tag-version
+
+echo "  [cmd] pnpm build"
 pnpm build
+echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
 pnpm publish --registry "$REGISTRY" --no-git-checks
 
-# Restore version and peerDep to their original values
-pnpm version "$SAVED_TOOLKIT_VERSION" --no-git-tag-version
-node -e "
-  const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-  pkg.peerDependencies['beamable-sdk'] = '$SAVED_TOOLKIT_PEER';
-  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-"
+cp package.json.devbak package.json && rm package.json.devbak
+TOOLKIT_BACKUP=false
 
 echo "Published @beamable/portal-toolkit@$VERSION"
 cd "$SCRIPT_DIR"

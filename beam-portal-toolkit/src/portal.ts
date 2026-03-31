@@ -1,7 +1,7 @@
 // Portal extension registration utilities.
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
-import { Beam, BeamBase } from "beamable-sdk";
+import { Beam, BeamBase } from "@beamable/sdk";
 
 // ---------------------------------------------------------------------------
 // Types

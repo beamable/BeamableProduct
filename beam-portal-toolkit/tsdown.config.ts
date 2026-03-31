@@ -10,7 +10,7 @@ export default defineConfig([
     dts: false,
     sourcemap: false,
     minify: true,
-    external: ['beamable-sdk'],
+    external: ['@beamable/sdk'],
   },
   // Type declarations
   {
@@ -23,7 +23,7 @@ export default defineConfig([
     outExtensions: () => ({
       dts: '.d.ts',
     }),
-    external: ['beamable-sdk', 'svelte'],
+    external: ['@beamable/sdk', 'svelte'],
   },
   // Svelte element type augmentations
   {

@@ -1,5 +1,5 @@
 {
-  "name": "beamable-sdk",
+  "name": "@beamable/sdk",
   "version": "1.0.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.cjs",

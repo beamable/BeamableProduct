@@ -1,7 +1,7 @@
 /**
  * Vite plugin for Beamable portal extensions.
  *
- * Configures the build so that `beamable-sdk` is treated as an external and
+ * Configures the build so that `@beamable/sdk` is treated as an external and
  * resolved to the versioned window global that the Portal injects before
  * running the extension script.
  *
@@ -21,8 +21,8 @@
  *     },
  *   })
  *
- * Note: only the main `beamable-sdk` entry is externalized. The subpath
- * `beamable-sdk/api` has no browser IIFE build and is stateless (no shared
+ * Note: only the main `@beamable/sdk` entry is externalized. The subpath
+ * `@beamable/sdk/api` has no browser IIFE build and is stateless (no shared
  * connection or auth state), so it is safe — and correct — to bundle it
  * directly into the extension. Do not add it to externals/globals.
  */
@@ -31,10 +31,10 @@ import pkg from '../package.json'
 
 // Versioned global name the Portal registers on window before the extension
 // script runs. Must match the `globalName` in the Portal's beam-sdk-registry.
-const SDK_GLOBAL = `beamable-sdk-${pkg.peerDependencies['beamable-sdk']}`
+const SDK_GLOBAL = `@beamable/sdk-${pkg.peerDependencies['@beamable/sdk']}`
 
 /**
- * Returns a Vite plugin that marks `beamable-sdk` as external and maps it
+ * Returns a Vite plugin that marks `@beamable/sdk` as external and maps it
  * to the Portal-provided window global at runtime.
  */
 export function portalExtensionPlugin() {
@@ -44,10 +44,10 @@ export function portalExtensionPlugin() {
       return {
         build: {
           rollupOptions: {
-            external: ['beamable-sdk'],
+            external: ['@beamable/sdk'],
             output: {
               globals: {
-                'beamable-sdk': `window['${SDK_GLOBAL}']`,
+                '@beamable/sdk': `window['${SDK_GLOBAL}']`,
               },
             },
           },
