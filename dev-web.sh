@@ -141,6 +141,11 @@ if [ "$SKIP_SDK" = false ]; then
   echo "  Updated @beamable/sdk → $VERSION"
 fi
 
+# Evict any cached @beamable/sdk tarball from the pnpm content-addressable store.
+# After a Verdaccio wipe the same version is republished with a different hash,
+# so the cached tarball causes ERR_PNPM_TARBALL_INTEGRITY on the next install.
+rm -f pnpm-lock.yaml
+pnpm store delete @beamable/sdk 2>/dev/null || true
 echo "  [cmd] pnpm install"
 pnpm install
 echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
