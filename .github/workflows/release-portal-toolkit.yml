@@ -67,8 +67,11 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
       - name: Install dependencies
-        run: npm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Compute version
         id: version
