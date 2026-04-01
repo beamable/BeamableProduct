@@ -1,0 +1,1655 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "plugins/vue-register-components.js",
+      "declarations": [
+        {
+          "kind": "custom-element",
+          "tagName": "beam-btn",
+          "name": "BeamBtn",
+          "description": "A Material Design button. Supports outlined, text, icon, fab, and loading variants.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill or text color. Accepts a CSS color or theme color name (e.g. `primary`, `secondary`, `error`)."
+            },
+            {
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders with a border and transparent background."
+            },
+            {
+              "name": "text",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a flat text button with no background or border."
+            },
+            {
+              "name": "block",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Expands the button to fill its container's full width."
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "fieldName": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "fieldName": "xLarge",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "icon",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a square icon button sized to fit a single icon."
+            },
+            {
+              "name": "fab",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a circular floating action button."
+            },
+            {
+              "name": "tile",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "rounded",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "depressed",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a loading spinner and disables the button."
+            },
+            {
+              "name": "href",
+              "type": {
+                "text": "string"
+              },
+              "description": "Renders the button as an anchor tag pointing to this URL."
+            },
+            {
+              "name": "target",
+              "type": {
+                "text": "string"
+              },
+              "description": "The `target` attribute forwarded to the anchor tag when `href` is set."
+            },
+            {
+              "name": "type",
+              "type": {
+                "text": "string"
+              },
+              "description": "The HTML button `type` attribute: `button`, `submit`, or `reset`."
+            },
+            {
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill or text color. Accepts a CSS color or theme color name (e.g. `primary`, `secondary`, `error`)."
+            },
+            {
+              "kind": "field",
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders with a border and transparent background."
+            },
+            {
+              "kind": "field",
+              "name": "text",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a flat text button with no background or border."
+            },
+            {
+              "kind": "field",
+              "name": "block",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Expands the button to fill its container's full width."
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "xLarge",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "icon",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a square icon button sized to fit a single icon."
+            },
+            {
+              "kind": "field",
+              "name": "fab",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a circular floating action button."
+            },
+            {
+              "kind": "field",
+              "name": "tile",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "rounded",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "depressed",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a loading spinner and disables the button."
+            },
+            {
+              "kind": "field",
+              "name": "href",
+              "type": {
+                "text": "string"
+              },
+              "description": "Renders the button as an anchor tag pointing to this URL."
+            },
+            {
+              "kind": "field",
+              "name": "target",
+              "type": {
+                "text": "string"
+              },
+              "description": "The `target` attribute forwarded to the anchor tag when `href` is set."
+            },
+            {
+              "kind": "field",
+              "name": "type",
+              "type": {
+                "text": "string"
+              },
+              "description": "The HTML button `type` attribute: `button`, `submit`, or `reset`."
+            },
+            {
+              "kind": "field",
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-icon",
+          "name": "BeamIcon",
+          "description": "Renders a Material Design icon by name. Pass the icon name via the `icon` prop or as default slot content.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "The Material Design icon name (e.g. `mdi-home`). Can also be passed as slot content."
+            },
+            {
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Icon color. Accepts a CSS color or theme color name (e.g. `primary`, `error`)."
+            },
+            {
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "fieldName": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "x-large",
+              "fieldName": "xLarge",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "left",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds right margin — use when the icon precedes inline text."
+            },
+            {
+              "name": "right",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds left margin — use when the icon follows inline text."
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "The Material Design icon name (e.g. `mdi-home`). Can also be passed as slot content."
+            },
+            {
+              "kind": "field",
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Icon color. Accepts a CSS color or theme color name (e.g. `primary`, `error`)."
+            },
+            {
+              "kind": "field",
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "xLarge",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "left",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds right margin — use when the icon precedes inline text."
+            },
+            {
+              "kind": "field",
+              "name": "right",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds left margin — use when the icon follows inline text."
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-chip",
+          "name": "BeamChip",
+          "description": "A small label element used for tags, filters, or status indicators. Supports closeable, outlined, and pill variants.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill color. Accepts a CSS color or theme color name (e.g. `primary`, `error`)."
+            },
+            {
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "x-small",
+              "fieldName": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "close",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a dismiss icon on the chip. Listen for the `click:close` event to handle removal."
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a square chip rather than rounded."
+            },
+            {
+              "name": "pill",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders with fully rounded (pill-shaped) ends."
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill color. Accepts a CSS color or theme color name (e.g. `primary`, `error`)."
+            },
+            {
+              "kind": "field",
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "small",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "large",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "xSmall",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "close",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a dismiss icon on the chip. Listen for the `click:close` event to handle removal."
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders as a square chip rather than rounded."
+            },
+            {
+              "kind": "field",
+              "name": "pill",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Renders with fully rounded (pill-shaped) ends."
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-alert",
+          "name": "BeamAlert",
+          "description": "Displays a contextual message to the user. Use the `type` prop for semantic variants: `success`, `info`, `warning`, or `error`.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill color. Overrides the color implied by `type`."
+            },
+            {
+              "name": "type",
+              "type": {
+                "text": "string"
+              },
+              "description": "Semantic variant: `success`, `info`, `warning`, or `error`. Sets icon and color automatically."
+            },
+            {
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "text",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "dismissible",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a close button. Listen for the `input` event (emits `false`) to handle dismissal."
+            },
+            {
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Overrides the default icon for the current `type`. Pass `false` to remove the icon."
+            },
+            {
+              "name": "border",
+              "type": {
+                "text": "string"
+              },
+              "description": "Adds a colored border on one side: `top`, `right`, `bottom`, or `left`."
+            },
+            {
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "prominent",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Increases the alert height and renders the icon at a larger size."
+            },
+            {
+              "name": "tile",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "color",
+              "type": {
+                "text": "string"
+              },
+              "description": "Fill color. Overrides the color implied by `type`."
+            },
+            {
+              "kind": "field",
+              "name": "type",
+              "type": {
+                "text": "string"
+              },
+              "description": "Semantic variant: `success`, `info`, `warning`, or `error`. Sets icon and color automatically."
+            },
+            {
+              "kind": "field",
+              "name": "outlined",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "text",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dismissible",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a close button. Listen for the `input` event (emits `false`) to handle dismissal."
+            },
+            {
+              "kind": "field",
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Overrides the default icon for the current `type`. Pass `false` to remove the icon."
+            },
+            {
+              "kind": "field",
+              "name": "border",
+              "type": {
+                "text": "string"
+              },
+              "description": "Adds a colored border on one side: `top`, `right`, `bottom`, or `left`."
+            },
+            {
+              "kind": "field",
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "prominent",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Increases the alert height and renders the icon at a larger size."
+            },
+            {
+              "kind": "field",
+              "name": "tile",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-card",
+          "name": "BeamCard",
+          "description": "A surface container with elevation and rounded corners for grouping related content.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              },
+              "description": "Shadow depth (0–24). Maps to the `elevation-N` CSS class."
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "elevation",
+              "type": {
+                "text": "string"
+              },
+              "description": "Shadow depth (0–24). Maps to the `elevation-N` CSS class."
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ],
+          "cssClasses": [
+            {
+              "name": "v-card"
+            },
+            {
+              "name": "v-sheet"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-card-title",
+          "name": "BeamCardTitle",
+          "description": "The title region of a beam-card. Renders with card title typography.",
+          "customElement": true,
+          "attributes": [],
+          "members": [],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ],
+          "cssClasses": [
+            {
+              "name": "v-card__title"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-card-subtitle",
+          "name": "BeamCardSubtitle",
+          "description": "The subtitle region of a beam-card. Renders with card subtitle typography.",
+          "customElement": true,
+          "attributes": [],
+          "members": [],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ],
+          "cssClasses": [
+            {
+              "name": "v-card__subtitle"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-card-text",
+          "name": "BeamCardText",
+          "description": "The body content region of a beam-card. Adds standard card padding.",
+          "customElement": true,
+          "attributes": [],
+          "members": [],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ],
+          "cssClasses": [
+            {
+              "name": "v-card__text"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-card-actions",
+          "name": "BeamCardActions",
+          "description": "The actions region of a beam-card. Aligns action buttons at the bottom of the card.",
+          "customElement": true,
+          "attributes": [],
+          "members": [],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ],
+          "cssClasses": [
+            {
+              "name": "v-card__actions"
+            }
+          ]
+        },
+        {
+          "kind": "custom-element",
+          "tagName": "beam-data-table",
+          "name": "BeamDataTable",
+          "description": "A full-featured data table with sorting, pagination, filtering, and row selection.",
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "headers",
+              "type": {
+                "text": "array"
+              },
+              "description": "Column definitions. Each item requires a `text` (display label) and `value` (row data key)."
+            },
+            {
+              "name": "items",
+              "type": {
+                "text": "array"
+              },
+              "description": "Array of row data objects. Each object's keys should match the `value` fields in `headers`."
+            },
+            {
+              "name": "items-per-page",
+              "fieldName": "itemsPerPage",
+              "type": {
+                "text": "string"
+              },
+              "description": "Number of rows shown per page. Set to `-1` to show all rows. Defaults to `10`."
+            },
+            {
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a loading bar above the table."
+            },
+            {
+              "name": "search",
+              "type": {
+                "text": "string"
+              },
+              "description": "Filters visible rows to those matching this string."
+            },
+            {
+              "name": "sort-by",
+              "fieldName": "sortBy",
+              "type": {
+                "text": "string"
+              },
+              "description": "The column `value` key to sort by."
+            },
+            {
+              "name": "sort-desc",
+              "fieldName": "sortDesc",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "multi-sort",
+              "fieldName": "multiSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "must-sort",
+              "fieldName": "mustSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "show-select",
+              "fieldName": "showSelect",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds a checkbox column for row selection. Use `value` to read or set the selected rows."
+            },
+            {
+              "name": "single-select",
+              "fieldName": "singleSelect",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The currently selected rows when `showSelect` is true."
+            },
+            {
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "fixed-header",
+              "fieldName": "fixedHeader",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Fixes the header row so only the body scrolls when `height` is set."
+            },
+            {
+              "name": "height",
+              "type": {
+                "text": "string"
+              },
+              "description": "Sets a fixed height on the table. Required for `fixedHeader` to take effect."
+            },
+            {
+              "name": "hide-default-header",
+              "fieldName": "hideDefaultHeader",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "hide-default-footer",
+              "fieldName": "hideDefaultFooter",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "no-data-text",
+              "fieldName": "noDataText",
+              "type": {
+                "text": "string"
+              },
+              "description": "Message shown when `items` is empty."
+            },
+            {
+              "name": "no-results-text",
+              "fieldName": "noResultsText",
+              "type": {
+                "text": "string"
+              },
+              "description": "Message shown when `search` produces no matches."
+            },
+            {
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "item-key",
+              "fieldName": "itemKey",
+              "type": {
+                "text": "string"
+              },
+              "description": "The row property used as a unique key. Defaults to `id`."
+            },
+            {
+              "name": "item-class",
+              "fieldName": "itemClass",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "page",
+              "type": {
+                "text": "string"
+              },
+              "description": "The current page number (1-based)."
+            },
+            {
+              "name": "server-items-length",
+              "fieldName": "serverItemsLength",
+              "type": {
+                "text": "string"
+              },
+              "description": "Total number of items on the server. Required for server-side pagination."
+            },
+            {
+              "name": "disable-pagination",
+              "fieldName": "disablePagination",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "disable-sort",
+              "fieldName": "disableSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "show-expand",
+              "fieldName": "showExpand",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds an expand toggle column. Use `expanded` to read or set expanded rows."
+            },
+            {
+              "name": "expanded",
+              "type": {
+                "text": "string"
+              },
+              "description": "Array of currently expanded row objects."
+            },
+            {
+              "name": "group-by",
+              "fieldName": "groupBy",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "group-desc",
+              "fieldName": "groupDesc",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "show-group-by",
+              "fieldName": "showGroupBy",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "mobile-breakpoint",
+              "fieldName": "mobileBreakpoint",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "loader-height",
+              "fieldName": "loaderHeight",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "loading-text",
+              "fieldName": "loadingText",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "footer-props",
+              "fieldName": "footerProps",
+              "type": {
+                "text": "string"
+              },
+              "description": "Props forwarded to the footer pagination control."
+            },
+            {
+              "name": "header-props",
+              "fieldName": "headerProps",
+              "type": {
+                "text": "string"
+              },
+              "description": "Props forwarded to the header row."
+            },
+            {
+              "name": "calculate-widths",
+              "fieldName": "calculateWidths",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "caption",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "headers",
+              "type": {
+                "text": "array"
+              },
+              "description": "Column definitions. Each item requires a `text` (display label) and `value` (row data key)."
+            },
+            {
+              "kind": "field",
+              "name": "items",
+              "type": {
+                "text": "array"
+              },
+              "description": "Array of row data objects. Each object's keys should match the `value` fields in `headers`."
+            },
+            {
+              "kind": "field",
+              "name": "itemsPerPage",
+              "type": {
+                "text": "string"
+              },
+              "description": "Number of rows shown per page. Set to `-1` to show all rows. Defaults to `10`."
+            },
+            {
+              "kind": "field",
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Shows a loading bar above the table."
+            },
+            {
+              "kind": "field",
+              "name": "search",
+              "type": {
+                "text": "string"
+              },
+              "description": "Filters visible rows to those matching this string."
+            },
+            {
+              "kind": "field",
+              "name": "sortBy",
+              "type": {
+                "text": "string"
+              },
+              "description": "The column `value` key to sort by."
+            },
+            {
+              "kind": "field",
+              "name": "sortDesc",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "multiSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "mustSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "showSelect",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds a checkbox column for row selection. Use `value` to read or set the selected rows."
+            },
+            {
+              "kind": "field",
+              "name": "singleSelect",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The currently selected rows when `showSelect` is true."
+            },
+            {
+              "kind": "field",
+              "name": "dense",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "fixedHeader",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Fixes the header row so only the body scrolls when `height` is set."
+            },
+            {
+              "kind": "field",
+              "name": "height",
+              "type": {
+                "text": "string"
+              },
+              "description": "Sets a fixed height on the table. Required for `fixedHeader` to take effect."
+            },
+            {
+              "kind": "field",
+              "name": "hideDefaultHeader",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "hideDefaultFooter",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "noDataText",
+              "type": {
+                "text": "string"
+              },
+              "description": "Message shown when `items` is empty."
+            },
+            {
+              "kind": "field",
+              "name": "noResultsText",
+              "type": {
+                "text": "string"
+              },
+              "description": "Message shown when `search` produces no matches."
+            },
+            {
+              "kind": "field",
+              "name": "dark",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "light",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "itemKey",
+              "type": {
+                "text": "string"
+              },
+              "description": "The row property used as a unique key. Defaults to `id`."
+            },
+            {
+              "kind": "field",
+              "name": "itemClass",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "page",
+              "type": {
+                "text": "string"
+              },
+              "description": "The current page number (1-based)."
+            },
+            {
+              "kind": "field",
+              "name": "serverItemsLength",
+              "type": {
+                "text": "string"
+              },
+              "description": "Total number of items on the server. Required for server-side pagination."
+            },
+            {
+              "kind": "field",
+              "name": "disablePagination",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "disableSort",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "showExpand",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Adds an expand toggle column. Use `expanded` to read or set expanded rows."
+            },
+            {
+              "kind": "field",
+              "name": "expanded",
+              "type": {
+                "text": "string"
+              },
+              "description": "Array of currently expanded row objects."
+            },
+            {
+              "kind": "field",
+              "name": "groupBy",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "groupDesc",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "showGroupBy",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "mobileBreakpoint",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "loaderHeight",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "loadingText",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "footerProps",
+              "type": {
+                "text": "string"
+              },
+              "description": "Props forwarded to the footer pagination control."
+            },
+            {
+              "kind": "field",
+              "name": "headerProps",
+              "type": {
+                "text": "string"
+              },
+              "description": "Props forwarded to the header row."
+            },
+            {
+              "kind": "field",
+              "name": "calculateWidths",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "caption",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "slots": [
+            {
+              "name": "",
+              "description": "Default slot"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-btn",
+          "declaration": {
+            "name": "BeamBtn"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-icon",
+          "declaration": {
+            "name": "BeamIcon"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-chip",
+          "declaration": {
+            "name": "BeamChip"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-alert",
+          "declaration": {
+            "name": "BeamAlert"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card",
+          "declaration": {
+            "name": "BeamCard"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-title",
+          "declaration": {
+            "name": "BeamCardTitle"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-subtitle",
+          "declaration": {
+            "name": "BeamCardSubtitle"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-text",
+          "declaration": {
+            "name": "BeamCardText"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-actions",
+          "declaration": {
+            "name": "BeamCardActions"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-data-table",
+          "declaration": {
+            "name": "BeamDataTable"
+          }
+        }
+      ]
+    }
+  ]
+}

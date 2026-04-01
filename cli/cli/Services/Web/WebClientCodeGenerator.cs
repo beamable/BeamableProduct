@@ -62,7 +62,7 @@ public class WebClientCodeGenerator
 
 		_clientFile.AddDeclaration(tsClass);
 
-		var tsBeamSdkImport = new TsImport("beamable-sdk");
+		var tsBeamSdkImport = new TsImport("@beamable/sdk");
 		tsBeamSdkImport.AddNamedImport("BeamMicroServiceClient");
 		_clientFile.AddImport(tsBeamSdkImport);
 

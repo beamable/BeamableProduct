@@ -42,6 +42,13 @@ Prereqs: `dotnet` (8+), and a POSIX shell for the provided scripts (or use WSL o
 - `./dev.sh` — builds and publishes local packages into a local NuGet feed consumed by downstream projects (used for fast iteration across CLI, microservices, and Unity SDK).
 - Run the repo-level scripts from the repository root. See `cli/` README for how to run CLI-specific projects after running the scripts.
 
+### Web local dev (Portal Toolkit & Web SDK)
+Prereqs: Node.js 22+, `pnpm`, and Docker.
+
+- `./setup-web.sh` (run once) — starts a local Verdaccio npm registry and local-unpkg CDN via Docker Compose, resets the build number, and configures npm to resolve `@beamable/*` packages from the local registry.
+- `./dev-web.sh` — builds and publishes `@beamable/sdk` and `@beamable/portal-toolkit` to the local Verdaccio registry, then restarts local-unpkg to clear its cache.
+- `./teardown-web.sh` — removes the `@beamable/*` registry override from npm config and stops the local Docker stack.
+
 ## Documentation and help
 - Unity SDK docs: https://help.beamable.com/Unity-Latest/
 - CLI docs: https://help.beamable.com/CLI-Latest/
