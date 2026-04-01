@@ -7,6 +7,11 @@
   "types": "dist/types/index.d.ts",
   "customElements": "custom-elements.json",
   "web-types": "src/generated/web-types.json",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beamable/BeamableProduct",
+    "directory": "beam-portal-toolkit"
+  },
   "author": "Beamable",
   "license": "MIT",
   "packageManager": "pnpm@10.8.0",
