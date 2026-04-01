@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [7.0.1] - 2026-04-01
+## Unreleased
 
 ### Added
 - New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
 - Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
-- Added support to masking sensitive data when logging environment variables.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
@@ -25,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue that considered types used in ServerCallable methods on Microservices to be generated to client code.
 - Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
 - Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
-- Fixed an issue where some msBuilds version could not properly build because of some MSBuild static methods not available in that environment, now are replaced for lower-common-denominator equivalents.
 
 ## [7.0.0] - 2026-02-19
 ### Added
@@ -48,10 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use `ForceRemoteStorage` on C#MS builder instead of `MicroserviceBootstrapper.ForceUseRemoteDependencies`
 - Deprecated `LocalEnvCustomArgs`, use the `LocalEnvModifier` instead. 
 - Newer Beam Auth API schemas use AuthV2 prefix.
-
-
-### Issues
-- Newly created content published by other developers working on the same realm as you will appear as deleted instead of automatically being downloaded.
 
 ## [6.2.2] - 2025-12-15
 ### Changed
@@ -261,26 +255,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
-
-## [4.3.6] - 2026-03-13
-
-### Fixed
-- Backported content serialization performance improvements [4123](https://github.com/beamable/BeamableProduct/issues/4123)
-
-## [4.3.5] - 2026-03-03
-### Fixed
-- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
-
-### Changed
-- Lowered log level of `/docs` endpoint from `DEBUG` to `Verbose` [4461](https://github.com/beamable/BeamableProduct/issues/4461)
-
-## [4.3.4] - 2025-08-01
-### Fixed
-- (backported from 5.2.0) - `beam deploy` commands handle non JSON `docker build` logs, which fixes error where builds couldn't find the docker image id of successfully built services.
-
-## [4.3.3] - 2025-07-23
-### Fixed
-- `beam deploy release` Task completion error.
 
 ## [4.3.1] - 2025-06-05
 
