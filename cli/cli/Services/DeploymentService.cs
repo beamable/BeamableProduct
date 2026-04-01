@@ -53,13 +53,25 @@ public class PortalExtensionUploadInfo : JsonSerializable.ISerializable
 {
 	public string name;
 	public string absolutePath;
-	public string checksum; // build hash; used as version on BeamoV2ExtensionContentReference
+	public string checksum;            // combined build hash; for BeamoV2PortalExtensionReference.checksum
+	public string jsChecksum;          // MD5 hex of main.js; stored as version in BeamoV2ExtensionContentReference
+	public string cssChecksum;         // MD5 hex of main.css; stored as version in BeamoV2ExtensionContentReference
+	public bool uploadJs;              // true if main.js differs from remote
+	public bool uploadCss;             // true if main.css differs from remote
+	public string existingJsContentId;  // remote contentId to reuse when uploadJs=false
+	public string existingCssContentId; // remote contentId to reuse when uploadCss=false
 
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.Serialize(nameof(name), ref name);
 		s.Serialize(nameof(absolutePath), ref absolutePath);
 		s.Serialize(nameof(checksum), ref checksum);
+		s.Serialize(nameof(jsChecksum), ref jsChecksum);
+		s.Serialize(nameof(cssChecksum), ref cssChecksum);
+		s.Serialize(nameof(uploadJs), ref uploadJs);
+		s.Serialize(nameof(uploadCss), ref uploadCss);
+		s.Serialize(nameof(existingJsContentId), ref existingJsContentId);
+		s.Serialize(nameof(existingCssContentId), ref existingCssContentId);
 	}
 }
 
@@ -922,8 +934,11 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.servicesSwitchingLogProvider, "Switching LogProvider", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
+		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
+		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
+		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
 
-		hasChanges = plan.diff.jsonChanges.Count > 0;
+		hasChanges = plan.diff.jsonChanges.Count > 0 || plan.portalExtensionsToUpload.Count > 0;
 		var hasDetectedChanges = detectedChangeCount > 0;
 		if (hasChanges)
 		{
@@ -1235,6 +1250,7 @@ public partial class DeployUtil
 			localPeNames.Add(peDef.Name);
 
 			var observer = new PortalExtensionObserver { ExtensionMetaData = peDef };
+			observer.InstallDeps();
 			observer.BuildExtension();
 
 			var mainJsPath  = Path.Combine(peDef.AbsolutePath, "assets", "main.js");
@@ -1242,28 +1258,47 @@ public partial class DeployUtil
 			var jsLines     = File.ReadLines(mainJsPath).ToArray();
 			var cssLines    = File.ReadLines(mainCssPath).ToArray();
 			var localChecksum = PortalExtensionObserver.GetBuildHash(jsLines, cssLines);
+			var jsMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainJsPath))).Replace("-", "");
+			var cssMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainCssPath))).Replace("-", "");
 
-			var remoteRef      = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
-			var remoteChecksum = remoteRef?.checksum.GetOrElse("") ?? "";
-			var needsUpload    = remoteRef == null || localChecksum != remoteChecksum;
+			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
+			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
+			var remoteJsRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "main.js");
+			var remoteCssRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "main.css");
+
+			var uploadJs = remoteJsRef == null || remoteJsRef.version.GetOrElse("") != jsMd5Hex;
+			var uploadCss = remoteCssRef == null || remoteCssRef.version.GetOrElse("") != cssMd5Hex;
+			var needsUpload = uploadJs || uploadCss;
 
 			if (needsUpload)
 			{
-				if (remoteRef == null) diff.addedPortalExtensions.Add(peDef.Name);
-				else                   diff.changedPortalExtensions.Add(peDef.Name);
+				if (remoteRef == null)
+				{
+					diff.addedPortalExtensions.Add(peDef.Name);
+				}
+				else
+				{
+					diff.changedPortalExtensions.Add(peDef.Name);
+				}
 
 				portalExtensionsToUpload.Add(new PortalExtensionUploadInfo
 				{
-					name         = peDef.Name,
+					name = peDef.Name,
 					absolutePath = peDef.AbsolutePath,
-					checksum     = localChecksum,
+					checksum = localChecksum,
+					jsChecksum = jsMd5Hex,
+					cssChecksum = cssMd5Hex,
+					uploadJs = uploadJs,
+					uploadCss = uploadCss,
+					existingJsContentId = remoteJsRef?.contentId.GetOrElse(""),
+					existingCssContentId = remoteCssRef?.contentId.GetOrElse(""),
 				});
 
 				portalExtensionReferences.Add(new BeamoV2PortalExtensionReference
 				{
-					name     = new OptionalString { Value = peDef.Name,   HasValue = true },
+					name = new OptionalString { Value = peDef.Name, HasValue = true },
 					checksum = new OptionalString { Value = localChecksum, HasValue = true },
-					enabled  = new OptionalBool   { Value = true,          HasValue = true },
+					enabled = new OptionalBool { Value = true, HasValue = true },
 				});
 			}
 			else
@@ -1502,66 +1537,89 @@ public partial class DeployUtil
 				var progressName = $"upload portal extension {pe.name}";
 				progressHandler?.Invoke(progressName, 0f);
 
-				var jsBytes  = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.js"));
-				var cssBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.css"));
-
-				var jsMd5Bytes  = MD5.HashData(jsBytes);
-				var cssMd5Bytes = MD5.HashData(cssBytes);
-
-				var idJs  = $"{pe.name}/main.js";
+				var idJs = $"{pe.name}/main.js";
 				var idCss = $"{pe.name}/main.css";
 
-				// 1/3: submit binary metadata to Beamable — get back signed upload URLs
-				var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest
+				// Build binary definitions only for files that changed
+				var binDefs = new List<BinaryDefinition>();
+				byte[] jsBytes = null, cssBytes = null, jsMd5Bytes = null, cssMd5Bytes = null;
+
+				if (pe.uploadJs)
 				{
-					binary = new[]
+					jsBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.js"));
+					jsMd5Bytes = MD5.HashData(jsBytes);
+					binDefs.Add(new BinaryDefinition
 					{
-						new BinaryDefinition
-						{
-							id                = idJs,
-							checksum          = BitConverter.ToString(jsMd5Bytes).Replace("-", ""),
-							uploadContentType = "application/javascript",
-							visibility        = new OptionalString { Value = "private", HasValue = true },
-						},
-						new BinaryDefinition
-						{
-							id                = idCss,
-							checksum          = BitConverter.ToString(cssMd5Bytes).Replace("-", ""),
-							uploadContentType = "text/css",
-							visibility        = new OptionalString { Value = "private", HasValue = true },
-						},
+						id = idJs,
+						checksum = BitConverter.ToString(jsMd5Bytes).Replace("-", ""),
+						uploadContentType = "application/javascript",
+						visibility = new OptionalString { Value = "private", HasValue = true },
+					});
+				}
+				if (pe.uploadCss)
+				{
+					cssBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.css"));
+					cssMd5Bytes = MD5.HashData(cssBytes);
+					binDefs.Add(new BinaryDefinition
+					{
+						id = idCss,
+						checksum = BitConverter.ToString(cssMd5Bytes).Replace("-", ""),
+						uploadContentType = "text/css",
+						visibility = new OptionalString { Value = "private", HasValue = true },
+					});
+				}
+
+				// 1/3: get signed upload URLs for files that need uploading
+				BinaryReference refJs = null, refCss = null;
+				if (binDefs.Count > 0)
+				{
+					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
+					if (pe.uploadJs)
+					{
+						refJs = binaryResp.binary.First(b => b.id == idJs);
 					}
-				});
+					if (pe.uploadCss)
+					{
+						refCss = binaryResp.binary.First(b => b.id == idCss);
+					}
+				}
 				progressHandler?.Invoke(progressName, 0.33f);
 
-				var refJs  = binaryResp.binary.First(b => b.id == idJs);
-				var refCss = binaryResp.binary.First(b => b.id == idCss);
-
-				// 2/3: upload JS to signed S3 URL
-				await PutToSignedUrl(httpClient, refJs.uploadUri, jsBytes, "application/javascript", jsMd5Bytes);
+				// 2/3: upload JS if changed
+				if (pe.uploadJs)
+				{
+					await PutToSignedUrl(httpClient, refJs.uploadUri, jsBytes, "application/javascript", jsMd5Bytes);
+				}
 				progressHandler?.Invoke(progressName, 0.66f);
 
-				// 3/3: upload CSS to signed S3 URL
-				await PutToSignedUrl(httpClient, refCss.uploadUri, cssBytes, "text/css", cssMd5Bytes);
+				// 3/3: upload CSS if changed
+				if (pe.uploadCss)
+				{
+					await PutToSignedUrl(httpClient, refCss.uploadUri, cssBytes, "text/css", cssMd5Bytes);
+				}
+
+				// Resolve final contentIds: new URIs for uploaded files, existing ones for unchanged files
+				var jsContentId = pe.uploadJs ? refJs.uri : pe.existingJsContentId;
+				var cssContentId = pe.uploadCss ? refCss.uri : pe.existingCssContentId;
 
 				// Fill in contentIds on the matching reference before manifest is built below
 				var peRef = plan.portalExtensionReferences.First(r => r.name.GetOrElse("") == pe.name);
 				peRef.files = new OptionalArrayOfBeamoV2ExtensionContentReference
 				{
 					HasValue = true,
-					Value    = new[]
+					Value = new[]
 					{
 						new BeamoV2ExtensionContentReference
 						{
-							contentId = new OptionalString { Value = refJs.uri,   HasValue = true },
-							name      = new OptionalString { Value = "main.js",   HasValue = true },
-							version   = new OptionalString { Value = pe.checksum, HasValue = true },
+							contentId = new OptionalString { Value = jsContentId, HasValue = true },
+							name = new OptionalString { Value = "main.js", HasValue = true },
+							version = new OptionalString { Value = pe.jsChecksum, HasValue = true },
 						},
 						new BeamoV2ExtensionContentReference
 						{
-							contentId = new OptionalString { Value = refCss.uri,  HasValue = true },
-							name      = new OptionalString { Value = "main.css",  HasValue = true },
-							version   = new OptionalString { Value = pe.checksum, HasValue = true },
+							contentId = new OptionalString { Value = cssContentId, HasValue = true },
+							name = new OptionalString { Value = "main.css", HasValue = true },
+							version = new OptionalString { Value = pe.cssChecksum, HasValue = true },
 						},
 					}
 				};
