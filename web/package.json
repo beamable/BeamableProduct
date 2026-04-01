@@ -59,6 +59,11 @@
       "import": "./dist/schema.mjs"
     },
     "./api": {
+      "browser": {
+        "types": "./dist/types/api.d.ts",
+        "require": "./dist/api.iife.js",
+        "import": "./dist/api.mjs"
+      },
       "types": "./dist/types/api.d.ts",
       "require": "./dist/api.cjs",
       "import": "./dist/api.mjs"
