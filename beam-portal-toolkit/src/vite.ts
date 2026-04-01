@@ -1,9 +1,9 @@
 /**
  * Vite plugin for Beamable portal extensions.
  *
- * Configures the build so that `@beamable/sdk` is treated as an external and
- * resolved to the versioned window global that the Portal injects before
- * running the extension script.
+ * Configures the build so that `@beamable/sdk` and `@beamable/sdk/api` are
+ * treated as externals and resolved to the versioned window globals that the
+ * Portal injects before running the extension script.
  *
  * Usage in vite.config.js / vite.config.ts:
  *
@@ -20,22 +20,19 @@
  *       },
  *     },
  *   })
- *
- * Note: only the main `@beamable/sdk` entry is externalized. The subpath
- * `@beamable/sdk/api` has no browser IIFE build and is stateless (no shared
- * connection or auth state), so it is safe — and correct — to bundle it
- * directly into the extension. Do not add it to externals/globals.
  */
 
 import pkg from '../package.json'
 
-// Versioned global name the Portal registers on window before the extension
+// Versioned global names the Portal registers on window before the extension
 // script runs. Must match the `globalName` in the Portal's beam-sdk-registry.
-const SDK_GLOBAL = `@beamable/sdk-${pkg.peerDependencies['@beamable/sdk']}`
+const SDK_VERSION = pkg.peerDependencies['@beamable/sdk']
+const SDK_GLOBAL = `@beamable/sdk-${SDK_VERSION}`
+const SDK_API_GLOBAL = `@beamable/sdk/api-${SDK_VERSION}`
 
 /**
- * Returns a Vite plugin that marks `@beamable/sdk` as external and maps it
- * to the Portal-provided window global at runtime.
+ * Returns a Vite plugin that marks `@beamable/sdk` and `@beamable/sdk/api`
+ * as external and maps them to the Portal-provided window globals at runtime.
  */
 export function portalExtensionPlugin() {
   return {
@@ -44,10 +41,11 @@ export function portalExtensionPlugin() {
       return {
         build: {
           rollupOptions: {
-            external: ['@beamable/sdk'],
+            external: ['@beamable/sdk', '@beamable/sdk/api'],
             output: {
               globals: {
                 '@beamable/sdk': `window['${SDK_GLOBAL}']`,
+                '@beamable/sdk/api': `window['${SDK_API_GLOBAL}']`,
               },
             },
           },

@@ -6,17 +6,10 @@
 # This script will be run many times as you develop web packages locally.
 # Each run:
 #   1. Increments the build number (stored in web-build-number.txt)
-#   2. Builds and publishes packages as version 0.0.123-local<build_number>
-#      to the local Verdaccio registry (http://localhost:4873)
+#   2. Builds and publishes @beamable/sdk and @beamable/portal-toolkit
+#      as version 0.0.123-local<build_number> to the local Verdaccio
+#      registry (http://localhost:4873)
 #   3. Restarts local-unpkg to bust its in-memory file cache
-#
-# By default both the webSDK (@beamable/sdk) and toolkit (@beamable/portal-toolkit)
-# are built and published. Use --skip-sdk to publish the toolkit only.
-#
-# When --skip-sdk is used, the toolkit's package.json is left untouched —
-# the developer is responsible for the declared @beamable/sdk version.
-# When the SDK is also published, both peer and dev dependency are updated to
-# the local version so the Portal loads both from localhost.
 
 set -e
 
@@ -50,24 +43,6 @@ cleanup() {
 trap cleanup EXIT
 
 # ---------------------------------------------------------------------------
-# Flags
-# ---------------------------------------------------------------------------
-SKIP_SDK=false
-
-while test $# -gt 0; do
-  case "$1" in
-    --skip-sdk)
-      SKIP_SDK=true
-      echo "Skipping webSDK build — toolkit will reference its current peerDependency version"
-      ;;
-    *)
-      echo "Unknown argument: $1"
-      ;;
-  esac
-  shift
-done
-
-# ---------------------------------------------------------------------------
 # Build number
 # ---------------------------------------------------------------------------
 if [ ! -f "$WEB_BUILD_NUMBER_FILE" ]; then
@@ -76,12 +51,10 @@ if [ ! -f "$WEB_BUILD_NUMBER_FILE" ]; then
 fi
 
 NEXT_BUILD_NUMBER=$(cat "$WEB_BUILD_NUMBER_FILE")
-PREVIOUS_BUILD_NUMBER=$NEXT_BUILD_NUMBER
 ((NEXT_BUILD_NUMBER += 1))
 echo $NEXT_BUILD_NUMBER > "$WEB_BUILD_NUMBER_FILE"
 
 VERSION="0.0.123-local$NEXT_BUILD_NUMBER"
-PREVIOUS_VERSION="0.0.123-local$PREVIOUS_BUILD_NUMBER"
 
 echo ""
 echo "=== Beamable Web Local Dev ==="
@@ -92,28 +65,26 @@ echo ""
 # ---------------------------------------------------------------------------
 # Publish webSDK
 # ---------------------------------------------------------------------------
-if [ "$SKIP_SDK" = false ]; then
-  echo "--- Building @beamable/sdk ---"
-  cd "$WEB_SDK_DIR"
+echo "--- Building @beamable/sdk ---"
+cd "$WEB_SDK_DIR"
 
-  cp package.json package.json.devbak
-  SDK_BACKUP=true
+cp package.json package.json.devbak
+SDK_BACKUP=true
 
-  echo "  [cmd] pnpm install"
-  pnpm install
-  echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
-  pnpm version "$VERSION" --no-git-tag-version
-  echo "  [cmd] pnpm build"
-  pnpm build
-  echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
-  pnpm publish --registry "$REGISTRY" --no-git-checks
+echo "  [cmd] pnpm install"
+pnpm install
+echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
+pnpm version "$VERSION" --no-git-tag-version
+echo "  [cmd] pnpm build"
+pnpm build
+echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
+pnpm publish --registry "$REGISTRY" --no-git-checks
 
-  cp package.json.devbak package.json && rm package.json.devbak
-  SDK_BACKUP=false
+cp package.json.devbak package.json && rm package.json.devbak
+SDK_BACKUP=false
 
-  echo "Published @beamable/sdk@$VERSION"
-  cd "$SCRIPT_DIR"
-fi
+echo "Published @beamable/sdk@$VERSION"
+cd "$SCRIPT_DIR"
 
 # ---------------------------------------------------------------------------
 # Publish toolkit
@@ -125,27 +96,22 @@ cd "$TOOLKIT_DIR"
 cp package.json package.json.devbak
 TOOLKIT_BACKUP=true
 
-# When the SDK is also published this run, update both devDependencies and
-# peerDependencies to the local version BEFORE pnpm install, so pnpm resolves
-# @beamable/sdk from Verdaccio correctly.
-# When --skip-sdk is passed, package.json is left untouched — the developer
-# is responsible for ensuring the declared version is available.
-if [ "$SKIP_SDK" = false ]; then
-  node -e "
-    const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    pkg.peerDependencies['@beamable/sdk'] = '$VERSION';
-    pkg.devDependencies['@beamable/sdk'] = '$VERSION';
-    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-  "
-  echo "  Updated @beamable/sdk → $VERSION"
-fi
+node -e "
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  pkg.peerDependencies['@beamable/sdk'] = '$VERSION';
+  pkg.devDependencies['@beamable/sdk'] = '$VERSION';
+  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+"
+echo "  Updated @beamable/sdk → $VERSION"
 
-# Evict any cached @beamable/sdk tarball from the pnpm content-addressable store.
-# After a Verdaccio wipe the same version is republished with a different hash,
-# so the cached tarball causes ERR_PNPM_TARBALL_INTEGRITY on the next install.
+# Evict any cached @beamable/sdk tarball from the pnpm content-addressable store
+# AND the pnpm metadata cache. After a Verdaccio wipe the same version is
+# republished with a different hash, so stale cached integrity hashes cause
+# ERR_PNPM_TARBALL_INTEGRITY on the next install.
 rm -f pnpm-lock.yaml
 pnpm store delete @beamable/sdk 2>/dev/null || true
+pnpm cache delete @beamable/sdk 2>/dev/null || true
 echo "  [cmd] pnpm install"
 pnpm install
 echo "  [cmd] pnpm version $VERSION --no-git-tag-version"

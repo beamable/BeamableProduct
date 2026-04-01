@@ -2,8 +2,9 @@
  * Rollup config helpers for Beamable portal extensions.
  *
  * Provides pre-configured external/globals options so that `@beamable/sdk`
- * is excluded from the extension bundle and resolved to the versioned window
- * global that the Portal injects before running the extension script.
+ * and `@beamable/sdk/api` are excluded from the extension bundle and resolved
+ * to the versioned window globals that the Portal injects before running the
+ * extension script.
  *
  * Usage in rollup.config.js:
  *
@@ -19,28 +20,26 @@
  *     },
  *     external: portalExtensionRollupOptions.external,
  *   }
- *
- * Note: only the main `@beamable/sdk` entry is externalized. The subpath
- * `@beamable/sdk/api` has no browser IIFE build and is stateless (no shared
- * connection or auth state), so it is safe — and correct — to bundle it
- * directly into the extension. Do not add it to externals/globals.
  */
 
 import pkg from '../package.json'
 
-// Versioned global name the Portal registers on window before the extension
+// Versioned global names the Portal registers on window before the extension
 // script runs. Must match the `globalName` in the Portal's beam-sdk-registry.
-const SDK_GLOBAL = `@beamable/sdk-${pkg.peerDependencies['@beamable/sdk']}`
+const SDK_VERSION = pkg.peerDependencies['@beamable/sdk']
+const SDK_GLOBAL = `@beamable/sdk-${SDK_VERSION}`
+const SDK_API_GLOBAL = `@beamable/sdk/api-${SDK_VERSION}`
 
 /**
  * Spread `external` into the top-level rollup config and `output` into the
  * output object. Both are read-only — do not mutate them.
  */
 export const portalExtensionRollupOptions = {
-  external: ['@beamable/sdk'] as const,
+  external: ['@beamable/sdk', '@beamable/sdk/api'] as const,
   output: {
     globals: {
       '@beamable/sdk': `window['${SDK_GLOBAL}']`,
+      '@beamable/sdk/api': `window['${SDK_API_GLOBAL}']`,
     },
   },
 } as const
