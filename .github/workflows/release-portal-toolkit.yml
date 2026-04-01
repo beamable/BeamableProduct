@@ -63,12 +63,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-          
-      - name: Install pnpm
-        run: npm install -g pnpm@10.8.0
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Compute version
         id: version
@@ -90,6 +85,8 @@ jobs:
       - name: Set package version
         run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
 
+      - run: npm ci
+      - run: npm run build --if-present
       # prepublishOnly runs sync-components --no-copy && build automatically
       - name: Publish to npm
         if: ${{ inputs.dryRun == false }}
