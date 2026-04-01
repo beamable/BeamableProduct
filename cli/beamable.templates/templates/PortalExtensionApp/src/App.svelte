@@ -12,7 +12,7 @@
 
 <beam-card style="margin-bottom: 20px">
     <beam-card-title>
-        New Extension
+        PortalExtensionApp
     </beam-card-title>
     <beam-card-text>
         <div  style="padding: 18px">
