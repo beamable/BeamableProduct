@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Server.Common;
 using microservice.Extensions;
 using UnityEngine;
 using ZLogger;
@@ -18,36 +19,11 @@ public static class BeamZLogFormatterExtensions
     
 }
 
-public class BeamMasker
-{
-    public Regex matcher;
-    public MatchEvaluator maskerFunction;
-} 
 
 public partial class BeamZLogFormatter : IZLoggerFormatter
 {
     private readonly IAppContext _context;
     private readonly IZLoggerFormatter _innerFormatter;
-
-    [GeneratedRegex("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............", RegexOptions.None, "en-US")]
-    public static partial Regex TokenRegex();
-
-    [GeneratedRegex(@"""password""\s*:\s*""([^""]*)""", RegexOptions.None, "en-US")]
-    public static partial Regex PasswordFieldRegex();
-
-    public static List<BeamMasker> customMasks = new List<BeamMasker>
-    {
-        new BeamMasker
-        {
-            matcher = TokenRegex(),
-            maskerFunction = ProcessToken
-        },
-        new BeamMasker
-        {
-            matcher = PasswordFieldRegex(),
-            maskerFunction = ProcessPassword
-        }
-    };
     
     public BeamZLogFormatter(IAppContext context, IZLoggerFormatter innerFormatter)
     {
@@ -71,9 +47,9 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
         var result = Encoding.UTF8.GetString(buffer.WrittenMemory.Span);
 
         // do masking operations to takeout sensitive data
-        foreach (var mask in customMasks)
+        foreach (var mask in BeamMasker.DefaultMaskers)
         {
-            result = mask.matcher.Replace(result, mask.maskerFunction);
+            result = mask.Matcher.Replace(result, mask.MaskerFunction);
         }
         
         // and finally write the masked result to the destination
@@ -82,14 +58,4 @@ public partial class BeamZLogFormatter : IZLoggerFormatter
     }
 
     public bool WithLineBreak => _innerFormatter.WithLineBreak;
-    
-    static string ProcessToken(Match match)
-    {
-        return $"{match.Groups[1].Value}\"<hidden_token last4=({match.Value.Substring(match.Value.Length - 4)})>";
-    }
-
-    static string ProcessPassword(Match _)
-    {
-        return "\"password\":\"<hidden_password>\"";
-    }
 }

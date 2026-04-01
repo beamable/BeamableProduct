@@ -906,6 +906,18 @@ public static class MicroserviceStartupUtil
 
 	}
 
+	private static string ApplyDefaultLogMasking(string text)
+	{
+		if (string.IsNullOrEmpty(text)) return text;
+
+		foreach (var mask in BeamMasker.DefaultMaskers)
+		{
+			text = mask.Matcher.Replace(text, mask.MaskerFunction);
+		}
+
+		return text;
+	}
+
 	public static async Task GetLocalEnvironment(StartupContext ctx)
 	{
 		var serviceName = ctx.attributes.MicroserviceName;
@@ -1015,11 +1027,11 @@ public static class MicroserviceStartupUtil
 
 		if (process.ExitCode != 0)
 		{
-			ctx.logger.ZLogError($"generate-env output:\n{sublogs}");
-			throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
+			ctx.logger.ZLogError($"generate-env output:\n{ApplyDefaultLogMasking(sublogs)}");
+			throw new Exception($"Failed to generate-env message=[{ApplyDefaultLogMasking(result)}] sub-logs=[{ApplyDefaultLogMasking(sublogs)}]");
 		}
 
-		ctx.logger.ZLogInformation($"environment:\n{result}");
+		ctx.logger.ZLogInformation($"environment:\n{ApplyDefaultLogMasking(result)}");
 
 		var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 		if (parsedOutput.type != "stream")
