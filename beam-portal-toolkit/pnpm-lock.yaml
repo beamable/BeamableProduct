@@ -7,11 +7,10 @@ settings:
 importers:
 
   .:
-    dependencies:
-      beamable-sdk:
-        specifier: 0.6.0
-        version: 0.6.0
     devDependencies:
+      '@beamable/sdk':
+        specifier: 1.0.0
+        version: 1.0.0
       svelte:
         specifier: ^5.0.0
         version: 5.55.0
@@ -44,6 +43,10 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@beamable/sdk@1.0.0':
+    resolution: {integrity: sha512-qW5HCrNbEifRmjeMO7lC1TXo/thyFgCDPMio8xq76msFB2it6KfuVLJ89oxiQDCz18Uxh20MiDflusJeaLCZmQ==}
+    engines: {node: '>=22.14.0'}
 
   '@emnapi/core@1.9.1':
     resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
@@ -299,10 +302,6 @@ packages:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
     engines: {node: '>= 0.4'}
 
-  beamable-sdk@0.6.0:
-    resolution: {integrity: sha512-hWer2//p7XCw01uMg3bebjd7155dcM4bRkbwt54sshMq42QTNVz5PD1jOrxYJKRScmZRzC6c0yp3EQpCsncUnw==}
-    engines: {node: '>=22.14.0'}
-
   birpc@4.0.0:
     resolution: {integrity: sha512-LShSxJP0KTmd101b6DRyGBj57LZxSDYWKitQNW/mi8GRMvZb078Uf9+pveax1DrVL89vm7mWe+TovdI/UDOuPw==}
 
@@ -515,6 +514,8 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
+  '@beamable/sdk@1.0.0': {}
+
   '@emnapi/core@1.9.1':
     dependencies:
       '@emnapi/wasi-threads': 1.2.0
@@ -687,8 +688,6 @@ snapshots:
       pathe: 2.0.3
 
   axobject-query@4.1.0: {}
-
-  beamable-sdk@0.6.0: {}
 
   birpc@4.0.0: {}
 
