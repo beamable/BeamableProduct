@@ -54,9 +54,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    defaults:
-      run:
-        working-directory: beam-portal-toolkit
     steps:
       - uses: actions/checkout@v4
         with:
