@@ -99,8 +99,8 @@
         </PropertyGroup>
 
         <PropertyGroup>
-            <BeamOutputDirFullPath>$([System.IO.Path]::GetFullPath('$(ActualOutputDir)', '$(MSBuildProjectDirectory)'))</BeamOutputDirFullPath>
-            <BeamOutputDirNormalized>$([System.IO.Path]::TrimEndingDirectorySeparator('$(BeamOutputDirFullPath)'))</BeamOutputDirNormalized>
+            <BeamOutputDirFullPath>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(ActualOutputDir)'))))</BeamOutputDirFullPath>
+            <BeamOutputDirNormalized>$(BeamOutputDirFullPath.TrimEnd('\').TrimEnd('/'))</BeamOutputDirNormalized>
             <BeamOutputDirNormalized Condition="'$(BeamOutputDirNormalized)'==''">$(BeamOutputDirFullPath)</BeamOutputDirNormalized>
         </PropertyGroup>
 
