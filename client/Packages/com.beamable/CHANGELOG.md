@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.0.1] - 2026-04-01
 ### Fixed
 - No longer automatically generate clients for readonly service references
-- Fixed an issue where some msBuilds version could not properly build because of some MSBuild static methods not available in that environment, now are replaced for lower-common-denominator equivalents.
+### Changed
+- Update CLI to 7.0.1
 
 ## [5.0.0] - 2026-02-19
 ### Added
