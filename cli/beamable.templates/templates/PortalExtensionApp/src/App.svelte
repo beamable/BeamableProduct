@@ -1,10 +1,27 @@
-<script>
-  import BeamableInit from './lib/BeamableInit.svelte'
-  import { Context } from './store'
+<script lang="ts">
 
-  export let context
+    import {Beam, type ExtensionContext} from '@beamable/portal-toolkit'
 
-  $: Context.set(context)
+    export let context: ExtensionContext
+
+    let beam: Beam
+
+    context.beam.then(b => beam = b);
+
 </script>
 
-<BeamableInit />
+<beam-card style="margin-bottom: 20px">
+    <beam-card-title>
+        New Extension
+    </beam-card-title>
+    <beam-card-text>
+        <div  style="padding: 18px">
+            <div>
+                Player ID {beam?.player.id}
+            </div>
+            <beam-btn color="primary">
+                Click
+            </beam-btn>
+        </div>
+    </beam-card-text>
+</beam-card>

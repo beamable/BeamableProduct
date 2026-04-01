@@ -1,4 +1,4 @@
-name: Web SDK Release
+name: Portal Toolkit Release
 
 on:
   workflow_dispatch:
@@ -43,19 +43,19 @@ on:
         default: false
 
 run-name: >-
-  Release Web SDK ${{ inputs.releaseType }}
+  Release Portal Toolkit ${{ inputs.releaseType }}
   ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}
   ${{ inputs.releaseType == 'rc' && format('-rc.{0}', inputs.rcNumber) || '' }}
   by @${{ github.actor }}
 
 jobs:
-  web-sdk-release:
+  portal-toolkit-release:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
     defaults:
       run:
-        working-directory: web
+        working-directory: beam-portal-toolkit
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,12 +72,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Test
-        run: pnpm test
 
       - name: Compute version
         id: version
@@ -99,28 +93,10 @@ jobs:
       - name: Set package version
         run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
 
-      # prepublishOnly runs build automatically
+      # prepublishOnly runs sync-components --no-copy && build automatically
       - name: Publish to npm
         if: ${{ inputs.dryRun == false }}
         run: pnpm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
-
-      - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }}
-        run: sh ./../build/bin/upload-changelogs.sh
-        env:
-          COPY_UNITY_SDK: 'false'
-          COPY_CLI: 'false'
-          COPY_WEB_SDK: 'true'
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
-          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
-          BRANCH: >-
-            ${{ fromJson('{
-              "nightly": "daily",
-              "rc": "staging",
-              "exp": "staging",
-              "production": "production"
-            }')[github.event.inputs.releaseType] }}
 
       - name: Dry run build
         if: ${{ inputs.dryRun == true }}

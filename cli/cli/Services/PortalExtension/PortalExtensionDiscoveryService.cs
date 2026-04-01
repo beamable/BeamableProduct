@@ -25,6 +25,7 @@ public class ExtensionBuildData //TODO make this have a diff version number so w
 public class ExtensionBuildMetaData
 {
 	public string Name;
+	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
 }
 
@@ -58,10 +59,12 @@ public class PortalExtensionDiscoveryService : Microservice
 	public ExtensionBuildMetaData RequestMetaData()
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
+		var extensionDef = observer.ExtensionMetaData;
 		return new ExtensionBuildMetaData
 		{
-			Name = observer.ExtensionMetaData.Name,
-			Properties = observer.ExtensionMetaData.Properties
+			Name = extensionDef.Name,
+			ToolkitVersion = extensionDef.GetToolkitVersion(),
+			Properties = extensionDef.Properties
 		};
 	}
 }
@@ -149,7 +152,7 @@ public class PortalExtensionObserver
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 		StartProcessResult result = isWindows
 			? StartProcessUtil.Run("cmd.exe", "/c npm install", workingDirectoryPath: AppFilesPath):
-			StartProcessUtil.Run("npm ", "install", workingDirectoryPath: AppFilesPath);
+			StartProcessUtil.Run("npm", "install", workingDirectoryPath: AppFilesPath);
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
