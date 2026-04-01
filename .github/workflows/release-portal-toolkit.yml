@@ -95,7 +95,7 @@ jobs:
       # prepublishOnly runs sync-components --no-copy && build automatically
       - name: Publish to npm
         if: ${{ inputs.dryRun == false }}
-        run: pnpm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
+        run: npm publish --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
       - name: Dry run build
         if: ${{ inputs.dryRun == true }}
