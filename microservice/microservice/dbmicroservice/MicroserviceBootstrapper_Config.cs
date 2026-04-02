@@ -31,7 +31,7 @@ public class BeamServiceConfig : IBeamServiceConfig
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
 
-    Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider { get; set; }
+    Func<ILoggingBuilder, DebugLogProcessor, DebugLogProcessor> IBeamServiceConfig.AddLoggerProvider { get; set; }
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.PerServiceInitializers { get; set; } =
 	    new List<Func<IDependencyProviderScope, Task>>();
@@ -138,7 +138,26 @@ public interface IBeamServiceConfig
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
-    Action<ILoggingBuilder> AddLoggerProvider { get; set; }
+    /// <summary>
+    /// An optional delegate that customizes the logging pipeline for this microservice.
+    /// <para>
+    /// The delegate receives the <see cref="ILoggingBuilder"/> so you can add or clear log providers,
+    /// and the default <see cref="DebugLogProcessor"/> that Beamable has already configured.
+    /// It must return the <see cref="DebugLogProcessor"/> that should be used — return the received
+    /// <paramref name="defaultProcessor"/> to keep the default, return a new instance to replace it
+    /// </para>
+    /// <example>
+    /// Add a custom provider while keeping the default processor:
+    /// <code>
+    /// config.AddLoggerProvider = (builder, defaultProcessor) =>
+    /// {
+    ///     builder.AddProvider(new MyCustomLogProvider());
+    ///     return defaultProcessor;
+    /// };
+    /// </code>
+    /// </example>
+    /// </summary>
+    Func<ILoggingBuilder, DebugLogProcessor, DebugLogProcessor> AddLoggerProvider { get; set; }
     List<Func<IDependencyProviderScope, Task>> PerServiceInitializers { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
     Action<BeamCliInvocation> LocalEnvModifier { get; set; }

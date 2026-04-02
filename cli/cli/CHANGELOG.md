@@ -22,7 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
 - Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
 - Fixed issue that considered types used in ServerCallable methods on Microservices to be generated to client code.
-- Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator. 
+- Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
+- Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
+
+## [7.0.1] - 2026-04-02
+### Fixed
+- Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
+- Fixed an issue where some MSBuild version could not properly build because of some MSBuild static methods not available in that environment, now are replaced for lower-common-denominator equivalents.
 
 ## [7.0.0] - 2026-02-19
 ### Added

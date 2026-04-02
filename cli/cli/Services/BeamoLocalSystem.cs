@@ -154,6 +154,17 @@ public partial class BeamoLocalSystem
 
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
 	}
+	
+	public static string GetServiceType(BeamoProtocolType protocolType)
+	{
+		return protocolType switch
+		{
+			BeamoProtocolType.HttpMicroservice => "service",
+			BeamoProtocolType.PortalExtension => "portalExtension",
+			BeamoProtocolType.EmbeddedMongoDb => "storage",
+			_ => throw new ArgumentOutOfRangeException()
+		};
+	}
 
 	public void SaveBeamoLocalRuntime() {
 		// TODO: remove this.
@@ -558,7 +569,7 @@ public class BeamoServiceDefinition
 
 	public bool IsLocal => !string.IsNullOrEmpty(WorkingDirectory);
 
-	public enum ProjectLanguage { CSharpDotnet, }
+	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
 
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.
@@ -832,9 +843,42 @@ public class PortalExtensionDef
 	public string AbsolutePath;
 
 	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
-	
+
 	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
 	public PortalExtensionPackageProperties Properties;
+
+	private string ToolkitNodeModulesPackageJsonPath =>
+		Path.Combine(AbsolutePath, "node_modules", "@beamable", "portal-toolkit", "package.json");
+
+	/// <summary>
+	/// Reads the @beamable/portal-toolkit version. If the devDependencies value is not a semver
+	/// (e.g. a file: reference), falls back to reading the installed toolkit's package.json version field.
+	/// </summary>
+	public string GetToolkitVersion()
+	{
+		try
+		{
+			var json = File.ReadAllText(AbsolutePackageJsonPath);
+			var root = Newtonsoft.Json.Linq.JObject.Parse(json);
+			var depVersion = (root["devDependencies"] as Newtonsoft.Json.Linq.JObject)
+				?["@beamable/portal-toolkit"]?.ToString();
+
+			// If the version is a file: reference or other non-semver, resolve from the installed package
+			if (depVersion != null && !char.IsDigit(depVersion.TrimStart('^', '~')[0]))
+			{
+				var toolkitJson = File.ReadAllText(ToolkitNodeModulesPackageJsonPath);
+				var toolkitRoot = Newtonsoft.Json.Linq.JObject.Parse(toolkitJson);
+				return toolkitRoot.SelectToken("version")?.ToString() ?? depVersion;
+			}
+
+			return depVersion;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
 }
 
 /// <summary>

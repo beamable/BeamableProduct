@@ -154,9 +154,11 @@ public partial class BeamoLocalSystem
 					switch (c.Protocol)
 					{
 						case BeamoProtocolType.EmbeddedMongoDb:
-							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMongoContainer(c.BeamoId);
+							return info.Names[0] == "/" + GetBeamIdAsMongoContainer(c.BeamoId);
 						case BeamoProtocolType.HttpMicroservice:
-							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMicroserviceContainer(c.BeamoId);
+							return info.Names[0] == "/" + GetBeamIdAsMicroserviceContainer(c.BeamoId);
+						case BeamoProtocolType.PortalExtension:
+							return info.Names[0] == "/" + GetBeamIdAsPortalExtension(c.BeamoId);
 						default:
 							throw new CliException("Unknown protocol type");
 					}
@@ -344,6 +346,8 @@ public partial class BeamoLocalSystem
 			
 			case BeamoProtocolType.EmbeddedMongoDb:
 				return true; // always pull down a version of mongo.
+			case BeamoProtocolType.PortalExtension:
+				return false;
 			default:
 				throw new CliException($"Unknown protocol=[{toCheck.Protocol}] inside method=[{nameof(VerifyCanBeBuiltLocally)}]");
 		}

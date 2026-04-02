@@ -119,7 +119,7 @@ namespace Beamable.Server.Generator
 
 			targetClass.Comments.Add(
 				new CodeCommentStatement(
-					$"<summary> A generated client for <see cref=\"{_serviceNamespaceClassName}\"/> </summary",
+					$"<summary> A generated client for <see cref=\"{_serviceNamespaceClassName}\"/> </summary>",
 					true));
 
 			var extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);

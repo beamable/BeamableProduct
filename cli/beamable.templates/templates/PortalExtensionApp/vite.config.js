@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { portalExtensionPlugin } from '@beamable/portal-toolkit/vite'
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), portalExtensionPlugin()],
   resolve: {
     dedupe: []
   },
@@ -15,15 +16,10 @@ export default defineConfig({
       formats: ['iife'],
     },
     rollupOptions: {
-      external: ['beamable-sdk', 'beamable-sdk/api'],
       input: 'src/main.js',
       output: {
         format: 'iife',
         inlineDynamicImports: true,
-        globals: {
-          'beamable-sdk': 'Beamable',
-          'beamable-sdk/api': 'BeamableApi'
-        },
         entryFileNames: 'index.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
