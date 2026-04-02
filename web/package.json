@@ -1,5 +1,5 @@
 {
-  "name": "beamable-sdk",
+  "name": "@beamable/sdk",
   "version": "1.0.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.cjs",
@@ -59,6 +59,11 @@
       "import": "./dist/schema.mjs"
     },
     "./api": {
+      "browser": {
+        "types": "./dist/types/api.d.ts",
+        "require": "./dist/api.iife.js",
+        "import": "./dist/api.mjs"
+      },
       "types": "./dist/types/api.d.ts",
       "require": "./dist/api.cjs",
       "import": "./dist/api.mjs"

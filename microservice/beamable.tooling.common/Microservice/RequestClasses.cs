@@ -10,18 +10,21 @@ public class MicroserviceNonceResponse
 public class MicroserviceAuthRequest
 {
     public string cid, pid, signature;
+    public string[] codecs;
 }
 
 [Serializable]
 public class MicroserviceAuthRequestWithToken
 {
     public string cid, pid, token;
+    public string[] codecs;
 }
 
 [Serializable]
 public class MicroserviceAuthResponse
 {
     public string result;
+    public string[] codecs;
     public MicroserviceAuthResponse(){}
 }
 
@@ -29,6 +32,7 @@ public class MicroserviceEventProviderRequest
 {
     public string type = "event";
     public string[] evtWhitelist;
+    public string[] evtUniqueBindings;
     public string name; // We can remove this field after the platform no longer needs it. Maybe mid August 2022?
 }
 

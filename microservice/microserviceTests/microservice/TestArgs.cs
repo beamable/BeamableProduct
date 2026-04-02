@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using microserviceTests.microservice.Util;
 using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace microserviceTests.microservice
 {
@@ -77,7 +78,13 @@ namespace microserviceTests.microservice
 				.OverrideConfig(c =>
 				{
 					c.Args = args;
-					c.LogFactory = () => LoggingUtil.testLogger;
+					c.AddLoggerProvider = (builder) =>
+					{
+						builder.ClearProviders();
+						var testLogs = new LoggingUtil.TestLogs();
+						builder.SetMinimumLevel(LogLevel.Trace);
+						builder.AddZLoggerLogProcessor(testLogs);
+					};
 					c.FirstConnectionHandler = (service) =>
 					{
 						Service = service;
@@ -150,6 +157,7 @@ namespace microserviceTests.microservice
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
+      public bool DisableOutboundWsCompression => false;
       public string MetadataUrl { get; }
 	  public string RefreshToken { get; }
 	  public long AccountId => 0;
@@ -163,6 +171,7 @@ namespace microserviceTests.microservice
 	  public bool OtelExporterStandardEnabled => false;
 	  public string OtelExporterRetryMaxSize { get; }
 	  public bool AllowStartupWithoutBeamableSettings => false;
+	  public int MaxUniqueEventBindingCount => 100;
 	  public bool SkipLocalEnv => true;
 	  public bool SkipAliasResolve => true;
 

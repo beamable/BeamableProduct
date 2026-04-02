@@ -15,13 +15,13 @@ namespace Beamable.Server;
 public class MicroserviceHttpRequester : IHttpRequester, IRequester
 {
 	private readonly HttpClient _client;
-	private readonly string _baseAddr;
+	public readonly string BaseAddr;
 	public OptionalString ScopeHeader = new OptionalString();
 
 	public MicroserviceHttpRequester(IMicroserviceArgs args, HttpClient client)
 	{
 		_client = client;
-		_baseAddr = args.Host
+		BaseAddr = args.Host
 			.Replace("ws://", "http://")
 			.Replace("wss://", "https://")
 			.Replace("/socket/", "")
@@ -131,7 +131,8 @@ public class MicroserviceHttpRequester : IHttpRequester, IRequester
 
 	public virtual Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 	{
-		var uri = _baseAddr + req.uri;
-		return ManualRequest<T>(req.method, uri, req.body);
+		var uri = BaseAddr + req.uri;
+		var headers = req.headerInterceptor?.Invoke(new Dictionary<string, string>());
+		return ManualRequest<T>(req.method, uri, req.body, headers);
 	}
 }

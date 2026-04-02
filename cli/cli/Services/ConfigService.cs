@@ -28,6 +28,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public const string CFG_FOLDER = ".beamable";
+	public const string BEAM_ROOT_FILE = ".beamroot";
 
 	public const string CFG_TOKEN_FILE_NAME = "auth.beam.json";
 	public const string CFG_TOKEN_FILE_DIR = $"{TEMP_FOLDER_NAME}/{CFG_TOKEN_FILE_NAME}";
@@ -43,6 +44,7 @@ public class ConfigService
 	public const string CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS = "additionalProjectPaths";
 	public const string CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS = "ignoredProjectPaths";
 	public const string CFG_JSON_FIELD_OBJ_OTEL = "otelConfig";
+	public const string CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION = "portalExtension";
 	public const string CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS = "linkedProjects";
 
 	public const string SHARED_FOLDER_NAME = "shared";
@@ -56,6 +58,15 @@ public class ConfigService
 	public const string CONTENT_SNAPSHOTS_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 	public const string CONTENT_SNAPSHOTS_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 
+	public const string CONTENT_HISTORY_FOLDER_NAME = "contentHistory";
+	public const string CONTENT_HISTORY_ENTRIES_FOLDER_NAME = "entries";
+	public const string CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME = "changelists";
+	public const string CONTENT_HISTORY_CONTENT_FOLDER_NAME = "content";
+	public const string CONTENT_HISTORY_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_HISTORY_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_ENTRIES_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_ENTRIES_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CHANGELISTS_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CONTENT_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CONTENT_FOLDER_NAME}";
+	
 	public const string DEV_USER_FOLDER_NAME = "developerUser";
 	public const string DEV_USER_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
 	public const string DEV_USER_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
@@ -818,21 +829,36 @@ public class ConfigService
 		var configFolder = isOverride
 			? ConfigLocalDirectoryPath
 			: ConfigDirectoryPath;
-
-		ReadConfigFile(configFolder, true, false, out var config);
-		var original = (JObject)config.DeepClone();
-		modifier(config);
-
-		var patch = DiffJObject(original, config);
 		
-		ReadConfigFile(configFolder, true, false, out var latestConfig);
-		ApplyDiff(latestConfig, patch);
-		FlushConfig(latestConfig, configFolder, !isOverride);
+		// Writing the new fields into the config file
+		{
+			ReadConfigFile(configFolder, true, false, out var config);
+			var original = (JObject)config.DeepClone();
+			modifier(config);
+
+			var patch = DiffJObject(original, config);
+		
+			ReadConfigFile(configFolder, true, false, out var latestConfig);
+			ApplyDiff(latestConfig, patch);
+			FlushConfig(latestConfig, configFolder, !isOverride);
+		}
+
+		// Removing fields from the override file if that is equal to the config file after the modification
+		{
+			ReadConfigFile(ConfigLocalDirectoryPath, true, false, out var overrideConfig);
+			ReadConfigFile(ConfigDirectoryPath, true, false, out var originalConfig);
+			var patch = DiffJObject(originalConfig, overrideConfig);
+			ApplyDiff(overrideConfig, patch, true);
+			FlushConfig(overrideConfig, ConfigLocalDirectoryPath, false);
+		}
+
+		
 		
 		
 		// chat-gippity wrote these methods...
 		JObject DiffJObject(JObject original, JObject modified)
 		{
+			var equal = new JArray();
 			var set = new JObject();
 			var remove = new JArray();
 			var children = new JObject();
@@ -863,6 +889,10 @@ public class ConfigService
 				{
 					set[name] = newValue.DeepClone();
 				}
+				else
+				{
+					equal.Add(name);	
+				}
 			}
 
 			// Detect added properties
@@ -879,10 +909,11 @@ public class ConfigService
 			if (set.HasValues) diff["$set"] = set;
 			if (remove.HasValues) diff["$remove"] = remove;
 			if (children.HasValues) diff["$children"] = children;
+			if (equal.HasValues) diff["$equal"] = equal;
 
 			return diff;
 		}
-		void ApplyDiff(JObject target, JObject diff)
+		void ApplyDiff(JObject target, JObject diff, bool removeEqualFields = false)
 		{
 			if (diff == null || !diff.HasValues)
 				return;
@@ -895,6 +926,16 @@ public class ConfigService
 					target.Remove(item.ToString());
 				}
 			}
+			
+			// Apply equal fields removal if specified
+			if (removeEqualFields && diff["$equal"] is JArray equalArray)
+			{
+				foreach (var item in equalArray)
+				{
+					target.Remove(item.ToString());
+				}
+			}
+			
 
 			// Apply sets
 			if (diff["$set"] is JObject setObj)
@@ -1421,6 +1462,26 @@ public class ConfigService
 
 	#endregion
 
+	#region Helpers - Portal Extensions
+
+	public void SavePortalExtensionConfig(PortalExtensionConfig config)
+	{
+		WriteConfig(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, config);
+	}
+
+	public PortalExtensionConfig LoadPortalExtensionConfig()
+	{
+		var config = GetConfig2(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, new PortalExtensionConfig());
+		if (config.fileExtensionsToObserve == null)
+		{
+			config.fileExtensionsToObserve = new List<string>();
+		}
+
+		return config;
+	}
+
+	#endregion
+
 	#region Helpers - Microservice Parsing Settings
 
 	public List<string> LoadExtraPathsFromFile() => GetConfig2(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
@@ -1576,6 +1637,8 @@ public class ConfigService
 
 	/// <summary>
 	/// Utility function that goes up from the relative path looking for a folder with the name <see cref="CFG_FOLDER"/>.
+	/// Traversal stops if a <see cref="BEAM_ROOT_FILE"/> file is found in a parent directory, preventing the search
+	/// from escaping a designated root (e.g. a test output directory).
 	/// </summary>
 	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
@@ -1587,9 +1650,20 @@ public class ConfigService
 			return true;
 		}
 
+		if (File.Exists(Path.Combine(basePath, BEAM_ROOT_FILE)))
+		{
+			// this is the root.
+			return false;
+		}
+
 		var parentDir = Directory.GetParent(basePath);
 		while (parentDir != null)
 		{
+			if (File.Exists(Path.Combine(parentDir.FullName, BEAM_ROOT_FILE)))
+			{
+				return false;
+			}
+
 			var path = Path.Combine(parentDir.FullName, CFG_FOLDER);
 			if (Directory.Exists(path))
 			{
@@ -1767,6 +1841,12 @@ public class OtelConfig
 }
 
 [Serializable]
+public class PortalExtensionConfig
+{
+	public List<string> fileExtensionsToObserve;
+}
+
+[Serializable]
 public class EngineProjectData
 {
 	public HashSet<Unity> unityProjectsPaths = new();
@@ -1797,6 +1877,10 @@ public class EngineProjectData
 	[Serializable]
 	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
 	{
+
+		public const string CORE_NAME_SUFFIX = "MicroserviceClients";
+		public const string BP_CORE_NAME_SUFFIX = "MicroserviceClientsBp";
+		
 		/// <summary>
 		/// Name for the project's core module (the module every other module has access to).
 		/// This will be used to generate the ______API UE Macros for the generated types.
@@ -1846,6 +1930,13 @@ public class EngineProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
+		public ReplacementTypeInfo[] ReplacementTypeInfos;
+
+		public string GetProjectName()
+		{
+			return CoreProjectName.Remove(CoreProjectName.Length - CORE_NAME_SUFFIX.Length);
+		}
+
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
 
@@ -1856,5 +1947,10 @@ public class EngineProjectData
 
 		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
 		public static bool operator !=(Unreal left, Unreal right) => !(left == right);
+		
+		public static string GetCoreName(string projectName) => $"{projectName}{CORE_NAME_SUFFIX}";
+		public static string GetBlueprintNodesProjectName(string projectName) => $"{projectName}{BP_CORE_NAME_SUFFIX}";
+		
+		
 	}
 }

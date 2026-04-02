@@ -89,6 +89,13 @@ public static class ProjectContextUtil
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
+
+		var allPortalExtensions = FindPortalExtensionProjects(configService.BeamableWorkspace, searchPaths, pathsToIgnore);
+
+		sw.Stop();
+		Log.Verbose($"Gathering portal extension apps took {sw.Elapsed.TotalMilliseconds} ");
+		sw.Restart();
+
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -151,6 +158,12 @@ public static class ProjectContextUtil
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());
+		}
+
+		foreach (var extension in allPortalExtensions)
+		{
+			var definition = ProjectContextUtil.ConvertPortalExtensionToServiceDefinition(extension);
+			manifest.ServiceDefinitions.Add(definition);
 		}
 		
 		
@@ -246,6 +259,13 @@ public static class ProjectContextUtil
 		
 		foreach (var definition in definitions)
 		{
+			//TODO: need to implement this for portal extensions
+			{
+				if (definition.Protocol == BeamoProtocolType.PortalExtension)
+				{
+					continue;
+				}
+			}
 			
 			// add all the groups for this definition
 			foreach (var group in definition.ServiceGroupTags)
@@ -348,6 +368,70 @@ public static class ProjectContextUtil
 		}
 
 		return beamoIdsToIgnore;
+	}
+
+	public static List<PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
+	{
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			var somePaths = Directory.GetFiles(searchPath, "package.json", SearchOption.AllDirectories);
+
+			var relevantFiles = somePaths
+				.Where(path => !path.Contains(Path.DirectorySeparatorChar + "node_modules" + Path.DirectorySeparatorChar));
+
+			pathList.AddRange(relevantFiles);
+		}
+
+		var filteredPaths = new List<string>();
+
+		foreach (var path in pathList)
+		{
+			var canBeAdded = true;
+			foreach (var pathToIgnore in pathsToIgnore)
+			{
+				if (path.StartsWith(pathToIgnore))
+				{
+					canBeAdded = false;
+					break;
+				}
+			}
+
+			if(canBeAdded) filteredPaths.Add(path);
+		}
+
+		var paths = filteredPaths.ToArray();
+
+		var projects = new List<PortalExtensionDef>();
+
+		foreach (string filePath in paths)
+		{
+			try
+			{
+				string jsonContent = File.ReadAllText(filePath);
+
+				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
+				var properties = info.BeamableProperties;
+
+				if (!properties.IsPortalExtension) continue;
+
+				var dir = Path.GetDirectoryName(filePath);
+
+				projects.Add(new PortalExtensionDef()
+				{
+					Name = info.Name,
+					Properties = properties,
+					RelativePath = Path.GetRelativePath(rootFolder, dir),
+					AbsolutePath = Path.GetFullPath(dir),
+				});
+			}
+			catch (Exception e)
+			{
+				// we don't really care if the file is not the correct format one
+			}
+		}
+
+		return projects;
 	}
 
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
@@ -782,6 +866,16 @@ public static class ProjectContextUtil
 		return definition;
 	}
 
+	public static BeamoServiceDefinition ConvertPortalExtensionToServiceDefinition(PortalExtensionDef def)
+	{
+		var definition = new BeamoServiceDefinition();
+		definition.PortalExtensionDefinition = def;
+		definition.BeamoId = def.Name;
+		definition.Protocol = BeamoProtocolType.PortalExtension;
+		//TODO do the rest of the conversion
+
+		return definition;
+	}
 
 
 	public class MsBuildProjectProperties

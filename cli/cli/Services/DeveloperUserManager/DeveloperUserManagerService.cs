@@ -302,12 +302,12 @@ public class DeveloperUserManagerService
 			catch (RequesterException e) // Backend Exception
 			{
 				BeamableLogger.LogError(e);
-				throw new CliException("Backend error on create the users from the template", BACKEND_ERROR, true);
+				throw new CliException($"Backend error on create the users from the template [{e.Message}]", BACKEND_ERROR, true);
 			}
 			catch (Exception e) // Any generic exception
 			{
 				BeamableLogger.LogError(e);
-				throw new CliException($"Generic error on create the users from the template", UNKOWN_SERVER_ERROR, true);
+				throw new CliException($"Generic error on create the users from the template [{e.Message}]", UNKOWN_SERVER_ERROR, true);
 			}
 		}
 		
@@ -387,11 +387,11 @@ public class DeveloperUserManagerService
 		catch (RequesterException e) // Backend Exception
 		{
 			BeamableLogger.LogError(e);
-			throw new CliException("Backend error on create the users from the template", BACKEND_ERROR, true);
+			throw new CliException($"Backend error on create the users from the template {e.Message}", BACKEND_ERROR, true);
 		}catch (Exception e) // Any generic exception
 		{
 			BeamableLogger.LogError(e);
-			throw new CliException($"Generic error on create the users from the template", UNKOWN_SERVER_ERROR, true);
+			throw new CliException($"Generic error on create the users from the template {e.Message}", UNKOWN_SERVER_ERROR, true);
 		}
 		
 
@@ -422,7 +422,8 @@ public class DeveloperUserManagerService
 		var realmsApi = _dependencyProvider.GetService<IRealmsApi>();
 		var res = await realmsApi.GetAdminCustomer();
 		var secretMap = res.customer.projects.ToDictionary(p => p.name, p=> p.secret);
-		
+	
+		// 10 requests in parallel the max should be 15
 		List<Task> copyTasks = new List<Task>
 		{
 			CopyInventoryState(sourceDeveloperUser, targetDeveloperUser, secretMap), 
@@ -891,17 +892,15 @@ public class DeveloperUserManagerService
 		var sourceInventoryApi = CreateInventoryApi(sourceDeveloperUser.GamerTag, sourceDeveloperUser.Cid, sourceDeveloperUser.Pid, secretMap[sourceDeveloperUser.Pid]);
 		
 		var targetInventoryApi = CreateInventoryApi(targetDeveloperUser.GamerTag, targetDeveloperUser.Cid, targetDeveloperUser.Pid, secretMap[targetDeveloperUser.Pid]);
+		
 
-		
-		// Get the target account
-		Promise<InventoryView> targetInventoryViewPromise = targetInventoryApi.ObjectGet(targetDeveloperUser.GamerTag);
-		
-		// Get the source inventory
-		Promise<InventoryView> sourceInventoryViewPromise = sourceInventoryApi.ObjectGet(sourceDeveloperUser.GamerTag);
-		
-		InventoryView targetInventoryView = await targetInventoryViewPromise;
-		
-		InventoryView sourceInventoryView = await sourceInventoryViewPromise;
+		InventoryView targetInventoryView = null;
+		InventoryView sourceInventoryView = null;
+			
+		var targetPromise = targetInventoryApi.ObjectGet(targetDeveloperUser.GamerTag).Then(item => targetInventoryView = item);
+		var sourcePromise = sourceInventoryApi.ObjectGet(sourceDeveloperUser.GamerTag).Then(item => sourceInventoryView = item);
+		// 2 request in parallel 
+		await Task.WhenAll(targetPromise.TaskFromPromise(), sourcePromise.TaskFromPromise());
 		
 		InventoryUpdateRequest inventoryUpdateRequest = new InventoryUpdateRequest();
 
@@ -971,7 +970,8 @@ public class DeveloperUserManagerService
 	/// <param name="sourceDeveloperUser"></param>
 	/// <param name="targetDeveloperUser"></param>
 	/// <param name="secretMap"></param>
-	private async Task CopyStatsState(DeveloperUser sourceDeveloperUser, DeveloperUser targetDeveloperUser, Dictionary<string, string> secretMap)
+	// 8 Requests parallel per player
+	private async Task CopyStatsState(DeveloperUser sourceDeveloperUser, DeveloperUser targetDeveloperUser, Dictionary<string, string> secretMap, bool shouldDeleteStats = false)
 	{
 		if (!secretMap.ContainsKey(sourceDeveloperUser.Pid))
 		{
@@ -987,39 +987,54 @@ public class DeveloperUserManagerService
 		
 		IStatsApi targetStatsAPI = CreateStatsApi(targetDeveloperUser.GamerTag, targetDeveloperUser.Cid, targetDeveloperUser.Pid, secretMap[targetDeveloperUser.Pid]);
 		
+
 		Task<Dictionary<string, StatsResponse>> sourceStatMapTask = GetStatMap(sourceDeveloperUser.GamerTag, sourceStatsAPI);
 		
+		// 4 Requests parallel
 		Task<Dictionary<string, StatsResponse>> targetStatMapTask = GetStatMap(targetDeveloperUser.GamerTag, targetStatsAPI);
 
 		await Task.WhenAll(sourceStatMapTask, targetStatMapTask);
 		
 		Dictionary<string, StatsResponse> sourceStatMap = sourceStatMapTask.Result;
 		Dictionary<string, StatsResponse> targetStatMap = targetStatMapTask.Result;
-		
-		// As we don't have a batch delete for stats it will delete one by one.
-		List<Task> deleteStatTasks = new List<Task>();
-		foreach (var targetStatKeyPair in targetStatMap)
+
+		if (shouldDeleteStats)
 		{
-			foreach (var stat in targetStatKeyPair.Value.stats)
+			int maxBatchSize = 8;
+			
+			// As we don't have a batch delete for stats it will delete one by one.
+			List<Task> deleteStatTasks = new List<Task>();
+			foreach (var targetStatKeyPair in targetStatMap)
 			{
-				string objectId = string.Format(targetStatKeyPair.Key, targetDeveloperUser.GamerTag);
-				deleteStatTasks.Add(targetStatsAPI.ObjectDelete(objectId, new StatRequest
+				foreach (var stat in targetStatKeyPair.Value.stats)
 				{
-					stats = new OptionalString(stat.Key)
-				}).TaskFromPromise()); 
+					string objectId = string.Format(targetStatKeyPair.Key, targetDeveloperUser.GamerTag);
+					deleteStatTasks.Add(targetStatsAPI.ObjectDelete(objectId, new StatRequest
+					{
+						stats = new OptionalString(stat.Key)
+					}).TaskFromPromise());
+
+					if (deleteStatTasks.Count >= maxBatchSize)
+					{
+						await Task.WhenAll(deleteStatTasks.ToArray());
+						deleteStatTasks.Clear();
+					}
+				}
 			}
-		}
 		
-		await Task.WhenAll(deleteStatTasks.ToArray());
+			await Task.WhenAll(deleteStatTasks.ToArray());
+		}
+
+		List<StatUpdateRequest> statUpdateRequests = new List<StatUpdateRequest>();
 		
 		foreach (var sourceStatKeyPair in sourceStatMap)
 		{
 			string objectId = string.Format(sourceStatKeyPair.Key, targetDeveloperUser.GamerTag);
 
-			StatUpdateRequest statUpdateRequest = new StatUpdateRequest() { set = new OptionalMapOfString(sourceStatKeyPair.Value.stats) };
-				
-			await targetStatsAPI.ObjectPost(objectId, statUpdateRequest);
+			statUpdateRequests.Add(new StatUpdateRequest() { set = new OptionalMapOfString(sourceStatKeyPair.Value.stats), objectId = objectId});
 		}
+
+		await targetStatsAPI.PostBatch(new BatchSetStatsRequest() { updates = statUpdateRequests.ToArray() });
 	}
 
 	

@@ -330,9 +330,14 @@ namespace Beamable.Microservice.Tests.Socket
 	        return req => req.Succeed(generator());
         }
 
-        public static TestSocketResponseGenerator AuthFailure()
+        public static TestSocketResponseGeneratorAsync AuthFailure(int delayMs=0)
         {
-            return req => req.AuthFailure();
+            return async req =>
+            {
+                if (delayMs > 0)
+                    await Task.Delay(delayMs);
+                return req.AuthFailure();
+            };
         }
         
         public static TestSocketResponseGenerator TimeoutFailure()
@@ -997,6 +1002,16 @@ namespace Beamable.Microservice.Tests.Socket
                 throw new Exception("Connection is not open");
             }
             await HandleRequestWithResponders(message);
+        }
+
+        public async Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
+        {
+            if (!MockIsConnectionOpen)
+            {
+                throw new Exception("Connection is not open");
+            }
+            var decompressed = SocketCompression.Decompress(data);
+            await HandleRequestWithResponders(decompressed);
         }
 
         public IConnection OnConnect(Action<IConnection> onConnect)

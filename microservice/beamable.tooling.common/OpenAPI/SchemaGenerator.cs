@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
+using Beamable.Common.Semantics;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 
@@ -34,11 +35,16 @@ public class SchemaGenerator
 		}
 
 		public bool IsFromCallable() => SourceCallable != null && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true) != null;
+		public bool IsFromServerCallable() => SourceCallable != null && SourceCallable.Method.GetCustomAttribute<ServerCallableAttribute>(true) != null;
 		public bool IsFromFederation() => SourceCallable != null && SourceCallable.IsFederatedCallbackMethod;
 		public bool IsFromBeamGenerateSchema() => SourceCallable == null && Type.GetCustomAttribute<BeamGenerateSchemaAttribute>() != null;
 
 		public bool IsFromCallableWithNoClientGen() => IsFromCallable() && SourceCallable.Method.GetCustomAttribute<CallableAttribute>(true).Flags.HasFlag(CallableFlags.SkipGenerateClientFiles);
-		public bool ShouldNotGenerateClientCode() => (IsFromFederation() || IsFromCallableWithNoClientGen()) && !IsFromBeamGenerateSchema();
+
+		public bool IsBeamSemanticType() => Type.GetInterfaces()
+			.Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
+		
+		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType() || IsFromServerCallable()) && !IsFromBeamGenerateSchema();
 		
 		public bool IsPrimitive()
 		{
@@ -204,6 +210,16 @@ public class SchemaGenerator
 				return Convert(x.GetGenericArguments()[0], depth - 1);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
 				return Convert(x.GetGenericArguments()[0], depth - 1);
+			case { } x when x.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>)):
+				var semanticType = x.GetInterfaces().First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
+				var semanticTypeSchema = Convert(semanticType.GetGenericArguments()[0], depth - 1);
+				if (Activator.CreateInstance(runtimeType) is IBeamSemanticType semanticTypeInstance)
+				{
+					semanticTypeSchema.Extensions[SCHEMA_SEMANTIC_TYPE_NAME_KEY] =
+						new OpenApiString(semanticTypeInstance.SemanticName);
+				}
+
+				return semanticTypeSchema;
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double" };
 			case { } x when x == typeof(float):
@@ -312,6 +328,16 @@ public class SchemaGenerator
 
 					var comment = DocsLoader.GetMemberComments(member);
 					fieldSchema.Description = comment?.Summary;
+
+
+					Type classSemanticType = member.FieldType.GetInterfaces().FirstOrDefault(i =>
+						i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
+					if (classSemanticType != null && Activator.CreateInstance(member.FieldType) is IBeamSemanticType memberSemanticTypeInstance)
+					{
+						fieldSchema.Extensions[SCHEMA_SEMANTIC_TYPE_NAME_KEY] =
+							new OpenApiString(memberSemanticTypeInstance.SemanticName);
+					}
+
 					schema.Properties[name] = fieldSchema;
 
 					if (!member.FieldType.IsAssignableTo(typeof(Optional)))
