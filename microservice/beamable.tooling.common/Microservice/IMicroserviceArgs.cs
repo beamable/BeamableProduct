@@ -41,6 +41,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public LogOutputType LogOutputType { get; }
     public string LogOutputPath { get; }
     public bool EnableDangerousDeflateOptions { get; }
+    public bool DisableOutboundWsCompression { get; }
     public string MetadataUrl { get; }
     public string RefreshToken { get; }
     public string AccountEmail { get; }
@@ -56,5 +57,6 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool OtelExporterStandardEnabled { get; }
     public string OtelExporterRetryMaxSize { get; }
     public bool AllowStartupWithoutBeamableSettings { get; }
+    public int MaxUniqueEventBindingCount { get; }
     void SetResolvedCid(string resolvedCid);
 }

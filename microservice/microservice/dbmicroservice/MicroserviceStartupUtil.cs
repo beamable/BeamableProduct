@@ -93,7 +93,8 @@ public static class MicroserviceStartupUtil
 #pragma warning restore CS0618 // Type or member is obsolete
 			
 			generateLocalEnvInvocationModifier = configurator.LocalEnvModifier ?? (_ => { }),
-			initializers = configurator.ServiceInitializers.ToList()
+			initializers = configurator.ServiceInitializers.ToList(),
+			perServiceInitializers = configurator.PerServiceInitializers.ToList()
 		};
 
 		ConfigureLogging(configurator, startupCtx, includeOtel: false, string.Empty);
@@ -374,15 +375,6 @@ public static class MicroserviceStartupUtil
 	private static void ConfigureLogging(IBeamServiceConfig configurator, StartupContext ctx, bool includeOtel,
 		string otlpEndpoint)
 	{
-		if (configurator.LogFactory != null)
-		{
-			BeamableLogProvider.Provider = new BeamableZLoggerProvider();
-			Debug.Instance = new MicroserviceDebug();
-			ctx.logger = configurator.LogFactory();
-			BeamableZLoggerProvider.SetLogger(ctx.logger);
-			return;
-		}
-
 		if (!LogUtil.TryParseSystemLogLevel(ctx.args.LogLevel, out var defaultLogLevel))
 		{
 			defaultLogLevel = LogLevel.Warning;
@@ -392,12 +384,12 @@ public static class MicroserviceStartupUtil
 
 		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
 		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
-		
+
 		ctx.logFactory = LoggerFactory.Create(builder =>
 		{
 			// TODO: handle per-route / config options
 
-			// all logs are valid, but may not pass the filter. 
+			// all logs are valid, but may not pass the filter.
 			builder.SetMinimumLevel(LogLevel.Trace);
 
 			builder.AddFilter(level => level >= MicroserviceBootstrapper.ContextLogLevel.Value);
@@ -407,7 +399,7 @@ public static class MicroserviceStartupUtil
 			}
 
 			var shouldIncludeOtel = ctx.InDocker || ctx.args.UseLocalOtel;
-			
+
 			if (includeOtel && shouldIncludeOtel)
 			{
 				builder.AddOpenTelemetry(logging =>
@@ -442,34 +434,16 @@ public static class MicroserviceStartupUtil
 				});
 			}
 
-			switch (ctx.args.LogOutputType)
+			if (configurator.AddLoggerProvider != null)
 			{
-				case LogOutputType.DEFAULT when !ctx.InDocker:
-				case LogOutputType.UNSTRUCTURED:
-					builder.AddZLoggerConsole(opts => { opts.UsePlainTextFormatter(); });
-
-					break;
-
-				case LogOutputType.FILE:
-					builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
-					break;
-
-				case LogOutputType.STRUCTURED_AND_FILE:
-
-					builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
-					builder.AddZLoggerFile(ctx.args.LogOutputPath ?? "./service.log");
-
-					break;
-				case LogOutputType.DEFAULT
-					: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
-				case LogOutputType.STRUCTURED:
-				default:
-					builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
-					break;
+				configurator.AddLoggerProvider(builder);
+			}
+			else
+			{
+				AddDefaultLoggerProviders(builder, ctx.args.LogOutputType, ctx.InDocker, ctx.args.LogOutputPath);
 			}
 
 		});
-
 
 		// use newtonsoft for JsonUtility
 		JsonUtilityConverter.Init();
@@ -478,6 +452,36 @@ public static class MicroserviceStartupUtil
 		Debug.Instance = new MicroserviceDebug();
 		ctx.logger = ctx.logFactory.CreateLogger<Microservice>();
 		BeamableZLoggerProvider.SetLogger(ctx.logger);
+		BeamableZLoggerProvider.LogContext.Value = ctx.logger;
+	}
+
+	private static void AddDefaultLoggerProviders(ILoggingBuilder builder, LogOutputType type, bool inDocker, string outputPath)
+	{
+		switch (type)
+		{
+			case LogOutputType.DEFAULT when !inDocker:
+			case LogOutputType.UNSTRUCTURED:
+				builder.AddZLoggerConsole(opts => { opts.UsePlainTextFormatter(); });
+
+				break;
+
+			case LogOutputType.FILE:
+				builder.AddZLoggerFile(outputPath ?? "./service.log");
+				break;
+
+			case LogOutputType.STRUCTURED_AND_FILE:
+
+				builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
+				builder.AddZLoggerFile(outputPath ?? "./service.log");
+
+				break;
+			case LogOutputType.DEFAULT
+				: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+			case LogOutputType.STRUCTURED:
+			default:
+				builder.AddZLoggerConsole(opts => { UseBeamJsonFormatter(opts); });
+				break;
+		}
 	}
 
 	public static void ConfigureUnhandledError()
@@ -600,6 +604,11 @@ public static class MicroserviceStartupUtil
 				.AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 				.AddSingleton<BeamScheduler>()
 				.AddSingleton<FederationMetadata>()
+				
+				// allow the developer to change how the event service is created. 
+				.AddSingleton<IEventSubscriptionHook, DefaultEventSubscription>()
+				.AddScoped<IEventSubscriptionConfiguration, DefaultEventSubscriptionConfiguration>()
+				
 				.AddSingleton<IUsageApi>(startupContext.ecsService)
 				.AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 				.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
@@ -775,10 +784,11 @@ public static class MicroserviceStartupUtil
 			return new EphemeralUserDataCache<RankEntry>(name, resolver);
 		}
 
-		IBeamableServices ExtractSdks(IServiceProvider provider)
+		IBeamableServices ExtractSdks(IDependencyProvider provider)
 		{
 			var services = new BeamableServices
 			{
+				Scope = provider.GetService<IDependencyProviderScope>(),
 				Analytics = provider.GetRequiredService<IMicroserviceAnalyticsService>(),
 				Auth = provider.GetRequiredService<IMicroserviceAuthApi>(),
 				Stats = provider.GetRequiredService<IMicroserviceStatsApi>(),
@@ -896,6 +906,18 @@ public static class MicroserviceStartupUtil
 
 	}
 
+	private static string ApplyDefaultLogMasking(string text)
+	{
+		if (string.IsNullOrEmpty(text)) return text;
+
+		foreach (var mask in BeamMasker.DefaultMaskers)
+		{
+			text = mask.Matcher.Replace(text, mask.MaskerFunction);
+		}
+
+		return text;
+	}
+
 	public static async Task GetLocalEnvironment(StartupContext ctx)
 	{
 		var serviceName = ctx.attributes.MicroserviceName;
@@ -1005,11 +1027,11 @@ public static class MicroserviceStartupUtil
 
 		if (process.ExitCode != 0)
 		{
-			ctx.logger.ZLogError($"generate-env output:\n{sublogs}");
-			throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
+			ctx.logger.ZLogError($"generate-env output:\n{ApplyDefaultLogMasking(sublogs)}");
+			throw new Exception($"Failed to generate-env message=[{ApplyDefaultLogMasking(result)}] sub-logs=[{ApplyDefaultLogMasking(sublogs)}]");
 		}
 
-		ctx.logger.ZLogInformation($"environment:\n{result}");
+		ctx.logger.ZLogInformation($"environment:\n{ApplyDefaultLogMasking(result)}");
 
 		var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 		if (parsedOutput.type != "stream")

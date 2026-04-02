@@ -49,12 +49,104 @@
         />
     </Target>
     
-    <!-- After the build completes, we should generate OAPI specifications for the Microservices-->
-    <Target Name="generate-oapi" AfterTargets="AfterBuild" Condition="'$(BeamProjectType)'=='service' AND '$(BeamPublish)' != 'true' AND '$(BeamPreventOapiGen)'!='true'">
+    <!-- The OAPI file is always written to the non-RID output directory so its path is
+         stable regardless of which RuntimeIdentifier the enclosing publish uses. -->
+    <PropertyGroup>
+        <BeamOapiOutputDir>$(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/</BeamOapiOutputDir>
+        <BeamOapiFilePath>$(BeamOapiOutputDir)beam_openApi.json</BeamOapiFilePath>
+    </PropertyGroup>
+
+    <!-- Directory where this downstream project writes client .cs files
+         generated from upstream service OAPI specs. -->
+    <PropertyGroup>
+        <BeamClientGenOutputDir>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)BeamGenerated/', '$(MSBuildProjectDirectory)'))</BeamClientGenOutputDir>
+    </PropertyGroup>
+
+    <!-- After the build completes, generate the OAPI spec for this Microservice. -->
+    <Target Name="generate-oapi" AfterTargets="AfterBuild"
+            Condition="'$(BeamProjectType)'=='service' AND '$(BeamPreventOapiGen)'!='true' AND '$(BeamPublish)'!='true'" >
+
+        <!-- Foreign-RID publish: compile a local-runtime copy of this project so we have
+             a binary we can actually execute on the current OS. -->
+        <Exec Condition="'$(RuntimeIdentifier)' != ''"
+              EchoOff="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="dotnet build &quot;$(MSBuildProjectFullPath)&quot; --configuration $(Configuration) --use-current-runtime -p:BeamPreventOapiGen=true -p:BeamPreventBuildCacheInvalidation=true --verbosity minimal" />
+
+        <!-- Resolve which binary to execute: non-RID path when a RID was in play. -->
+        <PropertyGroup>
+            <_BeamOapiExecPath Condition="'$(RuntimeIdentifier)' == ''">$(TargetPath)</_BeamOapiExecPath>
+            <_BeamOapiExecPath Condition="'$(RuntimeIdentifier)' != ''">$(BeamOapiOutputDir)$(AssemblyName).dll</_BeamOapiExecPath>
+        </PropertyGroup>
+
         <Message Text="Generating OAPI specifications" Importance="high" />
-        <Exec Command="dotnet &quot;$(TargetPath)&quot; --generate-oapi --tl:off" 
-              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(OutputPath);MSBUILDTERMINALLOGGER=off"/>
+        <Exec Command="dotnet &quot;$(_BeamOapiExecPath)&quot; --generate-oapi --tl:off"
+              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(BeamOapiOutputDir);MSBUILDTERMINALLOGGER=off"/>
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
+    </Target>
+
+    <!--
+        Populate _BeamServiceRef items: one per ProjectReference that carries
+        GenerateBeamClient="true", augmented with the computed upstream OAPI path and
+        a per-reference stamp file path used for MSBuild incremental builds.
+        No condition — populating items is always safe; downstream targets gate on conditions.
+    -->
+    <Target Name="_BeamPopulateServiceRefs">
+        <ItemGroup>
+            <_BeamServiceRef Include="%(ProjectReference.FullPath)"
+                             Condition="'%(ProjectReference.GenerateBeamClient)' == 'true'">
+                <OapiPath>%(ProjectReference.RootDir)%(ProjectReference.Directory)bin/$(Configuration)/$(TargetFramework)/beam_openApi.json</OapiPath>
+                <StampPath>$(BeamClientGenOutputDir)%(ProjectReference.Filename).stamp</StampPath>
+            </_BeamServiceRef>
+        </ItemGroup>
+    </Target>
+
+    <!--
+        If any upstream OAPI file is missing, build that upstream project now using the
+        local-system RID so that OAPI generation can execute on the current OS.
+        This handles the first-build case and publish flows that use a foreign RID
+        (e.g. unix-x64 on macOS from 'beam deploy plan').
+    -->
+    <Target Name="_BeamEnsureServiceOapi"
+            DependsOnTargets="_BeamPopulateServiceRefs"
+            Condition="'$(BeamPreventOapiGen)' != 'true'">
+        <Exec Command="dotnet build &quot;%(_BeamServiceRef.Identity)&quot; --configuration $(Configuration) -p:BeamPreventBuildCacheInvalidation=true --verbosity minimal"
+              EchoOff="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Condition="'@(_BeamServiceRef)' != '' AND !Exists('%(_BeamServiceRef.OapiPath)')" />
+    </Target>
+
+    <!--
+        Generate client .cs files from upstream OAPI specs into this project's own
+        $(BeamClientGenOutputDir).  MSBuild incremental: re-runs only for OAPI files
+        that are newer than their corresponding stamp file.
+    -->
+    <Target Name="_BeamGenerateClientsFromRefs"
+            DependsOnTargets="_BeamEnsureServiceOapi"
+            Inputs="@(_BeamServiceRef->'%(OapiPath)')"
+            Outputs="@(_BeamServiceRef->'%(StampPath)')"
+            Condition="'$(BeamPreventOapiGen)' != 'true'">
+        <MakeDir Directories="$(BeamClientGenOutputDir)" />
+        <Message Importance="high" Text="Generating Beam client from OAPI: %(_BeamServiceRef.OapiPath)" />
+        <Exec EchoOff="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client-oapi --oapi-path &quot;%(_BeamServiceRef.OapiPath)&quot; --output-dir &quot;$(BeamClientGenOutputDir)&quot; --server" />
+        <Touch Files="%(_BeamServiceRef.StampPath)" AlwaysCreate="true" />
+    </Target>
+
+    <!--
+        Include all client .cs files from $(BeamClientGenOutputDir) in this project's
+        compilation.  DependsOnTargets ensures generation runs first (or is skipped when
+        outputs are up-to-date); BeforeTargets ensures inclusion happens before CoreCompile.
+    -->
+    <Target Name="_BeamIncludeGeneratedClients"
+            DependsOnTargets="_BeamGenerateClientsFromRefs"
+            BeforeTargets="CoreCompile"
+            Condition="'$(BeamPreventOapiGen)' != 'true'">
+        <ItemGroup>
+            <Compile Include="$(BeamClientGenOutputDir)**/*.cs"
+                     Condition="Exists('$(BeamClientGenOutputDir)')" />
+        </ItemGroup>
     </Target>
     
     <Target Name="BeamableBuildAttrs" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service' AND '$(BeamGenProps)'!='disable'">
@@ -99,8 +191,8 @@
         </PropertyGroup>
 
         <PropertyGroup>
-            <BeamOutputDirFullPath>$([System.IO.Path]::GetFullPath('$(ActualOutputDir)', '$(MSBuildProjectDirectory)'))</BeamOutputDirFullPath>
-            <BeamOutputDirNormalized>$([System.IO.Path]::TrimEndingDirectorySeparator('$(BeamOutputDirFullPath)'))</BeamOutputDirNormalized>
+            <BeamOutputDirFullPath>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(ActualOutputDir)'))))</BeamOutputDirFullPath>
+            <BeamOutputDirNormalized>$(BeamOutputDirFullPath.TrimEnd('\').TrimEnd('/'))</BeamOutputDirNormalized>
             <BeamOutputDirNormalized Condition="'$(BeamOutputDirNormalized)'==''">$(BeamOutputDirFullPath)</BeamOutputDirNormalized>
         </PropertyGroup>
 

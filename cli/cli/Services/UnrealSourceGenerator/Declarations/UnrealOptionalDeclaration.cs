@@ -1,4 +1,6 @@
-﻿namespace cli.Unreal;
+﻿using System.Collections.Generic;
+
+namespace cli.Unreal;
 
 public struct UnrealOptionalDeclaration
 {
@@ -15,7 +17,9 @@ public struct UnrealOptionalDeclaration
 
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
-		_valueInitializerStatement = ValueUnrealTypeName.IsUnrealUObject() ? "nullptr" : $"{ValueUnrealTypeName}()";
+		_valueInitializerStatement = ValueUnrealTypeName.IsUnrealUObject() ? 
+			$"NewObject<{UnrealSourceGenerator.RemovePtrFromUnrealTypeIfAny(ValueUnrealTypeName)}>(GetTransientPackage())" : 
+			$"{ValueUnrealTypeName}()";
 
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);

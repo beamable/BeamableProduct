@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using cli.Utils;
 using microservice.Extensions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -542,6 +543,9 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
+	public PortalExtensionDef PortalExtensionDefinition;
+
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
@@ -810,6 +814,53 @@ public class BeamoServiceDefinition
 	};
 }
 
+public class PortalExtensionDef
+{
+	public string Name;
+	public string Version => Properties.Version;
+
+	public string RelativePath;
+	public string AbsolutePath;
+
+	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
+
+	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
+	public PortalExtensionPackageProperties Properties;
+
+	private string ToolkitNodeModulesPackageJsonPath =>
+		Path.Combine(AbsolutePath, "node_modules", "@beamable", "portal-toolkit", "package.json");
+
+	/// <summary>
+	/// Reads the @beamable/portal-toolkit version. If the devDependencies value is not a semver
+	/// (e.g. a file: reference), falls back to reading the installed toolkit's package.json version field.
+	/// </summary>
+	public string GetToolkitVersion()
+	{
+		try
+		{
+			var json = File.ReadAllText(AbsolutePackageJsonPath);
+			var root = Newtonsoft.Json.Linq.JObject.Parse(json);
+			var depVersion = (root["devDependencies"] as Newtonsoft.Json.Linq.JObject)
+				?["@beamable/portal-toolkit"]?.ToString();
+
+			// If the version is a file: reference or other non-semver, resolve from the installed package
+			if (depVersion != null && !char.IsDigit(depVersion.TrimStart('^', '~')[0]))
+			{
+				var toolkitJson = File.ReadAllText(ToolkitNodeModulesPackageJsonPath);
+				var toolkitRoot = Newtonsoft.Json.Linq.JObject.Parse(toolkitJson);
+				return toolkitRoot.SelectToken("version")?.ToString() ?? depVersion;
+			}
+
+			return depVersion;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+}
+
 /// <summary>
 /// Data representing a Docker Port Binding.
 /// </summary>
@@ -888,6 +939,9 @@ public enum BeamoProtocolType
 
 	// Current Mongo-based Data Storage
 	EmbeddedMongoDb,
+
+	// A svelte app
+	PortalExtension
 }
 
 public interface IBeamoLocalProtocol

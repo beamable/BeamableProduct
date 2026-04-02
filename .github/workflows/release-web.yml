@@ -24,7 +24,7 @@ on:
         default: 0
       rcNumber:
         type: number
-        description: Rc version number, if required, 0.0.0-PREVIEW.RCX
+        description: Rc version number, if required, 0.0.0-rc.X
         required: false
         default: 0
       releaseType:
@@ -51,6 +51,8 @@ run-name: >-
 jobs:
   web-sdk-release:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     defaults:
       run:
         working-directory: web
@@ -59,38 +61,57 @@ jobs:
         with:
           ref: ${{ github.event.inputs.commit }}
 
-      # Setup Node.js LTS version 22.14.0
       - name: Use Node.js LTS
         uses: actions/setup-node@v4
         with:
           node-version: '22.14.0'
+          registry-url: 'https://registry.npmjs.org'
 
-      # Install pnpm package manager version 10.8.0 globally
       - name: Install pnpm
         run: npm install -g pnpm@10.8.0
 
-      # Install project dependencies using pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Run code linter
       - name: Lint
         run: pnpm lint
 
-      # Run the test suite
       - name: Test
         run: pnpm test
-        
+
+      - name: Compute version
+        id: version
+        run: |
+          VERSION="${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
+          if [ "${{ inputs.releaseType }}" == "rc" ]; then
+            VERSION="${VERSION}-rc.${{ inputs.rcNumber }}"
+          elif [ "${{ inputs.releaseType }}" != "production" ]; then
+            VERSION="${VERSION}-${{ inputs.releaseType }}"
+          fi
+          NPM_TAG="${{ inputs.releaseType }}"
+          if [ "${{ inputs.releaseType }}" == "production" ]; then
+            NPM_TAG="latest"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $VERSION (tag: $NPM_TAG)"
+
+      - name: Set package version
+        run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
+
+      # prepublishOnly runs build automatically
+      - name: Publish to npm
+        if: ${{ inputs.dryRun == false }}
+        run: pnpm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
+
       - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }} 
+        if: ${{ inputs.dryRun == false }}
         run: sh ./../build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'false'
           COPY_CLI: 'false'
           COPY_WEB_SDK: 'true'
-          VERSION: >-
-            ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}
-            ${{ inputs.releaseType == 'rc' && format('-rc.{0}', inputs.rcNumber) || '' }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
           GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
           BRANCH: >-
@@ -101,6 +122,6 @@ jobs:
               "production": "production"
             }')[github.event.inputs.releaseType] }}
 
-      # # Run the release command that bumps the version, updates the changelog, and builds the project.
-      # - name: Run Release
-      #   run: pnpm release
+      - name: Dry run build
+        if: ${{ inputs.dryRun == true }}
+        run: pnpm prepublishOnly
