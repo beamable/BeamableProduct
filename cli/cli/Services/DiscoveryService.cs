@@ -682,7 +682,8 @@ public class DiscoveryService
 							healthPort = service.healthPort,
 							routingKey = service.prefix,
 							groups = groups,
-							federations = feds
+							federations = feds,
+							serviceType = service.serviceType,
 						};
 						evtQueue.Enqueue(new HostServiceEvent { type = ServiceEventType.Running, descriptor = addition });
 						Log.Verbose("added dotnet process" + service.processId);
@@ -829,6 +830,7 @@ public class HostServiceDescriptor
 	public string routingKey;
 	public long startedByAccountId;
 	public string[] groups;
+	public string serviceType;
 	public FederationInstance[] federations;
 }
 
@@ -874,7 +876,7 @@ public class HostServiceEvent : DiscoveryService.ServiceEvent<HostServiceDescrip
 {
 	public ServiceEventType Type => type;
 	public string Service => descriptor.service;
-	public string ServiceType => "service"; // cannot run storages locally on the host without docker.
+	public string ServiceType => descriptor.serviceType;
 	public long StartedByAccountId => descriptor.startedByAccountId;
 	public string RoutingKey => descriptor.routingKey;
 	public string PrimaryKey => $"host-{descriptor.processId}";

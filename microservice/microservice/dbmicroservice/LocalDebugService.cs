@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using Swan.Logging;
 using System;
 using System.Threading;
-using ZLogger;
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
@@ -21,12 +20,12 @@ namespace Beamable.Server {
 	{
 		private WebServer _server;
 
-		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogProcessor debugLogSink)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogProcessor debugLogSink, string serviceName)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			Log.Verbose($"Debug server starting at port={args.HealthPort}");
 			_server = new WebServer(args.HealthPort)
-				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink)));
+				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink, serviceName)));
 		}
 
 		public async Task Run()
@@ -38,13 +37,15 @@ namespace Beamable.Server {
 		{
 			private readonly BeamableMicroService _beamableService;
 			private readonly DebugLogProcessor _debugLogSink;
+			private readonly string _serviceName;
 			private IUsageApi _ecsService;
 
-			public SampleController(BeamableMicroService service, DebugLogProcessor debugLogSink)
+			public SampleController(BeamableMicroService service, DebugLogProcessor debugLogSink, string serviceName)
 			{
 				_ecsService = service.Provider.GetService<IUsageApi>();
 				_beamableService = service;
 				_debugLogSink = debugLogSink;
+				_serviceName = serviceName;
 			}
 
 			[Route(HttpVerbs.Get, "/metadata")]
@@ -75,13 +76,13 @@ namespace Beamable.Server {
 				return "stopping";
 			}
 
-			[Route(HttpVerbs.Get, "/logs")]
+		[Route(HttpVerbs.Get, "/logs")]
 			public string StreamLogs()
 			{
 				this.Response.ContentType = "text/event-stream";
 
 				using var writer = this.HttpContext.OpenResponseText();
-				var id = Guid.NewGuid().ToString();
+				var id = _serviceName;
 				var channel = _debugLogSink.GetMessageSubscription(id);
 				try
 				{

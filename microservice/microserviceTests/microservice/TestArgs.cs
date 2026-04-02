@@ -78,13 +78,14 @@ namespace microserviceTests.microservice
 				.OverrideConfig(c =>
 				{
 					c.Args = args;
-					c.AddLoggerProvider = (builder) =>
-					{
-						builder.ClearProviders();
-						var testLogs = new LoggingUtil.TestLogs();
-						builder.SetMinimumLevel(LogLevel.Trace);
-						builder.AddZLoggerLogProcessor(testLogs);
-					};
+			c.AddLoggerProvider = (builder, _) =>
+			{
+				builder.ClearProviders();
+				var testLogs = new LoggingUtil.TestLogs();
+				builder.SetMinimumLevel(LogLevel.Trace);
+				builder.AddZLoggerLogProcessor(testLogs);
+				return null;
+			};
 					c.FirstConnectionHandler = (service) =>
 					{
 						Service = service;

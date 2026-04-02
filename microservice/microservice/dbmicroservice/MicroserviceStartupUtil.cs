@@ -184,7 +184,7 @@ public static class MicroserviceStartupUtil
 			if (isFirstInstance)
 			{
 				configurator.FirstConnectionHandler?.Invoke(beamableService);
-				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor);
+				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor, startupCtx.attributes.MicroserviceName);
 				var runningDebugTask = localDebug.Run();
 			}
 
@@ -436,7 +436,11 @@ public static class MicroserviceStartupUtil
 
 			if (configurator.AddLoggerProvider != null)
 			{
-				configurator.AddLoggerProvider(builder);
+				DebugLogProcessor overrideLogProcessor = configurator.AddLoggerProvider(builder, ctx.debugLogProcessor);
+				if (overrideLogProcessor != null)
+				{
+					ctx.debugLogProcessor = overrideLogProcessor;
+				}
 			}
 			else
 			{
@@ -838,7 +842,7 @@ public static class MicroserviceStartupUtil
 			prefix = startupContext.args.NamePrefix,
 			serviceName = startupContext.attributes.MicroserviceName,
 			healthPort = startupContext.args.HealthPort,
-			serviceType = "service",
+			serviceType = startupContext.attributes.ServiceType,
 			startedByAccountId = startupContext.args.AccountId
 		};
 		var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
