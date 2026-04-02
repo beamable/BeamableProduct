@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
@@ -29,8 +30,14 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Action<IDependencyBuilder>> IBeamServiceConfig.ServiceConfigurations { get; set; } = new List<Action<IDependencyBuilder>>();
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
-    Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
+
+    Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider { get; set; }
+
+    List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.PerServiceInitializers { get; set; } =
+	    new List<Func<IDependencyProviderScope, Task>>();
+
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
+
     Action<BeamCliInvocation> IBeamServiceConfig.LocalEnvModifier { get; set; } = _ => { };
 }
 
@@ -118,7 +125,7 @@ public static class BeamServiceConfigExtensions
 		conf.ServiceInitializers.Add(initializer);
 		return conf;
 	}
-	
+
 }
 
 public interface IBeamServiceConfig
@@ -131,7 +138,8 @@ public interface IBeamServiceConfig
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
-    Func<ILogger> LogFactory { get; set; }
+    Action<ILoggingBuilder> AddLoggerProvider { get; set; }
+    List<Func<IDependencyProviderScope, Task>> PerServiceInitializers { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
     Action<BeamCliInvocation> LocalEnvModifier { get; set; }
     

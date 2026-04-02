@@ -7,6 +7,7 @@ cli/beamable.templates/.config/dotnet-tools.json
 /dist
 /BeamableNugetSource
 build-number.txt 
+web-build-number.txt
 
 .obsidian
 
@@ -179,3 +180,4 @@ web/dist
 web/docs
 web/node_modules
 web/temp
+

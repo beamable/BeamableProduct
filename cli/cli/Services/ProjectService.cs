@@ -270,6 +270,24 @@ public class ProjectService
 		return path;
 	}
 
+	public async Task<NewServiceInfo> CreateNewPortalExtension(NewPortalExtensionCommandArgs args)
+	{
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+		var portalExtensionInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion);
+
+		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions");
+
+		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
+		await RunDotnetCommand($"new portalextensionapp -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
+
+		await args.BeamoLocalSystem.InitManifest();
+
+		return portalExtensionInfo;
+	}
+
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
@@ -619,6 +637,10 @@ public class ProjectService
 		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var commandStr = $"build {projectPath.EnquotePath()} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		if (args.MaxParallelTask > 0)
+		{
+			commandStr += $" -maxcpucount:{args.MaxParallelTask}";
+		}
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
 		{

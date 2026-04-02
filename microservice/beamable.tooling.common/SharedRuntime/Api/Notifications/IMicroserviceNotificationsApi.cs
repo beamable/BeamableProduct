@@ -85,5 +85,8 @@ namespace Beamable.Server.Api.Notifications
 
 		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
 		Promise<EmptyResponse> NotifyServer<T>(bool toAll, string name, T messagePayload);
+		
+		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
+		Promise<EmptyResponse> NotifyServer<T>(CustomEvent<T> evt, T payload);
 	}
 }

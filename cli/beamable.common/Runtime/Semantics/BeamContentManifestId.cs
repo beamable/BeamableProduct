@@ -1,0 +1,46 @@
+﻿using System;
+using Beamable.Common.BeamCli;
+
+namespace Beamable.Common.Semantics
+{
+    [CliContractType, Serializable]
+    public struct BeamContentManifestId : IBeamSemanticType<string>, IEquatable<string>, IEquatable<BeamContentManifestId>
+    {
+        private string _value;
+
+        public string SemanticName => "ContentManifestId";
+        
+        public string AsString
+        {
+	        get => _value ?? string.Empty;
+            set => _value = value;
+        }
+
+        public BeamContentManifestId(string value)
+        {
+            _value = value;
+        }
+        
+        public static implicit operator string(BeamContentManifestId id) => id.AsString;
+        public static implicit operator BeamContentManifestId(string value) => new BeamContentManifestId(value);
+        public string ToJson()
+        {
+	        return $"\"{AsString}\"";
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(BeamContentManifestId other)
+        {
+	        return other.AsString == AsString;
+        }
+
+        public override string ToString()
+        {
+	        return AsString;
+        }
+    }
+}

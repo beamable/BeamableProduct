@@ -1,4 +1,6 @@
+using System.CommandLine.Binding;
 using Beamable.Common.Api;
+using Beamable.Server;
 using cli.Utils;
 
 namespace cli.Portal;
@@ -23,14 +25,30 @@ public class PortalCommand : AppCommand<PortalCommandArgs>
 	public override Task Handle(PortalCommandArgs args)
 	{
 
-		GetPortalBaseUrl(args, out var url, out var qb);
+		GetPortalRealmUrl(args, out var url, out var qb);
 		url = $"{url}/{qb}";
 		MachineHelper.OpenBrowser(url);
 
 		return Task.CompletedTask;
 	}
 
-	public static void GetPortalBaseUrl(CommandArgs args, out string url, out QueryBuilder qb)
+	public static string GetPortalBaseUrl(CommandArgs args)
+	{
+		var binding = args.DependencyProvider.GetService<BindingContext>();
+		var portalUrl = binding.ParseResult.GetValueForOption(args.DependencyProvider.GetService<PortalUrlOption>());
+		if (string.IsNullOrEmpty(portalUrl))
+		{
+			portalUrl = args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+		}
+		else
+		{
+			Log.Debug($"Using portal override=[{portalUrl}]");
+		}
+
+		return portalUrl;
+	}
+
+	public static void GetPortalRealmUrl(CommandArgs args, out string url, out QueryBuilder qb)
 	{
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
@@ -38,6 +56,8 @@ public class PortalCommand : AppCommand<PortalCommandArgs>
 		{
 			["refresh_token"] = args.AppContext.RefreshToken
 		});
-		url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}";
+
+		var portalUrl = GetPortalBaseUrl(args);
+		url = $"{portalUrl}/{cid}/games/{pid}/realms/{pid}";
 	}
 }

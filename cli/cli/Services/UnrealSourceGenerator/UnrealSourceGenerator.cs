@@ -1,16 +1,15 @@
-﻿using System.Collections.Concurrent;
+﻿using Beamable.Common;
+using Beamable.Server;
+using Docker.DotNet.Models;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
+using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
-using Beamable.Common;
-using Beamable.Server;
-using Docker.DotNet.Models;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Interfaces;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Writers;
-using Newtonsoft.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
@@ -28,6 +27,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_DOUBLE = new("double");
 	public static readonly UnrealType UNREAL_GUID = new("FGuid");
 	public static readonly UnrealType UNREAL_DATE_TIME = new("FDateTime");
+	public static readonly UnrealType UNREAL_VECTOR = new("FVector");
+	public static readonly UnrealType UNREAL_COLOR = new("FColor");
+	public static readonly UnrealType UNREAL_GAMEPLAY_TAG = new("FGameplayTag");
+	public static readonly UnrealType UNREAL_GAMEPLAY_TAG_CONTAINER = new("FGameplayTagContainer");
+	public static readonly UnrealType UNREAL_INT_VECTOR = new("FIntVector");
+	public static readonly UnrealType UNREAL_LINEAR_COLOR = new("FLinearColor");
+	public static readonly UnrealType UNREAL_SOFT_OBJECT_PATH = new("FSoftObjectPath");
 	public static readonly UnrealType UNREAL_JSON = new("TSharedPtr<FJsonObject>");
 	public static readonly UnrealType UNREAL_OPTIONAL = new("FOptional");
 	public static readonly UnrealType UNREAL_OPTIONAL_STRING = new($"{UNREAL_OPTIONAL}String");
@@ -40,6 +46,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_OPTIONAL_DOUBLE = new($"{UNREAL_OPTIONAL}Double");
 	public static readonly UnrealType UNREAL_OPTIONAL_GUID = new($"{UNREAL_OPTIONAL}Guid");
 	public static readonly UnrealType UNREAL_OPTIONAL_DATE_TIME = new($"{UNREAL_OPTIONAL}DateTime");
+	public static readonly UnrealType UNREAL_OPTIONAL_VECTOR = new($"{UNREAL_OPTIONAL}Vector");
+	public static readonly UnrealType UNREAL_OPTIONAL_COLOR = new($"{UNREAL_OPTIONAL}Color");
+	public static readonly UnrealType UNREAL_OPTIONAL_GAMEPLAY_TAG = new($"{UNREAL_OPTIONAL}GameplayTag");
+	public static readonly UnrealType UNREAL_OPTIONAL_GAMEPLAY_TAG_CONTAINER = new($"{UNREAL_OPTIONAL}GameplayTagContainer");
+	public static readonly UnrealType UNREAL_OPTIONAL_INT_VECTOR = new($"{UNREAL_OPTIONAL}IntVector");
+	public static readonly UnrealType UNREAL_OPTIONAL_LINEAR_COLOR = new($"{UNREAL_OPTIONAL}LinearColor");
+	public static readonly UnrealType UNREAL_OPTIONAL_SOFT_OBJECT_PATH = new($"{UNREAL_OPTIONAL}SoftObjectPath");
 	public static readonly UnrealType UNREAL_ARRAY = new("TArray");
 	public static readonly UnrealType UNREAL_OPTIONAL_ARRAY = new($"{UNREAL_OPTIONAL}ArrayOf");
 	public static readonly UnrealType UNREAL_WRAPPER_ARRAY = new("FArrayOf");
@@ -456,8 +469,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
 			};
 		}));
 
@@ -478,8 +490,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
 			};
 		}));
 
@@ -521,8 +532,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
 				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, },
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
 			};
@@ -569,28 +579,40 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			var beamFlowNodeCpp = UnrealEndpointDeclaration.BEAM_FLOW_BP_NODE_CPP.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
+			decl.IntoProcessMap(processDictionary, ueGenOutput.JsonSerializableTypes);
+			var beamFederationBpNodes = UnrealFederationDeclaration.FEDERATION_BP_NODE_HEADER.ProcessReplacement(processDictionary);
+			processDictionary.Clear();
 
-			return (decl, endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp);
+			return (decl, endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp, beamFederationBpNodes);
 		});
 		outputFiles.AddRange(subsystemEndpointsCode.SelectMany((sc, i) =>
 		{
 			return new[]
 			{
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader
-				},
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader },
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.cpp", Content = sc.endpointCpp },
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp
-				},
+				new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader },
+				new GeneratedFileDescriptor { FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp },
 			};
 		}));
+
+		// Only generate federations when generating microservice clients.
+		if (genType == GenerationType.Microservice)
+		{
+			var federations = ueGenOutput.SubsystemDeclarations.SelectMany(sd => sd.DeclaredFederations).ToList();
+			var federationsCode = federations.Select(decl =>
+			{
+				decl.IntoProcessMap(processDictionary);
+				var beamFederationBpNodes = UnrealFederationDeclaration.FEDERATION_BP_NODE_HEADER.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+
+				return (decl, beamFederationBpNodes);
+			});
+			outputFiles.AddRange(federationsCode.SelectMany((sc, i) =>
+			{
+				return new[] { new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.OwnerMicroserviceName}/K2BeamNode_Federations_{(sc.decl.OwnerMicroserviceName)}_{sc.decl.FederationType}_{sc.decl.SanitizedFederationId}.h", Content = sc.beamFederationBpNodes } };
+			}));
+		}
 
 		// Prints out all the identified semtype declarations
 		foreach ((string key, string value) in newGeneratedUnrealTypes)
@@ -1062,11 +1084,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var handle = GetEndpointFieldHandle(context, serviceName, serviceType, operationType, endpointPath, param.Name);
 						context.FieldRequiredMap.TryAdd(handle, param.Required);
-						if (!param.Required) Log.Debug(GetLog(logHeader, $"Found optional usage for type in endpoint. ServiceName=[{serviceName}]," +
-						                                                 $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]," +
-						                                                 $" FieldHandle=[{handle}]"));
+						if (!param.Required)
+							Log.Debug(GetLog(logHeader, $"Found optional usage for type in endpoint. ServiceName=[{serviceName}]," +
+							                            $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]," +
+							                            $" FieldHandle=[{handle}]"));
 					}
-					
+
 					Log.Debug(GetLog(logHeader, $"Finished parsing endpoint for building required field map. ServiceName=[{serviceName}]," +
 					                            $" ServiceType=[{serviceType}], EndpointOperation=[{operationType}], EndpointPath=[{endpointPath}]"));
 				}
@@ -1247,6 +1270,61 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				                            $" ServiceName=[{serviceName}], ServiceType=[{serviceType}], SubsystemName=[{unrealServiceDecl.SubsystemName}]"));
 			}
 
+
+			// Find existing federations
+			{
+				unrealServiceDecl.DeclaredFederations ??= new();
+				if (openApiDocument.Extensions.TryGetValue("x-beamable-federated-components-v2", out var federationExtension))
+				{
+					if (federationExtension is OpenApiArray federationsArray)
+					{
+						var federationCount = federationsArray.Count;
+						unrealServiceDecl.DeclaredFederations.EnsureCapacity(federationCount);
+
+						foreach (var federationArrayItem in federationsArray)
+						{
+							if (federationArrayItem is OpenApiObject federationObj)
+							{
+								var federationDeclaration = new UnrealFederationDeclaration();
+								federationDeclaration.OwnerMicroserviceName = serviceName;
+								if (federationObj.TryGetValue("interface", out var fedInterface))
+								{
+									// Extract just the type name -- not the namespace
+									// "Beamable.Common.IFederatedLogin" => "FederatedLogin"
+									if (fedInterface is OpenApiString fedInterfaceStr)
+										federationDeclaration.FederationType =  fedInterfaceStr.Value[(fedInterfaceStr.Value.LastIndexOf('.') + 2)..];
+									else
+										throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								else
+								{
+									throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+
+								if (federationObj.TryGetValue("federationId", out var fedId))
+								{
+									if (fedId is OpenApiString fedIdStr)
+										federationDeclaration.FederationId = fedIdStr.Value;
+									else
+										throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								else
+								{
+									throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+								}
+								
+								unrealServiceDecl.DeclaredFederations.Add(federationDeclaration);
+							}
+							else
+							{
+								throw new CliException("You should never see this. If you do, please report this issue to Beamable.");
+							}
+						}
+					}
+				}
+			}
+
+
 			// Get the number of endpoints so we can pre-allocate the correct list sizes.
 			var endpointCount = openApiDocument.Paths.SelectMany(endpoint => endpoint.Value.Operations).Count();
 
@@ -1307,7 +1385,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
 					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "auth");
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id is "auth" or "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -2133,11 +2211,29 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsUnrealDouble() => AsStr == UNREAL_DOUBLE;
 		public bool IsUnrealGuid() => AsStr == UNREAL_GUID;
 		public bool IsUnrealDateTime() => AsStr == UNREAL_DATE_TIME;
+		
+		public bool IsUnrealVector() => AsStr == UNREAL_VECTOR;
+		
+		public bool IsUnrealColor() => AsStr == UNREAL_COLOR;
+		
+		public bool ContainsUnrealGameplayTag() => AsStr.Contains(UNREAL_GAMEPLAY_TAG);
+		public bool IsUnrealGameplayTag() => AsStr == UNREAL_GAMEPLAY_TAG;
+
+		public bool IsUnrealGameplayTagContainer() => AsStr == UNREAL_GAMEPLAY_TAG_CONTAINER;
+
+		public bool IsUnrealIntVector() => AsStr == UNREAL_INT_VECTOR;
+
+		public bool IsUnrealLinearColor() => AsStr == UNREAL_LINEAR_COLOR;
+
+		public bool IsUnrealSoftObjectPath() => AsStr == UNREAL_SOFT_OBJECT_PATH;
+
 		public bool IsUnrealString() => AsStr == UNREAL_STRING;
 
 		public bool IsNumericPrimitive() => IsUnrealByte() || IsUnrealShort() || IsUnrealInt() || IsUnrealLong() || IsUnrealFloat() || IsUnrealDouble();
 
-		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool();
+		public bool IsRawPrimitive() => IsNumericPrimitive() || IsUnrealGuid() || IsUnrealDateTime() || IsUnrealString() || IsUnrealBool() || 
+		                                IsUnrealVector() || IsUnrealColor() || IsUnrealGameplayTag() || IsUnrealGameplayTagContainer() || 
+		                                IsUnrealIntVector() || IsUnrealLinearColor() || IsUnrealSoftObjectPath();
 
 		public bool IsUnrealArray() => AsStr.StartsWith(UNREAL_ARRAY);
 		public bool IsUnrealMap() => AsStr.StartsWith(UNREAL_MAP);
@@ -2329,6 +2425,20 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_DATE_TIME : UNREAL_DATE_TIME);
 			case ("string", _, "System.Guid", _):
 				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
+			case ("object", _, "UnrealEngine.FVector", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_VECTOR : UNREAL_VECTOR;
+			case ("object", _, "UnrealEngine.FColor", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_COLOR : UNREAL_COLOR;
+			case ("object", _, "UnrealEngine.FGameplayTag", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GAMEPLAY_TAG : UNREAL_GAMEPLAY_TAG;
+			case ("object", _, "UnrealEngine.FGameplayTagContainer", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_GAMEPLAY_TAG_CONTAINER : UNREAL_GAMEPLAY_TAG_CONTAINER;
+			case ("object", _, "UnrealEngine.FIntVector", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_INT_VECTOR : UNREAL_INT_VECTOR;
+			case ("object", _, "UnrealEngine.FLinearColor", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_LINEAR_COLOR : UNREAL_LINEAR_COLOR;
+			case ("object", _, "UnrealEngine.FSoftObjectPath", _):
+				return nonOverridenType = isOptional ? UNREAL_OPTIONAL_SOFT_OBJECT_PATH : UNREAL_SOFT_OBJECT_PATH;
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
 				var namespacedType = GetNamespacedTypeNameFromSchema(context, parentDoc, referenceId, isOptional);
@@ -2729,6 +2839,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.IsUnrealJson())
 				return @"#include ""Dom/JsonObject.h""";
+			
+			if(unrealType.ContainsUnrealGameplayTag())
+				return @"#include ""GameplayTagContainer.h""";
 
 			if (unrealType.IsRawPrimitive())
 				return @"#include ""Serialization/BeamJsonUtils.h""";
@@ -2809,7 +2922,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		return "";
 
-		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealEnum() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime();
+		bool MustInclude(UnrealType s) => s.IsUnrealUObject() || s.IsUnrealEnum() || s.IsUnrealStruct() && !s.IsUnrealGuid() && !s.IsUnrealString() && !s.IsUnrealDateTime() && !s.IsUnrealVector() && !s.IsUnrealColor() && !s.IsUnrealGameplayTag() && !s.IsUnrealGameplayTagContainer() && !s.IsUnrealIntVector() && !s.IsUnrealLinearColor() && !s.IsUnrealSoftObjectPath();
 	}
 }
 
