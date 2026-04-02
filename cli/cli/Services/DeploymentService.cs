@@ -56,10 +56,13 @@ public class PortalExtensionUploadInfo : JsonSerializable.ISerializable
 	public string checksum;            // combined build hash; for BeamoV2PortalExtensionReference.checksum
 	public string jsChecksum;          // MD5 hex of index.js; stored as version in BeamoV2ExtensionContentReference
 	public string cssChecksum;         // MD5 hex of style.css; stored as version in BeamoV2ExtensionContentReference
+	public string metadataChecksum;    // MD5 hex of metadata.json; stored as version in BeamoV2ExtensionContentReference
 	public bool uploadJs;              // true if index.js differs from remote
 	public bool uploadCss;             // true if style.css differs from remote
+	public bool uploadMetadata;        // true if metadata.json differs from remote
 	public string existingJsContentId;  // remote contentId to reuse when uploadJs=false
 	public string existingCssContentId; // remote contentId to reuse when uploadCss=false
+	public string existingMetadataContentId; // remote contentId to reuse when uploadMetadata=false
 
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
@@ -68,10 +71,13 @@ public class PortalExtensionUploadInfo : JsonSerializable.ISerializable
 		s.Serialize(nameof(checksum), ref checksum);
 		s.Serialize(nameof(jsChecksum), ref jsChecksum);
 		s.Serialize(nameof(cssChecksum), ref cssChecksum);
+		s.Serialize(nameof(metadataChecksum), ref metadataChecksum);
 		s.Serialize(nameof(uploadJs), ref uploadJs);
 		s.Serialize(nameof(uploadCss), ref uploadCss);
+		s.Serialize(nameof(uploadMetadata), ref uploadMetadata);
 		s.Serialize(nameof(existingJsContentId), ref existingJsContentId);
 		s.Serialize(nameof(existingCssContentId), ref existingCssContentId);
+		s.Serialize(nameof(existingMetadataContentId), ref existingMetadataContentId);
 	}
 }
 
@@ -1241,9 +1247,9 @@ public partial class DeployUtil
 			.Select(d => d.PortalExtensionDefinition)
 			.ToList();
 
-		var portalExtensionsToUpload  = new List<PortalExtensionUploadInfo>();
+		var portalExtensionsToUpload = new List<PortalExtensionUploadInfo>();
 		var portalExtensionReferences = new List<BeamoV2PortalExtensionReference>();
-		var localPeNames              = new HashSet<string>();
+		var localPeNames = new HashSet<string>();
 
 		foreach (var peDef in localPeDefs)
 		{
@@ -1253,22 +1259,27 @@ public partial class DeployUtil
 			observer.InstallDeps();
 			observer.BuildExtension();
 
-			var mainJsPath  = Path.Combine(peDef.AbsolutePath, "assets", "index.js");
+			var mainJsPath = Path.Combine(peDef.AbsolutePath, "assets", "index.js");
 			var mainCssPath = Path.Combine(peDef.AbsolutePath, "assets", "style.css");
-			var jsLines     = File.ReadLines(mainJsPath).ToArray();
-			var cssLines    = File.ReadLines(mainCssPath).ToArray();
-			var localChecksum = PortalExtensionObserver.GetBuildHash(jsLines, cssLines);
+			var mainMetadataPath = Path.Combine(peDef.AbsolutePath, "assets", "metadata.json");
+			var jsLines = File.ReadLines(mainJsPath).ToArray();
+			var cssLines = File.ReadLines(mainCssPath).ToArray();
+			var metadataLines = File.ReadLines(mainMetadataPath).ToArray();
+			var localChecksum = PortalExtensionObserver.GetBuildHash(jsLines, cssLines, metadataLines);
 			var jsMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainJsPath))).Replace("-", "");
 			var cssMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainCssPath))).Replace("-", "");
+			var metadataMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainMetadataPath))).Replace("-", "");
 
 			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
 			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
 			var remoteJsRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "index.js");
 			var remoteCssRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "style.css");
+			var remoteMetadataRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "metadata.json");
 
 			var uploadJs = remoteJsRef == null || remoteJsRef.version.GetOrElse("") != jsMd5Hex;
 			var uploadCss = remoteCssRef == null || remoteCssRef.version.GetOrElse("") != cssMd5Hex;
-			var needsUpload = uploadJs || uploadCss;
+			var uploadMetadata = remoteMetadataRef == null || remoteMetadataRef.version.GetOrElse("") != metadataMd5Hex;
+			var needsUpload = uploadJs || uploadCss || uploadMetadata;
 
 			if (needsUpload)
 			{
@@ -1288,10 +1299,13 @@ public partial class DeployUtil
 					checksum = localChecksum,
 					jsChecksum = jsMd5Hex,
 					cssChecksum = cssMd5Hex,
+					metadataChecksum = metadataMd5Hex,
 					uploadJs = uploadJs,
 					uploadCss = uploadCss,
+					uploadMetadata = uploadMetadata,
 					existingJsContentId = remoteJsRef?.contentId.GetOrElse(""),
 					existingCssContentId = remoteCssRef?.contentId.GetOrElse(""),
+					existingMetadataContentId = remoteMetadataRef?.contentId.GetOrElse(""),
 				});
 
 				portalExtensionReferences.Add(new BeamoV2PortalExtensionReference
@@ -1318,11 +1332,11 @@ public partial class DeployUtil
 				diff.removedPortalExtensions.Add(name);
 				portalExtensionReferences.Add(new BeamoV2PortalExtensionReference
 				{
-					name     = remoteRef.name,
+					name = remoteRef.name,
 					checksum = remoteRef.checksum,
-					files    = remoteRef.files,
-					archived = new OptionalBool { Value = true,  HasValue = true },
-					enabled  = new OptionalBool { Value = false, HasValue = true },
+					files = remoteRef.files,
+					archived = new OptionalBool { Value = true, HasValue = true },
+					enabled = new OptionalBool { Value = false, HasValue = true },
 				});
 			}
 		}
@@ -1394,7 +1408,7 @@ public partial class DeployUtil
 			manifest = next,
 			notes = notes,
 			servicesToUpload = servicesToUpload,
-			portalExtensionsToUpload  = portalExtensionsToUpload,
+			portalExtensionsToUpload = portalExtensionsToUpload,
 			portalExtensionReferences = portalExtensionReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
@@ -1539,41 +1553,32 @@ public partial class DeployUtil
 
 				var idJs = $"{pe.name}/index.js";
 				var idCss = $"{pe.name}/style.css";
+				var idMetadata = $"{pe.name}/metadata.json";
 
 				// Build binary definitions only for files that changed
 				var binDefs = new List<BinaryDefinition>();
-				byte[] jsBytes = null, cssBytes = null, jsMd5Bytes = null, cssMd5Bytes = null;
 
 				if (pe.uploadJs)
 				{
-					jsBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "index.js"));
-					jsMd5Bytes = MD5.HashData(jsBytes);
-					binDefs.Add(new BinaryDefinition
-					{
-						id = idJs,
-						checksum = BitConverter.ToString(jsMd5Bytes).Replace("-", ""),
-						uploadContentType = "application/javascript",
-						visibility = new OptionalString { Value = "private", HasValue = true },
-					});
+					var filePath = Path.Combine(pe.absolutePath, "assets", "index.js");
+					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idJs, "application/javascript"));
 				}
 				if (pe.uploadCss)
 				{
-					cssBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "style.css"));
-					cssMd5Bytes = MD5.HashData(cssBytes);
-					binDefs.Add(new BinaryDefinition
-					{
-						id = idCss,
-						checksum = BitConverter.ToString(cssMd5Bytes).Replace("-", ""),
-						uploadContentType = "text/css",
-						visibility = new OptionalString { Value = "private", HasValue = true },
-					});
+					var filePath = Path.Combine(pe.absolutePath, "assets", "style.css");
+					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idCss, "text/css"));
+				}
+				if (pe.uploadMetadata)
+				{
+					var filePath = Path.Combine(pe.absolutePath, "assets", "metadata.json");
+					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idMetadata, "application/json"));
 				}
 
 				// 1/3: get signed upload URLs for files that need uploading
-				BinaryReference refJs = null, refCss = null;
+				BinaryReference refJs = null, refCss = null, refMetadata=null;
 				if (binDefs.Count > 0)
 				{
-					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
+					SaveBinaryResponse binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
 					if (pe.uploadJs)
 					{
 						refJs = binaryResp.binary.First(b => b.id == idJs);
@@ -1582,25 +1587,37 @@ public partial class DeployUtil
 					{
 						refCss = binaryResp.binary.First(b => b.id == idCss);
 					}
+					if (pe.uploadMetadata)
+					{
+						refMetadata = binaryResp.binary.First(b => b.id == idMetadata);
+					}
 				}
 				progressHandler?.Invoke(progressName, 0.33f);
 
-				// 2/3: upload JS if changed
+				// Upload files that changed
 				if (pe.uploadJs)
 				{
-					await PutToSignedUrl(httpClient, refJs.uploadUri, jsBytes, "application/javascript", jsMd5Bytes);
+					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "index.js"));
+					await PutToSignedUrl(httpClient, refJs.uploadUri, bytes, "application/javascript", MD5.HashData(bytes));
 				}
 				progressHandler?.Invoke(progressName, 0.66f);
 
-				// 3/3: upload CSS if changed
 				if (pe.uploadCss)
 				{
-					await PutToSignedUrl(httpClient, refCss.uploadUri, cssBytes, "text/css", cssMd5Bytes);
+					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "style.css"));
+					await PutToSignedUrl(httpClient, refCss.uploadUri, bytes, "text/css", MD5.HashData(bytes));
+				}
+
+				if (pe.uploadMetadata)
+				{
+					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "metadata.json"));
+					await PutToSignedUrl(httpClient, refMetadata.uploadUri, bytes, "application/json", MD5.HashData(bytes));
 				}
 
 				// Resolve final contentIds: new IDs for uploaded files, existing ones for unchanged files
 				var jsContentId = pe.uploadJs ? refJs.id : pe.existingJsContentId;
 				var cssContentId = pe.uploadCss ? refCss.id : pe.existingCssContentId;
+				var metadataContentId = pe.uploadMetadata ? refMetadata.id : pe.existingMetadataContentId;
 
 				// Fill in contentIds on the matching reference before manifest is built below
 				var peRef = plan.portalExtensionReferences.First(r => r.name.GetOrElse("") == pe.name);
@@ -1620,6 +1637,12 @@ public partial class DeployUtil
 							contentId = new OptionalString { Value = cssContentId, HasValue = true },
 							name = new OptionalString { Value = "style.css", HasValue = true },
 							version = new OptionalString { Value = pe.cssChecksum, HasValue = true },
+						},
+						new BeamoV2ExtensionContentReference
+						{
+							contentId = new OptionalString { Value = metadataContentId, HasValue = true },
+							name = new OptionalString { Value = "metadata.json", HasValue = true },
+							version = new OptionalString { Value = pe.metadataChecksum, HasValue = true },
 						},
 					}
 				};
@@ -1655,7 +1678,7 @@ public partial class DeployUtil
 			portalExtensionReferences = new OptionalArrayOfBeamoV2PortalExtensionReference
 			{
 				HasValue = plan.portalExtensionReferences.Count > 0,
-				Value    = plan.portalExtensionReferences.ToArray(),
+				Value = plan.portalExtensionReferences.ToArray(),
 			},
 			autoDeploy = true,
 			comments = plan.manifest.comments,
@@ -1669,11 +1692,24 @@ public partial class DeployUtil
 
 	}
 
+	private static async Task<BinaryDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
+	{
+		var bytes = await File.ReadAllBytesAsync(filePath);
+		var md5Bytes = MD5.HashData(bytes);
+		return new BinaryDefinition
+		{
+			id = contentId,
+			checksum = BitConverter.ToString(md5Bytes).Replace("-", ""),
+			uploadContentType = contentType,
+			visibility = new OptionalString { Value = "private", HasValue = true },
+		};
+	}
+
 	private static async Task PutToSignedUrl(HttpClient httpClient, string url, byte[] data, string contentType, byte[] md5Bytes)
 	{
 		var content = new ByteArrayContent(data);
 		content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-		content.Headers.ContentMD5  = md5Bytes;
+		content.Headers.ContentMD5 = md5Bytes;
 
 		var response = await httpClient.PutAsync(url, content);
 		if (!response.IsSuccessStatusCode)
