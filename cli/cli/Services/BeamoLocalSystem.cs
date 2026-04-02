@@ -154,6 +154,17 @@ public partial class BeamoLocalSystem
 
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
 	}
+	
+	public static string GetServiceType(BeamoProtocolType protocolType)
+	{
+		return protocolType switch
+		{
+			BeamoProtocolType.HttpMicroservice => "service",
+			BeamoProtocolType.PortalExtension => "portalExtension",
+			BeamoProtocolType.EmbeddedMongoDb => "storage",
+			_ => throw new ArgumentOutOfRangeException()
+		};
+	}
 
 	public void SaveBeamoLocalRuntime() {
 		// TODO: remove this.
@@ -549,7 +560,7 @@ public class BeamoServiceDefinition
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
-	public enum ProjectLanguage { CSharpDotnet, }
+	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
 
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.

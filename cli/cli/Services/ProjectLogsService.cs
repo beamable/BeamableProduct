@@ -52,6 +52,8 @@ public class ProjectLogsService
 		while (!cts.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
+			var portalExtensionServiceType = BeamoLocalSystem.GetServiceType(BeamoProtocolType.PortalExtension);
+			var expectedServiceName = args.service.Value;
 
 			Task tailTask = null;
 			// TODO: ignore remote, and also care about id filtering
@@ -61,8 +63,17 @@ public class ProjectLogsService
 				if (evt.Type != ServiceEventType.Running)
 					continue;
 
-				if (evt.Service != args.service)
-					continue;
+				if (evt.ServiceType == portalExtensionServiceType)
+				{
+					if (!IsMatchingPortalExtensionService(evt.Service, expectedServiceName))
+						continue;
+				}
+				else
+				{
+					if (evt.Service != args.service)
+						continue;	
+				}
+				
 
 				switch (evt)
 				{
@@ -98,6 +109,14 @@ public class ProjectLogsService
 		}
 	}
 
+	static bool IsMatchingPortalExtensionService(string service, string expectedServiceName)
+	{
+		if (service == expectedServiceName)
+			return true;
+		var match = BeamoLocalSystem.PORTAL_EXTENSION_SERVICE_REGEX.Match(service ?? string.Empty);
+		return match.Success && match.Groups["serviceName"].Value == expectedServiceName;
+	}
+
 	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog, CancellationTokenSource cts)
 	{
 		await foreach (var line in beamo.TailLogs(container.containerId, cts))
@@ -116,7 +135,7 @@ public class ProjectLogsService
 		// Set up the HTTP GET request
 		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
 
-		// Set the "text/event-stream" media type to indicate Server-Sent Events
+		// Set the "text/event-stream" media type to indicate Se rver-Sent Events
 		request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
 
 
