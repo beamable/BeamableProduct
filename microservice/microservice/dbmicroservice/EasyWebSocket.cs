@@ -11,7 +11,6 @@ using System.Runtime;
 using System.Text.Json;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
-using beamable.tooling.common.Microservice;
 using UnityEngine;
 using ZLogger;
 
@@ -34,6 +33,7 @@ namespace Beamable.Server
 	public class WriteItem
 	{
 		public string message;
+		public byte[] binaryData;
 		public Stopwatch stopWatch;
 		public Promise promise;
 	}
@@ -126,7 +126,19 @@ namespace Beamable.Server
 							throw new Exception($"Connection is not open. state=[{_ws.State}]");
 						}
 
-						var messageBuffer = Encoding.UTF8.GetBytes(item.message);
+						byte[] messageBuffer;
+						WebSocketMessageType messageType;
+
+						if (item.binaryData != null)
+						{
+							messageBuffer = item.binaryData;
+							messageType = WebSocketMessageType.Binary;
+						}
+						else
+						{
+							messageBuffer = Encoding.UTF8.GetBytes(item.message);
+							messageType = WebSocketMessageType.Text;
+						}
 
 						var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
 
@@ -142,7 +154,7 @@ namespace Beamable.Server
 								count1 = messageBuffer.Length - offset;
 							}
 
-							await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count1), WebSocketMessageType.Text,
+							await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count1), messageType,
 								lastMessage, _cancellationToken);
 						}
 
@@ -238,6 +250,17 @@ namespace Beamable.Server
 			await item.promise;
 		}
 
+		/// <summary>
+		/// Send a binary message to the WebSocket server.
+		/// </summary>
+		/// <param name="data">The binary data to send</param>
+		public async Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
+		{
+			var item = new WriteItem { binaryData = data, stopWatch = sw, promise = new Promise() };
+			await _sendChannel.Writer.WriteAsync(item);
+			await item.promise;
+		}
+
 
 		/// <summary>
 		/// Terminate the socket in a friendly way.
@@ -322,12 +345,14 @@ namespace Beamable.Server
 					MemoryStream stream = new MemoryStream();
 					cpu.StartSample();
 					var byteCount = 0;
+					WebSocketMessageType? receivedMessageType = null;
 					do
 					{
 						var segment = new ArraySegment<byte>(readSegment.Array);
 						result = await _ws.ReceiveAsync(segment, _cancellationToken);
 
 						readCount++;
+						receivedMessageType ??= result.MessageType;
 
 						if (result.MessageType == WebSocketMessageType.Close)
 						{
@@ -348,8 +373,19 @@ namespace Beamable.Server
 						GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 					}
 
-					stream.Seek(0, SeekOrigin.Begin);
-					
+					// Handle binary messages by decompressing them
+					if (receivedMessageType == WebSocketMessageType.Binary && byteCount > 0)
+					{
+						var compressedData = stream.ToArray();
+						var decompressed = SocketCompression.Decompress(compressedData);
+						var decompressedBytes = Encoding.UTF8.GetBytes(decompressed);
+						stream = new MemoryStream(decompressedBytes);
+					}
+					else
+					{
+						stream.Seek(0, SeekOrigin.Begin);
+					}
+
 					JsonDocument document = null;
 					if (byteCount > 0)
 					{

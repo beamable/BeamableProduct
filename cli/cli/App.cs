@@ -466,6 +466,7 @@ public class App
 		Commands.AddSingleton(QuietOption.Instance);
 		Commands.AddSingleton(PidOption.Instance);
 		Commands.AddSingleton(HostOption.Instance);
+		Commands.AddSingleton(PortalUrlOption.Instance);
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
@@ -492,6 +493,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(QuietOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PortalUrlOption>());
 			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
@@ -577,6 +579,7 @@ public class App
 		Commands.AddSubCommand<GroupRemoveCommand, UpdateGroupArgs, GroupCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -595,6 +598,10 @@ public class App
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 
 		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddReplacementTypeCommand, AddReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ListReplacementTypeCommand, ListReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
+		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
@@ -630,7 +637,18 @@ public class App
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
-		
+		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
+				PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
@@ -739,7 +757,12 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
-		
+		Commands.AddSubCommandWithHandler<ContentHistoryCommand, ContentHistoryCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncChangelistCommand, ContentHistorySyncChangelistCommandArgs, ContentHistoryCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncContentCommand, ContentHistorySyncContentCommandArgs, ContentHistoryCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistoryRestoreCommand, ContentHistoryRestoreCommandArgs, ContentHistoryCommand>();
+
+
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();

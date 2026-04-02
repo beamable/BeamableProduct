@@ -26,8 +26,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroserviceSourceGen.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.templates", "beamable.templates\beamable.templates.csproj", "{EFED661A-4C6F-4410-902E-3533BB49F9B4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TemplateProjects", "TemplateProjects", "{C7F833F5-4FC1-47A0-AE55-2EAACA51D519}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamService", "beamable.templates\templates\BeamService\BeamService.csproj", "{EF261D57-B886-47CD-80E0-5AB36C5AC531}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.templates\templates\BeamStorage\BeamStorage.csproj", "{C07C1A4B-0E5F-4CA8-8189-1892FACB8DB1}"
@@ -39,6 +37,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.microservice.otel.exporter", "beamable.microservice.otel.exporter\beamable.microservice.otel.exporter.csproj", "{79B6E45A-7747-4894-93F5-F70836293D83}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.common", "beamable.otel.common\beamable.otel.common.csproj", "{343D6679-0ECA-478B-851D-95D570257958}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unrealenginestubs", "..\microservice\unrealenginestubs\unrealenginestubs.csproj", "{3A7C8FE6-D91C-484A-BA0C-EA514788611F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -120,10 +120,9 @@ Global
 		{343D6679-0ECA-478B-851D-95D570257958}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{343D6679-0ECA-478B-851D-95D570257958}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{EF261D57-B886-47CD-80E0-5AB36C5AC531} = {C7F833F5-4FC1-47A0-AE55-2EAACA51D519}
-		{C07C1A4B-0E5F-4CA8-8189-1892FACB8DB1} = {C7F833F5-4FC1-47A0-AE55-2EAACA51D519}
-		{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E} = {C7F833F5-4FC1-47A0-AE55-2EAACA51D519}
+		{9934B0A1-F36E-4717-A8AF-0B397DE12955}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9934B0A1-F36E-4717-A8AF-0B397DE12955}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9934B0A1-F36E-4717-A8AF-0B397DE12955}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9934B0A1-F36E-4717-A8AF-0B397DE12955}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

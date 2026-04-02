@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [7.0.1] - 2026-04-01
+## Unreleased
+
+### Added
+- New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
+- Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
+- Semantic Types for Beamable Classes with custom serialization and deserialization
+- A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
+- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm. 
+
+### Changed
+- Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
+- Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
+
+### Fixed
+- Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
+- Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
+- Fixed issue that considered types used in ServerCallable methods on Microservices to be generated to client code.
+- Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
+- Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
+
+## [7.0.1] - 2026-04-02
 ### Fixed
 - Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
 - Fixed an issue where some MSBuild version could not properly build because of some MSBuild static methods not available in that environment, now are replaced for lower-common-denominator equivalents.

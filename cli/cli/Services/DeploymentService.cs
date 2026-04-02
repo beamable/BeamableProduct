@@ -1065,7 +1065,7 @@ public partial class DeployUtil
 				throw CliExceptions.DOCKER_NOT_RUNNING;
 			}
 
-			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, useSequentialBuild: args.UseSequentialBuild);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		remote = await remoteTask;
@@ -1521,7 +1521,7 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, bool useSequentialBuild=false)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false)
 		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -1564,6 +1564,12 @@ public partial class DeployUtil
 					);
 					
 					pendingTasks.Add(buildTask);
+
+					while (pendingTasks.Count(task => !task.IsCompleted) >= maxParallelTask)
+					{
+						await Task.WhenAny(pendingTasks);
+					}
+					
 					if (useSequentialBuild)
 					{
 						await buildTask;
