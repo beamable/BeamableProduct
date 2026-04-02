@@ -89,7 +89,7 @@ switch (templateName)
         foreach (string f in EnumerateFiles(searchPath, "package.json", ignorePaths, [templatesDir]))
         {
             Console.Write($"\r  \x1b[2m{Truncate(f, consoleWidth - 4)}\x1b[0m");
-            if (FileContains(f, "\"beamPortalExtension\": true"))
+            if (FileContains(f, "\"portalExtension\": true"))
             {
                 long mtime = new DateTimeOffset(File.GetLastWriteTimeUtc(f)).ToUnixTimeSeconds();
                 foundPairs.Add((mtime, Path.GetDirectoryName(f)!));

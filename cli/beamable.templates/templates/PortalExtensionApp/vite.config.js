@@ -24,10 +24,10 @@ export default defineConfig({
           'beamable-sdk': 'Beamable',
           'beamable-sdk/api': 'BeamableApi'
         },
-        entryFileNames: 'main.js',
+        entryFileNames: 'index.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'main.css'
+            return 'style.css'
           }
           return '[name][extname]'
         },

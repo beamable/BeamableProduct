@@ -159,8 +159,8 @@ public class PortalExtensionObserver
 
 	public ExtensionBuildData GetAppBuild(string clientHash)
 	{
-		var mainJsPath = Path.Combine(AppFilesPath, "assets", "main.js");
-		var mainCssPath = Path.Combine(AppFilesPath, "assets", "main.css");
+		var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
+		var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
 
 		if (!File.Exists(mainJsPath) || !File.Exists(mainCssPath))
 		{

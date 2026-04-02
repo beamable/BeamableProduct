@@ -54,10 +54,10 @@ public class PortalExtensionUploadInfo : JsonSerializable.ISerializable
 	public string name;
 	public string absolutePath;
 	public string checksum;            // combined build hash; for BeamoV2PortalExtensionReference.checksum
-	public string jsChecksum;          // MD5 hex of main.js; stored as version in BeamoV2ExtensionContentReference
-	public string cssChecksum;         // MD5 hex of main.css; stored as version in BeamoV2ExtensionContentReference
-	public bool uploadJs;              // true if main.js differs from remote
-	public bool uploadCss;             // true if main.css differs from remote
+	public string jsChecksum;          // MD5 hex of index.js; stored as version in BeamoV2ExtensionContentReference
+	public string cssChecksum;         // MD5 hex of style.css; stored as version in BeamoV2ExtensionContentReference
+	public bool uploadJs;              // true if index.js differs from remote
+	public bool uploadCss;             // true if style.css differs from remote
 	public string existingJsContentId;  // remote contentId to reuse when uploadJs=false
 	public string existingCssContentId; // remote contentId to reuse when uploadCss=false
 
@@ -1253,8 +1253,8 @@ public partial class DeployUtil
 			observer.InstallDeps();
 			observer.BuildExtension();
 
-			var mainJsPath  = Path.Combine(peDef.AbsolutePath, "assets", "main.js");
-			var mainCssPath = Path.Combine(peDef.AbsolutePath, "assets", "main.css");
+			var mainJsPath  = Path.Combine(peDef.AbsolutePath, "assets", "index.js");
+			var mainCssPath = Path.Combine(peDef.AbsolutePath, "assets", "style.css");
 			var jsLines     = File.ReadLines(mainJsPath).ToArray();
 			var cssLines    = File.ReadLines(mainCssPath).ToArray();
 			var localChecksum = PortalExtensionObserver.GetBuildHash(jsLines, cssLines);
@@ -1263,8 +1263,8 @@ public partial class DeployUtil
 
 			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
 			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
-			var remoteJsRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "main.js");
-			var remoteCssRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "main.css");
+			var remoteJsRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "index.js");
+			var remoteCssRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "style.css");
 
 			var uploadJs = remoteJsRef == null || remoteJsRef.version.GetOrElse("") != jsMd5Hex;
 			var uploadCss = remoteCssRef == null || remoteCssRef.version.GetOrElse("") != cssMd5Hex;
@@ -1537,8 +1537,8 @@ public partial class DeployUtil
 				var progressName = $"upload portal extension {pe.name}";
 				progressHandler?.Invoke(progressName, 0f);
 
-				var idJs = $"{pe.name}/main.js";
-				var idCss = $"{pe.name}/main.css";
+				var idJs = $"{pe.name}/index.js";
+				var idCss = $"{pe.name}/style.css";
 
 				// Build binary definitions only for files that changed
 				var binDefs = new List<BinaryDefinition>();
@@ -1546,7 +1546,7 @@ public partial class DeployUtil
 
 				if (pe.uploadJs)
 				{
-					jsBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.js"));
+					jsBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "index.js"));
 					jsMd5Bytes = MD5.HashData(jsBytes);
 					binDefs.Add(new BinaryDefinition
 					{
@@ -1558,7 +1558,7 @@ public partial class DeployUtil
 				}
 				if (pe.uploadCss)
 				{
-					cssBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "main.css"));
+					cssBytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "style.css"));
 					cssMd5Bytes = MD5.HashData(cssBytes);
 					binDefs.Add(new BinaryDefinition
 					{
@@ -1598,9 +1598,9 @@ public partial class DeployUtil
 					await PutToSignedUrl(httpClient, refCss.uploadUri, cssBytes, "text/css", cssMd5Bytes);
 				}
 
-				// Resolve final contentIds: new URIs for uploaded files, existing ones for unchanged files
-				var jsContentId = pe.uploadJs ? refJs.uri : pe.existingJsContentId;
-				var cssContentId = pe.uploadCss ? refCss.uri : pe.existingCssContentId;
+				// Resolve final contentIds: new IDs for uploaded files, existing ones for unchanged files
+				var jsContentId = pe.uploadJs ? refJs.id : pe.existingJsContentId;
+				var cssContentId = pe.uploadCss ? refCss.id : pe.existingCssContentId;
 
 				// Fill in contentIds on the matching reference before manifest is built below
 				var peRef = plan.portalExtensionReferences.First(r => r.name.GetOrElse("") == pe.name);
@@ -1612,13 +1612,13 @@ public partial class DeployUtil
 						new BeamoV2ExtensionContentReference
 						{
 							contentId = new OptionalString { Value = jsContentId, HasValue = true },
-							name = new OptionalString { Value = "main.js", HasValue = true },
+							name = new OptionalString { Value = "index.js", HasValue = true },
 							version = new OptionalString { Value = pe.jsChecksum, HasValue = true },
 						},
 						new BeamoV2ExtensionContentReference
 						{
 							contentId = new OptionalString { Value = cssContentId, HasValue = true },
-							name = new OptionalString { Value = "main.css", HasValue = true },
+							name = new OptionalString { Value = "style.css", HasValue = true },
 							version = new OptionalString { Value = pe.cssChecksum, HasValue = true },
 						},
 					}
