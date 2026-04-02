@@ -45,6 +45,7 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Microservice\VersionManagement\collector-version.json" />
+        <EmbeddedResource Include="Microservice\VersionManagement\portal-toolkit-version.json" />
     </ItemGroup>
 
     <ItemGroup>

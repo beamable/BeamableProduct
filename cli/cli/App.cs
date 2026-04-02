@@ -607,6 +607,7 @@ public class App
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		Commands.AddRootCommand<GenerateWebComponentDocsCommand, GenerateWebComponentDocsCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();

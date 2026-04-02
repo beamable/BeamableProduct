@@ -841,7 +841,7 @@ public class PortalExtensionDef
 			var json = File.ReadAllText(AbsolutePackageJsonPath);
 			var root = Newtonsoft.Json.Linq.JObject.Parse(json);
 			var depVersion = (root["devDependencies"] as Newtonsoft.Json.Linq.JObject)
-				?["@beamable/portal-toolkit"]?.ToString();
+				?[Beamable.Common.Constants.Features.PortalExtension.PORTAL_TOOLKIT_PACKAGE_NAME]?.ToString();
 
 			// If the version is a file: reference or other non-semver, resolve from the installed package
 			if (depVersion != null && !char.IsDigit(depVersion.TrimStart('^', '~')[0]))

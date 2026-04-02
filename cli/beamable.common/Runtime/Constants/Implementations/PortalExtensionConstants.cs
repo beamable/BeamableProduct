@@ -7,6 +7,7 @@ namespace Beamable.Common
 			public static partial class PortalExtension
 			{
 				public const string EXTENSION_DEPENDENCIES_PROPERTY_NAME = "microserviceDependencies";
+				public const string PORTAL_TOOLKIT_PACKAGE_NAME = "@beamable/portal-toolkit";
 			}
 		}
 	}

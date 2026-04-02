@@ -417,13 +417,41 @@ public static class ProjectContextUtil
 
 				var dir = Path.GetDirectoryName(filePath);
 
-				projects.Add(new PortalExtensionDef()
+				var def = new PortalExtensionDef()
 				{
 					Name = info.Name,
 					Properties = properties,
 					RelativePath = Path.GetRelativePath(rootFolder, dir),
 					AbsolutePath = Path.GetFullPath(dir),
-				});
+				};
+
+				var embeddedVersion = EmbeddedVersionUtil.GetPortalToolkitVersion();
+				var installedVersion = def.GetToolkitVersion();
+
+				if (installedVersion != null && installedVersion != embeddedVersion)
+				{
+					switch (properties.AutoUpdateToolkit)
+					{
+						case AutoUpdateToolkitMode.Auto:
+							var packageJson = File.ReadAllText(def.AbsolutePackageJsonPath);
+							var root = Newtonsoft.Json.Linq.JObject.Parse(packageJson);
+							if (root["devDependencies"] is Newtonsoft.Json.Linq.JObject devDeps)
+							{
+								devDeps[Beamable.Common.Constants.Features.PortalExtension.PORTAL_TOOLKIT_PACKAGE_NAME] = embeddedVersion;
+								File.WriteAllText(def.AbsolutePackageJsonPath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+							}
+							break;
+						case AutoUpdateToolkitMode.Warn:
+							Log.Warning("Portal extension {Name} has {Package}@{Installed} but the embedded version is {Embedded}. Update your package.json to match.",
+								def.Name, Beamable.Common.Constants.Features.PortalExtension.PORTAL_TOOLKIT_PACKAGE_NAME, installedVersion, embeddedVersion);
+							break;
+						case AutoUpdateToolkitMode.None:
+						default:
+							break;
+					}
+				}
+
+				projects.Add(def);
 			}
 			catch (Exception e)
 			{

@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using Beamable.Common.Content;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
@@ -5,6 +6,7 @@ using cli.Portal;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace cli.Services;
 
@@ -152,6 +154,14 @@ public class PortalExtensionMountProperties
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
 }
 
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AutoUpdateToolkitMode
+{
+	[EnumMember(Value = "none")] None,
+	[EnumMember(Value = "auto")] Auto,
+	[EnumMember(Value = "warn")] Warn,
+}
+
 [Serializable]
 public class PortalExtensionPackageProperties
 {
@@ -161,6 +171,9 @@ public class PortalExtensionPackageProperties
 
 	[JsonProperty("microserviceDependencies")]
 	public List<string> MicroserviceDependencies;
+	
+	[JsonProperty("autoUpdateToolkit")]
+	public AutoUpdateToolkitMode AutoUpdateToolkit = AutoUpdateToolkitMode.Auto;
 
 	[JsonProperty("mount")] public PortalExtensionMountProperties Mount;
 }

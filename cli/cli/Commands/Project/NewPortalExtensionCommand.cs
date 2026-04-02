@@ -1,6 +1,7 @@
 using System.CommandLine;
 using cli.Portal;
 using cli.Services;
+using cli.Services.PortalExtension;
 using cli.Utils;
 using Newtonsoft.Json.Linq;
 using Spectre.Console;
@@ -146,6 +147,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		}
 
 		File.WriteAllText(def.AbsolutePackageJsonPath, jObj.ToString(Newtonsoft.Json.Formatting.Indented));
+
+		PortalExtensionObserver.InstallDeps(def.AbsolutePath);
 	}
 
 	private static void BuildMountSiteIndex(
