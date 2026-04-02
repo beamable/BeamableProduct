@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
 
+## [5.0.1] - 2026-04-02
+### Fixed
+- No longer automatically generate clients for readonly service references
+### Changed
+- Update CLI to 7.0.1
+
 ## [5.0.0] - 2026-02-19
 ### Added
 - Unity 6.3 Support

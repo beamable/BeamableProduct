@@ -12,6 +12,18 @@ namespace Beamable.Server.Editor.Usam
 {
 	public partial class UsamService
 	{
+		public bool ShouldServiceAutoGenerateClient(BeamManifestServiceEntry entry)
+		{
+			if (entry.IsReadonlyPackage) return false;
+			
+			if (_config.AutoGenerateClientOnBuilds.TryGetValue(entry.beamoId, out var value))
+			{
+				return value;
+			}
+
+			return true;
+		}
+		
 		public bool ShouldServiceAutoGenerateClient(string beamoId)
 		{
 			if (_config.AutoGenerateClientOnBuilds.TryGetValue(beamoId, out var value))
@@ -138,7 +150,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise GenerateClient()
 		{
 			var idArr = latestManifest.services
-			                          .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
+			                          .Where(ShouldServiceAutoGenerateClient)
 			                          .Select(x => x.beamoId)
 			                          .ToArray();
 			await GenerateClient(new ProjectGenerateClientArgs
@@ -169,7 +181,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise GenerateClientFromOAPI()
 		{
 			var idArr = latestManifest.services
-			                          .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
+			                          .Where(ShouldServiceAutoGenerateClient)
 			                          .Select(x => x.beamoId)
 			                          .ToArray();
 			var args = new ProjectGenerateClientOapiArgs
