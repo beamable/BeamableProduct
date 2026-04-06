@@ -49,35 +49,37 @@ public enum DeployMode
 	Replace
 }
 
+public class PortalExtensionFileUploadInfo : JsonSerializable.ISerializable
+{
+	public string fileName;          // e.g. "index.js", "style.css", "metadata.json"
+	public string contentType;       // MIME type used when uploading
+	public string checksum;          // MD5 hex; stored as version in BeamoV2ExtensionContentReference
+	public bool needsUpload;         // true if file differs from remote
+	public string existingContentId; // remote contentId to reuse when needsUpload=false
+
+	public void Serialize(JsonSerializable.IStreamSerializer s)
+	{
+		s.Serialize(nameof(fileName), ref fileName);
+		s.Serialize(nameof(contentType), ref contentType);
+		s.Serialize(nameof(checksum), ref checksum);
+		s.Serialize(nameof(needsUpload), ref needsUpload);
+		s.Serialize(nameof(existingContentId), ref existingContentId);
+	}
+}
+
 public class PortalExtensionUploadInfo : JsonSerializable.ISerializable
 {
 	public string name;
 	public string absolutePath;
-	public string checksum;            // combined build hash; for BeamoV2PortalExtensionReference.checksum
-	public string jsChecksum;          // MD5 hex of index.js; stored as version in BeamoV2ExtensionContentReference
-	public string cssChecksum;         // MD5 hex of style.css; stored as version in BeamoV2ExtensionContentReference
-	public string metadataChecksum;    // MD5 hex of metadata.json; stored as version in BeamoV2ExtensionContentReference
-	public bool uploadJs;              // true if index.js differs from remote
-	public bool uploadCss;             // true if style.css differs from remote
-	public bool uploadMetadata;        // true if metadata.json differs from remote
-	public string existingJsContentId;  // remote contentId to reuse when uploadJs=false
-	public string existingCssContentId; // remote contentId to reuse when uploadCss=false
-	public string existingMetadataContentId; // remote contentId to reuse when uploadMetadata=false
+	public string checksum; // combined build hash; for BeamoV2PortalExtensionReference.checksum
+	public List<PortalExtensionFileUploadInfo> files = new List<PortalExtensionFileUploadInfo>();
 
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.Serialize(nameof(name), ref name);
 		s.Serialize(nameof(absolutePath), ref absolutePath);
 		s.Serialize(nameof(checksum), ref checksum);
-		s.Serialize(nameof(jsChecksum), ref jsChecksum);
-		s.Serialize(nameof(cssChecksum), ref cssChecksum);
-		s.Serialize(nameof(metadataChecksum), ref metadataChecksum);
-		s.Serialize(nameof(uploadJs), ref uploadJs);
-		s.Serialize(nameof(uploadCss), ref uploadCss);
-		s.Serialize(nameof(uploadMetadata), ref uploadMetadata);
-		s.Serialize(nameof(existingJsContentId), ref existingJsContentId);
-		s.Serialize(nameof(existingCssContentId), ref existingCssContentId);
-		s.Serialize(nameof(existingMetadataContentId), ref existingMetadataContentId);
+		s.SerializeList(nameof(files), ref files);
 	}
 }
 
@@ -1259,27 +1261,18 @@ public partial class DeployUtil
 			observer.InstallDeps();
 			observer.BuildExtension();
 
-			var mainJsPath = Path.Combine(peDef.AbsolutePath, "assets", "index.js");
-			var mainCssPath = Path.Combine(peDef.AbsolutePath, "assets", "style.css");
-			var mainMetadataPath = Path.Combine(peDef.AbsolutePath, "assets", "metadata.json");
-			var jsLines = File.ReadLines(mainJsPath).ToArray();
-			var cssLines = File.ReadLines(mainCssPath).ToArray();
-			var metadataLines = File.ReadLines(mainMetadataPath).ToArray();
-			var localChecksum = PortalExtensionObserver.GetBuildHash(jsLines, cssLines, metadataLines);
-			var jsMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainJsPath))).Replace("-", "");
-			var cssMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainCssPath))).Replace("-", "");
-			var metadataMd5Hex = BitConverter.ToString(MD5.HashData(File.ReadAllBytes(mainMetadataPath))).Replace("-", "");
+			var assetFileNames = new[] { "index.js", "style.css", "metadata.json" };
+			var assetContentTypes = new[] { "application/javascript", "text/css", "application/json" };
+			var assetFilePaths = assetFileNames.Select(n => Path.Combine(peDef.AbsolutePath, "assets", n)).ToArray();
+			var assetFileLines = assetFilePaths.Select(p => File.ReadLines(p).ToArray()).ToArray();
+			var assetMd5Hexes = assetFilePaths.Select(p => BitConverter.ToString(MD5.HashData(File.ReadAllBytes(p))).Replace("-", "")).ToArray();
+			var localChecksum = PortalExtensionObserver.GetBuildHash(assetFileLines[0], assetFileLines[1], assetFileLines[2]);
 
 			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
 			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
-			var remoteJsRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "index.js");
-			var remoteCssRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "style.css");
-			var remoteMetadataRef = remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == "metadata.json");
-
-			var uploadJs = remoteJsRef == null || remoteJsRef.version.GetOrElse("") != jsMd5Hex;
-			var uploadCss = remoteCssRef == null || remoteCssRef.version.GetOrElse("") != cssMd5Hex;
-			var uploadMetadata = remoteMetadataRef == null || remoteMetadataRef.version.GetOrElse("") != metadataMd5Hex;
-			var needsUpload = uploadJs || uploadCss || uploadMetadata;
+			var remoteFileRefs = assetFileNames.Select(name => remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == name)).ToArray();
+			var uploadFlags = remoteFileRefs.Select((r, i) => r == null || r.version.GetOrElse("") != assetMd5Hexes[i]).ToArray();
+			var needsUpload = uploadFlags.Any(u => u);
 
 			if (needsUpload)
 			{
@@ -1297,15 +1290,14 @@ public partial class DeployUtil
 					name = peDef.Name,
 					absolutePath = peDef.AbsolutePath,
 					checksum = localChecksum,
-					jsChecksum = jsMd5Hex,
-					cssChecksum = cssMd5Hex,
-					metadataChecksum = metadataMd5Hex,
-					uploadJs = uploadJs,
-					uploadCss = uploadCss,
-					uploadMetadata = uploadMetadata,
-					existingJsContentId = remoteJsRef?.contentId.GetOrElse(""),
-					existingCssContentId = remoteCssRef?.contentId.GetOrElse(""),
-					existingMetadataContentId = remoteMetadataRef?.contentId.GetOrElse(""),
+					files = assetFileNames.Select((fileName, i) => new PortalExtensionFileUploadInfo
+					{
+						fileName = fileName,
+						contentType = assetContentTypes[i],
+						checksum = assetMd5Hexes[i],
+						needsUpload = uploadFlags[i],
+						existingContentId = remoteFileRefs[i]?.contentId.GetOrElse(""),
+					}).ToList(),
 				});
 
 				portalExtensionReferences.Add(new BeamoV2PortalExtensionReference
@@ -1551,100 +1543,45 @@ public partial class DeployUtil
 				var progressName = $"upload portal extension {pe.name}";
 				progressHandler?.Invoke(progressName, 0f);
 
-				var idJs = $"{pe.name}/index.js";
-				var idCss = $"{pe.name}/style.css";
-				var idMetadata = $"{pe.name}/metadata.json";
-
 				// Build binary definitions only for files that changed
 				var binDefs = new List<BinaryDefinition>();
-
-				if (pe.uploadJs)
+				foreach (var file in pe.files.Where(f => f.needsUpload))
 				{
-					var filePath = Path.Combine(pe.absolutePath, "assets", "index.js");
-					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idJs, "application/javascript"));
-				}
-				if (pe.uploadCss)
-				{
-					var filePath = Path.Combine(pe.absolutePath, "assets", "style.css");
-					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idCss, "text/css"));
-				}
-				if (pe.uploadMetadata)
-				{
-					var filePath = Path.Combine(pe.absolutePath, "assets", "metadata.json");
-					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, idMetadata, "application/json"));
+					var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
+					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType));
 				}
 
-				// 1/3: get signed upload URLs for files that need uploading
-				BinaryReference refJs = null, refCss = null, refMetadata=null;
+				// Get signed upload URLs for files that need uploading
+				var uploadedRefs = new Dictionary<string, BinaryReference>();
 				if (binDefs.Count > 0)
 				{
-					SaveBinaryResponse binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
-					if (pe.uploadJs)
+					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
+					foreach (var file in pe.files.Where(f => f.needsUpload))
 					{
-						refJs = binaryResp.binary.First(b => b.id == idJs);
-					}
-					if (pe.uploadCss)
-					{
-						refCss = binaryResp.binary.First(b => b.id == idCss);
-					}
-					if (pe.uploadMetadata)
-					{
-						refMetadata = binaryResp.binary.First(b => b.id == idMetadata);
+						uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
 					}
 				}
 				progressHandler?.Invoke(progressName, 0.33f);
 
 				// Upload files that changed
-				if (pe.uploadJs)
+				foreach (var file in pe.files.Where(f => f.needsUpload))
 				{
-					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "index.js"));
-					await PutToSignedUrl(httpClient, refJs.uploadUri, bytes, "application/javascript", MD5.HashData(bytes));
+					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
+					await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
 				}
 				progressHandler?.Invoke(progressName, 0.66f);
-
-				if (pe.uploadCss)
-				{
-					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "style.css"));
-					await PutToSignedUrl(httpClient, refCss.uploadUri, bytes, "text/css", MD5.HashData(bytes));
-				}
-
-				if (pe.uploadMetadata)
-				{
-					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", "metadata.json"));
-					await PutToSignedUrl(httpClient, refMetadata.uploadUri, bytes, "application/json", MD5.HashData(bytes));
-				}
-
-				// Resolve final contentIds: new IDs for uploaded files, existing ones for unchanged files
-				var jsContentId = pe.uploadJs ? refJs.id : pe.existingJsContentId;
-				var cssContentId = pe.uploadCss ? refCss.id : pe.existingCssContentId;
-				var metadataContentId = pe.uploadMetadata ? refMetadata.id : pe.existingMetadataContentId;
 
 				// Fill in contentIds on the matching reference before manifest is built below
 				var peRef = plan.portalExtensionReferences.First(r => r.name.GetOrElse("") == pe.name);
 				peRef.files = new OptionalArrayOfBeamoV2ExtensionContentReference
 				{
 					HasValue = true,
-					Value = new[]
+					Value = pe.files.Select(f => new BeamoV2ExtensionContentReference
 					{
-						new BeamoV2ExtensionContentReference
-						{
-							contentId = new OptionalString { Value = jsContentId, HasValue = true },
-							name = new OptionalString { Value = "index.js", HasValue = true },
-							version = new OptionalString { Value = pe.jsChecksum, HasValue = true },
-						},
-						new BeamoV2ExtensionContentReference
-						{
-							contentId = new OptionalString { Value = cssContentId, HasValue = true },
-							name = new OptionalString { Value = "style.css", HasValue = true },
-							version = new OptionalString { Value = pe.cssChecksum, HasValue = true },
-						},
-						new BeamoV2ExtensionContentReference
-						{
-							contentId = new OptionalString { Value = metadataContentId, HasValue = true },
-							name = new OptionalString { Value = "metadata.json", HasValue = true },
-							version = new OptionalString { Value = pe.metadataChecksum, HasValue = true },
-						},
-					}
+						contentId = new OptionalString { Value = f.needsUpload ? uploadedRefs[f.fileName].id : f.existingContentId, HasValue = true },
+						name = new OptionalString { Value = f.fileName, HasValue = true },
+						version = new OptionalString { Value = f.checksum, HasValue = true },
+					}).ToArray()
 				};
 
 				progressHandler?.Invoke(progressName, 1f);
