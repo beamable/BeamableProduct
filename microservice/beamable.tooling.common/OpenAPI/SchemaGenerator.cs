@@ -44,7 +44,7 @@ public class SchemaGenerator
 		public bool IsBeamSemanticType() => Type.GetInterfaces()
 			.Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBeamSemanticType<>));
 		
-		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType() || IsFromServerCallable()) && !IsFromBeamGenerateSchema();
+		public bool ShouldSkipClientCodeGeneration() => (IsFromFederation() || IsFromCallableWithNoClientGen() || IsBeamSemanticType()) && !IsFromBeamGenerateSchema();
 		
 		public bool IsPrimitive()
 		{
