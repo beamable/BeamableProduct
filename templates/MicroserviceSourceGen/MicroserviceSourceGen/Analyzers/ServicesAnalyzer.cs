@@ -345,12 +345,34 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				methodSymbol.Locations.FirstOrDefault(), 
 				context.Compilation));
 
-			bool IsServerCallable(AttributeData data)
+			bool IsCallableWithSkipClientGen(AttributeData data)
 			{
-				return data.AttributeClass is { Name: nameof(ServerCallableAttribute) };
+				// Check for ConstructorArguments first
+				foreach (TypedConstant arg in data.ConstructorArguments)
+				{
+					if (arg.Type?.Name == nameof(CallableFlags) &&
+					    arg.Value is int flagValue && 
+					    (flagValue & (int)CallableFlags.SkipGenerateClientFiles) != 0)
+					{
+						return true;
+					}
+				}
+
+				// Now try to get from NamedArguments
+				foreach (KeyValuePair<string, TypedConstant> namedArg in data.NamedArguments)
+				{
+					if (namedArg.Value.Type?.Name == nameof(CallableFlags) &&
+					    namedArg.Value.Value is int flagValue &&
+					    (flagValue & (int)CallableFlags.SkipGenerateClientFiles) != 0)
+					{
+						return true;
+					}
+				}
+
+				return false;
 			}
 			
-			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute) || methodSymbol.GetAttributes().Any(IsServerCallable))
+			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute) || methodSymbol.GetAttributes().Any(IsCallableWithSkipClientGen))
 			{
 				return;
 			}
