@@ -81,9 +81,9 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 				// args.ConfigService.FlushLocalOverrides();
 			}
 
-			res.host = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_HOST);
-			res.cid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_CID);
-			res.pid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_PID);
+			res.host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST);
+			res.cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID);
+			res.pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID);
 		}
 		
 		

@@ -68,10 +68,7 @@ public class GenerateClientFileCommand
 		{
 			"Tag", new ReplacementTypeInfo
 			{
-				ReferenceId = "Tag",
-				EngineReplacementType = "FBeamTag",
-				EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
-				EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+				ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
 			}
 		},
 		{
@@ -360,18 +357,13 @@ public class GenerateClientFileCommand
 
 
 				var replacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(BaseReplacementTypeInfos);
-				
+
 				foreach (ReplacementTypeInfo replacementTypeInfo in unrealProjectData.ReplacementTypeInfos)
 				{
 					replacementTypes.TryAdd(replacementTypeInfo.ReferenceId, replacementTypeInfo);
 				}
-				
-				var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
-				{
-					Documents = docs,
-					OrderedSchemas = orderedSchemas,
-					ReplacementTypes = replacementTypes,
-				});
+
+				var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas, ReplacementTypes = replacementTypes, });
 
 				Log.Verbose($"completed in-memory generation of clients for project {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 
@@ -413,7 +405,7 @@ public class GenerateClientFileCommand
 			""Name"": ""{customReplacementTypesFolderName}"",
 			""Type"": ""Runtime"",
 			""LoadingPhase"": ""Default""
-		}},
+		}}
 	],
 	""Plugins"": [
 		{{
@@ -451,6 +443,8 @@ public class {unrealProjectData.CoreProjectName} : ModuleRules
 
 				""Json"",
 				""JsonUtilities"",
+
+				""CustomReplacementTypes""
 			}});
 
 
@@ -516,6 +510,49 @@ public class {unrealProjectData.BlueprintNodesProjectName} : ModuleRules
 	public static void AddMicroserviceClientsBp(ModuleRules Rules)
 	{{
 		Rules.PublicDependencyModuleNames.AddRange(new[] {{ ""{unrealProjectData.BlueprintNodesProjectName}"" }});
+	}}
+	
+}}"
+						});
+					}
+
+					// Generate the ".Build.cs" file for the custom replacement types module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName =
+								$"Source/{customReplacementTypesFolderName}/{customReplacementTypesFolderName}.Build.cs",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+using UnrealBuildTool;
+
+public class {customReplacementTypesFolderName} : ModuleRules
+{{
+	public {customReplacementTypesFolderName}(ReadOnlyTargetRules Target) : base(Target)
+	{{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""Core"",
+				""BeamableCore"",
+				""BeamableCoreRuntime"",
+				""GameplayTags"",
+
+				""Json"",
+				""JsonUtilities"",
+			}});
+
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""CoreUObject"",
+				""Engine"",
+				""Slate"",
+				""SlateCore"",					
+			}});
 	}}
 	
 }}"
@@ -621,7 +658,57 @@ void F{unrealProjectData.BlueprintNodesProjectName}Module::ShutdownModule()
 IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealProjectData.BlueprintNodesProjectName})"
 						});
 					}
+
+					// Generate the IModuleInterface Header and Cpp files for the Custom Replacement Types Module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"Source/{customReplacementTypesFolderName}/Public/{customReplacementTypesFolderName}.h",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include ""CoreMinimal.h""
+#include ""Modules/ModuleManager.h""
+
+class F{customReplacementTypesFolderName}Module : public IModuleInterface
+{{
+public:
+
+	/** IModuleInterface implementation */
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+}};
+"
+						});
+
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"Source/{customReplacementTypesFolderName}/Private/{customReplacementTypesFolderName}.cpp",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include ""{customReplacementTypesFolderName}.h""
+
+#define LOCTEXT_NAMESPACE ""F{customReplacementTypesFolderName}Module""
+
+void F{customReplacementTypesFolderName}Module::StartupModule()
+{{
+	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+}}
+
+void F{customReplacementTypesFolderName}Module::ShutdownModule()
+{{
+	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+	// we call this function before unloading the module.
+}}
+
+#undef LOCTEXT_NAMESPACE
+	
+IMPLEMENT_MODULE(F{customReplacementTypesFolderName}Module, {customReplacementTypesFolderName})"
+						});
+					}
 				}
+
 
 				Log.Verbose($"completed in-memory generation of client plugin for project {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 
@@ -723,7 +810,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				{
 					Directory.CreateDirectory(replacementTypeFolder.FullName);
 				}
-				
+
 				Log.Verbose($"completed writing auto-generated files to disk {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}], total ms {sw.ElapsedMilliseconds}");
 
 				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
