@@ -559,15 +559,7 @@ public class BeamoServiceDefinition
 
 	public bool IsInRemote;
 
-	/// <summary>
-	/// Absolute path to the root directory of this service on the local filesystem.
-	/// Set for any protocol type that has local source. Used to determine <see cref="IsLocal"/>.
-	/// For dotnet protocols this equals <see cref="AbsoluteProjectDirectory"/>;
-	/// for portal extensions it is the directory containing package.json.
-	/// </summary>
-	public string WorkingDirectory;
-
-	public bool IsLocal => !string.IsNullOrEmpty(WorkingDirectory);
+	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
 	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
 
