@@ -65,7 +65,7 @@ public class ProjectLogsService
 
 				if (evt.ServiceType == portalExtensionServiceType)
 				{
-					if (!IsMatchingPortalExtensionService(evt.Service, expectedServiceName))
+ 					if (!BeamoLocalSystem.IsMatchingPortalExtensionService(evt.Service, expectedServiceName))
 						continue;
 				}
 				else
@@ -109,13 +109,7 @@ public class ProjectLogsService
 		}
 	}
 
-	static bool IsMatchingPortalExtensionService(string service, string expectedServiceName)
-	{
-		if (service == expectedServiceName)
-			return true;
-		var match = BeamoLocalSystem.PORTAL_EXTENSION_SERVICE_REGEX.Match(service ?? string.Empty);
-		return match.Success && match.Groups["serviceName"].Value == expectedServiceName;
-	}
+ 	
 
 	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog, CancellationTokenSource cts)
 	{
