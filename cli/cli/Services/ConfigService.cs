@@ -719,7 +719,7 @@ public class ConfigService
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option and, if we can't, get it from the loaded config file.		
-		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString2(option.OptionName, defaultValue);
+		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString(option.OptionName, defaultValue);
 		return !string.IsNullOrEmpty(value);
 	}
 
@@ -733,17 +733,13 @@ public class ConfigService
 		return "";
 	} 
 
-	// [CanBeNull]
-	// public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
-	// 	GetConfig<string>(key, defaultValue);
-	//
-	public string GetConfigString2(string key, [CanBeNull] string defaultValue = null) =>
-		GetConfig2<string>(key, defaultValue);
+	public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
+		GetConfig<string>(key, defaultValue);
 
 	[CanBeNull]
-	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig2<string>(key, defaultValue, true);
+	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig<string>(key, defaultValue, true);
 
-	public T GetConfig2<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
+	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
 	{
 		if (!ignoreOverride)
 		{
@@ -764,24 +760,6 @@ public class ConfigService
 		TryGetConfig(key, defaultValue, config, out var currentValue);
 		return currentValue; 
 	}
-	// public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
-	// {
-	// 	var value = _configLocalOverrides?.SelectToken(key);
-	// 	if (value != null)
-	// 	{
-	// 		if (!ignoreOverride)
-	// 		{
-	// 			return value switch
-	// 			{
-	// 				JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
-	// 				JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
-	// 				_ => value.Value<T>()
-	// 			};
-	// 		}
-	// 	}
-	//
-	// 	return GetConfig(key, defaultValue, _config);
-	// }
 
 	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, JObject config)
 	{
@@ -980,8 +958,6 @@ public class ConfigService
 		}, isOverride);
 		return nextValue;
 	}
-
-	// public T SetConfig<T>(string path, [CanBeNull] T newValue, bool isOverride = false) => SetConfig(path, newValue, isOverride ? _configLocalOverrides : _config);
 
 	public static T SetConfig<T>(string path, [CanBeNull] T newValue, JObject target)
 	{
@@ -1439,7 +1415,7 @@ public class ConfigService
 
 	public OtelConfig LoadOtelConfigFromFile()
 	{
-		var config = GetConfig2(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
+		var config = GetConfig(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
 		if (string.IsNullOrEmpty(config.BeamCliTelemetryLogLevel))
 		{
 			config.BeamCliTelemetryLogLevel = nameof(LogLevel.Warning);
@@ -1458,7 +1434,7 @@ public class ConfigService
 		WriteConfig(CFG_JSON_FIELD_OBJ_OTEL, config);
 	}
 
-	public bool ExistsOtelConfig() => GetConfig2<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
+	public bool ExistsOtelConfig() => GetConfig<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
 
 	#endregion
 
@@ -1471,7 +1447,7 @@ public class ConfigService
 
 	public PortalExtensionConfig LoadPortalExtensionConfig()
 	{
-		var config = GetConfig2(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, new PortalExtensionConfig());
+		var config = GetConfig(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, new PortalExtensionConfig());
 		if (config.fileExtensionsToObserve == null)
 		{
 			config.fileExtensionsToObserve = new List<string>();
@@ -1484,11 +1460,11 @@ public class ConfigService
 
 	#region Helpers - Microservice Parsing Settings
 
-	public List<string> LoadExtraPathsFromFile() => GetConfig2(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+	public List<string> LoadExtraPathsFromFile() => GetConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 
 	public List<string> LoadPathsToIgnoreFromFile()
 	{
-		var paths = GetConfig2(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var paths = GetConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		return paths
 			.Select(GetRelativeToExecutionPath)
 			.Select(Path.GetFullPath)
@@ -1497,21 +1473,21 @@ public class ConfigService
 
 	public void SaveExtraPathsToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
 		WriteConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public void SavePathsToIgnoreToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
 		WriteConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public string GetProjectRootPath()
 	{
-		var relativePath = GetConfig2<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
+		var relativePath = GetConfig<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
 		var fullPath = Path.Combine(BeamableWorkspace, relativePath);
 		return new DirectoryInfo(fullPath).FullName;
 	}
@@ -1582,7 +1558,10 @@ public class ConfigService
 
 	#region Helpers - Microservice Codegen Settings
 
-	public EngineProjectData GetLinkedEngineProjects() => GetConfig2(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
+	public EngineProjectData GetLinkedEngineProjects()
+	{
+		return GetConfig(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
+	}
 
 	public void SetLinkedEngineProjects(EngineProjectData data)
 	{
@@ -1846,6 +1825,24 @@ public class PortalExtensionConfig
 	public List<string> fileExtensionsToObserve;
 }
 
+/// <summary>
+/// JsonConverter that ensures null arrays are deserialized as empty arrays
+/// </summary>
+public class EmptyArrayConverter<T> : JsonConverter<T[]>
+{
+	public override T[] ReadJson(JsonReader reader, Type objectType, T[] existingValue, bool hasExistingValue, JsonSerializer serializer)
+	{
+		if (reader.TokenType == JsonToken.Null || reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Undefined)
+			return Array.Empty<T>();
+		return serializer.Deserialize<T[]>(reader) ?? Array.Empty<T>();
+	}
+
+	public override void WriteJson(JsonWriter writer, T[] value, JsonSerializer serializer)
+	{
+		serializer.Serialize(writer, value);
+	}
+}
+
 [Serializable]
 public class EngineProjectData
 {
@@ -1930,7 +1927,35 @@ public class EngineProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
-		public ReplacementTypeInfo[] ReplacementTypeInfos;
+		/// <summary>
+		/// Custom type mappings that replace default generated types with hand-written types in the Unreal SDK code generation
+		/// </summary>
+		[JsonConverter(typeof(EmptyArrayConverter<ReplacementTypeInfo>))]
+		public ReplacementTypeInfo[] ReplacementTypeInfos = Array.Empty<ReplacementTypeInfo>();
+
+		public Unreal()
+		{
+			CoreProjectName = "";
+			BlueprintNodesProjectName = "";
+			Path = "";
+			SourceFilesPath = "";
+			MsCoreHeaderPath = "";
+			MsCoreCppPath = "";
+			MsBlueprintNodesHeaderPath = "";
+			MsBlueprintNodesCppPath = "";
+			BeamableBackendGenerationPassFile = "";
+			ReplacementTypeInfos = Array.Empty<ReplacementTypeInfo>();
+		}
+
+		/// <summary>
+		/// Called after deserialization to ensure null arrays become empty arrays.
+		/// Works with Newtonsoft.Json (via OnDeserialized) and System.Text.Json (via null-coalescing).
+		/// </summary>
+		[System.Runtime.Serialization.OnDeserialized]
+		internal void OnDeserializedMethod(System.Runtime.Serialization.StreamingContext context)
+		{
+			ReplacementTypeInfos ??= Array.Empty<ReplacementTypeInfo>();
+		}
 
 		public string GetProjectName()
 		{

@@ -111,7 +111,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				return false;
 			}
 			// If the config file does not exist, we should be handling this workspace as a new one and require the full-login process to happen.
-			else if (args.ConfigService.GetConfigString2("cid") == null || args.ConfigService.GetConfigString2("pid") == null)
+			else if (args.ConfigService.GetConfigString("cid") == null || args.ConfigService.GetConfigString("pid") == null)
 			{
 				return false;
 			}
@@ -289,9 +289,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		return new InitCommandResult()
 		{
-			host = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_HOST),
-			cid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_CID),
-			pid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_PID)
+			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),
+			cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID),
+			pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID)
 		};
 	}
 
