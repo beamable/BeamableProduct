@@ -43,62 +43,68 @@ namespace Beamable.Editor.Library
 			var cardsPerRow = Mathf.FloorToInt(width / widthPerCard);
 			widthPerCard = Mathf.Min(maxWidth, width / cardsPerRow);
 			var heightPerCard = Mathf.Clamp(widthPerCard, minHeight, maxHeight);
-			var rows = Mathf.CeilToInt(count / (float)cardsPerRow);
-
+			var rows = Mathf.Max(Mathf.CeilToInt(count / (float)cardsPerRow),0);
 			
 			var xOffset = (width * .5f) - (widthPerCard * .5f * cardsPerRow); // center the cards
 			var index = 0;
 			var cardRects = new List<Rect>();
-
-			{ // layout the rects
-				for (var r = 0; r < rows && index < library.lightbeams.Count; r++)
+			
+			// Add guard for minimun screen width
+			if (rows > 0)
+			{
 				{
-					EditorGUILayout.BeginHorizontal();
-					for (var c = 0; c < cardsPerRow && index < library.lightbeams.Count; c++, index++)
+					// layout the rects
+					for (var r = 0; r < rows && index < library.lightbeams.Count; r++)
 					{
+						EditorGUILayout.BeginHorizontal();
+						for (var c = 0; c < cardsPerRow && index < library.lightbeams.Count; c++, index++)
+						{
 
-						var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
-						                                    GUILayout.Width(widthPerCard),
-						                                    GUILayout.Height(heightPerCard),
-						                                    GUILayout.ExpandWidth(false));
+							var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
+							                                    GUILayout.Width(widthPerCard),
+							                                    GUILayout.Height(heightPerCard),
+							                                    GUILayout.ExpandWidth(false));
 
-						int padding = 8;
-						var padded = new Rect(rect.x + padding + xOffset, rect.y + padding, rect.width - padding * 2,
-						                      rect.height - padding * 2);
-						cardRects.Add(padded);
+							int padding = 8;
+							var padded = new Rect(rect.x + padding + xOffset, rect.y + padding,
+							                      rect.width - padding * 2,
+							                      rect.height - padding * 2);
+							cardRects.Add(padded);
+						}
+
+						EditorGUILayout.EndHorizontal();
 					}
-
-					EditorGUILayout.EndHorizontal();
 				}
-			}
 
-			{ // draw drop shadow
-				for (var i = 0; i < library.lightbeams.Count; i++)
 				{
-					var rect = cardRects[i];
-					
-					var shadowOffset = 24;
-					var shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
-					GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
-					
-					shadowOffset = 6;
-					shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
-					GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
+					// draw drop shadow
+					for (var i = 0; i < library.lightbeams.Count; i++)
+					{
+						var rect = cardRects[i];
+
+						var shadowOffset = 24;
+						var shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width,
+						                          rect.height);
+						GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
+
+						shadowOffset = 6;
+						shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
+						GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
+					}
 				}
-			}
 
-			{ // draw the actual card content
-				for (var i = 0; i < library.lightbeams.Count; i++)
 				{
-					var rect = cardRects[i];
-					DrawSample(rect, library.lightbeams[i]);
+					// draw the actual card content
+					for (var i = 0; i < library.lightbeams.Count; i++)
+					{
+						var rect = cardRects[i];
+						DrawSample(rect, library.lightbeams[i]);
+					}
 				}
 			}
 
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndScrollView();
-			
-			
 		}
 
 		private Material iconMaterial;
