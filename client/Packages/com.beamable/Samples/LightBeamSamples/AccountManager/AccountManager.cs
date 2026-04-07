@@ -30,7 +30,7 @@ public class AccountManager : MonoBehaviour
 
 			builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
 			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
-			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
+			builder.AddLightComponent<AccountDetailsPage, PlayerAccount>(config.accountDetailsTemplate);
 		});
 		//
 		// var ctx = await this.InitLightBeams(root, loadingBlocker, builder =>
