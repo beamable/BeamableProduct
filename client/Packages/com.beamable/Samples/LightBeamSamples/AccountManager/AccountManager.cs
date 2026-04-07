@@ -4,6 +4,7 @@ using Beamable.Avatars;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AccountManager : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class AccountManager : MonoBehaviour
 
 	[Header("Asset references")]
 	public AccountExampleConfig config;
+
+	public Button InfoButton;
 
 	async void Start()
 	{
@@ -53,5 +56,7 @@ public class AccountManager : MonoBehaviour
 		// LightBeamUtilExtensions.Hints["pageType"] = nameof(RecoverEmailPage);
 		// LightBeamUtilExtensions.Hints["d_email"] = "\"dingus\"";
 		await lightBeam.Scope.Start<HomePage>();
+		
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam/"));
 	}
 }
