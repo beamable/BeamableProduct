@@ -25,7 +25,7 @@
   },
   "samples": [
     {
-      "displayName": "Account Management",
+      "displayName": "Player Account Management",
       "description": "Contains a simple user interface demonstrating how to use the Beamable Accounts SDK.",
       "path": "SAMPLES_PATH/LightBeamSamples/AccountManager",
       "subText": "accounts",
