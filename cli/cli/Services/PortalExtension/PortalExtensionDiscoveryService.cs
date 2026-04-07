@@ -52,6 +52,7 @@ public class PortalExtensionDiscoveryService : Microservice
 		};
 	}
 
+	//TODO we can delete this before launch of PE
 	[ClientCallable]
 	public ExtensionBuildMetaData RequestMetaData()
 	{
