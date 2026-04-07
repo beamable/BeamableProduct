@@ -15,7 +15,7 @@ namespace Beamable.Editor.Library
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "Beam Library",
+				Title = "Beam Samples",
 				FocusOnShow = false,
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				RequireLoggedUser = true,
@@ -25,7 +25,7 @@ namespace Beamable.Editor.Library
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Beam Library",
+			"Beam Samples",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
