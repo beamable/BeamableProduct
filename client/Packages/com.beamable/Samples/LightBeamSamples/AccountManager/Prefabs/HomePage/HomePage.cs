@@ -44,16 +44,21 @@ public class HomePage : MonoBehaviour, ILightComponent
 		{
 			await ctx.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(null);
 		});
-
+		
+		
+		
 		// set up the account detail page
 		await currentAccountDisplay.OnInstantiated(ctx, currentAccount);
 		currentAccountDisplay.changeAccountButton.HandleClicked(async () =>
 		{
+			/*
 			var details = await ctx.Instantiate<AccountDetailsBehaviour, PlayerAccount>(playerDetailsContainer, currentAccount);
 			details.cancelButton.HandleClicked(() =>
 			{
 				playerDetailsContainer.Clear();
-			});
+			});*/
+			
+			await ctx.GotoPage<AccountDetailsPage, PlayerAccount>(currentAccount);
 		});
 
 		// create all the prefab instances for the other accounts

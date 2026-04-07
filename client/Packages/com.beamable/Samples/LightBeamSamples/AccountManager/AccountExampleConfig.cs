@@ -11,5 +11,5 @@ public class AccountExampleConfig : ScriptableObject
 
 	public AvatarDisplayBehaviour avatarDisplayTemplate;
 	public AccountDisplayBehaviour accountDisplayTemplate;
-	public AccountDetailsBehaviour accountDetailsTemplate;
+	public AccountDetailsPage accountDetailsTemplate;
 }
