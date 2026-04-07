@@ -63,6 +63,12 @@ namespace Beamable.Runtime.LightBeams
 		public Promise<T> GotoPage<T>() where T : MonoBehaviour, ILightComponent
 			=> Scope.GotoPage<T>();
 
+		public static void OpenDocumentationPage(string page)
+		{
+			var baseDocsPath = "https://help.beamable.com/Unity-Latest/";
+			Application.OpenURL(baseDocsPath + page);
+		}
+
 		public void OpenPortalRealm(string relativePath,
 		                       Dictionary<string, string> queryArgs = null,
 		                       bool includeAuthIfAvailable = true)
