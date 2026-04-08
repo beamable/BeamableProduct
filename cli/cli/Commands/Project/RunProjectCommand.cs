@@ -239,6 +239,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 								}
 
 								Log.Debug("Parent process exited; terminating portal extension process.");
+								// TODO: Find a way to stop the portal extension without killing the CLI Server 
 								Environment.Exit(0);
 							}, cToken.Token);
 						}
@@ -522,6 +523,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		if (args.requireProcessId > 0)
 		{
 			innerArgs += $" --require-process-id {args.requireProcessId}";
+		}
+
+		if (args.forceRestart)
+		{
+			innerArgs += $" --force {args.forceRestart}";
 		}
 
 		// The command will be wrapped for a detached process tree (cmd.exe on Windows, nohup on Linux/macOS) by StartAsync.
