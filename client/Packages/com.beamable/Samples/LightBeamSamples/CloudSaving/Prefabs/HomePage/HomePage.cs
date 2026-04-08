@@ -49,7 +49,10 @@ public class HomePage : MonoBehaviour, ILightComponent
 
 	private void OnDestroy()
 	{
-		_cloudSavingService.SetConflictResolverOverride(null);
+		if (_cloudSavingService != null)
+		{
+			_cloudSavingService.SetConflictResolverOverride(null);
+		}
 	}
 
 	private void GoToJsonPage()

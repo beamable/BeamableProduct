@@ -11,11 +11,11 @@ public class AccountManager : MonoBehaviour
 	[Header("Scene references")]
 	public RectTransform root;
 	public CanvasGroup loadingBlocker;
-
+	public Button InfoButton;
+	
 	[Header("Asset references")]
 	public AccountExampleConfig config;
-
-	public Button InfoButton;
+	
 
 	async void Start()
 	{
@@ -57,6 +57,6 @@ public class AccountManager : MonoBehaviour
 		// LightBeamUtilExtensions.Hints["d_email"] = "\"dingus\"";
 		await lightBeam.Scope.Start<HomePage>();
 		
-		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam/"));
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam-account/"));
 	}
 }
