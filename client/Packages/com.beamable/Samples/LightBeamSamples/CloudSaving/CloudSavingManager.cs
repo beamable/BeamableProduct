@@ -5,6 +5,7 @@ using Beamable.Player.CloudSaving;
 using Beamable.Runtime.LightBeams;
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CloudSavingManager : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class CloudSavingManager : MonoBehaviour
 	public RectTransform root;
 
 	public CanvasGroup loadingBlocker;
+	public Button InfoButton;
 
 	[Header("Asset references")]
 	public CloudSavingExampleConfig config;
@@ -31,5 +33,7 @@ public class CloudSavingManager : MonoBehaviour
 		});
 		
 		await lightBeam.Scope.Start<HomePage>();
+		
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam-cloud/"));
 	}
 }

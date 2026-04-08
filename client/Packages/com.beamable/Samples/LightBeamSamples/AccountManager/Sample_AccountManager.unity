@@ -171,8 +171,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   root: {fileID: 1412789052}
   loadingBlocker: {fileID: 2307906666623612511}
-  config: {fileID: 11400000, guid: 9524dae84fe3847659378e99fa61f1b3, type: 2}
   InfoButton: {fileID: 313397326}
+  config: {fileID: 11400000, guid: 9524dae84fe3847659378e99fa61f1b3, type: 2}
 --- !u!1 &313397322
 GameObject:
   m_ObjectHideFlags: 0
@@ -1021,7 +1021,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LOADING...
+  m_text: Loading...
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: e8dc0ebc54e472548a685f67d318d23f, type: 2}
   m_sharedMaterial: {fileID: -8116913167181615731, guid: e8dc0ebc54e472548a685f67d318d23f,
@@ -1385,14 +1385,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: e669acd2805965449b35eb0938af6d2e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1507,7 +1507,7 @@ PrefabInstance:
     - target: {fileID: 2728377460735814433, guid: dc585c46f9ce94b11b37f6a7584425aa,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: -1360.7963
+      value: -1106.5052
       objectReference: {fileID: 0}
     - target: {fileID: 3576935581317921891, guid: dc585c46f9ce94b11b37f6a7584425aa,
         type: 3}
