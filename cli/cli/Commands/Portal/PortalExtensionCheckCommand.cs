@@ -1,9 +1,6 @@
 using Beamable.Common;
 using Beamable.Server;
 using cli.Utils;
-using System.Runtime.InteropServices;
-using cli.Services;
-using CliWrap;
 
 namespace cli.Portal;
 
@@ -45,31 +42,22 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 
 	public static bool CheckPortalExtensionsDependencies()
 	{
-		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
-		var nodeCommand = isWindows ? "cmd.exe" : "node";
-		var viteCommand = isWindows ? "cmd.exe" : "vite";
-		var npxCommand = isWindows ? "cmd.exe" : "npx";
-		var nodeArgs = isWindows ? "/c node -v" : "-v";
-		var viteArgs = isWindows ? "/c vite --version" : "--version";
-		var npxArgs = isWindows ? "/c npx --yes vite --version" : "--yes vite --version";
-
 		var nodeCheck = CheckDependency(
-			fileName: nodeCommand,
-			args: nodeArgs,
+			fileName: "node",
+			args: "-v",
 			minVersion: new PackageVersion(22, 0, 0),
 			hint: NodeVersionHint);
 
 		var viteCheck = CheckDependency(
-			fileName: viteCommand,
-			args: viteArgs,
+			fileName: "vite",
+			args: "--version",
 			hint: ViteHint);
 
 		// Try get Vite Check from npx
 		if (!viteCheck)
 		{
 			Log.Information("Trying to get vite through npx installation");
-			viteCheck = CheckDependency(npxCommand, npxArgs, hint: ViteNpxHint);
+			viteCheck = CheckDependency("npx", "--yes vite --version", hint: ViteNpxHint);
 			if (viteCheck)
 			{
 				Log.Information("Found Vite through npx installation");
@@ -85,7 +73,7 @@ public class PortalExtensionCheckCommand : AppCommand<PortalExtensionCheckComman
 	{
 		try
 		{
-			var result = StartProcessUtil.Run(fileName, args);
+			var result = StartProcessUtil.Run(fileName, args, useShell: true).WaitForResult();
 			if (result.exit != 0)
 			{
 				Log.Error($"{fileName} not found or returned non-zero exit code.\n{result.stderr}".Trim(), hint);

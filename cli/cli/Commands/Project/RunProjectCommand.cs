@@ -2,11 +2,11 @@ using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
 using cli.Dotnet;
 using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using microservice.Extensions;
@@ -69,7 +69,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 {
 	[GeneratedRegex(": error CS(\\d\\d\\d\\d):")]
 	public static partial Regex ErrorLike();
-	
+
 	public RunProjectCommand()
 		: base("run", "Run a project")
 	{
@@ -82,13 +82,22 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (b) throw new CliException("The --watch flag is no longer supported due to underlying .NET issues");
 		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
-		
-		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
-		AddOption<bool>(new Option<bool>("--detach", "With this flag, the service will run the background after it has reached basic startup"), (args, b) => args.detach = b);
-		AddOption<bool>(new Option<bool>("--no-client-gen", "We compile services that need compiling before running. This will disable the client-code generation part of the compilation"), (args, b) => args.disableClientCodeGen = b);
+
+		AddOption<bool>(
+			new Option<bool>("--force",
+				"With this flag, we restart any running services. Without it, we skip running services"),
+			(args, b) => args.forceRestart = b);
+		AddOption<bool>(
+			new Option<bool>("--detach",
+				"With this flag, the service will run the background after it has reached basic startup"),
+			(args, b) => args.detach = b);
+		AddOption<bool>(
+			new Option<bool>("--no-client-gen",
+				"We compile services that need compiling before running. This will disable the client-code generation part of the compilation"),
+			(args, b) => args.disableClientCodeGen = b);
 
 		AddOption(
 			new Option<int>("--require-process-id",
@@ -97,24 +106,23 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	}
 
 	const float MIN_PROGRESS = .05f;
-	void SendUpdate(string serviceId, string message=null, float progress=0)
+
+	void SendUpdate(string serviceId, string message = null, float progress = 0)
 	{
 		// remap the progress between MIN and 1.
 		progress = MIN_PROGRESS + (progress * (1 - MIN_PROGRESS));
 		this.SendResults<DefaultStreamResultChannel, RunProjectResultStream>(new RunProjectResultStream
 		{
-			serviceId = serviceId,
-			message = message,
-			progressRatio = progress
+			serviceId = serviceId, message = message, progressRatio = progress
 		});
 	}
-	
+
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: false, 
+			includeStorage: false,
 			ref args.services);
 
 		if (args.services.Count > 1)
@@ -122,46 +130,48 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			Log.Warning("You are starting multiple services " +
 			            "Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
 		}
-		
+
 		// Emit some progress messages to let any listeners know we are doing work...
 		foreach (var service in args.services)
 		{
 			SendUpdate(service, "discovering...", -MIN_PROGRESS * .9f);
 		}
-		
+
 		// First, we need to find out which services are currently running.
 		if (args.forceRestart)
 		{
 			Log.Trace("starting discovery");
-			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), "project run command", kill: true, TimeSpan.FromMilliseconds(100),
+			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services),
+				"project run command", kill: true, TimeSpan.FromMilliseconds(100),
 				evt =>
 				{
 					// do nothing?
 				});
 			Log.Trace("finished discovery");
 		}
-		
-		
+
+
 		foreach (var service in args.services)
 			SendUpdate(service, "resolving...", -MIN_PROGRESS * .7f);
 
 		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
-		Dictionary<string, BeamoServiceDefinition> serviceDefinitions = beamoLocalManifest.ServiceDefinitions.ToDictionary(def => def.BeamoId, def => def);
-		
+		Dictionary<string, BeamoServiceDefinition> serviceDefinitions =
+			beamoLocalManifest.ServiceDefinitions.ToDictionary(def => def.BeamoId, def => def);
+
 		// Build out the list of services we'll actually want to start.
 		var serviceTable = new Dictionary<string, BeamoServiceDefinition>();
 		foreach (var serviceName in args.services)
 		{
 			// If the service is not defined locally (as in, we can't run it locally for whatever reason)
-			
-			if (!serviceDefinitions.TryGetValue(serviceName, out var serviceDefinition ))
+
+			if (!serviceDefinitions.TryGetValue(serviceName, out var serviceDefinition))
 			{
 				throw new CliException($"No service definition available locally for service=[{serviceName}]");
 			}
 
 			serviceTable.Add(serviceName, serviceDefinition);
 		}
-		
+
 		foreach (var service in args.services)
 			SendUpdate(service, "starting...", 0);
 
@@ -173,21 +183,24 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		{
 			var name = serviceName;
 
-			var buildFlags = args.disableClientCodeGen ? ProjectService.BuildFlags.DisableClientCodeGen : ProjectService.BuildFlags.None;
+			var buildFlags = args.disableClientCodeGen
+				? ProjectService.BuildFlags.DisableClientCodeGen
+				: ProjectService.BuildFlags.None;
 			var runFlags = args.detach ? ProjectService.RunFlags.Detach : ProjectService.RunFlags.None;
 
 			switch (serviceDef.Protocol)
 			{
 				case BeamoProtocolType.HttpMicroservice:
-					runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags, OnLogReceived, (errorReport, exitCode) =>
-					{
-						var error = new RunProjectBuildErrorStream { serviceId = name, report = errorReport };
-						failedTasks[name] = error;
-						this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(error);
-					}, (progress, message) =>
-					{
-						SendUpdate(name, message, progress);
-					}));
+					runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags,
+						OnLogReceived, (errorReport, exitCode) =>
+						{
+							var error = new RunProjectBuildErrorStream { serviceId = name, report = errorReport };
+							failedTasks[name] = error;
+							this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(error);
+						}, (progress, message) =>
+						{
+							SendUpdate(name, message, progress);
+						}));
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:
 					runTasks.Add(args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
@@ -221,7 +234,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 								}
 								catch
 								{
-									Log.Warning($"Could not find Process with ID {args.requireProcessId}, treating as exited process and closing terminating portal extension.");
+									Log.Warning(
+										$"Could not find Process with ID {args.requireProcessId}, treating as exited process and closing terminating portal extension.");
 								}
 
 								Log.Debug("Parent process exited; terminating portal extension process.");
@@ -234,11 +248,12 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
 							token: cToken.Token));
 					}
+
 					break;
 				}
 			}
 		}
-		
+
 		await Task.WhenAll(runTasks);
 
 		if (failedTasks.Count > 0)
@@ -292,6 +307,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					currentProgress[0] = kvp.Value;
 					onProgress?.Invoke(kvp.Value, kvp.Key);
 				}
+
 				serviceLogProgressTable.Remove(kvp.Key);
 			}
 
@@ -316,6 +332,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						currentProgress[0] = kvp.Value;
 						onProgress?.Invoke(kvp.Value, kvp.Key);
 					}
+
 					nonServiceLogProgressTable.Remove(kvp.Key);
 				}
 
@@ -331,10 +348,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	private static void HandleErrorLine(string line, Action<ProjectRunLogData> onLog)
 	{
 		if (line == null) return;
-		onLog?.Invoke(new ProjectRunLogData
-		{
-			rawLogMessage = line, jsonData = null, forcedLogLevel = LogLevel.Error
-		});
+		onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null, forcedLogLevel = LogLevel.Error });
 	}
 
 	public static async Task RunService(
@@ -345,7 +359,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		ProjectService.RunFlags runFlags,
 		Action<ProjectRunLogData> onLog = null,
 		Action<ProjectErrorReport, int> onFailure = null,
-		Action<float, string> onProgress=null)
+		Action<float, string> onProgress = null)
 	{
 		var tokenSource =
 			CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
@@ -391,95 +405,65 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			Directory.CreateDirectory(errorPathDir);
 
 			var exe = args.AppContext.DotnetPath;
-			var commandStr = $"run --project {projectPath.EnquotePath()} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
+			var commandStr =
+				$"run --project {projectPath.EnquotePath()} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
 
 			if (buildFlags.HasFlag(ProjectService.BuildFlags.DisableClientCodeGen))
 			{
 				commandStr += " -p:GenerateClientCode=false";
 			}
-			
-			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
-			{
-				// it varies based on the os, but in general, when we are detaching, then
-				//  when THIS process exits, we don't want the child-process to exit. 
-				//  The C# ProcessSDK makes that sort of difficult, but we can invoke programs
-				//  that themselves create separate process trees. Or, at least I think we can.
-				
-				// in windows, this doesn't actually really _work_. It is put onto a background process, 
-				//  and the main window may close for the parent, but the process is kept open
-				//  if you look in task-manager. 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				{
-					commandStr = "/C " + $"{exe.EnquotePath()} {commandStr}".EnquotePath('(', ')');
-					exe = "cmd.exe";
-				}
-				else
-				{
-					commandStr = $"sh -c \"{exe} {commandStr}\" &";
-					exe = "nohup";	
-				}
-			}
-			
+
+			var isDetach = runFlags.HasFlag(ProjectService.RunFlags.Detach);
+
 			Log.Debug($"Running {exe} {commandStr}");
-			var startInfo = new ProcessStartInfo(exe, commandStr)
+
+			var envVars = new Dictionary<string, string>
 			{
-				Environment =
-				{
-					["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
-					["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
-					["LOG_PATH"] = logPath,
-					["LOG_LEVEL"] = "verbose",
-					["LOG_TYPE"] = "structured+file",
-					["WATCH_TOKEN"] = "false",
-					[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] =
-						args.AppContext.DotnetPath
-				},
-				WindowStyle = ProcessWindowStyle.Normal,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardError = true,
-				RedirectStandardOutput = true,
+				["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
+				["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
+				["LOG_PATH"] = logPath,
+				["LOG_LEVEL"] = "verbose",
+				["LOG_TYPE"] = "structured+file",
+				["WATCH_TOKEN"] = "false",
+				[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath
 			};
 			if (args.requireProcessId > 0)
 			{
-				startInfo.Environment.Add(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, args.requireProcessId.ToString());
+				envVars[Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID] =
+					args.requireProcessId.ToString();
 			}
 
-			var proc = Process.Start(startInfo);
-			var cts = new TaskCompletionSource();
-			
-			proc.Exited += (sender, eventArgs) =>
-			{
-				cts.TrySetResult();
-			};
-			proc.ErrorDataReceived += (sender, eventArgs) =>
-			HandleErrorLine(eventArgs.Data, onLog);
-		proc.OutputDataReceived += (sender, eventArgs) =>
-			HandleOutputLine(eventArgs.Data, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable, onProgress, onLog);
-		proc.EnableRaisingEvents = true;
-		proc.BeginErrorReadLine();
-		proc.BeginOutputReadLine();
+			var handle = StartProcessUtil.Run(
+				exe, commandStr,
+				isDetach: isDetach,
+				environmentVariables: envVars,
+				onStdout: line =>
+					HandleOutputLine(line, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
+						onProgress, onLog),
+				onStderr: line =>
+					HandleErrorLine(line, onLog));
 
-		var shouldAutoKill = false;
-			
-		if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
-		{
-			// wait for the progress to hit 1.
-			while (!proc.HasExited && Math.Abs(currentProgress[0] - 1) > .001f && !args.Lifecycle.IsCancelled)
-			{
-				await Task.Delay(10);
-			}
+			var proc = handle.Process;
+			var shouldAutoKill = false;
 
-			if (args.Lifecycle.IsCancelled)
+			if (isDetach)
 			{
-				shouldAutoKill = true;
+				// wait for the progress to hit 1.
+				while (!proc.HasExited && Math.Abs(currentProgress[0] - 1) > .001f && !args.Lifecycle.IsCancelled)
+				{
+					await Task.Delay(10);
+				}
+
+				if (args.Lifecycle.IsCancelled)
+				{
+					shouldAutoKill = true;
+				}
 			}
-		}
 			else
 			{
 				try
 				{
-					await cts.Task.WaitAsync(args.Lifecycle.CancellationToken);
+					await handle.ExitedTask.WaitAsync(args.Lifecycle.CancellationToken);
 				}
 				catch (TaskCanceledException)
 				{
@@ -500,7 +484,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					// does not matter.
 					Log.Trace($"failed to kill microservice type=[{ex.GetType().Name}] message=[{ex.Message}]");
 				}
-			} else if (proc.HasExited && proc.ExitCode != 0)
+			}
+			else if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);
 				onFailure?.Invoke(report, proc.ExitCode);
@@ -527,44 +512,23 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		var processPath = Environment.ProcessPath ?? string.Empty;
 		var isDotnetHost = processPath.EndsWith("dotnet", StringComparison.OrdinalIgnoreCase)
 		                   || processPath.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase);
-		var fullInnerCommand = isDotnetHost
-			? $"{args.AppContext.DotnetPath.EnquotePath()} beam project run --ids {serviceName}"
-			: $"{processPath.EnquotePath()} project run --ids {serviceName}";
+
+		var innerExe = isDotnetHost ? args.AppContext.DotnetPath : processPath;
+		var innerArgs = isDotnetHost
+			? $"beam project run --ids {serviceName}"
+			: $"project run --ids {serviceName}";
 
 		// Forward the parent-process watchdog to the inner beam process.
 		if (args.requireProcessId > 0)
 		{
-			fullInnerCommand += $" --require-process-id {args.requireProcessId}";
+			innerArgs += $" --require-process-id {args.requireProcessId}";
 		}
 
-		string exe;
-		string commandStr;
+		// The command will be wrapped for a detached process tree (cmd.exe on Windows, nohup on Linux/macOS) by StartAsync.
+		Log.Debug($"Running detached portal extension: {innerExe} {innerArgs}");
 
-		// Get the correct command for each OS
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-		{
-			commandStr = "/C " + fullInnerCommand.EnquotePath('(', ')');
-			exe = "cmd.exe";
-		}
-		else
-		{
-			commandStr = $"sh -c \"{fullInnerCommand}\" &";
-			exe = "nohup";
-		}
-
-		Log.Debug($"Running detached portal extension: {exe} {commandStr}");
-
-		var startInfo = new ProcessStartInfo(exe, commandStr)
-		{
-			UseShellExecute = false,
-			CreateNoWindow = true,
-			RedirectStandardOutput = true,
-			RedirectStandardError = true,
-		};
-
-		var proc = Process.Start(startInfo)!;
 		var readyOrExited = new TaskCompletionSource();
-		
+
 		var currentProgress = new float[] { 0f };
 		var serviceLogProgressTable = new Dictionary<string, float>
 		{
@@ -572,24 +536,23 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		};
 		var nonServiceLogProgressTable = new Dictionary<string, float>();
 
-		proc.EnableRaisingEvents = true;
-		proc.Exited += (_, _) => readyOrExited.TrySetResult();
+		var handle = StartProcessUtil.Run(
+			innerExe, innerArgs,
+			isDetach: true,
+			onStdout: line =>
+				HandleOutputLine(line, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
+					(progress, message) =>
+					{
+						onProgress?.Invoke(progress, message);
+						if (Math.Abs(progress - 1f) < .001f)
+							readyOrExited.TrySetResult();
+					},
+					onLog),
+			onStderr: line =>
+				HandleErrorLine(line, onLog));
 
-		proc.ErrorDataReceived += (_, e) =>
-			HandleErrorLine(e.Data, onLog);
-
-		proc.OutputDataReceived += (_, e) =>
-			HandleOutputLine(e.Data, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
-				(progress, message) =>
-				{
-					onProgress?.Invoke(progress, message);
-					if (Math.Abs(progress - 1f) < .001f)
-						readyOrExited.TrySetResult();
-				},
-				onLog);
-
-		proc.BeginErrorReadLine();
-		proc.BeginOutputReadLine();
+		// Also complete when the process exits (even if progress never reached 1).
+		_ = handle.ExitedTask.ContinueWith(_ => readyOrExited.TrySetResult());
 
 		var shouldAutoKill = false;
 		try
@@ -606,7 +569,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			try
 			{
 				Log.Debug("Killing detached portal extension process.");
-				proc.Kill(true);
+				handle.Process.Kill(true);
 			}
 			catch (Exception ex)
 			{
@@ -617,17 +580,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 	public class StructuredMicroserviceLog
 	{
-		[JsonProperty("__t")]
-		public string timeStamp;
+		[JsonProperty("__t")] public string timeStamp;
 
-		[JsonProperty("__m")]
-		public string message;
+		[JsonProperty("__m")] public string message;
 
-		[JsonProperty("__l")]
-		public string logLevel;
+		[JsonProperty("__l")] public string logLevel;
 
-		[JsonProperty("__x")]
-		public string exception;
+		[JsonProperty("__x")] public string exception;
 	}
 
 	public class ProjectRunLogData
@@ -638,19 +597,19 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		public bool IsJson => jsonData != null;
 
 		public LogLevel? forcedLogLevel;
-		
+
 		public LogLevel JsonLogLevel
 		{
 			get
 			{
-				if (!IsJson) 
+				if (!IsJson)
 					return LogLevel.Critical;
 				if (!jsonData.TryGetValue("__l", out var logLevel))
 					return LogLevel.Critical;
 
 				if (!LogUtil.TryParseSystemLogLevel(logLevel.ToString(), out var level))
 					return LogLevel.Critical;
-					
+
 				return level;
 			}
 		}
