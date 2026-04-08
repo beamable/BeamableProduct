@@ -60,7 +60,16 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		{
 			foreach (var service in status.services)
 			{
-				if (!serviceIds.Contains(service.service)) continue;
+				bool isPortalExtensionNameMatch = false;
+				if (service.serviceType == BeamoLocalSystem.GetServiceType(BeamoProtocolType.PortalExtension))
+				{
+					foreach (string serviceId in serviceIds)
+					{
+						isPortalExtensionNameMatch |= BeamoLocalSystem.IsMatchingPortalExtensionService(service.service, serviceId);
+					}
+				}
+				
+				if (!serviceIds.Contains(service.service) && !isPortalExtensionNameMatch) continue;
 				
 				foreach (var routable in service.availableRoutes)
 				{

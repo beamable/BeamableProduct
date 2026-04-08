@@ -281,7 +281,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			timeout = default;
 		}
 
-		Log.Debug($"running status-check with timeout=[{timeout.Milliseconds}]");
+		Log.Debug($"running status-check with timeout=[{timeout.TotalMilliseconds}]");
 
 		var result = new CheckStatusServiceResult { cid = args.AppContext.Cid, pid = args.AppContext.Pid, };
 
