@@ -3,7 +3,6 @@ using Beamable.Server.Api.Notifications;
 using cli.Portal;
 using cli.Utils;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
@@ -135,17 +134,6 @@ public class PortalExtensionObserver
 
 	public virtual void BuildExtension()
 	{
-		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-		StartProcessResult result = isWindows
-			? StartProcessUtil.Run("cmd.exe", "/c npm run beam-build", workingDirectoryPath: AppFilesPath)
-			: StartProcessUtil.Run("npm", "run beam-build", workingDirectoryPath: AppFilesPath);
-
-		if (result.exit != 0)
-		{
-			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
-				.Trim());
-		}
-
 		var metadataContent = new ExtensionBuildMetaData
 		{
 			Name = ExtensionMetaData.Name,
@@ -157,16 +145,18 @@ public class PortalExtensionObserver
 		File.WriteAllText(metadataPath, JsonConvert.SerializeObject(metadataContent, Formatting.Indented));
 
 
+		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 
-
+		if (result.exit != 0)
+		{
+			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
+				.Trim());
+		}
 	}
 
 	public void InstallDeps()
 	{
-		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-		StartProcessResult result = isWindows
-			? StartProcessUtil.Run("cmd.exe", "/c npm install", workingDirectoryPath: AppFilesPath):
-			StartProcessUtil.Run("npm", "install", workingDirectoryPath: AppFilesPath);
+		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
