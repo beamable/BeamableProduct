@@ -131,6 +131,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
 - New Validation for Cron Schedule Definition
 
+## [2.4.6] - 2026-04-10
+
+### Changed
+
+- Upgrade CLI to 4.3.7
+
+### Fixed 
+
+- Backported possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
+
 ## [2.4.5] - 2026-03-17
 
 ### Changed
