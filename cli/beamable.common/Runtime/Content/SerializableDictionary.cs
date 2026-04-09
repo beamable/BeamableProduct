@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Content;
 using Beamable.Serialization;
 using System;
@@ -16,7 +17,7 @@ namespace Beamable.Common.Content
 	[Serializable] public class OptionalMapOfLong : Optional<MapOfLong> { }
 	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
 	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }
-	[Serializable] public class MapOfString : SerializableDictionaryStringToString
+	[CliContractType, Serializable] public class MapOfString : SerializableDictionaryStringToString
 	{
 		public MapOfString()
 		{
