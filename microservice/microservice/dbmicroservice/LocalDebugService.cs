@@ -82,8 +82,7 @@ namespace Beamable.Server {
 				this.Response.ContentType = "text/event-stream";
 
 				using var writer = this.HttpContext.OpenResponseText();
-				var id = _serviceName;
-				var channel = _debugLogSink.GetMessageSubscription(id);
+				var (id, channel) = _debugLogSink.CreateUniqueListenerSubscription(_serviceName);
 				try
 				{
 					while (!HttpContext.CancellationToken.IsCancellationRequested)

@@ -57,6 +57,40 @@ public class DebugLogProcessor : IAsyncLogProcessor
 		}
 	}
 	
+	/// <summary>
+	/// Creates a unique listener subscription for the given service name and try to get early channels by the <paramref name="baseName"/>.
+	/// </summary>
+	public (string uniqueKey, Channel<string> channel) CreateUniqueListenerSubscription(string baseName, int capacity = 1024)
+	{
+		lock (subscriberToLogs)
+		{
+			var uniqueKey = $"{baseName}_{Guid.NewGuid()}";
+			var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(capacity)
+			{
+				AllowSynchronousContinuations = false,
+				FullMode = BoundedChannelFullMode.DropOldest,
+				SingleReader = true,
+				SingleWriter = true
+			});
+
+			// Try to get early channels values to the new unique one
+			if (subscriberToLogs.TryRemove(baseName, out var seedChannel))
+			{
+				while (seedChannel.Reader.TryRead(out var msg))
+				{
+					channel.Writer.TryWrite(msg);
+				}
+			}
+
+			if (!subscriberToLogs.TryAdd(uniqueKey, channel))
+			{
+				throw new Exception("Failed to add listener log subscription");
+			}
+
+			return (uniqueKey, channel);
+		}
+	}
+
 	public ValueTask DisposeAsync()
 	{
 		return new ValueTask();

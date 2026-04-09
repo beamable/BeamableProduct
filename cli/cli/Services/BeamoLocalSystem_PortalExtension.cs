@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 
 namespace cli.Services;
 
+ using ServiceLogs = Beamable.Common.Constants.Features.Services.Logs;
+
 public partial class BeamoLocalSystem
 {
 	public static string GetBeamIdAsPortalExtension(string beamoId) => $"{beamoId}_portalExtension";
@@ -30,7 +32,8 @@ public partial class BeamoLocalSystem
 	/// Runs a portal extension locally
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, CancellationToken token = default)
+	/// <param name="onProgress">Optional callback invoked with (progressRatio, message) as the service starts. A ratio of 1 means the service is ready for traffic.</param>
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -38,10 +41,10 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, onProgress, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Reset so each run gets a fresh sink.
 		_portalExtensionSink = null;
@@ -106,7 +109,7 @@ public partial class BeamoLocalSystem
 						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
 					};
 					
-					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, microserviceName);
+					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, microserviceName, onProgress);
 				})
 				.RunForever();
 		}
@@ -135,7 +138,7 @@ public partial class BeamoLocalSystem
 	///     keeps using it.</item>
 	/// </list>
 	/// </summary>
-	private DebugLogProcessor AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, string microserviceName)
+	private DebugLogProcessor AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, string microserviceName, Action<float, string> onProgress = null)
 	{
 		builder.ClearProviders();
 		if (_portalExtensionSink == null)
@@ -145,13 +148,13 @@ public partial class BeamoLocalSystem
 			// construction are buffered rather than dropped.
 			_portalExtensionSink = debugLogProcessor;
 			_portalExtensionSink.GetMessageSubscription(microserviceName);
-			builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext));
+			builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, onProgress));
 			// Return the same sink; ctx.debugLogProcessor stays as-is.
 			return debugLogProcessor;
 		}
 
 		// Second ConfigureLogging call: point the new builder at the stable first sink.
-		builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext));
+		builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, onProgress));
 		// Drain any messages that landed in the temporary second sink into the channel
 		// of the stable first sink, then discard the temporary subscription.
 		var tmpEarly = debugLogProcessor.GetMessageSubscription(microserviceName);
@@ -173,6 +176,14 @@ public partial class BeamoLocalSystem
 		_computedMicroserviceName = $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
 
 		return _computedMicroserviceName;
+	}
+	
+	public static bool IsMatchingPortalExtensionService(string service, string expectedServiceName)
+	{
+		if (service == expectedServiceName)
+			return true;
+		var match = PORTAL_EXTENSION_SERVICE_REGEX.Match(service ?? string.Empty);
+		return match.Success && match.Groups["serviceName"].Value == expectedServiceName;
 	}
 
 }
@@ -217,14 +228,16 @@ public class ExtensionAppLogProvider : ILoggerProvider
 {
 	private readonly DebugLogProcessor _sink;
 	private readonly IAppContext _appContext;
+	private readonly Action<float, string> _onProgress;
 
-	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext)
+	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, Action<float, string> onProgress = null)
 	{
 		_sink = sink;
 		_appContext = appContext;
+		_onProgress = onProgress;
 	}
 
-	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext);
+	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _onProgress);
 
 	public void Dispose() { }
 }
@@ -233,17 +246,26 @@ public class ExtensionLogger : ILogger
 {
 	private readonly DebugLogProcessor _debugLogProcessor;
 	private readonly IAppContext _appContext;
+	private readonly Action<float, string> _onProgress;
 
-	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext)
+	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, Action<float, string> onProgress = null)
 	{
 		_debugLogProcessor = debugLogProcessor;
 		_appContext = appContext;
+		_onProgress = onProgress;
 	}
 	
 	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
 	{
 		string message = formatter(state, exception);
 		string parsedMessage = ParseMicroserviceLogMessages(message);
+
+		// Signal readiness before any early-return so the callback always fires even
+		// if the log level would otherwise suppress this message.
+		if (message.StartsWith(ServiceLogs.READY_FOR_TRAFFIC_PREFIX))
+		{
+			_onProgress?.Invoke(1f, parsedMessage);
+		}
 
 		if (string.IsNullOrEmpty(parsedMessage))
 		{
@@ -288,17 +310,16 @@ public class ExtensionLogger : ILogger
 	{
 		switch (logMessage)
 		{
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs
-				.READY_FOR_TRAFFIC_PREFIX):
-				return "Portal extension started successfully and is now running.";
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.STARTING_PREFIX):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.SCANNING_CLIENT_PREFIX):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.STORAGE_READY):
-			case var _ when logMessage.StartsWith(Beamable.Common.Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX):
+			case var _ when logMessage.StartsWith(ServiceLogs.READY_FOR_TRAFFIC_PREFIX):
+				return ServiceLogs.PORTAL_EXTENSION_RUNNING;
+			case var _ when logMessage.StartsWith(ServiceLogs.STARTING_PREFIX):
+			case var _ when logMessage.StartsWith(ServiceLogs.SCANNING_CLIENT_PREFIX):
+			case var _ when logMessage.StartsWith(ServiceLogs.REGISTERING_STANDARD_SERVICES):
+			case var _ when logMessage.StartsWith(ServiceLogs.REGISTERING_CUSTOM_SERVICES):
+			case var _ when logMessage.StartsWith(ServiceLogs.SERVICE_PROVIDER_INITIALIZED):
+			case var _ when logMessage.StartsWith(ServiceLogs.EVENT_PROVIDER_INITIALIZED):
+			case var _ when logMessage.StartsWith(ServiceLogs.STORAGE_READY):
+			case var _ when logMessage.StartsWith(ServiceLogs.GENERATED_CLIENT_PREFIX):
 				return string.Empty;
 			default:
 				return logMessage;
