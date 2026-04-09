@@ -1616,37 +1616,37 @@ public partial class DeployUtil
 			var contentApi = provider.GetService<IContentApi>();
 			using var httpClient = new HttpClient();
 
-			foreach (var pe in plan.portalExtensionsToUpload)
+			await Task.WhenAll(plan.portalExtensionsToUpload.Select(async pe =>
 			{
 				var progressName = $"upload portal extension {pe.name}";
 				progressHandler?.Invoke(progressName, 0f);
 
-				// Build binary definitions only for files that changed
-				var binDefs = new List<BinaryDefinition>();
-				foreach (var file in pe.files.Where(f => f.needsUpload))
+				// Build binary definitions in parallel for files that changed
+				var filesToUpload = pe.files.Where(f => f.needsUpload).ToList();
+				var binDefs = await Task.WhenAll(filesToUpload.Select(async file =>
 				{
 					var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
-					binDefs.Add(await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType));
-				}
+					return await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType);
+				}));
 
 				// Get signed upload URLs for files that need uploading
 				var uploadedRefs = new Dictionary<string, BinaryReference>();
-				if (binDefs.Count > 0)
+				if (binDefs.Length > 0)
 				{
-					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs.ToArray() });
-					foreach (var file in pe.files.Where(f => f.needsUpload))
+					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs });
+					foreach (var file in filesToUpload)
 					{
 						uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
 					}
 				}
 				progressHandler?.Invoke(progressName, 0.33f);
 
-				// Upload files that changed
-				foreach (var file in pe.files.Where(f => f.needsUpload))
+				// Upload files in parallel
+				await Task.WhenAll(filesToUpload.Select(async file =>
 				{
 					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
 					await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
-				}
+				}));
 				progressHandler?.Invoke(progressName, 0.66f);
 
 				// Fill in contentIds on the matching reference before manifest is built below
@@ -1659,7 +1659,7 @@ public partial class DeployUtil
 				}).ToList();
 
 				progressHandler?.Invoke(progressName, 1f);
-			}
+			}));
 		}
 		// ── End Portal Extension binary uploads ───────────────────────────────────
 
@@ -1718,6 +1718,8 @@ public partial class DeployUtil
 
 	private static async Task PutToSignedUrl(HttpClient httpClient, string url, byte[] data, string contentType, byte[] md5Bytes)
 	{
+		//TODO This can be done with more granular updates over how many bytes were uploaded
+		// INstead of using ByteArrayContent we can use ObservableByteArrayContent
 		var content = new ByteArrayContent(data);
 		content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 		content.Headers.ContentMD5 = md5Bytes;
