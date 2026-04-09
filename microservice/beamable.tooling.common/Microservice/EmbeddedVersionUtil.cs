@@ -26,7 +26,7 @@ public static class EmbeddedVersionUtil
     [Serializable]
     public class ToolkitVersion
     {
-        [JsonPropertyName("portal-toolkit-version")]
+        [JsonPropertyName("portalToolkitVersion")]
         public string portalToolkitVersion;
     }
 
