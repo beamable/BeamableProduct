@@ -20,5 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<BeamServiceFederationChange> addedFederations;
         public System.Collections.Generic.List<BeamServiceFederationChange> removedFederations;
         public System.Collections.Generic.List<BeamServiceImageIdChange> serviceImageIdChanges;
+        public System.Collections.Generic.List<string> addedPortalExtensions;
+        public System.Collections.Generic.List<string> changedPortalExtensions;
+        public System.Collections.Generic.List<string> removedPortalExtensions;
     }
 }
