@@ -134,17 +134,6 @@ public class PortalExtensionObserver
 
 	public virtual void BuildExtension()
 	{
-		var metadataContent = new ExtensionBuildMetaData
-		{
-			Name = ExtensionMetaData.Name,
-			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-			Properties = ExtensionMetaData.Properties
-		};
-
-		var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
-		File.WriteAllText(metadataPath, JsonConvert.SerializeObject(metadataContent, Formatting.Indented));
-
-
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 
 		if (result.exit != 0)
@@ -152,6 +141,35 @@ public class PortalExtensionObserver
 			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+
+		try
+		{
+			var metadataContent = new ExtensionBuildMetaData
+			{
+				Name = ExtensionMetaData.Name,
+				ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
+				Properties = ExtensionMetaData.Properties
+			};
+
+			var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
+
+			string metaDataDir = Path.GetDirectoryName(metadataPath);
+
+			if (!Directory.Exists(metaDataDir))
+			{
+				Directory.CreateDirectory(metadataPath);
+			}
+
+			var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
+
+			File.WriteAllText(metadataPath, metadataContentJson);
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed to generate portal extension metadata file. \nCheck exception: [\n{e.Message}] \nStackTrace: [{e.StackTrace}]"
+				.Trim());
+		}
+
 	}
 
 	public void InstallDeps()
