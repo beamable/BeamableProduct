@@ -77,10 +77,9 @@ import type { SupportedFederationsResponse } from '@/__generated__/schemas/Suppo
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2PostManifestRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostManifests(requester: HttpRequester, payload: BeamoV2PostManifestRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2ManifestChecksum>> {
+export async function beamoPostManifests(requester: HttpRequester, payload: BeamoV2PostManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2ManifestChecksum>> {
   let endpoint = "/api/beamo/manifests";
   
   // Make the API request
@@ -104,10 +103,9 @@ export async function beamoPostManifests(requester: HttpRequester, payload: Beam
  * @param limit - Maximum number of items to return.
  * @param offset - Number of items to skip.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetManifests(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2GetManifestsResponse>> {
+export async function beamoGetManifests(requester: HttpRequester, archived?: boolean, limit?: number, offset?: number, gamertag?: string): Promise<HttpResponse<BeamoV2GetManifestsResponse>> {
   let endpoint = "/api/beamo/manifests";
   
   // Make the API request
@@ -134,10 +132,9 @@ export async function beamoGetManifests(requester: HttpRequester, archived?: boo
  * @param manifestId - GUID identifier of the manifest.
  * @param archived - Whether to include archived manifests. Defaults to true.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetManifestsByManifestId(requester: HttpRequester, manifestId: string, archived?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2Manifest>> {
+export async function beamoGetManifestsByManifestId(requester: HttpRequester, manifestId: string, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
   let endpoint = "/api/beamo/manifests/{manifestId}".replace(manifestIdPlaceholder, endpointEncoder(manifestId));
   
   // Make the API request
@@ -161,10 +158,9 @@ export async function beamoGetManifestsByManifestId(requester: HttpRequester, ma
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param archived - Whether to include archived manifests. Defaults to true.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetManifestsCurrent(requester: HttpRequester, archived?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2Manifest>> {
+export async function beamoGetManifestsCurrent(requester: HttpRequester, archived?: boolean, gamertag?: string): Promise<HttpResponse<BeamoV2Manifest>> {
   let endpoint = "/api/beamo/manifests/current";
   
   // Make the API request
@@ -187,10 +183,9 @@ export async function beamoGetManifestsCurrent(requester: HttpRequester, archive
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostManifestsCurrent(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPostManifestsCurrent(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/manifests/current";
   
   // Make the API request
@@ -214,10 +209,9 @@ export async function beamoPostManifestsCurrent(requester: HttpRequester, gamert
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2PromoteBeamoManifestRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostManifestsPromote(requester: HttpRequester, payload: BeamoV2PromoteBeamoManifestRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPostManifestsPromote(requester: HttpRequester, payload: BeamoV2PromoteBeamoManifestRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/manifests/promote";
   
   // Make the API request
@@ -238,10 +232,9 @@ export async function beamoPostManifestsPromote(requester: HttpRequester, payloa
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetTemplates(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2GetTemplatesResponse>> {
+export async function beamoGetTemplates(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetTemplatesResponse>> {
   let endpoint = "/api/beamo/templates";
   
   // Make the API request
@@ -261,10 +254,9 @@ export async function beamoGetTemplates(requester: HttpRequester, gamertag?: str
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetStatus(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2GetStatusResponse>> {
+export async function beamoGetStatus(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetStatusResponse>> {
   let endpoint = "/api/beamo/status";
   
   // Make the API request
@@ -284,10 +276,9 @@ export async function beamoGetStatus(requester: HttpRequester, gamertag?: string
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
+export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
   let endpoint = "/api/beamo/registry-uri";
   
   // Make the API request
@@ -308,10 +299,9 @@ export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: s
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2ServiceRegistrationQuery` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostServicesRegistrations(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2ServiceRegistrationResponse>> {
+export async function beamoPostServicesRegistrations(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2ServiceRegistrationResponse>> {
   let endpoint = "/api/beamo/services/registrations";
   
   // Make the API request
@@ -333,10 +323,9 @@ export async function beamoPostServicesRegistrations(requester: HttpRequester, p
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2ServiceRegistrationQuery` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostServicesFederation(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2FederationRegistrationResponse>> {
+export async function beamoPostServicesFederation(requester: HttpRequester, payload: BeamoV2ServiceRegistrationQuery, gamertag?: string): Promise<HttpResponse<BeamoV2FederationRegistrationResponse>> {
   let endpoint = "/api/beamo/services/federation";
   
   // Make the API request
@@ -359,10 +348,9 @@ export async function beamoPostServicesFederation(requester: HttpRequester, payl
  * @param payload - The `BeamoV2ServiceRegistrationRequest` instance to use for the API request
  * @param serviceName - Name of the service to register federation for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPutServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceRegistrationRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPutServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/federation/traffic".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -385,10 +373,9 @@ export async function beamoPutServicesFederationTrafficByServiceName(requester: 
  * @param payload - The `BeamoV2DeleteRegistrationRequest` instance to use for the API request
  * @param serviceName - Name of the service to remove the registration from.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoDeleteServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2DeleteRegistrationRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoDeleteServicesFederationTrafficByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2DeleteRegistrationRequest, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/federation/traffic".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -411,10 +398,9 @@ export async function beamoDeleteServicesFederationTrafficByServiceName(requeste
  * @param payload - The `BeamoV2GetMetricsRequest` instance to use for the API request
  * @param serviceName - Name of the service to fetch metrics for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostServicesMetricsRequestByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2GetMetricsRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
+export async function beamoPostServicesMetricsRequestByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2GetMetricsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
   let endpoint = "/api/beamo/services/{serviceName}/metrics-request".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -437,10 +423,9 @@ export async function beamoPostServicesMetricsRequestByServiceName(requester: Ht
  * @param payload - The `BeamoV2StartServiceLogsRequest` instance to use for the API request
  * @param serviceName - Name of the service to query logs for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostServicesLogsQueryByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2StartServiceLogsRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2QueryResponse>> {
+export async function beamoPostServicesLogsQueryByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2StartServiceLogsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2QueryResponse>> {
   let endpoint = "/api/beamo/services/{serviceName}/logs/query".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -462,10 +447,9 @@ export async function beamoPostServicesLogsQueryByServiceName(requester: HttpReq
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param queryId - ID of the query to stop.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoDeleteServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse>> {
+export async function beamoDeleteServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse>> {
   let endpoint = "/api/beamo/services/logs/query/{queryId}".replace(queryIdPlaceholder, endpointEncoder(queryId));
   
   // Make the API request
@@ -486,10 +470,9 @@ export async function beamoDeleteServicesLogsQueryByQueryId(requester: HttpReque
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param queryId - ID of the completed query.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
+export async function beamoGetServicesLogsQueryByQueryId(requester: HttpRequester, queryId: string, gamertag?: string): Promise<HttpResponse<BeamoV2SignedRequest>> {
   let endpoint = "/api/beamo/services/logs/query/{queryId}".replace(queryIdPlaceholder, endpointEncoder(queryId));
   
   // Make the API request
@@ -512,10 +495,9 @@ export async function beamoGetServicesLogsQueryByQueryId(requester: HttpRequeste
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetServicesSecret(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2GetServiceSecretResponse>> {
+export async function beamoGetServicesSecret(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetServiceSecretResponse>> {
   let endpoint = "/api/beamo/services/secret";
   
   // Make the API request
@@ -535,10 +517,9 @@ export async function beamoGetServicesSecret(requester: HttpRequester, gamertag?
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetStorageConnection(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2ConnectionStringResponse>> {
+export async function beamoGetStorageConnection(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2ConnectionStringResponse>> {
   let endpoint = "/api/beamo/storage/connection";
   
   // Make the API request
@@ -563,10 +544,9 @@ export async function beamoGetStorageConnection(requester: HttpRequester, gamert
  * @param Period - The `Period` parameter to include in the API request.
  * @param StartTime - The `StartTime` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetStoragePerformanceByStorageObjectName(requester: HttpRequester, storageObjectName: string, EndTime?: Date, Granularity?: string, Period?: string, StartTime?: Date, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2StoragePerformance>> {
+export async function beamoGetStoragePerformanceByStorageObjectName(requester: HttpRequester, storageObjectName: string, EndTime?: Date, Granularity?: string, Period?: string, StartTime?: Date, gamertag?: string): Promise<HttpResponse<BeamoV2StoragePerformance>> {
   let endpoint = "/api/beamo/storage/{storageObjectName}/performance".replace(storageObjectNamePlaceholder, endpointEncoder(storageObjectName));
   
   // Make the API request
@@ -594,10 +574,9 @@ export async function beamoGetStoragePerformanceByStorageObjectName(requester: H
  * @param serviceName - Name of the service.
  * @param routingKey - Optional routing key for multi-instance services.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2ServiceLoggingContext>> {
+export async function beamoGetServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string): Promise<HttpResponse<BeamoV2ServiceLoggingContext>> {
   let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -622,10 +601,9 @@ export async function beamoGetServicesLogsContextByServiceName(requester: HttpRe
  * @param payload - The `BeamoV2ServiceLoggingContext` instance to use for the API request
  * @param serviceName - Name of the service.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPutServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceLoggingContext, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoPutServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceLoggingContext, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -648,10 +626,9 @@ export async function beamoPutServicesLogsContextByServiceName(requester: HttpRe
  * @param serviceName - Name of the service.
  * @param routingKey - Routing key identifying the logging context to delete.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoDeleteServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoDeleteServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
   
   // Make the API request
@@ -674,10 +651,9 @@ export async function beamoDeleteServicesLogsContextByServiceName(requester: Htt
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetServicesLogsContext(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<BeamoV2GetAllServiceLoggingContexts>> {
+export async function beamoGetServicesLogsContext(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetAllServiceLoggingContexts>> {
   let endpoint = "/api/beamo/services/logs/context";
   
   // Make the API request

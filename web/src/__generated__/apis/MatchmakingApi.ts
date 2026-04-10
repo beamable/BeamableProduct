@@ -26,10 +26,9 @@ import type { TicketReservationResponse } from '@/__generated__/schemas/TicketRe
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Match ID
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function matchmakingGetMatchesById(requester: HttpRequester, id: string, gamertag?: string, timeout?: string): Promise<HttpResponse<Match>> {
+export async function matchmakingGetMatchesById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Match>> {
   let endpoint = "/api/matchmaking/matches/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -53,10 +52,9 @@ export async function matchmakingGetMatchesById(requester: HttpRequester, id: st
  * @param Players - The `Players` parameter to include in the API request.
  * @param Skip - The `Skip` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function matchmakingGetTickets(requester: HttpRequester, IncludeInactive?: boolean, Limit?: number, Players?: string[], Skip?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<TicketQueryResponse>> {
+export async function matchmakingGetTickets(requester: HttpRequester, IncludeInactive?: boolean, Limit?: number, Players?: string[], Skip?: number, gamertag?: string): Promise<HttpResponse<TicketQueryResponse>> {
   let endpoint = "/api/matchmaking/tickets";
   
   // Make the API request
@@ -83,10 +81,9 @@ export async function matchmakingGetTickets(requester: HttpRequester, IncludeIna
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `TicketReservationRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function matchmakingPostTickets(requester: HttpRequester, payload: TicketReservationRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<TicketReservationResponse>> {
+export async function matchmakingPostTickets(requester: HttpRequester, payload: TicketReservationRequest, gamertag?: string): Promise<HttpResponse<TicketReservationResponse>> {
   let endpoint = "/api/matchmaking/tickets";
   
   // Make the API request
@@ -108,10 +105,9 @@ export async function matchmakingPostTickets(requester: HttpRequester, payload: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Ticket ID
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function matchmakingGetTicketsById(requester: HttpRequester, id: string, gamertag?: string, timeout?: string): Promise<HttpResponse<Ticket>> {
+export async function matchmakingGetTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<Ticket>> {
   let endpoint = "/api/matchmaking/tickets/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request
@@ -132,10 +128,9 @@ export async function matchmakingGetTicketsById(requester: HttpRequester, id: st
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Ticket ID to cancel.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function matchmakingDeleteTicketsById(requester: HttpRequester, id: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
+export async function matchmakingDeleteTicketsById(requester: HttpRequester, id: string, gamertag?: string): Promise<HttpResponse<ApiMatchmakingTicketsDeleteTicketResponse>> {
   let endpoint = "/api/matchmaking/tickets/{id}".replace(idPlaceholder, endpointEncoder(id));
   
   // Make the API request

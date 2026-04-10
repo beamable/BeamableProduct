@@ -16,10 +16,9 @@ import type { PortalSessionResponse } from '@/__generated__/schemas/PortalSessio
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function billingPostPortalSession(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<PortalSessionResponse>> {
+export async function billingPostPortalSession(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<PortalSessionResponse>> {
   let endpoint = "/api/billing/portal-session";
   
   // Make the API request

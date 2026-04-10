@@ -52,10 +52,9 @@ import type { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/
  * @param keys - The `keys` parameter to include in the API request.
  * @param visibility - The `visibility` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsGet(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string, timeout?: string): Promise<HttpResponse<GetStatsResponse>> {
+export async function statsGet(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<GetStatsResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request
@@ -85,10 +84,9 @@ export async function statsGet(requester: HttpRequester, id: string, itemType: s
  * @param domain - The `domain` parameter to include in the API request.
  * @param visibility - The `visibility` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPost(requester: HttpRequester, id: string, itemType: string, payload: SetStatsRequest, domain?: string, visibility?: StatsVisibility, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsPost(requester: HttpRequester, id: string, itemType: string, payload: SetStatsRequest, domain?: string, visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request
@@ -118,10 +116,9 @@ export async function statsPost(requester: HttpRequester, id: string, itemType: 
  * @param keys - The `keys` parameter to include in the API request.
  * @param visibility - The `visibility` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsDelete(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsDelete(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request
@@ -147,10 +144,9 @@ export async function statsDelete(requester: HttpRequester, id: string, itemType
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsSubscribeRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPutSubscription(requester: HttpRequester, payload: StatsSubscribeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsPutSubscription(requester: HttpRequester, payload: StatsSubscribeRequest, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/subscription";
   
   // Make the API request
@@ -172,10 +168,9 @@ export async function statsPutSubscription(requester: HttpRequester, payload: St
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsUnsubscribeRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsDeleteSubscription(requester: HttpRequester, payload: StatsUnsubscribeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsDeleteSubscription(requester: HttpRequester, payload: StatsUnsubscribeRequest, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/subscription";
   
   // Make the API request
@@ -197,10 +192,9 @@ export async function statsDeleteSubscription(requester: HttpRequester, payload:
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BatchGetRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPostBatch(requester: HttpRequester, payload: BatchGetRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<BatchGetStatsResponse>> {
+export async function statsPostBatch(requester: HttpRequester, payload: BatchGetRequest, gamertag?: string): Promise<HttpResponse<BatchGetStatsResponse>> {
   let endpoint = "/api/stats/batch";
   
   // Make the API request
@@ -222,10 +216,9 @@ export async function statsPostBatch(requester: HttpRequester, payload: BatchGet
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BatchWriteRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPutBatch(requester: HttpRequester, payload: BatchWriteRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsPutBatch(requester: HttpRequester, payload: BatchWriteRequest, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/batch";
   
   // Make the API request
@@ -247,10 +240,9 @@ export async function statsPutBatch(requester: HttpRequester, payload: BatchWrit
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsActorStatsSearchRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPostQuery(requester: HttpRequester, payload: StatsActorStatsSearchRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsActorStatsSearchResponse>> {
+export async function statsPostQuery(requester: HttpRequester, payload: StatsActorStatsSearchRequest, gamertag?: string): Promise<HttpResponse<StatsActorStatsSearchResponse>> {
   let endpoint = "/api/stats/query";
   
   // Make the API request
@@ -272,10 +264,9 @@ export async function statsPostQuery(requester: HttpRequester, payload: StatsAct
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsSearchExtendedRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function statsPostQueryExtended(requester: HttpRequester, payload: StatsSearchExtendedRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<StatsSearchExtendedResponse>> {
+export async function statsPostQueryExtended(requester: HttpRequester, payload: StatsSearchExtendedRequest, gamertag?: string): Promise<HttpResponse<StatsSearchExtendedResponse>> {
   let endpoint = "/api/stats/query/extended";
   
   // Make the API request

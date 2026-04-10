@@ -121,6 +121,8 @@ public static class WebApi
 				.Where(p => p.In == ParameterLocation.Header)
 				// Exclude 'X-BEAM-SCOPE' header; it is set by default via the Beam Web SDK.
 				.Where(p => p.Name != "X-BEAM-SCOPE")
+				// Only include headers that makeApiRequest supports (currently just X-BEAM-GAMERTAG).
+				.Where(p => p.Name == "X-BEAM-GAMERTAG")
 				.ToList();
 
 			foreach (var (httpMethod, operation) in pathItem.Operations)

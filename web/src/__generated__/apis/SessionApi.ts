@@ -30,10 +30,9 @@ import type { StartSessionResponse } from '@/__generated__/schemas/StartSessionR
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SessionActorStartSessionRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function sessionsPost(requester: HttpRequester, payload: SessionActorStartSessionRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSessionsPostSessionResponse>> {
+export async function sessionsPost(requester: HttpRequester, payload: SessionActorStartSessionRequest, gamertag?: string): Promise<HttpResponse<ApiSessionsPostSessionResponse>> {
   let endpoint = "/api/sessions";
   
   // Make the API request
@@ -57,10 +56,9 @@ export async function sessionsPost(requester: HttpRequester, payload: SessionAct
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function sessionsPostHeartbeat(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSessionsHeartbeatPostSessionResponse>> {
+export async function sessionsPostHeartbeat(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ApiSessionsHeartbeatPostSessionResponse>> {
   let endpoint = "/api/sessions/heartbeat";
   
   // Make the API request
@@ -85,10 +83,9 @@ export async function sessionsPostHeartbeat(requester: HttpRequester, gamertag?:
  * @param intervalSecs - The `intervalSecs` parameter to include in the API request.
  * @param playerIds - The `playerIds` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function sessionsGetStatus(requester: HttpRequester, intervalSecs?: bigint | string, playerIds?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSessionsStatusGetSessionResponse>> {
+export async function sessionsGetStatus(requester: HttpRequester, intervalSecs?: bigint | string, playerIds?: string, gamertag?: string): Promise<HttpResponse<ApiSessionsStatusGetSessionResponse>> {
   let endpoint = "/api/sessions/status";
   
   // Make the API request

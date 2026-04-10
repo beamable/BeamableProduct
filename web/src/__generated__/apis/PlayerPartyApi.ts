@@ -22,10 +22,9 @@ import type { PartyInvitesForPlayerResponse } from '@/__generated__/schemas/Part
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - Player Id
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetPartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<Party>> {
+export async function playersGetPartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Party>> {
   let endpoint = "/api/players/{playerId}/parties".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -46,10 +45,9 @@ export async function playersGetPartiesByPlayerId(requester: HttpRequester, play
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - Player Id
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersDeletePartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>> {
+export async function playersDeletePartiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPartiesDeletePlayerPartyResponse>> {
   let endpoint = "/api/players/{playerId}/parties".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -70,10 +68,9 @@ export async function playersDeletePartiesByPlayerId(requester: HttpRequester, p
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - PlayerId
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetPartiesInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
+export async function playersGetPartiesInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
   let endpoint = "/api/players/{playerId}/parties/invites".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -94,10 +91,9 @@ export async function playersGetPartiesInvitesByPlayerId(requester: HttpRequeste
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - PlayerId
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetPartyInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
+export async function playersGetPartyInvitesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<PartyInvitesForPlayerResponse>> {
   let endpoint = "/api/players/{playerId}/party/invites".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

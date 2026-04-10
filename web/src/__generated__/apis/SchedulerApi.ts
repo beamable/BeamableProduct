@@ -32,10 +32,9 @@ import type { JobExecutionResult } from '@/__generated__/schemas/JobExecutionRes
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ExecuteJobRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: ExecuteJobRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<JobExecutionResult>> {
+export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: ExecuteJobRequest, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
   let endpoint = "/api/internal/scheduler/job/execute";
   
   // Make the API request
@@ -57,10 +56,9 @@ export async function schedulerPostJobExecuteInternal(requester: HttpRequester, 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `JobDefinitionSaveRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerPostJob(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerPostJob(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/scheduler/job";
   
   // Make the API request
@@ -82,10 +80,9 @@ export async function schedulerPostJob(requester: HttpRequester, payload: JobDef
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `JobDefinitionSaveRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerPostJobInternal(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerPostJobInternal(requester: HttpRequester, payload: JobDefinitionSaveRequest, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/internal/scheduler/job";
   
   // Make the API request
@@ -112,10 +109,9 @@ export async function schedulerPostJobInternal(requester: HttpRequester, payload
  * @param name - Optional name filter.
  * @param source - Optional source filter.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobs(requester: HttpRequester, limit?: number, name?: string, source?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSchedulerJobsGetSchedulerResponse>> {
+export async function schedulerGetJobs(requester: HttpRequester, limit?: number, name?: string, source?: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobsGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/jobs";
   
   // Make the API request
@@ -144,10 +140,9 @@ export async function schedulerGetJobs(requester: HttpRequester, limit?: number,
  * @param onlyUnique - When true, only returns unique jobs.
  * @param source - Optional source filter.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobsPaged(requester: HttpRequester, cursor?: string, name?: string, onlyUnique?: boolean, source?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
+export async function schedulerGetJobsPaged(requester: HttpRequester, cursor?: string, name?: string, onlyUnique?: boolean, source?: string, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs-paged";
   
   // Make the API request
@@ -175,10 +170,9 @@ export async function schedulerGetJobsPaged(requester: HttpRequester, cursor?: s
  * @param cursor - Pagination cursor from a previous response. Mutually exclusive with from.
  * @param from - Return jobs suspended from this datetime. Mutually exclusive with cursor.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobsSuspended(requester: HttpRequester, cursor?: string, from?: Date, gamertag?: string, timeout?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
+export async function schedulerGetJobsSuspended(requester: HttpRequester, cursor?: string, from?: Date, gamertag?: string): Promise<HttpResponse<JobDefinitionViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs/suspended";
   
   // Make the API request
@@ -203,10 +197,9 @@ export async function schedulerGetJobsSuspended(requester: HttpRequester, cursor
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param jobId - ID of the job to retrieve.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<JobDefinitionView>> {
+export async function schedulerGetJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<JobDefinitionView>> {
   let endpoint = "/api/scheduler/job/{jobId}".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -227,10 +220,9 @@ export async function schedulerGetJobByJobId(requester: HttpRequester, jobId: st
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param jobId - ID of the job to delete.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerDeleteJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>> {
+export async function schedulerDeleteJobByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobDeleteSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -255,10 +247,9 @@ export async function schedulerDeleteJobByJobId(requester: HttpRequester, jobId:
  * @param jobId - ID of the job to retrieve activity for.
  * @param limit - Maximum number of results. Cannot exceed 10000.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobActivityByJobId(requester: HttpRequester, jobId: string, limit?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>> {
+export async function schedulerGetJobActivityByJobId(requester: HttpRequester, jobId: string, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobActivityGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/activity".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -283,10 +274,9 @@ export async function schedulerGetJobActivityByJobId(requester: HttpRequester, j
  * @param jobId - ID of the job to retrieve activity for.
  * @param cursor - Pagination cursor from a previous response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobActivityPagedByJobId(requester: HttpRequester, jobId: string, cursor?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
+export async function schedulerGetJobActivityPagedByJobId(requester: HttpRequester, jobId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/job/{jobId}/activity-paged".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -310,10 +300,9 @@ export async function schedulerGetJobActivityPagedByJobId(requester: HttpRequest
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param cursor - Pagination cursor from a previous response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobsActivityPaged(requester: HttpRequester, cursor?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
+export async function schedulerGetJobsActivityPaged(requester: HttpRequester, cursor?: string, gamertag?: string): Promise<HttpResponse<JobActivityViewCursorPagedResult>> {
   let endpoint = "/api/scheduler/jobs/activity-paged";
   
   // Make the API request
@@ -339,10 +328,9 @@ export async function schedulerGetJobsActivityPaged(requester: HttpRequester, cu
  * @param from - Start time for the schedule preview. Defaults to now.
  * @param limit - Maximum number of executions to return. Cannot exceed 1000.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerGetJobNextExecutionsByJobId(requester: HttpRequester, jobId: string, from?: Date, limit?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>> {
+export async function schedulerGetJobNextExecutionsByJobId(requester: HttpRequester, jobId: string, from?: Date, limit?: number, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobNextExecutionsGetSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/next-executions".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request
@@ -367,10 +355,9 @@ export async function schedulerGetJobNextExecutionsByJobId(requester: HttpReques
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param jobId - ID of the job to cancel.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function schedulerPutJobCancelByJobId(requester: HttpRequester, jobId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>> {
+export async function schedulerPutJobCancelByJobId(requester: HttpRequester, jobId: string, gamertag?: string): Promise<HttpResponse<ApiSchedulerJobCancelPutSchedulerResponse>> {
   let endpoint = "/api/scheduler/job/{jobId}/cancel".replace(jobIdPlaceholder, endpointEncoder(jobId));
   
   // Make the API request

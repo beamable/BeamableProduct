@@ -18,10 +18,9 @@ import type { MessageRequest } from '@/__generated__/schemas/MessageRequest';
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `MessageRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function mailboxPostPublish(requester: HttpRequester, payload: MessageRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>> {
+export async function mailboxPostPublish(requester: HttpRequester, payload: MessageRequest, gamertag?: string): Promise<HttpResponse<ApiMailboxPublishPostMailboxResponse>> {
   let endpoint = "/api/mailbox/publish";
   
   // Make the API request
