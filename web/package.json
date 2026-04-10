@@ -19,7 +19,7 @@
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
     "format": "prettier --write .",
-    "generateAPITypes": "WEB_DIR=$PWD && cd \"$WEB_DIR/..\" && [ -f build-number.txt ] || echo 0 > build-number.txt && dotnet run -f net10.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine web --conflict-strategy RenameUncommonConflicts --output \"$WEB_DIR/src/__generated__\"",
+    "codegen": "WEB_DIR=$PWD && cd \"$WEB_DIR/..\" && [ -f build-number.txt ] || echo 0 > build-number.txt && dotnet run -f net10.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine web --conflict-strategy RenameUncommonConflicts --output \"$WEB_DIR/src/__generated__\"",
     "doc": "node ./generateDocs.mjs",
     "release": "node ./update-version.mjs && pnpm build",
     "prepublishOnly": "pnpm build"
