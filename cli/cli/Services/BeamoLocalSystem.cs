@@ -1,4 +1,4 @@
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
@@ -558,6 +558,7 @@ public class BeamoServiceDefinition
 	public PortalExtensionDef PortalExtensionDefinition;
 
 	public bool IsInRemote;
+
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
 	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
