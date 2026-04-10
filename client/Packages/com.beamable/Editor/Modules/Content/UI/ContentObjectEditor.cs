@@ -378,6 +378,7 @@ namespace Beamable.Editor.Content.UI
 			}
 
 			base.OnInspectorGUI();
+			contentObject.CheckForNonDetectedChanges();
 		}
 
 		public string GetTagString(string[] tags)
