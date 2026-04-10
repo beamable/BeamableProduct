@@ -549,7 +549,7 @@ export async function customersPutRealmsConfig(requester: HttpRequester, custome
  * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: RealmConfigChangeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPatchRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: RealmConfigChangeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
