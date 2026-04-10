@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `codegen` script in `package.json` to regenerate TypeScript API types from OpenAPI specs via the CLI.
+- New generated APIs: `BillingApi`, `CustomerApi`, `PlayerSessionApi`, `PlayerStatsApi`.
+
+### Fixed
+
+- Web code generator now quotes TypeScript property names that contain invalid identifier characters (e.g., `x5t#S256`).
+- Web code generator now produces distinct method names for PATCH endpoints instead of colliding with GET.
+- `tsdown.config.ts` updated to use `import.meta.url` instead of `__dirname` for ES module compatibility.
+
+### Changed
+
+- Updated auto-generated APIs and schemas to latest OpenAPI specs.
+
 ## [1.0.0] - 2025-11-19
 
 ### Added
