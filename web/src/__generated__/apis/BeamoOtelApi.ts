@@ -26,10 +26,9 @@ import type { UpdateOtelViewRequest } from '@/__generated__/schemas/UpdateOtelVi
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - Player ID to retrieve views for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetOtelViews(requester: HttpRequester, playerId?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<OtelViewsResponse>> {
+export async function beamoGetOtelViews(requester: HttpRequester, playerId?: string, gamertag?: string): Promise<HttpResponse<OtelViewsResponse>> {
   let endpoint = "/api/beamo/otel/views";
   
   // Make the API request
@@ -53,10 +52,9 @@ export async function beamoGetOtelViews(requester: HttpRequester, playerId?: str
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `OtelView` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPostOtelViews(requester: HttpRequester, payload: OtelView, gamertag?: string, timeout?: string): Promise<HttpResponse<OtelView>> {
+export async function beamoPostOtelViews(requester: HttpRequester, payload: OtelView, gamertag?: string): Promise<HttpResponse<OtelView>> {
   let endpoint = "/api/beamo/otel/views";
   
   // Make the API request
@@ -78,10 +76,9 @@ export async function beamoPostOtelViews(requester: HttpRequester, payload: Otel
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param viewId - ID of the view to delete.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoDeleteOtelViewsByViewId(requester: HttpRequester, viewId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiBeamoOtelViewsDeleteBeamoOtelResponse>> {
+export async function beamoDeleteOtelViewsByViewId(requester: HttpRequester, viewId: string, gamertag?: string): Promise<HttpResponse<ApiBeamoOtelViewsDeleteBeamoOtelResponse>> {
   let endpoint = "/api/beamo/otel/views/{viewId}".replace(viewIdPlaceholder, endpointEncoder(viewId));
   
   // Make the API request
@@ -103,10 +100,9 @@ export async function beamoDeleteOtelViewsByViewId(requester: HttpRequester, vie
  * @param payload - The `UpdateOtelViewRequest` instance to use for the API request
  * @param viewId - ID of the view to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoPutOtelViewsByViewId(requester: HttpRequester, viewId: string, payload: UpdateOtelViewRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<OtelView>> {
+export async function beamoPutOtelViewsByViewId(requester: HttpRequester, viewId: string, payload: UpdateOtelViewRequest, gamertag?: string): Promise<HttpResponse<OtelView>> {
   let endpoint = "/api/beamo/otel/views/{viewId}".replace(viewIdPlaceholder, endpointEncoder(viewId));
   
   // Make the API request
@@ -127,10 +123,9 @@ export async function beamoPutOtelViewsByViewId(requester: HttpRequester, viewId
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetOtelAuthReaderConfig(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<OtelAuthConfig>> {
+export async function beamoGetOtelAuthReaderConfig(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<OtelAuthConfig>> {
   let endpoint = "/api/beamo/otel/auth/reader/config";
   
   // Make the API request
@@ -150,10 +145,9 @@ export async function beamoGetOtelAuthReaderConfig(requester: HttpRequester, gam
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function beamoGetOtelAuthWriterConfig(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<OtelAuthConfig>> {
+export async function beamoGetOtelAuthWriterConfig(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<OtelAuthConfig>> {
   let endpoint = "/api/beamo/otel/auth/writer/config";
   
   // Make the API request

@@ -22,10 +22,9 @@ import type { PlayerSessionActorSessionHistoryResponse } from '@/__generated__/s
  * @param month - The `month` parameter to include in the API request.
  * @param year - The `year` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetSessionsByPlayerId(requester: HttpRequester, playerId: string, month?: number, year?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<PlayerSessionActorSessionHistoryResponse>> {
+export async function playersGetSessionsByPlayerId(requester: HttpRequester, playerId: string, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<PlayerSessionActorSessionHistoryResponse>> {
   let endpoint = "/api/players/{playerId}/sessions".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -52,10 +51,9 @@ export async function playersGetSessionsByPlayerId(requester: HttpRequester, pla
  * @param month - The `month` parameter to include in the API request.
  * @param year - The `year` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetSessionsClientByPlayerId(requester: HttpRequester, playerId: string, month?: number, year?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<PlayerSessionActorSessionClientHistoryResponse>> {
+export async function playersGetSessionsClientByPlayerId(requester: HttpRequester, playerId: string, month?: number, year?: number, gamertag?: string): Promise<HttpResponse<PlayerSessionActorSessionClientHistoryResponse>> {
   let endpoint = "/api/players/{playerId}/sessions/client".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

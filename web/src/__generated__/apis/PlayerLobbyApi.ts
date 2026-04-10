@@ -21,10 +21,9 @@ import type { Lobby } from '@/__generated__/schemas/Lobby';
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - Player Id
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<Lobby>> {
+export async function playersGetLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<Lobby>> {
   let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -45,10 +44,9 @@ export async function playersGetLobbiesByPlayerId(requester: HttpRequester, play
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - Player Id
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersDeleteLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
+export async function playersDeleteLobbiesByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersLobbiesDeletePlayerLobbyResponse>> {
   let endpoint = "/api/players/{playerId}/lobbies".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

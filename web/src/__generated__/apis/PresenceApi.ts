@@ -18,10 +18,9 @@ import type { PlayersStatusResponse } from '@/__generated__/schemas/PlayersStatu
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `OnlineStatusQuery` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function presencePostQuery(requester: HttpRequester, payload: OnlineStatusQuery, gamertag?: string, timeout?: string): Promise<HttpResponse<PlayersStatusResponse>> {
+export async function presencePostQuery(requester: HttpRequester, payload: OnlineStatusQuery, gamertag?: string): Promise<HttpResponse<PlayersStatusResponse>> {
   let endpoint = "/api/presence/query";
   
   // Make the API request

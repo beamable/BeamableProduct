@@ -48,10 +48,9 @@ import type { UpdateRealmRequest } from '@/__generated__/schemas/UpdateRealmRequ
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CustomerActorNewCustomerRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPost(requester: HttpRequester, payload: CustomerActorNewCustomerRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorNewCustomerResponse>> {
+export async function customersPost(requester: HttpRequester, payload: CustomerActorNewCustomerRequest, gamertag?: string): Promise<HttpResponse<CustomerActorNewCustomerResponse>> {
   let endpoint = "/api/customers";
   
   // Make the API request
@@ -73,10 +72,9 @@ export async function customersPost(requester: HttpRequester, payload: CustomerA
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param showHiddenRealms - Whether to include hidden realms in the response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGet(requester: HttpRequester, showHiddenRealms?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorCustomersResponse>> {
+export async function customersGet(requester: HttpRequester, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<CustomerActorCustomersResponse>> {
   let endpoint = "/api/customers";
   
   // Make the API request
@@ -100,10 +98,9 @@ export async function customersGet(requester: HttpRequester, showHiddenRealms?: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CustomerActorNewCustomerRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPostVerify(requester: HttpRequester, payload: CustomerActorNewCustomerRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorNewCustomerResponse>> {
+export async function customersPostVerify(requester: HttpRequester, payload: CustomerActorNewCustomerRequest, gamertag?: string): Promise<HttpResponse<CustomerActorNewCustomerResponse>> {
   let endpoint = "/api/customers/verify";
   
   // Make the API request
@@ -124,10 +121,9 @@ export async function customersPostVerify(requester: HttpRequester, payload: Cus
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPutActivate(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiCustomersActivatePutCustomerResponse>> {
+export async function customersPutActivate(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ApiCustomersActivatePutCustomerResponse>> {
   let endpoint = "/api/customers/activate";
   
   // Make the API request
@@ -149,10 +145,9 @@ export async function customersPutActivate(requester: HttpRequester, gamertag?: 
  * @param customerId - The customer ID to look up.
  * @param showHiddenRealms - Whether to include hidden realms in the response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorCustomerView>> {
+export async function customersGetByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<CustomerActorCustomerView>> {
   let endpoint = "/api/customers/{customerId}".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -177,10 +172,9 @@ export async function customersGetByCustomerId(requester: HttpRequester, custome
  * @param customerId - The customer ID to look up.
  * @param showHiddenRealms - Whether to include hidden realms in the response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetAdminViewByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorCustomer>> {
+export async function customersGetAdminViewByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<CustomerActorCustomer>> {
   let endpoint = "/api/customers/{customerId}/admin-view".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -204,10 +198,9 @@ export async function customersGetAdminViewByCustomerId(requester: HttpRequester
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - ID of the customer.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetStripeSubscriptionByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<StripeSubscriptionResponse>> {
+export async function customersGetStripeSubscriptionByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string): Promise<HttpResponse<StripeSubscriptionResponse>> {
   let endpoint = "/api/customers/{customerId}/stripe/subscription".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -230,10 +223,9 @@ export async function customersGetStripeSubscriptionByCustomerId(requester: Http
  * @param customerId - ID of the customer that owns the realm.
  * @param realmId - ID of the realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPutRealms(requester: HttpRequester, customerId: string, realmId: string, payload: UpdateRealmRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutRealms(requester: HttpRequester, customerId: string, realmId: string, payload: UpdateRealmRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -256,10 +248,9 @@ export async function customersPutRealms(requester: HttpRequester, customerId: s
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to retrieve.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<RealmView>> {
+export async function customersGetRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<RealmView>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -281,10 +272,9 @@ export async function customersGetRealms(requester: HttpRequester, customerId: s
  * @param customerId - ID of the customer that owns the realm.
  * @param realmId - ID of the realm to archive.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersDeleteRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersDeleteRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -305,10 +295,9 @@ export async function customersDeleteRealms(requester: HttpRequester, customerId
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - ID of the customer to retrieve config for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetConfigByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
+export async function customersGetConfigByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
   let endpoint = "/api/customers/{customerId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -330,10 +319,9 @@ export async function customersGetConfigByCustomerId(requester: HttpRequester, c
  * @param customerId - ID of the customer.
  * @param showHiddenRealms - Whether to include hidden realms.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetGamesByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<GetGamesResponse>> {
+export async function customersGetGamesByCustomerId(requester: HttpRequester, customerId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<GetGamesResponse>> {
   let endpoint = "/api/customers/{customerId}/games".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -358,10 +346,9 @@ export async function customersGetGamesByCustomerId(requester: HttpRequester, cu
  * @param payload - The `CustomerActorNewGameRequest` instance to use for the API request
  * @param customerId - ID of the customer to create the game under.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPostGamesByCustomerId(requester: HttpRequester, customerId: string, payload: CustomerActorNewGameRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<RealmView>> {
+export async function customersPostGamesByCustomerId(requester: HttpRequester, customerId: string, payload: CustomerActorNewGameRequest, gamertag?: string): Promise<HttpResponse<RealmView>> {
   let endpoint = "/api/customers/{customerId}/games".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -385,10 +372,9 @@ export async function customersPostGamesByCustomerId(requester: HttpRequester, c
  * @param gameId - ID of the game realm to retrieve realms for.
  * @param showHiddenRealms - Whether to include hidden realms.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetGames(requester: HttpRequester, customerId: string, gameId: string, showHiddenRealms?: boolean, gamertag?: string, timeout?: string): Promise<HttpResponse<GetGamesResponse>> {
+export async function customersGetGames(requester: HttpRequester, customerId: string, gameId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<GetGamesResponse>> {
   let endpoint = "/api/customers/{customerId}/games/{gameId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(gameIdPlaceholder, endpointEncoder(gameId));
   
   // Make the API request
@@ -414,10 +400,9 @@ export async function customersGetGames(requester: HttpRequester, customerId: st
  * @param customerId - ID of the customer.
  * @param gameId - ID of the game realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPutGames(requester: HttpRequester, customerId: string, gameId: string, payload: CustomerActorUpdateGameHierarchyRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutGames(requester: HttpRequester, customerId: string, gameId: string, payload: CustomerActorUpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/games/{gameId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(gameIdPlaceholder, endpointEncoder(gameId));
   
   // Make the API request
@@ -440,10 +425,9 @@ export async function customersPutGames(requester: HttpRequester, customerId: st
  * @param payload - The `CreateRealmRequest` instance to use for the API request
  * @param customerId - ID of the customer to create the realm under.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPostRealmsByCustomerId(requester: HttpRequester, customerId: string, payload: CreateRealmRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPostRealmsByCustomerId(requester: HttpRequester, customerId: string, payload: CreateRealmRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
@@ -467,10 +451,9 @@ export async function customersPostRealmsByCustomerId(requester: HttpRequester, 
  * @param customerId - ID of the customer that owns the realm.
  * @param realmId - ID of the realm to rename.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPutRealmsRename(requester: HttpRequester, customerId: string, realmId: string, payload: RenameRealmRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutRealmsRename(requester: HttpRequester, customerId: string, realmId: string, payload: RenameRealmRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/rename".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -493,10 +476,9 @@ export async function customersPutRealmsRename(requester: HttpRequester, custome
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to retrieve config for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
+export async function customersGetRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -519,10 +501,9 @@ export async function customersGetRealmsConfig(requester: HttpRequester, custome
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPutRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: CustomerActorRealmConfigSaveRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: CustomerActorRealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -546,10 +527,9 @@ export async function customersPutRealmsConfig(requester: HttpRequester, custome
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPatchRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: RealmConfigChangeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPatchRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: RealmConfigChangeRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -572,10 +552,9 @@ export async function customersPatchRealmsConfig(requester: HttpRequester, custo
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetRealmsClientDefaults(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorRealmConfiguration>> {
+export async function customersGetRealmsClientDefaults(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<CustomerActorRealmConfiguration>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/client-defaults".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -598,10 +577,9 @@ export async function customersGetRealmsClientDefaults(requester: HttpRequester,
  * @param customerId - ID of the customer.
  * @param destinationRealmId - ID of the realm to promote content into.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersPostRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, payload: CustomerActorPromoteRealmRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
+export async function customersPostRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, payload: CustomerActorPromoteRealmRequest, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{destinationRealmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(destinationRealmIdPlaceholder, endpointEncoder(destinationRealmId));
   
   // Make the API request
@@ -627,10 +605,9 @@ export async function customersPostRealmsPromotion(requester: HttpRequester, cus
  * @param promotables - Comma-separated list of promotable types to include.
  * @param sourceRealmId - ID of the source realm.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, contentIds?: string, promotables?: string, sourceRealmId?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
+export async function customersGetRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, contentIds?: string, promotables?: string, sourceRealmId?: string, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{destinationRealmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(destinationRealmIdPlaceholder, endpointEncoder(destinationRealmId));
   
   // Make the API request
@@ -656,10 +633,9 @@ export async function customersGetRealmsPromotion(requester: HttpRequester, cust
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param alias - The alias to check.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function customersGetAliasesByAlias(requester: HttpRequester, alias: string, gamertag?: string, timeout?: string): Promise<HttpResponse<CustomerActorAliasAvailableResponse>> {
+export async function customersGetAliasesByAlias(requester: HttpRequester, alias: string, gamertag?: string): Promise<HttpResponse<CustomerActorAliasAvailableResponse>> {
   let endpoint = "/api/customers/aliases/{alias}".replace(aliasPlaceholder, endpointEncoder(alias));
   
   // Make the API request

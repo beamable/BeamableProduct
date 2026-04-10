@@ -45,10 +45,9 @@ import type { TokenResponse } from '@/__generated__/schemas/TokenResponse';
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function wellKnownGetOpenidConfiguration(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2OpenIdConfigResponse>> {
+export async function wellKnownGetOpenidConfiguration(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AuthV2OpenIdConfigResponse>> {
   let endpoint = "/api/.well-known/openid-configuration";
   
   // Make the API request
@@ -68,10 +67,9 @@ export async function wellKnownGetOpenidConfiguration(requester: HttpRequester, 
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authGetKeys(requester: HttpRequester, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2JsonWebKeySet>> {
+export async function authGetKeys(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AuthV2JsonWebKeySet>> {
   let endpoint = "/api/auth/keys";
   
   // Make the API request
@@ -95,10 +93,9 @@ export async function authGetKeys(requester: HttpRequester, gamertag?: string, t
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2RefreshTokenAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostRefreshToken(requester: HttpRequester, payload: AuthV2RefreshTokenAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostRefreshToken(requester: HttpRequester, payload: AuthV2RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/refresh-token";
   
   // Make the API request
@@ -120,10 +117,9 @@ export async function authPostRefreshToken(requester: HttpRequester, payload: Au
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2RefreshTokenAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensRefreshToken(requester: HttpRequester, payload: AuthV2RefreshTokenAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostTokensRefreshToken(requester: HttpRequester, payload: AuthV2RefreshTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/tokens/refresh-token";
   
   // Make the API request
@@ -145,10 +141,9 @@ export async function authPostTokensRefreshToken(requester: HttpRequester, paylo
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2GuestAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensGuest(requester: HttpRequester, payload: AuthV2GuestAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostTokensGuest(requester: HttpRequester, payload: AuthV2GuestAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/tokens/guest";
   
   // Make the API request
@@ -170,10 +165,9 @@ export async function authPostTokensGuest(requester: HttpRequester, payload: Aut
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2PasswordAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensPassword(requester: HttpRequester, payload: AuthV2PasswordAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostTokensPassword(requester: HttpRequester, payload: AuthV2PasswordAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/tokens/password";
   
   // Make the API request
@@ -195,10 +189,9 @@ export async function authPostTokensPassword(requester: HttpRequester, payload: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2ExternalAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensExternal(requester: HttpRequester, payload: AuthV2ExternalAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2ExternalAuthResponse>> {
+export async function authPostTokensExternal(requester: HttpRequester, payload: AuthV2ExternalAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2ExternalAuthResponse>> {
   let endpoint = "/api/auth/tokens/external";
   
   // Make the API request
@@ -220,10 +213,9 @@ export async function authPostTokensExternal(requester: HttpRequester, payload: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2DeviceIdAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensDeviceId(requester: HttpRequester, payload: AuthV2DeviceIdAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostTokensDeviceId(requester: HttpRequester, payload: AuthV2DeviceIdAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/tokens/device-id";
   
   // Make the API request
@@ -247,10 +239,9 @@ export async function authPostTokensDeviceId(requester: HttpRequester, payload: 
  * @param playerIdOrAccountId - The gamer tag or account ID to list tokens for
  * @param skip - Skips N items
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authGetTokens(requester: HttpRequester, limit?: number, playerIdOrAccountId?: string, skip?: number, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2ListTokensResponse>> {
+export async function authGetTokens(requester: HttpRequester, limit?: number, playerIdOrAccountId?: string, skip?: number, gamertag?: string): Promise<HttpResponse<AuthV2ListTokensResponse>> {
   let endpoint = "/api/auth/tokens";
   
   // Make the API request
@@ -276,10 +267,9 @@ export async function authGetTokens(requester: HttpRequester, limit?: number, pl
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2RevokeRefreshTokensRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authDeleteTokens(requester: HttpRequester, payload: AuthV2RevokeRefreshTokensRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2EmptyMessage>> {
+export async function authDeleteTokens(requester: HttpRequester, payload: AuthV2RevokeRefreshTokensRequest, gamertag?: string): Promise<HttpResponse<AuthV2EmptyMessage>> {
   let endpoint = "/api/auth/tokens";
   
   // Make the API request
@@ -301,10 +291,9 @@ export async function authDeleteTokens(requester: HttpRequester, payload: AuthV2
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tokenId - The refresh token id to look up
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authGetTokensByTokenId(requester: HttpRequester, tokenId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2RefreshToken>> {
+export async function authGetTokensByTokenId(requester: HttpRequester, tokenId: string, gamertag?: string): Promise<HttpResponse<AuthV2RefreshToken>> {
   let endpoint = "/api/auth/tokens/{tokenId}".replace(tokenIdPlaceholder, endpointEncoder(tokenId));
   
   // Make the API request
@@ -327,10 +316,9 @@ export async function authGetTokensByTokenId(requester: HttpRequester, tokenId: 
  * @param customerId - Customer ID
  * @param realmId - Realm ID
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authGetTokensAccessByTokenId(requester: HttpRequester, tokenId: string, customerId?: string, realmId?: string, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2LegacyAccessToken>> {
+export async function authGetTokensAccessByTokenId(requester: HttpRequester, tokenId: string, customerId?: string, realmId?: string, gamertag?: string): Promise<HttpResponse<AuthV2LegacyAccessToken>> {
   let endpoint = "/api/auth/tokens/access/{tokenId}".replace(tokenIdPlaceholder, endpointEncoder(tokenId));
   
   // Make the API request
@@ -355,10 +343,9 @@ export async function authGetTokensAccessByTokenId(requester: HttpRequester, tok
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2AuthorizationCodeAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostTokensAuthCode(requester: HttpRequester, payload: AuthV2AuthorizationCodeAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
+export async function authPostTokensAuthCode(requester: HttpRequester, payload: AuthV2AuthorizationCodeAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthResponse>> {
   let endpoint = "/api/auth/tokens/auth-code";
   
   // Make the API request
@@ -380,10 +367,9 @@ export async function authPostTokensAuthCode(requester: HttpRequester, payload: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2AuthCodeRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostAuthCodes(requester: HttpRequester, payload: AuthV2AuthCodeRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2AuthCode>> {
+export async function authPostAuthCodes(requester: HttpRequester, payload: AuthV2AuthCodeRequest, gamertag?: string): Promise<HttpResponse<AuthV2AuthCode>> {
   let endpoint = "/api/auth/auth-codes";
   
   // Make the API request
@@ -405,10 +391,9 @@ export async function authPostAuthCodes(requester: HttpRequester, payload: AuthV
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AuthV2ServerTokenAuthRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function authPostServer(requester: HttpRequester, payload: AuthV2ServerTokenAuthRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<AuthV2ServerTokenResponse>> {
+export async function authPostServer(requester: HttpRequester, payload: AuthV2ServerTokenAuthRequest, gamertag?: string): Promise<HttpResponse<AuthV2ServerTokenResponse>> {
   let endpoint = "/api/auth/server";
   
   // Make the API request
