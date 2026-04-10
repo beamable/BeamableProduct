@@ -26,10 +26,6 @@ import type { SendMailResponse } from '@/__generated__/schemas/SendMailResponse'
 import type { UpdateMailRequest } from '@/__generated__/schemas/UpdateMailRequest';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AcceptMultipleAttachments` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -44,8 +40,7 @@ export async function mailPutAttachmentsBasic(requester: HttpRequester, payload:
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -94,10 +89,6 @@ export async function mailGetBasic(requester: HttpRequester, mid: bigint | strin
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UpdateMailRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -112,16 +103,11 @@ export async function mailPutBasic(requester: HttpRequester, payload: UpdateMail
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BulkSendMailRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -136,8 +122,7 @@ export async function mailPostBulkBasic(requester: HttpRequester, payload: BulkS
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 

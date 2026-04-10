@@ -13,7 +13,9 @@ export type InventoryUpdateRequest = {
   currencies?: Record<string, bigint | string>; 
   currencyProperties?: Record<string, CurrencyProperty[]>; 
   deleteItems?: ItemDeleteRequest[]; 
+  includeDeltas?: boolean; 
   newItems?: ItemCreateRequest[]; 
+  scopes?: string[]; 
   transaction?: string; 
   updateItems?: ItemUpdateRequest[]; 
 };

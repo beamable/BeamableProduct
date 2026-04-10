@@ -19,6 +19,8 @@ import type { ContentBasicManifestChecksums } from '@/__generated__/schemas/Cont
 import type { ContentOrText } from '@/__generated__/schemas/ContentOrText';
 import type { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetBinaryDownloadUrlsRequest } from '@/__generated__/schemas/GetBinaryDownloadUrlsRequest';
+import type { GetBinaryDownloadUrlsResponse } from '@/__generated__/schemas/GetBinaryDownloadUrlsResponse';
 import type { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
 import type { GetManifestDiffsResponse } from '@/__generated__/schemas/GetManifestDiffsResponse';
 import type { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
@@ -38,10 +40,6 @@ import type { SaveTextRequest } from '@/__generated__/schemas/SaveTextRequest';
 import type { SaveTextResponse } from '@/__generated__/schemas/SaveTextResponse';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ArchiveOrUnarchiveManifestsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -56,16 +54,11 @@ export async function contentPostManifestsUnarchiveBasic(requester: HttpRequeste
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PullManifestRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -80,16 +73,11 @@ export async function contentPostManifestPullBasic(requester: HttpRequester, pay
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - The `id` parameter to include in the API request.
  * @param limit - The `limit` parameter to include in the API request.
@@ -108,16 +96,11 @@ export async function contentGetManifestHistoryBasic(requester: HttpRequester, i
       id,
       limit
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveBinaryRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -132,16 +115,11 @@ export async function contentPostBinaryBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PullAllManifestsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -156,16 +134,11 @@ export async function contentPostManifestsPullBasic(requester: HttpRequester, pa
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
  * @param version - The `version` parameter to include in the API request.
@@ -184,16 +157,11 @@ export async function contentGetBasic(requester: HttpRequester, contentId: strin
       contentId,
       version
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -206,16 +174,11 @@ export async function contentGetLocalizationsBasic(requester: HttpRequester, gam
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PutLocalizationsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -230,16 +193,11 @@ export async function contentPutLocalizationsBasic(requester: HttpRequester, pay
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteLocalizationRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -254,16 +212,11 @@ export async function contentDeleteLocalizationsBasic(requester: HttpRequester, 
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveTextRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -278,16 +231,11 @@ export async function contentPostTextBasic(requester: HttpRequester, payload: Sa
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param uid - The `uid` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -304,16 +252,11 @@ export async function contentGetManifestExactBasic(requester: HttpRequester, uid
     q: {
       uid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
  * @param uid - UID of the content manifest
@@ -332,16 +275,11 @@ export async function contentGetManifestBasic(requester: HttpRequester, id?: str
       id,
       uid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveManifestRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -356,16 +294,11 @@ export async function contentPostManifestBasic(requester: HttpRequester, payload
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param manifestId - The `manifestId` parameter to include in the API request.
  * @param fromDate - The `fromDate` parameter to include in the API request.
@@ -394,16 +327,11 @@ export async function contentGetManifestDiffsBasic(requester: HttpRequester, man
       toDate,
       toUid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ArchiveOrUnarchiveManifestsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -418,16 +346,11 @@ export async function contentPostManifestsArchiveBasic(requester: HttpRequester,
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveContentRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -442,8 +365,7 @@ export async function contentPostBasic(requester: HttpRequester, payload: SaveCo
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -494,10 +416,6 @@ export async function contentGetManifestPublicJsonBasic(requester: HttpRequester
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RepeatManifestRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -512,16 +430,11 @@ export async function contentPutManifestRepeatBasic(requester: HttpRequester, pa
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Content ID of the content manifest
  * @param uid - UID of the content manifest
@@ -540,16 +453,11 @@ export async function contentGetManifestPrivateJsonBasic(requester: HttpRequeste
       id,
       uid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
  * @param uid - UID of the content manifest
@@ -568,16 +476,11 @@ export async function contentGetManifestPrivateBasic(requester: HttpRequester, i
       id,
       uid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -590,8 +493,26 @@ export async function contentGetManifestChecksumsBasic(requester: HttpRequester,
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `GetBinaryDownloadUrlsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function contentPostBinaryPrivateUrlsBasic(requester: HttpRequester, payload: GetBinaryDownloadUrlsRequest, gamertag?: string): Promise<HttpResponse<GetBinaryDownloadUrlsResponse>> {
+  let endpoint = "/basic/content/binary/private/urls";
+  
+  // Make the API request
+  return makeApiRequest<GetBinaryDownloadUrlsResponse, GetBinaryDownloadUrlsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
   });
 }
 
@@ -619,10 +540,6 @@ export async function contentGetManifestChecksumBasic(requester: HttpRequester, 
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -635,7 +552,6 @@ export async function contentGetManifestsBasic(requester: HttpRequester, gamerta
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }

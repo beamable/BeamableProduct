@@ -24,10 +24,6 @@ import type { ListDefinitionsResponse } from '@/__generated__/schemas/ListDefini
 import type { ListTagsResponse } from '@/__generated__/schemas/ListTagsResponse';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tagNameFilter - The `tagNameFilter` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -44,16 +40,11 @@ export async function announcementsGetListTagsBasic(requester: HttpRequester, ta
     q: {
       tagNameFilter
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -66,16 +57,11 @@ export async function announcementsGetListBasic(requester: HttpRequester, gamert
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param date - The `date` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -92,16 +78,11 @@ export async function announcementsGetSearchBasic(requester: HttpRequester, date
     q: {
       date
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -114,16 +95,11 @@ export async function announcementsGetListDefinitionsBasic(requester: HttpReques
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AnnouncementDto` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -138,16 +114,11 @@ export async function announcementsPostBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteAnnouncementRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -162,16 +133,11 @@ export async function announcementsDeleteBasic(requester: HttpRequester, payload
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -184,8 +150,7 @@ export async function announcementsGetContentBasic(requester: HttpRequester, gam
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
