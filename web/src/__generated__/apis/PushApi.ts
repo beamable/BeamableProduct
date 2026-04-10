@@ -12,10 +12,6 @@ import type { RegisterReq } from '@/__generated__/schemas/RegisterReq';
 import type { SendReq } from '@/__generated__/schemas/SendReq';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RegisterReq` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -30,16 +26,11 @@ export async function pushPostRegisterBasic(requester: HttpRequester, payload: R
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SendReq` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -54,7 +45,6 @@ export async function pushPostSendBasic(requester: HttpRequester, payload: SendR
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }

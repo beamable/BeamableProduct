@@ -20,11 +20,12 @@ import type { SetPresenceStatusRequest } from '@/__generated__/schemas/SetPresen
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param playerId - The `playerId` parameter to include in the API request.
+ * @param playerId - The player ID to heartbeat. Must match the authenticated player.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersPutPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
+export async function playersPutPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<ApiPlayersPresencePutPlayerPresenceResponse>> {
   let endpoint = "/api/players/{playerId}/presence".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -43,11 +44,12 @@ export async function playersPutPresenceByPlayerId(requester: HttpRequester, pla
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param playerId - The `playerId` parameter to include in the API request.
+ * @param playerId - Player ID to retrieve online status for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersGetPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
+export async function playersGetPresenceByPlayerId(requester: HttpRequester, playerId: string, gamertag?: string, timeout?: string): Promise<HttpResponse<OnlineStatus>> {
   let endpoint = "/api/players/{playerId}/presence".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request
@@ -67,11 +69,12 @@ export async function playersGetPresenceByPlayerId(requester: HttpRequester, pla
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SetPresenceStatusRequest` instance to use for the API request
- * @param playerId - The `playerId` parameter to include in the API request.
+ * @param playerId - The player ID to update. Must match the authenticated player.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * @param gamertag - Set the request timeout in seconds. Defaults to 10 seconds.
  * 
  */
-export async function playersPutPresenceStatusByPlayerId(requester: HttpRequester, playerId: string, payload: SetPresenceStatusRequest, gamertag?: string): Promise<HttpResponse<OnlineStatus>> {
+export async function playersPutPresenceStatusByPlayerId(requester: HttpRequester, playerId: string, payload: SetPresenceStatusRequest, gamertag?: string, timeout?: string): Promise<HttpResponse<OnlineStatus>> {
   let endpoint = "/api/players/{playerId}/presence/status".replace(playerIdPlaceholder, endpointEncoder(playerId));
   
   // Make the API request

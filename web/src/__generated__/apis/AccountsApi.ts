@@ -43,10 +43,6 @@ import type { TransferThirdPartyAssociation } from '@/__generated__/schemas/Tran
 import type { UpdateRole } from '@/__generated__/schemas/UpdateRole';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteDevicesRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -61,16 +57,11 @@ export async function accountsDeleteMeDeviceBasic(requester: HttpRequester, payl
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -83,16 +74,11 @@ export async function accountsGetMeBasic(requester: HttpRequester, gamertag?: st
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AccountUpdate` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -107,16 +93,11 @@ export async function accountsPutMeBasic(requester: HttpRequester, payload: Acco
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ThirdPartyAvailableRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -131,8 +112,7 @@ export async function accountsDeleteMeThirdPartyBasic(requester: HttpRequester, 
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -158,10 +138,6 @@ export async function accountsGetGetPersonallyIdentifiableInformationBasic(reque
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param page - The `page` parameter to include in the API request.
  * @param pagesize - The `pagesize` parameter to include in the API request.
@@ -182,16 +158,11 @@ export async function accountsGetSearchBasic(requester: HttpRequester, page: num
       pagesize,
       query
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `EmailUpdateRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -206,16 +177,11 @@ export async function accountsPostEmailUpdateInitBasic(requester: HttpRequester,
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `EmailUpdateConfirmation` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -230,8 +196,7 @@ export async function accountsPostEmailUpdateConfirmBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -284,10 +249,6 @@ export async function accountsGetAvailableThirdPartyBasic(requester: HttpRequest
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreateElevatedAccountRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -302,16 +263,11 @@ export async function accountsPostAdminAdminUserBasic(requester: HttpRequester, 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AccountRegistration` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -326,16 +282,11 @@ export async function accountsPostRegisterBasic(requester: HttpRequester, payloa
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -348,8 +299,7 @@ export async function accountsGetAdminMeBasic(requester: HttpRequester, gamertag
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -373,10 +323,6 @@ export async function accountsPostPasswordUpdateInitBasic(requester: HttpRequest
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -389,16 +335,11 @@ export async function accountsGetAdminAdminUsersBasic(requester: HttpRequester, 
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param query - The `query` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -415,8 +356,7 @@ export async function accountsGetFindBasic(requester: HttpRequester, query: stri
     q: {
       query
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -501,10 +441,6 @@ export async function accountsPostPasswordUpdateConfirmBasic(requester: HttpRequ
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `AttachExternalIdentityApiRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -519,16 +455,11 @@ export async function accountsPostExternalIdentityBasic(requester: HttpRequester
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteExternalIdentityApiRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -543,8 +474,7 @@ export async function accountsDeleteExternalIdentityBasic(requester: HttpRequest
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 

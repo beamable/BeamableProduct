@@ -24,10 +24,6 @@ import type { TrialSuccessResponse } from '@/__generated__/schemas/TrialSuccessR
 import type { UploadTrialDataRequest } from '@/__generated__/schemas/UploadTrialDataRequest';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - The `id` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -44,16 +40,11 @@ export async function trialsGetAdminDataBasic(requester: HttpRequester, id: bigi
     q: {
       id
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UploadTrialDataRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -68,16 +59,11 @@ export async function trialsPostDataBasic(requester: HttpRequester, payload: Upl
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteTrialDataRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -92,16 +78,11 @@ export async function trialsDeleteDataBasic(requester: HttpRequester, payload: D
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PauseTrialRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -116,16 +97,11 @@ export async function trialsPutPauseBasic(requester: HttpRequester, payload: Pau
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ScheduleTrialRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -140,16 +116,11 @@ export async function trialsPutScheduleBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -162,16 +133,11 @@ export async function trialsGetBasic(requester: HttpRequester, gamertag?: string
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreateTrialRestRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -186,16 +152,11 @@ export async function trialsPostBasic(requester: HttpRequester, payload: CreateT
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `DeleteTrialRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -210,16 +171,11 @@ export async function trialsDeleteBasic(requester: HttpRequester, payload: Delet
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param dbid - The `dbid` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -236,16 +192,11 @@ export async function trialsGetAdminBasic(requester: HttpRequester, dbid: bigint
     q: {
       dbid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StartTrialRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -260,7 +211,6 @@ export async function trialsPutStartBasic(requester: HttpRequester, payload: Sta
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }

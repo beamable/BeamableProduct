@@ -29,10 +29,6 @@ import type { ListLeaderBoardViewResponse } from '@/__generated__/schemas/ListLe
 import type { MatchMakingMatchesPvpResponse } from '@/__generated__/schemas/MatchMakingMatchesPvpResponse';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param includePartitions - The `includePartitions` parameter to include in the API request.
  * @param limit - The `limit` parameter to include in the API request.
@@ -55,16 +51,11 @@ export async function leaderboardsGetListBasic(requester: HttpRequester, include
       prefix,
       skip
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param dbid - The `dbid` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -81,16 +72,11 @@ export async function leaderboardsGetPlayerBasic(requester: HttpRequester, dbid:
     q: {
       dbid
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param boardId - The `boardId` parameter to include in the API request.
  * @param joinBoard - The `joinBoard` parameter to include in the API request.
@@ -109,16 +95,11 @@ export async function leaderboardsGetAssignmentBasic(requester: HttpRequester, b
       boardId,
       joinBoard
     },
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -131,8 +112,7 @@ export async function leaderboardsGetUidBasic(requester: HttpRequester, gamertag
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
@@ -142,7 +122,7 @@ export async function leaderboardsGetUidBasic(requester: HttpRequester, gamertag
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -165,7 +145,7 @@ export async function leaderboardsDeleteEntriesByObjectId(requester: HttpRequest
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param playerId - The `playerId` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -192,7 +172,7 @@ export async function leaderboardsGetMembershipByObjectId(requester: HttpRequest
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param ids - The `ids` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -219,7 +199,7 @@ export async function leaderboardsGetRanksByObjectId(requester: HttpRequester, o
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param playerId - The `playerId` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -246,7 +226,7 @@ export async function leaderboardsGetPartitionByObjectId(requester: HttpRequeste
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -270,7 +250,7 @@ export async function leaderboardsGetFriendsByObjectId(requester: HttpRequester,
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `LeaderboardCreateRequest` instance to use for the API request
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -294,7 +274,7 @@ export async function leaderboardsPostByObjectId(requester: HttpRequester, objec
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -317,7 +297,7 @@ export async function leaderboardsDeleteByObjectId(requester: HttpRequester, obj
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param poolSize - The `poolSize` parameter to include in the API request.
  * @param windowSize - The `windowSize` parameter to include in the API request.
  * @param windows - The `windows` parameter to include in the API request.
@@ -348,7 +328,7 @@ export async function leaderboardsGetMatchesByObjectId(requester: HttpRequester,
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -372,7 +352,7 @@ export async function leaderboardsGetAssignmentByObjectId(requester: HttpRequest
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `LeaderboardRemoveCacheEntryRequest` instance to use for the API request
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -397,7 +377,7 @@ export async function leaderboardsDeleteAssignmentByObjectId(requester: HttpRequ
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `LeaderboardAddRequest` instance to use for the API request
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -422,7 +402,7 @@ export async function leaderboardsPutEntryByObjectId(requester: HttpRequester, o
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `LeaderboardRemoveEntryRequest` instance to use for the API request
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -446,7 +426,7 @@ export async function leaderboardsDeleteEntryByObjectId(requester: HttpRequester
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
@@ -469,7 +449,30 @@ export async function leaderboardsPutFreezeByObjectId(requester: HttpRequester, 
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function leaderboardsDeleteFreezeByObjectId(requester: HttpRequester, objectId: string, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+  let endpoint = "/object/leaderboards/{objectId}/freeze".replace(objectIdPlaceholder, endpointEncoder(objectId));
+  
+  // Make the API request
+  return makeApiRequest<CommonResponse>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param objectId - Leaderboard ID
  * @param from - The `from` parameter to include in the API request.
  * @param max - The `max` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -498,7 +501,7 @@ export async function leaderboardsGetDetailsByObjectId(requester: HttpRequester,
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param focus - The `focus` parameter to include in the API request.
  * @param friends - The `friends` parameter to include in the API request.
  * @param from - The `from` parameter to include in the API request.
@@ -536,7 +539,7 @@ export async function leaderboardsGetViewByObjectId(requester: HttpRequester, ob
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `LeaderboardSwapRequest` instance to use for the API request
- * @param objectId - Gamertag of the player.
+ * @param objectId - Leaderboard ID
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */

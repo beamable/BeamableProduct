@@ -20,10 +20,6 @@ import type { UploadRequestsFromPortal } from '@/__generated__/schemas/UploadReq
 import type { URLSResponse } from '@/__generated__/schemas/URLSResponse';
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ReplaceObjectsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -38,16 +34,11 @@ export async function cloudsavingPostDataReplaceBasic(requester: HttpRequester, 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ObjectRequests` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -62,16 +53,11 @@ export async function cloudsavingDeleteDataBasic(requester: HttpRequester, paylo
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ObjectRequests` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -86,16 +72,11 @@ export async function cloudsavingPostDataDownloadURLBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ObjectRequests` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -110,16 +91,11 @@ export async function cloudsavingPostDataDownloadURLFromPortalBasic(requester: H
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PlayerBasicCloudDataRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -134,16 +110,11 @@ export async function cloudsavingPutDataMoveBasic(requester: HttpRequester, payl
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PlayerBasicCloudDataRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -158,16 +129,11 @@ export async function cloudsavingPutDataMoveFromPortalBasic(requester: HttpReque
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UploadRequestsFromPortal` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -182,16 +148,11 @@ export async function cloudsavingPostDataUploadURLFromPortalBasic(requester: Htt
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UploadRequests` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -206,16 +167,11 @@ export async function cloudsavingPutDataCommitManifestBasic(requester: HttpReque
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
 /**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UploadRequests` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -230,8 +186,7 @@ export async function cloudsavingPostDataUploadURLBasic(requester: HttpRequester
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
+    g: gamertag
   });
 }
 
