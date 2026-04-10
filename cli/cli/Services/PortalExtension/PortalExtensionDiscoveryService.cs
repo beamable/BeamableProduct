@@ -5,6 +5,7 @@ using cli.Utils;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace cli.Services.PortalExtension;
 
@@ -16,6 +17,7 @@ public class ExtensionBuildData //TODO make this have a diff version number so w
 
 	public DiffInstructions DiffInstructionsJs;
 	public DiffInstructions DiffInstructionsCss;
+	public DiffInstructions DiffInstructionsMetadata;
 
 	public string CurrentHash;
 }
@@ -26,12 +28,6 @@ public class ExtensionBuildMetaData
 	public string Name;
 	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
-}
-
-public enum PortalExtensionType
-{
-	TestPage,
-	PlayerPage
 }
 
 public class PortalExtensionDiscoveryService : Microservice
@@ -50,10 +46,12 @@ public class PortalExtensionDiscoveryService : Microservice
 			FullData = buildData.FullData,
 			DiffInstructionsJs = buildData.DiffInstructionsJs,
 			DiffInstructionsCss = buildData.DiffInstructionsCss,
+			DiffInstructionsMetadata = buildData.DiffInstructionsMetadata,
 			CurrentHash = buildData.CurrentHash
 		};
 	}
 
+	//TODO we can delete this before launch of PE
 	[ClientCallable]
 	public ExtensionBuildMetaData RequestMetaData()
 	{
@@ -77,6 +75,7 @@ public class PortalExtensionObserver
 	{
 		public string[] previousLinesJs;
 		public string[] previousLinesCss;
+		public string[] previousLinesMetadata;
 
 		public string previousBuildHash;
 	}
@@ -133,14 +132,44 @@ public class PortalExtensionObserver
 		_manifest = manifest;
 	}
 
-	public void BuildExtension()
+	public virtual void BuildExtension()
 	{
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+
+		try
+		{
+			var metadataContent = new ExtensionBuildMetaData
+			{
+				Name = ExtensionMetaData.Name,
+				ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
+				Properties = ExtensionMetaData.Properties
+			};
+
+			var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
+
+			string metaDataDir = Path.GetDirectoryName(metadataPath);
+
+			if (!Directory.Exists(metaDataDir))
+			{
+				Directory.CreateDirectory(metadataPath);
+			}
+
+			var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
+
+			File.WriteAllText(metadataPath, metadataContentJson);
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed to generate portal extension metadata file. \nCheck exception: [\n{e.Message}] \nStackTrace: [{e.StackTrace}]"
+				.Trim());
+		}
+
 	}
 
 	public void InstallDeps()
@@ -155,18 +184,20 @@ public class PortalExtensionObserver
 
 	public ExtensionBuildData GetAppBuild(string clientHash)
 	{
-		var mainJsPath = Path.Combine(AppFilesPath, "assets", "main.js");
-		var mainCssPath = Path.Combine(AppFilesPath, "assets", "main.css");
+		var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
+		var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
+		var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
 
-		if (!File.Exists(mainJsPath) || !File.Exists(mainCssPath))
+		if (!File.Exists(mainJsPath) || !File.Exists(mainCssPath) || !File.Exists(metadataPath))
 		{
-			throw new CliException($"Could not find the portal extension built files. These should exist: [\"{mainJsPath}\", \"{mainCssPath}\"]");
+			throw new CliException($"Could not find the portal extension built files. These should exist: [\"{mainJsPath}\", \"{mainCssPath}\", \"{metadataPath}\"]");
 		}
 
 		string[] currentJsLines = File.ReadLines(mainJsPath).ToArray();
 		string[] currentCssLines = File.ReadLines(mainCssPath).ToArray();
+		string[] currentMetadataLines = File.ReadLines(metadataPath).ToArray();
 
-		var computedHash = GetBuildHash(currentJsLines, currentCssLines);
+		var computedHash = GetBuildHash(currentJsLines, currentCssLines, currentMetadataLines);
 
 
 		// no sender hash, no stored previous hash or different hash than expected, means that we need to send the full build and sync the hashes
@@ -176,10 +207,11 @@ public class PortalExtensionObserver
 			{
 				previousLinesJs = currentJsLines,
 				previousLinesCss = currentCssLines,
+				previousLinesMetadata = currentMetadataLines,
 				previousBuildHash = computedHash,
 			};
 
-			var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath});
+			var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath, metadataPath});
 
 			return new ExtensionBuildData()
 			{
@@ -191,29 +223,34 @@ public class PortalExtensionObserver
 
 		var diffJs = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesJs, currentJsLines);
 		var diffCss = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesCss, currentCssLines);
+		var diffMetadata = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesMetadata, currentMetadataLines);
 
 		var result = new ExtensionBuildData()
 		{
 			CurrentHash = computedHash,
 			IsFullBuild = false,
 			DiffInstructionsJs = diffJs,
-			DiffInstructionsCss = diffCss
+			DiffInstructionsCss = diffCss,
+			DiffInstructionsMetadata = diffMetadata,
 		};
 
 		_currentExtensionData.previousLinesJs = currentJsLines;
 		_currentExtensionData.previousLinesCss = currentCssLines;
+		_currentExtensionData.previousLinesMetadata = currentMetadataLines;
 		_currentExtensionData.previousBuildHash = computedHash;
 
 		return result;
 	}
 
-	private static string GetBuildHash(string[] fileA, string[] fileB)
+	public static string GetBuildHash(string[] fileA, string[] fileB, string[] fileC)
 	{
 		var sequenceA = fileA.Select((val, index) => new KeyValuePair<string, string>($"A:{index}", val));
 
 		var sequenceB = fileB.Select((val, index) => new KeyValuePair<string, string>($"B:{index}", val));
 
-		var combined = sequenceA.Concat(sequenceB);
+		var sequenceC = fileC.Select((val, index) => new KeyValuePair<string, string>($"C:{index}", val));
+
+		var combined = sequenceA.Concat(sequenceB).Concat(sequenceC);
 
 		StringBuilder sb = new StringBuilder();
 		foreach (var item in combined)

@@ -10,8 +10,12 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] ids;
         /// <summary>By default, a blank --ids option maps to ALL available ids. When the --exact-ids flag is given, a blank --ids option maps to NO ids</summary>
         public bool exactIds;
+        /// <summary>Instructs the generator to write code for a server, not a client</summary>
+        public bool server;
         /// <summary>Directory to write the output client at</summary>
         public string outputDir;
+        /// <summary>Path to an existing beam_openApi.json file; skips manifest lookup when provided</summary>
+        public string oapiPath;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -31,10 +35,20 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--exact-ids=" + this.exactIds));
             }
+            // If the server value was not default, then add it to the list of args.
+            if ((this.server != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--server=" + this.server));
+            }
             // If the outputDir value was not default, then add it to the list of args.
             if ((this.outputDir != default(string)))
             {
                 genBeamCommandArgs.Add(("--output-dir=" + this.outputDir));
+            }
+            // If the oapiPath value was not default, then add it to the list of args.
+            if ((this.oapiPath != default(string)))
+            {
+                genBeamCommandArgs.Add(("--oapi-path=" + this.oapiPath));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Beamable.Common;
+using Newtonsoft.Json.Linq;
 
 namespace cli.Services;
 
@@ -282,6 +283,17 @@ public class ProjectService
 
 		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
 		await RunDotnetCommand($"new portalextensionapp -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
+
+		{ // Updates the package name to use the same name passed in it's creation, making sure it's the correct one instead of what dotnet template might parse
+			var packagePath = Path.Combine(portalExtensionInfo.ServicePath, "package.json");
+			string jsonContent = File.ReadAllText(packagePath);
+
+			JObject root = JObject.Parse(jsonContent);
+			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
+				JToken.FromObject(args.ProjectName.Value);
+
+			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+		}
 
 		await args.BeamoLocalSystem.InitManifest();
 

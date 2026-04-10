@@ -872,7 +872,7 @@ public static class ProjectContextUtil
 		definition.PortalExtensionDefinition = def;
 		definition.BeamoId = def.Name;
 		definition.Protocol = BeamoProtocolType.PortalExtension;
-		definition.ProjectPath = def.RelativePath;
+		definition.ProjectPath = def.AbsolutePackageJsonPath;
 		definition.AbsoluteProjectPath = def.AbsolutePath;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.JavascriptSvelte;
 
