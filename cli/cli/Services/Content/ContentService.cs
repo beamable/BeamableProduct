@@ -887,7 +887,7 @@ public partial class ContentService
 					checksum = c.checksum,
 					type = c.type.ToString().ToLower(),
 					tags = new OptionalArrayOfString(c.tags),
-					uri = c.id,
+					uri = c.uri,
 					visibility = c.visibility.ToString().ToLower()
 				}).ToArray()
 		};

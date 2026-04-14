@@ -45,6 +45,7 @@ namespace Beamable.Editor.ContentService
 		private List<string> _tagsCache = new();
 		private int syncedContents;
 		private int publishedContents;
+		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
 		
 		[NonSerialized]
 		public bool isReloading;
@@ -95,6 +96,16 @@ namespace Beamable.Editor.ContentService
 		public void SaveContent(ContentObject selectedContentObject)
 		{
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+
+			// This prevents save storms when the debounce fires for rapid-fire edits where
+			// the final serialised value is the same as what was already written.
+			if (_lastSavedPropertiesCache.TryGetValue(selectedContentObject.Id, out var lastJson)
+			    && lastJson == propertiesJson)
+			{
+				return;
+			}
+			_lastSavedPropertiesCache[selectedContentObject.Id] = propertiesJson;
+
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
 			SaveContent(selectedContentObject.Id, propertiesJson, () => SetContentTags(selectedContentObject.Id, selectedContentObject.Tags));
@@ -619,6 +630,7 @@ namespace Beamable.Editor.ContentService
 			_statusContentCache.Clear();
 			_conflictedContentCache.Clear();
 			_contentIdTagsCache.Clear();
+			_lastSavedPropertiesCache.Clear();
 		}
 
 		public void ReceiveStorageHandle(StorageHandle<CliContentService> handle)

@@ -359,6 +359,9 @@ namespace Beamable.Common.Content
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
       private EditorCoroutine _validateCoroutine;
+      [NonSerialized, IgnoreContentField, HideInInspector]
+      private string _lastChecksum = string.Empty;
+
 
       public Guid ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
@@ -401,12 +404,8 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-
-	      if (_validateCoroutine != null)
-	      {
-		      EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
-	      }
-	      _validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+	      _lastChecksum = GetEditorDataChecksum();
+	      ScheduleDelayedValidate();
 	      
 
 	      if (ValidationContext == null)
@@ -445,10 +444,50 @@ namespace Beamable.Common.Content
 	      _validateCoroutine = null;
       }
 
+		private void ScheduleDelayedValidate()
+		{
+			if (_validateCoroutine != null)
+			{
+				EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+			}
+			_validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+		}
+
+		private string CalculateDataChecksum()
+		{
+			string jsonData;
+			try
+			{
+				jsonData = ClientContentSerializer.SerializeProperties(this);
+			}
+			catch
+			{
+				jsonData = EditorJsonUtility.ToJson(this);
+			}
+			return ClientContentSerializer.CalculateChecksum(jsonData);
+		}
+
+		public string GetEditorDataChecksum()
+		{
+			return CalculateDataChecksum();
+		}
+
       public void ForceValidate()
       {
          OnValidate();
+      }
 
+      
+      public void CheckForNonDetectedChanges()
+      {
+		 var nextChecksum = GetEditorDataChecksum();
+		 if (!string.IsNullOrEmpty(_lastChecksum) && string.Equals(_lastChecksum, nextChecksum, StringComparison.Ordinal))
+		 {
+			return;
+		 }
+
+		 _lastChecksum = nextChecksum;
+		 ScheduleDelayedValidate();
       }
 
       [ContextMenu("Force Validate")]
