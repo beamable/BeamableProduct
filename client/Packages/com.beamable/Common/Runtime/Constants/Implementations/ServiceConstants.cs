@@ -136,6 +136,8 @@ namespace Beamable.Common
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
 					public const string STORAGE_READY = "Waiting for connections";
 					public const string GENERATED_CLIENT_PREFIX = "Generated Client Code.";
+					public const string PORTAL_EXTENSION_RUNNING =
+						"Portal extension started successfully and is now running.";
 				}
 
 				public static class Dialogs
