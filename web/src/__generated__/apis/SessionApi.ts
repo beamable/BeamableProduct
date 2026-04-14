@@ -103,6 +103,10 @@ export async function sessionsGetStatus(requester: HttpRequester, intervalSecs?:
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -115,11 +119,16 @@ export async function sessionPostHeartbeatBasic(requester: HttpRequester, gamert
     r: requester,
     e: endpoint,
     m: POST,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param dbid - The `dbid` parameter to include in the API request.
  * @param month - The `month` parameter to include in the API request.
@@ -140,11 +149,16 @@ export async function sessionGetHistoryBasic(requester: HttpRequester, dbid: big
       month,
       year
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param intervalSecs - The `intervalSecs` parameter to include in the API request.
  * @param playerIds - The `playerIds` parameter to include in the API request.
@@ -163,11 +177,16 @@ export async function sessionGetStatusBasic(requester: HttpRequester, intervalSe
       intervalSecs,
       playerIds
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param month - The `month` parameter to include in the API request.
  * @param year - The `year` parameter to include in the API request.
@@ -186,11 +205,16 @@ export async function sessionGetClientHistoryBasic(requester: HttpRequester, mon
       month,
       year
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SessionBasicStartSessionRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -205,6 +229,7 @@ export async function sessionPostBasic(requester: HttpRequester, payload: Sessio
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }

@@ -281,6 +281,10 @@ export async function statsPostQueryExtended(requester: HttpRequester, payload: 
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsSubscribeRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -295,11 +299,16 @@ export async function statsPutSubscribeBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsUnsubscribeRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -314,7 +323,8 @@ export async function statsDeleteSubscribeBasic(requester: HttpRequester, payloa
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -344,6 +354,10 @@ export async function statsGetClientBatchBasic(requester: HttpRequester, objectI
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BatchSetStatsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -358,11 +372,16 @@ export async function statsPostBatchBasic(requester: HttpRequester, payload: Bat
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `StatsBasicStatsSearchRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -377,11 +396,16 @@ export async function statsPostSearchBasic(requester: HttpRequester, payload: St
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SearchExtendedRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -396,7 +420,8 @@ export async function statsPostSearchExtendedBasic(requester: HttpRequester, pay
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

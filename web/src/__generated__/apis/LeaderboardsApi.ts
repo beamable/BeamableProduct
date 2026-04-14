@@ -29,6 +29,10 @@ import type { ListLeaderBoardViewResponse } from '@/__generated__/schemas/ListLe
 import type { MatchMakingMatchesPvpResponse } from '@/__generated__/schemas/MatchMakingMatchesPvpResponse';
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param includePartitions - The `includePartitions` parameter to include in the API request.
  * @param limit - The `limit` parameter to include in the API request.
@@ -51,11 +55,16 @@ export async function leaderboardsGetListBasic(requester: HttpRequester, include
       prefix,
       skip
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param dbid - The `dbid` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -72,11 +81,16 @@ export async function leaderboardsGetPlayerBasic(requester: HttpRequester, dbid:
     q: {
       dbid
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param boardId - The `boardId` parameter to include in the API request.
  * @param joinBoard - The `joinBoard` parameter to include in the API request.
@@ -95,11 +109,16 @@ export async function leaderboardsGetAssignmentBasic(requester: HttpRequester, b
       boardId,
       joinBoard
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -112,7 +131,8 @@ export async function leaderboardsGetUidBasic(requester: HttpRequester, gamertag
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

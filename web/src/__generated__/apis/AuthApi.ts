@@ -408,6 +408,10 @@ export async function authPostServer(requester: HttpRequester, payload: AuthV2Se
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamerTagOrAccountId - The `gamerTagOrAccountId` parameter to include in the API request.
  * @param page - The `page` parameter to include in the API request.
@@ -432,7 +436,8 @@ export async function authGetTokenListBasic(requester: HttpRequester, gamerTagOr
       cid,
       pid
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -477,6 +482,10 @@ export async function authPostTokenBasic(requester: HttpRequester, payload: Toke
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RevokeTokenRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -491,6 +500,7 @@ export async function authPutTokenRevokeBasic(requester: HttpRequester, payload:
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }

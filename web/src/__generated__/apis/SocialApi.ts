@@ -20,6 +20,10 @@ import type { SendFriendRequest } from '@/__generated__/schemas/SendFriendReques
 import type { Social } from '@/__generated__/schemas/Social';
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -32,11 +36,16 @@ export async function socialGetMyBasic(requester: HttpRequester, gamertag?: stri
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SendFriendRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -51,11 +60,16 @@ export async function socialPostFriendsInviteBasic(requester: HttpRequester, pay
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SendFriendRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -70,11 +84,16 @@ export async function socialDeleteFriendsInviteBasic(requester: HttpRequester, p
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PlayerIdRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -89,11 +108,16 @@ export async function socialDeleteFriendsBasic(requester: HttpRequester, payload
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ImportFriendsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -108,11 +132,16 @@ export async function socialPostFriendsImportBasic(requester: HttpRequester, pay
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `MakeFriendshipRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -127,11 +156,16 @@ export async function socialPostFriendsMakeBasic(requester: HttpRequester, paylo
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerIds - The `playerIds` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -148,11 +182,16 @@ export async function socialGetBasic(requester: HttpRequester, playerIds: string
     q: {
       playerIds
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PlayerIdRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -167,11 +206,16 @@ export async function socialPostBlockedBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PlayerIdRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -186,6 +230,7 @@ export async function socialDeleteBlockedBasic(requester: HttpRequester, payload
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }

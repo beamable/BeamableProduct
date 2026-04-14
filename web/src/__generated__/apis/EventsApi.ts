@@ -23,6 +23,10 @@ import type { PingRsp } from '@/__generated__/schemas/PingRsp';
 import type { SetContentRequest } from '@/__generated__/schemas/SetContentRequest';
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -35,11 +39,16 @@ export async function eventsGetContentBasic(requester: HttpRequester, gamertag?:
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param from - The `from` parameter to include in the API request.
  * @param limit - The `limit` parameter to include in the API request.
@@ -62,11 +71,16 @@ export async function eventsGetCalendarBasic(requester: HttpRequester, from?: st
       query,
       to
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `EventApplyRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -81,7 +95,8 @@ export async function eventsPostApplyContentBasic(requester: HttpRequester, payl
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

@@ -102,6 +102,10 @@ export async function paymentsPostWindowsPurchaseCompleteBasic(requester: HttpRe
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -116,7 +120,8 @@ export async function paymentsPostTestPurchaseBeginBasic(requester: HttpRequeste
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -165,6 +170,10 @@ export async function paymentsPostFacebookUpdateBasic(requester: HttpRequester, 
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -179,7 +188,8 @@ export async function paymentsPostSteamPurchaseFailBasic(requester: HttpRequeste
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -203,6 +213,10 @@ export async function paymentsPostFacebookPurchaseCompleteBasic(requester: HttpR
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -217,7 +231,8 @@ export async function paymentsPostFacebookPurchaseFailBasic(requester: HttpReque
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -300,6 +315,10 @@ export async function paymentsPostTestPurchaseTrackBasic(requester: HttpRequeste
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -314,11 +333,16 @@ export async function paymentsPostGoogleplayPurchaseBeginBasic(requester: HttpRe
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -333,7 +357,8 @@ export async function paymentsPostItunesPurchaseBeginBasic(requester: HttpReques
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -357,6 +382,10 @@ export async function paymentsPostGoogleplayPurchaseVerifyBasic(requester: HttpR
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -371,7 +400,8 @@ export async function paymentsPostFacebookPurchaseCancelBasic(requester: HttpReq
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -433,6 +463,10 @@ export async function paymentsPostFacebookPurchaseTrackBasic(requester: HttpRequ
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -447,7 +481,8 @@ export async function paymentsPostItunesPurchaseFailBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -471,6 +506,10 @@ export async function paymentsPostTestPurchaseVerifyBasic(requester: HttpRequest
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -485,7 +524,8 @@ export async function paymentsPostTestPurchaseCancelBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -549,6 +589,10 @@ export async function paymentsPostWindowsPurchaseVerifyBasic(requester: HttpRequ
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -563,11 +607,16 @@ export async function paymentsPostTestPurchaseFailBasic(requester: HttpRequester
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -582,7 +631,8 @@ export async function paymentsPostCouponPurchaseCancelBasic(requester: HttpReque
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -625,6 +675,10 @@ export async function paymentsPostItunesPurchaseCompleteBasic(requester: HttpReq
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -639,7 +693,8 @@ export async function paymentsPostCouponPurchaseBeginBasic(requester: HttpReques
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -682,6 +737,10 @@ export async function paymentsPostSteamPurchaseTrackBasic(requester: HttpRequest
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -696,11 +755,16 @@ export async function paymentsPostFacebookPurchaseBeginBasic(requester: HttpRequ
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param orderId - The `orderId` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -717,7 +781,8 @@ export async function paymentsGetSteamOrderBasic(requester: HttpRequester, order
     q: {
       orderId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -741,6 +806,10 @@ export async function paymentsPostCouponPurchaseVerifyBasic(requester: HttpReque
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -755,7 +824,8 @@ export async function paymentsPostWindowsPurchaseBeginBasic(requester: HttpReque
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -781,6 +851,10 @@ export async function paymentsGetWindowsProductBasic(requester: HttpRequester, s
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -795,7 +869,8 @@ export async function paymentsPostGoogleplayPurchaseFailBasic(requester: HttpReq
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -821,6 +896,10 @@ export async function paymentsGetFacebookProductBasic(requester: HttpRequester, 
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -835,7 +914,8 @@ export async function paymentsPostGoogleplayPurchaseCancelBasic(requester: HttpR
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -861,6 +941,10 @@ export async function paymentsGetCouponProductBasic(requester: HttpRequester, sk
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -875,11 +959,16 @@ export async function paymentsPostCouponPurchaseFailBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeginPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -894,7 +983,8 @@ export async function paymentsPostSteamPurchaseBeginBasic(requester: HttpRequest
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -920,6 +1010,10 @@ export async function paymentsGetSteamProductsBasic(requester: HttpRequester, st
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -934,7 +1028,8 @@ export async function paymentsPostSteamPurchaseCancelBasic(requester: HttpReques
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -998,6 +1093,10 @@ export async function paymentsPostCouponPurchaseCompleteBasic(requester: HttpReq
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -1012,7 +1111,8 @@ export async function paymentsPostWindowsPurchaseCancelBasic(requester: HttpRequ
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -1038,6 +1138,10 @@ export async function paymentsGetGoogleplayProductBasic(requester: HttpRequester
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -1052,11 +1156,16 @@ export async function paymentsPostWindowsPurchaseFailBasic(requester: HttpReques
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CancelPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -1071,7 +1180,8 @@ export async function paymentsPostItunesPurchaseCancelBasic(requester: HttpReque
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

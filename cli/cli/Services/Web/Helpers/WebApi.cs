@@ -249,7 +249,9 @@ public static class WebApi
 		var requiresAuth = !serviceType.Equals("basic", StringComparison.InvariantCultureIgnoreCase) ||
 		                   serviceName.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 		                   (operation.Security.Count >= 1 &&
-		                    operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user"));
+		                    operation.Security[0].Any(kvp =>
+			                    kvp.Key.Reference?.Id is "user" or "auth" ||
+			                    kvp.Key.Scheme?.Equals("bearer", StringComparison.OrdinalIgnoreCase) == true));
 		var remarks = requiresAuth
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;

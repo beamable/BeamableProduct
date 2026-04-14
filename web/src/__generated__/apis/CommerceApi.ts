@@ -30,6 +30,10 @@ import type { SaveSKUsRequest } from '@/__generated__/schemas/SaveSKUsRequest';
 import type { StatSubscriptionNotification } from '@/__generated__/schemas/StatSubscriptionNotification';
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveCatalogRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -44,11 +48,16 @@ export async function commercePostCatalogLegacyBasic(requester: HttpRequester, p
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param version - The `version` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -65,7 +74,8 @@ export async function commerceGetCatalogBasic(requester: HttpRequester, version?
     q: {
       version
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -91,6 +101,10 @@ export async function commerceGetSkusBasic(requester: HttpRequester, version?: b
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SaveSKUsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -105,7 +119,8 @@ export async function commercePostSkusBasic(requester: HttpRequester, payload: S
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

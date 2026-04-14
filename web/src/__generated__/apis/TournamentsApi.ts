@@ -75,6 +75,10 @@ export async function tournamentsGetBasic(requester: HttpRequester, contentId?: 
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `JoinRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -89,11 +93,16 @@ export async function tournamentsPostBasic(requester: HttpRequester, payload: Jo
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -110,11 +119,16 @@ export async function tournamentsGetMeGroupBasic(requester: HttpRequester, conte
     q: {
       contentId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
@@ -133,11 +147,16 @@ export async function tournamentsGetRewardsBasic(requester: HttpRequester, conte
       contentId,
       tournamentId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RewardsRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -152,11 +171,16 @@ export async function tournamentsPostRewardsBasic(requester: HttpRequester, payl
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
@@ -183,11 +207,16 @@ export async function tournamentsGetGlobalBasic(requester: HttpRequester, tourna
       from,
       max
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
@@ -214,11 +243,16 @@ export async function tournamentsGetStandingsGroupBasic(requester: HttpRequester
       from,
       max
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
@@ -245,11 +279,16 @@ export async function tournamentsGetStandingsBasic(requester: HttpRequester, tou
       from,
       max
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param playerId - The `playerId` parameter to include in the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
@@ -272,11 +311,16 @@ export async function tournamentsGetAdminPlayerBasic(requester: HttpRequester, p
       hasUnclaimedRewards,
       tournamentId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UpdatePlayerStatusRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -291,11 +335,16 @@ export async function tournamentsPutAdminPlayerBasic(requester: HttpRequester, p
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
  * @param hasUnclaimedRewards - The `hasUnclaimedRewards` parameter to include in the API request.
@@ -316,11 +365,16 @@ export async function tournamentsGetMeBasic(requester: HttpRequester, contentId?
       hasUnclaimedRewards,
       tournamentId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param cycles - The `cycles` parameter to include in the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
@@ -341,7 +395,8 @@ export async function tournamentsGetChampionsBasic(requester: HttpRequester, cyc
       tournamentId,
       contentId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -365,6 +420,10 @@ export async function tournamentsPostScoreBasic(requester: HttpRequester, payloa
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param tournamentId - The `tournamentId` parameter to include in the API request.
  * @param contentId - The `contentId` parameter to include in the API request.
@@ -391,7 +450,8 @@ export async function tournamentsGetGroupsBasic(requester: HttpRequester, tourna
       from,
       max
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 

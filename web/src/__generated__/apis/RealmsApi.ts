@@ -66,6 +66,10 @@ export async function realmsGetCustomerActivateBasic(requester: HttpRequester, c
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreateProjectRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -80,7 +84,8 @@ export async function realmsPostProjectBeamableBasic(requester: HttpRequester, p
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -123,6 +128,10 @@ export async function realmsGetProjectBasic(requester: HttpRequester, gamertag?:
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreateProjectRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -137,11 +146,16 @@ export async function realmsPostProjectBasic(requester: HttpRequester, payload: 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UnarchiveProjectRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -156,11 +170,16 @@ export async function realmsPutProjectBasic(requester: HttpRequester, payload: U
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `ArchiveProjectRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -175,7 +194,8 @@ export async function realmsDeleteProjectBasic(requester: HttpRequester, payload
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -199,6 +219,10 @@ export async function realmsPostCustomerVerifyBasic(requester: HttpRequester, pa
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -211,11 +235,16 @@ export async function realmsGetGamesBasic(requester: HttpRequester, gamertag?: s
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -228,11 +257,16 @@ export async function realmsGetConfigBasic(requester: HttpRequester, gamertag?: 
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmConfigChangeRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -247,11 +281,16 @@ export async function realmsPostConfigBasic(requester: HttpRequester, payload: R
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmsBasicRealmConfigSaveRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -266,11 +305,16 @@ export async function realmsPutConfigBasic(requester: HttpRequester, payload: Re
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RenameProjectRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -285,11 +329,16 @@ export async function realmsPutProjectRenameBasic(requester: HttpRequester, payl
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -302,11 +351,16 @@ export async function realmsGetPlansBasic(requester: HttpRequester, gamertag?: s
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreatePlanRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -321,7 +375,8 @@ export async function realmsPostPlansBasic(requester: HttpRequester, payload: Cr
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -343,6 +398,10 @@ export async function realmsGetClientDefaultsBasic(requester: HttpRequester, gam
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -355,7 +414,8 @@ export async function realmsGetCustomerBasic(requester: HttpRequester, gamertag?
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -379,6 +439,10 @@ export async function realmsPostCustomerBasic(requester: HttpRequester, payload:
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param serviceName - The `serviceName` parameter to include in the API request.
  * @param serviceObjectId - The `serviceObjectId` parameter to include in the API request.
@@ -397,11 +461,16 @@ export async function realmsGetAdminInflightFailuresBasic(requester: HttpRequest
       serviceName,
       serviceObjectId
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BatchDeleteInFlightRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -416,11 +485,16 @@ export async function realmsDeleteAdminInflightFailuresBasic(requester: HttpRequ
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -433,11 +507,16 @@ export async function realmsGetLaunchMessageBasic(requester: HttpRequester, game
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CreateLaunchMessageRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -452,11 +531,16 @@ export async function realmsPostLaunchMessageBasic(requester: HttpRequester, pay
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RemoveLaunchMessageRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -471,7 +555,8 @@ export async function realmsDeleteLaunchMessageBasic(requester: HttpRequester, p
     e: endpoint,
     m: DELETE,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -493,6 +578,10 @@ export async function realmsGetIsCustomerBasic(requester: HttpRequester, gamerta
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -505,11 +594,16 @@ export async function realmsGetAdminCustomerBasic(requester: HttpRequester, game
     r: requester,
     e: endpoint,
     m: GET,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param rootPID - The `rootPID` parameter to include in the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -526,11 +620,16 @@ export async function realmsGetGameBasic(requester: HttpRequester, rootPID: stri
     q: {
       rootPID
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmsBasicNewGameRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -545,11 +644,16 @@ export async function realmsPostGameBasic(requester: HttpRequester, payload: Rea
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmsBasicUpdateGameHierarchyRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -564,11 +668,16 @@ export async function realmsPutGameBasic(requester: HttpRequester, payload: Real
     e: endpoint,
     m: PUT,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param sourcePid - The `sourcePid` parameter to include in the API request.
  * @param contentManifestIds - The `contentManifestIds` parameter to include in the API request.
@@ -589,11 +698,16 @@ export async function realmsGetProjectPromoteBasic(requester: HttpRequester, sou
       contentManifestIds,
       promotions
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmsBasicPromoteRealmRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -608,7 +722,8 @@ export async function realmsPostProjectPromoteBasic(requester: HttpRequester, pa
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
@@ -630,6 +745,10 @@ export async function realmsGetCustomersBasic(requester: HttpRequester, gamertag
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param sourcePid - The `sourcePid` parameter to include in the API request.
  * @param contentManifestIds - The `contentManifestIds` parameter to include in the API request.
@@ -650,11 +769,16 @@ export async function realmsGetPromotionBasic(requester: HttpRequester, sourcePi
       contentManifestIds,
       promotions
     },
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RealmsBasicPromoteRealmRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
@@ -669,6 +793,7 @@ export async function realmsPostPromotionBasic(requester: HttpRequester, payload
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag
+    g: gamertag,
+    w: true
   });
 }
