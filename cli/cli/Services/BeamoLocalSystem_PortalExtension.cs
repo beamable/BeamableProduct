@@ -47,14 +47,16 @@ public partial class BeamoLocalSystem
 
 	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, ResourceBuilder resourceBuilder, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
+		var extension = definition.PortalExtensionDefinition;
+		var microserviceName = GetMicroName(extension.Name);
 		var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
-		var beamActivity = newCliProvider.Create($"Running Portal Extension: {definition.BeamoId}");
+		var beamActivity = newCliProvider.Create($"Running Portal Extension: {microserviceName}");
 		
-		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(definition.BeamoId));
+		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(microserviceName));
 		
 		// Reset so each run gets a fresh sink.
 		_portalExtensionSink = null;
-		var extension = definition.PortalExtensionDefinition;
+		
 		try
 		{
 			Environment.SetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE", "true");
@@ -112,7 +114,6 @@ public partial class BeamoLocalSystem
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.OverrideConfig((microserviceConfig) =>
 				{
-					var microserviceName = GetMicroName(extension.Name);
 					microserviceConfig.Attributes = new DefaultMicroserviceAttributes()
 					{
 						MicroserviceName = microserviceName,

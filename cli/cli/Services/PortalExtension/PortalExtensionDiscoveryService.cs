@@ -162,7 +162,8 @@ public class PortalExtensionObserver
 		childActivity.SetTags(new TelemetryAttributeCollection().With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
 			.With(TelemetryAttributes.PortalExtensionJsSize(jsSizeBytes))
 			.With(TelemetryAttributes.PortalExtensionCssSize(cssSizeBytes))
-			.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes)));
+			.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes))
+			.With(TelemetryAttributes.PortalExtensionName(_attributes.MicroserviceName)));
 	}
 
 	public void InstallDeps()
@@ -176,12 +177,8 @@ public class PortalExtensionObserver
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
-
-		// var dict = new Dictionary<string, object>()
-		// {
-		// 	[Otel.ATTR_PORTAL_EXTENSION_INSTALL_DURATION_MS] = sw.ElapsedMilliseconds,
-		// };
-
+		
+		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_attributes.MicroserviceName));
 		// Don't need to track for Duration for install as Activity already does it
 	}
 
