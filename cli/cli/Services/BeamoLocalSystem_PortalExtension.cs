@@ -6,6 +6,7 @@ using cli.Portal;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using OpenTelemetry.Resources;
 using System.Text.RegularExpressions;
 
 namespace cli.Services;
@@ -33,7 +34,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
 	/// <param name="onProgress">Optional callback invoked with (progressRatio, message) as the service starts. A ratio of 1 means the service is ready for traffic.</param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, Action<float, string> onProgress = null, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, ResourceBuilder resourceBuilder, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -41,11 +42,16 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, onProgress, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, resourceBuilder, onProgress, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, Action<float, string> onProgress = null, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, ResourceBuilder resourceBuilder, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
+		var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
+		var beamActivity = newCliProvider.Create($"Running Portal Extension: {definition.BeamoId}");
+		
+		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(definition.BeamoId));
+		
 		// Reset so each run gets a fresh sink.
 		_portalExtensionSink = null;
 		var extension = definition.PortalExtensionDefinition;
@@ -61,10 +67,14 @@ public partial class BeamoLocalSystem
 						var observer = provider.GetService<PortalExtensionObserver>();
 						var notification = provider.GetService<IMicroserviceNotificationsApi>();
 						var attributes = provider.GetService<MicroserviceAttribute>();
-
-						observer.ConfigureServiceData(notification, attributes, localSystem.BeamoManifest);
+						observer.ConfigureServiceData(notification, attributes, beamActivity, localSystem.BeamoManifest);
 						observer.InstallDeps();
 						observer.BuildExtension();
+						
+						// We can dispose beamActivity here now as we are only getting the Install and Build traces, as the 
+						// Portal Extension run forever until we force it to stop, we don't need wait for that
+						beamActivity.Dispose();
+						
 						PortalExtensionAddDependencyCommand.GenerateDependenciesClients(extension.AbsolutePath,
 							localSystem.BeamoManifest);
 					}
@@ -112,6 +122,8 @@ public partial class BeamoLocalSystem
 					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, microserviceName, onProgress);
 				})
 				.RunForever();
+			
+			beamActivity.Dispose();
 		}
 		catch (Exception e)
 		{

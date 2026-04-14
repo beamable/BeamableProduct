@@ -2,11 +2,14 @@ using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
 using cli.Utils;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace cli.Services.PortalExtension;
+
+using Otel = Beamable.Common.Constants.Features.Otel;
 
 [Serializable]
 public class ExtensionBuildData //TODO make this have a diff version number so we know if the diff algorithm changed
@@ -93,6 +96,7 @@ public class PortalExtensionObserver
 	private CancellationTokenSource _cancelToken;
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
+	private BeamActivity _rootActivity;
 	private BeamoLocalManifest _manifest;
 
 	public string AppFilesPath => _metaData.AbsolutePath;
@@ -126,31 +130,59 @@ public class PortalExtensionObserver
 		_cancelToken.Cancel();
 	}
 
-	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamoLocalManifest manifest)
+	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamActivity beamActivity, BeamoLocalManifest manifest)
 	{
 		_notificationsApi = notificationApi;
 		_attributes = attributes;
+		_rootActivity = beamActivity;
 		_manifest = manifest;
 	}
+	
 
 	public void BuildExtension()
 	{
+		using var childActivity = _rootActivity.CreateChild("Build extension");
+		
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+		
+		var metadataJsonPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
+		var mainJsPath = Path.Combine(AppFilesPath, "assets", "main.js");
+		var mainCssPath = Path.Combine(AppFilesPath, "assets", "main.css");
+
+		long metadataBytes = File.Exists(metadataJsonPath) ? new FileInfo(metadataJsonPath).Length : 0;
+		long jsSizeBytes = File.Exists(mainJsPath) ? new FileInfo(mainJsPath).Length : 0;
+		long cssSizeBytes = File.Exists(mainCssPath) ? new FileInfo(mainCssPath).Length : 0;
+
+		childActivity.SetTags(new TelemetryAttributeCollection().With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
+			.With(TelemetryAttributes.PortalExtensionJsSize(jsSizeBytes))
+			.With(TelemetryAttributes.PortalExtensionCssSize(cssSizeBytes))
+			.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes)));
 	}
 
 	public void InstallDeps()
 	{
+		using var childActivity = _rootActivity.CreateChild("Install Deps");
+		
 		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+
+		// var dict = new Dictionary<string, object>()
+		// {
+		// 	[Otel.ATTR_PORTAL_EXTENSION_INSTALL_DURATION_MS] = sw.ElapsedMilliseconds,
+		// };
+
+		// Don't need to track for Duration for install as Activity already does it
 	}
 
 	public ExtensionBuildData GetAppBuild(string clientHash)
