@@ -57,7 +57,7 @@ export class BaseRequester implements HttpRequester {
       const contentType = response.headers.get('content-type');
       const text = await response.text();
       const responseBody = contentType?.includes('application/json')
-        ? JSON.parse(text, BeamJsonUtils.reviver) // deserialize with custom reviver
+        ? BeamJsonUtils.parse(text)
         : text;
 
       const responseHeaders: Record<string, string> = {};

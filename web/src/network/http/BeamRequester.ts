@@ -134,7 +134,7 @@ export class BeamRequester implements HttpRequester {
 
     if (typeof response.body === 'string') {
       try {
-        newBody = JSON.parse(response.body, BeamJsonUtils.reviver);
+        newBody = BeamJsonUtils.parse(response.body);
       } catch {
         // leave response body as-is if invalid JSON
       }
