@@ -494,6 +494,7 @@ public class {unrealProjectData.BlueprintNodesProjectName} : ModuleRules
                 ""BeamableCoreBlueprintNodes"",
                 
                 ""BlueprintGraph"",
+				""UnrealEd""
 			}});
 
 
