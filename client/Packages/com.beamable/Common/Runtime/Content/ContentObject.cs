@@ -407,7 +407,7 @@ namespace Beamable.Common.Content
 
 	      ValidationGuid = Increment(ValidationGuid);
 	      _serializedValidationGUID = ValidationGuid.ToString();
-	      _lastChecksum = CalculateDataChecksum();
+	      _lastChecksum = GetEditorDataChecksum();
 	      ScheduleDelayedValidate();
 	      
 
@@ -470,6 +470,11 @@ namespace Beamable.Common.Content
 			return ClientContentSerializer.CalculateChecksum(jsonData);
 		}
 
+		public string GetEditorDataChecksum()
+		{
+			return CalculateDataChecksum();
+		}
+
       public void ForceValidate()
       {
          OnValidate();
@@ -478,7 +483,7 @@ namespace Beamable.Common.Content
       
       public void CheckForNonDetectedChanges()
       {
-		 var nextChecksum = CalculateDataChecksum();
+		 var nextChecksum = GetEditorDataChecksum();
 		 if (!string.IsNullOrEmpty(_lastChecksum) && string.Equals(_lastChecksum, nextChecksum, StringComparison.Ordinal))
 		 {
 			return;
