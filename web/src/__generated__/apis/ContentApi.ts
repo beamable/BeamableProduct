@@ -19,6 +19,8 @@ import type { ContentBasicManifestChecksums } from '@/__generated__/schemas/Cont
 import type { ContentOrText } from '@/__generated__/schemas/ContentOrText';
 import type { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetBinaryDownloadUrlsRequest } from '@/__generated__/schemas/GetBinaryDownloadUrlsRequest';
+import type { GetBinaryDownloadUrlsResponse } from '@/__generated__/schemas/GetBinaryDownloadUrlsResponse';
 import type { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
 import type { GetManifestDiffsResponse } from '@/__generated__/schemas/GetManifestDiffsResponse';
 import type { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
@@ -590,6 +592,30 @@ export async function contentGetManifestChecksumsBasic(requester: HttpRequester,
     r: requester,
     e: endpoint,
     m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `GetBinaryDownloadUrlsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function contentPostBinaryPrivateUrlsBasic(requester: HttpRequester, payload: GetBinaryDownloadUrlsRequest, gamertag?: string): Promise<HttpResponse<GetBinaryDownloadUrlsResponse>> {
+  let endpoint = "/basic/content/binary/private/urls";
+  
+  // Make the API request
+  return makeApiRequest<GetBinaryDownloadUrlsResponse, GetBinaryDownloadUrlsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
     g: gamertag,
     w: true
   });

@@ -15,13 +15,13 @@ import type { ApiSchedulerJobCancelPutSchedulerResponse } from '@/__generated__/
 import type { ApiSchedulerJobDeleteSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobDeleteSchedulerResponse';
 import type { ApiSchedulerJobNextExecutionsGetSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobNextExecutionsGetSchedulerResponse';
 import type { ApiSchedulerJobsGetSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobsGetSchedulerResponse';
+import type { ExecuteJobRequest } from '@/__generated__/schemas/ExecuteJobRequest';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { JobActivityViewCursorPagedResult } from '@/__generated__/schemas/JobActivityViewCursorPagedResult';
 import type { JobDefinitionSaveRequest } from '@/__generated__/schemas/JobDefinitionSaveRequest';
 import type { JobDefinitionView } from '@/__generated__/schemas/JobDefinitionView';
 import type { JobDefinitionViewCursorPagedResult } from '@/__generated__/schemas/JobDefinitionViewCursorPagedResult';
-import type { JobExecutionEvent } from '@/__generated__/schemas/JobExecutionEvent';
 import type { JobExecutionResult } from '@/__generated__/schemas/JobExecutionResult';
 
 /**
@@ -30,15 +30,15 @@ import type { JobExecutionResult } from '@/__generated__/schemas/JobExecutionRes
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `JobExecutionEvent` instance to use for the API request
+ * @param payload - The `ExecuteJobRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: JobExecutionEvent, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
+export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: ExecuteJobRequest, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
   let endpoint = "/api/internal/scheduler/job/execute";
   
   // Make the API request
-  return makeApiRequest<JobExecutionResult, JobExecutionEvent>({
+  return makeApiRequest<JobExecutionResult, ExecuteJobRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -105,9 +105,9 @@ export async function schedulerPostJobInternal(requester: HttpRequester, payload
  * This API method is deprecated and may be removed in future versions.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param limit - The `limit` parameter to include in the API request.
- * @param name - The `name` parameter to include in the API request.
- * @param source - The `source` parameter to include in the API request.
+ * @param limit - Maximum number of results. Cannot exceed 10000.
+ * @param name - Optional name filter.
+ * @param source - Optional source filter.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -135,10 +135,10 @@ export async function schedulerGetJobs(requester: HttpRequester, limit?: number,
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param cursor - The `cursor` parameter to include in the API request.
- * @param name - The `name` parameter to include in the API request.
- * @param onlyUnique - The `onlyUnique` parameter to include in the API request.
- * @param source - The `source` parameter to include in the API request.
+ * @param cursor - Pagination cursor from a previous response.
+ * @param name - Optional name filter.
+ * @param onlyUnique - When true, only returns unique jobs.
+ * @param source - Optional source filter.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -167,8 +167,8 @@ export async function schedulerGetJobsPaged(requester: HttpRequester, cursor?: s
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param cursor - The `cursor` parameter to include in the API request.
- * @param from - The `from` parameter to include in the API request.
+ * @param cursor - Pagination cursor from a previous response. Mutually exclusive with from.
+ * @param from - Return jobs suspended from this datetime. Mutually exclusive with cursor.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -195,7 +195,7 @@ export async function schedulerGetJobsSuspended(requester: HttpRequester, cursor
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
+ * @param jobId - ID of the job to retrieve.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -218,7 +218,7 @@ export async function schedulerGetJobByJobId(requester: HttpRequester, jobId: st
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
+ * @param jobId - ID of the job to delete.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -244,8 +244,8 @@ export async function schedulerDeleteJobByJobId(requester: HttpRequester, jobId:
  * This API method is deprecated and may be removed in future versions.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
- * @param limit - The `limit` parameter to include in the API request.
+ * @param jobId - ID of the job to retrieve activity for.
+ * @param limit - Maximum number of results. Cannot exceed 10000.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -271,8 +271,8 @@ export async function schedulerGetJobActivityByJobId(requester: HttpRequester, j
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
- * @param cursor - The `cursor` parameter to include in the API request.
+ * @param jobId - ID of the job to retrieve activity for.
+ * @param cursor - Pagination cursor from a previous response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -298,7 +298,7 @@ export async function schedulerGetJobActivityPagedByJobId(requester: HttpRequest
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param cursor - The `cursor` parameter to include in the API request.
+ * @param cursor - Pagination cursor from a previous response.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -324,9 +324,9 @@ export async function schedulerGetJobsActivityPaged(requester: HttpRequester, cu
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
- * @param from - The `from` parameter to include in the API request.
- * @param limit - The `limit` parameter to include in the API request.
+ * @param jobId - ID of the job to compute schedules for.
+ * @param from - Start time for the schedule preview. Defaults to now.
+ * @param limit - Maximum number of executions to return. Cannot exceed 1000.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -353,7 +353,7 @@ export async function schedulerGetJobNextExecutionsByJobId(requester: HttpReques
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param jobId - The `jobId` parameter to include in the API request.
+ * @param jobId - ID of the job to cancel.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */

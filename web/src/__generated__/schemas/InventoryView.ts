@@ -4,10 +4,12 @@
  */
 
 import type { CurrencyView } from './CurrencyView';
+import type { InventoryFiltersDTO } from './InventoryFiltersDTO';
 import type { ItemGroup } from './ItemGroup';
 
 export type InventoryView = { 
   currencies: CurrencyView[]; 
   items: ItemGroup[]; 
+  itemFilters?: InventoryFiltersDTO; 
   scope?: string; 
 };

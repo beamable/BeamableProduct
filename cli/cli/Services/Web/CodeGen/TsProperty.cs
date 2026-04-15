@@ -1,3 +1,5 @@
+using cli.Services.Web.Helpers;
+
 namespace cli.Services.Web.CodeGen;
 
 /// <summary>
@@ -148,7 +150,7 @@ public class TsProperty : TsNode
 		if (Modifiers.HasFlag(TsModifier.Abstract))
 			writer.Write($"{TsModifierExtensions.Abstract} ");
 
-		writer.Write(Name);
+		writer.Write(StringHelper.QuoteIfNeeded(Name));
 
 		if (IsOptional)
 			writer.Write("?");

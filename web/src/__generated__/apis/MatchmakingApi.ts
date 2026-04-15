@@ -126,7 +126,7 @@ export async function matchmakingGetTicketsById(requester: HttpRequester, id: st
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param id - The `id` parameter to include in the API request.
+ * @param id - Ticket ID to cancel.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */

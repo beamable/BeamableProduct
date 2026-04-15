@@ -1,3 +1,5 @@
+using cli.Services.Web.Helpers;
+
 namespace cli.Services.Web.CodeGen;
 
 /// <summary>
@@ -322,7 +324,7 @@ public abstract class TsType : TsNode
 
 			for (int i = 0; i < _props.Length; i++)
 			{
-				w.Write(_props[i].name);
+				w.Write(StringHelper.QuoteIfNeeded(_props[i].name));
 
 				if (_props[i].propType == PropType.Optional)
 					w.Write("?");

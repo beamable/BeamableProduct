@@ -1250,7 +1250,7 @@ export async function paymentsPostItunesPurchaseTrackBasic(requester: HttpReques
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param objectId - Gamertag of the player.Underlying objectId type is integer in format int64.
+ * @param objectId - Transaction ID.Underlying objectId type is integer in format int64.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */

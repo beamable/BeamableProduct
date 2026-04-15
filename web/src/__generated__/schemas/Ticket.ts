@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Tag } from './Tag';
+import type { TagList } from './TagList';
 
 export type Ticket = { 
   created?: Date | null; 
@@ -17,7 +17,7 @@ export type Ticket = {
   priority?: number; 
   status?: string | null; 
   stringProperties?: Record<string, string | null> | null; 
-  tags?: Tag[] | null; 
+  tags?: Record<string, TagList> | null; 
   team?: string | null; 
   ticketId?: string | null; 
   watchOnlineStatus?: boolean; 
