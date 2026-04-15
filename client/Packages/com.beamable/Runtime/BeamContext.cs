@@ -20,6 +20,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Common.Util;
 using Beamable.Connection;
+using Beamable.Console;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
@@ -262,6 +263,7 @@ namespace Beamable
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
+		private BeamableAdminConsole _adminConsole;
 		private OfflineCache _offlineCache;
 		private RealmsBasicRealmConfiguration _realmConfig;
 
@@ -820,7 +822,19 @@ namespace Beamable
 			}
 		}
 
+		public void StartAdminConsole()
+		{
+			_adminConsole = _behaviour.gameObject.AddComponent<BeamableAdminConsole>();
+			_adminConsole.InitializeConsole(this);
+		}
 
+		public void CloseAdminConsole()
+		{
+			if (_adminConsole != null)
+			{
+				_adminConsole.DestroyConsole();
+			}
+		}
 
 		/// <summary>
 		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.
