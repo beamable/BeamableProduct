@@ -8,6 +8,7 @@ import type { ContentReference } from './ContentReference';
 import type { TextReference } from './TextReference';
 
 export type ContentBasicManifest = { 
+  affectedContentIds: string; 
   checksum: string; 
   created: bigint | string; 
   id: string; 
