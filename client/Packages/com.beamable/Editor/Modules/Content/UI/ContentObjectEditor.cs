@@ -374,10 +374,11 @@ namespace Beamable.Editor.Content.UI
 				rect = new Rect(rect.x, rect.y - 6, rect.width, rect.height);
 				GUI.Box(new Rect(0, rect.y, contextWidth, rect.height), "", "In BigTitle Post");
 
-				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentUtils.ComputeChecksum(contentObject)}", checksumStyle);
+				EditorGUI.SelectableLabel(rect, $"Checksum: {contentObject.GetEditorDataChecksum()}", checksumStyle);
 			}
-
+			
 			base.OnInspectorGUI();
+			contentObject.CheckForNonDetectedChanges();
 		}
 
 		public string GetTagString(string[] tags)
