@@ -75,15 +75,6 @@
       "subText": "data",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/CloudDataToMicroServices_Violet@3x.png",
       "relativeMainAssetPath": "Sample_CloudSaving.unity"
-    },
-    {
-      "displayName": "Admin Console",
-      "description": "A debugging prefab used to run Beamable commands at runtime.",
-      "path": "SAMPLES_PATH/LightBeamSamples/AdminFlowPrefab",
-      "subText": "development",
-      "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/AdminPortal_Violet@3x.png",
-      "relativeMainAssetPath": "AdminFlow.prefab",
-      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/user-reference/editor-systems/admin-overview/"
     }
   ]
 }
