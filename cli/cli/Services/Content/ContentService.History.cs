@@ -868,7 +868,7 @@ public partial class ContentService
 
 					// We make sure we don't store "null"s here ---
 					// this is just to make it so that we don't need to null check and because UE's JSON library emits an annoying warning when it tries to get a string out of a "null".
-					fixedChangelist.Created ??= new();
+					fixedChangelist.Added ??= new();
 					fixedChangelist.Removed ??= new();
 					fixedChangelist.Modified ??= new();
 
@@ -910,7 +910,7 @@ public partial class ContentService
 						}
 					}
 
-					PostProcessEntry(fixedChangelist.Created, ContentStatus.Created);
+					PostProcessEntry(fixedChangelist.Added, ContentStatus.Created);
 					PostProcessEntry(fixedChangelist.Removed, ContentStatus.Deleted);
 					PostProcessEntry(fixedChangelist.Modified, ContentStatus.Modified);
 
@@ -1050,7 +1050,7 @@ public partial class ContentService
 							}
 						}
 
-						ConvertToAbsolutePath(changelist.Created);
+						ConvertToAbsolutePath(changelist.Added);
 						ConvertToAbsolutePath(changelist.Modified);
 						ConvertToAbsolutePath(changelist.Removed);
 
@@ -1167,7 +1167,7 @@ public partial class ContentService
 
 					// Find the changelist entry for this content
 					ContentHistoryChangelistEntry changelistEntry = default;
-					if (changelist.Created?.ContainsKey(file.Id) == true) changelistEntry = changelist.Created[file.Id];
+					if (changelist.Added?.ContainsKey(file.Id) == true) changelistEntry = changelist.Added[file.Id];
 					else if (changelist.Modified?.ContainsKey(file.Id) == true) changelistEntry = changelist.Modified[file.Id];
 					else if (changelist.Removed?.ContainsKey(file.Id) == true) changelistEntry = changelist.Removed[file.Id];
 
@@ -1267,7 +1267,7 @@ public partial class ContentService
 					bool isRemoved = false;
 
 					// Check Created dictionary first
-					if (targetChangelist.Created != null && targetChangelist.Created.TryGetValue(contentId, out var createdEntry))
+					if (targetChangelist.Added != null && targetChangelist.Added.TryGetValue(contentId, out var createdEntry))
 					{
 						entry = createdEntry;
 						found = true;
@@ -1291,7 +1291,7 @@ public partial class ContentService
 						Log.Warning($"Content {contentId} not found in changelist for manifest {manifestUid}");
 						return default;
 					}
-
+					
 					// Generate the content URL using the appropriate static function
 					// For removed entries, use OldUrl; for created/modified entries, use NewUrl
 					var uri = isRemoved
@@ -1370,7 +1370,7 @@ public partial class ContentService
 	{
 		// Determine status based on which dictionary this entry is in
 		var status = ContentStatus.UpToDate;
-		if (changelist.Created != null && changelist.Created.ContainsKey(file.Id))
+		if (changelist.Added != null && changelist.Added.ContainsKey(file.Id))
 		{
 			status = ContentStatus.Created;
 		}
@@ -1433,19 +1433,37 @@ public partial class ContentService
 	}
 
 	/// <summary>
+	/// Derives the Beamable content CDN base URL from the current API host.
+	/// </summary>
+	/// <remarks>
+	/// Mapping rules:
+	/// - https://dev.api.beamable.com     → https://dev-content.beamable.com
+	/// - https://staging.api.beamable.com → https://staging-content.beamable.com
+	/// - https://api.beamable.com         → https://content.beamable.com
+	/// </remarks>
+	private string GetContentBaseUrl()
+	{
+		var hostName = new Uri(_appContext.Host).Host; // e.g. "dev.api.beamable.com"
+		var prefix = hostName.Split('.')[0];           // "dev", "staging", or "api"
+		return prefix == "api"
+			? "https://content.beamable.com"
+			: $"https://{prefix}-content.beamable.com";
+	}
+
+	/// <summary>
 	/// Constructs the URL for downloading a content history changelist JSON file from the Beamable CDN.
 	/// </summary>
 	/// <param name="cid">The customer ID (CID)</param>
 	/// <param name="pid">The realm id (PID)</param>
 	/// <param name="entry">The content history entry containing the ManifestUid</param>
-	/// <returns>The full HTTPS URL to the changelist JSON file on dev-content.beamable.com</returns>
+	/// <returns>The full HTTPS URL to the changelist JSON file on the content CDN</returns>
 	/// <remarks>
-	/// URL format: https://dev-content.beamable.com/{cid}/{pid}/public/manifest-diffs/{manifestUid}.json
+	/// URL format: {contentBaseUrl}/{cid}/{pid}/public/manifest-diffs/{manifestUid}.json
 	/// No validation is performed on input parameters; assumes they are non-null and valid.
 	/// </remarks>
-	public static string GetContentHistoryChangelistUrl(string cid, string pid, ContentHistoryEntry entry)
+	public string GetContentHistoryChangelistUrl(string cid, string pid, ContentHistoryEntry entry)
 	{
-		return $"https://dev-content.beamable.com/{cid}/{pid}/public/manifest-diffs/{entry.ManifestUid}.json";
+		return $"{GetContentBaseUrl()}/{cid}/{pid}/public/manifest-diffs/{entry.ManifestUid}.json";
 	}
 
 	/// <summary>
@@ -1455,11 +1473,11 @@ public partial class ContentService
 	/// <param name="cid">The customer ID (CID)</param>
 	/// <param name="pid">The realm id (PID)</param>
 	/// <param name="summary">The manifest diff summary to convert to a ContentHistoryEntry</param>
-	/// <returns>The full HTTPS URL to the changelist JSON file on dev-content.beamable.com</returns>
+	/// <returns>The full HTTPS URL to the changelist JSON file on the content CDN</returns>
 	/// <remarks>
 	/// Delegates to GetContentHistoryChangelistUrl(cid, pid, entry) after converting the summary.
 	/// </remarks>
-	public static string GetContentHistoryChangelistUrl(string cid, string pid, ManifestDiffSummary summary)
+	public string GetContentHistoryChangelistUrl(string cid, string pid, ManifestDiffSummary summary)
 	{
 		return GetContentHistoryChangelistUrl(cid, pid, ContentHistoryEntry.FromManifestDiff(summary));
 	}
@@ -1471,14 +1489,14 @@ public partial class ContentService
 	/// <param name="rootPid">The root realm id</param>
 	/// <param name="contentId">The full content ID (e.g., "items.MyItem")</param>
 	/// <param name="changelistEntry">The changelist entry containing the NewChecksum</param>
-	/// <returns>The full HTTPS URL to the new content version JSON file on dev-content.beamable.com</returns>
+	/// <returns>The full HTTPS URL to the new content version JSON file on the content CDN</returns>
 	/// <remarks>
-	/// URL format: https://dev-content.beamable.com/{cid}/{rootPid}/public/{contentId}/{newChecksum}.json
+	/// URL format: {contentBaseUrl}/{cid}/{rootPid}/public/{contentId}/{newChecksum}.json
 	/// No validation is performed; assumes changelistEntry.NewChecksum is non-null and valid.
 	/// </remarks>
-	public static string GetContentHistoryContentNewUrl(string cid, string rootPid, string contentId, ContentHistoryChangelistEntry changelistEntry)
+	public string GetContentHistoryContentNewUrl(string cid, string rootPid, string contentId, ContentHistoryChangelistEntry changelistEntry)
 	{
-		return $"https://dev-content.beamable.com/{cid}/{rootPid}/public/{contentId}/{changelistEntry.NewChecksum}.json";
+		return $"{GetContentBaseUrl()}/{cid}/{rootPid}/public/{contentId}/{changelistEntry.NewVersion}.json";
 	}
 
 	/// <summary>
@@ -1488,14 +1506,14 @@ public partial class ContentService
 	/// <param name="rootPid">The root realm id</param>
 	/// <param name="contentId">The full content ID (e.g., "items.MyItem")</param>
 	/// <param name="changelistEntry">The changelist entry containing the OldChecksum</param>
-	/// <returns>The full HTTPS URL to the old content version JSON file on dev-content.beamable.com</returns>
+	/// <returns>The full HTTPS URL to the old content version JSON file on the content CDN</returns>
 	/// <remarks>
-	/// URL format: https://dev-content.beamable.com/{cid}/{rootPid}/public/{contentId}/{oldChecksum}.json
+	/// URL format: {contentBaseUrl}/{cid}/{rootPid}/public/{contentId}/{oldChecksum}.json
 	/// No validation is performed; assumes changelistEntry.OldChecksum is non-null and valid.
 	/// </remarks>
-	public static string GetContentHistoryContentOldUrl(string cid, string rootPid, string contentId, ContentHistoryChangelistEntry changelistEntry)
+	public string GetContentHistoryContentOldUrl(string cid, string rootPid, string contentId, ContentHistoryChangelistEntry changelistEntry)
 	{
-		return $"https://dev-content.beamable.com/{cid}/{rootPid}/public/{contentId}/{changelistEntry.OldChecksum}.json";
+		return $"{GetContentBaseUrl()}/{cid}/{rootPid}/public/{contentId}/{changelistEntry.OldVersion}.json";
 	}
 
 	/// <summary>
@@ -1934,8 +1952,8 @@ public struct ContentHistoryChangelist
 	[JsonPropertyName("publishedAt")] [JsonProperty("publishedAt")]
 	public long PublishedAt;
 
-	[JsonPropertyName("created")] [JsonProperty("created")]
-	public Dictionary<string, ContentHistoryChangelistEntry> Created;
+	[JsonPropertyName("added")] [JsonProperty("added")]
+	public Dictionary<string, ContentHistoryChangelistEntry> Added;
 
 	[JsonPropertyName("removed")] [JsonProperty("removed")]
 	public Dictionary<string, ContentHistoryChangelistEntry> Removed;
@@ -2144,7 +2162,7 @@ public partial class ContentService
 
 		// Determine which content IDs we need to restore
 		var allContentInChangelist = new HashSet<string>();
-		if (changelist.Created != null) allContentInChangelist.UnionWith(changelist.Created.Keys);
+		if (changelist.Added != null) allContentInChangelist.UnionWith(changelist.Added.Keys);
 		if (changelist.Modified != null) allContentInChangelist.UnionWith(changelist.Modified.Keys);
 		if (changelist.Removed != null) allContentInChangelist.UnionWith(changelist.Removed.Keys);
 
