@@ -9,18 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `codegen` script in `package.json` to regenerate TypeScript API types from OpenAPI specs via the CLI.
-- New generated APIs: `BillingApi`, `CustomerApi`, `PlayerSessionApi`, `PlayerStatsApi`.
+- Web SDK: `codegen` script in `package.json` to regenerate TypeScript API types from OpenAPI specs via the CLI.
+- Web SDK: New generated APIs: `BillingApi`, `CustomerApi`, `PlayerSessionApi`, `PlayerStatsApi`.
+- Web SDK: `BeamWebSocket` now sends a `session-start` frame as the first message after connecting, carrying device and platform info that browsers cannot set via WebSocket upgrade headers.
 
 ### Fixed
 
-- Web code generator now quotes TypeScript property names that contain invalid identifier characters (e.g., `x5t#S256`).
-- Web code generator now produces distinct method names for PATCH endpoints instead of colliding with GET.
+- Web SDK: Code generator now quotes TypeScript property names that contain invalid identifier characters (e.g., `x5t#S256`).
+- Web SDK: Code generator now produces distinct method names for PATCH endpoints instead of colliding with GET.
 - `tsdown.config.ts` updated to use `import.meta.url` instead of `__dirname` for ES module compatibility.
+- Web SDK: Code generator now correctly emits `w: true` (auth flag) for endpoints that require a bearer token. Previously, after the `ForcePlayerScopedAuth` OpenAPI processor renamed the security scheme from `user` to `auth` and `Reserailize` stripped reference info, `DetermineAuth` failed to detect auth requirements for all `basic` service endpoints — causing the SDK to omit the `Authorization` header on calls like `GET /basic/accounts/me`.
+- Web SDK: HTTP response parsing now preserves precision for int64 values (e.g., player IDs, gamer tags). Previously `JSON.parse` rounded large integers before the reviver could convert them to `BigInt`, producing incorrect IDs like `70820408384930820` instead of `70820408384930816`. A new `BeamJsonUtils.parse` pre-quotes integers >10 digits before parsing so they reach the reviver as strings.
 
 ### Changed
 
-- Updated auto-generated APIs and schemas to latest OpenAPI specs.
+- Web SDK: Updated auto-generated APIs and schemas to latest OpenAPI specs.
+- Web SDK: Web code generator now only emits header parameters that `makeApiRequest` actually supports (currently `X-BEAM-GAMERTAG`); unsupported headers like `X-BEAM-TIMEOUT` are no longer added to generated method signatures.
 
 ## [1.0.0] - 2025-11-19
 
