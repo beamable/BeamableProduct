@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Deserialization issue with `properties` field in Score Items of Events
 - Fixed an issue where the Unity Editor would not detect changes to Icon subObject (for Sprites in Multiple Mode) and thus not saving it correctly
+- Fixed an issue when creating a new Content Object some Optional and string values were null instead of default values.
 
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
