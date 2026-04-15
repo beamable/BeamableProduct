@@ -26,6 +26,8 @@ import type { LocalizedPriceMap } from '@/__generated__/schemas/LocalizedPriceMa
 import type { PaymentResultResponse } from '@/__generated__/schemas/PaymentResultResponse';
 import type { SteamAuthRequest } from '@/__generated__/schemas/SteamAuthRequest';
 import type { SteamOrderInfoResponse } from '@/__generated__/schemas/SteamOrderInfoResponse';
+import type { StripeWebhookRequest } from '@/__generated__/schemas/StripeWebhookRequest';
+import type { StripeWebhookResponse } from '@/__generated__/schemas/StripeWebhookResponse';
 import type { SubscriptionVerificationResponse } from '@/__generated__/schemas/SubscriptionVerificationResponse';
 import type { TrackPurchaseRequest } from '@/__generated__/schemas/TrackPurchaseRequest';
 import type { VerifyPurchaseRequest } from '@/__generated__/schemas/VerifyPurchaseRequest';
@@ -218,6 +220,30 @@ export async function paymentsPostFacebookPurchaseCompleteBasic(requester: HttpR
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `CancelPurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripePurchaseCancelBasic(requester: HttpRequester, payload: CancelPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/cancel";
+  
+  // Make the API request
+  return makeApiRequest<PaymentResultResponse, CancelPurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `FailPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -297,6 +323,25 @@ export async function paymentsPostGoogleplayPurchaseCompleteBasic(requester: Htt
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `CompletePurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripePurchaseCompleteBasic(requester: HttpRequester, payload: CompletePurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/complete";
+  
+  // Make the API request
+  return makeApiRequest<PaymentResultResponse, CompletePurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `TrackPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -359,6 +404,25 @@ export async function paymentsPostItunesPurchaseBeginBasic(requester: HttpReques
     p: payload,
     g: gamertag,
     w: true
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `StripeWebhookRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripeWebhookBasic(requester: HttpRequester, payload: StripeWebhookRequest, gamertag?: string): Promise<HttpResponse<StripeWebhookResponse>> {
+  let endpoint = "/basic/payments/stripe/webhook";
+  
+  // Make the API request
+  return makeApiRequest<StripeWebhookResponse, StripeWebhookRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
   });
 }
 
@@ -613,6 +677,46 @@ export async function paymentsPostTestPurchaseFailBasic(requester: HttpRequester
 }
 
 /**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param sku - The `sku` parameter to include in the API request.
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsGetStripeProductBasic(requester: HttpRequester, sku: string, gamertag?: string): Promise<HttpResponse<GetProductResponse>> {
+  let endpoint = "/basic/payments/stripe/product";
+  
+  // Make the API request
+  return makeApiRequest<GetProductResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      sku
+    },
+    g: gamertag
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `VerifyPurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripePurchaseVerifyBasic(requester: HttpRequester, payload: VerifyPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/verify";
+  
+  // Make the API request
+  return makeApiRequest<PaymentResultResponse, VerifyPurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
+  });
+}
+
+/**
  * @remarks
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
@@ -860,11 +964,59 @@ export async function paymentsGetWindowsProductBasic(requester: HttpRequester, s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
+export async function paymentsPostStripePurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/fail";
+  
+  // Make the API request
+  return makeApiRequest<PaymentResultResponse, FailPurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `FailPurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
 export async function paymentsPostGoogleplayPurchaseFailBasic(requester: HttpRequester, payload: FailPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
   let endpoint = "/basic/payments/googleplay/purchase/fail";
   
   // Make the API request
   return makeApiRequest<PaymentResultResponse, FailPurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `BeginPurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripePurchaseBeginBasic(requester: HttpRequester, payload: BeginPurchaseRequest, gamertag?: string): Promise<HttpResponse<BeginPurchaseResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/begin";
+  
+  // Make the API request
+  return makeApiRequest<BeginPurchaseResponse, BeginPurchaseRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -1158,6 +1310,25 @@ export async function paymentsPostWindowsPurchaseFailBasic(requester: HttpReques
     p: payload,
     g: gamertag,
     w: true
+  });
+}
+
+/**
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `TrackPurchaseRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function paymentsPostStripePurchaseTrackBasic(requester: HttpRequester, payload: TrackPurchaseRequest, gamertag?: string): Promise<HttpResponse<PaymentResultResponse>> {
+  let endpoint = "/basic/payments/stripe/purchase/track";
+  
+  // Make the API request
+  return makeApiRequest<PaymentResultResponse, TrackPurchaseRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag
   });
 }
 
