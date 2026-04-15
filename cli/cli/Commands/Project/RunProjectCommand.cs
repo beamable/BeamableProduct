@@ -246,13 +246,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 							}, cToken.Token);
 						}
 
-						var resourceBuilder = args.Provider.GetService<ResourceBuilder>();
-						resourceBuilder.AddAttributes(new Dictionary<string, object>()
-						{
-							[Beamable.Common.Constants.Features.Otel.ATTR_PORTAL_EXTENSION_NAME] = serviceName,
-						});
+						var beamActivity = args.Provider.GetService<BeamActivity>();
 						runTasks.Add(args.BeamoLocalSystem.RunLocalPortalExtension(
-							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, resourceBuilder,
+							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, beamActivity,
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
 							token: cToken.Token));
 					}

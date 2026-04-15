@@ -2,15 +2,12 @@ using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
 using cli.Utils;
-using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 
 namespace cli.Services.PortalExtension;
-
-using Otel = Beamable.Common.Constants.Features.Otel;
 
 [Serializable]
 public class ExtensionBuildData //TODO make this have a diff version number so we know if the diff algorithm changed
@@ -122,6 +119,12 @@ public class PortalExtensionObserver
 		}
 	}
 
+	public BeamActivity RootActivity
+	{
+		get => _rootActivity;
+		set => _rootActivity = value;
+	}
+
 	public List<string> FileExtensions = new List<string>();
 
 	public void CancelDiscovery()
@@ -135,6 +138,12 @@ public class PortalExtensionObserver
 		_attributes = attributes;
 		_rootActivity = beamActivity;
 		_manifest = manifest;
+	}
+	
+	public void ConfigureServiceData(PortalExtensionDef extensionMetaData, BeamActivity beamActivity)
+	{
+		_metaData = extensionMetaData;
+		_rootActivity = beamActivity;
 	}
 	
 
@@ -171,18 +180,19 @@ public class PortalExtensionObserver
 
 			File.WriteAllText(metadataPath, metadataContentJson);
 			
-			var mainJsPath = Path.Combine(AppFilesPath, "assets", "main.js");
-			var mainCssPath = Path.Combine(AppFilesPath, "assets", "main.css");
+			var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
+			var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
 
 			long metadataBytes = File.Exists(metadataPath) ? new FileInfo(metadataPath).Length : 0;
 			long jsSizeBytes = File.Exists(mainJsPath) ? new FileInfo(mainJsPath).Length : 0;
 			long cssSizeBytes = File.Exists(mainCssPath) ? new FileInfo(mainCssPath).Length : 0;
-
-			childActivity.SetTags(new TelemetryAttributeCollection().With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
+			
+			childActivity.SetTags(new TelemetryAttributeCollection()
+				.With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
 				.With(TelemetryAttributes.PortalExtensionJsSize(jsSizeBytes))
 				.With(TelemetryAttributes.PortalExtensionCssSize(cssSizeBytes))
 				.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes))
-				.With(TelemetryAttributes.PortalExtensionName(_attributes.MicroserviceName)));
+				.With(TelemetryAttributes.PortalExtensionName(_metaData.Name)));
 			
 		}
 		catch (Exception e)
@@ -195,7 +205,7 @@ public class PortalExtensionObserver
 
 	public void InstallDeps()
 	{
-		using var childActivity = _rootActivity.CreateChild("Install Deps");
+		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
 		
 		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 
@@ -205,7 +215,7 @@ public class PortalExtensionObserver
 				.Trim());
 		}
 		
-		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_attributes.MicroserviceName));
+		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_metaData.Name));
 		// Don't need to track for Duration for install as Activity already does it
 	}
 

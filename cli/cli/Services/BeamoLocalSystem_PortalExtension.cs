@@ -34,7 +34,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
 	/// <param name="onProgress">Optional callback invoked with (progressRatio, message) as the service starts. A ratio of 1 means the service is ready for traffic.</param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, ResourceBuilder resourceBuilder, Action<float, string> onProgress = null, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -42,17 +42,14 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, resourceBuilder, onProgress, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, beamActivity, onProgress, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, ResourceBuilder resourceBuilder, Action<float, string> onProgress = null, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
-		var microserviceName = GetMicroName(extension.Name);
-		var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
-		var beamActivity = newCliProvider.Create($"Running Portal Extension: {microserviceName}");
 		
-		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(microserviceName));
+		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
 		
 		// Reset so each run gets a fresh sink.
 		_portalExtensionSink = null;
@@ -114,6 +111,7 @@ public partial class BeamoLocalSystem
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.OverrideConfig((microserviceConfig) =>
 				{
+					var microserviceName = GetMicroName(extension.Name);
 					microserviceConfig.Attributes = new DefaultMicroserviceAttributes()
 					{
 						MicroserviceName = microserviceName,
