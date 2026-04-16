@@ -94,6 +94,8 @@ public class PortalExtensionObserver
 		set => _rootActivity = value;
 	}
 
+	public string MetadataPath => Path.Combine(AppFilesPath, "assets", "metadata.json");
+
 	public List<string> FileExtensions = new List<string>();
 
 	public void CancelDiscovery()
@@ -125,6 +127,7 @@ public class PortalExtensionObserver
 		}
 
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		CreateMetaDataFile();
 
 		if (result.exit != 0)
 		{
@@ -139,33 +142,13 @@ public class PortalExtensionObserver
 
 		try
 		{
-			var metadataContent = new ExtensionBuildMetaData
-			{
-				Name = ExtensionMetaData.Name,
-				ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-				Properties = ExtensionMetaData.Properties
-			};
-
-			var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
-
-			string metaDataDir = Path.GetDirectoryName(metadataPath);
-
-			if (!Directory.Exists(metaDataDir))
-			{
-				Directory.CreateDirectory(metadataPath);
-			}
-
-			var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
-
-			File.WriteAllText(metadataPath, metadataContentJson);
-
 			var build = CreateAppBuildData();
 			_buildHistory.Add(build);
 
 			var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
 			var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
 
-			long metadataBytes = File.Exists(metadataPath) ? new FileInfo(metadataPath).Length : 0;
+			long metadataBytes = File.Exists(MetadataPath) ? new FileInfo(MetadataPath).Length : 0;
 			long jsSizeBytes = File.Exists(mainJsPath) ? new FileInfo(mainJsPath).Length : 0;
 			long cssSizeBytes = File.Exists(mainCssPath) ? new FileInfo(mainCssPath).Length : 0;
 
@@ -199,6 +182,27 @@ public class PortalExtensionObserver
 		// Don't need to track for Duration for install as Activity already does it
 	}
 
+	private void CreateMetaDataFile()
+	{
+		var metadataContent = new ExtensionBuildMetaData
+		{
+			Name = ExtensionMetaData.Name,
+			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
+			Properties = ExtensionMetaData.Properties
+		};
+
+		string metaDataDir = Path.GetDirectoryName(MetadataPath);
+
+		if (!Directory.Exists(metaDataDir))
+		{
+			Directory.CreateDirectory(MetadataPath);
+		}
+
+		var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
+
+		File.WriteAllText(MetadataPath, metadataContentJson);
+	}
+
 	public PortalExtensionBuild CreateAppBuildData()
 	{
 		var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
@@ -227,13 +231,23 @@ public class PortalExtensionObserver
 		};
 	}
 
+	public (string hash, string bundle) GetFullBundleWithOnlyMetadata()
+	{
+		string[] currentMetadataLines = File.ReadLines(MetadataPath).ToArray();
+		var computedHash = GetBuildHash(Array.Empty<string>(), Array.Empty<string>(), currentMetadataLines);
+		var bundle = ConvertBuiltFiles(new []{MetadataPath});
+
+		return (computedHash, bundle);
+	}
+
 	public ExtensionBuildData GetAppBuild(string clientHash)
 	{
 		var recentBuild = _buildHistory.GetFirst();
 
 		if (recentBuild.IsError)
 		{
-			return new ExtensionBuildData() { IsError = true, ErrorMessage = recentBuild.ErrorMessage, ErrorStackTrace = ""};
+			(string hash, string bundle) = GetFullBundleWithOnlyMetadata();
+			return new ExtensionBuildData() { IsError = true, ErrorMessage = recentBuild.ErrorMessage, ErrorStackTrace = "", FullData = bundle, CurrentHash = hash };
 		}
 
 		if (_buildHistory.Get(clientHash, out var oldBuild))
