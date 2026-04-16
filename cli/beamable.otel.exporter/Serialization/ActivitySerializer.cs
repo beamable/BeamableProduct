@@ -106,7 +106,7 @@ public static class ActivitySerializer
 
 	public static SerializableActivity SerializeActivity(Activity activity)
 	{
-		var activityTags = activity.Tags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty);
+		var activityTags = activity.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty);
 
 		var links = activity.Links.Select(l =>
 		{

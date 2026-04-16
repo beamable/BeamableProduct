@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli;
+using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using cli.Dotnet;
 using cli.Services;
@@ -12,6 +13,7 @@ using System.Text.RegularExpressions;
 using microservice.Extensions;
 using Beamable.Server;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Resources;
 
 namespace cli.Commands.Project;
 
@@ -244,8 +246,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 							}, cToken.Token);
 						}
 
+						var beamActivity = args.Provider.GetService<BeamActivity>();
 						runTasks.Add(args.BeamoLocalSystem.RunLocalPortalExtension(
-							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext,
+							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, beamActivity,
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
 							token: cToken.Token));
 					}
