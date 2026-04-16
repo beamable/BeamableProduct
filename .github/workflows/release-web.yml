@@ -106,6 +106,20 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
+      - name: Create Release
+        id: create_release
+        if: ${{ inputs.dryRun == false }} 
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: web-sdk-${{ steps.version.outputs.VERSION }}
+          release_name: Web SDK ${{ steps.version.outputs.VERSION }}
+          body: |
+            Web SDK Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ inputs.releaseType != 'production' }}
+
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}
         run: sh ./../build/bin/upload-changelogs.sh
