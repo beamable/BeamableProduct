@@ -28,15 +28,7 @@ public class PortalExtensionDiscoveryService : Microservice
 
 		ExtensionBuildData buildData = observer.GetAppBuild(currentHash);
 
-		return new ExtensionBuildData
-		{
-			IsFullBuild = buildData.IsFullBuild,
-			FullData = buildData.FullData,
-			DiffInstructionsJs = buildData.DiffInstructionsJs,
-			DiffInstructionsCss = buildData.DiffInstructionsCss,
-			DiffInstructionsMetadata = buildData.DiffInstructionsMetadata,
-			CurrentHash = buildData.CurrentHash
-		};
+		return buildData;
 	}
 }
 
@@ -124,7 +116,7 @@ public class PortalExtensionObserver
 			{
 				 IsError = true,
 				 ErrorMessage = result.stderr,
-				 Checksum = ""
+				 Checksum = Guid.NewGuid().ToString() // Just put a random guid here, this is just so it's not confused with an empty string, that means that no build was found
 			});
 			return;
 		}
@@ -159,7 +151,6 @@ public class PortalExtensionObserver
 			throw new CliException($"Failed to generate portal extension metadata file. \nCheck exception: [\n{e.Message}] \nStackTrace: [{e.StackTrace}]"
 				.Trim());
 		}
-
 	}
 
 	public void InstallDeps()
@@ -202,59 +193,36 @@ public class PortalExtensionObserver
 
 	public ExtensionBuildData GetAppBuild(string clientHash)
 	{
+		var recentBuild = _buildHistory.GetFirst();
+
+		if (recentBuild.IsError)
+		{
+			return new ExtensionBuildData() { IsError = true, ErrorMessage = recentBuild.ErrorMessage, ErrorStackTrace = ""};
+		}
+
 		if (_buildHistory.Get(clientHash, out var oldBuild))
 		{
-			var recentBuild = _buildHistory.GetFirst();
+			// calculate diff
+			var diffJs = PortalExtensionDiff.GetDiffInstructions(oldBuild.javascriptLines, recentBuild.javascriptLines);
+			var diffCss = PortalExtensionDiff.GetDiffInstructions(oldBuild.cssLines, recentBuild.cssLines);
+			var diffMetadata = PortalExtensionDiff.GetDiffInstructions(oldBuild.metadataLines, recentBuild.metadataLines);
 
-			if (recentBuild.IsError)
+			return new ExtensionBuildData()
 			{
-				return new ExtensionBuildData() { IsFullBuild = true, ErrorMessage = recentBuild.ErrorMessage, };
-			}
-
-
+				CurrentHash = recentBuild.Checksum,
+				IsFullBuild = false,
+				DiffInstructionsJs = diffJs,
+				DiffInstructionsCss = diffCss,
+				DiffInstructionsMetadata = diffMetadata,
+			};
 		}
-		//
-		//
-		// // no sender hash, no stored previous hash or different hash than expected, means that we need to send the full build and sync the hashes
-		// if (string.IsNullOrEmpty(clientHash) || _currentExtensionData == null || !clientHash.Equals(_currentExtensionData.previousBuildHash))
-		// {
-		// 	_currentExtensionData = new ExtensionCurrentData
-		// 	{
-		// 		previousLinesJs = currentJsLines,
-		// 		previousLinesCss = currentCssLines,
-		// 		previousLinesMetadata = currentMetadataLines,
-		// 		previousBuildHash = computedHash,
-		// 	};
-		//
-		// 	var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath, metadataPath});
-		//
-		// 	return new ExtensionBuildData()
-		// 	{
-		// 		IsFullBuild = true,
-		// 		CurrentHash = computedHash,
-		// 		FullData = bundle
-		// 	};
-		// }
-		//
-		// var diffJs = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesJs, currentJsLines);
-		// var diffCss = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesCss, currentCssLines);
-		// var diffMetadata = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesMetadata, currentMetadataLines);
-		//
-		// var result = new ExtensionBuildData()
-		// {
-		// 	CurrentHash = computedHash,
-		// 	IsFullBuild = false,
-		// 	DiffInstructionsJs = diffJs,
-		// 	DiffInstructionsCss = diffCss,
-		// 	DiffInstructionsMetadata = diffMetadata,
-		// };
-		//
-		// _currentExtensionData.previousLinesJs = currentJsLines;
-		// _currentExtensionData.previousLinesCss = currentCssLines;
-		// _currentExtensionData.previousLinesMetadata = currentMetadataLines;
-		// _currentExtensionData.previousBuildHash = computedHash;
 
-		return new ExtensionBuildData();
+		return new ExtensionBuildData()
+		{
+			IsFullBuild = true,
+			CurrentHash = recentBuild.Checksum,
+			FullData = recentBuild.FullBuild,
+		};
 	}
 
 	public static string GetBuildHash(string[] fileA, string[] fileB, string[] fileC)
