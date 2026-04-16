@@ -24,7 +24,7 @@ import type { UpdateOtelViewRequest } from '@/__generated__/schemas/UpdateOtelVi
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param playerId - The `playerId` parameter to include in the API request.
+ * @param playerId - Player ID to retrieve views for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -74,7 +74,7 @@ export async function beamoPostOtelViews(requester: HttpRequester, payload: Otel
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param viewId - The `viewId` parameter to include in the API request.
+ * @param viewId - ID of the view to delete.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -98,7 +98,7 @@ export async function beamoDeleteOtelViewsByViewId(requester: HttpRequester, vie
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UpdateOtelViewRequest` instance to use for the API request
- * @param viewId - The `viewId` parameter to include in the API request.
+ * @param viewId - ID of the view to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */

@@ -9,6 +9,7 @@ import type { LobbyRestriction } from './enums/LobbyRestriction';
 export type UpdateLobby = { 
   data?: UpdateData; 
   description?: string | null; 
+  hasRestriction?: boolean; 
   matchType?: string | null; 
   maxPlayers?: number | null; 
   name?: string | null; 

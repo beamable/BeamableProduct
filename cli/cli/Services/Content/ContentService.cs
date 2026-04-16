@@ -84,6 +84,7 @@ public partial class ContentService
 	private readonly IAccountsApi _accountsApi;
 	private readonly IRealmsApi _realmsApi;
 	private readonly IAuthApi _authApi;
+	private readonly IAppContext _appContext;
 
 	/// <summary>
 	/// We use this to ensure only one thread is ever running the <see cref="GetAllContentFiles"/> function as well as any other group of file system operations:
@@ -104,7 +105,7 @@ public partial class ContentService
 	/// </summary>
 	public static readonly HashSet<ContentFilterType> UNSUPPORTED_FILTERS_BEFORE_LOADING = new() { ContentFilterType.Tags };
 
-	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi, IRealmsApi realmsApi, IAuthApi authApi)
+	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi, IRealmsApi realmsApi, IAuthApi authApi, IAppContext appContext)
 	{
 		_requester = requester;
 		_config = config;
@@ -112,6 +113,7 @@ public partial class ContentService
 		_accountsApi = accountsApi;
 		_realmsApi = realmsApi;
 		_authApi = authApi;
+		_appContext = appContext;
 
 		_channelChangedContentFiles = Channel.CreateUnbounded<ChangedContentFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 		_channelRemoteContentPublishes = Channel.CreateUnbounded<RemoteContentPublished>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
@@ -648,8 +650,8 @@ public partial class ContentService
 						foreach (ContentHistoryChangelist parsedDiff in parsedDiffs)
 						{
 							// Check each content changed individually, checking for any that the changeType is 'added'
-							if (parsedDiff.Created == null) continue;
-							foreach (var contentItem in parsedDiff.Created.Keys) newItemsOnRemote.Add(contentItem);
+							if (parsedDiff.Added == null) continue;
+							foreach (var contentItem in parsedDiff.Added.Keys) newItemsOnRemote.Add(contentItem);
 						}
 					}
 				}
@@ -887,7 +889,7 @@ public partial class ContentService
 					checksum = c.checksum,
 					type = c.type.ToString().ToLower(),
 					tags = new OptionalArrayOfString(c.tags),
-					uri = c.id,
+					uri = c.uri,
 					visibility = c.visibility.ToString().ToLower()
 				}).ToArray()
 		};

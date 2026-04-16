@@ -20,6 +20,7 @@ import type { BeamoV2ConnectionStringResponse } from '@/__generated__/schemas/Be
 import type { BeamoV2DeleteRegistrationRequest } from '@/__generated__/schemas/BeamoV2DeleteRegistrationRequest';
 import type { BeamoV2EmptyMessage } from '@/__generated__/schemas/BeamoV2EmptyMessage';
 import type { BeamoV2FederationRegistrationResponse } from '@/__generated__/schemas/BeamoV2FederationRegistrationResponse';
+import type { BeamoV2GetAllServiceLoggingContexts } from '@/__generated__/schemas/BeamoV2GetAllServiceLoggingContexts';
 import type { BeamoV2GetManifestsResponse } from '@/__generated__/schemas/BeamoV2GetManifestsResponse';
 import type { BeamoV2GetMetricsRequest } from '@/__generated__/schemas/BeamoV2GetMetricsRequest';
 import type { BeamoV2GetServiceSecretResponse } from '@/__generated__/schemas/BeamoV2GetServiceSecretResponse';
@@ -30,6 +31,7 @@ import type { BeamoV2ManifestChecksum } from '@/__generated__/schemas/BeamoV2Man
 import type { BeamoV2PostManifestRequest } from '@/__generated__/schemas/BeamoV2PostManifestRequest';
 import type { BeamoV2PromoteBeamoManifestRequest } from '@/__generated__/schemas/BeamoV2PromoteBeamoManifestRequest';
 import type { BeamoV2QueryResponse } from '@/__generated__/schemas/BeamoV2QueryResponse';
+import type { BeamoV2ServiceLoggingContext } from '@/__generated__/schemas/BeamoV2ServiceLoggingContext';
 import type { BeamoV2ServiceRegistrationQuery } from '@/__generated__/schemas/BeamoV2ServiceRegistrationQuery';
 import type { BeamoV2ServiceRegistrationRequest } from '@/__generated__/schemas/BeamoV2ServiceRegistrationRequest';
 import type { BeamoV2ServiceRegistrationResponse } from '@/__generated__/schemas/BeamoV2ServiceRegistrationResponse';
@@ -97,9 +99,9 @@ export async function beamoPostManifests(requester: HttpRequester, payload: Beam
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param archived - The `archived` parameter to include in the API request.
- * @param limit - The `limit` parameter to include in the API request.
- * @param offset - The `offset` parameter to include in the API request.
+ * @param archived - Whether to include archived manifests. Defaults to true.
+ * @param limit - Maximum number of items to return.
+ * @param offset - Number of items to skip.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -127,8 +129,8 @@ export async function beamoGetManifests(requester: HttpRequester, archived?: boo
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param manifestId - The `manifestId` parameter to include in the API request.
- * @param archived - The `archived` parameter to include in the API request.
+ * @param manifestId - GUID identifier of the manifest.
+ * @param archived - Whether to include archived manifests. Defaults to true.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -154,7 +156,7 @@ export async function beamoGetManifestsByManifestId(requester: HttpRequester, ma
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param archived - The `archived` parameter to include in the API request.
+ * @param archived - Whether to include archived manifests. Defaults to true.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -344,7 +346,7 @@ export async function beamoPostServicesFederation(requester: HttpRequester, payl
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2ServiceRegistrationRequest` instance to use for the API request
- * @param serviceName - The `serviceName` parameter to include in the API request.
+ * @param serviceName - Name of the service to register federation for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -369,7 +371,7 @@ export async function beamoPutServicesFederationTrafficByServiceName(requester: 
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2DeleteRegistrationRequest` instance to use for the API request
- * @param serviceName - The `serviceName` parameter to include in the API request.
+ * @param serviceName - Name of the service to remove the registration from.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -394,7 +396,7 @@ export async function beamoDeleteServicesFederationTrafficByServiceName(requeste
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2GetMetricsRequest` instance to use for the API request
- * @param serviceName - The `serviceName` parameter to include in the API request.
+ * @param serviceName - Name of the service to fetch metrics for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -419,7 +421,7 @@ export async function beamoPostServicesMetricsRequestByServiceName(requester: Ht
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `BeamoV2StartServiceLogsRequest` instance to use for the API request
- * @param serviceName - The `serviceName` parameter to include in the API request.
+ * @param serviceName - Name of the service to query logs for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -443,7 +445,7 @@ export async function beamoPostServicesLogsQueryByServiceName(requester: HttpReq
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param queryId - The `queryId` parameter to include in the API request.
+ * @param queryId - ID of the query to stop.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -466,7 +468,7 @@ export async function beamoDeleteServicesLogsQueryByQueryId(requester: HttpReque
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param queryId - The `queryId` parameter to include in the API request.
+ * @param queryId - ID of the completed query.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -536,7 +538,7 @@ export async function beamoGetStorageConnection(requester: HttpRequester, gamert
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param storageObjectName - The `storageObjectName` parameter to include in the API request.
+ * @param storageObjectName - Name of the storage object (collection) to query.
  * @param EndTime - The `EndTime` parameter to include in the API request.
  * @param Granularity - The `Granularity` parameter to include in the API request.
  * @param Period - The `Period` parameter to include in the API request.
@@ -558,6 +560,107 @@ export async function beamoGetStoragePerformanceByStorageObjectName(requester: H
       Period,
       StartTime
     },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param serviceName - Name of the service.
+ * @param routingKey - Optional routing key for multi-instance services.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoGetServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string): Promise<HttpResponse<BeamoV2ServiceLoggingContext>> {
+  let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2ServiceLoggingContext>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      routingKey
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `BeamoV2ServiceLoggingContext` instance to use for the API request
+ * @param serviceName - Name of the service.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoPutServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, payload: BeamoV2ServiceLoggingContext, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+  let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2EmptyMessage, BeamoV2ServiceLoggingContext>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param serviceName - Name of the service.
+ * @param routingKey - Routing key identifying the logging context to delete.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoDeleteServicesLogsContextByServiceName(requester: HttpRequester, serviceName: string, routingKey?: string, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+  let endpoint = "/api/beamo/services/{serviceName}/logs/context".replace(serviceNamePlaceholder, endpointEncoder(serviceName));
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2EmptyMessage>({
+    r: requester,
+    e: endpoint,
+    m: DELETE,
+    q: {
+      routingKey
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoGetServicesLogsContext(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2GetAllServiceLoggingContexts>> {
+  let endpoint = "/api/beamo/services/logs/context";
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2GetAllServiceLoggingContexts>({
+    r: requester,
+    e: endpoint,
+    m: GET,
     g: gamertag,
     w: true
   });

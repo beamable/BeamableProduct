@@ -4,7 +4,9 @@
  */
 
 export type ManifestDiffSummary = { 
+  affectedContentIds: string[]; 
   createdDate: bigint | string; 
-  diffUrl: string; 
   manifestUid: string; 
+  publishedBy?: string; 
+  publishedByName?: string; 
 };

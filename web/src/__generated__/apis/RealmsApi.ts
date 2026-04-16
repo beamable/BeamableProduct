@@ -8,7 +8,6 @@ import { GET } from '@/constants';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import type { AliasAvailableResponse } from '@/__generated__/schemas/AliasAvailableResponse';
 import type { ArchiveProjectRequest } from '@/__generated__/schemas/ArchiveProjectRequest';
 import type { BatchDeleteInFlightRequest } from '@/__generated__/schemas/BatchDeleteInFlightRequest';
 import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
@@ -16,7 +15,6 @@ import type { CreateLaunchMessageRequest } from '@/__generated__/schemas/CreateL
 import type { CreatePlanRequest } from '@/__generated__/schemas/CreatePlanRequest';
 import type { CreateProjectRequest } from '@/__generated__/schemas/CreateProjectRequest';
 import type { CustomerResponse } from '@/__generated__/schemas/CustomerResponse';
-import type { CustomersResponse } from '@/__generated__/schemas/CustomersResponse';
 import type { CustomerViewResponse } from '@/__generated__/schemas/CustomerViewResponse';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import type { GetGameResponse } from '@/__generated__/schemas/GetGameResponse';
@@ -25,22 +23,24 @@ import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { InFlightFailureResponse } from '@/__generated__/schemas/InFlightFailureResponse';
 import type { LaunchMessageListResponse } from '@/__generated__/schemas/LaunchMessageListResponse';
-import type { NewCustomerRequest } from '@/__generated__/schemas/NewCustomerRequest';
-import type { NewCustomerResponse } from '@/__generated__/schemas/NewCustomerResponse';
-import type { NewGameRequest } from '@/__generated__/schemas/NewGameRequest';
 import type { ProjectView } from '@/__generated__/schemas/ProjectView';
-import type { PromoteRealmRequest } from '@/__generated__/schemas/PromoteRealmRequest';
-import type { PromoteRealmResponse } from '@/__generated__/schemas/PromoteRealmResponse';
 import type { PromoteRealmResponseOld } from '@/__generated__/schemas/PromoteRealmResponseOld';
 import type { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
-import type { RealmConfigResponse } from '@/__generated__/schemas/RealmConfigResponse';
-import type { RealmConfigSaveRequest } from '@/__generated__/schemas/RealmConfigSaveRequest';
-import type { RealmConfiguration } from '@/__generated__/schemas/RealmConfiguration';
+import type { RealmsBasicAliasAvailableResponse } from '@/__generated__/schemas/RealmsBasicAliasAvailableResponse';
+import type { RealmsBasicCustomersResponse } from '@/__generated__/schemas/RealmsBasicCustomersResponse';
+import type { RealmsBasicNewCustomerRequest } from '@/__generated__/schemas/RealmsBasicNewCustomerRequest';
+import type { RealmsBasicNewCustomerResponse } from '@/__generated__/schemas/RealmsBasicNewCustomerResponse';
+import type { RealmsBasicNewGameRequest } from '@/__generated__/schemas/RealmsBasicNewGameRequest';
+import type { RealmsBasicPromoteRealmRequest } from '@/__generated__/schemas/RealmsBasicPromoteRealmRequest';
+import type { RealmsBasicPromoteRealmResponse } from '@/__generated__/schemas/RealmsBasicPromoteRealmResponse';
+import type { RealmsBasicRealmConfigResponse } from '@/__generated__/schemas/RealmsBasicRealmConfigResponse';
+import type { RealmsBasicRealmConfigSaveRequest } from '@/__generated__/schemas/RealmsBasicRealmConfigSaveRequest';
+import type { RealmsBasicRealmConfiguration } from '@/__generated__/schemas/RealmsBasicRealmConfiguration';
+import type { RealmsBasicUpdateGameHierarchyRequest } from '@/__generated__/schemas/RealmsBasicUpdateGameHierarchyRequest';
 import type { RemoveLaunchMessageRequest } from '@/__generated__/schemas/RemoveLaunchMessageRequest';
 import type { RenameProjectRequest } from '@/__generated__/schemas/RenameProjectRequest';
 import type { ServicePlansResponse } from '@/__generated__/schemas/ServicePlansResponse';
 import type { UnarchiveProjectRequest } from '@/__generated__/schemas/UnarchiveProjectRequest';
-import type { UpdateGameHierarchyRequest } from '@/__generated__/schemas/UpdateGameHierarchyRequest';
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
@@ -95,11 +95,11 @@ export async function realmsPostProjectBeamableBasic(requester: HttpRequester, p
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetCustomerAliasAvailableBasic(requester: HttpRequester, alias: string, gamertag?: string): Promise<HttpResponse<AliasAvailableResponse>> {
+export async function realmsGetCustomerAliasAvailableBasic(requester: HttpRequester, alias: string, gamertag?: string): Promise<HttpResponse<RealmsBasicAliasAvailableResponse>> {
   let endpoint = "/basic/realms/customer/alias/available";
   
   // Make the API request
-  return makeApiRequest<AliasAvailableResponse>({
+  return makeApiRequest<RealmsBasicAliasAvailableResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -201,15 +201,15 @@ export async function realmsDeleteProjectBasic(requester: HttpRequester, payload
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `NewCustomerRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicNewCustomerRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPostCustomerVerifyBasic(requester: HttpRequester, payload: NewCustomerRequest, gamertag?: string): Promise<HttpResponse<NewCustomerResponse>> {
+export async function realmsPostCustomerVerifyBasic(requester: HttpRequester, payload: RealmsBasicNewCustomerRequest, gamertag?: string): Promise<HttpResponse<RealmsBasicNewCustomerResponse>> {
   let endpoint = "/basic/realms/customer/verify";
   
   // Make the API request
-  return makeApiRequest<NewCustomerResponse, NewCustomerRequest>({
+  return makeApiRequest<RealmsBasicNewCustomerResponse, RealmsBasicNewCustomerRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -249,11 +249,11 @@ export async function realmsGetGamesBasic(requester: HttpRequester, gamertag?: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetConfigBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmConfigResponse>> {
+export async function realmsGetConfigBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmsBasicRealmConfigResponse>> {
   let endpoint = "/basic/realms/config";
   
   // Make the API request
-  return makeApiRequest<RealmConfigResponse>({
+  return makeApiRequest<RealmsBasicRealmConfigResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -292,15 +292,15 @@ export async function realmsPostConfigBasic(requester: HttpRequester, payload: R
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `RealmConfigSaveRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicRealmConfigSaveRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPutConfigBasic(requester: HttpRequester, payload: RealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function realmsPutConfigBasic(requester: HttpRequester, payload: RealmsBasicRealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/realms/config";
   
   // Make the API request
-  return makeApiRequest<CommonResponse, RealmConfigSaveRequest>({
+  return makeApiRequest<CommonResponse, RealmsBasicRealmConfigSaveRequest>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -385,11 +385,11 @@ export async function realmsPostPlansBasic(requester: HttpRequester, payload: Cr
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetClientDefaultsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmConfiguration>> {
+export async function realmsGetClientDefaultsBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmsBasicRealmConfiguration>> {
   let endpoint = "/basic/realms/client/defaults";
   
   // Make the API request
-  return makeApiRequest<RealmConfiguration>({
+  return makeApiRequest<RealmsBasicRealmConfiguration>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -421,15 +421,15 @@ export async function realmsGetCustomerBasic(requester: HttpRequester, gamertag?
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `NewCustomerRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicNewCustomerRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPostCustomerBasic(requester: HttpRequester, payload: NewCustomerRequest, gamertag?: string): Promise<HttpResponse<NewCustomerResponse>> {
+export async function realmsPostCustomerBasic(requester: HttpRequester, payload: RealmsBasicNewCustomerRequest, gamertag?: string): Promise<HttpResponse<RealmsBasicNewCustomerResponse>> {
   let endpoint = "/basic/realms/customer";
   
   // Make the API request
-  return makeApiRequest<NewCustomerResponse, NewCustomerRequest>({
+  return makeApiRequest<RealmsBasicNewCustomerResponse, RealmsBasicNewCustomerRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -631,15 +631,15 @@ export async function realmsGetGameBasic(requester: HttpRequester, rootPID: stri
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `NewGameRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicNewGameRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPostGameBasic(requester: HttpRequester, payload: NewGameRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function realmsPostGameBasic(requester: HttpRequester, payload: RealmsBasicNewGameRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/realms/game";
   
   // Make the API request
-  return makeApiRequest<CommonResponse, NewGameRequest>({
+  return makeApiRequest<CommonResponse, RealmsBasicNewGameRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -655,15 +655,15 @@ export async function realmsPostGameBasic(requester: HttpRequester, payload: New
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `UpdateGameHierarchyRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicUpdateGameHierarchyRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPutGameBasic(requester: HttpRequester, payload: UpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function realmsPutGameBasic(requester: HttpRequester, payload: RealmsBasicUpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/realms/game";
   
   // Make the API request
-  return makeApiRequest<CommonResponse, UpdateGameHierarchyRequest>({
+  return makeApiRequest<CommonResponse, RealmsBasicUpdateGameHierarchyRequest>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -709,15 +709,15 @@ export async function realmsGetProjectPromoteBasic(requester: HttpRequester, sou
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `PromoteRealmRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicPromoteRealmRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPostProjectPromoteBasic(requester: HttpRequester, payload: PromoteRealmRequest, gamertag?: string): Promise<HttpResponse<PromoteRealmResponseOld>> {
+export async function realmsPostProjectPromoteBasic(requester: HttpRequester, payload: RealmsBasicPromoteRealmRequest, gamertag?: string): Promise<HttpResponse<PromoteRealmResponseOld>> {
   let endpoint = "/basic/realms/project/promote";
   
   // Make the API request
-  return makeApiRequest<PromoteRealmResponseOld, PromoteRealmRequest>({
+  return makeApiRequest<PromoteRealmResponseOld, RealmsBasicPromoteRealmRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -732,11 +732,11 @@ export async function realmsPostProjectPromoteBasic(requester: HttpRequester, pa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetCustomersBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<CustomersResponse>> {
+export async function realmsGetCustomersBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmsBasicCustomersResponse>> {
   let endpoint = "/basic/realms/customers";
   
   // Make the API request
-  return makeApiRequest<CustomersResponse>({
+  return makeApiRequest<RealmsBasicCustomersResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -756,11 +756,11 @@ export async function realmsGetCustomersBasic(requester: HttpRequester, gamertag
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetPromotionBasic(requester: HttpRequester, sourcePid: string, contentManifestIds?: string[], promotions?: string[], gamertag?: string): Promise<HttpResponse<PromoteRealmResponse>> {
+export async function realmsGetPromotionBasic(requester: HttpRequester, sourcePid: string, contentManifestIds?: string[], promotions?: string[], gamertag?: string): Promise<HttpResponse<RealmsBasicPromoteRealmResponse>> {
   let endpoint = "/basic/realms/promotion";
   
   // Make the API request
-  return makeApiRequest<PromoteRealmResponse>({
+  return makeApiRequest<RealmsBasicPromoteRealmResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -780,15 +780,15 @@ export async function realmsGetPromotionBasic(requester: HttpRequester, sourcePi
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `PromoteRealmRequest` instance to use for the API request
+ * @param payload - The `RealmsBasicPromoteRealmRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPostPromotionBasic(requester: HttpRequester, payload: PromoteRealmRequest, gamertag?: string): Promise<HttpResponse<PromoteRealmResponse>> {
+export async function realmsPostPromotionBasic(requester: HttpRequester, payload: RealmsBasicPromoteRealmRequest, gamertag?: string): Promise<HttpResponse<RealmsBasicPromoteRealmResponse>> {
   let endpoint = "/basic/realms/promotion";
   
   // Make the API request
-  return makeApiRequest<PromoteRealmResponse, PromoteRealmRequest>({
+  return makeApiRequest<RealmsBasicPromoteRealmResponse, RealmsBasicPromoteRealmRequest>({
     r: requester,
     e: endpoint,
     m: POST,

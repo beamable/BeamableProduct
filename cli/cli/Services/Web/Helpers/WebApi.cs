@@ -121,6 +121,8 @@ public static class WebApi
 				.Where(p => p.In == ParameterLocation.Header)
 				// Exclude 'X-BEAM-SCOPE' header; it is set by default via the Beam Web SDK.
 				.Where(p => p.Name != "X-BEAM-SCOPE")
+				// Only include headers that makeApiRequest supports (currently just X-BEAM-GAMERTAG).
+				.Where(p => p.Name == "X-BEAM-GAMERTAG")
 				.ToList();
 
 			foreach (var (httpMethod, operation) in pathItem.Operations)
@@ -247,7 +249,9 @@ public static class WebApi
 		var requiresAuth = !serviceType.Equals("basic", StringComparison.InvariantCultureIgnoreCase) ||
 		                   serviceName.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 		                   (operation.Security.Count >= 1 &&
-		                    operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user"));
+		                    operation.Security[0].Any(kvp =>
+			                    kvp.Key.Reference?.Id is "user" or "auth" ||
+			                    kvp.Key.Scheme?.Equals("bearer", StringComparison.OrdinalIgnoreCase) == true));
 		var remarks = requiresAuth
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;

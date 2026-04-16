@@ -9,6 +9,7 @@ import {
   realmsGetClientDefaultsBasic,
 } from '@/__generated__/apis';
 import { HttpRequester } from '@/network/http/types/HttpRequester';
+import { getUserDeviceAndPlatform } from '@/utils/getUserDeviceAndPlatform';
 
 interface BeamWebSocketConnectParams {
   requester: HttpRequester;
@@ -68,7 +69,22 @@ export class BeamWebSocket {
 
   private handleOpen() {
     this.reconnectAttempts = 0;
+    // The server's `&send-session-start=true` query param tells the gateway to
+    // expect a `session-start` frame as the very first message on this socket.
+    // Browsers can't set request headers on the WebSocket upgrade, so we send
+    // the device info as a frame instead. If the frame is missing or malformed,
+    // the server will close the connection.
+    this.sendSessionStartFrame();
     this.connectPromiseWithResolvers?.resolve();
+  }
+
+  private sendSessionStartFrame(): void {
+    if (!this.socket) return;
+    try {
+      this.socket.send(JSON.stringify(buildSessionStartFrame()));
+    } catch (e) {
+      console.warn('Failed to send session-start frame:', e);
+    }
   }
 
   private handleError(e: Event) {
@@ -204,4 +220,40 @@ export class BeamWebSocket {
   dispose(): void {
     this.disconnect();
   }
+}
+
+interface SessionStartFrame {
+  type: 'session-start';
+  device: {
+    platform: string;
+    model: string;
+    locale?: string;
+    language?: { code: string; context: string };
+  };
+}
+
+/**
+ * Build the `session-start` frame payload sent as the first WebSocket message.
+ * The shape mirrors the server-side `SessionDeviceInfo` record (camelCase
+ * JSON via `JsonSerializerDefaults.Web`).
+ */
+function buildSessionStartFrame(): SessionStartFrame {
+  const { deviceType, platform } = getUserDeviceAndPlatform();
+  const browserLocale =
+    typeof navigator !== 'undefined' ? navigator.language : undefined;
+
+  const frame: SessionStartFrame = {
+    type: 'session-start',
+    device: {
+      platform,
+      model: deviceType,
+    },
+  };
+
+  if (browserLocale) {
+    frame.device.locale = browserLocale.toLowerCase();
+    frame.device.language = { code: browserLocale, context: 'IETF' };
+  }
+
+  return frame;
 }
