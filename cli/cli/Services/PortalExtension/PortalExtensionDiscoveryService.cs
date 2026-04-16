@@ -92,6 +92,7 @@ public class PortalExtensionObserver
 	private CancellationTokenSource _cancelToken;
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
+	private BeamActivity _rootActivity;
 	private BeamoLocalManifest _manifest;
 
 	public string AppFilesPath => _metaData.AbsolutePath;
@@ -118,6 +119,12 @@ public class PortalExtensionObserver
 		}
 	}
 
+	public BeamActivity RootActivity
+	{
+		get => _rootActivity;
+		set => _rootActivity = value;
+	}
+
 	public List<string> FileExtensions = new List<string>();
 
 	public void CancelDiscovery()
@@ -125,17 +132,26 @@ public class PortalExtensionObserver
 		_cancelToken.Cancel();
 	}
 
-	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamoLocalManifest manifest)
+	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamActivity beamActivity, BeamoLocalManifest manifest)
 	{
 		_notificationsApi = notificationApi;
 		_attributes = attributes;
+		_rootActivity = beamActivity;
 		_manifest = manifest;
 	}
+	
+	public void ConfigureServiceData(PortalExtensionDef extensionMetaData, BeamActivity beamActivity)
+	{
+		_metaData = extensionMetaData;
+		_rootActivity = beamActivity;
+	}
+	
 
 	public virtual void BuildExtension()
 	{
+		using var childActivity = _rootActivity.CreateChild("Build extension");
+		
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
-
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -163,6 +179,21 @@ public class PortalExtensionObserver
 			var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
 
 			File.WriteAllText(metadataPath, metadataContentJson);
+			
+			var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
+			var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
+
+			long metadataBytes = File.Exists(metadataPath) ? new FileInfo(metadataPath).Length : 0;
+			long jsSizeBytes = File.Exists(mainJsPath) ? new FileInfo(mainJsPath).Length : 0;
+			long cssSizeBytes = File.Exists(mainCssPath) ? new FileInfo(mainCssPath).Length : 0;
+			
+			childActivity.SetTags(new TelemetryAttributeCollection()
+				.With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
+				.With(TelemetryAttributes.PortalExtensionJsSize(jsSizeBytes))
+				.With(TelemetryAttributes.PortalExtensionCssSize(cssSizeBytes))
+				.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes))
+				.With(TelemetryAttributes.PortalExtensionName(_metaData.Name)));
+			
 		}
 		catch (Exception e)
 		{
@@ -174,12 +205,18 @@ public class PortalExtensionObserver
 
 	public void InstallDeps()
 	{
+		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
+		
 		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+		
+		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_metaData.Name));
+		// Don't need to track for Duration for install as Activity already does it
 	}
 
 	public ExtensionBuildData GetAppBuild(string clientHash)

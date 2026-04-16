@@ -1,3 +1,4 @@
+using Beamable.Common;
 using beamable.otel.exporter.Serialization;
 using beamable.otel.exporter.Utils;
 using OpenTelemetry;
@@ -32,7 +33,10 @@ public class FileActivityExporter : FileExporter<Activity>
 
 		foreach (var activity in batch)
 		{
-			if (activity.Status != ActivityStatusCode.Error) // For now we only care about error traces
+			bool isPortalExtension =
+				activity.Tags.Any(tag => tag.Key == Constants.Features.Otel.ATTR_PORTAL_EXTENSION_NAME);
+			
+			if (activity.Status != ActivityStatusCode.Error && !isPortalExtension) // For now we only care about error traces and portal Extension traces
 			{
 				continue;
 			}
