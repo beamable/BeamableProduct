@@ -63,10 +63,9 @@ jobs:
         with:
           ref: ${{ github.event.inputs.commit }}
 
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.14.0'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm

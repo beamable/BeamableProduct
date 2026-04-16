@@ -6,6 +6,11 @@
   "module": "dist/node/index.mjs",
   "unpkg": "dist/browser/index.iife.js",
   "types": "dist/types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beamable/BeamableProduct",
+    "directory": "web"
+  },
   "author": "Beamable",
   "license": "MIT",
   "packageManager": "pnpm@10.8.0",
