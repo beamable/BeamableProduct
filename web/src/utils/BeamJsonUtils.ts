@@ -10,7 +10,7 @@ export class BeamJsonUtils {
   // as JavaScript Numbers. Quotes them so they arrive at the reviver as strings.
   // Uses negative lookbehind/lookahead to avoid matching inside quoted strings.
   private static readonly UNSAFE_INT_REGEX =
-    /(?<=[:,\[{]\s*)-?\d{11,}(?=\s*[,\]\}])/g;
+    /(?<=[:,[{]\s*)-?\d{11,}(?=\s*[,\]}])/g;
 
   /**
    * Replacer function for JSON.stringify that:
