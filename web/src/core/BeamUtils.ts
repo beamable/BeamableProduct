@@ -53,8 +53,8 @@ export function parseSocketMessage<K extends keyof RefreshableServiceMap>(
 export interface StandaloneRequesterProps {
   /** The Beamable Customer ID. */
   cid: string;
-  /** The Beamable Project ID. */
-  pid: string;
+  /** The Beamable Project ID. If omitted, the scope header will use only the CID. */
+  pid?: string;
   /**
    * The Beamable environment to connect to.
    * Can be one of 'prod', 'stg', 'dev', or a custom environment name.
@@ -93,7 +93,7 @@ export function createStandaloneRequester(
   baseRequester.defaultHeaders = {
     [HEADERS.ACCEPT]: 'application/json',
     [HEADERS.CONTENT_TYPE]: 'application/json',
-    [HEADERS.BEAM_SCOPE]: `${props.cid}.${props.pid}`,
+    [HEADERS.BEAM_SCOPE]: props.pid ? `${props.cid}.${props.pid}` : props.cid,
     [HEADERS.BEAM_SDK_VERSION]: packageJson.version,
   };
 
@@ -101,9 +101,9 @@ export function createStandaloneRequester(
     inner: baseRequester,
     tokenStorage:
       props.tokenStorage ??
-      defaultTokenStorage({ pid: props.pid, tag: props.tokenStorageTag }),
+      defaultTokenStorage({ pid: props.pid ?? props.cid, tag: props.tokenStorageTag }),
     useSignedRequest: !isBrowserEnv() && (props.useSignedRequest ?? false),
-    pid: props.pid,
+    pid: props.pid ?? props.cid,
   });
 }
 

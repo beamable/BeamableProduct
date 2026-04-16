@@ -263,6 +263,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					return CliLogLevel.Info;
 				case "Fatal":
 				case "fatal":
+				case "critical":
+				case "Critical":
 					return CliLogLevel.Fatal;
 				case "Error":
 				case "error":
