@@ -8,5 +8,5 @@ This command can also be used to change the CID/PID of an existing `.beamable` f
 
 # Arg_path
 
-By default, the {{title}} command creates a `.beamable` folder in the current directory. 
+By default, the {{title}} command creates a `.beamable` folder in the current directory.
 However, the `path` argument configures where the `.beamable` folder is created.
