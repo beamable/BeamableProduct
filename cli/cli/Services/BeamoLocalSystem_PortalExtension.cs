@@ -6,7 +6,6 @@ using cli.Portal;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using OpenTelemetry.Resources;
 using System.Text.RegularExpressions;
 
 namespace cli.Services;
@@ -48,7 +47,6 @@ public partial class BeamoLocalSystem
 	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
-		
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
 		
 		// Reset so each run gets a fresh sink.
@@ -118,7 +116,7 @@ public partial class BeamoLocalSystem
 						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
 					};
 					
-					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, microserviceName, onProgress);
+					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, extension, microserviceName, onProgress);
 				})
 				.RunForever();
 			
@@ -149,7 +147,7 @@ public partial class BeamoLocalSystem
 	///     keeps using it.</item>
 	/// </list>
 	/// </summary>
-	private DebugLogProcessor AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, string microserviceName, Action<float, string> onProgress = null)
+	private DebugLogProcessor AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, string microserviceName, Action<float, string> onProgress = null)
 	{
 		builder.ClearProviders();
 		if (_portalExtensionSink == null)
@@ -159,13 +157,13 @@ public partial class BeamoLocalSystem
 			// construction are buffered rather than dropped.
 			_portalExtensionSink = debugLogProcessor;
 			_portalExtensionSink.GetMessageSubscription(microserviceName);
-			builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, onProgress));
+			builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, extension, onProgress));
 			// Return the same sink; ctx.debugLogProcessor stays as-is.
 			return debugLogProcessor;
 		}
 
 		// Second ConfigureLogging call: point the new builder at the stable first sink.
-		builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, onProgress));
+		builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, extension, onProgress));
 		// Drain any messages that landed in the temporary second sink into the channel
 		// of the stable first sink, then discard the temporary subscription.
 		var tmpEarly = debugLogProcessor.GetMessageSubscription(microserviceName);
@@ -176,6 +174,59 @@ public partial class BeamoLocalSystem
 		// Return the stable first sink so ctx.debugLogProcessor is updated to point at it.
 		return _portalExtensionSink;
 	}
+
+	public static string BuildPortalExtensionUrl(IAppContext context, PortalExtensionDef extension)
+	{
+		if (context == null)
+		{
+			return null;
+		}
+
+		var treatedHost = GetPortalExtensionBaseUrl(context.Host);
+		if (string.IsNullOrEmpty(treatedHost) || string.IsNullOrEmpty(context.Cid) || string.IsNullOrEmpty(context.Pid))
+		{
+			return null;
+		}
+
+		var baseUrl = $"{treatedHost}/{context.Cid}/games/{context.Pid}/realms/{context.Pid}";
+		var mountPath = NormalizePortalExtensionMountPage(extension?.Properties?.Mount?.Page);
+		if (!string.IsNullOrEmpty(mountPath))
+		{
+			return $"{baseUrl}/{mountPath}?refresh_token={context.RefreshToken}";
+		}
+
+		return $"Invalid Mount Path for Extension {extension.Name}";
+	}
+
+	public static string BuildPortalExtensionReadyMessage(IAppContext context, PortalExtensionDef extension)
+	{
+		var portalUrl = BuildPortalExtensionUrl(context, extension);
+		if (string.IsNullOrEmpty(portalUrl))
+		{
+			return ServiceLogs.PORTAL_EXTENSION_RUNNING;
+		}
+
+		return $"{ServiceLogs.PORTAL_EXTENSION_RUNNING} Portal URL: {portalUrl}";
+	}
+
+	private static string GetPortalExtensionBaseUrl(string host)
+	{
+		if (string.IsNullOrEmpty(host))
+		{
+			return null;
+		}
+
+		return host.Replace("/socket", "")
+			.Replace("wss", "https")
+			.Replace("dev.", "dev-")
+			.Replace("api", "portal");
+	}
+
+	private static string NormalizePortalExtensionMountPage(string mountPage)
+	{
+		return string.IsNullOrWhiteSpace(mountPage) ? null : mountPage.Trim().Trim('/');
+	}
+	
 
 	private string GetMicroName(string appName)
 	{
@@ -239,16 +290,18 @@ public class ExtensionAppLogProvider : ILoggerProvider
 {
 	private readonly DebugLogProcessor _sink;
 	private readonly IAppContext _appContext;
+	private readonly PortalExtensionDef _extension;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, Action<float, string> onProgress = null)
+	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
 	{
 		_sink = sink;
 		_appContext = appContext;
+		_extension = extension;
 		_onProgress = onProgress;
 	}
 
-	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _onProgress);
+	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _extension, _onProgress);
 
 	public void Dispose() { }
 }
@@ -257,12 +310,14 @@ public class ExtensionLogger : ILogger
 {
 	private readonly DebugLogProcessor _debugLogProcessor;
 	private readonly IAppContext _appContext;
+	private readonly PortalExtensionDef _extension;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, Action<float, string> onProgress = null)
+	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
 	{
 		_debugLogProcessor = debugLogProcessor;
 		_appContext = appContext;
+		_extension = extension;
 		_onProgress = onProgress;
 	}
 	
@@ -317,12 +372,12 @@ public class ExtensionLogger : ILogger
 		}
 	}
 
-	private static string ParseMicroserviceLogMessages(string logMessage)
+	private string ParseMicroserviceLogMessages(string logMessage)
 	{
 		switch (logMessage)
 		{
 			case var _ when logMessage.StartsWith(ServiceLogs.READY_FOR_TRAFFIC_PREFIX):
-				return ServiceLogs.PORTAL_EXTENSION_RUNNING;
+				return BeamoLocalSystem.BuildPortalExtensionReadyMessage(_appContext, _extension);
 			case var _ when logMessage.StartsWith(ServiceLogs.STARTING_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.SCANNING_CLIENT_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.REGISTERING_STANDARD_SERVICES):

@@ -58,7 +58,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		
 		foreach (var sd in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
-			if (!sd.IsLocal) continue;
+			if (!sd.IsLocal || sd.Protocol is BeamoProtocolType.PortalExtension) continue;
 			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
 		
 			Log.Debug($"adding project=[{proj}] to solution");
