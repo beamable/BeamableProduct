@@ -26,9 +26,6 @@ import type { LocalizedPriceMap } from '@/__generated__/schemas/LocalizedPriceMa
 import type { PaymentResultResponse } from '@/__generated__/schemas/PaymentResultResponse';
 import type { SteamAuthRequest } from '@/__generated__/schemas/SteamAuthRequest';
 import type { SteamOrderInfoResponse } from '@/__generated__/schemas/SteamOrderInfoResponse';
-import type { StripeWebhookRequest } from '@/__generated__/schemas/StripeWebhookRequest';
-import type { StripeWebhookResponse } from '@/__generated__/schemas/StripeWebhookResponse';
-import type { StripeWebhookSetupRequest } from '@/__generated__/schemas/StripeWebhookSetupRequest';
 import type { StripeWebhookSetupResponse } from '@/__generated__/schemas/StripeWebhookSetupResponse';
 import type { SubscriptionVerificationResponse } from '@/__generated__/schemas/SubscriptionVerificationResponse';
 import type { TrackPurchaseRequest } from '@/__generated__/schemas/TrackPurchaseRequest';
@@ -411,25 +408,6 @@ export async function paymentsPostItunesPurchaseBeginBasic(requester: HttpReques
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `StripeWebhookRequest` instance to use for the API request
- * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
- * 
- */
-export async function paymentsPostStripeWebhookBasic(requester: HttpRequester, payload: StripeWebhookRequest, gamertag?: string): Promise<HttpResponse<StripeWebhookResponse>> {
-  let endpoint = "/basic/payments/stripe/webhook";
-  
-  // Make the API request
-  return makeApiRequest<StripeWebhookResponse, StripeWebhookRequest>({
-    r: requester,
-    e: endpoint,
-    m: POST,
-    p: payload,
-    g: gamertag
-  });
-}
-
-/**
- * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `VerifyPurchaseRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
@@ -473,19 +451,17 @@ export async function paymentsPostFacebookPurchaseCancelBasic(requester: HttpReq
 
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `StripeWebhookSetupRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function paymentsPostStripeWebhookSetupBasic(requester: HttpRequester, payload: StripeWebhookSetupRequest, gamertag?: string): Promise<HttpResponse<StripeWebhookSetupResponse>> {
+export async function paymentsPostStripeWebhookSetupBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<StripeWebhookSetupResponse>> {
   let endpoint = "/basic/payments/stripe/webhook/setup";
   
   // Make the API request
-  return makeApiRequest<StripeWebhookSetupResponse, StripeWebhookSetupRequest>({
+  return makeApiRequest<StripeWebhookSetupResponse>({
     r: requester,
     e: endpoint,
     m: POST,
-    p: payload,
     g: gamertag
   });
 }

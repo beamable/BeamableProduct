@@ -750,6 +750,7 @@ export * from './SteamOrderInfoResponse';
 export * from './Store';
 export * from './StringStringKeyValuePair';
 export * from './StripeSubscriptionResponse';
+export * from './StripeWebhookSetupResponse';
 export * from './SubscriberDetailsResponse';
 export * from './SubscriptionVerificationRequest';
 export * from './SubscriptionVerificationResponse';
