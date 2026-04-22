@@ -1,4 +1,3 @@
-
 namespace Beamable.Editor.BeamCli.Commands
 {
     using Beamable.Common;
