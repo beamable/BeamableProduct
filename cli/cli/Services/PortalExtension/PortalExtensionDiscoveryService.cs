@@ -9,18 +9,6 @@ using Newtonsoft.Json;
 
 namespace cli.Services.PortalExtension;
 
-[Serializable]
-public class ExtensionBuildData //TODO make this have a diff version number so we know if the diff algorithm changed
-{
-	public bool IsFullBuild;
-	public string FullData;
-
-	public DiffInstructions DiffInstructionsJs;
-	public DiffInstructions DiffInstructionsCss;
-	public DiffInstructions DiffInstructionsMetadata;
-
-	public string CurrentHash;
-}
 
 [Serializable]
 public class ExtensionBuildMetaData
@@ -40,54 +28,35 @@ public class PortalExtensionDiscoveryService : Microservice
 
 		ExtensionBuildData buildData = observer.GetAppBuild(currentHash);
 
-		return new ExtensionBuildData
-		{
-			IsFullBuild = buildData.IsFullBuild,
-			FullData = buildData.FullData,
-			DiffInstructionsJs = buildData.DiffInstructionsJs,
-			DiffInstructionsCss = buildData.DiffInstructionsCss,
-			DiffInstructionsMetadata = buildData.DiffInstructionsMetadata,
-			CurrentHash = buildData.CurrentHash
-		};
+		return buildData;
 	}
+}
 
-	//TODO we can delete this before launch of PE
-	[ClientCallable]
-	public ExtensionBuildMetaData RequestMetaData()
-	{
-		var observer = Provider.GetService<PortalExtensionObserver>();
-		var extensionDef = observer.ExtensionMetaData;
-		return new ExtensionBuildMetaData
-		{
-			Name = extensionDef.Name,
-			ToolkitVersion = extensionDef.GetToolkitVersion(),
-			Properties = extensionDef.Properties
-		};
-	}
+[Serializable]
+public class ExtensionBuildData
+{
+	public bool IsFullBuild;
+	public string FullData;
+
+	public bool IsError;
+	public string ErrorMessage;
+	public string ErrorStackTrace;
+
+	public DiffInstructions DiffInstructionsJs;
+	public DiffInstructions DiffInstructionsCss;
+	public DiffInstructions DiffInstructionsMetadata;
+
+	public string CurrentHash;
 }
 
 public class PortalExtensionObserver
 {
 	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "svelte", "js", "html" };
-
-
-	public class ExtensionCurrentData
-	{
-		public string[] previousLinesJs;
-		public string[] previousLinesCss;
-		public string[] previousLinesMetadata;
-
-		public string previousBuildHash;
-	}
-
-
 	private bool _alreadyStarted;
 
 	private PortalExtensionDef _metaData;
 
-	//TODO have this have a sorted list of data+hash (with a max size of 10 maybe), and try to find the one that matches and calculate the
-	// diff between that one and the latest build, on each build we add the to the list and remove the oldest one
-	private ExtensionCurrentData _currentExtensionData;
+	private PortalExtensionBuildHistory _buildHistory;
 
 	private CancellationTokenSource _cancelToken;
 	private IMicroserviceNotificationsApi _notificationsApi;
@@ -125,6 +94,8 @@ public class PortalExtensionObserver
 		set => _rootActivity = value;
 	}
 
+	public string MetadataPath => Path.Combine(AppFilesPath, "assets", "metadata.json");
+
 	public List<string> FileExtensions = new List<string>();
 
 	public void CancelDiscovery()
@@ -139,87 +110,100 @@ public class PortalExtensionObserver
 		_rootActivity = beamActivity;
 		_manifest = manifest;
 	}
-	
+
 	public void ConfigureServiceData(PortalExtensionDef extensionMetaData, BeamActivity beamActivity)
 	{
 		_metaData = extensionMetaData;
 		_rootActivity = beamActivity;
 	}
-	
 
-	public virtual void BuildExtension()
+	public void BuildExtension()
 	{
 		using var childActivity = _rootActivity.CreateChild("Build extension");
-		
+
+		if (_buildHistory == null)
+		{
+			_buildHistory = new PortalExtensionBuildHistory(10);
+		}
+
 		StartProcessResult result = StartProcessUtil.Run("npm", "run beam-build", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		CreateMetaDataFile();
+
 		if (result.exit != 0)
 		{
-			throw new CliException($"Failed to generate portal extension build. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
-				.Trim());
+			_buildHistory.Add(new PortalExtensionBuild()
+			{
+				 IsError = true,
+				 ErrorMessage = result.stderr,
+				 Checksum = Guid.NewGuid().ToString() // Just put a random guid here, this is just so it's not confused with an empty string, that means that no build was found
+			});
+			return;
 		}
 
 		try
 		{
-			var metadataContent = new ExtensionBuildMetaData
-			{
-				Name = ExtensionMetaData.Name,
-				ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-				Properties = ExtensionMetaData.Properties
-			};
+			var build = CreateAppBuildData();
+			_buildHistory.Add(build);
 
-			var metadataPath = Path.Combine(AppFilesPath, "assets", "metadata.json");
-
-			string metaDataDir = Path.GetDirectoryName(metadataPath);
-
-			if (!Directory.Exists(metaDataDir))
-			{
-				Directory.CreateDirectory(metadataPath);
-			}
-
-			var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
-
-			File.WriteAllText(metadataPath, metadataContentJson);
-			
 			var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
 			var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
 
-			long metadataBytes = File.Exists(metadataPath) ? new FileInfo(metadataPath).Length : 0;
+			long metadataBytes = File.Exists(MetadataPath) ? new FileInfo(MetadataPath).Length : 0;
 			long jsSizeBytes = File.Exists(mainJsPath) ? new FileInfo(mainJsPath).Length : 0;
 			long cssSizeBytes = File.Exists(mainCssPath) ? new FileInfo(mainCssPath).Length : 0;
-			
+
+
 			childActivity.SetTags(new TelemetryAttributeCollection()
 				.With(TelemetryAttributes.PortalExtensionMetadataSize(metadataBytes))
 				.With(TelemetryAttributes.PortalExtensionJsSize(jsSizeBytes))
 				.With(TelemetryAttributes.PortalExtensionCssSize(cssSizeBytes))
 				.With(TelemetryAttributes.PortalExtensionTotalSize(metadataBytes + jsSizeBytes + cssSizeBytes))
 				.With(TelemetryAttributes.PortalExtensionName(_metaData.Name)));
-			
 		}
 		catch (Exception e)
 		{
 			throw new CliException($"Failed to generate portal extension metadata file. \nCheck exception: [\n{e.Message}] \nStackTrace: [{e.StackTrace}]"
 				.Trim());
 		}
-
 	}
 
 	public void InstallDeps()
 	{
 		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
-		
-		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 
+		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
-		
+
 		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_metaData.Name));
 		// Don't need to track for Duration for install as Activity already does it
 	}
 
-	public ExtensionBuildData GetAppBuild(string clientHash)
+	private void CreateMetaDataFile()
+	{
+		var metadataContent = new ExtensionBuildMetaData
+		{
+			Name = ExtensionMetaData.Name,
+			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
+			Properties = ExtensionMetaData.Properties
+		};
+
+		string metaDataDir = Path.GetDirectoryName(MetadataPath);
+
+		if (!Directory.Exists(metaDataDir))
+		{
+			Directory.CreateDirectory(MetadataPath);
+		}
+
+		var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
+
+		File.WriteAllText(MetadataPath, metadataContentJson);
+	}
+
+	public PortalExtensionBuild CreateAppBuildData()
 	{
 		var mainJsPath = Path.Combine(AppFilesPath, "assets", "index.js");
 		var mainCssPath = Path.Combine(AppFilesPath, "assets", "style.css");
@@ -235,48 +219,60 @@ public class PortalExtensionObserver
 		string[] currentMetadataLines = File.ReadLines(metadataPath).ToArray();
 
 		var computedHash = GetBuildHash(currentJsLines, currentCssLines, currentMetadataLines);
+		var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath, metadataPath});
 
-
-		// no sender hash, no stored previous hash or different hash than expected, means that we need to send the full build and sync the hashes
-		if (string.IsNullOrEmpty(clientHash) || _currentExtensionData == null || !clientHash.Equals(_currentExtensionData.previousBuildHash))
+		return new PortalExtensionBuild()
 		{
-			_currentExtensionData = new ExtensionCurrentData
-			{
-				previousLinesJs = currentJsLines,
-				previousLinesCss = currentCssLines,
-				previousLinesMetadata = currentMetadataLines,
-				previousBuildHash = computedHash,
-			};
+			javascriptLines = currentJsLines,
+			cssLines = currentCssLines,
+			metadataLines = currentMetadataLines,
+			FullBuild =  bundle,
+			Checksum = computedHash,
+		};
+	}
 
-			var bundle = ConvertBuiltFiles(new []{mainJsPath, mainCssPath, metadataPath});
+	public (string hash, string bundle) GetFullBundleWithOnlyMetadata()
+	{
+		string[] currentMetadataLines = File.ReadLines(MetadataPath).ToArray();
+		var computedHash = GetBuildHash(Array.Empty<string>(), Array.Empty<string>(), currentMetadataLines);
+		var bundle = ConvertBuiltFiles(new []{MetadataPath});
+
+		return (computedHash, bundle);
+	}
+
+	public ExtensionBuildData GetAppBuild(string clientHash)
+	{
+		var recentBuild = _buildHistory.GetFirst();
+
+		if (recentBuild.IsError)
+		{
+			(string hash, string bundle) = GetFullBundleWithOnlyMetadata();
+			return new ExtensionBuildData() { IsError = true, ErrorMessage = recentBuild.ErrorMessage, ErrorStackTrace = "", FullData = bundle, CurrentHash = hash };
+		}
+
+		if (_buildHistory.Get(clientHash, out var oldBuild))
+		{
+			// calculate diff
+			var diffJs = PortalExtensionDiff.GetDiffInstructions(oldBuild.javascriptLines, recentBuild.javascriptLines);
+			var diffCss = PortalExtensionDiff.GetDiffInstructions(oldBuild.cssLines, recentBuild.cssLines);
+			var diffMetadata = PortalExtensionDiff.GetDiffInstructions(oldBuild.metadataLines, recentBuild.metadataLines);
 
 			return new ExtensionBuildData()
 			{
-				IsFullBuild = true,
-				CurrentHash = computedHash,
-				FullData = bundle
+				CurrentHash = recentBuild.Checksum,
+				IsFullBuild = false,
+				DiffInstructionsJs = diffJs,
+				DiffInstructionsCss = diffCss,
+				DiffInstructionsMetadata = diffMetadata,
 			};
 		}
 
-		var diffJs = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesJs, currentJsLines);
-		var diffCss = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesCss, currentCssLines);
-		var diffMetadata = PortalExtensionDiff.GetDiffInstructions(_currentExtensionData.previousLinesMetadata, currentMetadataLines);
-
-		var result = new ExtensionBuildData()
+		return new ExtensionBuildData()
 		{
-			CurrentHash = computedHash,
-			IsFullBuild = false,
-			DiffInstructionsJs = diffJs,
-			DiffInstructionsCss = diffCss,
-			DiffInstructionsMetadata = diffMetadata,
+			IsFullBuild = true,
+			CurrentHash = recentBuild.Checksum,
+			FullData = recentBuild.FullBuild,
 		};
-
-		_currentExtensionData.previousLinesJs = currentJsLines;
-		_currentExtensionData.previousLinesCss = currentCssLines;
-		_currentExtensionData.previousLinesMetadata = currentMetadataLines;
-		_currentExtensionData.previousBuildHash = computedHash;
-
-		return result;
 	}
 
 	public static string GetBuildHash(string[] fileA, string[] fileB, string[] fileC)

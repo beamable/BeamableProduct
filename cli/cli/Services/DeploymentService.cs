@@ -1329,9 +1329,9 @@ public partial class DeployUtil
 		{
 			var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
 			using var beamActivity = newCliProvider.Create($"Planning Portal Extension: {peDef.Name}");
-		
+
 			beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(peDef.Name));
-			
+
 			localPeNames.Add(peDef.Name);
 
 			var observer = new PortalExtensionObserver { ExtensionMetaData = peDef, RootActivity = beamActivity };
