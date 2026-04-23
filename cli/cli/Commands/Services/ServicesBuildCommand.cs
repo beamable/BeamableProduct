@@ -470,19 +470,16 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			message = "starting docker build..."
 		});
 
-		var defaultBaseImageTag = "8.0-alpine";
 		var targetFramework = http.Metadata.msbuildProject.GetPropertyValue("TargetFramework");
-		if (targetFramework.Contains("net10.0"))
-		{
-			defaultBaseImageTag = "10.0-alpine";
-		}
+		var containerFamily = http.Metadata.msbuildProject.GetPropertyValue("ContainerFamily");
+		var baseImageTag = GetBaseImageTag(targetFramework, containerFamily);
 		
-		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
+		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
-		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
+		                $"--build-arg BEAM_DOTNET_VERSION={baseImageTag} " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
@@ -640,6 +637,30 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			fullImageId = imageId,
 			sourceReport = report
 		};
+	}
+
+	/// <summary>
+	/// Returns the base image tag for the given target framework and container family.
+	/// The <paramref name="containerFamily"/> value is read from the MSBuild <c>ContainerFamily</c>
+	/// property and should be either "alpine" or "noble". Defaults to "alpine" when not set or
+	/// when an unrecognised value is provided.
+	/// </summary>
+	public static string GetBaseImageTag(string targetFramework, string containerFamily)
+	{
+		// Validate containerFamily against known supported values; fall back to "alpine".
+		var knownFamilies = new[] { "alpine", "noble" };
+		var family = knownFamilies.Contains(containerFamily, StringComparer.OrdinalIgnoreCase)
+			? containerFamily
+			: "alpine";
+
+		// Extract the dotnet version number from strings like "net8.0", "net10.0", etc.
+		// The TargetFramework moniker starts with "net" followed by the version number.
+		const string prefix = "net";
+		var version = targetFramework.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+			? targetFramework.Substring(prefix.Length)
+			: targetFramework;
+
+		return $"{version}-{family}";
 	}
 
 	/// <summary>
