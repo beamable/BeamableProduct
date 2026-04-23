@@ -143,6 +143,15 @@ public static class Diagnostics
 				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#missing-serializable-attribute-on-type", Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 		
+		public static readonly DiagnosticDescriptor MissingSerializableAttributeForArgument
+			= new(MISSING_SERIALIZABLE_ATTRIBUTE_ON_TYPE_ID,
+				"Argument type is not serializable",
+				$"Type of argument '{{1}}' must be serializable or have [BeamGenerateSchema] attribute. Either add the [Serializable] attribute to type '{{0}}' or use different type.",
+				Category_Services,
+				DiagnosticSeverity.Error,
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#missing-serializable-attribute-on-type", Constants.CLI_CURRENT_DOCS_VERSION),
+				isEnabledByDefault: true);
+		
 		public static readonly DiagnosticDescriptor PropertiesFoundInSerializableTypes
 			= new(PROPERTIES_FOUND_IN_SERIALIZABLE_TYPES_ID,
 				$"Properties in serializable types are ignored by the client code generator",
