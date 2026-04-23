@@ -74,7 +74,7 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
 {
     public override bool IsForInternalUse => true;
 
-    public GetRemoteLogsCommand() : base("remote-logs", "get remote logs for a service")
+    public GetRemoteLogsCommand() : base("remote-logs", "Get remote logs for a service")
     {
     }
 

@@ -57,6 +57,7 @@ using cli.Commands.Project.Logs;
 using cli.Services.Web;
 using cli.DeveloperUserCommands;
 using cli.OtelCommands;
+using cli.Mcp;
 using cli.OtelCommands.Grafana;
 using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
@@ -516,13 +517,17 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+		Commands.AddRootCommand<McpGroupCommand>();
+		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
-		
+		Commands.AddSubCommandWithHandler<InitGetRealmsCommand, InitGetRealmsCommandArgs, InitCommand>();
+
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 		Commands.AddSubCommand<LockedFilesCheckCommand, LockedFilesCheckCommandArgs, CheckCommandCommandGroup>();

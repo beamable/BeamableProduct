@@ -13,7 +13,7 @@ public class PortalCommandArgs : CommandArgs
 
 public class PortalCommand : AppCommand<PortalCommandArgs>
 {
-	public PortalCommand() : base("portal", "Open portal")
+	public PortalCommand() : base("portal", "Open the Beamable Portal in a browser, auto-logged in with the current CID, PID and account credentials")
 	{
 	}
 

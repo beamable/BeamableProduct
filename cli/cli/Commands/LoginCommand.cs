@@ -55,7 +55,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private ConfigService _configService;
 	private IAuthApi _authApi;
 
-	public LoginCommand() : base("login", "Save credentials")
+	public LoginCommand() : base("login", "Authenticate and save credentials for the current Beamable account")
 	{
 	}
 
