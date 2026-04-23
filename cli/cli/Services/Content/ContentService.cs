@@ -74,6 +74,41 @@ public partial class ContentService
 	private const int ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST = 3;
 
 	/// <summary>
+	/// Target POST body size for each content-publish batch.
+	/// Set to 1 MiB — 12.5 % of the gateway's 8 MiB hard limit — to keep
+	/// individual requests well within the rejection threshold for catalogs of
+	/// large content items, while still consolidating many small items into
+	/// fewer requests than the old fixed-count approach.
+	/// </summary>
+	private const long CONTENT_PUBLISH_TARGET_BATCH_BYTES = 1 * 1024 * 1024; // 1 MiB
+
+	/// <summary>
+	/// Maximum number of content items per batch POST, regardless of their
+	/// serialized byte size.  Caps the amount of server-side work in a single
+	/// request so that the content service does not time out while processing
+	/// a batch of many tiny items that would otherwise be well under the byte
+	/// limit.  Both <see cref="CONTENT_PUBLISH_TARGET_BATCH_BYTES"/> and this
+	/// constant must be satisfied simultaneously: a batch is flushed as soon
+	/// as either threshold is reached.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_ITEMS_PER_BATCH = 50;
+
+	/// <summary>
+	/// Maximum number of content-publish POST requests that may be in flight
+	/// at the same time.  Limits connection-pool pressure and gateway load
+	/// regardless of how many batches the size-aware splitter produces.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_CONCURRENCY = 8;
+
+	/// <summary>
+	/// How many times a single batch POST may be retried after a transient
+	/// gateway error (429, 502, 503, 504) before the whole publish is aborted.
+	/// Delays follow an exponential back-off of 2^(attempt+1) seconds
+	/// (2 s → 4 s → 8 s) with ±20 % random jitter.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_RETRIES = 3;
+
+	/// <summary>
 	/// <see cref="CreateFakeEmptyManifest"/> and <see cref="GetManifest"/>.
 	/// </summary>
 	private const string FAKE_EMPTY_MANIFEST_UID = "EmptyManifest";
@@ -752,6 +787,103 @@ public partial class ContentService
 	/// <summary>
 	/// Publishes the local changes made to the given <paramref name="manifestId"/> to the current <see cref="IAppContext.Pid"/>.
 	///
+	/// Returns true for HTTP status codes that indicate a transient server-side
+	/// condition that is worth retrying: rate-limit (429) and gateway errors
+	/// (502, 503, 504).  Client errors (4xx except 429) and definitive server
+	/// errors are not retried.
+	private static bool IsTransientHttpStatus(long status) =>
+		status is 429 or 502 or 503 or 504;
+
+	/// <summary>
+	/// Posts a single content batch, automatically retrying up to
+	/// <see cref="CONTENT_PUBLISH_MAX_RETRIES"/> times on transient gateway
+	/// errors.  Delays follow an exponential back-off schedule (2 s, 4 s, 8 s)
+	/// with ±20 % random jitter to prevent thundering-herd retries when many
+	/// batches fail at the same moment.
+	/// </summary>
+	private static async Task<SaveContentResponse> PostBatchWithRetryAsync(
+		IContentApi contentApi, SaveContentRequest request)
+	{
+		var rng = new Random();
+		for (var attempt = 0; ; attempt++)
+		{
+			try
+			{
+				return await contentApi.Post(request);
+			}
+			catch (RequesterException ex)
+				when (IsTransientHttpStatus(ex.Status) && attempt < CONTENT_PUBLISH_MAX_RETRIES)
+			{
+				// 2^(attempt+1) seconds: 2 s, 4 s, 8 s — with ±20 % jitter.
+				var baseDelayMs = (int)Math.Pow(2, attempt + 1) * 1000;
+				var jitterMs    = rng.Next(-baseDelayMs / 5, baseDelayMs / 5);
+				var delayMs     = Math.Max(500, baseDelayMs + jitterMs);
+				Log.Warning(
+					"Content publish batch received HTTP {Status} (attempt {Attempt}/{MaxRetries}) — " +
+					"retrying in {Delay} ms.  Server: {Error}",
+					ex.Status, attempt + 1, CONTENT_PUBLISH_MAX_RETRIES, delayMs,
+					ex.RequestError?.message ?? ex.Message);
+				await Task.Delay(delayMs);
+			}
+			// Any non-transient exception (e.g. 413, 401) propagates immediately.
+		}
+	}
+
+	/// <summary>
+	/// Partitions <paramref name="items"/> into batches whose estimated serialized
+	/// JSON byte length stays at or below <paramref name="targetBytes"/>.
+	///
+	/// Each item is serialised individually to measure its contribution to the
+	/// request body.  Batches are built greedily: items are appended to the
+	/// current batch until the next item would push the total past
+	/// <paramref name="targetBytes"/>, at which point the batch is flushed and a
+	/// new one is started.  An item that is larger than
+	/// <paramref name="targetBytes"/> on its own is always emitted as a
+	/// single-item batch rather than being dropped.
+	/// </summary>
+	private static IEnumerable<ContentDefinition[]> BuildSizeAwareBatches(
+		IEnumerable<ContentDefinition> items, long targetBytes, int maxItemsPerBatch)
+	{
+		// Overhead of the SaveContentRequest wrapper: {"content":[…]}
+		// 13 bytes regardless of the number of items.
+		const int wrapperOverheadBytes = 13;
+
+		var batch = new List<ContentDefinition>();
+		long batchBytes = 0;
+
+		foreach (var item in items)
+		{
+			// Serialise the item in isolation to get a byte-accurate estimate.
+			var itemJson = JsonSerializable.ToJson(item);
+			var itemBytes = Encoding.UTF8.GetByteCount(itemJson);
+			// Each item after the first is preceded by a comma separator.
+			var separatorBytes = batch.Count > 0 ? 1 : 0;
+
+			var projectedTotal = wrapperOverheadBytes + batchBytes + separatorBytes + itemBytes;
+
+			// Flush when either constraint would be violated: byte budget or item count.
+			// The item-count cap prevents server-side processing timeouts for catalogs
+			// of many tiny items that would otherwise be well under the byte limit.
+			var byteLimitReached = batch.Count > 0 && projectedTotal > targetBytes;
+			var itemLimitReached = batch.Count >= maxItemsPerBatch;
+
+			if (byteLimitReached || itemLimitReached)
+			{
+				yield return batch.ToArray();
+				batch.Clear();
+				batchBytes = 0;
+			}
+
+			batch.Add(item);
+			// separatorBytes for this item become 0 when it is the first in a
+			// fresh batch, but the next item will pay a comma.
+			batchBytes += (batch.Count == 1 ? 0 : 1) + itemBytes;
+		}
+
+		if (batch.Count > 0)
+			yield return batch.ToArray();
+	}
+
 	/// First, this checks if the last manifest we pulled is the same as the last manifest anyone published to that realm.
 	/// If it isn't we error out with <see cref="ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST"/>.
 	///
@@ -825,41 +957,59 @@ public partial class ContentService
 			}).ToArray();
 
 		
-		var batches = changedContentDefinitions.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
+		// Split into size-aware batches targeting ~1 MiB each.
+		// This keeps individual requests well within the
+		// rejection threshold for both large-item and small-item catalogs, while
+		// producing far fewer requests than the old fixed-count (20 items) approach did for
+		// small items.
+		var batches = BuildSizeAwareBatches(changedContentDefinitions, CONTENT_PUBLISH_TARGET_BATCH_BYTES, CONTENT_PUBLISH_MAX_ITEMS_PER_BATCH);
+
+		// Throttle concurrent POSTs to avoid overwhelming the connection pool
+		// and the gateway, regardless of how many batches were produced.
+		var semaphore = new SemaphoreSlim(CONTENT_PUBLISH_MAX_CONCURRENCY);
+
 		// Then we save them to S3
 		Task<SaveContentResponse>[] saveContentRequestsTasks = batches.Select(async contentDefinitions =>
 			{
-				var contentProgressUpdateData = new ContentProgressUpdateData()
-				{
-					contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
-					totalItems = changedContentDefinitions.Length,
-				};
-			
-				var saveRequest = new SaveContentRequest() { content = contentDefinitions };
-				SaveContentResponse saveResponse;
+				await semaphore.WaitAsync();
 				try
 				{
-					saveResponse = await _contentApi.Post(saveRequest);
-				}
-				catch (Exception exception)
-				{
-					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
-					contentProgressUpdateData.errorMessage = exception.Message;
+					var contentProgressUpdateData = new ContentProgressUpdateData()
+					{
+						contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
+						totalItems = changedContentDefinitions.Length,
+					};
+
+					var saveRequest = new SaveContentRequest() { content = contentDefinitions };
+					SaveContentResponse saveResponse;
+					try
+					{
+						saveResponse = await PostBatchWithRetryAsync(_contentApi, saveRequest);
+					}
+					catch (Exception exception)
+					{
+						contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+						contentProgressUpdateData.errorMessage = exception.Message;
+						onProgressUpdateAction?.Invoke(contentProgressUpdateData);
+						throw;
+					}
+
+					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
 					onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-					throw;
+
+					// Use actual batch item count, not the old fixed constant.
+					Interlocked.Add(ref _publishProcessedCount, contentDefinitions.Length);
+
+					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount;
+					contentProgressUpdateData.processedItems = _publishProcessedCount;
+					onProgressUpdateAction?.Invoke(contentProgressUpdateData);
+
+					return saveResponse;
 				}
-			
-
-				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
-				onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-
-				Interlocked.Add(ref _publishProcessedCount, CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
-				
-				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount;
-				contentProgressUpdateData.processedItems = _publishProcessedCount;
-				onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-			
-				return saveResponse;
+				finally
+				{
+					semaphore.Release();
+				}
 			}).ToArray();
 
 		SaveContentResponse[] saveContentResponses;
@@ -869,9 +1019,11 @@ public partial class ContentService
 		}
 		catch (Exception e)
 		{
-			// Handle failure case by just stopping here and erroring out
-			throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={e.Data}");
-			
+			// Unwrap AggregateException so the message contains the real failure.
+			var inner = e is AggregateException agg ? (agg.InnerException ?? e) : e;
+			throw new CliException(
+				$"Failed to save the local content after {CONTENT_PUBLISH_MAX_RETRIES} retries. " +
+				$"Please try again. {inner.GetType().Name}: {inner.Message}");
 		}
 		
 		// Prepare the save manifest request using the response from the save content request.
