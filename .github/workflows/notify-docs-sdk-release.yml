@@ -12,17 +12,23 @@ jobs:
     name: Dispatch unity-sdk-released to beamable/docs
     runs-on: ubuntu-latest
     steps:
+      - name: Extract SDK version from tag
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "sdk_version=${TAG#unity-sdk-}" >> $GITHUB_OUTPUT
+
       - name: Send repository_dispatch to beamable/docs
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.DOCS_DISPATCH_PAT }}
-          script: |
-            const tag = context.ref.replace('refs/tags/', '');
-            const sdkVersion = tag.replace('unity-sdk-', '');
-            await github.rest.repos.createDispatchEvent({
-              owner: 'beamable',
-              repo: 'docs',
-              event_type: 'unity-sdk-released',
-              client_payload: { tag, sdk_version: sdkVersion }
-            });
-            core.info(`Dispatched unity-sdk-released (${tag}) to beamable/docs`);
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_PAT }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/beamable/docs/dispatches \
+            -d '{
+              "event_type": "unity-sdk-released",
+              "client_payload": {
+                "tag": "${{ github.ref_name }}",
+                "sdk_version": "${{ steps.version.outputs.sdk_version }}"
+              }
+            }'
