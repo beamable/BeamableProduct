@@ -3,9 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BeginPurchaseRequest = { 
-  purchaseId: string; 
-  language?: string; 
-  returnUrl?: string; 
-  time?: string; 
+export type StripeWebhookSetupResponse = { 
+  endpointId: string; 
+  status: string; 
+  url: string; 
 };

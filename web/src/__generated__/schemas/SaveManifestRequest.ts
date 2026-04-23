@@ -8,4 +8,5 @@ import type { ReferenceSuperset } from './ReferenceSuperset';
 export type SaveManifestRequest = { 
   id: string; 
   references: ReferenceSuperset[]; 
+  clientVersion?: string; 
 };
