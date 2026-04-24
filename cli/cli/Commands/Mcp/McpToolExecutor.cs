@@ -24,6 +24,9 @@ public class McpToolExecutor
 	{
 		var norm = section?.Trim().ToLowerInvariant() ?? "";
 
+		if (norm == "web")
+			return BuildWebSdkResponse();
+
 		// Fast path: read the embedded snapshot committed to the repo.
 		var schema = McpListTypesCommand.ReadEmbeddedSchema();
 		if (schema?.ContentTypes is { Length: > 0 })
@@ -34,6 +37,20 @@ public class McpToolExecutor
 		if (!string.IsNullOrEmpty(norm)) cmd += $" --section {norm}";
 		if (!string.IsNullOrEmpty(filter)) cmd += $" --filter \"{filter}\"";
 		return await ExecuteAsync(cmd);
+	}
+
+	private static string BuildWebSdkResponse()
+	{
+		var webInfo = new
+		{
+			hint = "The Beamable Web SDK (TypeScript) documentation is hosted online. Read the portal extension's package.json to find the '@beamable/portal-toolkit' version in devDependencies, then use that major.minor version in the URL below.",
+			docsUrlPattern = "https://help.beamable.com/WebSDK-{VERSION}/web/user-reference/api-reference/modules/",
+			example = "https://help.beamable.com/WebSDK-1.0/web/user-reference/api-reference/modules/",
+			sdkPackageName = "@beamable/portal-toolkit",
+			versionSource = "devDependencies[\"@beamable/portal-toolkit\"] in the extension's package.json",
+			usage = "Use beam_exec('services list') to find portal extensions, then read the extension's package.json to get the SDK version and build the docs URL."
+		};
+		return JsonConvert.SerializeObject(webInfo, Formatting.None);
 	}
 
 	private static string BuildTypeResponse(BeamableTypesSchema schema, string section, string filter)
@@ -50,10 +67,11 @@ public class McpToolExecutor
 
 			var overview = new
 			{
-				hint = "Pass section='content', 'federation', or 'utility' to load types. For 'utility', also pass a filter string (namespace prefix or type name keyword) to narrow the large result set.",
+				hint = "Pass section='content', 'federation', 'utility', or 'web' to load types. For 'utility', also pass a filter string (namespace prefix or type name keyword) to narrow the large result set. For 'web', get the Beamable Web SDK documentation URL for portal extension development.",
 				content = new { count = schema.ContentTypes?.Length ?? 0 },
 				federation = new { count = schema.FederationTypes?.Length ?? 0 },
-				utility = new { totalCount = schema.UtilityTypes?.Length ?? 0, namespaces }
+				utility = new { totalCount = schema.UtilityTypes?.Length ?? 0, namespaces },
+				web = new { hint = "Pass section='web' to get the Beamable Web SDK (TypeScript) documentation URL for portal extension development" }
 			};
 			return JsonConvert.SerializeObject(overview, Formatting.None);
 		}
@@ -166,6 +184,13 @@ public class McpToolExecutor
 	private sealed class CapturingReporterService : IDataReporterService
 	{
 		private readonly TextWriter _writer;
+		private readonly Dictionary<string, long> _lastProgressWrite = new();
+		private const long ThrottleIntervalMs = 2000;
+
+		private static readonly HashSet<string> _progressChannels = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"progress", "progressStream", "remote_progress"
+		};
 
 		public CapturingReporterService(TextWriter writer)
 		{
@@ -174,6 +199,14 @@ public class McpToolExecutor
 
 		public void Report<T>(string type, T data)
 		{
+			if (_progressChannels.Contains(type))
+			{
+				var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+				if (_lastProgressWrite.TryGetValue(type, out var last) && now - last < ThrottleIntervalMs)
+					return;
+				_lastProgressWrite[type] = now;
+			}
+
 			var pt = new ReportDataPoint<T>
 			{
 				data = data,
