@@ -33,21 +33,6 @@ public class McpSetupCommand
 	{
 		var targetDir = ResolveTargetDirectory(args);
 
-		var cid = args.AppContext?.Cid ?? string.Empty;
-		var pid = args.AppContext?.Pid ?? string.Empty;
-
-		var serveArgs = new List<string> { "mcp", "serve" };
-		if (!string.IsNullOrWhiteSpace(cid))
-		{
-			serveArgs.Add("--cid");
-			serveArgs.Add(cid);
-		}
-		if (!string.IsNullOrWhiteSpace(pid))
-		{
-			serveArgs.Add("--pid");
-			serveArgs.Add(pid);
-		}
-
 		var config = new
 		{
 			mcpServers = new Dictionary<string, object>
@@ -55,7 +40,7 @@ public class McpSetupCommand
 				["beamable"] = new
 				{
 					command = "beam",
-					args = serveArgs
+					args = new[] { "mcp", "serve" }
 				}
 			}
 		};
