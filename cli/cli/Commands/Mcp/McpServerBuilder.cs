@@ -7,9 +7,9 @@ namespace cli.Mcp;
 
 public class McpServerBuilder
 {
-	public async Task RunAsync(string cid, string pid, CancellationToken cancellationToken = default)
+	public async Task RunAsync(CancellationToken cancellationToken = default)
 	{
-		var executor = new McpToolExecutor(cid, pid);
+		var executor = new McpToolExecutor();
 		var tools = new BeamMcpTools(executor);
 
 		// The MCP stdio transport owns stdout for JSON-RPC framing.

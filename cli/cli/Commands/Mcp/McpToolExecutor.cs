@@ -8,17 +8,10 @@ namespace cli.Mcp;
 
 public class McpToolExecutor
 {
-	private readonly string _cid;
-	private readonly string _pid;
-
 	// Serialize all in-process beam calls so Console.Out redirection and MSBuildLocator don't race.
 	private static readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
-	public McpToolExecutor(string cid, string pid)
-	{
-		_cid = cid;
-		_pid = pid;
-	}
+	public McpToolExecutor() { }
 
 	public async Task<string> GetTypeSchemaAsync(string section = "", string filter = "")
 	{
@@ -109,7 +102,7 @@ public class McpToolExecutor
 
 	private async Task<string> RunInProcessAsync(string commandLine)
 	{
-		var fullCommand = AppendRealmContext(commandLine);
+		var fullCommand = EnsureLogStreams(commandLine);
 
 		var sw = new StringWriter();
 		var errSw = new StringWriter();
@@ -163,22 +156,16 @@ public class McpToolExecutor
 		return sw.ToString();
 	}
 
-	private string AppendRealmContext(string commandLine)
+	private static string EnsureLogStreams(string commandLine)
 	{
 		var lower = commandLine.ToLowerInvariant();
-		var extra = string.Empty;
 
 		// Route log messages through IDataReporterService so they are captured
 		// in the MCP response alongside structured output.
 		if (!lower.Contains("--emit-log-streams"))
-			extra += " --emit-log-streams";
+			return commandLine + " --emit-log-streams";
 
-		if (!string.IsNullOrWhiteSpace(_cid) && !lower.Contains("--cid"))
-			extra += $" --cid {_cid}";
-		if (!string.IsNullOrWhiteSpace(_pid) && !lower.Contains("--pid"))
-			extra += $" --pid {_pid}";
-
-		return commandLine + extra;
+		return commandLine;
 	}
 
 	private sealed class CapturingReporterService : IDataReporterService

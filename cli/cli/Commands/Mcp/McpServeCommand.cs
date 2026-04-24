@@ -15,9 +15,7 @@ public class McpServeCommand
 
 	public override async Task Handle(McpServeCommandArgs args)
 	{
-		var cid = args.AppContext?.Cid ?? string.Empty;
-		var pid = args.AppContext?.Pid ?? string.Empty;
 		var builder = new McpServerBuilder();
-		await builder.RunAsync(cid, pid);
+		await builder.RunAsync();
 	}
 }
