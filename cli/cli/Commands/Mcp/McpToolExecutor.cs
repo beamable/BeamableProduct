@@ -1,6 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
- using cli.Docs;
+using cli.Docs;
 using cli.Services;
 using Newtonsoft.Json;
 
@@ -101,6 +101,7 @@ public class McpToolExecutor
 		var previousErr = Console.Error;
 		Console.SetOut(sw);
 		Console.SetError(errSw);
+
 		try
 		{
 			var app = new App();
@@ -113,7 +114,11 @@ public class McpToolExecutor
 				overwriteLogger: false);
 			app.Build();
 
-			await app.RunWithSingleString(fullCommand, useCustomSplitter: false);
+			// Run on a plain thread-pool thread to avoid deadlocking the ASP.NET
+			// SynchronizationContext that the MCP host uses. Without this, CliWrap's
+			// internal async continuations try to resume on the captured context, which
+			// is already blocked waiting for this tool call to complete.
+			await Task.Run(() => app.RunWithSingleString(fullCommand, useCustomSplitter: false)).ConfigureAwait(false);
 		}
 		catch (Exception ex)
 		{
@@ -131,17 +136,25 @@ public class McpToolExecutor
 		if (!string.IsNullOrEmpty(errorText))
 			sw.WriteLine(JsonConvert.SerializeObject(new { error = errorText }));
 
+		// Commands that implement IEmptyResult produce no output on success.
+		// Emit a generic success envelope so the MCP client always receives a
+		// non-empty response and knows the command completed without error.
+		if (string.IsNullOrWhiteSpace(sw.ToString()))
+			sw.WriteLine(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+
 		return sw.ToString();
 	}
 
 	private string AppendRealmContext(string commandLine)
 	{
-		if (string.IsNullOrWhiteSpace(_cid) && string.IsNullOrWhiteSpace(_pid))
-			return commandLine;
-
-		// Don't double-append if the caller already specified them.
 		var lower = commandLine.ToLowerInvariant();
 		var extra = string.Empty;
+
+		// Route log messages through IDataReporterService so they are captured
+		// in the MCP response alongside structured output.
+		if (!lower.Contains("--emit-log-streams"))
+			extra += " --emit-log-streams";
+
 		if (!string.IsNullOrWhiteSpace(_cid) && !lower.Contains("--cid"))
 			extra += $" --cid {_cid}";
 		if (!string.IsNullOrWhiteSpace(_pid) && !lower.Contains("--pid"))
