@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
+ using cli.Docs;
 using cli.Services;
 using Newtonsoft.Json;
 
@@ -17,6 +18,54 @@ public class McpToolExecutor
 	{
 		_cid = cid;
 		_pid = pid;
+	}
+
+	public async Task<string> GetTypeSchemaAsync(string section = "", string filter = "")
+	{
+		var norm = section?.Trim().ToLowerInvariant() ?? "";
+
+		// Fast path: read the embedded snapshot committed to the repo.
+		var schema = McpListTypesCommand.ReadEmbeddedSchema();
+		if (schema?.ContentTypes is { Length: > 0 })
+			return BuildTypeResponse(schema, norm, filter?.Trim() ?? "");
+
+		// Slow path: generate live via reflection (first build before AfterBuild regen).
+		var cmd = "mcp list-types";
+		if (!string.IsNullOrEmpty(norm)) cmd += $" --section {norm}";
+		if (!string.IsNullOrEmpty(filter)) cmd += $" --filter \"{filter}\"";
+		return await ExecuteAsync(cmd);
+	}
+
+	private static string BuildTypeResponse(BeamableTypesSchema schema, string section, string filter)
+	{
+		if (string.IsNullOrEmpty(section))
+		{
+			// Overview: counts + namespace list so the AI knows what to request next.
+			var namespaces = (schema.UtilityTypes ?? Array.Empty<UtilityTypeEntry>())
+				.Select(t => t.Namespace)
+				.Where(n => !string.IsNullOrEmpty(n))
+				.Distinct()
+				.OrderBy(n => n)
+				.ToArray();
+
+			var overview = new
+			{
+				hint = "Pass section='content', 'federation', or 'utility' to load types. For 'utility', also pass a filter string (namespace prefix or type name keyword) to narrow the large result set.",
+				content = new { count = schema.ContentTypes?.Length ?? 0 },
+				federation = new { count = schema.FederationTypes?.Length ?? 0 },
+				utility = new { totalCount = schema.UtilityTypes?.Length ?? 0, namespaces }
+			};
+			return JsonConvert.SerializeObject(overview, Formatting.None);
+		}
+
+		var filtered = McpListTypesCommand.ApplySectionFilter(schema, section, filter);
+		return section switch
+		{
+			"content"    => JsonConvert.SerializeObject(filtered.ContentTypes, Formatting.None),
+			"federation" => JsonConvert.SerializeObject(filtered.FederationTypes, Formatting.None),
+			"utility"    => JsonConvert.SerializeObject(filtered.UtilityTypes, Formatting.None),
+			_            => JsonConvert.SerializeObject(new { error = $"Unknown section '{section}'. Valid: content, federation, utility." }, Formatting.None)
+		};
 	}
 
 	public Task<string> ExecuteHelpAsync(string commandPath)
@@ -45,10 +94,13 @@ public class McpToolExecutor
 		var fullCommand = AppendRealmContext(commandLine);
 
 		var sw = new StringWriter();
+		var errSw = new StringWriter();
 		var capturer = new CapturingReporterService(sw);
 
 		var previousOut = Console.Out;
+		var previousErr = Console.Error;
 		Console.SetOut(sw);
+		Console.SetError(errSw);
 		try
 		{
 			var app = new App();
@@ -70,7 +122,14 @@ public class McpToolExecutor
 		finally
 		{
 			Console.SetOut(previousOut);
+			Console.SetError(previousErr);
 		}
+
+		// CliException and other framework errors write to Console.Error, not stdout.
+		// Append them as a JSON error line so the MCP client always sees them.
+		var errorText = errSw.ToString().Trim();
+		if (!string.IsNullOrEmpty(errorText))
+			sw.WriteLine(JsonConvert.SerializeObject(new { error = errorText }));
 
 		return sw.ToString();
 	}

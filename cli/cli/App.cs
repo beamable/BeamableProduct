@@ -520,6 +520,7 @@ public class App
 		Commands.AddRootCommand<McpGroupCommand>();
 		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
 		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpListTypesCommand, McpListTypesCommandArgs, McpGroupCommand>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
@@ -611,6 +612,7 @@ public class App
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		Commands.AddRootCommand<GenerateBeamableTypesSchemaCommand, GenerateBeamableTypesSchemaCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
@@ -652,6 +654,7 @@ public class App
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();

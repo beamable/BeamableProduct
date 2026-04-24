@@ -76,4 +76,16 @@ public class BeamMcpTools
 	public Task<string> beam_exec(
 		[Description("The beam command string, everything after 'beam'")] string command)
 		=> _executor.ExecuteAsync(command);
+ 
+	[McpServerTool]
+	[Description(
+		"Return a schema of Beamable Common types — content objects, federation interfaces, and SDK utility types. " +
+		"Call with no arguments first to get an overview with section counts and the full list of utility namespaces. " +
+		"Then call again with section='content', 'federation', or 'utility' to load the actual types. " +
+		"For 'utility', always pass a filter string (namespace prefix or type name keyword) to avoid loading the full set. " +
+		"Use this when helping customers subclass ContentObject, implement federation, define microservice types, or reuse any Beamable.Common utility.")]
+	public Task<string> beam_list_types(
+		[Description("Which section to load: 'content', 'federation', or 'utility'. Leave empty for an overview with counts and the list of utility namespaces.")] string section = "",
+		[Description("Narrows utility results to types whose namespace or name contains this string (case-insensitive). E.g. 'Inventory', 'Beamable.Common.Content'.")] string filter = "")
+		=> _executor.GetTypeSchemaAsync(section, filter);
 }
