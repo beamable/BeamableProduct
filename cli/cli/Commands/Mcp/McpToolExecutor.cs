@@ -3,6 +3,7 @@ using Beamable.Server.Common;
 using cli.Docs;
 using cli.Services;
 using Newtonsoft.Json;
+using System.Reflection;
 
 namespace cli.Mcp;
 
@@ -87,6 +88,57 @@ public class McpToolExecutor
 			"utility"    => JsonConvert.SerializeObject(filtered.UtilityTypes, Formatting.None),
 			_            => JsonConvert.SerializeObject(new { error = $"Unknown section '{section}'. Valid: content, federation, utility." }, Formatting.None)
 		};
+	}
+
+	public static List<(string name, string content)> GetEmbeddedSkills()
+	{
+		var assembly = typeof(McpToolExecutor).Assembly;
+		const string prefix = "cli.Docs.Skills.";
+		const string suffix = ".md";
+
+		return assembly.GetManifestResourceNames()
+			.Where(r => r.StartsWith(prefix) && r.EndsWith(suffix))
+			.OrderBy(r => r)
+			.Select(r => (
+				name: r.Substring(prefix.Length, r.Length - prefix.Length - suffix.Length),
+				content: ReadEmbeddedResource(assembly, r)
+			))
+			.ToList();
+	}
+
+	public static Task<string> GetSkillAsync(string skillName = "")
+	{
+		var skills = GetEmbeddedSkills()
+			.Select(s => (s.name, summary: s.content.Split('\n', 2)[0].Trim(), s.content))
+			.ToList();
+
+		var normalized = skillName?.Trim().ToLowerInvariant().Replace(" ", "-") ?? "";
+
+		if (string.IsNullOrEmpty(normalized))
+		{
+			var catalog = skills.Select(s => new { name = s.name, summary = s.summary });
+			return Task.FromResult(JsonConvert.SerializeObject(catalog, Formatting.None));
+		}
+
+		var match = skills.FirstOrDefault(s =>
+			s.name.Equals(normalized, StringComparison.OrdinalIgnoreCase));
+
+		if (match == default)
+		{
+			var available = string.Join(", ", skills.Select(s => s.name));
+			return Task.FromResult(
+				JsonConvert.SerializeObject(new { error = $"Unknown skill '{skillName}'. Available: {available}" }));
+		}
+
+		return Task.FromResult(match.content);
+	}
+
+	private static string ReadEmbeddedResource(Assembly assembly, string resourceName)
+	{
+		using var stream = assembly.GetManifestResourceStream(resourceName);
+		if (stream == null) return string.Empty;
+		using var reader = new StreamReader(stream);
+		return reader.ReadToEnd();
 	}
 
 	public Task<string> ExecuteHelpAsync(string commandPath)

@@ -39,8 +39,8 @@ public class McpSetupCommand
 			{
 				["beamable"] = new
 				{
-					command = "beam",
-					args = new[] { "mcp", "serve" }
+					command = "dotnet",
+					args = new[] { "beam", "mcp", "serve" }
 				}
 			}
 		};

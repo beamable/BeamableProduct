@@ -72,11 +72,23 @@ public class BeamMcpTools
 		"Only call this AFTER completing Step 1 (beam_list_commands) and Step 2 (beam_get_help) for the command you intend to run. " +
 		"Never guess arguments or assume command syntax. " +
 		"Pass everything after 'beam', e.g. 'init --cid MyCid --pid MyPid' or 'project new microservice --name Foo'. " +
-		"If the .beamable workspace folder does not exist yet, run 'init' first (see beam_get_help('init') for required arguments).")]
+		"If the .beamable workspace folder does not exist yet, run 'init' first (see beam_get_help('init') for required arguments). " +
+		"For multi-step workflows, call beam_get_skill first to load a step-by-step guide.")]
 	public Task<string> beam_exec(
 		[Description("The beam command string, everything after 'beam'")] string command)
 		=> _executor.ExecuteAsync(command);
- 
+
+	[McpServerTool]
+	[Description(
+		"Load a step-by-step skill guide for a complex Beamable workflow. " +
+		"Call with an empty string to list all available skills with summaries. " +
+		"Call with a skill name to load the full guide. " +
+		"Always load the relevant skill BEFORE attempting multi-step workflows like creating extensions, microservices, deploying, or managing content. " +
+		"Available skills: create-portal-extension, create-microservice, build-and-deploy, manage-content, initialize-project, login-auth")]
+	public Task<string> beam_get_skill(
+		[Description("Skill name to load, e.g. 'create-portal-extension'. Leave empty to list all available skills.")] string skill = "")
+		=> McpToolExecutor.GetSkillAsync(skill);
+
 	[McpServerTool]
 	[Description(
 		"Return a schema of Beamable types — C# content objects, federation interfaces, SDK utility types, and Web SDK documentation. " +
