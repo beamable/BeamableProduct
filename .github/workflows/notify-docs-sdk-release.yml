@@ -1,0 +1,34 @@
+name: Notify Docs of Unity SDK Release
+
+on:
+  push:
+    tags:
+      - 'unity-sdk-[0-9]*'
+      - '!unity-sdk-*-PREVIEW*'
+      - '!unity-sdk-*-RC*'
+
+jobs:
+  dispatch:
+    name: Dispatch unity-sdk-released to beamable/docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract SDK version from tag
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "sdk_version=${TAG#unity-sdk-}" >> $GITHUB_OUTPUT
+
+      - name: Send repository_dispatch to beamable/docs
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_PAT }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/beamable/docs/dispatches \
+            -d '{
+              "event_type": "unity-sdk-released",
+              "client_payload": {
+                "tag": "${{ github.ref_name }}",
+                "sdk_version": "${{ steps.version.outputs.sdk_version }}"
+              }
+            }'
