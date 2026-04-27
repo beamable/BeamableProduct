@@ -1,4 +1,5 @@
 ---
+name: beam-create-portal-extension
 description: Create a portal extension (full-page or component) mounted on the Beamable Portal.
 ---
 

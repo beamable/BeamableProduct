@@ -1,4 +1,5 @@
 ---
+name: beam-build-and-deploy
 description: Build Docker images and deploy services to a Beamable realm.
 ---
 

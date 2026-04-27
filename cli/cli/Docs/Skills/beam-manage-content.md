@@ -1,4 +1,5 @@
 ---
+name: beam-manage-content
 description: Manage Beamable content — check status, sync, publish, and create custom content types.
 ---
 

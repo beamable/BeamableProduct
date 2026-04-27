@@ -29,12 +29,12 @@ public class InstallAISkillsCommand
 	, IStandaloneCommand
 	, ISkipManifest
 {
-	private static readonly (string flag, string dirName, string skillsSubPath)[] KnownAgents =
+	private static readonly (string flag, string dirName, string skillsSubPath, string skillFileName)[] KnownAgents =
 	{
-		("claude", ".claude", Path.Combine(".claude", "skills")),
-		("cursor", ".cursor", Path.Combine(".cursor", "rules")),
-		("windsurf", ".windsurf", Path.Combine(".windsurf", "rules")),
-		("opencode", ".opencode", Path.Combine(".opencode", "skills")),
+		("claude", ".claude", Path.Combine(".claude", "skills"), "Skill.md"),
+		("cursor", ".cursor", Path.Combine(".cursor", "skills"), "SKILL.md"),
+		("windsurf", ".windsurf", Path.Combine(".windsurf", "skills"), "SKILL.md"),
+		("opencode", ".opencode", Path.Combine(".opencode", "skills"), "SKILL.md"),
 	};
 
 	public InstallAISkillsCommand()
@@ -51,12 +51,12 @@ public class InstallAISkillsCommand
 
 		AddOption(new Option<bool>(
 				"--cursor",
-				"Install to .cursor/rules/"),
+				"Install to .cursor/skills/"),
 			(args, v) => args.cursor = v);
 
 		AddOption(new Option<bool>(
 				"--windsurf",
-				"Install to .windsurf/rules/"),
+				"Install to .windsurf/skills/"),
 			(args, v) => args.windsurf = v);
 
 		AddOption(new Option<bool>(
@@ -91,29 +91,29 @@ public class InstallAISkillsCommand
 		};
 
 		var hasExplicitFlag = explicitFlags.Values.Any(v => v);
-		var targets = new List<(string dir, string agent)>();
+		var targets = new List<(string dir, string skillFileName)>();
 		string fallbackMessage = null;
 
 		if (hasExplicitFlag)
 		{
-			foreach (var (flag, _, skillsSubPath) in KnownAgents)
+			foreach (var (flag, _, skillsSubPath, skillFileName) in KnownAgents)
 			{
 				if (!explicitFlags[flag]) continue;
-				targets.Add((Path.Combine(projectRoot, skillsSubPath), flag));
+				targets.Add((Path.Combine(projectRoot, skillsSubPath), skillFileName));
 			}
 		}
 		else
 		{
-			foreach (var (flag, dirName, skillsSubPath) in KnownAgents)
+			foreach (var (_, dirName, skillsSubPath, skillFileName) in KnownAgents)
 			{
 				if (Directory.Exists(Path.Combine(projectRoot, dirName)))
-					targets.Add((Path.Combine(projectRoot, skillsSubPath), flag));
+					targets.Add((Path.Combine(projectRoot, skillsSubPath), skillFileName));
 			}
 
 			if (targets.Count == 0)
 			{
 				var fallbackDir = Path.Combine(configDir, ConfigService.LOCAL_FOLDER_NAME, "skills");
-				targets.Add((fallbackDir, ""));
+				targets.Add((fallbackDir, "SKILL.md"));
 				fallbackMessage =
 					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/). " +
 					$"Skills were installed to the fallback location: {fallbackDir}. " +
@@ -121,10 +121,10 @@ public class InstallAISkillsCommand
 			}
 		}
 
-		foreach (var (skillsDir, _) in targets)
+		foreach (var (skillsDir, skillFileName) in targets)
 		{
 			Directory.CreateDirectory(skillsDir);
-			InstallSkillsTo(skillsDir, embedded, args.force, installed, skipped);
+			InstallSkills(skillsDir, skillFileName, embedded, args.force, installed, skipped);
 			UpdateManifest(skillsDir, embedded);
 		}
 
@@ -139,8 +139,9 @@ public class InstallAISkillsCommand
 		});
 	}
 
-	private static void InstallSkillsTo(
+	private static void InstallSkills(
 		string skillsDir,
+		string skillFileName,
 		List<(string name, string content)> embedded,
 		bool force,
 		List<string> installed,
@@ -148,13 +149,15 @@ public class InstallAISkillsCommand
 	{
 		foreach (var (name, content) in embedded)
 		{
-			var filePath = Path.Combine(skillsDir, name + ".md");
+			var dir = Path.Combine(skillsDir, name);
+			var filePath = Path.Combine(dir, skillFileName);
 			if (File.Exists(filePath) && !force)
 			{
 				skipped.Add(filePath);
 				continue;
 			}
 
+			Directory.CreateDirectory(dir);
 			File.WriteAllText(filePath, content);
 			installed.Add(filePath);
 		}

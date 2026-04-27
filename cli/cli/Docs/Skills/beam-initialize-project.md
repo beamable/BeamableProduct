@@ -1,4 +1,5 @@
 ---
+name: beam-initialize-project
 description: Initialize a Beamable project workspace with realm context and authentication.
 ---
 

@@ -1,4 +1,5 @@
 ---
+name: beam-create-microservice
 description: Create a Beamable microservice with optional storage and federation support.
 ---
 

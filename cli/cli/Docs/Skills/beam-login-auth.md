@@ -1,4 +1,5 @@
 ---
+name: beam-login-auth
 description: Authenticate with Beamable using credentials or refresh tokens.
 ---
 
