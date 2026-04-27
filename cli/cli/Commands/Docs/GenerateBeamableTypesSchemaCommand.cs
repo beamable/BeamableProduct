@@ -111,6 +111,8 @@ public class ContentFieldEntry
 public class GenerateBeamableTypesSchemaCommand
 	: AtomicCommand<GenerateBeamableTypesSchemaCommandArgs, BeamableTypesSchema>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public GenerateBeamableTypesSchemaCommand()
 		: base("generate-type-schema", "Generate a JSON snapshot of Beamable Common types and their fields for MCP type discovery")
 	{
