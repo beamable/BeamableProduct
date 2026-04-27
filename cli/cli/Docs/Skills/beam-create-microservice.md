@@ -1,4 +1,8 @@
-Create a Beamable microservice with optional storage and federation support.
+---
+description: Create a Beamable microservice with optional storage and federation support.
+---
+
+# Create Microservice
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)

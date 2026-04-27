@@ -84,9 +84,9 @@ public class BeamMcpTools
 		"Call with an empty string to list all available skills with summaries. " +
 		"Call with a skill name to load the full guide. " +
 		"Always load the relevant skill BEFORE attempting multi-step workflows like creating extensions, microservices, deploying, or managing content. " +
-		"Available skills: create-portal-extension, create-microservice, build-and-deploy, manage-content, initialize-project, login-auth")]
+		"Available skills: beam-create-portal-extension, beam-create-microservice, beam-build-and-deploy, beam-manage-content, beam-initialize-project, beam-login-auth")]
 	public Task<string> beam_get_skill(
-		[Description("Skill name to load, e.g. 'create-portal-extension'. Leave empty to list all available skills.")] string skill = "")
+		[Description("Skill name to load, e.g. 'beam-create-portal-extension'. Leave empty to list all available skills.")] string skill = "")
 		=> McpToolExecutor.GetSkillAsync(skill);
 
 	[McpServerTool]

@@ -1,4 +1,8 @@
-Authenticate with Beamable using credentials or refresh tokens.
+---
+description: Authenticate with Beamable using credentials or refresh tokens.
+---
+
+# Login and Authentication
 
 ## Authentication Methods
 

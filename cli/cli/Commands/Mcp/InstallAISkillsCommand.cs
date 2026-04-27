@@ -91,7 +91,7 @@ public class InstallAISkillsCommand
 		};
 
 		var hasExplicitFlag = explicitFlags.Values.Any(v => v);
-		var targetDirs = new List<string>();
+		var targets = new List<(string dir, string agent)>();
 		string fallbackMessage = null;
 
 		if (hasExplicitFlag)
@@ -99,22 +99,21 @@ public class InstallAISkillsCommand
 			foreach (var (flag, _, skillsSubPath) in KnownAgents)
 			{
 				if (!explicitFlags[flag]) continue;
-				var dir = Path.Combine(projectRoot, skillsSubPath);
-				targetDirs.Add(dir);
+				targets.Add((Path.Combine(projectRoot, skillsSubPath), flag));
 			}
 		}
 		else
 		{
-			foreach (var (_, dirName, skillsSubPath) in KnownAgents)
+			foreach (var (flag, dirName, skillsSubPath) in KnownAgents)
 			{
 				if (Directory.Exists(Path.Combine(projectRoot, dirName)))
-					targetDirs.Add(Path.Combine(projectRoot, skillsSubPath));
+					targets.Add((Path.Combine(projectRoot, skillsSubPath), flag));
 			}
 
-			if (targetDirs.Count == 0)
+			if (targets.Count == 0)
 			{
 				var fallbackDir = Path.Combine(configDir, ConfigService.LOCAL_FOLDER_NAME, "skills");
-				targetDirs.Add(fallbackDir);
+				targets.Add((fallbackDir, ""));
 				fallbackMessage =
 					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/). " +
 					$"Skills were installed to the fallback location: {fallbackDir}. " +
@@ -122,7 +121,7 @@ public class InstallAISkillsCommand
 			}
 		}
 
-		foreach (var skillsDir in targetDirs)
+		foreach (var (skillsDir, _) in targets)
 		{
 			Directory.CreateDirectory(skillsDir);
 			InstallSkillsTo(skillsDir, embedded, args.force, installed, skipped);
@@ -131,7 +130,7 @@ public class InstallAISkillsCommand
 
 		return Task.FromResult(new InstallAISkillsCommandResult
 		{
-			targetDirectories = targetDirs.ToArray(),
+			targetDirectories = targets.Select(t => t.dir).ToArray(),
 			installedCount = installed.Count,
 			skippedCount = skipped.Count,
 			installedFiles = installed.ToArray(),
@@ -186,7 +185,7 @@ public class InstallAISkillsCommand
 
 		foreach (var (name, content) in embedded)
 		{
-			var summary = content.Split('\n', 2)[0].Trim();
+			var summary = McpToolExecutor.ExtractDescription(content);
 			manifest[name] = new { summary, file = name + ".md" };
 		}
 

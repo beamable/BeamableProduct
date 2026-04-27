@@ -1,4 +1,8 @@
-Build Docker images and deploy services to a Beamable realm.
+---
+description: Build Docker images and deploy services to a Beamable realm.
+---
+
+# Build and Deploy
 
 ## Prerequisites
 - A `.beamable` workspace with services defined

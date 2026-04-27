@@ -1,4 +1,8 @@
-Create a portal extension (full-page or component) mounted on the Beamable Portal.
+---
+description: Create a portal extension (full-page or component) mounted on the Beamable Portal.
+---
+
+# Create Portal Extension
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)

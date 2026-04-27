@@ -109,7 +109,7 @@ public class McpToolExecutor
 	public static Task<string> GetSkillAsync(string skillName = "")
 	{
 		var skills = GetEmbeddedSkills()
-			.Select(s => (s.name, summary: s.content.Split('\n', 2)[0].Trim(), s.content))
+			.Select(s => (s.name, summary: ExtractDescription(s.content), s.content))
 			.ToList();
 
 		var normalized = skillName?.Trim().ToLowerInvariant().Replace(" ", "-") ?? "";
@@ -131,6 +131,20 @@ public class McpToolExecutor
 		}
 
 		return Task.FromResult(match.content);
+	}
+
+	public static string ExtractDescription(string content)
+	{
+		if (!content.StartsWith("---"))
+			return content.Split('\n', 2)[0].Trim();
+
+		foreach (var line in content.Split('\n'))
+		{
+			if (line.StartsWith("description:", StringComparison.OrdinalIgnoreCase))
+				return line.Substring("description:".Length).Trim();
+		}
+
+		return content.Split('\n', 2)[0].Trim();
 	}
 
 	private static string ReadEmbeddedResource(Assembly assembly, string resourceName)

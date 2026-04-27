@@ -1,4 +1,8 @@
-Manage Beamable content — check status, sync, publish, and create custom content types.
+---
+description: Manage Beamable content — check status, sync, publish, and create custom content types.
+---
+
+# Manage Content
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)

@@ -1,4 +1,8 @@
-Initialize a Beamable project workspace with realm context and authentication.
+---
+description: Initialize a Beamable project workspace with realm context and authentication.
+---
+
+# Initialize Project
 
 ## Key Concepts
 - **CID** (Customer ID): Your Beamable organization identifier. Can be a numeric ID or an alias.
