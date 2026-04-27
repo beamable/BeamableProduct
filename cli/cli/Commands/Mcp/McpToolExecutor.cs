@@ -36,12 +36,22 @@ public class McpToolExecutor
 	{
 		var webInfo = new
 		{
-			hint = "The Beamable Web SDK (TypeScript) documentation is hosted online. Read the portal extension's package.json to find the '@beamable/portal-toolkit' version in devDependencies, then use that major.minor version in the URL below.",
+			hint = "The Beamable Web SDK (@beamable/sdk) is a transitive dependency of @beamable/portal-toolkit. " +
+			       "The toolkit version in devDependencies is NOT the SDK version. " +
+			       "To find the actual SDK version: read node_modules/@beamable/portal-toolkit/package.json and check peerDependencies[\"@beamable/sdk\"]. " +
+			       "Use that major.minor version in the docs URL below.",
 			docsUrlPattern = "https://help.beamable.com/WebSDK-{VERSION}/web/user-reference/api-reference/modules/",
 			example = "https://help.beamable.com/WebSDK-1.0/web/user-reference/api-reference/modules/",
-			sdkPackageName = "@beamable/portal-toolkit",
-			versionSource = "devDependencies[\"@beamable/portal-toolkit\"] in the extension's package.json",
-			usage = "Use beam_exec('services list') to find portal extensions, then read the extension's package.json to get the SDK version and build the docs URL."
+			sdkPackageName = "@beamable/sdk",
+			toolkitPackageName = "@beamable/portal-toolkit",
+			versionResolution = new[]
+			{
+				"1. Read the extension's package.json to confirm @beamable/portal-toolkit is in devDependencies",
+				"2. Read node_modules/@beamable/portal-toolkit/package.json",
+				"3. Get the @beamable/sdk version from peerDependencies (e.g. '1.0.0')",
+				"4. Use the major.minor (e.g. '1.0') in the docs URL"
+			},
+			usage = "Use beam_exec('services list') to find portal extensions, then follow the versionResolution steps to build the docs URL."
 		};
 		return JsonConvert.SerializeObject(webInfo, Formatting.None);
 	}
