@@ -9,10 +9,6 @@ public class SampleAdminConsole : MonoBehaviour
     {
 	    _context = BeamContext.Default;
 	    await _context.OnReady;
-	    
-	    // Start Admin Console
-	    //_context.StartAdminConsole();
-	    
     }
 	
 	/*

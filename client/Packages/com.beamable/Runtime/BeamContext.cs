@@ -540,6 +540,13 @@ namespace Beamable
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
+
+			if (ConsoleConfiguration.Instance.EnableConsole)
+			{
+				_adminConsole = ServiceProvider.GetService<BeamableAdminConsole>();
+				_adminConsole.InitializeConsole(this);
+			}
+			
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
 			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
 
@@ -819,20 +826,6 @@ namespace Beamable
 				var session = SetupNewSession(_realmConfig);
 				await Promise.Sequence( connection, session, purchase);
 				SetupEmitEvents();
-			}
-		}
-
-		public void StartAdminConsole()
-		{
-			_adminConsole = _behaviour.gameObject.AddComponent<BeamableAdminConsole>();
-			_adminConsole.InitializeConsole(this);
-		}
-
-		public void CloseAdminConsole()
-		{
-			if (_adminConsole != null)
-			{
-				_adminConsole.DestroyConsole();
 			}
 		}
 

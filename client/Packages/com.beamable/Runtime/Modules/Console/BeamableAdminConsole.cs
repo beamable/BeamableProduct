@@ -6,12 +6,9 @@ using UnityEngine.InputSystem;
 #endif
 #endif
 
-using Beamable.Common;
 using Beamable.ConsoleCommands;
-using Beamable.Coroutines;
 using Beamable.InputManagerIntegration;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -100,6 +97,8 @@ namespace Beamable.Console
 		
 		public void InitializeConsole(BeamContext beamContext)
 		{
+			Instance = this;
+			
 			DetachConsole();
 			_beamContext = beamContext;
 			_beamableConsole = _beamContext.ServiceProvider.GetService<BeamableConsole>();
@@ -126,69 +125,9 @@ namespace Beamable.Console
 			// Start Listening Inputs
 			StartListening();
 		}
-
-		public void DestroyConsole()
-		{
-			Destroy(this);
-		}
 		
-		/*
-		/// <summary>
-		/// Fire-and-forget async initialization: connects to Beamable and loads all
-		/// console commands.  Check <see cref="IsInitialized"/> or subscribe to
-		/// <see cref="OnLogLine"/> for the "Console ready" notification.
-		/// </summary>
-		public async void Initialize()
-		{
-			try
-			{
-				await InitializeAsync();
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[StandAloneConsoleFlow] Initialization failed: {e}");
-			}
-		}*/
-		
-		
-		
-		/*
-		/// <summary>
-		/// Awaitable version of <see cref="Initialize"/>; returns a Beamable
-		/// <see cref="Promise"/> that completes when the console is ready.
-		/// </summary>
-		public async Promise InitializeAsync()
-		{
-			_isInitialized = false;
-
-			var ctx = BeamContext.ForPlayer(PlayerCode);
-			await ctx.OnReady;
-
-			DetachConsole();
-			_beamableConsole = ctx.ServiceProvider.GetService<BeamableConsole>();
-			AttachConsole();
-
-			try
-			{
-				_beamableConsole.LoadCommands();
-			}
-			catch (Exception)
-			{
-				Debug.LogError("[StandAloneConsoleFlow] Unable to load console commands.");
-			}
-
-			_isInitialized = true;
-			Log("Console ready");
-		}*/
-		
-		/// <summary>
-		/// Marks this GameObject as <c>DontDestroyOnLoad</c> and registers the global
-		/// singleton.  Call once after adding the component (or from <c>Start</c>).
-		/// </summary>
 		public void StartListening()
 		{
-			UnityEngine.Object.DontDestroyOnLoad(gameObject);
-			Instance = this;
 
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 			if (AutoEnableToggleAction && CustomToggleAction != null && !CustomToggleAction.enabled)
@@ -217,14 +156,6 @@ namespace Beamable.Console
 			_autoCompleter.Reset();
 		}
 
-		/// <summary>Toggles between shown and hidden.</summary>
-		public void ToggleConsole()
-		{
-			ShowConsole();
-			if (_isActive) HideConsole();
-			else           ShowConsole();
-		}
-
 		#endregion
 
 		#region Logging
@@ -233,7 +164,6 @@ namespace Beamable.Console
 		public void Log(string line)
 		{
 			if (line == null) return;
-			Debug.Log(line);
 			_consoleText      += Environment.NewLine + line;
 			_scrollPosition.y  = float.MaxValue;
 			TrimConsoleText();
