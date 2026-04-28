@@ -106,3 +106,18 @@ beam_exec("deploy plan --without-group experimental -q")
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts.
 - **`--replace` is the default mode** for `deploy plan`. This means services NOT included in the plan will be removed from the realm. Use `--merge` to add services without removing existing ones.
 - **Build errors appear in stderr.** If `deploy plan` fails, check the error output for .NET compilation errors.
+
+## Wrap-Up
+
+After completing the workflow, provide the user with a summary that covers:
+
+1. **What was deployed**: List each service by name and whether it was included in the deployment plan. Note if any services were skipped or filtered out via `--ids`/`--with-group`/`--without-group`.
+2. **Where the artifacts live**:
+   - Docker images: Built locally and tagged during `deploy plan`. The images are pushed to Beamable's container registry as part of the release.
+   - Deployment plan: Stored in `.beamable/temp/` — contains the image references and service configuration that `deploy release` uses.
+   - Service manifest: `.beamable/beamoLocalManifest.json` — the local definition of all services, their Docker settings, and dependency graph.
+3. **Why specific choices were made** — explain the reasoning:
+   - **Replace vs merge mode**: Replace (default) ensures the realm matches exactly what was deployed — services not in the plan are removed. Merge adds or updates services without touching others. Explain which was used and why (e.g., clean deployment vs incremental update).
+   - **Service filtering**: If `--ids` or group tags were used, explain why only those services were deployed (e.g., the others were unchanged, or a staged rollout was needed).
+   - **Plan then release (two-step)**: The two-step workflow lets the user inspect the plan before committing. A single-step `deploy release` (without a prior plan) builds and releases in one shot — faster but with no review step.
+4. **How to verify**: The user can run `deploy list` to see the current deployment state, or check individual service health via the Beamable Portal. If something went wrong, `deploy plan` output contains build logs and image details.

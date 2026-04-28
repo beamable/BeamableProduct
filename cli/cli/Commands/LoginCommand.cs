@@ -125,6 +125,13 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			catch (RequesterException e)
 			{
 				Log.Verbose(e.Message + " " + e.StackTrace);
+				if (args.Quiet)
+				{
+					throw new CliException<LoginFailedError>(e.RequestError.message, LOGIN_FAILED_ERROR_CODE)
+					{
+						payload = new LoginFailedError()
+					};
+				}
 				AnsiConsole.WriteLine($"Login failed: {e.RequestError.message} Try again");
 				await Handle(args);
 				return;
@@ -174,6 +181,10 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private string GetUserName(LoginCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.username)) return args.username;
+
+		if (args.Quiet)
+			throw new CliException("--email is required when using -q (quiet mode). Use --email <address> or --refresh-token <token>.");
+
 		return AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]email[/]:")
 				.PromptStyle("green")
@@ -189,6 +200,10 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private string GetPassword(LoginCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.password)) return args.password;
+
+		if (args.Quiet)
+			throw new CliException("--password is required when using -q (quiet mode). Use --password <value> or --refresh-token <token>.");
+
 		return AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]password[/]:")
 				.PromptStyle("green")

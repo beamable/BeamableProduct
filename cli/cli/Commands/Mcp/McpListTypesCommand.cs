@@ -24,10 +24,10 @@ public class McpListTypesCommand : AtomicCommand<McpListTypesCommandArgs, Beamab
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--section",
-			"Which section to return: 'content', 'federation', or 'utility'. Leave empty to return all sections."),
+			"Which section to return: 'content', 'federation', or 'utility' — leave empty to return all sections"),
 			(args, v) => args.section = v);
 		AddOption(new Option<string>("--filter",
-			"For section='utility': narrow results to types whose namespace or name contains this string (case-insensitive)."),
+			"For section='utility': narrow results to types whose namespace or name contains this string (case-insensitive)"),
 			(args, v) => args.filter = v);
 	}
 

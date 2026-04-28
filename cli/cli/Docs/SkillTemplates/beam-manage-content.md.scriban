@@ -173,3 +173,20 @@ beam_exec("content publish --manifest-ids events -q")
 - **Always check `content status` before sync or publish** to understand what will change.
 - **The default manifest is `global`**. If you have multiple manifests, specify them with `--manifest-ids`.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts.
+
+## Wrap-Up
+
+After completing the workflow, provide the user with a summary that covers:
+
+1. **What was done**: Which content operation was performed (status check, sync, publish, or content type creation), and what changed — how many items were synced, published, or created.
+2. **Where the files live**:
+   - Content files: `.beamable/content/<realm-id>/<manifest-id>/` — JSON files, one per content object. Each file contains the serialized content data including its type, ID, and all field values.
+   - Custom content types (C#): Wherever the user placed them — typically `Assets/Beamable/Common/` for Unity or a shared project for standalone microservices. These define the schema that content files must conform to.
+   - Custom content types (Unreal): In the project's C++ modules as `UBeamContentObject` subclasses. C# equivalents must also exist if the content is accessed from microservices.
+   - Manifest config: `.beamable/content/<realm-id>/` — each subdirectory is a manifest (default is `global`).
+3. **Why specific choices were made** — explain the reasoning:
+   - **Sync flags used**: If sync was performed, explain what each flag did — `--sync-modified` overwrites local changes with remote versions (useful when the remote is the source of truth), `--sync-created` removes local-only content not in the remote (cleans up stale local data). If destructive flags were avoided, explain why.
+   - **Manifest choice**: Content is organized into manifests. The `global` manifest is the default and typically holds all game content. Additional manifests (e.g., `events`, `seasons`) are used to partition content for independent publish cycles or team ownership.
+   - **Content type design**: If a custom content type was created, explain the `[ContentType("name")]` naming convention (the string becomes the prefix in content IDs like `weapons.sword_01`), why specific fields were chosen, and how `[ContentField]` and validation attributes help maintain data integrity.
+   - **Engine-specific placement**: Explain why content types were placed in a particular directory — Unity requires them in a path shared between the editor and microservices, Unreal requires C++ types with matching C# equivalents for cross-language serialization.
+4. **How to verify**: Remind the user to run `content status` to confirm the current state, and that `content publish` pushes local content to the realm where game clients and microservices can access it.

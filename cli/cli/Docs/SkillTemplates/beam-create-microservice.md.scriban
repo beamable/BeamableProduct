@@ -52,6 +52,60 @@ beam_exec("project run --ids <Name>")
 beam_exec("project stop --ids <Name>")
 ```
 
+## Endpoint Callable Types
+
+Before writing endpoint methods, ask the user what access level each endpoint needs. The attribute determines who can call the endpoint and what authentication is required.
+
+| Attribute | Auth Required | Scope | Use Case |
+|---|---|---|---|
+| `[Callable]` | No | Public (no auth) | Webhooks, health checks, unauthenticated endpoints |
+| `[ClientCallable]` | Yes (any user) | Authenticated user | Game client calls — most common for player-facing features |
+| `[AdminOnlyCallable]` | Yes (admin only) | `*` (admin scope) | Back-office tools, moderation, data migration |
+| `[ServerCallable]` | No (service identity) | `*` (admin scope) | Microservice-to-microservice calls only |
+
+### Examples
+
+**Public endpoint (no authentication):**
+```csharp
+[Callable]
+public string HealthCheck() => "ok";
+```
+
+**Player-facing endpoint (requires authenticated user):**
+```csharp
+[ClientCallable]
+public async Task<int> GetPlayerScore()
+{
+    // Context.UserId is available — the caller is authenticated
+    return await Services.Stats.GetStat("score");
+}
+```
+
+**Admin-only endpoint:**
+```csharp
+[AdminOnlyCallable]
+public async Task ResetAllScores()
+{
+    // Only callable by admin/developer tokens
+}
+```
+
+**Service-to-service endpoint:**
+```csharp
+[ServerCallable]
+public async Task<string> InternalSync()
+{
+    // Only callable from other microservices, not from game clients
+}
+```
+
+### Skipping client code generation
+Add `CallableFlags.SkipGenerateClientFiles` to prevent the CLI from generating typed client code for an endpoint:
+```csharp
+[ClientCallable(flags: CallableFlags.SkipGenerateClientFiles)]
+public Task InternalHelper() { /* ... */ }
+```
+
 ## Federation
 
 Federations allow microservices to integrate with external identity providers and inventory systems. They are auto-managed via interface implementation in the microservice code — there are no manual CLI commands for federation.
@@ -95,3 +149,19 @@ Federation declarations are automatically picked up by the OpenAPI spec generati
 - **Storage must exist before linking.** Create the storage first with `project new storage`, then link with `project deps add`.
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts.
 - **Solution auto-discovery** looks for `.sln` files near the `.beamable` workspace. Unity and Unreal solutions are automatically excluded.
+
+## Wrap-Up
+
+After completing the workflow, provide the user with a summary that covers:
+
+1. **What was created**: List each service and storage by name, and their project paths relative to the workspace root (e.g. `services/<Name>/<Name>.csproj`).
+2. **Where the files live**:
+   - The microservice project: `services/<Name>/` — contains the C# source with endpoint methods.
+   - If storage was created: `services/<StorageName>/` — the MongoDB storage project.
+   - The solution file: whichever `.sln` was used or created.
+   - Service manifest: `.beamable/beamoLocalManifest.json` — tracks all local services and their Docker configuration.
+3. **Why specific choices were made** — explain the reasoning behind the decisions:
+   - **Callable attribute chosen**: Why `[ClientCallable]` vs `[AdminOnlyCallable]` vs `[ServerCallable]` vs `[Callable]` — what authentication and access scope this gives the endpoint, and why that fits the user's use case.
+   - **Storage dependency**: If storage was linked, explain that `project deps add` generates a typed `StorageDocument` accessor in the microservice, and that the storage runs as a local MongoDB container during development.
+   - **Federation interface**: If a federation was implemented, explain what external system it integrates with and how Beamable will call the federation methods during player authentication or inventory resolution.
+4. **How to iterate**: Remind the user they can `project run --ids <Name>` to start the service locally, open Swagger with `project open-swagger <Name>` to test endpoints interactively, and `project build` to verify compilation before deploying.
