@@ -1,0 +1,78 @@
+---
+name: beam-build-and-deploy
+description: Build Docker images and deploy services to a Beamable realm.
+---
+
+# Build and Deploy
+
+## Prerequisites
+- A `.beamable` workspace with services defined
+- Docker installed and running
+- Authenticated with `beam login` or saved credentials
+
+## Steps
+
+### 1. Build locally to check for compile errors
+```
+beam_exec("project build --ids <service1> <service2>")
+```
+Omit `--ids` to build all services.
+{{ if commands["project build"] }}
+#### `beam project build` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project build"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 2. Plan the deployment (builds Docker images)
+```
+beam_exec("deploy plan -q")
+```
+This builds Docker images for all services and generates a deployment plan.
+{{ if commands["deploy plan"] }}
+#### `beam deploy plan` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["deploy plan"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 3. Release the deployment
+```
+beam_exec("deploy release -q")
+```
+This pushes the most recent plan to the realm. Alternatively, use `--from-latest-plan` to explicitly use the last generated plan:
+```
+beam_exec("deploy release --from-latest-plan -q")
+```
+
+You can also plan and release in one step:
+```
+beam_exec("deploy release --comment \"Initial deployment\" -q")
+```
+{{ if commands["deploy release"] }}
+#### `beam deploy release` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["deploy release"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 4. Verify the deployment
+```
+beam_exec("deploy list")
+```
+
+## Filtering Services
+
+Target specific services by ID or group tags:
+```
+beam_exec("deploy plan --ids MyService1 MyService2 -q")
+beam_exec("deploy plan --with-group backend -q")
+beam_exec("deploy plan --without-group experimental -q")
+```
+
+## Common Pitfalls
+- **`services build`, `services deploy`, `services run`, `services stop` are ALL REMOVED.** They will throw an error. Use `project run`/`project stop`/`project build` for local development and `deploy plan`/`deploy release` for cloud deployment.
+- **Docker must be running** before `deploy plan`. The command builds Docker images using `docker buildx`.
+- **Always pass `-q`** when executing from MCP to avoid interactive prompts.
+- **`--replace` is the default mode** for `deploy plan`. This means services NOT included in the plan will be removed from the realm. Use `--merge` to add services without removing existing ones.
+- **Build errors appear in stderr.** If `deploy plan` fails, check the error output for .NET compilation errors.

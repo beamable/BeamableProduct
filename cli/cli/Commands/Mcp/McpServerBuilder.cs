@@ -91,13 +91,32 @@ public class BeamMcpTools
 
 	[McpServerTool]
 	[Description(
-		"Return a schema of Beamable types — C# content objects, federation interfaces, SDK utility types, and Web SDK documentation. " +
-		"Call with no arguments first to get an overview with section counts and the full list of utility namespaces. " +
-		"Then call again with section='content', 'federation', or 'utility' to load C# types, or section='web' to get the Beamable Web SDK (TypeScript) documentation URL for portal extension development. " +
-		"For 'utility', always pass a filter string (namespace prefix or type name keyword) to avoid loading the full set. " +
-		"Use this when helping customers subclass ContentObject, implement federation, define microservice types, reuse any Beamable.Common utility, or build portal extensions with the Web SDK.")]
+		"List all available type schema sections. " +
+		"Call this before beam_list_types to discover which sections exist. " +
+		"Each section contains a category of Beamable types (content, federation, utility, unreal, web, etc.).")]
+	public Task<string> beam_list_type_sections()
+		=> _executor.ListTypeSectionsAsync();
+
+	[McpServerTool]
+	[Description(
+		"Load types from a specific schema section. " +
+		"Call beam_list_type_sections first to discover available sections. " +
+		"Pass a section name to load its types, and an optional filter to narrow results by namespace or type name. " +
+		"If called with an empty section, returns the section list (same as beam_list_type_sections).")]
 	public Task<string> beam_list_types(
-		[Description("Which section to load: 'content', 'federation', 'utility', or 'web'. Leave empty for an overview with counts and the list of utility namespaces.")] string section = "",
-		[Description("Narrows utility results to types whose namespace or name contains this string (case-insensitive). E.g. 'Inventory', 'Beamable.Common.Content'.")] string filter = "")
+		[Description("Section name from beam_list_type_sections, e.g. 'content', 'federation', 'utility-shared'.")] string section = "",
+		[Description("Narrows results to types whose namespace or name contains this string (case-insensitive).")] string filter = "")
 		=> _executor.GetTypeSchemaAsync(section, filter);
+
+	[McpServerTool]
+	[Description(
+		"Get a URL to the Beamable SDK source code on GitHub. " +
+		"Auto-detects the SDK platform and version from the current project directory. " +
+		"Pass a file path to get a direct link to a specific file in the source tree. " +
+		"For Unreal projects, returns a local filesystem path instead of a URL.")]
+	public Task<string> beam_get_source(
+		[Description("Platform: 'unity', 'cli', 'unreal', or 'web'. Auto-detected if omitted.")] string platform = "",
+		[Description("SDK version override, e.g. '5.0.1'. Auto-detected if omitted.")] string version = "",
+		[Description("File path within the source tree, e.g. 'Runtime/Api/BeamContext.cs'. Appended to the URL.")] string filePath = "")
+		=> _executor.GetSourceUrlAsync(platform, version, filePath);
 }

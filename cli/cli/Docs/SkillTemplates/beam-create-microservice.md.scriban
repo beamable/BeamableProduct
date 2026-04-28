@@ -22,17 +22,12 @@ beam_exec("project ps")
 beam_exec("project new service --name <Name> -q")
 ```
 The CLI auto-discovers the nearest `.sln` file relative to the `.beamable` workspace. If none exists, it creates `<Name>/<Name>.sln`.
-
+{{ if commands["project new service"] }}
 #### `beam project new service` options
 | Option | Type | Description |
 |---|---|---|
-`--target-framework` | string | The target framework to use for the new project. Defaults to the current dotnet runtime framework
-`--sln` | string | Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used
-`--service-directory` | string | Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"
-`--link-to` | Set[string] | The name of the storage to link this service to
-`--groups` | Set[string] | Specify BeamableGroups for this service
-`--generate-common` | flag | If passed, will create a common library for this project
-
+{{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 3. Optionally create and link storage
 If the microservice needs a database:
@@ -40,16 +35,12 @@ If the microservice needs a database:
 beam_exec("project new storage --name <StorageName> -q")
 beam_exec("project deps add --source <Name> --deps <StorageName>")
 ```
-
+{{ if commands["project new storage"] }}
 #### `beam project new storage` options
 | Option | Type | Description |
 |---|---|---|
-`--target-framework` | string | The target framework to use for the new project. Defaults to the current dotnet runtime framework
-`--sln` | string | Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used
-`--service-directory` | string | Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"
-`--link-to` | Set[string] | The name of the project to link this storage to
-`--groups` | Set[string] | Specify BeamableGroups for this service
-
+{{ for opt in commands["project new storage"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 4. Run locally
 ```
@@ -73,15 +64,9 @@ Returns the full list of available federation interfaces with their methods.
 
 ### Available federation interfaces
 All federation interfaces require a generic type parameter `T` constrained to `where T : IFederationId, new()`.
-
-- **`IFederatedGameServer<T>`** (`where T : IFederationId, new()`)
-
-- **`IFederatedInventory<T>`** (`where T : IFederationId, new()`)
-
-- **`IFederatedLogin<T>`** — Login federation allows you to create federate the login/signup flows of Beamable to one or more third-parties. It also allows you to run arbitrary code every time a user logs in. (`where T : IFederationId, new()`)
-
-- **`IFederatedPlayerInit<T>`** — Player Init Federation allows you to run custom server code when a new player token is created. The player's token request will not complete until the function has finished. (`where T : IFederationId, new()`)
-
+{{ for fed in federation_types }}{{ if fed.interface_name != "IFederationId" }}
+- **`{{ fed.interface_name }}`**{{ if fed.summary != "" }} — {{ fed.summary }}{{ end }}{{ if fed.generic_constraint != "" }} (`{{ fed.generic_constraint }}`){{ end }}
+{{ end }}{{ end }}
 
 ### Declaring a federation identity
 Create a class implementing `IFederationId` with the `[FederationId]` attribute:

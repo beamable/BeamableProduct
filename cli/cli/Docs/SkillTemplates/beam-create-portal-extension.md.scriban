@@ -36,20 +36,12 @@ beam_exec("project new portal-extension <Name> --mount-page \"<path>\" --mount-s
 ```
 - `--mount-selector` is REQUIRED and must match one of the selectors from step 1
 - Do NOT provide `--mount-group` or `--mount-label`
-
+{{ if commands["project new portal-extension"] }}
 #### `beam project new portal-extension` options
 | Option | Type | Description |
 |---|---|---|
-`--sln` | string | Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used
-`--service-directory` | string | Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"
-`--mount-page` | string | The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values
-`--mount-selector` | string | The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page
-`--mount-group` | string | Specify the navigation group of the extension. This is only valid when the extension is a full page
-`--mount-label` | string | Specify the navigation label of the extension. This is only valid when the extension is a full page
-`--mount-icon` | string | Specify the Material Design Icon (mdi) that will be used for the extension's navigation. This is only valid when the extension is a full page
-`--mount-group-order` | int | Specify the order of the mount group
-`--mount-label-order` | int | Specify the order of the mount label
-
+{{ for opt in commands["project new portal-extension"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 3. Run the extension locally
 ```

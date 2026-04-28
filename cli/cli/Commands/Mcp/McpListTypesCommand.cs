@@ -55,7 +55,8 @@ public class McpListTypesCommand : AtomicCommand<McpListTypesCommandArgs, Beamab
 				AssemblyVersion = schema.AssemblyVersion,
 				ContentTypes = schema.ContentTypes,
 				FederationTypes = System.Array.Empty<FederationTypeEntry>(),
-				UtilityTypes = System.Array.Empty<UtilityTypeEntry>()
+				UtilityTypes = System.Array.Empty<UtilityTypeEntry>(),
+				UnrealTypeMappings = System.Array.Empty<UnrealTypeMappingEntry>()
 			},
 			"federation" => new BeamableTypesSchema
 			{
@@ -63,21 +64,43 @@ public class McpListTypesCommand : AtomicCommand<McpListTypesCommandArgs, Beamab
 				AssemblyVersion = schema.AssemblyVersion,
 				ContentTypes = System.Array.Empty<ContentTypeEntry>(),
 				FederationTypes = schema.FederationTypes,
-				UtilityTypes = System.Array.Empty<UtilityTypeEntry>()
+				UtilityTypes = System.Array.Empty<UtilityTypeEntry>(),
+				UnrealTypeMappings = System.Array.Empty<UnrealTypeMappingEntry>()
 			},
-			"utility" => new BeamableTypesSchema
+			"utility" or "utility-shared" => new BeamableTypesSchema
 			{
 				GeneratedAt = schema.GeneratedAt,
 				AssemblyVersion = schema.AssemblyVersion,
 				ContentTypes = System.Array.Empty<ContentTypeEntry>(),
 				FederationTypes = System.Array.Empty<FederationTypeEntry>(),
-				UtilityTypes = FilterUtility(schema.UtilityTypes, f)
+				UtilityTypes = FilterUtility(
+					schema.UtilityTypes?.Where(t => t.Platform != "MicroserviceOnly").ToArray() ?? System.Array.Empty<UtilityTypeEntry>(), f),
+				UnrealTypeMappings = System.Array.Empty<UnrealTypeMappingEntry>()
+			},
+			"utility-server" => new BeamableTypesSchema
+			{
+				GeneratedAt = schema.GeneratedAt,
+				AssemblyVersion = schema.AssemblyVersion,
+				ContentTypes = System.Array.Empty<ContentTypeEntry>(),
+				FederationTypes = System.Array.Empty<FederationTypeEntry>(),
+				UtilityTypes = FilterUtility(
+					schema.UtilityTypes?.Where(t => t.Platform == "MicroserviceOnly").ToArray() ?? System.Array.Empty<UtilityTypeEntry>(), f),
+				UnrealTypeMappings = System.Array.Empty<UnrealTypeMappingEntry>()
+			},
+			"unreal" => new BeamableTypesSchema
+			{
+				GeneratedAt = schema.GeneratedAt,
+				AssemblyVersion = schema.AssemblyVersion,
+				ContentTypes = System.Array.Empty<ContentTypeEntry>(),
+				FederationTypes = System.Array.Empty<FederationTypeEntry>(),
+				UtilityTypes = System.Array.Empty<UtilityTypeEntry>(),
+				UnrealTypeMappings = schema.UnrealTypeMappings
 			},
 			_ => schema
 		};
 	}
 
-	private static UtilityTypeEntry[] FilterUtility(UtilityTypeEntry[] types, string filter)
+	internal static UtilityTypeEntry[] FilterUtility(UtilityTypeEntry[] types, string filter)
 	{
 		if (string.IsNullOrEmpty(filter)) return types;
 		return System.Array.FindAll(types, t =>

@@ -110,7 +110,8 @@
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="System.Management" Version="6.0.0" />
     <PackageReference Include="spkl.Diffs" Version="2.1.0" />
-    
+    <PackageReference Include="Scriban" Version="5.12.0" />
+
   </ItemGroup>
 
   <ItemGroup>
@@ -136,8 +137,8 @@
     <!-- Automatically add any files ending in .oapi.json in the /Resources folder. -->
     <EmbeddedResource Include="openapi/**/*.oapi.json" />
 
-    <!-- Beamable content-type schema snapshot for MCP type discovery -->
-    <EmbeddedResource Include="Resources\beamable-types.json" />
+    <!-- Beamable content-type schema snapshots for MCP type discovery (split per section + combined) -->
+    <EmbeddedResource Include="Resources\beamable-types*.json" />
   </ItemGroup>
 
   <!-- Regenerate the type schema snapshot after each build so it stays current.
@@ -148,17 +149,33 @@
           Condition="('$(TargetFramework)' == 'net8.0' OR ('$(TargetFramework)' == 'net10.0' AND !Exists('$(OutputPath)net8.0/') AND !Exists('$(OutputPath)net8.0\'))) AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <!-- Unix — prefer net8.0, fall back to net10.0 -->
     <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')"
-          Command="./$(OutputPath)net8.0/$(AssemblyName) generate-type-schema --output=$(MSBuildThisFileDirectory)Resources/beamable-types.json"
+          Command="./$(OutputPath)net8.0/$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources/"
           IgnoreExitCode="true" />
     <Exec Condition="'$(IsWindows)'!='true' And !Exists('$(OutputPath)net8.0/') And Exists('$(OutputPath)net10.0/')"
-          Command="./$(OutputPath)net10.0/$(AssemblyName) generate-type-schema --output=$(MSBuildThisFileDirectory)Resources/beamable-types.json"
+          Command="./$(OutputPath)net10.0/$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources/"
           IgnoreExitCode="true" />
     <!-- Windows — prefer net8.0, fall back to net10.0 -->
     <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')"
-          Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-type-schema --output=$(MSBuildThisFileDirectory)Resources\beamable-types.json"
+          Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources\"
           IgnoreExitCode="true" />
     <Exec Condition="'$(IsWindows)'=='true' And !Exists('$(OutputPath)net8.0\') And Exists('$(OutputPath)net10.0\')"
-          Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-type-schema --output=$(MSBuildThisFileDirectory)Resources\beamable-types.json"
+          Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources\"
+          IgnoreExitCode="true" />
+  </Target>
+
+  <Target Name="RegenerateSkillDocs" AfterTargets="RegenerateTypeSchema"
+          Condition="('$(TargetFramework)' == 'net8.0' OR ('$(TargetFramework)' == 'net10.0' AND !Exists('$(OutputPath)net8.0/') AND !Exists('$(OutputPath)net8.0\'))) AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')"
+          Command="./$(OutputPath)net8.0/$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'!='true' And !Exists('$(OutputPath)net8.0/') And Exists('$(OutputPath)net10.0/')"
+          Command="./$(OutputPath)net10.0/$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')"
+          Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'=='true' And !Exists('$(OutputPath)net8.0\') And Exists('$(OutputPath)net10.0\')"
+          Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
           IgnoreExitCode="true" />
   </Target>
 

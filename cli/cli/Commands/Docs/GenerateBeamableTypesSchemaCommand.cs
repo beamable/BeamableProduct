@@ -12,6 +12,7 @@ namespace cli.Docs;
 public class GenerateBeamableTypesSchemaCommandArgs : CommandArgs
 {
 	public string outputPath;
+	public string outputDir;
 }
 
 [CliContractType]
@@ -22,6 +23,7 @@ public class BeamableTypesSchema
 	public ContentTypeEntry[] ContentTypes;
 	public FederationTypeEntry[] FederationTypes;
 	public UtilityTypeEntry[] UtilityTypes;
+	public UnrealTypeMappingEntry[] UnrealTypeMappings;
 }
 
 [CliContractType]
@@ -31,6 +33,7 @@ public class FederationTypeEntry
 	public string Namespace;
 	public string Summary;
 	public string GenericConstraint;
+	public string Platform;
 	public FederationMethodEntry[] Methods;
 }
 
@@ -57,6 +60,7 @@ public class UtilityTypeEntry
 	public string Namespace;
 	public string Kind;  // "class", "abstract class", "static class", "struct", "interface", "enum"
 	public string Summary;
+	public string Platform;
 	public UtilityMemberEntry[] Members;   // public fields + properties
 	public UtilityMethodEntry[] Methods;   // public declared methods
 	public string[] EnumValues;
@@ -96,6 +100,7 @@ public class ContentTypeEntry
 	public string ClassName;
 	public string Namespace;
 	public string Summary;
+	public string Platform;
 	public string[] FormerlyKnownAs;
 	public ContentFieldEntry[] Fields;
 }
@@ -106,6 +111,22 @@ public class ContentFieldEntry
 	public string Name;
 	public string Type;
 	public string Summary;
+}
+
+[CliContractType]
+public class UnrealTypeMappingEntry
+{
+	public string CppType;
+	public string CSharpEquivalent;
+	public string Notes;
+}
+
+[CliContractType]
+public class TypeSectionIndex
+{
+	public string Name;
+	public string Description;
+	public int TypeCount;
 }
 
 public class GenerateBeamableTypesSchemaCommand
@@ -123,19 +144,91 @@ public class GenerateBeamableTypesSchemaCommand
 		AddOption(
 			new Option<string>("--output", "File path to write the JSON schema to; omit to return as command output"),
 			(args, v) => args.outputPath = v);
+		AddOption(
+			new Option<string>("--output-dir", "Directory to write split JSON schema files to; generates one file per section plus an index"),
+			(args, v) => args.outputDir = v);
 	}
 
 	public static BeamableTypesSchema GenerateLive()
 	{
-		var assembly = typeof(ContentObject).Assembly;
-		return BuildSchema(assembly, LoadXmlDocs(assembly));
+		var commonAssembly = typeof(ContentObject).Assembly;
+		var commonDocs = LoadXmlDocs(commonAssembly);
+		var schema = BuildSchema(commonAssembly, commonDocs);
+
+		foreach (var ct in schema.ContentTypes) ct.Platform = "Shared";
+		foreach (var ft in schema.FederationTypes) ft.Platform = "Shared";
+		foreach (var ut in schema.UtilityTypes) ut.Platform = ClassifyPlatform(ut.Namespace);
+
+		// Collect types already covered so we don't duplicate them
+		var coveredTypeNames = new HashSet<string>(
+			schema.UtilityTypes.Select(u => $"{u.Namespace}.{u.TypeName}")
+				.Concat(schema.ContentTypes.Select(c => $"{c.Namespace}.{c.ClassName}"))
+				.Concat(schema.FederationTypes.Select(f => $"{f.Namespace}.{f.InterfaceName}"))
+		);
+
+		// Scan all loaded Beamable assemblies beyond the common assembly
+		var scannedAssemblies = new HashSet<string> { commonAssembly.FullName };
+		var anchorTypes = new Type[] { typeof(Microservice) };
+		foreach (var anchor in anchorTypes)
+		{
+			try { _ = anchor.Assembly; }
+			catch { /* force load */ }
+		}
+
+		var beamableAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+			.Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+			.Where(a =>
+			{
+				var name = a.GetName().Name ?? "";
+				return (name.Contains("beamable", StringComparison.OrdinalIgnoreCase) ||
+				        name.Contains("Beamable", StringComparison.OrdinalIgnoreCase) ||
+				        name == "BeamableMicroserviceBase") &&
+				       !scannedAssemblies.Contains(a.FullName);
+			})
+			.ToList();
+
+		foreach (var assembly in beamableAssemblies)
+		{
+			scannedAssemblies.Add(assembly.FullName);
+			try
+			{
+				var docs = LoadXmlDocs(assembly);
+				var alreadyCovered = new HashSet<Type>(
+					assembly.GetTypes().Where(t => coveredTypeNames.Contains($"{t.Namespace}.{t.Name}"))
+				);
+				var utilityTypes = GetUtilityTypes(assembly, docs, alreadyCovered);
+				foreach (var ut in utilityTypes)
+				{
+					ut.Platform = ClassifyPlatform(ut.Namespace);
+					coveredTypeNames.Add($"{ut.Namespace}.{ut.TypeName}");
+				}
+				schema.UtilityTypes = schema.UtilityTypes.Concat(utilityTypes)
+					.OrderBy(t => t.Namespace).ThenBy(t => t.TypeName).ToArray();
+			}
+			catch { /* Assembly may not be scannable in all contexts */ }
+		}
+
+		schema.UnrealTypeMappings = BuildUnrealTypeMappings();
+		return schema;
+	}
+
+	static string ClassifyPlatform(string ns)
+	{
+		if (string.IsNullOrEmpty(ns)) return "Shared";
+		if (ns.StartsWith("Beamable.Server")) return "MicroserviceOnly";
+		return "Shared";
 	}
 
 	public override async Task<BeamableTypesSchema> GetResult(GenerateBeamableTypesSchemaCommandArgs args)
 	{
 		var schema = GenerateLive();
 
-		if (!string.IsNullOrWhiteSpace(args.outputPath))
+		if (!string.IsNullOrWhiteSpace(args.outputDir))
+		{
+			Directory.CreateDirectory(args.outputDir);
+			await WriteSectionFiles(schema, args.outputDir);
+		}
+		else if (!string.IsNullOrWhiteSpace(args.outputPath))
 		{
 			var dir = Path.GetDirectoryName(args.outputPath);
 			if (!string.IsNullOrEmpty(dir))
@@ -145,6 +238,71 @@ public class GenerateBeamableTypesSchemaCommand
 		}
 
 		return schema;
+	}
+
+	static async Task WriteSectionFiles(BeamableTypesSchema schema, string outputDir)
+	{
+		var settings = new JsonSerializerSettings { Formatting = Formatting.Indented };
+
+		// Split utility types by platform
+		var sharedUtility = schema.UtilityTypes?.Where(t => t.Platform != "MicroserviceOnly").ToArray() ?? Array.Empty<UtilityTypeEntry>();
+		var serverUtility = schema.UtilityTypes?.Where(t => t.Platform == "MicroserviceOnly").ToArray() ?? Array.Empty<UtilityTypeEntry>();
+
+		var sections = new Dictionary<string, (string description, object data, int count)>
+		{
+			["content"] = ("C# content object types with [ContentType] attribute", schema.ContentTypes, schema.ContentTypes?.Length ?? 0),
+			["federation"] = ("Federation interfaces (IFederatedLogin, IFederatedInventory, etc.)", schema.FederationTypes, schema.FederationTypes?.Length ?? 0),
+			["utility-shared"] = ("Shared C# utility types from Beamable SDK (usable by Unity and Microservices)", sharedUtility, sharedUtility.Length),
+			["utility-server"] = ("Microservice-only C# types from Beamable SDK server assemblies", serverUtility, serverUtility.Length),
+			["unreal"] = ("Unreal C++ to C# type mapping table", schema.UnrealTypeMappings, schema.UnrealTypeMappings?.Length ?? 0),
+		};
+
+		var index = new List<TypeSectionIndex>();
+
+		foreach (var (name, (description, data, count)) in sections)
+		{
+			var filePath = Path.Combine(outputDir, $"beamable-types-{name}.json");
+			await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(data, settings));
+			index.Add(new TypeSectionIndex { Name = name, Description = description, TypeCount = count });
+		}
+
+		var indexPath = Path.Combine(outputDir, "beamable-types-index.json");
+		await File.WriteAllTextAsync(indexPath, JsonConvert.SerializeObject(index.ToArray(), settings));
+
+		// Also write combined file for backward compatibility
+		var combinedPath = Path.Combine(outputDir, "beamable-types.json");
+		await File.WriteAllTextAsync(combinedPath, JsonConvert.SerializeObject(schema, settings));
+
+		Log.Information($"Wrote {sections.Count} section files + index to {outputDir}");
+	}
+
+	static UnrealTypeMappingEntry[] BuildUnrealTypeMappings()
+	{
+		return new[]
+		{
+			new UnrealTypeMappingEntry { CppType = "uint8", CSharpEquivalent = "byte", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "int16", CSharpEquivalent = "short", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "int32", CSharpEquivalent = "int", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "int64", CSharpEquivalent = "long", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "bool", CSharpEquivalent = "bool", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "float", CSharpEquivalent = "float", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "double", CSharpEquivalent = "double", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "FString", CSharpEquivalent = "string", Notes = "Serialized as JSON strings" },
+			new UnrealTypeMappingEntry { CppType = "FText", CSharpEquivalent = "string", Notes = "Serialized as JSON strings" },
+			new UnrealTypeMappingEntry { CppType = "FName", CSharpEquivalent = "string", Notes = "Serialized as JSON strings" },
+			new UnrealTypeMappingEntry { CppType = "FGuid", CSharpEquivalent = "Guid", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "FDateTime", CSharpEquivalent = "DateTime", Notes = "" },
+			new UnrealTypeMappingEntry { CppType = "FGameplayTag", CSharpEquivalent = "string", Notes = "Use FGameplayTag::RequestGameplayTag for deserialization" },
+			new UnrealTypeMappingEntry { CppType = "FGameplayTagContainer", CSharpEquivalent = "string", Notes = "Use FGameplayTagContainer::FromExportString for deserialization" },
+			new UnrealTypeMappingEntry { CppType = "TSoftObjectPtr<>", CSharpEquivalent = "string", Notes = "Serializes as FSoftObjectPath; empty string when None" },
+			new UnrealTypeMappingEntry { CppType = "TArray<T>", CSharpEquivalent = "List<T> or T[]", Notes = "Works for any supported element type" },
+			new UnrealTypeMappingEntry { CppType = "TMap<FString, V>", CSharpEquivalent = "Dictionary<string, V>", Notes = "Only FString keys supported" },
+			new UnrealTypeMappingEntry { CppType = "FOptional<T>", CSharpEquivalent = "Optional<T>", Notes = "Not serialized when IsSet==false" },
+			new UnrealTypeMappingEntry { CppType = "FBeamArray", CSharpEquivalent = "ArrayOf", Notes = "For nested TArray<TArray<>> with Blueprint support" },
+			new UnrealTypeMappingEntry { CppType = "FBeamMap", CSharpEquivalent = "MapOf", Notes = "For nested TMap<,TMap<>> with Blueprint support" },
+			new UnrealTypeMappingEntry { CppType = "FBeamJsonSerializableUStruct", CSharpEquivalent = "C# class", Notes = "Serialized as JSON object" },
+			new UnrealTypeMappingEntry { CppType = "IBeamJsonSerializableUObject", CSharpEquivalent = "C# class", Notes = "Use DefaultToInstanced, EditInlineNew for content UObjects" },
+		};
 	}
 
 	static BeamableTypesSchema BuildSchema(Assembly assembly, Dictionary<string, string> xmlDocs)

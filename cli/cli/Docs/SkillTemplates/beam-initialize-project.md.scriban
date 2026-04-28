@@ -21,22 +21,12 @@ If you know the CID and PID:
 beam_exec("init --cid <CID> --pid <PID> -q")
 ```
 Tokens are saved to disk by default. Use `--no-token-save` to prevent persistence.
-
+{{ if commands["init"] }}
 #### `beam init` options
 | Option | Type | Description |
 |---|---|---|
-`--email` | string | Specify user email address
-`--password` | string | User password
-`--host` | string | This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'
-`--refresh-token` | string | A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY
-`--ignore-pid` | flag | Ignore the existing pid while initializing
-`--save-extra-paths` | Set[string] | Overwrite the stored extra paths for where to find projects
-`--paths-to-ignore` | Set[string] | Paths to ignore when searching for services
-`--save-to-environment` | flag | Save login refresh token to environment variable
-`--no-token-save` | flag | Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option
-`--realm-scoped` | flag | Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one
-`--print-to-console` | flag | Prints out login request response to console
-
+{{ for opt in commands["init"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 2. Verify the configuration
 ```
@@ -52,18 +42,12 @@ Or with a refresh token:
 ```
 beam_exec("login --refresh-token <token> -q")
 ```
-
+{{ if commands["login"] }}
 #### `beam login` options
 | Option | Type | Description |
 |---|---|---|
-`--email` | string | Specify user email address
-`--password` | string | User password
-`--save-to-environment` | flag | Save login refresh token to environment variable
-`--no-token-save` | flag | Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option
-`--realm-scoped` | flag | Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one
-`--refresh-token` | string | A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY
-`--print-to-console` | flag | Prints out login request response to console
-
+{{ for opt in commands["login"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ## Switching Realms
 To switch to a different realm within the same organization:

@@ -16,15 +16,12 @@ description: Manage Beamable content — check status, sync, publish, and create
 beam_exec("content status")
 ```
 Shows the state of each content object: Created (local only), Modified, Deleted, Conflicted, or UpToDate. Add `--show-up-to-date` to see all content including unchanged items.
-
+{{ if commands["content status"] }}
 #### `beam content status` options
 | Option | Type | Description |
 |---|---|---|
-`--manifest-ids` | String[] | Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest
-`--show-up-to-date` | flag | Show up to date content
-`--limit` | int | Limit content displayed amount (default: 100)
-`--skip` | int | Skips content amount
-
+{{ for opt in commands["content status"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 2. Sync local content with remote (CAUTION)
 ```
@@ -37,41 +34,24 @@ Without flags, sync does nothing. You must specify what to sync:
 - `--sync-deleted` — RESTORE files that were deleted locally
 
 **WARNING**: `--sync-modified` and `--sync-conflicts` are DESTRUCTIVE and IRREVERSIBLE. They discard your local changes in favor of the remote version. Always check `content status` first.
-
+{{ if commands["content sync"] }}
 #### `beam content sync` options
 | Option | Type | Description |
 |---|---|---|
-`--manifest-ids` | String[] | Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest
-`--filter-type` | ContentFilterType | Defines the semantics for the `filter` argument. When no filters are given, affects all existing content.
-ExactIds => Will only add the given tags to the ','-separated list of filters
-Regexes => Will add the given tags to any content whose Id is matched by any of the ','-separated list of filters (C# regex string)
-TypeHierarchy => Will add the given tags to any content of the ','-separated list of filters (content type strings with full hierarchy --- StartsWith comparison)
-Tags => Will add the given tags to any content that currently has any of the ','-separated list of filters (tags)
-`--filter` | string | Accepts different strings to filter which content files will be affected. See the `filter-type` option
-`--sync-created` | flag | Deletes any created content that is not present in the latest manifest. If filters are provided, will only delete the created content that matches the filter
-`--sync-modified` | flag | This will discard your local changes ONLY on files that are NOT conflicted. If filters are provided, will only do this for content that matches the filter
-`--sync-conflicts` | flag | This will discard your local changes ONLY on files that ARE conflicted. If filters are provided, will only do this for content that matches the filter
-`--sync-deleted` | flag | This will revert all your deleted files. If filters are provided, will only do this for content that matches the filter
-`--target` | string | If you pass in a Manifest's UID, we'll sync with that as the target. If filters are provided, will only do this for content that matches the filter
-
+{{ for opt in commands["content sync"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 3. Publish content to the realm
 ```
 beam_exec("content publish --manifest-ids global -q")
 ```
 This pushes local content to the remote realm.
-
+{{ if commands["content publish"] }}
 #### `beam content publish` options
 | Option | Type | Description |
 |---|---|---|
-`--manifest-ids` | String[] | Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest
-`--auto-snapshot-type` | AutoSnapshotType | Defines if after publish the Content System should take snapshots of the content.
-None => Will not save any snapshot after publishing
-LocalOnly => Will save the snapshot under `.beamable/temp/content-snapshots/[PID]` folder
-SharedOnly => Will save the snapshot under `.beamable/content-snapshots/[PID]` folder
-Both => Will save two snapshots, under local and shared folders
-`--max-local-snapshots` | int | Defines the max stored local snapshots taken by the auto snapshot generation by this command. When the number hits, the older one will be deletd and replaced by the new snapshot
-
+{{ for opt in commands["content publish"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
 
 ### 4. Create additional manifests (optional)
 ```
@@ -167,29 +147,8 @@ When accessing Unreal-defined content in microservices, map types as follows:
 
 | C++ Type | C# Equivalent | Notes |
 |---|---|---|
-| `uint8` | `byte` |  |
-| `int16` | `short` |  |
-| `int32` | `int` |  |
-| `int64` | `long` |  |
-| `bool` | `bool` |  |
-| `float` | `float` |  |
-| `double` | `double` |  |
-| `FString` | `string` | Serialized as JSON strings |
-| `FText` | `string` | Serialized as JSON strings |
-| `FName` | `string` | Serialized as JSON strings |
-| `FGuid` | `Guid` |  |
-| `FDateTime` | `DateTime` |  |
-| `FGameplayTag` | `string` | Use FGameplayTag::RequestGameplayTag for deserialization |
-| `FGameplayTagContainer` | `string` | Use FGameplayTagContainer::FromExportString for deserialization |
-| `TSoftObjectPtr<>` | `string` | Serializes as FSoftObjectPath; empty string when None |
-| `TArray<T>` | `List<T> or T[]` | Works for any supported element type |
-| `TMap<FString, V>` | `Dictionary<string, V>` | Only FString keys supported |
-| `FOptional<T>` | `Optional<T>` | Not serialized when IsSet==false |
-| `FBeamArray` | `ArrayOf` | For nested TArray<TArray<>> with Blueprint support |
-| `FBeamMap` | `MapOf` | For nested TMap<,TMap<>> with Blueprint support |
-| `FBeamJsonSerializableUStruct` | `C# class` | Serialized as JSON object |
-| `IBeamJsonSerializableUObject` | `C# class` | Use DefaultToInstanced, EditInlineNew for content UObjects |
-
+{{ for m in unreal_type_mappings }}| `{{ m.cpp_type }}` | `{{ m.c_sharp_equivalent }}` | {{ m.notes }} |
+{{ end }}
 
 ### Key content type rules
 - The `[ContentType("name")]` attribute defines the type name used in content IDs (e.g., `weapons.sword_01`)

@@ -19,6 +19,7 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
 using cli.DockerCommands;
+using cli.Commands.Docs;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -614,6 +615,7 @@ public class App
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateBeamableTypesSchemaCommand, GenerateBeamableTypesSchemaCommandArgs>();
+		Commands.AddRootCommand<GenerateSkillDocsCommand, GenerateSkillDocsCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
