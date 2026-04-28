@@ -44,13 +44,13 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 	{
 		propertiesContainer.Clear();
 
-		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
+		if (_model.Content.icon != null)
 		{
 			icon.sprite = await _model.Content.icon.LoadSprite();
 		}
 
 		id.text = _model.ContentId;
-		type.text = _model.Content.name;
+		type.text = _model.Content.ContentName;
 
 		createdDate.text = $"Created: {GetDateTimeFromInt(_model.CreatedAt)}";
 		updatedDate.text = $"Updated: {GetDateTimeFromInt(_model.UpdatedAt)}";
