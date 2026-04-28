@@ -644,6 +644,7 @@ public class App
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
+		Commands.AddSubCommandWithHandler<PortalOpenExtensionCommand, PortalOpenExtensionCommandArgs, PortalCommand>();
 		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
