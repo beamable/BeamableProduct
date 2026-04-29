@@ -23,7 +23,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 {
 	private readonly InitCommand _initCommand;
 
-	public NewPortalExtensionCommand(InitCommand initCommand) : base("portal-extension", "Creates a new Portal Extension App")
+	public NewPortalExtensionCommand(InitCommand initCommand) : base("portal-extension",
+			"Creates a new Portal Extension App. Before calling this, run 'portal extension list-extension-options' to discover valid --mount-page and --mount-selector values")
 	{
 		_initCommand = initCommand;
 	}
@@ -35,12 +36,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-page" },
-				description: "Specify the page that the portal extension should added"),
+				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values"),
 				binder: (args, i) => args.mountPage = i);
-		
+
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-selector" },
-				description: "Specify the place on the page that the portal extension should added"),
+				description: "The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page"),
 			binder: (args, i) => args.mountSelector = i);
 		
 		AddOption(new Option<string>(
@@ -71,6 +72,17 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
 	{
+		// Validate required arg pairs before any expensive I/O so errors surface immediately
+		// (dependency checks and the remote portal config fetch can take many seconds).
+		var hasExplicitPage = !string.IsNullOrEmpty(args.mountPage);
+		var hasExplicitSelector = !string.IsNullOrEmpty(args.mountSelector);
+
+		if (!hasExplicitPage && hasExplicitSelector)
+			throw new CliException("--mount-selector requires --mount-page to also be specified.");
+
+		if (!hasExplicitPage && args.Quiet)
+			throw new CliException("Must provide --mount-page when running with -q / --quiet. Run 'portal extension list-extension-options' to discover valid pages and selectors.");
+
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
 			throw new CliException("Not all required dependencies exist. Aborting.");
 
@@ -82,20 +94,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
 
-		var hasExplicitPage = !string.IsNullOrEmpty(args.mountPage);
-		var hasExplicitSelector = !string.IsNullOrEmpty(args.mountSelector);
-
-		if (hasExplicitPage && hasExplicitSelector)
+		if (hasExplicitPage)
 		{
 			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
-		else if (hasExplicitPage || hasExplicitSelector)
-		{
-			throw new CliException("--mount-page and --mount-selector must both be provided together, or neither.");
-		}
 		else
 		{
-			if (args.Quiet) throw new CliException("Must provide --mount-page and --mount-selector when in quiet mode.");
 			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
 
@@ -186,7 +190,14 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		if (matchingPrefix != null)
 		{
+			// Page extensions don't require --mount-selector; auto-assign from the first available selector.
 			var siteConfig = customPageConfigs[matchingPrefix];
+			if (string.IsNullOrEmpty(args.mountSelector))
+			{
+				var first = siteConfig.selectors[0];
+				args.mountSelector = first.selector;
+				return first;
+			}
 			var selector = siteConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
 			if (selector == null)
 				throw new CliException(
@@ -198,6 +209,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		// Check if --mount-page is a component page
 		if (componentPages.TryGetValue(args.mountPage, out var componentConfig))
 		{
+			if (string.IsNullOrEmpty(args.mountSelector))
+				throw new CliException(
+					$"--mount-selector is required for component pages. " +
+					$"Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
 			var selector = componentConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
 			if (selector == null)
 				throw new CliException(

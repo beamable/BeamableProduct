@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
-- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm. 
+- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm.
+- MCP Server Configuration for Beamable CLI. Use `beam mcp setup` to configure in your project.
+- Agentic AI Skills for working with beamable. Use `beam install-ai-skill` to install it in your project.
 
 ### Changed
 - Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.

@@ -6,7 +6,7 @@ public class TokenCommandGroup : CommandGroup
 {
 	public override bool IsForInternalUse => true;
 
-	public TokenCommandGroup() : base("token", "explore Beamable tokens")
+	public TokenCommandGroup() : base("token", "Explore Beamable tokens")
 	{
 	}
 }

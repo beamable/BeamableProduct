@@ -7,29 +7,23 @@ namespace cli.Portal;
 
 public class PortalCommandArgs : CommandArgs
 {
-	
 }
 
 
 public class PortalCommand : AppCommand<PortalCommandArgs>
 {
-	public PortalCommand() : base("portal", "Open portal")
+	public PortalCommand() : base("portal", "Open the Beamable Portal in a browser, auto-logged in with the current CID, PID and account credentials")
 	{
 	}
 
 	public override void Configure()
 	{
-		
 	}
 
-	public override Task Handle(PortalCommandArgs args)
+	public override async Task Handle(PortalCommandArgs args)
 	{
-
-		GetPortalRealmUrl(args, out var url, out var qb);
-		url = $"{url}/{qb}";
-		MachineHelper.OpenBrowser(url);
-
-		return Task.CompletedTask;
+		GetPortalRealmUrl(args, out var realmUrl, out var qb);
+		MachineHelper.OpenBrowser($"{realmUrl}/{qb}");
 	}
 
 	public static string GetPortalBaseUrl(CommandArgs args)

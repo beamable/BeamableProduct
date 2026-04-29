@@ -40,6 +40,8 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, 
 					          $"Running command for {args.storageName} since it is the only storage in BeamoManifest.");
 					break;
 				case > 1:
+					if (args.Quiet)
+						throw new CliException("Multiple storages found. Provide the storage name as an argument when using -q (quiet mode).");
 					Log.Information("Found more than one storage in the directory");
 					args.storageName = new ServiceName(AskForStorageAndRunBeamCommandTask(storages));
 					return;

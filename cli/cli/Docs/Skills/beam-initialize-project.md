@@ -1,0 +1,125 @@
+---
+name: beam-initialize-project
+description: Initialize a Beamable project workspace with realm context and authentication. Start here for new projects.
+---
+
+# Initialize Project
+
+## When to Use This Skill
+- **New project**: The user is setting up Beamable for the first time in a project directory. This is the very first step before any other Beamable work.
+- **No `.beamable` folder**: If any command fails because there is no `.beamable` workspace, guide the user through this skill first.
+- **After `beam mcp setup`**: If MCP was set up before Beamable was initialized, the AI tools will work but most commands will fail without a `.beamable` folder. Ask the user if they want to initialize Beamable in the current directory before proceeding.
+
+## Key Concepts
+- **CID** (Customer ID): Your Beamable organization identifier. Can be a numeric ID or an alias.
+- **PID** (Project ID): A specific realm within your organization. Each game can have multiple realms (dev, staging, production).
+- **`.beamable` folder**: The workspace root created by `beam init`. Contains config, content, and credentials. Required by most commands. **This is the first thing you need to create in any new Beamable project.**
+- **Environment**: The Beamable platform environment to connect to. Ask the user which environment they need before initializing:
+  - `prod` (default) — `https://api.beamable.com` — production, used by most customers
+  - `staging` — `https://staging.api.beamable.com` — Beamable staging environment
+  - `dev` — `https://dev.api.beamable.com` — Beamable development environment
+  - `custom` — any custom URL, must be provided via `--host`
+
+## Steps
+
+### 0. Check if Beamable is already initialized
+Before running `beam init`, check if a `.beamable` folder already exists in the project:
+```
+beam_exec("config")
+```
+If this returns CID and PID values, the workspace is already initialized — skip to step 2 (Verify) or step 3 (Login). If it fails or shows no CID/PID, proceed with initialization.
+
+### 1. Initialize the workspace
+Ask the user for their CID, PID, and which environment they need. For production (the default):
+```
+beam_exec("init --cid <CID> --pid <PID> -q")
+```
+For a non-production environment, pass `--host`:
+```
+beam_exec("init --cid <CID> --pid <PID> --host <environment> -q")
+```
+Where `<environment>` is one of: `prod`, `staging`, `dev`, or a full custom URL (e.g. `https://custom.beamable.com`).
+
+Tokens are saved to disk by default. Use `--no-token-save` to prevent persistence.
+
+#### `beam init` options
+| Option | Type | Description |
+|---|---|---|
+`--email` | string | Specify user email address
+`--password` | string | User password
+`--host` | string | This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'
+`--refresh-token` | string | A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY
+`--ignore-pid` | flag | Ignore the existing pid while initializing
+`--save-extra-paths` | Set[string] | Overwrite the stored extra paths for where to find projects
+`--paths-to-ignore` | Set[string] | Paths to ignore when searching for services
+`--save-to-environment` | flag | Save login refresh token to environment variable
+`--no-token-save` | flag | Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option
+`--realm-scoped` | flag | Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one
+`--print-to-console` | flag | Prints out login request response to console
+
+
+### 2. Verify the configuration
+```
+beam_exec("config")
+```
+This shows the current CID, PID, host, and other workspace settings.
+
+### 3. Login (if not done during init)
+```
+beam_exec("login --email <email> --password <password> -q")
+```
+Or with a refresh token:
+```
+beam_exec("login --refresh-token <token> -q")
+```
+
+#### `beam login` options
+| Option | Type | Description |
+|---|---|---|
+`--email` | string | Specify user email address
+`--password` | string | User password
+`--save-to-environment` | flag | Save login refresh token to environment variable
+`--no-token-save` | flag | Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option
+`--realm-scoped` | flag | Makes the resulting access/refresh token pair be realm scoped instead of the default customer scoped one
+`--refresh-token` | string | A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY
+`--print-to-console` | flag | Prints out login request response to console
+
+
+## Switching Realms
+To switch to a different realm within the same organization:
+```
+beam_exec("init --cid <CID> --pid <NewPID> -q")
+```
+
+## Setting Up MCP for a New Project
+
+If the user wants to connect an AI agent (Claude, Cursor, etc.) to Beamable, the recommended flow is:
+
+1. **Initialize Beamable first** with `beam init` (this skill)
+2. **Then set up MCP** with `beam mcp setup` — this writes a `.mcp.json` file that AI clients use to discover the Beamable tools
+
+If the user ran `beam mcp setup` before `beam init`, the `.mcp.json` file will exist but most Beamable commands will fail because there is no `.beamable` workspace. In this case, ask the user if they want to initialize Beamable in the current directory, and then run `beam init` as described above.
+
+## Common Pitfalls
+- **`beam init` is the first step for any new Beamable project.** Without it, there is no `.beamable` folder and most commands will fail. If the user is new to Beamable, always start here.
+- **Both `--cid` and `--pid` are required in quiet mode** (`-q`). Without them, the command tries interactive realm selection which will hang from MCP.
+- **Quiet mode defaults to `prod` environment.** If the user needs staging/dev, you must pass `--host` explicitly.
+- **Tokens save by default.** Use `--no-token-save` if you need ephemeral credentials.
+- **CID can be an alias or numeric ID.** The CLI resolves aliases automatically.
+- **Always pass `-q`** when executing from MCP to avoid interactive prompts.
+- **`dotnet tool restore` runs automatically** during init to set up the local toolchain.
+
+## Wrap-Up
+
+After completing the workflow, provide the user with a summary that covers:
+
+1. **What was configured**: The CID (organization), PID (realm), environment, and authentication state.
+2. **Where the files live**:
+   - Workspace config: `.beamable/config.beam.json` — stores the CID, PID, host URL, and CLI version. This is checked into version control so teammates share the same realm context.
+   - Auth token: `.beamable/connection-configuration.json` — stores the refresh token locally. This file should NOT be committed to version control.
+   - Tool manifest: `.config/dotnet-tools.json` — the local .NET tool manifest that pins the `beam` CLI version for this project.
+3. **Why specific choices were made** — explain the reasoning:
+   - **Environment**: Why this environment was chosen (prod for live games, staging/dev for testing against Beamable's pre-release infrastructure, custom for self-hosted).
+   - **CID and PID**: CID identifies the organization — all realms under a CID share the same game configuration and account data. PID identifies a specific realm — dev/staging/production realms are isolated from each other, so content and services deployed to one realm do not affect others.
+   - **Token persistence**: Tokens are saved by default so subsequent `beam` commands authenticate automatically. If `--no-token-save` was used, explain that each command session will need explicit credentials.
+4. **What to do next**: Suggest the user can now create microservices (`beam-create-microservice` skill), manage content (`beam-manage-content` skill), or build and deploy (`beam-build-and-deploy` skill). If they need to switch realms later, they can re-run `beam init` with a different `--pid`.
