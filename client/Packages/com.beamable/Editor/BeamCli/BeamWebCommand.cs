@@ -135,6 +135,22 @@ namespace Beamable.Editor.BeamCli
 			_serverCommand = null;
 		}
 
+		public void InvalidateServer(Exception cause)
+		{
+			// Marshal back to the editor coroutine thread — port, _serverCommand,
+			// and discoveryRequest are all touched by ServerDiscoveryLoop and
+			// shouldn't race with an async continuation.
+			dispatcher.Schedule(() =>
+			{
+				_history.AddServerEvent(
+					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
+
+				KillServer();
+				port = _options.startPortOverride.GetOrElse(8432);
+				discoveryRequest++;
+			});
+		}
+
 		public string GetServerProcess()
 		{
 			
@@ -399,8 +415,8 @@ namespace Beamable.Editor.BeamCli
 			{
 				if (!_cts.IsCancellationRequested)
 				{
-					var client = new HttpClient() {Timeout = TimeSpan.FromDays(7),};
-					var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					using var client = new HttpClient() {Timeout = TimeSpan.FromDays(7),};
+					var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
 					_history.AddCustomLog(id, "[Unity] sent request...");
 
 					using HttpResponseMessage response = await sendTask;
@@ -464,6 +480,15 @@ namespace Beamable.Editor.BeamCli
 				}
 
 			}
+			catch (Exception ex) when (IsTransportFailure(ex) && !_cts.IsCancellationRequested)
+			{
+				// The loopback connection to the CLI server is unhealthy
+				// (server died, port stale, half-closed socket). Tear down
+				// the cached server state so the next attempt rediscovers
+				// before we keep hammering a dead endpoint.
+				_factory.InvalidateServer(ex);
+				throw;
+			}
 			finally
 			{
 				_history.AddCustomLog(id, "[Unity] ending...");
@@ -482,6 +507,14 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (_cts.IsCancellationRequested) return; // no-op
 			_cts.Cancel();
+		}
+
+		private static bool IsTransportFailure(Exception ex)
+		{
+			return ex is HttpRequestException
+			       || ex is SocketException
+			       || ex is ObjectDisposedException
+			       || ex is IOException;
 		}
 
 		public IBeamCommand On<T>(Func<ReportDataPointDescription, bool> predicate, Action<ReportDataPoint<T>> cb)
