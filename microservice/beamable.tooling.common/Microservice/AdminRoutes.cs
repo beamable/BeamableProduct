@@ -70,7 +70,7 @@ namespace microservice.Common
       {
          return "responsive";
       }
-
+      
       /// <summary>
       /// Generates an OpenAPI/Swagger 3.0 document that describes the available service endpoints.
       /// </summary>
@@ -84,19 +84,31 @@ namespace microservice.Common
       [CustomResponseSerializationAttribute]
       public string Docs()
       {
-	      var docs = new ServiceDocGenerator();
-	      var ctx = GlobalProvider.GetService<StartupContext>();
-	      var doc = docs.Generate(ctx, GlobalProvider);
-	     
-	      if (!string.IsNullOrEmpty(PublicHost))
-	      {
-		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
-	      }
+	      // Suppress info-level logs during OpenAPI doc generation to avoid noise
+	      //Wrapping with try/finally to ensure log level is restored even if an exception occurs
+	      var previousLogLevel = MicroserviceLogLevelContext.CurrentLogLevel.Value;
+	      MicroserviceLogLevelContext.CurrentLogLevel.Value = LogLevel.Warning;
 
-	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+	      try
+	      {
+		      var docs = new ServiceDocGenerator();
+		      var ctx = GlobalProvider.GetService<StartupContext>();
+		      var doc = docs.Generate(ctx, GlobalProvider);
+	     
+		      if (!string.IsNullOrEmpty(PublicHost))
+		      {
+			      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
+		      }
+
+		      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 	      
 	      
-	      return outputString;
+		      return outputString;
+	      }
+	      finally
+	      {
+		      MicroserviceLogLevelContext.CurrentLogLevel.Value = previousLogLevel;
+	      }
       }
 
       /// <summary>

@@ -827,16 +827,18 @@ namespace Beamable.Server
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
 	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
-	      {
-		      // when the path starts with admin, use warning.
-		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
-	      }
-	      else
-	      {
-		      // otherwise, allow default behaviour.
-		      configService.UpdateLogLevel();
-	      }
+	      // if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
+	      // {
+		     //  // when the path starts with admin, use warning.
+		     //  MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
+	      // }
+	      // else
+	      // {
+		     //  // otherwise, allow default behaviour.
+		     //  configService.UpdateLogLevel();
+	      // }
+	      
+	      configService.UpdateLogLevel();
 
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
@@ -901,7 +903,7 @@ namespace Beamable.Server
 			      }
 
 			   
-			      MicroserviceBootstrapper.ContextLogLevel.Value = contextLogLevel;
+			      MicroserviceLogLevelContext.CurrentLogLevel.Value = contextLogLevel;
 
 			      void TryToSetNewLogLevel(LogLevel newLogLevel)
 			      {
