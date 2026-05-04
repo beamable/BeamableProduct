@@ -457,28 +457,32 @@ public class ConfigService
 
 
 	/// <summary>
-	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
+	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.
 	/// </summary>
 	public void EnforceDotNetToolsManifest(out string pathToToolsManifest)
 	{
-		pathToToolsManifest = null;
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath)!.ToString();
-		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
+		var projectRoot = Directory.GetParent(ConfigDirectoryPath)!.ToString();
+		pathToToolsManifest = EnsureDotNetToolsManifest(projectRoot);
+	}
 
-		// Create the sibling ".config" folder if its not there.
-		if (!Directory.Exists(pathToDotNetConfigFolder))
-			Directory.CreateDirectory(pathToDotNetConfigFolder);
+	/// <summary>
+	/// Creates or updates .config/dotnet-tools.json under the given directory with the current CLI version.
+	/// </summary>
+	public static string EnsureDotNetToolsManifest(string targetDir)
+	{
+		var configFolder = Path.Combine(targetDir, ".config");
+		if (!Directory.Exists(configFolder))
+			Directory.CreateDirectory(configFolder);
 
-		// Create/Update the manifest inside the ".config" folder 
-		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+		var manifestPath = Path.Combine(configFolder, "dotnet-tools.json");
 		string manifestString;
 
 		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
 		// Create the file if it doesn't exist with our default local tool and its correct version.
-		if (!File.Exists(pathToToolsManifest))
+		if (!File.Exists(manifestPath))
 		{
 			manifestString = $@"{{
   ""version"": 1,
@@ -497,7 +501,7 @@ public class ConfigService
 		else
 		{
 			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-			manifestString = File.ReadAllText(pathToToolsManifest);
+			manifestString = File.ReadAllText(manifestPath);
 
 			if (versionMatching.IsMatch(manifestString))
 			{
@@ -523,7 +527,7 @@ public class ConfigService
 				toolsDict.Add("version", versionStr);
 				toolsDict.Add("commands", new[] { "beam" });
 
-				// Update the tools JSON object 
+				// Update the tools JSON object
 				var tools = (ArrayDict)manifest["tools"];
 				tools["beamable.tools"] = toolsDict;
 
@@ -532,7 +536,8 @@ public class ConfigService
 			}
 		}
 
-		File.WriteAllText(pathToToolsManifest, manifestString);
+		File.WriteAllText(manifestPath, manifestString);
+		return manifestPath;
 	}
 
 	public bool TryGetProjectBeamableCLIVersion(out string version)

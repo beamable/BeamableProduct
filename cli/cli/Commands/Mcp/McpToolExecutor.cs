@@ -1,178 +1,16 @@
 using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
-using cli.Docs;
 using cli.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 
-namespace cli.Mcp;
+namespace cli.Commands.Mcp;
 
 public class McpToolExecutor
 {
 	// Serialize all in-process beam calls so Console.Out redirection and MSBuildLocator don't race.
-	private static readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-
-	public McpToolExecutor() { }
-
-	public Task<string> ListTypeSectionsAsync()
-	{
-		var assembly = typeof(McpToolExecutor).Assembly;
-		var indexStream = assembly.GetManifestResourceStream("cli.Resources.beamable-types-index.json");
-
-		if (indexStream != null)
-		{
-			using var reader = new StreamReader(indexStream);
-			var indexJson = reader.ReadToEnd();
-			var sections = JsonConvert.DeserializeObject<TypeSectionIndex[]>(indexJson);
-			if (sections is { Length: > 0 })
-			{
-				// Append the special "web" section
-				var allSections = sections.Append(new TypeSectionIndex
-				{
-					Name = "web",
-					Description = "Beamable Web SDK documentation URL and version resolution",
-					TypeCount = 0
-				}).ToArray();
-				return Task.FromResult(JsonConvert.SerializeObject(allSections, Formatting.None));
-			}
-		}
-
-		// Fallback: generate live
-		var schema = GenerateBeamableTypesSchemaCommand.GenerateLive();
-		var sharedCount = schema.UtilityTypes?.Count(t => t.Platform != "MicroserviceOnly") ?? 0;
-		var serverCount = schema.UtilityTypes?.Count(t => t.Platform == "MicroserviceOnly") ?? 0;
-		var fallback = new[]
-		{
-			new TypeSectionIndex { Name = "content", Description = "C# content object types with [ContentType] attribute", TypeCount = schema.ContentTypes?.Length ?? 0 },
-			new TypeSectionIndex { Name = "federation", Description = "Federation interfaces", TypeCount = schema.FederationTypes?.Length ?? 0 },
-			new TypeSectionIndex { Name = "utility-shared", Description = "Shared C# utility types from Beamable.Common", TypeCount = sharedCount },
-			new TypeSectionIndex { Name = "utility-server", Description = "Microservice-only C# types from Beamable.Server", TypeCount = serverCount },
-			new TypeSectionIndex { Name = "unreal", Description = "Unreal C++ to C# type mapping table", TypeCount = schema.UnrealTypeMappings?.Length ?? 0 },
-			new TypeSectionIndex { Name = "web", Description = "Beamable Web SDK documentation URL and version resolution", TypeCount = 0 },
-		};
-		return Task.FromResult(JsonConvert.SerializeObject(fallback, Formatting.None));
-	}
-
-	public async Task<string> GetTypeSchemaAsync(string section = "", string filter = "")
-	{
-		var norm = section?.Trim().ToLowerInvariant() ?? "";
-
-		if (string.IsNullOrEmpty(norm))
-			return await ListTypeSectionsAsync();
-
-		if (norm == "web")
-			return BuildWebSdkResponse();
-
-		// Try loading section-specific embedded resource
-		var resourceName = $"cli.Resources.beamable-types-{norm}.json";
-		var stream = typeof(McpToolExecutor).Assembly.GetManifestResourceStream(resourceName);
-		if (stream != null)
-		{
-			using var reader = new StreamReader(stream);
-			var json = reader.ReadToEnd();
-
-			var f = filter?.Trim() ?? "";
-			if (string.IsNullOrEmpty(f))
-				return json;
-
-			// Apply filter based on section type
-			if (norm.StartsWith("utility"))
-			{
-				var types = JsonConvert.DeserializeObject<UtilityTypeEntry[]>(json);
-				var filtered = McpListTypesCommand.FilterUtility(types ?? Array.Empty<UtilityTypeEntry>(), f);
-				return JsonConvert.SerializeObject(filtered, Formatting.None);
-			}
-			if (norm == "content")
-			{
-				var types = JsonConvert.DeserializeObject<ContentTypeEntry[]>(json);
-				var filtered = Array.FindAll(types ?? Array.Empty<ContentTypeEntry>(), t =>
-					(t.TypeName?.IndexOf(f, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-					(t.ClassName?.IndexOf(f, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-					(t.Namespace?.IndexOf(f, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
-				return JsonConvert.SerializeObject(filtered, Formatting.None);
-			}
-			if (norm == "federation")
-			{
-				var types = JsonConvert.DeserializeObject<FederationTypeEntry[]>(json);
-				var filtered = Array.FindAll(types ?? Array.Empty<FederationTypeEntry>(), t =>
-					(t.InterfaceName?.IndexOf(f, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-					(t.Namespace?.IndexOf(f, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
-				return JsonConvert.SerializeObject(filtered, Formatting.None);
-			}
-
-			return json;
-		}
-
-		// Fallback: monolithic file or live generation
-		var schema = McpListTypesCommand.ReadEmbeddedSchema();
-		if (schema?.ContentTypes is { Length: > 0 })
-			return BuildTypeResponse(schema, norm, filter?.Trim() ?? "");
-
-		var cmd = "mcp list-types";
-		if (!string.IsNullOrEmpty(norm)) cmd += $" --section {norm}";
-		if (!string.IsNullOrEmpty(filter)) cmd += $" --filter \"{filter}\"";
-		return await ExecuteAsync(cmd);
-	}
-
-	private static string BuildWebSdkResponse()
-	{
-		var webInfo = new
-		{
-			hint = "The Beamable Web SDK (@beamable/sdk) is a transitive dependency of @beamable/portal-toolkit. " +
-			       "The toolkit version in devDependencies is NOT the SDK version. " +
-			       "To find the actual SDK version: read node_modules/@beamable/portal-toolkit/package.json and check peerDependencies[\"@beamable/sdk\"]. " +
-			       "Use that major.minor version in the docs URL below.",
-			docsUrlPattern = "https://help.beamable.com/WebSDK-{VERSION}/web/user-reference/api-reference/modules/",
-			example = "https://help.beamable.com/WebSDK-1.0/web/user-reference/api-reference/modules/",
-			sdkPackageName = "@beamable/sdk",
-			toolkitPackageName = "@beamable/portal-toolkit",
-			versionResolution = new[]
-			{
-				"1. Read the extension's package.json to confirm @beamable/portal-toolkit is in devDependencies",
-				"2. Read node_modules/@beamable/portal-toolkit/package.json",
-				"3. Get the @beamable/sdk version from peerDependencies (e.g. '1.0.0')",
-				"4. Use the major.minor (e.g. '1.0') in the docs URL"
-			},
-			usage = "Use beam_exec('services list') to find portal extensions, then follow the versionResolution steps to build the docs URL."
-		};
-		return JsonConvert.SerializeObject(webInfo, Formatting.None);
-	}
-
-	private static string BuildTypeResponse(BeamableTypesSchema schema, string section, string filter)
-	{
-		if (string.IsNullOrEmpty(section))
-		{
-			// Overview: counts + namespace list so the AI knows what to request next.
-			var namespaces = (schema.UtilityTypes ?? Array.Empty<UtilityTypeEntry>())
-				.Select(t => t.Namespace)
-				.Where(n => !string.IsNullOrEmpty(n))
-				.Distinct()
-				.OrderBy(n => n)
-				.ToArray();
-
-			var overview = new
-			{
-				hint = "Pass section='content', 'federation', 'utility', or 'web' to load types. For 'utility', also pass a filter string (namespace prefix or type name keyword) to narrow the large result set. For 'web', get the Beamable Web SDK documentation URL for portal extension development.",
-				content = new { count = schema.ContentTypes?.Length ?? 0 },
-				federation = new { count = schema.FederationTypes?.Length ?? 0 },
-				utility = new { totalCount = schema.UtilityTypes?.Length ?? 0, namespaces },
-				web = new { hint = "Pass section='web' to get the Beamable Web SDK (TypeScript) documentation URL for portal extension development" }
-			};
-			return JsonConvert.SerializeObject(overview, Formatting.None);
-		}
-
-		var filtered = McpListTypesCommand.ApplySectionFilter(schema, section, filter);
-		return section switch
-		{
-			"content"        => JsonConvert.SerializeObject(filtered.ContentTypes, Formatting.None),
-			"federation"     => JsonConvert.SerializeObject(filtered.FederationTypes, Formatting.None),
-			"utility" or "utility-shared" or "utility-server"
-			                 => JsonConvert.SerializeObject(filtered.UtilityTypes, Formatting.None),
-			"unreal"         => JsonConvert.SerializeObject(filtered.UnrealTypeMappings, Formatting.None),
-			_                => JsonConvert.SerializeObject(new { error = $"Unknown section '{section}'. Valid: content, federation, utility-shared, utility-server, unreal, web." }, Formatting.None)
-		};
-	}
+	private static readonly SemaphoreSlim Lock = new(1, 1);
 
 	public static List<(string name, string content)> GetEmbeddedSkills()
 	{
@@ -247,7 +85,6 @@ public class McpToolExecutor
 			var normalizedPlatform = platform?.Trim().ToLowerInvariant() ?? "";
 			var detectedVersion = version?.Trim() ?? "";
 
-			// Auto-detect platform and version if not provided
 			if (string.IsNullOrEmpty(normalizedPlatform) || string.IsNullOrEmpty(detectedVersion))
 			{
 				var detected = TryDetectUnity(startDir)
@@ -275,67 +112,96 @@ public class McpToolExecutor
 
 			detectedVersion = NormalizeVersion(detectedVersion);
 
-			// Construct tag name and URLs
-			string tagName;
-			string sourceUrl;
+			string sourcePath;
 			string[] commonPaths;
 			string hint;
+			string fileFull = null;
 
 			switch (normalizedPlatform)
 			{
 				case "unity":
-					tagName = $"unity-sdk-{detectedVersion}";
-					sourceUrl = $"https://github.com/beamable/BeamableProduct/tree/{tagName}";
-					commonPaths = new[] { "client/Packages/com.beamable/", "client/Packages/com.beamable.server/" };
-					hint = "Unity SDK source. The 'client/Packages/com.beamable/' directory contains the main SDK code.";
+				{
+					var localPkg = FindUnityPackageCache(startDir, detectedVersion);
+					if (localPkg != null)
+					{
+						sourcePath = localPkg;
+						commonPaths = new[] { Path.Combine(localPkg, "Runtime"), Path.Combine(localPkg, "Common") };
+						hint = "Unity SDK source is local in the Library PackageCache. Read files directly.";
+					}
+					else
+					{
+						sourcePath = $"https://github.com/beamable/BeamableProduct/tree/unity-sdk-{detectedVersion}";
+						commonPaths = new[] { "client/Packages/com.beamable/", "client/Packages/com.beamable.server/" };
+						hint = "Unity SDK local PackageCache not found. Falling back to GitHub URL.";
+					}
 					break;
+				}
 				case "cli":
-					tagName = $"cli-{detectedVersion}";
-					sourceUrl = $"https://github.com/beamable/BeamableProduct/tree/{tagName}";
-					commonPaths = new[] { "cli/cli/", "cli/beamable.common/", "cli/beamable.server.common/", "microservice/" };
-					hint = "CLI source. The 'cli/cli/' directory contains the main CLI code.";
+				{
+					var nugetBase = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+						".nuget", "packages");
+					var commonSrc = Path.Combine(nugetBase, "beamable.common", detectedVersion, "content", "netstandard2.0", "Runtime");
+					var toolingSrc = Path.Combine(nugetBase, "beamable.tooling.common", detectedVersion, "content", "netstandard2.1");
+					var runtimeSrc = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "content", "net8.0");
+
+					sourcePath = nugetBase;
+					commonPaths = new[] { commonSrc, toolingSrc, runtimeSrc };
+					hint = "CLI/Microservice source is in the NuGet cache. " +
+					       "beamable.common has content types, APIs, and Optional<T>. " +
+					       "beamable.tooling.common has callable attributes, federation interfaces, and storage. " +
+					       "beamable.microservice.runtime has the Microservice base class and API implementations. " +
+					       "Read .cs files directly from these paths.";
 					break;
+				}
 				case "web":
-					tagName = $"web-sdk-{detectedVersion}";
-					sourceUrl = $"https://github.com/beamable/BeamableProduct/tree/{tagName}";
-					commonPaths = new[] { "web/" };
-					hint = "Web SDK source. The 'web/' directory contains the main Web SDK code.";
+				{
+					var localModules = FindWebSdkLocal(startDir);
+					if (localModules != null)
+					{
+						sourcePath = localModules;
+						commonPaths = new[] { localModules };
+						hint = "Web SDK source is local in node_modules. Read files directly.";
+					}
+					else
+					{
+						sourcePath = $"https://github.com/beamable/BeamableProduct/tree/web-sdk-{detectedVersion}";
+						commonPaths = new[] { "web/" };
+						hint = "Web SDK local node_modules not found. Falling back to GitHub URL.";
+					}
 					break;
+				}
 				case "unreal":
-					tagName = "unreal-local";
+				{
 					var pluginsDir = FindPluginsDir(startDir);
-					sourceUrl = pluginsDir ?? startDir;
+					sourcePath = pluginsDir ?? startDir;
 					commonPaths = Array.Empty<string>();
 					hint = "Unreal SDK source is local. The Plugins/BeamableCore directory contains the SDK code.";
 					break;
+				}
 				default:
+				{
 					var errorResult = new
 					{
 						error = $"Unknown platform '{normalizedPlatform}'",
 						hint = "Valid platforms: 'unity', 'cli', 'web', 'unreal'"
 					};
 					return Task.FromResult(JsonConvert.SerializeObject(errorResult, Formatting.None));
+				}
 			}
 
-			string fileUrl = null;
 			if (!string.IsNullOrEmpty(filePath))
 			{
 				var normalizedPath = filePath.Trim().Replace("\\", "/").TrimStart('/');
-				fileUrl = normalizedPlatform == "unreal"
-					? Path.Combine(sourceUrl, normalizedPath)
-					: $"{sourceUrl}/{normalizedPath}";
+				fileFull = Path.Combine(sourcePath, normalizedPath);
 			}
-
-			var fallbackUrl = "https://github.com/beamable/BeamableProduct/tree/main";
 
 			var response = new
 			{
 				platform = normalizedPlatform,
 				detectedVersion,
-				tagName,
-				sourceUrl,
-				fileUrl,
-				fallbackUrl,
+				sourcePath,
+				filePath = fileFull,
 				commonPaths,
 				hint
 			};
@@ -346,11 +212,40 @@ public class McpToolExecutor
 		{
 			var errorResult = new
 			{
-				error = $"Failed to resolve source URL: {ex.Message}",
+				error = $"Failed to resolve source path: {ex.Message}",
 				hint = "Pass platform and version explicitly if auto-detection is not working"
 			};
 			return Task.FromResult(JsonConvert.SerializeObject(errorResult, Formatting.None));
 		}
+	}
+
+	private static string FindUnityPackageCache(string startDir, string version)
+	{
+		var dir = startDir;
+		while (dir != null)
+		{
+			var cacheDir = Path.Combine(dir, "Library", "PackageCache");
+			if (Directory.Exists(cacheDir))
+			{
+				var match = Directory.GetDirectories(cacheDir, $"com.beamable@{version}*").FirstOrDefault()
+				            ?? Directory.GetDirectories(cacheDir, "com.beamable@*").FirstOrDefault();
+				if (match != null) return match;
+			}
+			dir = Path.GetDirectoryName(dir);
+		}
+		return null;
+	}
+
+	private static string FindWebSdkLocal(string startDir)
+	{
+		var dir = startDir;
+		while (dir != null)
+		{
+			var sdkDir = Path.Combine(dir, "node_modules", "@beamable", "sdk");
+			if (Directory.Exists(sdkDir)) return sdkDir;
+			dir = Path.GetDirectoryName(dir);
+		}
+		return null;
 	}
 
 	private static (string platform, string version)? TryDetectUnity(string startDir)
@@ -498,14 +393,14 @@ public class McpToolExecutor
 
 	public async Task<string> ExecuteAsync(string commandLine)
 	{
-		await _lock.WaitAsync();
+		await Lock.WaitAsync();
 		try
 		{
 			return await RunInProcessAsync(commandLine);
 		}
 		finally
 		{
-			_lock.Release();
+			Lock.Release();
 		}
 	}
 
@@ -542,7 +437,7 @@ public class McpToolExecutor
 		}
 		catch (Exception ex)
 		{
-			sw.WriteLine($"{{\"error\":\"{ex.Message.Replace("\"", "\\\"")}\"}}");
+			await sw.WriteLineAsync($"{{\"error\":\"{ex.Message.Replace("\"", "\\\"")}\"}}");
 		}
 		finally
 		{
@@ -554,15 +449,40 @@ public class McpToolExecutor
 		// Append them as a JSON error line so the MCP client always sees them.
 		var errorText = errSw.ToString().Trim();
 		if (!string.IsNullOrEmpty(errorText))
-			sw.WriteLine(JsonConvert.SerializeObject(new { error = errorText }));
+		{
+			var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
+			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
+		}
 
 		// Commands that implement IEmptyResult produce no output on success.
 		// Emit a generic success envelope so the MCP client always receives a
 		// non-empty response and knows the command completed without error.
 		if (string.IsNullOrWhiteSpace(sw.ToString()))
-			sw.WriteLine(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
 
 		return sw.ToString();
+	}
+
+	private static readonly string[] CommandErrorPatterns = new[]
+	{
+		"is not a recognized command",
+		"unrecognized command or argument",
+		"unrecognized option",
+		"required argument missing",
+		"Required argument missing",
+	};
+
+	private static string EnrichErrorIfCommandFailure(string errorText, string commandLine)
+	{
+		var lower = errorText.ToLowerInvariant();
+		var isCommandError = CommandErrorPatterns.Any(p => lower.Contains(p.ToLowerInvariant()));
+		if (!isCommandError) return errorText;
+
+		return errorText + $"\n\nIMPORTANT: The command ({commandLine}) or its arguments may have changed. Before retrying:\n" +
+		       "1. Call beam_list_commands() to get the current list of all available commands\n" +
+		       "2. Call beam_get_help(\"<command>\") for the specific command to get its current options and arguments\n" +
+		       "3. Retry with the corrected command\n\n" +
+		       "Do NOT guess or retry with the same arguments.";
 	}
 
 	private static string EnsureLogStreams(string commandLine)
@@ -581,9 +501,9 @@ public class McpToolExecutor
 	{
 		private readonly TextWriter _writer;
 		private readonly Dictionary<string, long> _lastProgressWrite = new();
-		private const long ThrottleIntervalMs = 2000;
+		private const long THROTTLE_INTERVAL_MS = 2000;
 
-		private static readonly HashSet<string> _progressChannels = new(StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> ProgressChannels = new(StringComparer.OrdinalIgnoreCase)
 		{
 			"progress", "progressStream", "remote_progress"
 		};
@@ -595,10 +515,10 @@ public class McpToolExecutor
 
 		public void Report<T>(string type, T data)
 		{
-			if (_progressChannels.Contains(type))
+			if (ProgressChannels.Contains(type))
 			{
 				var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-				if (_lastProgressWrite.TryGetValue(type, out var last) && now - last < ThrottleIntervalMs)
+				if (_lastProgressWrite.TryGetValue(type, out var last) && now - last < THROTTLE_INTERVAL_MS)
 					return;
 				_lastProgressWrite[type] = now;
 			}

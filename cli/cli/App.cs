@@ -521,7 +521,6 @@ public class App
 		Commands.AddRootCommand<McpGroupCommand>();
 		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
 		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
-		Commands.AddSubCommand<McpListTypesCommand, McpListTypesCommandArgs, McpGroupCommand>();
 		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
@@ -1534,9 +1533,27 @@ public class App
 
 	public virtual int Run(string[] args)
 	{
+		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
 		return prog.Invoke(args);
 	}
+
+	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
+	{
+		if (IsRunningInMcpServer) return;
+		var joined = string.Join(" ", args).ToLowerInvariant();
+		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
+
+		var aiEnvVars = new[] { "CLAUDE_CODE", "CURSOR_SESSION_ID", "COPILOT_AGENT", "WINDSURF_SESSION", "OPENCODE_SESSION", "AIDER" };
+		var isAI = aiEnvVars.Any(v => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(v)));
+		if (!isAI) return;
+
+		Console.Error.WriteLine(
+			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
+			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+	}
+
+	internal static bool IsRunningInMcpServer { get; set; }
 
 	public virtual Task<int> RunAsync(string[] args)
 	{

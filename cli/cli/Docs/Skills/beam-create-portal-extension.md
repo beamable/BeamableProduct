@@ -7,7 +7,7 @@ description: Create a portal extension (full-page or component) mounted on the B
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)
-- Node.js and npm must be available on the system
+- Node.js and npm must be available on the system, it uses node version 22 or greater.
 
 ## Steps
 
@@ -102,3 +102,7 @@ After completing the workflow, provide the user with a summary that covers:
    - **Page vs component**: Why this extension type was chosen — page extensions are standalone features with their own route, while component extensions augment existing Portal pages at specific insertion points.
    - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the extension can call `[ClientCallable]` endpoints with full type safety, and that the microservice must be running (locally or deployed) for those calls to work.
 4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes to the TypeScript source hot-reload in the browser. For the Web SDK API reference, call `beam_list_types("web")` to get the documentation URL.
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

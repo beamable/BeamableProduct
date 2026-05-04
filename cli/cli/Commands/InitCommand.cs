@@ -287,6 +287,19 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			Log.Information("The beamable project has been initialized in the current folder.");
 		}
 
+		var agentsPath = Path.Combine(args.ConfigService.BeamableWorkspace, "AGENTS.md");
+		if (!File.Exists(agentsPath))
+		{
+			var asm = typeof(InitCommand).Assembly;
+			using var agentsStream = asm.GetManifestResourceStream("cli.Docs.AGENTS.md");
+			if (agentsStream != null)
+			{
+				using var reader = new StreamReader(agentsStream);
+				File.WriteAllText(agentsPath, reader.ReadToEnd());
+				Log.Information("Created AGENTS.md for AI agent discovery");
+			}
+		}
+
 		return new InitCommandResult()
 		{
 			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),

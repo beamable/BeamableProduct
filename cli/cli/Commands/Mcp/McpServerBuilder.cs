@@ -1,3 +1,4 @@
+using cli.Commands.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModelContextProtocol.Server;
@@ -9,6 +10,7 @@ public class McpServerBuilder
 {
 	public async Task RunAsync(CancellationToken cancellationToken = default)
 	{
+		App.IsRunningInMcpServer = true;
 		var executor = new McpToolExecutor();
 		var tools = new BeamMcpTools(executor);
 
@@ -83,40 +85,20 @@ public class BeamMcpTools
 		"Load a step-by-step skill guide for a complex Beamable workflow. " +
 		"Call with an empty string to list all available skills with summaries. " +
 		"Call with a skill name to load the full guide. " +
-		"Always load the relevant skill BEFORE attempting multi-step workflows like creating extensions, microservices, deploying, or managing content. " +
-		"Available skills: beam-create-portal-extension, beam-create-microservice, beam-build-and-deploy, beam-manage-content, beam-initialize-project, beam-login-auth")]
+		"Always load the relevant skill BEFORE attempting multi-step workflows like creating extensions, microservices, deploying, or managing content.")]
 	public Task<string> beam_get_skill(
 		[Description("Skill name to load, e.g. 'beam-create-portal-extension'. Leave empty to list all available skills.")] string skill = "")
 		=> McpToolExecutor.GetSkillAsync(skill);
 
 	[McpServerTool]
 	[Description(
-		"List all available type schema sections. " +
-		"Call this before beam_list_types to discover which sections exist. " +
-		"Each section contains a category of Beamable types (content, federation, utility, unreal, web, etc.).")]
-	public Task<string> beam_list_type_sections()
-		=> _executor.ListTypeSectionsAsync();
-
-	[McpServerTool]
-	[Description(
-		"Load types from a specific schema section. " +
-		"Call beam_list_type_sections first to discover available sections. " +
-		"Pass a section name to load its types, and an optional filter to narrow results by namespace or type name. " +
-		"If called with an empty section, returns the section list (same as beam_list_type_sections).")]
-	public Task<string> beam_list_types(
-		[Description("Section name from beam_list_type_sections, e.g. 'content', 'federation', 'utility-shared'.")] string section = "",
-		[Description("Narrows results to types whose namespace or name contains this string (case-insensitive).")] string filter = "")
-		=> _executor.GetTypeSchemaAsync(section, filter);
-
-	[McpServerTool]
-	[Description(
-		"Get a URL to the Beamable SDK source code on GitHub. " +
+		"Get local file paths to the Beamable SDK source code. " +
 		"Auto-detects the SDK platform and version from the current project directory. " +
-		"Pass a file path to get a direct link to a specific file in the source tree. " +
-		"For Unreal projects, returns a local filesystem path instead of a URL.")]
+		"Returns local filesystem paths — read the source files directly instead of browsing types through the API. " +
+		"For CLI/Microservice projects, source is in the NuGet cache at ~/.nuget/packages/beamable.common/{version}/content/.")]
 	public Task<string> beam_get_source(
 		[Description("Platform: 'unity', 'cli', 'unreal', or 'web'. Auto-detected if omitted.")] string platform = "",
 		[Description("SDK version override, e.g. '5.0.1'. Auto-detected if omitted.")] string version = "",
-		[Description("File path within the source tree, e.g. 'Runtime/Api/BeamContext.cs'. Appended to the URL.")] string filePath = "")
+		[Description("File path within the source tree, e.g. 'Runtime/Content/ContentObject.cs'.")] string filePath = "")
 		=> _executor.GetSourceUrlAsync(platform, version, filePath);
 }

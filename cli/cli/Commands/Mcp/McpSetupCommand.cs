@@ -33,6 +33,8 @@ public class McpSetupCommand
 	{
 		var targetDir = ResolveTargetDirectory(args);
 
+		ConfigService.EnsureDotNetToolsManifest(targetDir);
+
 		var config = new
 		{
 			mcpServers = new Dictionary<string, object>
@@ -62,4 +64,5 @@ public class McpSetupCommand
 			? Directory.GetCurrentDirectory()
 			: workspace;
 	}
+
 }

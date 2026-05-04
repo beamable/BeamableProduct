@@ -123,3 +123,7 @@ After completing the workflow, provide the user with a summary that covers:
    - **CID and PID**: CID identifies the organization — all realms under a CID share the same game configuration and account data. PID identifies a specific realm — dev/staging/production realms are isolated from each other, so content and services deployed to one realm do not affect others.
    - **Token persistence**: Tokens are saved by default so subsequent `beam` commands authenticate automatically. If `--no-token-save` was used, explain that each command session will need explicit credentials.
 4. **What to do next**: Suggest the user can now create microservices (`beam-create-microservice` skill), manage content (`beam-manage-content` skill), or build and deploy (`beam-build-and-deploy` skill). If they need to switch realms later, they can re-run `beam init` with a different `--pid`.
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

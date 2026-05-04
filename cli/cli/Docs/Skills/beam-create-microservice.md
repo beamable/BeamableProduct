@@ -165,6 +165,75 @@ Federation declarations are automatically picked up by the OpenAPI spec generati
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts.
 - **Solution auto-discovery** looks for `.sln` files near the `.beamable` workspace. Unity and Unreal solutions are automatically excluded.
 
+## Build Warnings
+
+After running `beam project build`, check stderr for Beamable Analyzer warnings. Treat all Beamable-related warnings as errors — fix them before proceeding.
+
+```
+beam_exec("project build -q")
+```
+
+Common warnings to watch for:
+- **Deprecated API usage** — A Beamable API you called has been replaced; the warning message names the replacement.
+- **Missing attributes** — Endpoints missing `[ClientCallable]`, `[AdminOnlyCallable]`, or other required attributes.
+- **Federation mismatches** — The federation interface implementation does not match the expected method signatures.
+
+Do not ignore these warnings. They indicate code that will fail at runtime or break on the next Beamable upgrade.
+
+## Microservice Storage
+
+Storage objects provide MongoDB access for microservices. Each storage runs as a local MongoDB container during development.
+
+### Creating storage
+```
+beam_exec("project new storage --name MyStorage -q")
+```
+
+Storage is linked to a microservice via project references. Use `project deps add` to create the link:
+```
+beam_exec("project deps add --source MyService --deps MyStorage")
+```
+
+
+#### `beam project new storage` options
+| Option | Type | Description |
+|---|---|---|
+| `--target-framework` | string | The target framework to use for the new project. Defaults to the current dotnet runtime framework |
+| `--sln` | string | Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used |
+| `--service-directory` | string | Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services" |
+| `--link-to` | Set[string] | The name of the project to link this storage to |
+| `--groups` | Set[string] | Specify BeamableGroups for this service |
+
+
+### Storage object declaration
+```csharp
+[StorageObject("MyStorage")]
+public class MyStorage : MongoStorageObject { }
+```
+
+### Accessing storage in a microservice
+```csharp
+var db = await Storage.GetDatabase<MyStorage>();
+var collection = db.GetCollection<MyDocument>("my-collection");
+await collection.InsertOneAsync(new MyDocument { ... });
+```
+
+## Calling Other Microservices
+
+Use the `[MicroserviceClient]` attribute on an interface to generate a typed client for another microservice. Inject the generated client via constructor DI, then call the remote service's `[ClientCallable]` methods through it.
+
+```csharp
+// In ServiceA, call ServiceB's endpoints:
+[MicroserviceClient(typeof(ServiceB))]
+public interface IServiceBClient { }
+```
+
+**WARNING:** Inter-service calls create tight coupling. Both services must be deployed, and each call adds network latency. Prefer shared libraries (common `.csproj` references) for reusable logic over microservice-to-microservice calls.
+
+## Reading Source Code
+
+Use the `beam-get-source` skill to read Beamable SDK source code when you need to understand microservice base classes, DI services, or available APIs.
+
 ## Wrap-Up
 
 After completing the workflow, provide the user with a summary that covers:
@@ -180,3 +249,7 @@ After completing the workflow, provide the user with a summary that covers:
    - **Storage dependency**: If storage was linked, explain that `project deps add` generates a typed `StorageDocument` accessor in the microservice, and that the storage runs as a local MongoDB container during development.
    - **Federation interface**: If a federation was implemented, explain what external system it integrates with and how Beamable will call the federation methods during player authentication or inventory resolution.
 4. **How to iterate**: Remind the user they can `project run --ids <Name>` to start the service locally, open Swagger with `project open-swagger <Name>` to test endpoints interactively, and `project build` to verify compilation before deploying.
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

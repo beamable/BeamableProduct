@@ -1,3 +1,4 @@
+using cli.Commands.Mcp;
 using cli.Services;
 using Newtonsoft.Json;
 using System.CommandLine;
