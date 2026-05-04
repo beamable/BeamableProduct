@@ -38,6 +38,49 @@ namespace Beamable.Editor.Library
 				margin = new RectOffset(12, 12, 12, 12)
 			});
 
+			// Header: welcome title and subtext
+			{
+				var headerStyle = new GUIStyle(EditorStyles.largeLabel)
+				{
+					fontStyle = FontStyle.Bold,
+					fontSize = 25,
+					wordWrap = true,
+					alignment = TextAnchor.UpperLeft,
+					margin = new RectOffset(2, 2, 4, 0),
+					padding = new RectOffset(2, 2, 0, 0)
+				};
+
+				var subStyle = new GUIStyle(EditorStyles.label)
+				{
+					wordWrap = true,
+					richText = false,
+					fontSize = 11,
+					alignment = TextAnchor.UpperLeft,
+					margin = new RectOffset(2, 2, 0, 8),
+					padding = new RectOffset(2, 2, 0, 0)
+				};
+
+				const string titleText = "Welcome to the Lightbeam Samples";
+				const string subText = "This section has ready-to-use samples covering features such as Leaderboards, Inventory, Cloud Saving, Friends, Lobbies, and more. Explore them to accelerate your integration with Beamable.";
+
+				var headerHeight = headerStyle.CalcHeight(new GUIContent(titleText), width);
+				var subHeight    = subStyle.CalcHeight(new GUIContent(subText), width);
+
+				EditorGUILayout.LabelField(titleText, headerStyle, GUILayout.Height(headerHeight));
+				EditorGUILayout.LabelField(subText, subStyle, GUILayout.Height(subHeight));
+
+				EditorGUILayout.BeginHorizontal();
+				if (EditorGUILayout.LinkButton("Visit our documentation website →"))
+				{
+					library.OpenDocumentation("unity/samples/lightbeam/");
+				}
+				GUILayout.FlexibleSpace();
+				EditorGUILayout.EndHorizontal();
+
+				EditorGUILayout.Space(8);
+			}
+			
+			// Add Sample Cards
 			var count = library.lightbeams.Count;
 			var widthPerCard = Mathf.Clamp(width / count, minWidth, maxWidth);
 			var cardsPerRow = Mathf.FloorToInt(width / widthPerCard);
