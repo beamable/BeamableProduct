@@ -31,7 +31,7 @@ namespace microserviceTests.microservice
 
 		public async Task Start<T>(TestArgs dudArgs=null, Action<IDependencyBuilder> configurator=null) where T : Microservice
 		{
-			var args = new TestArgs();
+			var args = dudArgs ?? new TestArgs();
 		
 
 			var attr = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
@@ -175,10 +175,12 @@ namespace microserviceTests.microservice
 	  public int MaxUniqueEventBindingCount => 100;
 	  public bool SkipLocalEnv => true;
 	  public bool SkipAliasResolve => true;
+	  public AdminRouteLogPolicy AdminRouteLogPolicy { get; set; } = AdminRouteLogPolicy.Protected;
 
 	  public void SetResolvedCid(string resolvedCid)
 	  {
 		  throw new NotImplementedException();
 	  }
+
    }
 }

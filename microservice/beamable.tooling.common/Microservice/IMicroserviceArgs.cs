@@ -8,6 +8,12 @@ public enum LogOutputType
     DEFAULT, STRUCTURED, UNSTRUCTURED, FILE, STRUCTURED_AND_FILE
 }
 
+public enum AdminRouteLogPolicy
+{
+    Protected = 0, //Default where Admin logs are restricted to warning and above
+    FollowServiceRules = 1 //Admin logs follow service rules
+}
+
 public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
 {
     public IDependencyProviderScope ServiceScope { get; }
@@ -59,4 +65,5 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool AllowStartupWithoutBeamableSettings { get; }
     public int MaxUniqueEventBindingCount { get; }
     void SetResolvedCid(string resolvedCid);
+    public AdminRouteLogPolicy AdminRouteLogPolicy { get; }
 }

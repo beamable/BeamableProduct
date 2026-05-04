@@ -68,6 +68,8 @@ namespace Beamable.Server
 		{
 			throw new NotImplementedException();
 		}
+
+		public AdminRouteLogPolicy AdminRouteLogPolicy { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -126,6 +128,7 @@ namespace Beamable.Server
 				SkipAliasResolve = args.SkipAliasResolve,
 				MaxUniqueEventBindingCount = args.MaxUniqueEventBindingCount,
 				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings,
+				AdminRouteLogPolicy = args.AdminRouteLogPolicy
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -226,6 +229,18 @@ namespace Beamable.Server
 		public void SetResolvedCid(string resolvedCid)
 		{
 			//CustomerID = resolvedCid;
+		}
+
+		//Default Admin logging policy = Protected 
+		public AdminRouteLogPolicy AdminRouteLogPolicy
+		{
+			get
+			{
+				var rawPolicy = Environment.GetEnvironmentVariable("BEAM_ADMIN_ROUTE_LOG_POLICY");
+				return Enum.TryParse<AdminRouteLogPolicy>(rawPolicy, true, out var policy) ? 
+					policy : 
+					AdminRouteLogPolicy.Protected;
+			}
 		}
 
 		public string Host => Environment.GetEnvironmentVariable("HOST");
