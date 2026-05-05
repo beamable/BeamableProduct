@@ -61,7 +61,7 @@ namespace Beamable.Editor.Library
 				};
 
 				const string titleText = "Welcome to the Lightbeam Samples";
-				const string subText = "This section has ready-to-use samples covering features such as Leaderboards, Inventory, Cloud Saving, Friends, Lobbies, and more. Explore them to accelerate your integration with Beamable.";
+				const string subText = "This section has ready-to-use samples covering features such as Player Accounts, Inventory, Cloud Saving, Friends, Lobbies, and more. Explore them to accelerate your integration with Beamable.";
 
 				var headerHeight = headerStyle.CalcHeight(new GUIContent(titleText), width);
 				var subHeight    = subStyle.CalcHeight(new GUIContent(subText), width);
