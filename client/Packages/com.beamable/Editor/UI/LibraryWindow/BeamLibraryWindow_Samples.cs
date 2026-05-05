@@ -54,7 +54,7 @@ namespace Beamable.Editor.Library
 				{
 					wordWrap = true,
 					richText = false,
-					fontSize = 11,
+					fontSize = 12,
 					alignment = TextAnchor.UpperLeft,
 					margin = new RectOffset(2, 2, 0, 8),
 					padding = new RectOffset(2, 2, 0, 0)
