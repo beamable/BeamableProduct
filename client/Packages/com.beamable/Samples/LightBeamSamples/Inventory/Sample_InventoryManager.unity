@@ -175,6 +175,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   root: {fileID: 1412789052}
   loadingBlocker: {fileID: 2307906666623612511}
+  InfoButton: {fileID: 124659308}
   config: {fileID: 11400000, guid: 5012d8fe6164745b094c12210d354d07, type: 2}
 --- !u!1 &124659306
 GameObject:

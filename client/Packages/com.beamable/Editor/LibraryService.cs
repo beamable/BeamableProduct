@@ -94,9 +94,18 @@ namespace Beamable.Editor
 
 		public void OpenDocumentation(LightbeamSampleInfo lb)
 		{
-			Application.OpenURL(lb.docsUrl);
-		}
+			var packageFile = $"Packages/{BeamablePackages.BeamablePackageName}/package.json";
+			if (!File.Exists(packageFile)) 
+				return;
 
+			var json = File.ReadAllText(packageFile);
+			var dict = (ArrayDict)Json.Deserialize(json);
+			if (!dict.TryGetValue("documentationUrl", out var docsURL))
+				return;
+			
+			Application.OpenURL($"{docsURL}{lb.docsUrl}");
+		}
+		
 		public void OpenSample(LightbeamSampleInfo lb)
 		{
 			var needsRefresh = false;
