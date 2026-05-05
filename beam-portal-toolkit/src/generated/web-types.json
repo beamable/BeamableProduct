@@ -1,741 +1,4760 @@
 {
   "$schema": "https://raw.githubusercontent.com/JetBrains/web-types/master/schema/web-types.json",
   "name": "@beamable/portal-toolkit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "js-types-syntax": "typescript",
   "description-markup": "markdown",
   "contributions": {
     "html": {
       "elements": [
         {
-          "name": "beam-btn",
-          "description": "A Material Design button. Supports outlined, text, icon, fab, and loading variants.",
+          "name": "beam-icon",
+          "description": "",
           "attributes": [
             {
-              "name": "color",
-              "description": "Fill or text color. Accepts a CSS color or theme color name (e.g. `primary`, `secondary`, `error`).",
+              "name": "name",
+              "description": "The name of the icon to draw. Available names depend on the icon library being used.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "family",
+              "description": "The family of icons to choose from. For Font Awesome Free, valid options include `classic` and `brands`. For\nFont Awesome Pro subscribers, valid options include, `classic`, `sharp`, `duotone`, `sharp-duotone`, and `brands`.\nA valid kit code must be present to show pro icons via CDN. You can set `<html data-fa-kit-code=\"...\">` to provide\none.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "outlined",
-              "description": "Renders with a border and transparent background.",
+              "name": "variant",
+              "description": "The name of the icon's variant. For Font Awesome, valid options include `thin`, `light`, `regular`, and `solid` for\nthe `classic` and `sharp` families. Some variants require a Font Awesome Pro subscription. Custom icon libraries\nmay or may not use this property.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "auto-width",
+              "description": "Sets the width of the icon to match the cropped SVG viewBox. This operates like the Font `fa-width-auto` class.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "text",
-              "description": "Renders as a flat text button with no background or border.",
+              "name": "swap-opacity",
+              "description": "Swaps the opacity of duotone icons.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "block",
-              "description": "Expands the button to fill its container's full width.",
+              "name": "src",
+              "description": "An external URL of an SVG file. Be sure you trust the content you are including, as it will be executed as code and\ncan result in XSS attacks.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "label",
+              "description": "An alternate description to use for assistive devices. If omitted, the icon will be considered presentational and\nignored by assistive devices.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "library",
+              "description": "The name of a registered custom icon library.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "rotate",
+              "description": "Sets the rotation degree of the icon",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "flip",
+              "description": "Sets the flip direction of the icon along the 'x' (horizontal), 'y' (vertical), or 'both' axes.",
+              "value": {
+                "type": "'x' | 'y' | 'both' | undefined"
+              }
+            },
+            {
+              "name": "animation",
+              "description": "Sets the animation for the icon",
+              "value": {
+                "type": "IconAnimation | undefined"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-checkbox",
+          "description": "",
+          "attributes": [
+            {
+              "name": "title",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the checkbox, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The value of the checkbox, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The checkbox's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the checkbox.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "indeterminate",
+              "description": "Draws the checkbox in an indeterminate state. This is usually applied to checkboxes that represents a \"select\nall/none\" behavior when associated checkboxes have a mix of checked and unchecked states.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "checked",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the checkbox a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The checkbox's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-spinner",
+          "description": "",
+          "attributes": [
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tree-item",
+          "description": "",
+          "attributes": [
+            {
+              "name": "expanded",
+              "description": "Expands the tree item.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "selected",
+              "description": "Draws the tree item in a selected state.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "disabled",
+              "description": "Disables the tree item.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "lazy",
+              "description": "Enables lazy loading behavior.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
               "description": "",
               "value": {
-                "type": "boolean"
+                "type": "string"
               }
             },
             {
-              "name": "small",
+              "name": "lang",
               "description": "",
               "value": {
-                "type": "boolean"
+                "type": "string"
               }
             },
             {
-              "name": "large",
+              "name": "did-ssr",
               "description": "",
               "value": {
-                "type": "boolean"
+                "type": "any"
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "beam-button",
+          "description": "",
+          "attributes": [
             {
-              "name": "x-small",
+              "name": "title",
               "description": "",
               "value": {
-                "type": "boolean"
+                "type": "string"
               }
             },
             {
-              "name": "x-large",
-              "description": "",
+              "name": "variant",
+              "description": "The button's theme variant. Defaults to `neutral` if not within another element with a variant.",
+              "value": {
+                "type": "'neutral' | 'brand' | 'success' | 'warning' | 'danger'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The button's visual appearance.",
+              "value": {
+                "type": "'accent' | 'filled' | 'outlined' | 'filled-outlined' | 'plain'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The button's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "with-caret",
+              "description": "Draws the button with a caret. Used to indicate that the button triggers a dropdown menu or similar behavior.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "icon",
-              "description": "Renders as a square icon button sized to fit a single icon.",
+              "name": "with-start",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `start` element so the server-rendered markup\nincludes the start slot before the component hydrates on the client.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "fab",
-              "description": "Renders as a circular floating action button.",
+              "name": "with-end",
+              "description": "Only required for SSR. Set to `true` if you're slotting in an `end` element so the server-rendered markup\nincludes the end slot before the component hydrates on the client.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "tile",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "rounded",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "depressed",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dark",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "light",
-              "description": "",
+              "name": "disabled",
+              "description": "Disables the button.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "loading",
-              "description": "Shows a loading spinner and disables the button.",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "href",
-              "description": "Renders the button as an anchor tag pointing to this URL.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "target",
-              "description": "The `target` attribute forwarded to the anchor tag when `href` is set.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "type",
-              "description": "The HTML button `type` attribute: `button`, `submit`, or `reset`.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "elevation",
-              "description": "",
-              "value": {
-                "type": "string"
-              }
-            }
-          ]
-        },
-        {
-          "name": "beam-icon",
-          "description": "Renders a Material Design icon by name. Pass the icon name via the `icon` prop or as default slot content.",
-          "attributes": [
-            {
-              "name": "icon",
-              "description": "The Material Design icon name (e.g. `mdi-home`). Can also be passed as slot content.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "color",
-              "description": "Icon color. Accepts a CSS color or theme color name (e.g. `primary`, `error`).",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "small",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "large",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "x-small",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "x-large",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dense",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "disabled",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dark",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "light",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "left",
-              "description": "Adds right margin — use when the icon precedes inline text.",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "right",
-              "description": "Adds left margin — use when the icon follows inline text.",
-              "value": {
-                "type": "boolean"
-              }
-            }
-          ]
-        },
-        {
-          "name": "beam-chip",
-          "description": "A small label element used for tags, filters, or status indicators. Supports closeable, outlined, and pill variants.",
-          "attributes": [
-            {
-              "name": "color",
-              "description": "Fill color. Accepts a CSS color or theme color name (e.g. `primary`, `error`).",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "outlined",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "small",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "large",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "x-small",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "close",
-              "description": "Shows a dismiss icon on the chip. Listen for the `click:close` event to handle removal.",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "disabled",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dark",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "light",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "label",
-              "description": "Renders as a square chip rather than rounded.",
+              "description": "Draws the button in a loading state.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "pill",
-              "description": "Renders with fully rounded (pill-shaped) ends.",
+              "description": "Draws a pill-style button with rounded edges.",
               "value": {
                 "type": "boolean"
-              }
-            }
-          ]
-        },
-        {
-          "name": "beam-alert",
-          "description": "Displays a contextual message to the user. Use the `type` prop for semantic variants: `success`, `info`, `warning`, or `error`.",
-          "attributes": [
-            {
-              "name": "color",
-              "description": "Fill color. Overrides the color implied by `type`.",
-              "value": {
-                "type": "string"
               }
             },
             {
               "name": "type",
-              "description": "Semantic variant: `success`, `info`, `warning`, or `error`. Sets icon and color automatically.",
+              "description": "The type of button. Note that the default value is `button` instead of `submit`, which is opposite of how native\n`<button>` elements behave. When the type is `submit`, the button will submit the surrounding form.",
+              "value": {
+                "type": "'button' | 'submit' | 'reset'"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the button, submitted as a name/value pair with form data, but only when this button is the submitter.\nThis attribute is ignored when `href` is present.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The value of the button, submitted as a pair with the button's name as part of the form data, but only when this\nbutton is the submitter. This attribute is ignored when `href` is present.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "outlined",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "text",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dense",
-              "description": "",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "dismissible",
-              "description": "Shows a close button. Listen for the `input` event (emits `false`) to handle dismissal.",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "icon",
-              "description": "Overrides the default icon for the current `type`. Pass `false` to remove the icon.",
+              "name": "href",
+              "description": "When set, the underlying button will be rendered as an `<a>` with this `href` instead of a `<button>`.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "border",
-              "description": "Adds a colored border on one side: `top`, `right`, `bottom`, or `left`.",
+              "name": "target",
+              "description": "Tells the browser where to open the link. Only used when `href` is present.",
+              "value": {
+                "type": "'_blank' | '_parent' | '_self' | '_top'"
+              }
+            },
+            {
+              "name": "rel",
+              "description": "When using `href`, this attribute will map to the underlying link's `rel` attribute.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "download",
+              "description": "Tells the browser to download the linked file as this filename. Only used when `href` is present.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "formaction",
+              "description": "Used to override the form owner's `action` attribute.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "elevation",
+              "name": "formenctype",
+              "description": "Used to override the form owner's `enctype` attribute.",
+              "value": {
+                "type": "'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain'"
+              }
+            },
+            {
+              "name": "formmethod",
+              "description": "Used to override the form owner's `method` attribute.",
+              "value": {
+                "type": "'post' | 'get'"
+              }
+            },
+            {
+              "name": "formnovalidate",
+              "description": "Used to override the form owner's `novalidate` attribute.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "formtarget",
+              "description": "Used to override the form owner's `target` attribute.",
+              "value": {
+                "type": "'_self' | '_blank' | '_parent' | '_top' | string"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "dark",
+              "name": "lang",
               "description": "",
               "value": {
-                "type": "boolean"
+                "type": "string"
               }
             },
             {
-              "name": "light",
+              "name": "did-ssr",
               "description": "",
               "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "prominent",
-              "description": "Increases the alert height and renders the icon at a larger size.",
-              "value": {
-                "type": "boolean"
-              }
-            },
-            {
-              "name": "tile",
-              "description": "",
-              "value": {
-                "type": "boolean"
+                "type": "any"
               }
             }
           ]
         },
         {
-          "name": "beam-card",
-          "description": "A surface container with elevation and rounded corners for grouping related content.",
+          "name": "beam-animation",
+          "description": "",
           "attributes": [
             {
-              "name": "elevation",
-              "description": "Shadow depth (0–24). Maps to the `elevation-N` CSS class.",
+              "name": "name",
+              "description": "The name of the built-in animation to use. For custom animations, use the `keyframes` prop.",
               "value": {
                 "type": "string"
+              }
+            },
+            {
+              "name": "play",
+              "description": "Plays the animation. When omitted, the animation will be paused. This attribute will be automatically removed when\nthe animation finishes or gets canceled.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "delay",
+              "description": "The number of milliseconds to delay the start of the animation.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "direction",
+              "description": "Determines the direction of playback as well as the behavior when reaching the end of an iteration.\n[Learn more](https://developer.mozilla.org/en-US/docs/Web/CSS/animation-direction)",
+              "value": {
+                "type": "PlaybackDirection"
+              }
+            },
+            {
+              "name": "duration",
+              "description": "The number of milliseconds each iteration of the animation takes to complete.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "easing",
+              "description": "The easing function to use for the animation. This can be a Web Awesome easing function or a custom easing function\nsuch as `cubic-bezier(0, 1, .76, 1.14)`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "end-delay",
+              "description": "The number of milliseconds to delay after the active period of an animation sequence.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "fill",
+              "description": "Sets how the animation applies styles to its target before and after its execution.",
+              "value": {
+                "type": "FillMode"
+              }
+            },
+            {
+              "name": "iterations",
+              "description": "The number of iterations to run before the animation completes. Defaults to `Infinity`, which loops.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "iteration-start",
+              "description": "The offset at which to start the animation, usually between 0 (start) and 1 (end).",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "playback-rate",
+              "description": "Sets the animation's playback rate. The default is `1`, which plays the animation at a normal speed. Setting this\nto `2`, for example, will double the animation's speed. A negative value can be used to reverse the animation. This\nvalue can be changed without causing the animation to restart.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
               }
             }
           ]
         },
         {
-          "name": "beam-card-title",
-          "description": "The title region of a beam-card. Renders with card title typography.",
-          "attributes": []
-        },
-        {
-          "name": "beam-card-subtitle",
-          "description": "The subtitle region of a beam-card. Renders with card subtitle typography.",
-          "attributes": []
-        },
-        {
-          "name": "beam-card-text",
-          "description": "The body content region of a beam-card. Adds standard card padding.",
-          "attributes": []
-        },
-        {
-          "name": "beam-card-actions",
-          "description": "The actions region of a beam-card. Aligns action buttons at the bottom of the card.",
-          "attributes": []
-        },
-        {
-          "name": "beam-data-table",
-          "description": "A full-featured data table with sorting, pagination, filtering, and row selection.",
+          "name": "beam-avatar",
+          "description": "",
           "attributes": [
             {
-              "name": "headers",
-              "description": "Column definitions. Each item requires a `text` (display label) and `value` (row data key).",
+              "name": "image",
+              "description": "The image source to use for the avatar.",
               "value": {
-                "type": "array"
+                "type": "string"
               }
             },
             {
-              "name": "items",
-              "description": "Array of row data objects. Each object's keys should match the `value` fields in `headers`.",
+              "name": "label",
+              "description": "A label to use to describe the avatar to assistive devices.",
               "value": {
-                "type": "array"
+                "type": "string"
               }
             },
             {
-              "name": "items-per-page",
-              "description": "Number of rows shown per page. Set to `-1` to show all rows. Defaults to `10`.",
+              "name": "initials",
+              "description": "Initials to use as a fallback when no image is available (1-2 characters max recommended).",
               "value": {
                 "type": "string"
               }
             },
             {
               "name": "loading",
-              "description": "Shows a loading bar above the table.",
+              "description": "Indicates how the browser should load the image.",
               "value": {
-                "type": "boolean"
+                "type": "'eager' | 'lazy'"
               }
             },
             {
-              "name": "search",
-              "description": "Filters visible rows to those matching this string.",
+              "name": "shape",
+              "description": "The shape of the avatar.",
               "value": {
-                "type": "string"
+                "type": "'circle' | 'square' | 'rounded'"
               }
             },
             {
-              "name": "sort-by",
-              "description": "The column `value` key to sort by.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "sort-desc",
+              "name": "dir",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "multi-sort",
+              "name": "lang",
               "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-badge",
+          "description": "",
+          "attributes": [
+            {
+              "name": "variant",
+              "description": "The badge's theme variant. Defaults to `brand` if not within another element with a variant.",
+              "value": {
+                "type": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The badge's visual appearance.",
+              "value": {
+                "type": "'accent' | 'filled' | 'outlined' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "Draws a pill-style badge with rounded edges.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "must-sort",
+              "name": "attention",
+              "description": "Adds an animation to draw attention to the badge.",
+              "value": {
+                "type": "'none' | 'pulse' | 'bounce'"
+              }
+            },
+            {
+              "name": "dir",
               "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-breadcrumb-item",
+          "description": "",
+          "attributes": [
+            {
+              "name": "href",
+              "description": "Optional URL to direct the user to when the breadcrumb item is activated. When set, a link will be rendered\ninternally. When unset, a button will be rendered instead.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "target",
+              "description": "Tells the browser where to open the link. Only used when `href` is set.",
+              "value": {
+                "type": "'_blank' | '_parent' | '_self' | '_top' | undefined"
+              }
+            },
+            {
+              "name": "rel",
+              "description": "The `rel` attribute to use on the link. Only used when `href` is set.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-breadcrumb",
+          "description": "",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "The label to use for the breadcrumb control. This will not be shown on the screen, but it will be announced by\nscreen readers and other assistive devices to provide more context for users.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-button-group",
+          "description": "",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "A label to use for the button group. This won't be displayed on the screen, but it will be announced by assistive\ndevices when interacting with the control and is strongly recommended.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "orientation",
+              "description": "The button group's orientation.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-callout",
+          "description": "",
+          "attributes": [
+            {
+              "name": "variant",
+              "description": "The callout's theme variant. Defaults to `brand` if not within another element with a variant.",
+              "value": {
+                "type": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The callout's visual appearance.",
+              "value": {
+                "type": "'accent' | 'filled' | 'outlined' | 'plain' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The callout's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-card",
+          "description": "",
+          "attributes": [
+            {
+              "name": "appearance",
+              "description": "The card's visual appearance.",
+              "value": {
+                "type": "'accent' | 'filled' | 'outlined' | 'filled-outlined' | 'plain'"
+              }
+            },
+            {
+              "name": "with-header",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `header` element so the server-rendered markup\nincludes the header before the component hydrates on the client.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "show-select",
-              "description": "Adds a checkbox column for row selection. Use `value` to read or set the selected rows.",
+              "name": "with-media",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `media` element so the server-rendered markup\nincludes the media before the component hydrates on the client.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "single-select",
-              "description": "",
+              "name": "with-footer",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `footer` element so the server-rendered markup\nincludes the footer before the component hydrates on the client.",
               "value": {
                 "type": "boolean"
+              }
+            },
+            {
+              "name": "orientation",
+              "description": "Renders the card's orientation *",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-input",
+          "description": "",
+          "attributes": [
+            {
+              "name": "title",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "The type of input. Works the same as a native `<input>` element, but only a subset of types are supported. Defaults\nto `text`.",
+              "value": {
+                "type": "| 'date'\n    | 'datetime-local'\n    | 'email'\n    | 'number'\n    | 'password'\n    | 'search'\n    | 'tel'\n    | 'text'\n    | 'time'\n    | 'url'"
               }
             },
             {
               "name": "value",
-              "description": "The currently selected rows when `showSelect` is true.",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
               "value": {
-                "type": "string"
+                "type": "string | null"
               }
             },
             {
-              "name": "dense",
-              "description": "",
+              "name": "size",
+              "description": "The input's size.",
               "value": {
-                "type": "boolean"
+                "type": "'small' | 'medium' | 'large'"
               }
             },
             {
-              "name": "fixed-header",
-              "description": "Fixes the header row so only the body scrolls when `height` is set.",
+              "name": "appearance",
+              "description": "The input's visual appearance.",
               "value": {
-                "type": "boolean"
+                "type": "'filled' | 'outlined' | 'filled-outlined'"
               }
             },
             {
-              "name": "height",
-              "description": "Sets a fixed height on the table. Required for `fixedHeader` to take effect.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "hide-default-header",
-              "description": "",
+              "name": "pill",
+              "description": "Draws a pill-style input with rounded edges.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "hide-default-footer",
-              "description": "",
+              "name": "label",
+              "description": "The input's label. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The input's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "with-clear",
+              "description": "Adds a clear button when the input is not empty.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "no-data-text",
-              "description": "Message shown when `items` is empty.",
+              "name": "placeholder",
+              "description": "Placeholder text to show as a hint when the input is empty.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "no-results-text",
-              "description": "Message shown when `search` produces no matches.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "dark",
-              "description": "",
+              "name": "readonly",
+              "description": "Makes the input readonly.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "light",
-              "description": "",
+              "name": "password-toggle",
+              "description": "Adds a button to toggle the password's visibility. Only applies to password types.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "item-key",
-              "description": "The row property used as a unique key. Defaults to `id`.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "item-class",
-              "description": "",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "page",
-              "description": "The current page number (1-based).",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "server-items-length",
-              "description": "Total number of items on the server. Required for server-side pagination.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "disable-pagination",
-              "description": "",
+              "name": "password-visible",
+              "description": "Determines whether or not the password is currently visible. Only applies to password input types.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "disable-sort",
-              "description": "",
+              "name": "without-spin-buttons",
+              "description": "Hides the browser's built-in increment/decrement spin buttons for number inputs.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "show-expand",
-              "description": "Adds an expand toggle column. Use `expanded` to read or set expanded rows.",
+              "name": "required",
+              "description": "Makes the input a required field.",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "expanded",
-              "description": "Array of currently expanded row objects.",
+              "name": "pattern",
+              "description": "A regular expression pattern to validate input against.",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "group-by",
+              "name": "minlength",
+              "description": "The minimum length of input that will be considered valid.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "maxlength",
+              "description": "The maximum length of input that will be considered valid.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "min",
+              "description": "The input's minimum value. Only applies to date and number input types.",
+              "value": {
+                "type": "number | string"
+              }
+            },
+            {
+              "name": "max",
+              "description": "The input's maximum value. Only applies to date and number input types.",
+              "value": {
+                "type": "number | string"
+              }
+            },
+            {
+              "name": "step",
+              "description": "Specifies the granularity that the value must adhere to, or the special value `any` which means no stepping is\nimplied, allowing any numeric value. Only applies to date and number input types.",
+              "value": {
+                "type": "number | 'any'"
+              }
+            },
+            {
+              "name": "autocapitalize",
+              "description": "Controls whether and how text input is automatically capitalized as it is entered by the user.",
+              "value": {
+                "type": "'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters'"
+              }
+            },
+            {
+              "name": "autocorrect",
+              "description": "Indicates whether the browser's autocorrect feature is on or off. When set as an attribute, use `\"off\"` or `\"on\"`.\nWhen set as a property, use `true` or `false`.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "autocomplete",
+              "description": "Specifies what permission the browser has to provide assistance in filling out form field values. Refer to\n[this page on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete) for available values.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "autofocus",
+              "description": "Indicates that the input should receive focus on page load.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "enterkeyhint",
+              "description": "Used to customize the label or icon of the Enter key on virtual keyboards.",
+              "value": {
+                "type": "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'"
+              }
+            },
+            {
+              "name": "spellcheck",
+              "description": "Enables spell checking on the input.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "inputmode",
+              "description": "Tells the browser what type of data will be entered by the user, allowing it to display the appropriate virtual\nkeyboard on supportive devices.",
+              "value": {
+                "type": "'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url'"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the input, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the form control.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "group-desc",
+              "name": "lang",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "show-group-by",
+              "name": "did-ssr",
               "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-popup",
+          "description": "",
+          "attributes": [
+            {
+              "name": "anchor",
+              "description": "The element the popup will be anchored to. If the anchor lives outside of the popup, you can provide the anchor\nelement `id`, a DOM element reference, or a `VirtualElement`. If the anchor lives inside the popup, use the\n`anchor` slot instead.",
+              "value": {
+                "type": "Element | string | VirtualElement"
+              }
+            },
+            {
+              "name": "active",
+              "description": "Activates the positioning logic and shows the popup. When this attribute is removed, the positioning logic is torn\ndown and the popup will be hidden.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The preferred placement of the popup. Note that the actual placement will vary as configured to keep the\npanel inside of the viewport.",
+              "value": {
+                "type": "| 'top'\n    | 'top-start'\n    | 'top-end'\n    | 'bottom'\n    | 'bottom-start'\n    | 'bottom-end'\n    | 'right'\n    | 'right-start'\n    | 'right-end'\n    | 'left'\n    | 'left-start'\n    | 'left-end'"
+              }
+            },
+            {
+              "name": "boundary",
+              "description": "The bounding box to use for flipping, shifting, and auto-sizing.",
+              "value": {
+                "type": "'viewport' | 'scroll'"
+              }
+            },
+            {
+              "name": "distance",
+              "description": "The distance in pixels from which to offset the panel away from its anchor.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "skidding",
+              "description": "The distance in pixels from which to offset the panel along its anchor.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "arrow",
+              "description": "Attaches an arrow to the popup. The arrow's size and color can be customized using the `--arrow-size` and\n`--arrow-color` custom properties. For additional customizations, you can also target the arrow using\n`::part(arrow)` in your stylesheet.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "arrow-placement",
+              "description": "The placement of the arrow. The default is `anchor`, which will align the arrow as close to the center of the\nanchor as possible, considering available space and `arrow-padding`. A value of `start`, `end`, or `center` will\nalign the arrow to the start, end, or center of the popover instead.",
+              "value": {
+                "type": "'start' | 'end' | 'center' | 'anchor'"
+              }
+            },
+            {
+              "name": "arrow-padding",
+              "description": "The amount of padding between the arrow and the edges of the popup. If the popup has a border-radius, for example,\nthis will prevent it from overflowing the corners.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "flip",
+              "description": "When set, placement of the popup will flip to the opposite site to keep it in view. You can use\n`flipFallbackPlacements` to further configure how the fallback placement is determined.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "flip-fallback-placements",
+              "description": "If the preferred placement doesn't fit, popup will be tested in these fallback placements until one fits. Must be a\nstring of any number of placements separated by a space, e.g. \"top bottom left\". If no placement fits, the flip\nfallback strategy will be used instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "flip-fallback-strategy",
+              "description": "When neither the preferred placement nor the fallback placements fit, this value will be used to determine whether\nthe popup should be positioned using the best available fit based on available space or as it was initially\npreferred.",
+              "value": {
+                "type": "'best-fit' | 'initial'"
+              }
+            },
+            {
+              "name": "flipBoundary",
+              "description": "The flip boundary describes clipping element(s) that overflow will be checked relative to when flipping. By\ndefault, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can\nchange the boundary by passing a reference to one or more elements to this property.",
+              "value": {
+                "type": "Element | Element[]"
+              }
+            },
+            {
+              "name": "flip-padding",
+              "description": "The amount of padding, in pixels, to exceed before the flip behavior will occur.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "shift",
+              "description": "Moves the popup along the axis to keep it in view when clipped.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "shiftBoundary",
+              "description": "The shift boundary describes clipping element(s) that overflow will be checked relative to when shifting. By\ndefault, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can\nchange the boundary by passing a reference to one or more elements to this property.",
+              "value": {
+                "type": "Element | Element[]"
+              }
+            },
+            {
+              "name": "shift-padding",
+              "description": "The amount of padding, in pixels, to exceed before the shift behavior will occur.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "auto-size",
+              "description": "When set, this will cause the popup to automatically resize itself to prevent it from overflowing.",
+              "value": {
+                "type": "'horizontal' | 'vertical' | 'both'"
+              }
+            },
+            {
+              "name": "sync",
+              "description": "Syncs the popup's width or height to that of the anchor element.",
+              "value": {
+                "type": "'width' | 'height' | 'both'"
+              }
+            },
+            {
+              "name": "autoSizeBoundary",
+              "description": "The auto-size boundary describes clipping element(s) that overflow will be checked relative to when resizing. By\ndefault, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can\nchange the boundary by passing a reference to one or more elements to this property.",
+              "value": {
+                "type": "Element | Element[]"
+              }
+            },
+            {
+              "name": "auto-size-padding",
+              "description": "The amount of padding, in pixels, to exceed before the auto-size behavior will occur.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "hover-bridge",
+              "description": "When a gap exists between the anchor and the popup element, this option will add a \"hover bridge\" that fills the\ngap using an invisible element. This makes listening for events such as `mouseenter` and `mouseleave` more sane\nbecause the pointer never technically leaves the element. The hover bridge will only be drawn when the popover is\nactive.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-color-picker",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The color picker's label. This will not be displayed, but it will be announced by assistive devices. If you need to\ndisplay HTML, you can use the `label` slot` instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The color picker's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "format",
+              "description": "The format to use. If opacity is enabled, these will translate to HEXA, RGBA, HSLA, and HSVA respectively. The color\npicker will accept user input in any format (including CSS color names) and convert it to the desired format.",
+              "value": {
+                "type": "'hex' | 'rgb' | 'hsl' | 'hsv'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "Determines the size of the color picker's trigger",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The preferred placement of the color picker's popup. Note that the actual placement will vary as configured to\nkeep the panel inside of the viewport.",
+              "value": {
+                "type": "| 'top'\n    | 'top-start'\n    | 'top-end'\n    | 'bottom'\n    | 'bottom-start'\n    | 'bottom-end'\n    | 'right'\n    | 'right-start'\n    | 'right-end'\n    | 'left'\n    | 'left-start'\n    | 'left-end'"
+              }
+            },
+            {
+              "name": "without-format-toggle",
+              "description": "Removes the button that lets users toggle between format.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the form control, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the color picker.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "open",
+              "description": "Indicates whether or not the popup is open. You can toggle this attribute to show and hide the popup, or you\ncan use the `show()` and `hide()` methods and this attribute will reflect the popup's open state.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "opacity",
+              "description": "Shows the opacity slider. Enabling this will cause the formatted value to be HEXA, RGBA, or HSLA.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "uppercase",
+              "description": "By default, values are lowercase. With this attribute, values will be uppercase instead.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "swatches",
+              "description": "One or more predefined color swatches to display as presets in the color picker. Can include any format the color\npicker can parse, including HEX(A), RGB(A), HSL(A), HSV(A), and CSS color names. Each color must be separated by a\nsemicolon (`;`). Alternatively, you can pass an array of color values or an array of `{ color, label }` objects to\nthis property using JavaScript. When using objects with labels, the label will be used for the swatch's accessible\nname instead of the raw color value.",
+              "value": {
+                "type": "string | string[] | WaColorPickerSwatch[]"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the color picker a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tooltip",
+          "description": "",
+          "attributes": [
+            {
+              "name": "placement",
+              "description": "The preferred placement of the tooltip. Note that the actual placement may vary as needed to keep the tooltip\ninside of the viewport.",
+              "value": {
+                "type": "| 'top'\n    | 'top-start'\n    | 'top-end'\n    | 'right'\n    | 'right-start'\n    | 'right-end'\n    | 'bottom'\n    | 'bottom-start'\n    | 'bottom-end'\n    | 'left'\n    | 'left-start'\n    | 'left-end'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the tooltip so it won't show when triggered.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "distance",
+              "description": "The distance in pixels from which to offset the tooltip away from its target.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "open",
+              "description": "Indicates whether or not the tooltip is open. You can use this in lieu of the show/hide methods.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "skidding",
+              "description": "The distance in pixels from which to offset the tooltip along its target.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "show-delay",
+              "description": "The amount of time to wait before showing the tooltip when the user mouses in.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "hide-delay",
+              "description": "The amount of time to wait before hiding the tooltip when the user mouses out.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "trigger",
+              "description": "Controls how the tooltip is activated. Possible options include `click`, `hover`, `focus`, and `manual`. Multiple\noptions can be passed by separating them with a space. When manual is used, the tooltip must be activated\nprogrammatically.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "without-arrow",
+              "description": "Removes the arrow from the tooltip.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "for",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-copy-button",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The text value to copy.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "from",
+              "description": "An id that references an element in the same document from which data will be copied. If both this and `value` are\npresent, this value will take precedence. By default, the target element's `textContent` will be copied. To copy an\nattribute, append the attribute name wrapped in square brackets, e.g. `from=\"el[value]\"`. To copy a property,\nappend a dot and the property name, e.g. `from=\"el.value\"`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the copy button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "copy-label",
+              "description": "A custom label to show in the tooltip.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "success-label",
+              "description": "A custom label to show in the tooltip after copying.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "error-label",
+              "description": "A custom label to show in the tooltip when a copy error occurs.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "feedback-duration",
+              "description": "The length of time to show feedback before restoring the default trigger.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "tooltip-placement",
+              "description": "The preferred placement of the tooltip.",
+              "value": {
+                "type": "'top' | 'right' | 'bottom' | 'left'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-details",
+          "description": "",
+          "attributes": [
+            {
+              "name": "open",
+              "description": "Indicates whether or not the details is open. You can toggle this attribute to show and hide the details, or you\ncan use the `show()` and `hide()` methods and this attribute will reflect the details' open state.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "summary",
+              "description": "The summary to show in the header. If you need to display HTML, use the `summary` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "Groups related details elements. When one opens, others with the same name will close.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the details so it can't be toggled.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The element's visual appearance.",
+              "value": {
+                "type": "'filled' | 'outlined' | 'filled-outlined' | 'plain'"
+              }
+            },
+            {
+              "name": "icon-placement",
+              "description": "The location of the expand/collapse icon.",
+              "value": {
+                "type": "'start' | 'end'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-dialog",
+          "description": "",
+          "attributes": [
+            {
+              "name": "open",
+              "description": "Indicates whether or not the dialog is open. Toggle this attribute to show and hide the dialog.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The dialog's label as displayed in the header. You should always include a relevant label, as it is required for\nproper accessibility. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "without-header",
+              "description": "Disables the header. This will also remove the default close button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light-dismiss",
+              "description": "When enabled, the dialog will be closed when the user clicks outside of it.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-footer",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `footer` element so the server-rendered markup\nincludes the footer before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-divider",
+          "description": "",
+          "attributes": [
+            {
+              "name": "orientation",
+              "description": "Sets the divider's orientation.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-drawer",
+          "description": "",
+          "attributes": [
+            {
+              "name": "open",
+              "description": "Indicates whether or not the drawer is open. Toggle this attribute to show and hide the drawer.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The drawer's label as displayed in the header. You should always include a relevant label, as it is required for\nproper accessibility. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The direction from which the drawer will open.",
+              "value": {
+                "type": "'top' | 'end' | 'bottom' | 'start'"
+              }
+            },
+            {
+              "name": "without-header",
+              "description": "Disables the header. This will also remove the default close button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "light-dismiss",
+              "description": "When enabled, the drawer will be closed when the user clicks outside of it.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-footer",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `footer` element so the server-rendered markup\nincludes the footer before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-dropdown-item",
+          "description": "",
+          "attributes": [
+            {
+              "name": "variant",
+              "description": "The type of menu item to render.",
+              "value": {
+                "type": "'danger' | 'default'"
+              }
+            },
+            {
+              "name": "value",
+              "description": "An optional value for the menu item. This is useful for determining which item was selected when listening to the\ndropdown's `wa-select` event.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "type",
+              "description": "Set to `checkbox` to make the item a checkbox.",
+              "value": {
+                "type": "'normal' | 'checkbox'"
+              }
+            },
+            {
+              "name": "checked",
+              "description": "Set to true to check the dropdown item. Only valid when `type` is `checkbox`.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the dropdown item.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "submenuOpen",
+              "description": "Whether the submenu is currently open.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-dropdown",
+          "description": "",
+          "attributes": [
+            {
+              "name": "open",
+              "description": "Opens or closes the dropdown.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The dropdown's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The placement of the dropdown menu in reference to the trigger. The menu will shift to a more optimal location if\nthe preferred placement doesn't have enough room.",
+              "value": {
+                "type": "| 'top'\n    | 'top-start'\n    | 'top-end'\n    | 'bottom'\n    | 'bottom-start'\n    | 'bottom-end'\n    | 'right'\n    | 'right-start'\n    | 'right-end'\n    | 'left'\n    | 'left-start'\n    | 'left-end'"
+              }
+            },
+            {
+              "name": "distance",
+              "description": "The distance of the dropdown menu from its trigger.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "skidding",
+              "description": "The offset of the dropdown menu along its trigger.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-format-bytes",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The number to format in bytes.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "unit",
+              "description": "The type of unit to display.",
+              "value": {
+                "type": "'byte' | 'bit'"
+              }
+            },
+            {
+              "name": "display",
+              "description": "Determines how to display the result, e.g. \"100 bytes\", \"100 b\", or \"100b\".",
+              "value": {
+                "type": "'long' | 'short' | 'narrow'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-format-date",
+          "description": "",
+          "attributes": [
+            {
+              "name": "date",
+              "description": "The date/time to format. If not set, the current date and time will be used. When passing a string, it's strongly\nrecommended to use the ISO 8601 format to ensure timezones are handled correctly. To convert a date to this format\nin JavaScript, use [`date.toISOString()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString).",
+              "value": {
+                "type": "Date | string"
+              }
+            },
+            {
+              "name": "weekday",
+              "description": "The format for displaying the weekday.",
+              "value": {
+                "type": "'narrow' | 'short' | 'long'"
+              }
+            },
+            {
+              "name": "era",
+              "description": "The format for displaying the era.",
+              "value": {
+                "type": "'narrow' | 'short' | 'long'"
+              }
+            },
+            {
+              "name": "year",
+              "description": "The format for displaying the year.",
+              "value": {
+                "type": "'numeric' | '2-digit'"
+              }
+            },
+            {
+              "name": "month",
+              "description": "The format for displaying the month.",
+              "value": {
+                "type": "'numeric' | '2-digit' | 'narrow' | 'short' | 'long'"
+              }
+            },
+            {
+              "name": "day",
+              "description": "The format for displaying the day.",
+              "value": {
+                "type": "'numeric' | '2-digit'"
+              }
+            },
+            {
+              "name": "hour",
+              "description": "The format for displaying the hour.",
+              "value": {
+                "type": "'numeric' | '2-digit'"
+              }
+            },
+            {
+              "name": "minute",
+              "description": "The format for displaying the minute.",
+              "value": {
+                "type": "'numeric' | '2-digit'"
+              }
+            },
+            {
+              "name": "second",
+              "description": "The format for displaying the second.",
+              "value": {
+                "type": "'numeric' | '2-digit'"
+              }
+            },
+            {
+              "name": "time-zone-name",
+              "description": "The format for displaying the time.",
+              "value": {
+                "type": "'short' | 'long'"
+              }
+            },
+            {
+              "name": "time-zone",
+              "description": "The time zone to express the time in.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hour-format",
+              "description": "The format for displaying the hour.",
+              "value": {
+                "type": "'auto' | '12' | '24'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-format-number",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The number to format.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "type",
+              "description": "The formatting style to use.",
+              "value": {
+                "type": "'currency' | 'decimal' | 'percent'"
+              }
+            },
+            {
+              "name": "without-grouping",
+              "description": "Turns off grouping separators.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "currency",
+              "description": "The [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) currency code to use when formatting.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "currency-display",
+              "description": "How to display the currency.",
+              "value": {
+                "type": "'symbol' | 'narrowSymbol' | 'code' | 'name'"
+              }
+            },
+            {
+              "name": "minimum-integer-digits",
+              "description": "The minimum number of integer digits to use. Possible values are 1-21.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "minimum-fraction-digits",
+              "description": "The minimum number of fraction digits to use. Possible values are 0-100.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "maximum-fraction-digits",
+              "description": "The maximum number of fraction digits to use. Possible values are 0-100.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "minimum-significant-digits",
+              "description": "The minimum number of significant digits to use. Possible values are 1-21.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "maximum-significant-digits",
+              "description": "The maximum number of significant digits to use,. Possible values are 1-21.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-intersection-observer",
+          "description": "",
+          "attributes": [
+            {
+              "name": "root",
+              "description": "Element ID to define the viewport boundaries for tracked targets.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "root-margin",
+              "description": "Offset space around the root boundary. Accepts values like CSS margin syntax.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "threshold",
+              "description": "One or more space-separated values representing visibility percentages that trigger the observer callback.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "intersect-class",
+              "description": "CSS class applied to elements during intersection. Automatically removed when elements leave\nthe viewport, enabling pure CSS styling based on visibility state.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "once",
+              "description": "If enabled, observation ceases after initial intersection.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Deactivates the intersection observer functionality.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-mutation-observer",
+          "description": "",
+          "attributes": [
+            {
+              "name": "attr",
+              "description": "Watches for changes to attributes. To watch only specific attributes, separate them by a space, e.g.\n`attr=\"class id title\"`. To watch all attributes, use `*`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "attr-old-value",
+              "description": "Indicates whether or not the attribute's previous value should be recorded when monitoring changes.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "char-data",
+              "description": "Watches for changes to the character data contained within the node.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "char-data-old-value",
+              "description": "Indicates whether or not the previous value of the node's text should be recorded.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "child-list",
+              "description": "Watches for the addition or removal of new child nodes.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the observer.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-number-input",
+          "description": "",
+          "attributes": [
+            {
+              "name": "title",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The input's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The input's visual appearance.",
+              "value": {
+                "type": "'filled' | 'outlined' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "Draws a pill-style input with rounded edges.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The input's label. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The input's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placeholder",
+              "description": "Placeholder text to show as a hint when the input is empty.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "readonly",
+              "description": "Makes the input readonly.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the input a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "min",
+              "description": "The input's minimum value.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "max",
+              "description": "The input's maximum value.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "step",
+              "description": "Specifies the granularity that the value must adhere to, or the special value `any` which means no stepping is\nimplied, allowing any numeric value.",
+              "value": {
+                "type": "number | 'any'"
+              }
+            },
+            {
+              "name": "without-steppers",
+              "description": "Hides the increment/decrement stepper buttons.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "autocomplete",
+              "description": "Specifies what permission the browser has to provide assistance in filling out form field values. Refer to\n[this page on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete) for available values.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "autofocus",
+              "description": "Indicates that the input should receive focus on page load.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "enterkeyhint",
+              "description": "Used to customize the label or icon of the Enter key on virtual keyboards.",
+              "value": {
+                "type": "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'"
+              }
+            },
+            {
+              "name": "inputmode",
+              "description": "Tells the browser what type of data will be entered by the user, allowing it to display the appropriate virtual\nkeyboard on supportive devices.",
+              "value": {
+                "type": "'numeric' | 'decimal'"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the input, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the form control.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tag",
+          "description": "",
+          "attributes": [
+            {
+              "name": "variant",
+              "description": "The tag's theme variant. Defaults to `neutral` if not within another element with a variant.",
+              "value": {
+                "type": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The tag's visual appearance.",
+              "value": {
+                "type": "'accent' | 'filled' | 'outlined' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The tag's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "Draws a pill-style tag with rounded edges.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-remove",
+              "description": "Makes the tag removable and shows a remove button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-option",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The option's value. When selected, the containing form control will receive this value. The value must be unique\nfrom other options in the same group. Values may not contain spaces, as spaces are used as delimiters when listing\nmultiple values.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Draws the option in a disabled state, preventing selection.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "selected",
+              "description": "Selects an option initially.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The option’s plain text label.\nUsually automatically generated, but can be useful to provide manually for cases involving complex content.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-select",
+          "description": "",
+          "attributes": [
+            {
+              "name": "name",
+              "description": "The name of the select, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The select's value. This will be a string for single select or an array for multi-select.",
+              "value": {
+                "type": "any"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The select's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "placeholder",
+              "description": "Placeholder text to show as a hint when the select is empty.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "multiple",
+              "description": "Allows more than one option to be selected.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "max-options-visible",
+              "description": "The maximum number of selected options to show when `multiple` is true. After the maximum, \"+n\" will be shown to\nindicate the number of additional items that are selected. Set to 0 to remove the limit.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the select control.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-clear",
+              "description": "Adds a clear button when the select is not empty.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "open",
+              "description": "Indicates whether or not the select is open. You can toggle this attribute to show and hide the menu, or you can\nuse the `show()` and `hide()` methods and this attribute will reflect the select's open state.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The select's visual appearance.",
+              "value": {
+                "type": "'filled' | 'outlined' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "pill",
+              "description": "Draws a pill-style select with rounded edges.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The select's label. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The preferred placement of the select's menu. Note that the actual placement may vary as needed to keep the listbox\ninside of the viewport.",
+              "value": {
+                "type": "'top' | 'bottom'"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The select's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "The select's required attribute.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-popover",
+          "description": "",
+          "attributes": [
+            {
+              "name": "placement",
+              "description": "The preferred placement of the popover. Note that the actual placement may vary as needed to keep the popover\ninside of the viewport.",
+              "value": {
+                "type": "| 'top'\n    | 'top-start'\n    | 'top-end'\n    | 'right'\n    | 'right-start'\n    | 'right-end'\n    | 'bottom'\n    | 'bottom-start'\n    | 'bottom-end'\n    | 'left'\n    | 'left-start'\n    | 'left-end'"
+              }
+            },
+            {
+              "name": "open",
+              "description": "Shows or hides the popover.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "distance",
+              "description": "The distance in pixels from which to offset the popover away from its target.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "skidding",
+              "description": "The distance in pixels from which to offset the popover along its target.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "for",
+              "description": "The ID of the popover's anchor element. This must be an interactive/focusable element such as a button.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "without-arrow",
+              "description": "Removes the arrow from the popover.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-progress-bar",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The current progress as a percentage, 0 to 100.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "indeterminate",
+              "description": "When true, percentage is ignored, the label is hidden, and the progress bar is drawn in an indeterminate state.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "A custom label for assistive devices.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-progress-ring",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The current progress as a percentage, 0 to 100.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "label",
+              "description": "A custom label for assistive devices.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-qr-code",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The QR code's value.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The label for assistive devices to announce. If unspecified, the value will be used instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The size of the QR code, in pixels.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "fill",
+              "description": "The fill color. This can be any valid CSS color, but not a CSS custom property.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "background",
+              "description": "The background color. This can be any valid CSS color or `transparent`. It cannot be a CSS custom property.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "radius",
+              "description": "The edge radius of each module. Must be between 0 and 0.5.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "error-correction",
+              "description": "The level of error correction to use. [Learn more](https://www.qrcode.com/en/about/error_correction.html)",
+              "value": {
+                "type": "'L' | 'M' | 'Q' | 'H'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-radio",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The radio's value. When selected, the radio group will receive this value.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The radio's visual appearance.",
+              "value": {
+                "type": "'default' | 'button'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The radio's size. When used inside a radio group, the size will be determined by the radio group's size, which will\noverride this attribute.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the radio.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the input, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-radio-group",
+          "description": "",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "The radio group's label. Required for proper accessibility. If you need to display HTML, use the `label` slot\ninstead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The radio groups's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the radio group, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the radio group and all child radios.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "orientation",
+              "description": "The orientation in which to show radio items.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The radio group's size. When present, this size will be applied to all `<wa-radio>` items inside.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Ensures a child radio is checked before allowing the containing form to submit.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-rating",
+          "description": "",
+          "attributes": [
+            {
+              "name": "name",
+              "description": "The name of the rating, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "label",
+              "description": "A label that describes the rating to assistive devices.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The current rating.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "default-value",
+              "description": "The default value of the form control. Used to reset the rating to its initial value.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "max",
+              "description": "The highest rating to show.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "precision",
+              "description": "The precision at which the rating will increase and decrease. For example, to allow half-star ratings, set this\nattribute to `0.5`.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "readonly",
+              "description": "Makes the rating readonly.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the rating.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the rating a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "getSymbol",
+              "description": "A function that customizes the symbol to be rendered. The first and only argument is the rating's current value.\nThe function should return a string containing trusted HTML of the symbol to render at the specified value. Works\nwell with `<wa-icon>` elements.",
+              "value": {
+                "type": "(value: number, isSelected: boolean) => string"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The component's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-relative-time",
+          "description": "",
+          "attributes": [
+            {
+              "name": "with-utc-popover",
+              "description": "Enables the hover popover.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "date",
+              "description": "The date from which to calculate time from. If not set, the current date and time will be used. When passing a\nstring, it's strongly recommended to use the ISO 8601 format to ensure timezones are handled correctly. To convert\na date to this format in JavaScript, use [`date.toISOString()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString).",
+              "value": {
+                "type": "Date | string"
+              }
+            },
+            {
+              "name": "format",
+              "description": "The formatting style to use.",
+              "value": {
+                "type": "'long' | 'short' | 'narrow'"
+              }
+            },
+            {
+              "name": "numeric",
+              "description": "When `auto`, values such as \"yesterday\" and \"tomorrow\" will be shown when possible. When `always`, values such as\n\"1 day ago\" and \"in 1 day\" will be shown.",
+              "value": {
+                "type": "'always' | 'auto'"
+              }
+            },
+            {
+              "name": "sync",
+              "description": "Keep the displayed value up to date as time passes.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-scroller",
+          "description": "",
+          "attributes": [
+            {
+              "name": "orientation",
+              "description": "The scroller's orientation.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "without-scrollbar",
+              "description": "Removes the visible scrollbar.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "without-shadow",
+              "description": "Removes the shadows.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-resize-observer",
+          "description": "",
+          "attributes": [
+            {
+              "name": "disabled",
+              "description": "Disables the observer.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-skeleton",
+          "description": "",
+          "attributes": [
+            {
+              "name": "effect",
+              "description": "Determines which effect the skeleton will use.",
+              "value": {
+                "type": "'pulse' | 'sheen' | 'none'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-slider",
+          "description": "<wa-slider>",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "The slider's label. If you need to provide HTML in the label, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The slider hint. If you need to display HTML, use the hint slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the slider. This will be submitted with the form as a name/value pair.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "min-value",
+              "description": "The minimum value of a range selection. Used only when range attribute is set.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "max-value",
+              "description": "The maximum value of a range selection. Used only when range attribute is set.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "range",
+              "description": "Converts the slider to a range slider with two thumbs.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the slider.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "readonly",
+              "description": "Makes the slider a read-only field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "orientation",
+              "description": "The orientation of the slider.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The slider's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "indicator-offset",
+              "description": "The starting value from which to draw the slider's fill, which is based on its current value.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "min",
+              "description": "The minimum value allowed.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "max",
+              "description": "The maximum value allowed.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "step",
+              "description": "The granularity the value must adhere to when incrementing and decrementing.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "autofocus",
+              "description": "Tells the browser to focus the slider when the page loads or a dialog is shown.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "tooltip-distance",
+              "description": "The distance of the tooltip from the slider's thumb.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "tooltip-placement",
+              "description": "The placement of the tooltip in reference to the slider's thumb.",
+              "value": {
+                "type": "'top' | 'right' | 'bottom' | 'left'"
+              }
+            },
+            {
+              "name": "with-markers",
+              "description": "Draws markers at each step along the slider.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-tooltip",
+              "description": "Draws a tooltip above the thumb when the control has focus or is dragged.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-switch",
+          "description": "",
+          "attributes": [
+            {
+              "name": "title",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the switch, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The value of the switch, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The switch's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the switch.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "checked",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the switch a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The switch's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tab",
+          "description": "",
+          "attributes": [
+            {
+              "name": "panel",
+              "description": "The name of the tab panel this tab is associated with. The panel must be located in the same tab group.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the tab and prevents selection.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-split-panel",
+          "description": "",
+          "attributes": [
+            {
+              "name": "position",
+              "description": "The current position of the divider from the primary panel's edge as a percentage 0-100. Defaults to 50% of the\ncontainer's initial size.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "position-in-pixels",
+              "description": "The current position of the divider from the primary panel's edge in pixels.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "orientation",
+              "description": "Sets the split panel's orientation.",
+              "value": {
+                "type": "'horizontal' | 'vertical'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables resizing. Note that the position may still change as a result of resizing the host element.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "primary",
+              "description": "If no primary panel is designated, both panels will resize proportionally when the host element is resized. If a\nprimary panel is designated, it will maintain its size and the other panel will grow or shrink as needed when the\nhost element is resized.",
+              "value": {
+                "type": "'start' | 'end' | undefined"
+              }
+            },
+            {
+              "name": "snap",
+              "description": "One or more space-separated values at which the divider should snap. Values can be in pixels or percentages, e.g.\n`\"100px 50%\"`.",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "snap-threshold",
+              "description": "How close the divider must be to a snap point until snapping occurs.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tab-panel",
+          "description": "",
+          "attributes": [
+            {
+              "name": "name",
+              "description": "The tab panel's name.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "active",
+              "description": "When true, the tab panel will be shown.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tab-group",
+          "description": "",
+          "attributes": [
+            {
+              "name": "active",
+              "description": "Sets the active tab.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placement",
+              "description": "The placement of the tabs.",
+              "value": {
+                "type": "'top' | 'bottom' | 'start' | 'end'"
+              }
+            },
+            {
+              "name": "activation",
+              "description": "When set to auto, navigating tabs with the arrow keys will instantly show the corresponding tab panel. When set to\nmanual, the tab will receive focus but will not show until the user presses spacebar or enter.",
+              "value": {
+                "type": "'auto' | 'manual'"
+              }
+            },
+            {
+              "name": "without-scroll-controls",
+              "description": "Disables the scroll arrows that appear when tabs overflow.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-textarea",
+          "description": "",
+          "attributes": [
+            {
+              "name": "title",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "name",
+              "description": "The name of the textarea, submitted as a name/value pair with form data.",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "value",
+              "description": "The default value of the form control. Primarily used for resetting the form control.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "size",
+              "description": "The textarea's size.",
+              "value": {
+                "type": "'small' | 'medium' | 'large'"
+              }
+            },
+            {
+              "name": "appearance",
+              "description": "The textarea's visual appearance.",
+              "value": {
+                "type": "'filled' | 'outlined' | 'filled-outlined'"
+              }
+            },
+            {
+              "name": "label",
+              "description": "The textarea's label. If you need to display HTML, use the `label` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hint",
+              "description": "The textarea's hint. If you need to display HTML, use the `hint` slot instead.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placeholder",
+              "description": "Placeholder text to show as a hint when the input is empty.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "rows",
+              "description": "The number of rows to display by default.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "resize",
+              "description": "Controls how the textarea can be resized.",
+              "value": {
+                "type": "'none' | 'vertical' | 'horizontal' | 'both' | 'auto'"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "Disables the textarea.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "readonly",
+              "description": "Makes the textarea readonly.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "required",
+              "description": "Makes the textarea a required field.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "minlength",
+              "description": "The minimum length of input that will be considered valid.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "maxlength",
+              "description": "The maximum length of input that will be considered valid.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "autocapitalize",
+              "description": "Controls whether and how text input is automatically capitalized as it is entered by the user.",
+              "value": {
+                "type": "'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters'"
+              }
+            },
+            {
+              "name": "autocorrect",
+              "description": "Indicates whether the browser's autocorrect feature is on or off. When set as an attribute, use `\"off\"` or `\"on\"`.\nWhen set as a property, use `true` or `false`.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "autocomplete",
+              "description": "Specifies what permission the browser has to provide assistance in filling out form field values. Refer to\n[this page on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete) for available values.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "autofocus",
+              "description": "Indicates that the input should receive focus on page load.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "enterkeyhint",
+              "description": "Used to customize the label or icon of the Enter key on virtual keyboards.",
+              "value": {
+                "type": "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'"
+              }
+            },
+            {
+              "name": "spellcheck",
+              "description": "Enables spell checking on the textarea.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "inputmode",
+              "description": "Tells the browser what type of data will be entered by the user, allowing it to display the appropriate virtual\nkeyboard on supportive devices.",
+              "value": {
+                "type": "'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url'"
+              }
+            },
+            {
+              "name": "with-label",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `label` element so the server-rendered markup\nincludes the label before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-hint",
+              "description": "Only required for SSR. Set to `true` if you're slotting in a `hint` element so the server-rendered markup\nincludes the hint before the component hydrates on the client.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "with-count",
+              "description": "Shows a character count below the textarea. When `maxlength` is set, shows remaining characters instead.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "custom-error",
+              "description": "",
+              "value": {
+                "type": "string | null"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-tree",
+          "description": "",
+          "attributes": [
+            {
+              "name": "selection",
+              "description": "The selection behavior of the tree. Single selection allows only one node to be selected at a time. Multiple\ndisplays checkboxes and allows more than one node to be selected. Leaf allows only leaf nodes to be selected.",
+              "value": {
+                "type": "'single' | 'multiple' | 'leaf'"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-markdown",
+          "description": "",
+          "attributes": [
+            {
+              "name": "tab-size",
+              "description": "The tab stop width used when converting leading tabs to spaces during whitespace normalization.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "dir",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-page",
+          "description": "",
+          "attributes": [
+            {
+              "name": "view",
+              "description": "The view is a reflection of the \"mobileBreakpoint\", when the page is larger than the `mobile-breakpoint` (768px by\ndefault), it is considered to be a \"desktop\" view. The view is merely a way to distinguish when to show/hide the\nnavigation. You can use additional media queries to make other adjustments to content as necessary.\nThe default is \"desktop\" because the \"mobile navigation drawer\" isn't accessible via SSR due to drawer requiring JS.",
+              "value": {
+                "type": "'mobile' | 'desktop'"
+              }
+            },
+            {
+              "name": "nav-open",
+              "description": "Whether or not the navigation drawer is open. Note, the navigation drawer is only \"open\" on mobile views.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "mobile-breakpoint",
+              "description": "At what page width to hide the \"navigation\" slot and collapse into a hamburger button.\nAccepts both numbers (interpreted as px) and CSS lengths (e.g. `50em`), which are resolved based on the root element.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "navigation-placement",
+              "description": "Where to place the navigation when in the mobile viewport.",
+              "value": {
+                "type": "'start' | 'end'"
+              }
+            },
+            {
+              "name": "disable-navigation-toggle",
+              "description": "Determines whether or not to hide the default hamburger button.\nThis will automatically flip to \"true\" if you add an element with `data-toggle-nav` anywhere in the element light DOM.\nGenerally this will be set for you and you don't need to do anything, unless you're using SSR, in which case you should set this manually for initial page loads.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "dir",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "loader-height",
+              "name": "lang",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "loading-text",
+              "name": "did-ssr",
+              "description": "",
+              "value": {
+                "type": "any"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-table",
+          "description": "",
+          "attributes": [
+            {
+              "name": "columns",
+              "description": "",
+              "value": {
+                "type": "BeamTableColumn[]"
+              }
+            },
+            {
+              "name": "data",
+              "description": "",
+              "value": {
+                "type": "any[]"
+              }
+            },
+            {
+              "name": "group-by",
+              "description": "",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "page-size",
+              "description": "",
+              "value": {
+                "type": "number | undefined"
+              }
+            },
+            {
+              "name": "empty-message",
               "description": "",
               "value": {
                 "type": "string"
               }
             },
             {
-              "name": "footer-props",
-              "description": "Props forwarded to the footer pagination control.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "header-props",
-              "description": "Props forwarded to the header row.",
-              "value": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "calculate-widths",
+              "name": "loading",
               "description": "",
               "value": {
                 "type": "boolean"
               }
             },
             {
-              "name": "caption",
+              "name": "loading-message",
               "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "default-collapsed",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "table-title",
+              "description": "",
+              "value": {
+                "type": "string | undefined"
+              }
+            },
+            {
+              "name": "has-top-row",
+              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\ngroup's header — and the owner is expected to mount its own DOM there.\nIf unset, the table renders its built-in defaults.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "has-group-header",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-json",
+          "description": "",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "indent",
+              "description": "",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "no-toolbar",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-page-header",
+          "description": "",
+          "attributes": [
+            {
+              "name": "label",
+              "description": "Page title. Rendered as an H1.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "description",
+              "description": "Optional description rendered below the title.",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-confirm-dialog",
+          "description": "",
+          "attributes": [
+            {
+              "name": "open",
+              "description": "When true, the dialog is shown. Toggle from the consumer to open/close.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "label",
+              "description": "Title shown at the top of the dialog.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "message",
+              "description": "Body text rendered under the title.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "confirm-label",
+              "description": "Confirm button label.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "cancel-label",
+              "description": "Cancel button label.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "confirm-variant",
+              "description": "Visual variant of the confirm button.",
+              "value": {
+                "type": "ConfirmVariant"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-pagination",
+          "description": "",
+          "attributes": [
+            {
+              "name": "page",
+              "description": "1-indexed current page number.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "page-size",
+              "description": "Items per page.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "total",
+              "description": "Total number of items across all pages.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "page-size-options",
+              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hide-info",
+              "description": "Hide the \"Showing X–Y of Z\" info block.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "hide-page-input",
+              "description": "Hide the page input (Prev/Next only).",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-toast",
+          "description": "",
+          "attributes": [
+            {
+              "name": "variant",
+              "description": "Visual variant.",
+              "value": {
+                "type": "ToastVariant"
+              }
+            },
+            {
+              "name": "message",
+              "description": "Plain-text message. Replaced by default-slot content when present.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "duration",
+              "description": "Auto-dismiss after N ms. 0 = sticky.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "toastId",
+              "description": "Identifier supplied by the host stack.",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
+              "name": "action-label",
+              "description": "Optional action label rendered as a default action button.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "no-close",
+              "description": "Hide the close button.",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-toast-stack",
+          "description": "",
+          "attributes": [
+            {
+              "name": "placement",
+              "description": "Where toasts appear on the screen.",
+              "value": {
+                "type": "'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'"
+              }
+            },
+            {
+              "name": "max-toasts",
+              "description": "Maximum number of toasts visible at once. Older toasts beyond this limit are dropped.",
+              "value": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-code-snippet",
+          "description": "",
+          "attributes": [
+            {
+              "name": "code",
+              "description": "Source code to render.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "lang",
+              "description": "Shiki language id (e.g. `tsx`, `bash`, `json`). Defaults to `tsx`.",
               "value": {
                 "type": "string"
               }

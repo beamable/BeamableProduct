@@ -7,19 +7,23 @@
  *   - src/globals.ts             (TypeScript HTMLElementTagNameMap augmentations)
  *   - src/svelte-elements.ts     (Svelte SvelteHTMLElements augmentations)
  *
- * By default also copies beam-components.json from the Portal repo into
- * custom-elements.json first. Pass --no-copy to skip that step and use the
- * existing custom-elements.json instead.
+ * By default also copies custom-elements.json from the agentic-portal repo
+ * into this project's custom-elements.json first. Pass --no-copy to skip that
+ * step and use the existing custom-elements.json instead.
+ *
+ * Run `npm run generate:cem` in the agentic-portal repo first to refresh its
+ * manifest before syncing.
  *
  * Usage:
- *   pnpm sync-components            # copy from Portal, then regenerate
+ *   pnpm sync-components            # copy from agentic-portal, then regenerate
  *   pnpm sync-components --no-copy  # regenerate from existing custom-elements.json
  *
- * When copying, the Portal repo is expected to be a sibling of BeamableProduct:
- *   ~/Documents/Github/Portal/
+ * When copying, the agentic-portal repo is expected to be a sibling of
+ * BeamableProduct:
+ *   ~/Documents/Github/agentic-portal/
  *
  * Override via env var if it lives elsewhere:
- *   PORTAL_REPO_PATH=/path/to/Portal pnpm sync-components
+ *   PORTAL_REPO_PATH=/path/to/agentic-portal pnpm sync-components
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
@@ -36,8 +40,8 @@ const noCopy = process.argv.includes('--no-copy');
 // ---------------------------------------------------------------------------
 
 const portalRepo =
-  process.env.PORTAL_REPO_PATH ?? resolve(root, '../../Portal');
-const cemSource = resolve(portalRepo, 'static/beam-components.json');
+  process.env.PORTAL_REPO_PATH ?? resolve(root, '../../agentic-portal');
+const cemSource = resolve(portalRepo, 'custom-elements.json');
 const cemDest = resolve(root, 'custom-elements.json');
 const webTypesDest = resolve(root, 'src/generated/web-types.json');
 const globalsDest = resolve(root, 'src/generated/globals.ts');
@@ -61,7 +65,8 @@ if (noCopy) {
   if (!existsSync(cemSource)) {
     console.error(`\nERROR: CEM file not found at:\n  ${cemSource}\n`);
     console.error(
-      'Set the PORTAL_REPO_PATH env var to point to your Portal repo root,\n' +
+      'Run `npm run generate:cem` in the agentic-portal repo to produce it,\n' +
+      'set the PORTAL_REPO_PATH env var to point to your agentic-portal repo root,\n' +
       'or pass --no-copy to regenerate from the existing custom-elements.json.',
     );
     process.exit(1);
@@ -76,10 +81,11 @@ if (noCopy) {
 // ---------------------------------------------------------------------------
 
 /** @type {Array<{kind: string, tagName: string, name: string, description?: string, attributes?: Array<{name: string, description?: string, type?: {text: string}}>, members?: Array<{kind: string, name: string, type?: {text: string}}>}>} */
+// agentic-portal's CEM is produced by @custom-elements-manifest/analyzer, which
+// emits `kind: "class"` with a `tagName` for custom elements. The old Portal
+// repo emitted `kind: "custom-element"`. Filter on `tagName` so both shapes work.
 const declarations = cem.modules.flatMap((m) =>
-  (m.declarations ?? []).filter(
-    (d) => d.kind === 'custom-element' && d.tagName,
-  ),
+  (m.declarations ?? []).filter((d) => d.tagName),
 );
 
 if (declarations.length === 0) {
@@ -129,8 +135,36 @@ console.log(
 // ---------------------------------------------------------------------------
 
 /**
- * Convert a CEM type text string to a TypeScript type string.
- * CEM type.text is usually already valid TS, but a few common names differ.
+ * Identifiers we trust to resolve at the toolkit's compile time without an
+ * import (TS built-ins + lib.dom). Any identifier outside this set in a CEM
+ * type string would dangle, so we fall back to `unknown` for the whole type.
+ *
+ * This is conservative on purpose: consumers get `unknown` (still type-safe,
+ * still permits assignment from inferred values) instead of a hard TS error.
+ */
+const SAFE_TYPE_IDENTS = new Set([
+  // primitives + special forms
+  'string', 'number', 'boolean', 'bigint', 'symbol',
+  'null', 'undefined', 'void', 'any', 'unknown', 'never', 'object',
+  'true', 'false',
+  // structural built-ins
+  'Array', 'ReadonlyArray', 'Record', 'Map', 'ReadonlyMap', 'Set', 'ReadonlySet',
+  'WeakMap', 'WeakSet', 'Promise', 'Partial', 'Required', 'Readonly', 'Pick',
+  'Omit', 'Exclude', 'Extract', 'NonNullable', 'Date', 'RegExp', 'Error',
+  // DOM
+  'HTMLElement', 'HTMLInputElement', 'HTMLTextAreaElement', 'HTMLSelectElement',
+  'HTMLFormElement', 'HTMLTemplateElement', 'HTMLImageElement', 'HTMLAnchorElement',
+  'HTMLButtonElement', 'HTMLDivElement', 'HTMLSpanElement', 'HTMLLabelElement',
+  'SVGElement', 'Element', 'Node', 'Event', 'CustomEvent', 'EventTarget',
+  'ElementInternals', 'CustomStateSet', 'NodeList', 'NodeListOf',
+  'HTMLCollection', 'DOMTokenList', 'ShadowRoot', 'File', 'FileList', 'Blob',
+]);
+
+/**
+ * Convert a CEM type text string to a safe TypeScript type string. If the
+ * type references any identifier we don't have visibility into (component
+ * internals like IconAnimation, Lit's CSSResultGroup, etc.), fall back to
+ * `unknown` so the generated declaration still compiles.
  */
 function toTsType(typeText) {
   if (!typeText) return 'unknown';
@@ -141,7 +175,16 @@ function toTsType(typeText) {
     object: 'Record<string, unknown>',
     Object: 'Record<string, unknown>',
   };
-  return overrides[normalized] ?? normalized;
+  if (overrides[normalized]) return overrides[normalized];
+
+  // Strip string/number literals before scanning for identifiers — literals
+  // happen to spell things like `'large'` that look like idents to a regex.
+  const stripped = normalized.replace(/'[^']*'|"[^"]*"|`[^`]*`|-?\d+(?:\.\d+)?/g, '');
+  const idents = stripped.match(/[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+  for (const id of idents) {
+    if (!SAFE_TYPE_IDENTS.has(id)) return 'unknown';
+  }
+  return normalized;
 }
 
 /** 'beam-some-thing' → 'BeamSomeThing' */
@@ -162,10 +205,67 @@ const tagMapLines = declarations
   .map((d) => `    '${d.tagName}': ${toIfaceName(d.tagName)};`)
   .join('\n');
 
-// Per-element interface blocks (use members for JS property access)
+// Names that are already declared on HTMLElement (or on lib.dom mixins it
+// pulls in). Re-declaring them as `?: T` produces `T | undefined`, which is
+// not assignable to the stricter base type and breaks `extends HTMLElement`.
+// We rely on the inherited declarations instead.
+const HTML_ELEMENT_INHERITED = new Set([
+  'id', 'className', 'slot', 'style', 'title', 'lang', 'dir', 'hidden',
+  'tabIndex', 'role', 'inert', 'accessKey', 'draggable', 'spellcheck',
+  'translate', 'contentEditable', 'enterKeyHint', 'inputMode', 'autocapitalize',
+  'autocorrect', 'autofocus', 'popover', 'nonce',
+]);
+
+// Names that are technically public on the underlying class (often inherited
+// from WaElement / Lit base), but we don't want to advertise them in the
+// generated `BeamFooElement` interfaces — they're framework plumbing, not
+// part of the component's user-facing API.
+//
+// Add to this set when you spot another field leaking into globals.ts that
+// shouldn't be in the toolkit's public surface. These are quiet skips: they
+// don't fix any error, they just keep the generated types honest.
+const WA_INTERNAL_LEAKAGE = new Set([
+  'internals',                  // ElementInternals — set by WA for form association
+  'initialReflectedProperties', // Lit reactive-property bookkeeping
+  'didSSR',                     // SSR marker flag
+  'hasSlotController',          // WA slot-detection helper
+  'validators',                 // WA form-validation helpers
+  'allValidators',
+  'assumeInteractionOn',
+  'valueHasChanged',
+  'hasInteracted',
+  'emittedEvents',
+  'states',                     // CustomStateSet — exposed via internals.states
+  'emitInvalid',
+  'formAssociated',
+  'shadowRootOptions',
+]);
+
+// Per-element interface blocks (use members for JS property access).
+// Filter to public, instance, non-internal fields:
+//   - kind=field (drop methods — interface methods would need full signatures)
+//   - not static (class-level, not an instance prop)
+//   - not private/protected (not part of the public surface)
+//   - name doesn't start with `#` (private fields are TS-syntax-illegal in an interface)
+//   - name doesn't start with `_` (toolkit convention for internal state)
+//   - name not inherited from HTMLElement (would conflict on extends)
+//   - name not in WA_INTERNAL_LEAKAGE (framework plumbing we don't broadcast)
+//   - type is something more useful than bare `undefined`
 const ifaceBlocks = declarations.map((decl) => {
   const members = (decl.members ?? [])
-    .filter((m) => m.kind === 'field' && m.name)
+    .filter(
+      (m) =>
+        m.kind === 'field' &&
+        m.name &&
+        !m.static &&
+        m.privacy !== 'private' &&
+        m.privacy !== 'protected' &&
+        !m.name.startsWith('#') &&
+        !m.name.startsWith('_') &&
+        !HTML_ELEMENT_INHERITED.has(m.name) &&
+        !WA_INTERNAL_LEAKAGE.has(m.name) &&
+        m.type?.text?.trim() !== 'undefined',
+    )
     .map((m) => `    ${m.name}?: ${toTsType(m.type?.text)};`)
     .join('\n');
 
@@ -174,7 +274,7 @@ const ifaceBlocks = declarations.map((decl) => {
 });
 
 const globalsTs = `// AUTO-GENERATED — do not edit manually.
-// Run \`pnpm sync-components\` to regenerate from Portal's beam-components.json.
+// Run \`pnpm sync-components\` to regenerate from agentic-portal's custom-elements.json.
 
 export {};
 
@@ -218,7 +318,7 @@ const svelteElementEntries = declarations.map((decl) => {
 });
 
 const svelteElementsTs = `// AUTO-GENERATED — do not edit manually.
-// Run \`pnpm sync-components\` to regenerate from Portal's beam-components.json.
+// Run \`pnpm sync-components\` to regenerate from agentic-portal's custom-elements.json.
 //
 // Augments Svelte's element type map so .svelte templates get autocomplete
 // for Beamable web components.
