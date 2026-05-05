@@ -10,11 +10,7 @@ description: Create custom content types for Unity, Unreal, and Microservices
 - Authenticated with `beam login` or saved credentials
 
 ## Discover existing content types
-Before creating custom types, check what already exists:
-```
-beam_list_types("content")
-```
-This returns all `[ContentType]`-annotated types — names, C# classes, namespaces, and serializable fields. Built-in examples:
+Before creating custom types, check what already exists. Use the `beam-get-source` skill to read SDK source files for built-in content types. Common built-in examples:
 - `ItemContent` (`[ContentType("items")]`) — inventory items with icon and federation support
 - `CurrencyContent` (`[ContentType("currency")]`) — currencies with starting amounts
 - `AnnouncementContent` (`[ContentType("announcements")]`) — announcements with scheduling
@@ -178,6 +174,7 @@ Archives a manifest that is no longer needed. Archived manifests are not deleted
 - **Type names cannot contain dots.** The dot is reserved for the `{type}.{name}` content ID format.
 - **Unreal custom types need C# equivalents** if microservices access them. Use the serialization mapping table above.
 - **Place shared types correctly.** Unity types go in `Assets/Beamable/Common/`; standalone projects use a shared library.
+- **Microservices need explicit imports.** When using `ContentRef<T>`, `ContentObject`, or validation attributes in a microservice, add `using Beamable.Common.Content;` and `using Beamable.Common.Content.Validation;`. These are not auto-imported.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts.
 
 ## Wrap-up

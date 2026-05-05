@@ -31,10 +31,7 @@ Review the output for unexpected changes before publishing. Look for:
 - **Conflicted** items that need manual resolution
 
 ### 3. Verify content types and references
-Use the type discovery tool to confirm content types are correctly registered:
-```
-beam_list_types("content")
-```
+Read the content type source files to confirm types are correctly registered. Use the `beam-get-source` skill to locate SDK source code if needed.
 
 ## Checklist
 
@@ -85,6 +82,12 @@ Choose the right attribute for each microservice endpoint:
 - [ ] Callable methods without `CallableFlags.SkipGenerateClientFiles` have serializable arguments and return types
 - [ ] Complex types used in callables are plain C# classes with public fields or properties — no interfaces or abstract types as parameters
 - [ ] `[System.Serializable]` attribute is present on content classes (required for Unity serialization)
+
+### Content Files
+- [ ] All content files have `"referenceManifestId": "EmptyManifest"` (not an empty string — empty string causes NullReferenceException)
+- [ ] All property values use `{"data": "..."}` wrapper format
+- [ ] String values are properly double-escaped inside `data` (e.g., `"data": "\"Iron Sword\""`)
+- [ ] List/object values are JSON-stringified inside `data` (e.g., `"data": "[{\"id\":\"x\"}]"`)
 
 ### Deploy Safety
 - [ ] `deploy plan` uses `--merge` when adding services without removing existing ones

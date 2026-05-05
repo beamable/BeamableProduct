@@ -14,18 +14,18 @@ description: Initialize a Beamable project workspace with realm context and auth
 - **CID** (Customer ID): Your Beamable organization identifier. Can be a numeric ID or an alias.
 - **PID** (Project ID): A specific realm within your organization. Each game can have multiple realms (dev, staging, production).
 - **`.beamable` folder**: The workspace root created by `beam init`. Contains config, content, and credentials. Required by most commands. **This is the first thing you need to create in any new Beamable project.**
-- **Environment**: The Beamable platform environment to connect to. Ask the user which environment they need before initializing:
-  - `prod` (default) — `https://api.beamable.com` — production, used by most customers
-  - `staging` — `https://staging.api.beamable.com` — Beamable staging environment
-  - `dev` — `https://dev.api.beamable.com` — Beamable development environment
-  - `custom` — any custom URL, must be provided via `--host`
+- **Environment**: The Beamable platform environment to connect to. `--host` requires a full URL — shorthand names like `dev` or `staging` do not work. Ask the user which environment they need before initializing:
+  - **prod** (default) — `https://api.beamable.com` — no `--host` needed
+  - **staging** — `--host https://staging.api.beamable.com`
+  - **dev** — `--host https://dev.api.beamable.com`
+  - **custom** — any full URL, e.g. `--host https://custom.beamable.com`
 
 ## Steps
 
 ### 0. Check if Beamable is already initialized
 Before running `beam init`, check if a `.beamable` folder already exists in the project:
 ```
-beam_exec("config")
+beam_exec("config -q")
 ```
 If this returns CID and PID values, the workspace is already initialized — skip to step 2 (Verify) or step 3 (Login). If it fails or shows no CID/PID, proceed with initialization.
 
@@ -36,9 +36,9 @@ beam_exec("init --cid <CID> --pid <PID> -q")
 ```
 For a non-production environment, pass `--host`:
 ```
-beam_exec("init --cid <CID> --pid <PID> --host <environment> -q")
+beam_exec("init --cid <CID> --pid <PID> --host https://dev.api.beamable.com -q")
 ```
-Where `<environment>` is one of: `prod`, `staging`, `dev`, or a full custom URL (e.g. `https://custom.beamable.com`).
+The `--host` value must be a full URL. See the environment list above for the correct URLs.
 
 Tokens are saved to disk by default. Use `--no-token-save` to prevent persistence.
 
@@ -60,7 +60,7 @@ Tokens are saved to disk by default. Use `--no-token-save` to prevent persistenc
 
 ### 2. Verify the configuration
 ```
-beam_exec("config")
+beam_exec("config -q")
 ```
 This shows the current CID, PID, host, and other workspace settings.
 
@@ -105,7 +105,7 @@ If the user ran `beam mcp setup` before `beam init`, the `.mcp.json` file will e
 - **Both `--cid` and `--pid` are required in quiet mode** (`-q`). Without them, the command tries interactive realm selection which will hang from MCP.
 - **Quiet mode defaults to `prod` environment.** If the user needs staging/dev, you must pass `--host` explicitly.
 - **Tokens save by default.** Use `--no-token-save` if you need ephemeral credentials.
-- **CID can be an alias or numeric ID.** The CLI resolves aliases automatically.
+- **CID can be an alias or numeric ID.** The CLI resolves aliases automatically. **However, aliases are environment-scoped** — the same alias may not resolve on all environments. If a CID alias fails to resolve, try a different `--host` environment or use the numeric CID instead.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts.
 - **`dotnet tool restore` runs automatically** during init to set up the local toolchain.
 

@@ -129,16 +129,47 @@ beam_exec("content publish --manifest-ids events -q")
 ## Cross-SDK content access
 
 ### Microservices (C#)
-Access content inside a microservice using dependency injection:
+
+**Get a single content object by ID:**
 ```csharp
-[Callable]
-public async Task<string> GetWeaponDamage(string contentId)
+[ClientCallable]
+public async Task<int> GetWeaponDamage(string contentId)
 {
-    var weapon = await Services.Content.GetContent<WeaponContent>(contentId);
-    return $"Damage: {weapon.damage}";
+    var weapon = await Services.Content.GetContent<WeaponContent>(
+        new ContentRef<WeaponContent>(contentId)
+    );
+    return weapon.damage;
 }
 ```
-You can also inject `IContentApi` directly and use `EnableEagerContentLoading` on the service class to preload all content at startup.
+
+**Get ALL content of a specific type** (there is no `GetAll<T>()`):
+```csharp
+[ClientCallable]
+public async Task<List<string>> GetAllWeaponIds()
+{
+    // Step 1: Get manifest filtered by type prefix
+    var manifest = await Services.Content.GetManifest("t:weapons");
+
+    // Step 2: Resolve each entry individually
+    var weapons = new List<WeaponContent>();
+    foreach (var entry in manifest.entries)
+    {
+        var weapon = await Services.Content.GetContent<WeaponContent>(
+            new ContentRef<WeaponContent>(entry.contentId)
+        );
+        weapons.Add(weapon);
+    }
+    return weapons.Select(w => w.Id).ToList();
+}
+```
+
+**GetManifest filter syntax:**
+- `"t:weapons"` — all content of type "weapons"
+- `"t:weapons items"` — all weapons OR items
+- `"tag:rare"` — all content tagged "rare"
+- `""` — entire manifest (all types)
+
+You can also use `EnableEagerContentLoading` on the `[Microservice]` attribute to preload all content at startup.
 
 ### Unity
 ```csharp
@@ -155,6 +186,29 @@ Use the `@beamable/sdk` npm package:
 ```typescript
 const content = await sdk.content.get("weapons.sword_01");
 ```
+
+## Content file format
+
+Content JSON files in `.beamable/content/` must follow this exact structure:
+```json
+{
+  "tags": [],
+  "referenceManifestId": "EmptyManifest",
+  "properties": {
+    "fieldName": { "data": "<json_serialized_value>" }
+  }
+}
+```
+
+Critical serialization rules:
+- Every property value is wrapped in `{"data": "..."}` — the `data` field contains the JSON-serialized value as a **string**
+- Strings are double-escaped: `"data": "\"Iron Sword\""`
+- Numbers are stringified: `"data": "25"` or `"data": "1.5"`
+- Booleans: `"data": "true"`
+- Lists/objects: `"data": "[{\"contentId\":\"weapons.iron_sword\",\"weight\":30.0}]"`
+- `referenceManifestId` must be `"EmptyManifest"`, not an empty string — an empty string causes a NullReferenceException in the SDK
+
+**WARNING**: Do not use `content save --force` — it can produce malformed files with an empty `referenceManifestId`.
 
 ## Common pitfalls
 - **Sync without flags does nothing.** You must explicitly specify `--sync-created`, `--sync-modified`, etc.

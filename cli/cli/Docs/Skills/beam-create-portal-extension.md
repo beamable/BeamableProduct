@@ -74,17 +74,21 @@ beam_exec("portal open-extension <Name>")
 ```
 
 ## Web SDK Documentation
-For TypeScript development in the extension, call:
-```
-beam_list_types("web")
-```
-This returns the documentation URL pattern for the Beamable Web SDK (`@beamable/sdk`). The SDK is a transitive dependency of `@beamable/portal-toolkit` — the toolkit version is NOT the SDK version. Follow the `versionResolution` steps in the response to find the actual SDK version from `node_modules/@beamable/portal-toolkit/package.json` → `peerDependencies["@beamable/sdk"]`.
+The portal extension uses `@beamable/portal-toolkit` which depends on `@beamable/sdk`. To find the actual SDK version, check `node_modules/@beamable/portal-toolkit/package.json` → `peerDependencies["@beamable/sdk"]`. Use the `beam-get-source` skill to read SDK source code locally.
 
 ## Common Pitfalls
 - **Never guess mount values.** Valid pages and selectors come from a remote config that changes between Portal versions. Always call `list-extension-options` first.
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
+- **Portal extensions use Svelte, not React.** The default `--service-directory` for portal extensions is `extensions/`, not `services/`.
+
+## Generated microservice clients
+
+When `portal extension add-microservice` generates clients:
+- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.js` (JavaScript, not TypeScript)
+- The client class extends `BeamMicroServiceClient` from `@beamable/sdk`
+- Import path uses `.js` extension: `import { MyServiceClient } from '../beamable/clients/MyServiceClient.js'`
 
 ## Wrap-Up
 
@@ -92,16 +96,16 @@ After completing the workflow, provide the user with a summary that covers:
 
 1. **What was created**: The portal extension name, and whether it is a page extension (new navigation entry) or a component extension (injected into an existing page).
 2. **Where the files live**:
-   - Extension project root: `services/<Name>/` — contains the React/TypeScript source.
-   - Entry point: `services/<Name>/src/index.tsx` — the main component rendered by the Portal.
-   - Package config: `services/<Name>/package.json` — dependencies including `@beamable/portal-toolkit`.
-   - If a microservice dependency was added: `services/<Name>/beamable/clients/` — auto-generated typed TypeScript clients for calling microservice endpoints.
+   - Extension project root: `extensions/<Name>/` — contains the Svelte source.
+   - Entry point: `extensions/<Name>/src/App.svelte` — the main component rendered by the Portal. Uses `@beamable/portal-toolkit` which provides custom elements: `beam-card`, `beam-btn`, `beam-data-table`, etc.
+   - Package config: `extensions/<Name>/package.json` — dependencies including `@beamable/portal-toolkit`.
+   - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated JavaScript clients for calling microservice endpoints.
    - Service manifest: `.beamable/beamoLocalManifest.json` — tracks the extension alongside other services.
 3. **Why specific choices were made** — explain the reasoning:
    - **Mount point chosen**: Why this `--mount-page` and `--mount-selector` — what Portal page it extends and where in the UI it appears. For page extensions, explain what the nav group and label mean for Portal navigation.
    - **Page vs component**: Why this extension type was chosen — page extensions are standalone features with their own route, while component extensions augment existing Portal pages at specific insertion points.
-   - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the extension can call `[ClientCallable]` endpoints with full type safety, and that the microservice must be running (locally or deployed) for those calls to work.
-4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes to the TypeScript source hot-reload in the browser. For the Web SDK API reference, call `beam_list_types("web")` to get the documentation URL.
+   - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the extension can call `[ClientCallable]` endpoints, and that the microservice must be running (locally or deployed) for those calls to work.
+4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes to the Svelte source hot-reload in the browser.
 
 ## CLI Version Awareness
 

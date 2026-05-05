@@ -25,7 +25,7 @@ beam_exec("login --refresh-token <token> -q")
 
 ## Checking Current Auth Status
 ```
-beam_exec("config")
+beam_exec("config -q")
 ```
 This shows the current CID, PID, and authentication state.
 

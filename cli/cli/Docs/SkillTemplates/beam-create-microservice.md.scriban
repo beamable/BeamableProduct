@@ -14,12 +14,12 @@ description: Create a Beamable microservice with optional storage and federation
 
 ### 1. Check existing services
 ```
-beam_exec("project ps")
+beam_exec("project ps -q")
 ```
 
 ### 2. Create the microservice
 ```
-beam_exec("project new service --name <Name> -q")
+beam_exec("project new service <Name> -q")
 ```
 The CLI auto-discovers the nearest `.sln` file relative to the `.beamable` workspace. If none exists, it creates `<Name>/<Name>.sln`.
 {{ if commands["project new service"] }}
@@ -32,8 +32,8 @@ The CLI auto-discovers the nearest `.sln` file relative to the `.beamable` works
 ### 3. Optionally create and link storage
 If the microservice needs a database:
 ```
-beam_exec("project new storage --name <StorageName> -q")
-beam_exec("project deps add --source <Name> --deps <StorageName>")
+beam_exec("project new storage <StorageName> -q")
+beam_exec("project deps add <Name> <StorageName>")
 ```
 {{ if commands["project new storage"] }}
 #### `beam project new storage` options
@@ -110,12 +110,6 @@ public Task InternalHelper() { /* ... */ }
 
 Federations allow microservices to integrate with external identity providers and inventory systems. They are auto-managed via interface implementation in the microservice code — there are no manual CLI commands for federation.
 
-### Discovering federation interfaces
-```
-beam_list_types("federation")
-```
-Returns the full list of available federation interfaces with their methods.
-
 ### Available federation interfaces
 All federation interfaces require a generic type parameter `T` constrained to `where T : IFederationId, new()`.
 {{ for fed in federation_types }}{{ if fed.interface_name != "IFederationId" }}
@@ -171,12 +165,12 @@ Storage objects provide MongoDB access for microservices. Each storage runs as a
 
 ### Creating storage
 ```
-beam_exec("project new storage --name MyStorage -q")
+beam_exec("project new storage MyStorage -q")
 ```
 
 Storage is linked to a microservice via project references. Use `project deps add` to create the link:
 ```
-beam_exec("project deps add --source MyService --deps MyStorage")
+beam_exec("project deps add MyService MyStorage")
 ```
 
 {{ if commands["project new storage"] }}
@@ -210,6 +204,118 @@ public interface IServiceBClient { }
 ```
 
 **WARNING:** Inter-service calls create tight coupling. Both services must be deployed, and each call adds network latency. Prefer shared libraries (common `.csproj` references) for reusable logic over microservice-to-microservice calls.
+
+## Common API Patterns
+
+These are the correct API signatures for the most-used microservice services. Do NOT guess method names — use these exact signatures.
+
+### Stats API (`Services.Stats`)
+
+```csharp
+// Get a single stat
+string value = await Services.Stats.GetStat(
+    StatsDomainType.Game,     // or StatsDomainType.Client
+    StatsAccessType.Public,   // or StatsAccessType.Private
+    Context.UserId,           // long — the player's realm-specific ID
+    "stat_key"                // string — the stat key name
+);
+
+// Get multiple stats (pass null for all stats)
+Dictionary<string, string> stats = await Services.Stats.GetFilteredStats(
+    StatsDomainType.Game, StatsAccessType.Public,
+    Context.UserId, new[] { "score", "level" }
+);
+
+// Set a single stat
+await Services.Stats.SetStat(
+    StatsDomainType.Game, StatsAccessType.Public,
+    Context.UserId, "score", "100"
+);
+
+// Set multiple stats
+await Services.Stats.SetStats(
+    StatsDomainType.Game, StatsAccessType.Public,
+    Context.UserId, new Dictionary<string, string> { { "score", "100" }, { "level", "5" } }
+);
+
+// Delete a stat
+await Services.Stats.DeleteStat(
+    StatsDomainType.Game, StatsAccessType.Public,
+    Context.UserId, "old_stat"
+);
+
+// Search players by stat value
+var results = await Services.Stats.SearchStats(
+    StatsDomainType.Game, StatsAccessType.Public,
+    new List<Criteria> { new Criteria("level", "gte", 10) }
+);
+long[] matchingPlayerIds = results.ids;
+```
+
+**Important:** All stat values are strings. Numbers must be stringified: `"100"`, not `100`. The obsolete methods `GetProtectedPlayerStat`, `GetPublicPlayerStat`, `SetProtectedPlayerStat` still compile but should NOT be used — use the enum-based versions above.
+
+### Content API (`Services.Content`)
+
+```csharp
+// Get a single content object by ID
+var weapon = await Services.Content.GetContent<WeaponContent>(
+    new ContentRef<WeaponContent>("weapons.sword_01")
+);
+int damage = weapon.damage;
+
+// Get ALL content of a specific type (there is no GetAll<T>())
+// You must: get manifest → filter entries → resolve each one
+var manifest = await Services.Content.GetManifest("t:weapons");
+var allWeapons = new List<WeaponContent>();
+foreach (var entry in manifest.entries)
+{
+    var content = await Services.Content.GetContent<WeaponContent>(
+        new ContentRef<WeaponContent>(entry.contentId)
+    );
+    allWeapons.Add(content);
+}
+
+// GetManifest filter syntax:
+// "t:weapons"              — all content of type "weapons"
+// "t:weapons items"        — all weapons OR items
+// "tag:rare"               — all content tagged "rare"
+// "tag:rare legendary"     — all content tagged rare AND legendary
+// ""                       — entire manifest (all content)
+```
+
+**Important:** There is no `GetContent<T>()` that returns a list. You must use `GetManifest()` with a type filter, then resolve each entry individually.
+
+### Inventory API (`Services.Inventory`)
+
+```csharp
+// Get a player's currency amount
+long coins = await Services.Inventory.GetCurrency("currency.coins");
+
+// Get multiple currencies
+Dictionary<string, long> currencies = await Services.Inventory.GetCurrencies(
+    new[] { "currency.coins", "currency.gems" }
+);
+
+// Add currency (increments)
+await Services.Inventory.AddCurrency("currency.coins", 50);
+
+// Set currency (absolute value)
+await Services.Inventory.SetCurrency("currency.coins", 200);
+
+// Add an item to inventory
+await Services.Inventory.AddItem("items.sword_01",
+    new Dictionary<string, string> { { "enchantment", "fire" } }
+);
+
+// Get all items of a type
+List<InventoryObject<ItemContent>> items = await Services.Inventory.GetItems<ItemContent>();
+
+// Batch update (currencies + items in one call)
+await Services.Inventory.Update(builder => builder
+    .CurrencyChange("currency.coins", -100)
+    .AddItem("items.health_potion")
+);
+```
 
 ## Reading Source Code
 

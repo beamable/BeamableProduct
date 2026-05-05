@@ -94,11 +94,10 @@ public class BeamMcpTools
 	[Description(
 		"Get local file paths to the Beamable SDK source code. " +
 		"Auto-detects the SDK platform and version from the current project directory. " +
-		"Returns local filesystem paths — read the source files directly instead of browsing types through the API. " +
-		"For CLI/Microservice projects, source is in the NuGet cache at ~/.nuget/packages/beamable.common/{version}/content/.")]
+		"Returns local filesystem paths — read the source files directly instead of browsing types through the API.")]
 	public Task<string> beam_get_source(
 		[Description("Platform: 'unity', 'cli', 'unreal', or 'web'. Auto-detected if omitted.")] string platform = "",
 		[Description("SDK version override, e.g. '5.0.1'. Auto-detected if omitted.")] string version = "",
 		[Description("File path within the source tree, e.g. 'Runtime/Content/ContentObject.cs'.")] string filePath = "")
-		=> _executor.GetSourceUrlAsync(platform, version, filePath);
+		=> _executor.GetSourceCode(platform, version, filePath);
 }

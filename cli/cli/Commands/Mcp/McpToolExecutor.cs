@@ -4,6 +4,7 @@ using cli.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using static cli.ConfigService;
 
 namespace cli.Commands.Mcp;
 
@@ -77,7 +78,7 @@ public class McpToolExecutor
 		return reader.ReadToEnd();
 	}
 
-	public Task<string> GetSourceUrlAsync(string platform = "", string version = "", string filePath = "")
+	public Task<string> GetSourceCode(string platform = "", string version = "", string filePath = "")
 	{
 		try
 		{
@@ -329,10 +330,21 @@ public class McpToolExecutor
 		var dir = startDir;
 		while (dir != null)
 		{
-			if (ConfigService.TryGetProjectBeamableCLIVersion(dir, out var cliVersion)
+			if (TryGetProjectBeamableCLIVersion(dir, out var cliVersion)
 			    && !string.IsNullOrEmpty(cliVersion))
 			{
 				return ("cli", cliVersion);
+			}
+
+			var manifestPath = Path.Combine(dir, ".config", "dotnet-tools.json");
+			if (File.Exists(manifestPath))
+			{
+				var content = File.ReadAllText(manifestPath);
+				var match = System.Text.RegularExpressions.Regex.Match(content,
+					@"beamable.*?""([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?[^""]*)"",",
+					System.Text.RegularExpressions.RegexOptions.Singleline);
+				if (match.Success)
+					return ("cli", match.Groups[1].Value);
 			}
 
 			dir = Path.GetDirectoryName(dir);
@@ -469,7 +481,6 @@ public class McpToolExecutor
 		"unrecognized command or argument",
 		"unrecognized option",
 		"required argument missing",
-		"Required argument missing",
 	};
 
 	private static string EnrichErrorIfCommandFailure(string errorText, string commandLine)
