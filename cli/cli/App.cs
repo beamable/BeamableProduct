@@ -12,6 +12,7 @@ using Beamable.Common.Semantics;
 using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
+using cli.Commands;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
@@ -280,6 +281,12 @@ public class App
 			if (!string.IsNullOrEmpty(ctx.EngineVersion))
 			{
 				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
+			}
+
+			var aiAgent = DetectAiAgent();
+			if (!string.IsNullOrEmpty(aiAgent))
+			{
+				dict[Otel.ATTR_AI_AGENT] = aiAgent;
 			}
 
 			dict[Otel.ATTR_SOURCE] = "cli";
@@ -705,6 +712,9 @@ public class App
 		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
 		Commands.AddSubCommand<SelectUnrealSampleCommand, SelectUnrealSampleCommandArgs, UnrealGroupCommand>();
 		
+		// env command
+		Commands.AddRootCommand<EnvCommand, EnvCommandArgs>();
+
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -1544,19 +1554,57 @@ public class App
 		var joined = string.Join(" ", args).ToLowerInvariant();
 		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
 
-		var aiEnvVars = new[] { "CLAUDE_CODE", "CURSOR_SESSION_ID", "COPILOT_AGENT", "WINDSURF_SESSION", "OPENCODE_SESSION", "AIDER" };
-		var isAI = aiEnvVars.Any(v => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(v)));
-		if (!isAI) return;
+		var aiAgent = DetectAiAgent();
+		if (aiAgent == null) return;
 
 		Console.Error.WriteLine(
 			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
 			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
 	}
 
+	internal static string DetectAiAgent()
+	{
+		var mapping = new (string EnvVar, string AgentName)[]
+		{
+			("CLAUDECODE", "claude_code"),
+			("CLAUDE_CODE_ENTRYPOINT", "claude_code"),
+			("CURSOR_SESSION_ID", "cursor"),
+			("COPILOT_AGENT", "copilot"),
+			("COPILOT_CLI", "copilot"),
+			("COPILOT_AGENT_SESSION_ID", "copilot"),
+			("WINDSURF_SESSION", "windsurf"),
+			("OPENCODE_SESSION", "opencode"),
+			("OPENCODE", "opencode"),
+			("AIDER", "aider"),
+			("AI_AGENT", "unknown"),
+		};
+
+		string agentName = null;
+		foreach (var (envVar, name) in mapping)
+		{
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVar)))
+			{
+				agentName = name;
+				break;
+			}
+		}
+
+		var prefix = IsRunningInMcpServer ? "mcp" : "cli";
+
+		if (agentName != null)
+			return $"{prefix}_{agentName}";
+
+		if (IsRunningInMcpServer)
+			return "mcp_unknown";
+
+		return null;
+	}
+
 	internal static bool IsRunningInMcpServer { get; set; }
 
 	public virtual Task<int> RunAsync(string[] args)
 	{
+		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
 		return prog.InvokeAsync(args);
 	}

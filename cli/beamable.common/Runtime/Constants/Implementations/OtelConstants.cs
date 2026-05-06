@@ -104,6 +104,11 @@ namespace Beamable.Common
                 public const string ATTR_SOURCE = "beam.source";
 
                 /// <summary>
+                /// The AI agent calling the CLI in the format "transport_agentname" (e.g. "mcp_claude_code", "cli_cursor")
+                /// </summary>
+                public const string ATTR_AI_AGENT = "beam.ai_agent";
+
+                /// <summary>
                 /// A tag used to identify which engine is using the CLI, either "unity" or "unreal"
                 /// </summary>
                 public const string ATTR_ENGINE_SOURCE = "beam.engine.source";
