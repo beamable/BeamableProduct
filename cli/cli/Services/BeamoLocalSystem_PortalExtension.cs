@@ -7,6 +7,7 @@ using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
 
@@ -264,13 +265,40 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
-	[JsonProperty(KEY_NAV_GROUP)] public OptionalString NavGroup;
-	[JsonProperty(KEY_NAV_LABEL)] public OptionalString NavLabel;
-	[JsonProperty(KEY_NAV_ICON)] public OptionalString NavIcon;
+
+	[JsonProperty(KEY_NAV_GROUP)]
+	[JsonConverter(typeof(OptionalStringConverter))]
+	public OptionalString NavGroup;
+
+	[JsonProperty(KEY_NAV_LABEL)]
+	[JsonConverter(typeof(OptionalStringConverter))]
+	public OptionalString NavLabel;
+
+	[JsonProperty(KEY_NAV_ICON)]
+	[JsonConverter(typeof(OptionalStringConverter))]
+	public OptionalString NavIcon;
+
 	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
 	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+}
+
+public class OptionalStringConverter : JsonConverter<OptionalString>
+{
+
+	public override void WriteJson(JsonWriter writer, OptionalString value, JsonSerializer serializer)
+	{
+		var stringValue = value.HasValue ? value.Value : string.Empty;
+		writer.WriteValue(stringValue);
+	}
+
+	public override OptionalString ReadJson(JsonReader reader, Type objectType, OptionalString existingValue, bool hasExistingValue,
+		JsonSerializer serializer)
+	{
+		string stringValue = (string)reader.Value;
+		return new OptionalString() { HasValue = !string.IsNullOrEmpty(stringValue), Value = stringValue };
+	}
 }
 
 [Serializable]
