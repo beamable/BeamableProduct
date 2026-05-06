@@ -102,7 +102,7 @@ public static class MicroserviceStartupUtil
 		if (startupCtx.IsGeneratingOapi)
 		{
 			LogUtil.TryParseSystemLogLevel(configuredArgs.OapiGenLogLevel, out var defaultLevel, LogLevel.Information);
-			MicroserviceBootstrapper.ContextLogLevel.Value = defaultLevel;
+			MicroserviceLogLevelContext.CurrentLogLevel.Value = defaultLevel;
 			await GenerateOpenApiSpecification(startupCtx, configurator);
 			startupCtx.result.GeneratedClient = true;
 			return startupCtx.result;
@@ -380,7 +380,7 @@ public static class MicroserviceStartupUtil
 			defaultLogLevel = LogLevel.Warning;
 		}
 
-		MicroserviceBootstrapper.ContextLogLevel.Value = defaultLogLevel;
+		MicroserviceLogLevelContext.CurrentLogLevel.Value = defaultLogLevel;
 
 		var debugLogOptions = UseBeamJsonFormatter(new ZLoggerOptions());
 		ctx.debugLogProcessor = new DebugLogProcessor(debugLogOptions);
@@ -392,7 +392,7 @@ public static class MicroserviceStartupUtil
 			// all logs are valid, but may not pass the filter.
 			builder.SetMinimumLevel(LogLevel.Trace);
 
-			builder.AddFilter(level => level >= MicroserviceBootstrapper.ContextLogLevel.Value);
+			builder.AddFilter(level => level >= MicroserviceLogLevelContext.CurrentLogLevel.Value);
 			if (!ctx.InDocker)
 			{
 				builder.AddZLoggerLogProcessor(ctx.debugLogProcessor);

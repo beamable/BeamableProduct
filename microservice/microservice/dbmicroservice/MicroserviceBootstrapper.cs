@@ -17,7 +17,8 @@ namespace Beamable.Server
 
     public static partial class MicroserviceBootstrapper
     {
-	    public static AsyncLocal<LogLevel> ContextLogLevel = new();
+	    [Obsolete("Use MicroserviceLogLevelContext.CurrentLogLevel instead.")]
+	    public static AsyncLocal<LogLevel> ContextLogLevel => MicroserviceLogLevelContext.CurrentLogLevel;
 
 
         private static BeamServiceConfigBuilder _preparedBuilder;
