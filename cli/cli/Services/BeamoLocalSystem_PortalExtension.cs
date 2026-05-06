@@ -222,7 +222,7 @@ public partial class BeamoLocalSystem
 			.Replace("api", "portal");
 	}
 
-	private static string NormalizePortalExtensionMountPage(string mountPage)
+	public static string NormalizePortalExtensionMountPage(string mountPage)
 	{
 		return string.IsNullOrWhiteSpace(mountPage) ? null : mountPage.Trim().Trim('/');
 	}

@@ -110,6 +110,7 @@ public static class StartProcessUtil
 		{
 			UseShellExecute = false,
 			CreateNoWindow = true,
+			RedirectStandardInput = true,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 		};
@@ -128,6 +129,7 @@ public static class StartProcessUtil
 		}
 
 		var proc = Process.Start(psi);
+		proc.StandardInput.Close();
 		var exitTcs = new TaskCompletionSource();
 		var stdout = new StringBuilder();
 		var stderr = new StringBuilder();

@@ -3,7 +3,7 @@
 public class ProjectNewCommand : CommandGroup
 {
 	public ProjectNewCommand()
-		: base("new", "Commands that allows creating new Beamable services")
+		: base("new", "Commands for creating new Beamable service projects")
 	{
 	}
 }

@@ -56,6 +56,8 @@
        develop a dependency on it. 
    -->
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
     <PackageReference Include="NBomber" Version="4.1.0" />
     <PackageReference Include="NBomber.Http" Version="4.1.0" />
     <PackageReference Include="Serilog" Version="2.10.0" Condition="'$(BeamBuild)'!='true'">
@@ -65,16 +67,16 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)'=='net8.0' OR '$(TargetFramework)'=='net9.0'">
-    <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.Build" Version="17.10.4" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Locator" Version="1.7.8" />
     <PackageReference Include="Microsoft.NET.StringTools" Version="17.10.4" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.10.4" ExcludeAssets="runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net10.0'">
-    <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2" />
-    <PackageReference Include="Microsoft.NET.StringTools" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all"/>
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime"/>
+    <PackageReference Include="Microsoft.NET.StringTools" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime" />
   </ItemGroup>
   
   <ItemGroup>
@@ -104,19 +106,20 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
 
-    <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
-    <PackageReference Include="Dapper" Version="2.1.66"/>
-    <PackageReference Include="System.Management" Version="6.0.0"/>
+    <PackageReference Include="ClickHouse.Client" Version="7.14.0" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="System.Management" Version="6.0.0" />
     <PackageReference Include="spkl.Diffs" Version="2.1.0" />
-    
+    <PackageReference Include="Scriban" Version="5.12.0" />
+
   </ItemGroup>
 
   <ItemGroup>
 
-    <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
-    <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
-    <None Include="$(MSBuildThisFileDirectory)/../../dev.sh" Pack="false" PackagePath=""/>
-    <None Include="$(MSBuildThisFileDirectory)/../../setup.sh" Pack="false" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)/../../dev.sh" Pack="false" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)/../../setup.sh" Pack="false" PackagePath="" />
     
 
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
@@ -130,10 +133,51 @@
   <ItemGroup>
     <None Remove="Docs\**\*.md" />
     <EmbeddedResource Include="Docs\**\*.md" />
-    
+
     <!-- Automatically add any files ending in .oapi.json in the /Resources folder. -->
     <EmbeddedResource Include="openapi/**/*.oapi.json" />
+
+    <!-- Beamable content-type schema snapshots for MCP type discovery (split per section + combined) -->
+    <EmbeddedResource Include="Resources\beamable-types*.json" />
   </ItemGroup>
+
+  <!-- Regenerate the type schema snapshot after each build so it stays current.
+       Prefers net8.0 to avoid re-running across multi-target builds; falls back to net10.0
+       when only net10.0 is built (e.g. dotnet build -f net10.0).
+       Skipped in containers and when SKIP_GENERATION is set (same gate as BuildCLIInterface). -->
+  <Target Name="RegenerateTypeSchema" AfterTargets="Build"
+          Condition="('$(TargetFramework)' == 'net8.0' OR ('$(TargetFramework)' == 'net10.0' AND !Exists('$(OutputPath)net8.0/') AND !Exists('$(OutputPath)net8.0\'))) AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
+    <!-- Unix — prefer net8.0, fall back to net10.0 -->
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')"
+          Command="./$(OutputPath)net8.0/$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources/"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'!='true' And !Exists('$(OutputPath)net8.0/') And Exists('$(OutputPath)net10.0/')"
+          Command="./$(OutputPath)net10.0/$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources/"
+          IgnoreExitCode="true" />
+    <!-- Windows — prefer net8.0, fall back to net10.0 -->
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')"
+          Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources\"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'=='true' And !Exists('$(OutputPath)net8.0\') And Exists('$(OutputPath)net10.0\')"
+          Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-type-schema --output-dir=$(MSBuildThisFileDirectory)Resources\"
+          IgnoreExitCode="true" />
+  </Target>
+
+  <Target Name="RegenerateSkillDocs" AfterTargets="RegenerateTypeSchema"
+          Condition="('$(TargetFramework)' == 'net8.0' OR ('$(TargetFramework)' == 'net10.0' AND !Exists('$(OutputPath)net8.0/') AND !Exists('$(OutputPath)net8.0\'))) AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')"
+          Command="./$(OutputPath)net8.0/$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'!='true' And !Exists('$(OutputPath)net8.0/') And Exists('$(OutputPath)net10.0/')"
+          Command="./$(OutputPath)net10.0/$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')"
+          Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+    <Exec Condition="'$(IsWindows)'=='true' And !Exists('$(OutputPath)net8.0\') And Exists('$(OutputPath)net10.0\')"
+          Command=".\$(OutputPath)net10.0\$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          IgnoreExitCode="true" />
+  </Target>
 
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />

@@ -12,6 +12,7 @@ using Beamable.Common.Semantics;
 using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
+using cli.Commands;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
@@ -19,6 +20,7 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
 using cli.DockerCommands;
+using cli.Commands.Docs;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -57,6 +59,7 @@ using cli.Commands.Project.Logs;
 using cli.Services.Web;
 using cli.DeveloperUserCommands;
 using cli.OtelCommands;
+using cli.Mcp;
 using cli.OtelCommands.Grafana;
 using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
@@ -278,6 +281,12 @@ public class App
 			if (!string.IsNullOrEmpty(ctx.EngineVersion))
 			{
 				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
+			}
+
+			var aiAgent = DetectAiAgent();
+			if (!string.IsNullOrEmpty(aiAgent))
+			{
+				dict[Otel.ATTR_AI_AGENT] = aiAgent;
 			}
 
 			dict[Otel.ATTR_SOURCE] = "cli";
@@ -516,13 +525,18 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+		Commands.AddRootCommand<McpGroupCommand>();
+		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
-		
+		Commands.AddSubCommandWithHandler<InitGetRealmsCommand, InitGetRealmsCommandArgs, InitCommand>();
+
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 		Commands.AddSubCommand<LockedFilesCheckCommand, LockedFilesCheckCommandArgs, CheckCommandCommandGroup>();
@@ -606,6 +620,8 @@ public class App
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		Commands.AddRootCommand<GenerateBeamableTypesSchemaCommand, GenerateBeamableTypesSchemaCommandArgs>();
+		Commands.AddRootCommand<GenerateSkillDocsCommand, GenerateSkillDocsCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
@@ -636,6 +652,7 @@ public class App
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
+		Commands.AddSubCommandWithHandler<PortalOpenExtensionCommand, PortalOpenExtensionCommandArgs, PortalCommand>();
 		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
@@ -647,6 +664,7 @@ public class App
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -694,6 +712,9 @@ public class App
 		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
 		Commands.AddSubCommand<SelectUnrealSampleCommand, SelectUnrealSampleCommandArgs, UnrealGroupCommand>();
 		
+		// env command
+		Commands.AddRootCommand<EnvCommand, EnvCommandArgs>();
+
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -1522,12 +1543,68 @@ public class App
 
 	public virtual int Run(string[] args)
 	{
+		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
 		return prog.Invoke(args);
 	}
 
+	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
+	{
+		if (IsRunningInMcpServer) return;
+		var joined = string.Join(" ", args).ToLowerInvariant();
+		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
+
+		var aiAgent = DetectAiAgent();
+		if (aiAgent == null) return;
+
+		Console.Error.WriteLine(
+			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
+			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+	}
+
+	internal static string DetectAiAgent()
+	{
+		var mapping = new (string EnvVar, string AgentName)[]
+		{
+			("CLAUDECODE", "claude_code"),
+			("CLAUDE_CODE_ENTRYPOINT", "claude_code"),
+			("CURSOR_SESSION_ID", "cursor"),
+			("COPILOT_AGENT", "copilot"),
+			("COPILOT_CLI", "copilot"),
+			("COPILOT_AGENT_SESSION_ID", "copilot"),
+			("WINDSURF_SESSION", "windsurf"),
+			("OPENCODE_SESSION", "opencode"),
+			("OPENCODE", "opencode"),
+			("AIDER", "aider"),
+			("AI_AGENT", "unknown"),
+		};
+
+		string agentName = null;
+		foreach (var (envVar, name) in mapping)
+		{
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVar)))
+			{
+				agentName = name;
+				break;
+			}
+		}
+
+		var prefix = IsRunningInMcpServer ? "mcp" : "cli";
+
+		if (agentName != null)
+			return $"{prefix}_{agentName}";
+
+		if (IsRunningInMcpServer)
+			return "mcp_unknown";
+
+		return null;
+	}
+
+	internal static bool IsRunningInMcpServer { get; set; }
+
 	public virtual Task<int> RunAsync(string[] args)
 	{
+		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
 		return prog.InvokeAsync(args);
 	}
