@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.CommandLine;
 
 namespace cli.Mcp;
@@ -35,21 +36,21 @@ public class McpSetupCommand
 
 		ConfigService.EnsureDotNetToolsManifest(targetDir);
 
-		var config = new
-		{
-			mcpServers = new Dictionary<string, object>
-			{
-				["beamable"] = new
-				{
-					command = "dotnet",
-					args = new[] { "beam", "mcp", "serve" }
-				}
-			}
-		};
-
 		var configPath = Path.Combine(targetDir, ".mcp.json");
-		var json = JsonConvert.SerializeObject(config, Formatting.Indented);
-		File.WriteAllText(configPath, json);
+
+		var root = File.Exists(configPath)
+			? JObject.Parse(File.ReadAllText(configPath))
+			: new JObject();
+
+		var servers = root["mcpServers"] as JObject ?? new JObject();
+		servers["beamable"] = JObject.FromObject(new
+		{
+			command = "dotnet",
+			args = new[] { "beam", "mcp", "serve" }
+		});
+		root["mcpServers"] = servers;
+
+		File.WriteAllText(configPath, root.ToString(Formatting.Indented));
 
 		return Task.FromResult(new McpSetupCommandResult { configPath = configPath });
 	}

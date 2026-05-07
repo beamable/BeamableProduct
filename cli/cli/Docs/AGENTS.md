@@ -19,11 +19,16 @@ This project has a Beamable MCP server. If `.mcp.json` exists, your AI tool can 
 beam mcp setup
 ```
 
+### Claude Desktop / Cowork
+
+Install the Beamable extension from the Claude Desktop Extensions directory, or download the `.mcpb` bundle for your platform from [GitHub Releases](https://github.com/beamable/BeamableProduct/releases) and open it in Claude Desktop.
+
 ### Available MCP tools
 - `beam_list_commands(prefix)` — discover CLI commands
 - `beam_get_help(command)` — full command documentation
 - `beam_exec(command)` — execute a command (always pass `-q`)
 - `beam_get_skill(skill)` — step-by-step workflow guides
+- `beam_get_source(platform, version, filePath)` — get local SDK source file paths
 
 ### Workflow Skills
 Load a skill before attempting complex tasks:
