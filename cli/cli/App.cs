@@ -238,6 +238,7 @@ public class App
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
 		services.AddSingleton<VersionService>();
+		services.AddSingleton<cli.Services.Analytics.AnalyticEventsApi>();
 		services.AddSingleton<IDataReporterService, DataReporterService>();
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
@@ -660,6 +661,10 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand>();
 		Commands.AddSubCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+		Commands.AddRootCommand<cli.Commands.Analytics.AnalyticsCommand>();
+		Commands.AddSubCommand<cli.Commands.Analytics.GenerateAnalyticsValidatorsCommand,
+		                       cli.Commands.Analytics.GenerateAnalyticsValidatorsCommandArgs,
+		                       cli.Commands.Analytics.AnalyticsCommand>();
 		Commands.AddSubCommandWithHandler<DepsCommand, DepsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommandWithHandler<ListDepsCommand, ListDepsCommandArgs, DepsCommand>();
 		Commands.AddSubCommandWithHandler<AddDepsCommand, AddDepsCommandArgs, DepsCommand>();
