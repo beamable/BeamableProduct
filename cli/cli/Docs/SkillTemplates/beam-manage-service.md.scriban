@@ -1,9 +1,9 @@
 ---
-name: beam-create-microservice
-description: Create a Beamable microservice with optional storage and federation support.
+name: beam-manage-service
+description: Create, configure, and remove Beamable microservices with optional storage and federation support.
 ---
 
-# Create Microservice
+# Manage Microservice
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)
@@ -146,6 +146,9 @@ Federation declarations are automatically picked up by the OpenAPI spec generati
 - **No `--force` flag for file conflicts.** `project new service` runs `dotnet new` under the hood. If files already exist in the target directory (e.g. from a previous failed attempt), the command will fail. Delete the conflicting directory first or choose a different service name. Use `project ps -q` to check if the service was partially registered, and `project remove --ids <Name> -q` to clean it up.
 - **`IncludeRoutes<T>` must match your service class name.** If the type parameter doesn't match, the service starts but registers zero endpoints — all calls return 404.
 - **DTOs need `[System.Serializable]` and public fields.** Properties (`{ get; set; }`) may not serialize correctly. Use public fields for Beamable's serialization system.
+- **Removal is permanent and immediate.** `project remove` deletes the service directory recursively with no confirmation prompt. No undo — ensure code is committed first.
+- **Remote deployment is not affected by removal.** `project remove` only removes local source code. Use `deploy plan`/`deploy release` to update the remote state.
+- **Storage removal does not remove linked references.** Remove the dependency first with `project deps remove`, or remove both the service and storage together.
 
 ## Build Warnings
 
@@ -373,10 +376,45 @@ await Services.Inventory.Update(builder => builder
 
 Use the `beam-get-source` skill to read Beamable SDK source code when you need to understand microservice base classes, DI services, or available APIs.
 
+## Removing a Service
+
+### When to remove
+- A service was created by mistake or is no longer needed
+- Cleanup after experimentation or a failed `project new service` attempt
+
+### 1. Confirm the service exists
+```
+beam_exec("project ps -q")
+```
+Confirm the exact service name with the user before removing.
+
+### 2. Remove the service
+```
+beam_exec("project remove --ids <ServiceName> -q")
+```
+This deletes the service's project directory recursively and removes the project reference from the `.sln` file. To remove multiple services:
+```
+beam_exec("project remove --ids ServiceA ServiceB -q")
+```
+
+### 3. Verify removal
+```
+beam_exec("project ps -q")
+```
+
+### `beam project remove` options
+| Option | Type | Description |
+|---|---|---|
+| `--ids` | Set[string] | The list of services to remove (separated by whitespace) |
+| `--with-group` | Set[string] | Remove services matching these group tags |
+| `--without-group` | Set[string] | Exclude services matching these group tags from removal |
+| `--sln` | string | Path to the .sln file |
+
 ## Wrap-Up
 
 After completing the workflow, provide the user with a summary that covers:
 
+**If creating:**
 1. **What was created**: List each service and storage by name, and their project paths relative to the workspace root (e.g. `services/<Name>/<Name>.csproj`).
 2. **Where the files live**:
    - The microservice project: `services/<Name>/` — contains the C# source with endpoint methods.
@@ -388,6 +426,12 @@ After completing the workflow, provide the user with a summary that covers:
    - **Storage dependency**: If storage was linked, explain that `project deps add` generates a typed `StorageDocument` accessor in the microservice, and that the storage runs as a local MongoDB container during development.
    - **Federation interface**: If a federation was implemented, explain what external system it integrates with and how Beamable will call the federation methods during player authentication or inventory resolution.
 4. **How to iterate**: Remind the user they can `project run --ids <Name>` to start the service locally, open Swagger with `project open-swagger <Name>` to test endpoints interactively, and `project build` to verify compilation before deploying.
+
+**If removing:**
+1. **What was removed**: The service name and its former project directory.
+2. **What remains**: Any linked storages or dependent services that still reference the removed project.
+3. **Remote state**: Whether the service was previously deployed and needs a `deploy release` to clean up the remote environment.
+4. **Version control**: Remind the user to commit the deletion so teammates pick up the change.
 
 ## CLI Version Awareness
 

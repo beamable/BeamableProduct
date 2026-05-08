@@ -41,7 +41,7 @@ beam_exec("me -q")
 beam_exec("project ps -q")
 ```
 **Expected:** Lists all services with their status (running/stopped/not-built).
-**If empty:** No services created yet. Use `beam-create-microservice` skill.
+**If empty:** No services created yet. Use `beam-manage-service` skill.
 **If shows services but paths are wrong:** The `.beamable/beamoLocalManifest.json` may be stale. Re-run `project ps` after fixing paths.
 
 ### 5. Projects compile

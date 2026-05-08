@@ -58,7 +58,7 @@ If the AI agent cannot reach Beamable tools:
 ### Workflow Skills
 Load a skill before attempting complex tasks:
 - `beam-initialize-project` — set up a new workspace
-- `beam-create-microservice` — create services with storage/federation
+- `beam-manage-service` — create, configure, and remove microservices with storage/federation
 - `beam-diagnose-project` — troubleshoot common local dev issues
 - `beam-build-and-deploy` — Docker build and cloud deployment
 - `beam-create-portal-extension` — portal UI extensions
@@ -68,7 +68,6 @@ Load a skill before attempting complex tasks:
 - `beam-content-history` — content change history
 - `beam-openapi` — OpenAPI spec generation
 - `beam-review` — code review checklist for Beamable projects
-- `beam-remove-service` — remove services from a project
 - `beam-get-source` — read Beamable SDK source code
 
 ## Project Structure
