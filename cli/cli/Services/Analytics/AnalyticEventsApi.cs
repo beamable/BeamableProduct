@@ -69,6 +69,9 @@ public class AnalyticEventView
 	[JsonProperty("name")]
 	public string Name = string.Empty;
 
+	[JsonProperty("category")]
+	public string Category = string.Empty;
+
 	[JsonProperty("description")]
 	public string Description = string.Empty;
 
@@ -79,19 +82,20 @@ public class AnalyticEventView
 	public bool Archived;
 
 	[JsonProperty("schema")]
-	public AnalyticEventSchemaReference Schema;
-
-	[JsonProperty("uri")]
-	public string Uri;
+	public AnalyticEventSchemaRef Schema = new();
 }
+
 [Serializable]
-public class AnalyticEventSchemaReference
+public class AnalyticEventSchemaRef
 {
 	[JsonProperty("contentId")]
 	public string ContentId = string.Empty;
 
 	[JsonProperty("version")]
 	public string Version = string.Empty;
+
+	[JsonProperty("uri")]
+	public string Uri = string.Empty;
 }
 [Serializable]
 public class AnalyticEventUrl

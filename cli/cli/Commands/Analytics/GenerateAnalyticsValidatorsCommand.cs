@@ -52,27 +52,40 @@ public class GenerateAnalyticsValidatorsCommand
 	{
 		var api = (AnalyticEventsApi)args.Provider.GetService(typeof(AnalyticEventsApi));
 
-		var urls = await api.GetUrls();
-		Log.Information($"Fetched {urls.Count} active analytics event schema(s) from the realm");
+		var views = await api.GetAll();
+		Log.Information($"Fetched {views.Count} analytics event schema(s) from the realm");
 
-		var events = new List<AnalyticsEventSchema>(urls.Count);
+		var events = new List<AnalyticsEventSchema>(views.Count);
 		using var http = new HttpClient();
-		foreach (var entry in urls)
+		foreach (var view in views)
 		{
-			if (string.IsNullOrEmpty(entry.Uri))
+			if (view.Archived || !view.Enabled)
 			{
-				Log.Warning($"Skipping event '{entry.EventName}' — no schema URL returned");
+				Log.Verbose($"Skipping event '{view.Name}' — archived or disabled");
 				continue;
 			}
 
-			var body = await http.GetStringAsync(entry.Uri);
+			var uri = view.Schema?.Uri;
+			if (string.IsNullOrEmpty(uri))
+			{
+				Log.Warning($"Skipping event '{view.Name}' — no schema URI returned");
+				continue;
+			}
+
+			var body = await http.GetStringAsync(uri);
 			var schema = JsonSerializer.Deserialize<JsonSchemaBody>(body, SchemaParseOptions)
 			             ?? new JsonSchemaBody();
 
+			// The realm-level Category field is authoritative — it's what users edit in the portal.
+			// Override the schema body's x-beamCategory if the view carries one.
+			if (!string.IsNullOrEmpty(view.Category))
+				schema.BeamCategory = view.Category;
+
 			events.Add(new AnalyticsEventSchema
 			{
-				Name = entry.EventName,
-				Enabled = true,
+				Name = view.Name,
+				Description = view.Description ?? string.Empty,
+				Enabled = view.Enabled,
 				Schema = schema,
 			});
 		}
