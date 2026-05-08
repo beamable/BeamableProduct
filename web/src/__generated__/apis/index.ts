@@ -4,6 +4,7 @@
  */
 
 export * from './AccountsApi';
+export * from './AnalyticsApi';
 export * from './AnnouncementsApi';
 export * from './AuthApi';
 export * from './BeamoApi';
@@ -32,13 +33,22 @@ export * from './PlayerLobbyApi';
 export * from './PlayerPartyApi';
 export * from './PlayerSessionApi';
 export * from './PlayerStatsApi';
+export * from './PlayerSupportTicketApi';
 export * from './PlayerTicketApi';
 export * from './PresenceApi';
 export * from './PushApi';
+export * from './RealmAlertsApi';
+export * from './RealmErrorLogsApi';
 export * from './RealmsApi';
+export * from './RealmSecretsApi';
 export * from './SchedulerApi';
 export * from './SessionApi';
 export * from './SocialApi';
 export * from './StatsApi';
+export * from './SupportTicketApi';
 export * from './TournamentsApi';
 export * from './TrialsApi';
+export * from './UserWorkflowAuthoringApi';
+export * from './UserWorkflowTemplateApi';
+export * from './UserWorkflowTriggerApi';
+export * from './WorkflowApi';

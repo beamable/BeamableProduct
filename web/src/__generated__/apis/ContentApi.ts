@@ -650,6 +650,30 @@ export async function contentGetManifestChecksumBasic(requester: HttpRequester, 
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `GetBinaryDownloadUrlsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function contentPostBinaryPublicUrlsBasic(requester: HttpRequester, payload: GetBinaryDownloadUrlsRequest, gamertag?: string): Promise<HttpResponse<GetBinaryDownloadUrlsResponse>> {
+  let endpoint = "/basic/content/binary/public/urls";
+  
+  // Make the API request
+  return makeApiRequest<GetBinaryDownloadUrlsResponse, GetBinaryDownloadUrlsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */

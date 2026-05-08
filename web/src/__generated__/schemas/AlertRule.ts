@@ -1,0 +1,18 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+import type { AlertState } from './enums/AlertState';
+
+export type AlertRule = { 
+  createdAt: Date; 
+  enabled: boolean; 
+  errorThreshold: number; 
+  notificationEmails: string[]; 
+  state: AlertState; 
+  updatedAt: Date; 
+  windowMinutes: number; 
+  enteredAlertingAt?: Date | null; 
+  lastNotificationAt?: Date | null; 
+};
