@@ -138,18 +138,28 @@ public class BeamMcpTools
 		=> McpToolExecutor.GetSkillAsync(skill);
 
 	[McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false,
-		Title = "Get Beamable SDK source file paths")]
+		Title = "Get Beamable SDK source code")]
 	[Description(
-		"Get local file paths to the Beamable SDK source code. " +
-		"Auto-detects the SDK platform and version from the current project directory. " +
-		"Returns local filesystem paths — read the source files directly instead of browsing types through the API.")]
+		"Get Beamable SDK source code. " +
+		"Returns local file paths to SDK source, and when filePath is provided, reads and returns the file content directly. " +
+		"Use this in sandboxed environments where the agent cannot access NuGet cache or package directories. " +
+		"For large files, use offset and limit to paginate — check hasMore and nextOffset in the response. " +
+		"Auto-detects the SDK platform and version from the current project directory.")]
 	public async Task<string> beam_get_source(
 		McpServer server,
 		[Description("Platform: 'unity', 'cli', 'unreal', or 'web'. Auto-detected if omitted.")] string platform = "",
 		[Description("SDK version override, e.g. '5.0.1'. Auto-detected if omitted.")] string version = "",
-		[Description("File path within the source tree, e.g. 'Runtime/Content/ContentObject.cs'.")] string filePath = "")
+		[Description(
+			"File to read from SDK source. Can be: " +
+			"(1) a filename like 'ContentObject.cs' (searches all known SDK directories), " +
+			"(2) a relative path like 'Runtime/Content/ContentObject.cs', or " +
+			"(3) an absolute path under an allowed SDK directory. " +
+			"When provided and found, file content is returned in the response. " +
+			"Omit to get directory paths only.")] string filePath = "",
+		[Description("Character offset to start reading from. Use nextOffset from a previous response to continue reading a large file. Defaults to 0 (start of file)")] int offset = 0,
+		[Description("Maximum characters to return per chunk. Capped at 65536. Defaults to 65536 if omitted or 0. Use with offset to paginate large files")] int limit = 0)
 	{
 		await McpServerBuilder.EnsureWorkspaceFromRootsAsync(server);
-		return await _executor.GetSourceCode(platform, version, filePath);
+		return await _executor.GetSourceCode(platform, version, filePath, offset, limit);
 	}
 }

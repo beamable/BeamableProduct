@@ -78,7 +78,9 @@ public class McpToolExecutor
 		return reader.ReadToEnd();
 	}
 
-	public Task<string> GetSourceCode(string platform = "", string version = "", string filePath = "")
+	private const int DefaultFileReadLimit = 65_536;
+
+	public Task<string> GetSourceCode(string platform = "", string version = "", string filePath = "", int offset = 0, int limit = 0)
 	{
 		try
 		{
@@ -145,14 +147,18 @@ public class McpToolExecutor
 					var commonSrc = Path.Combine(nugetBase, "beamable.common", detectedVersion, "content", "netstandard2.0", "Runtime");
 					var toolingSrc = Path.Combine(nugetBase, "beamable.tooling.common", detectedVersion, "content", "netstandard2.1");
 					var runtimeSrc = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "content", "net8.0");
+					var runtimeBuild = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "build");
+					var commonBuild = Path.Combine(nugetBase, "beamable.common", detectedVersion, "build", "netstandard2.0");
 
 					sourcePath = nugetBase;
-					commonPaths = new[] { commonSrc, toolingSrc, runtimeSrc };
-					hint = "CLI/Microservice source is in the NuGet cache. " +
-					       "beamable.common has content types, APIs, and Optional<T>. " +
-					       "beamable.tooling.common has callable attributes, federation interfaces, and storage. " +
-					       "beamable.microservice.runtime has the Microservice base class and API implementations. " +
-					       "Read .cs files directly from these paths.";
+					commonPaths = new[] { commonSrc, toolingSrc, runtimeSrc, runtimeBuild, commonBuild };
+					hint = "Read files from the 'commonPaths' directories listed below — those are the actual source locations. " +
+					       "Do NOT read from 'sourcePath' directly in sandbox environments (it is the broad NuGet cache root). " +
+					       "commonPaths[0] (beamable.common) has content types, APIs, and Optional<T>. " +
+					       "commonPaths[1] (beamable.tooling.common) has callable attributes, federation interfaces, and storage. " +
+					       "commonPaths[2] (beamable.microservice.runtime) has the Microservice base class and API implementations. " +
+					       "commonPaths[3] (beamable.microservice.runtime/build) has MSBuild .targets and .props for OAPI gen, build validation, and collector resolution. " +
+					       "commonPaths[4] (beamable.common/build) has MSBuild .props for the common package.";
 					break;
 				}
 				case "web":
@@ -191,23 +197,77 @@ public class McpToolExecutor
 				}
 			}
 
+			string fileContent = null;
+			int totalLength = 0;
+			bool hasMore = false;
+
 			if (!string.IsNullOrEmpty(filePath))
 			{
-				var normalizedPath = filePath.Trim().Replace("\\", "/").TrimStart('/');
-				fileFull = Path.Combine(sourcePath, normalizedPath);
+				var resolved = ResolveFilePath(filePath, sourcePath, commonPaths);
+
+				if (resolved != null && File.Exists(resolved))
+				{
+					fileFull = Path.GetFullPath(resolved);
+
+					if (IsPathUnderAllowedDirectory(fileFull, sourcePath, commonPaths))
+					{
+						try
+						{
+							var fullText = File.ReadAllText(fileFull);
+							totalLength = fullText.Length;
+							var effectiveLimit = limit <= 0 || limit > DefaultFileReadLimit ? DefaultFileReadLimit : limit;
+							var clampedOffset = Math.Max(0, Math.Min(offset, fullText.Length));
+							var chunkLength = Math.Min(effectiveLimit, fullText.Length - clampedOffset);
+							fileContent = fullText.Substring(clampedOffset, chunkLength);
+							hasMore = clampedOffset + chunkLength < totalLength;
+						}
+						catch (Exception ex)
+						{
+							hint += $" (file read error: {ex.Message})";
+						}
+					}
+					else
+					{
+						fileFull = null;
+						hint += " (requested file path is outside allowed SDK directories)";
+					}
+				}
+				else
+				{
+					var normalizedPath = filePath.Trim().Replace("\\", "/").TrimStart('/');
+					fileFull = !sourcePath.StartsWith("http")
+						? Path.Combine(sourcePath, normalizedPath)
+						: normalizedPath;
+				}
 			}
 
-			var response = new
+			var responseObj = new JObject
 			{
-				platform = normalizedPlatform,
-				detectedVersion,
-				sourcePath,
-				filePath = fileFull,
-				commonPaths,
-				hint
+				["platform"] = normalizedPlatform,
+				["detectedVersion"] = detectedVersion,
+				["sourcePath"] = sourcePath,
+				["commonPaths"] = new JArray(commonPaths),
+				["hint"] = hint
 			};
 
-			return Task.FromResult(JsonConvert.SerializeObject(response, Formatting.None));
+			if (fileFull != null)
+				responseObj["filePath"] = fileFull;
+
+			if (fileContent != null)
+			{
+				responseObj["content"] = fileContent;
+				responseObj["totalLength"] = totalLength;
+				responseObj["offset"] = Math.Max(0, Math.Min(offset, totalLength));
+				responseObj["hasMore"] = hasMore;
+				if (hasMore)
+				{
+					var nextOffset = Math.Max(0, Math.Min(offset, totalLength)) + fileContent.Length;
+					responseObj["nextOffset"] = nextOffset;
+					responseObj["remaining"] = totalLength - nextOffset;
+				}
+			}
+
+			return Task.FromResult(responseObj.ToString(Formatting.None));
 		}
 		catch (Exception ex)
 		{
@@ -395,6 +455,70 @@ public class McpToolExecutor
 		return version;
 	}
 
+	private static string ResolveFilePath(string filePath, string sourcePath, string[] commonPaths)
+	{
+		var normalized = filePath.Trim().Replace("\\", "/").TrimStart('/');
+
+		if (Path.IsPathRooted(normalized))
+		{
+			var abs = Path.GetFullPath(normalized);
+			return File.Exists(abs) ? abs : null;
+		}
+
+		if (!sourcePath.StartsWith("http") && Path.IsPathRooted(sourcePath))
+		{
+			var candidate = Path.GetFullPath(Path.Combine(sourcePath, normalized));
+			if (File.Exists(candidate))
+				return candidate;
+		}
+
+		foreach (var cp in commonPaths)
+		{
+			if (cp.StartsWith("http") || !Path.IsPathRooted(cp))
+				continue;
+			var candidate = Path.GetFullPath(Path.Combine(cp, normalized));
+			if (File.Exists(candidate))
+				return candidate;
+		}
+
+		if (!normalized.Contains('/') && !normalized.Contains('\\'))
+		{
+			foreach (var cp in commonPaths)
+			{
+				if (cp.StartsWith("http") || !Path.IsPathRooted(cp) || !Directory.Exists(cp))
+					continue;
+				try
+				{
+					var matches = Directory.GetFiles(cp, normalized, SearchOption.AllDirectories);
+					if (matches.Length > 0)
+						return Path.GetFullPath(matches[0]);
+				}
+				catch (UnauthorizedAccessException) { }
+				catch (IOException) { }
+			}
+		}
+
+		return null;
+	}
+
+	private static bool IsPathUnderAllowedDirectory(string resolvedPath, string sourcePath, string[] commonPaths)
+	{
+		var canonical = Path.GetFullPath(resolvedPath);
+		var allowed = new List<string>();
+
+		if (!sourcePath.StartsWith("http") && Path.IsPathRooted(sourcePath))
+			allowed.Add(Path.GetFullPath(sourcePath));
+
+		foreach (var cp in commonPaths)
+		{
+			if (!cp.StartsWith("http") && Path.IsPathRooted(cp))
+				allowed.Add(Path.GetFullPath(cp));
+		}
+
+		return allowed.Any(dir =>
+			canonical.StartsWith(dir, StringComparison.OrdinalIgnoreCase));
+	}
+
 	public Task<string> ExecuteHelpAsync(string commandPath)
 	{
 		var helpCommand = string.IsNullOrWhiteSpace(commandPath)
@@ -472,7 +596,22 @@ public class McpToolExecutor
 		if (string.IsNullOrWhiteSpace(sw.ToString()))
 			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
 
-		return sw.ToString();
+		return TruncateIfNeeded(sw.ToString());
+	}
+
+	private const int MaxOutputLength = 32_768;
+	private const int TruncateHeadKeep = 4_096;
+	private const int TruncateTailKeep = 24_576;
+
+	private static string TruncateIfNeeded(string output)
+	{
+		if (output.Length <= MaxOutputLength)
+			return output;
+
+		var head = output.Substring(0, TruncateHeadKeep);
+		var tail = output.Substring(output.Length - TruncateTailKeep);
+		var dropped = output.Length - TruncateHeadKeep - TruncateTailKeep;
+		return head + $"\n\n... [{dropped} characters truncated — showing first {TruncateHeadKeep} and last {TruncateTailKeep} characters] ...\n\n" + tail;
 	}
 
 	private static readonly string[] CommandErrorPatterns = new[]
@@ -519,6 +658,11 @@ public class McpToolExecutor
 			"progress", "progressStream", "remote_progress"
 		};
 
+		private static readonly HashSet<string> SuppressedChannels = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"logs"
+		};
+
 		public CapturingReporterService(TextWriter writer)
 		{
 			_writer = writer;
@@ -526,6 +670,9 @@ public class McpToolExecutor
 
 		public void Report<T>(string type, T data)
 		{
+			if (SuppressedChannels.Contains(type))
+				return;
+
 			if (ProgressChannels.Contains(type))
 			{
 				var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();

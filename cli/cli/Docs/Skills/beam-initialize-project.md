@@ -100,12 +100,22 @@ If the user wants to connect an AI agent (Claude, Cursor, etc.) to Beamable, the
 
 If the user ran `beam mcp setup` before `beam init`, the `.mcp.json` file will exist but most Beamable commands will fail because there is no `.beamable` workspace. In this case, ask the user if they want to initialize Beamable in the current directory, and then run `beam init` as described above.
 
+## Adding Beamable to an Existing Project
+
+If the user already has a .NET project (or any codebase) and wants to add Beamable:
+
+1. **Run `beam init` in the existing project directory.** The command creates a `.beamable` folder alongside the existing code — it does not overwrite or modify existing files.
+2. **Create microservices alongside existing code.** Use `project new service <Name>` — it adds a new service project under `services/` and registers it in the nearest `.sln`. Existing projects in the solution are not affected.
+3. **Use `--sln` if needed.** If the project has multiple `.sln` files, pass `--sln path/to/your.sln` to target the correct one. The CLI auto-discovers the first non-Unity, non-Unreal `.sln` near `.beamable`, but for complex project structures, being explicit avoids surprises.
+
+The key point: `beam init` is non-destructive. It only creates the `.beamable` configuration folder and a `.config/dotnet-tools.json` manifest. It never modifies existing source files, project files, or solution structures.
+
 ## Common Pitfalls
 - **`beam init` is the first step for any new Beamable project.** Without it, there is no `.beamable` folder and most commands will fail. If the user is new to Beamable, always start here.
 - **Both `--cid` and `--pid` are required in quiet mode** (`-q`). Without them, the command tries interactive realm selection which will hang from MCP.
 - **Quiet mode defaults to `prod` environment.** If the user needs staging/dev, you must pass `--host` explicitly.
 - **Tokens save by default.** Use `--no-token-save` if you need ephemeral credentials.
-- **CID can be an alias or numeric ID.** The CLI resolves aliases automatically. **However, aliases are environment-scoped** — the same alias may not resolve on all environments. If a CID alias fails to resolve, try a different `--host` environment or use the numeric CID instead.
+- **CID can be an alias or numeric ID.** The CLI resolves aliases automatically. **However, aliases are environment-scoped** — the same alias may not resolve on all environments. Most organizations register their alias on **prod** (the default, no `--host` needed). If the alias fails to resolve, the user may be on a custom cloud — ask them for their environment URL and pass it via `--host`. If the alias still fails on all known environments, ask the user for their numeric CID instead.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts.
 - **`dotnet tool restore` runs automatically** during init to set up the local toolchain.
 
