@@ -47,6 +47,12 @@ public static class OpenApiMethodNameGenerator
 			.Select(p => ParamName(SanitizeSegment(p)))
 			.ToList();
 
+		// A trailing path parameter identifies a single resource (e.g. `/tickets/{ticketId}`),
+		// so it must be reflected in the method name to disambiguate from the collection endpoint.
+		var tailParamName = rawSegments.Count > 0 && IsParameter(rawSegments[^1])
+			? ParamName(SanitizeSegment(rawSegments[^1]))
+			: null;
+
 		var verbUpper = httpMethod.Trim().ToUpperInvariant();
 
 		// 4) Prepare singular/plural forms of the resource
@@ -76,10 +82,10 @@ public static class OpenApiMethodNameGenerator
 				// 	// special-case for auth token endpoint
 				// 	"get" + ConcatCapitalize(filteredStaticSegments),
 				_ =>
-					// fallback: list everything e.g GET /resources | /resources/subresources
+					// fallback: list / nested list, with `By{TailParam}` if the path ends in a parameter
 					resources + HttpVerbPrefix(verbUpper) + (filteredStaticSegments.Count > 1
 						? ConcatCapitalize(filteredStaticSegments[1..])
-						: string.Empty)
+						: string.Empty) + (tailParamName != null ? "By" + tailParamName : string.Empty)
 			};
 		}
 		else
@@ -92,7 +98,7 @@ public static class OpenApiMethodNameGenerator
 				                                   ConcatCapitalize(staticSegments[1..]) + "By" + paramNames[0],
 				_ => resources + HttpVerbPrefix(verbUpper) + (staticSegments.Count > 1
 					? ConcatCapitalize(staticSegments[1..])
-					: string.Empty)
+					: string.Empty) + (tailParamName != null ? "By" + tailParamName : string.Empty)
 			};
 		}
 

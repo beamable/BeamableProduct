@@ -54,7 +54,7 @@ import type { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function statsGet(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<GetStatsResponse>> {
+export async function statsGetById(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<GetStatsResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request
@@ -86,7 +86,7 @@ export async function statsGet(requester: HttpRequester, id: string, itemType: s
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function statsPost(requester: HttpRequester, id: string, itemType: string, payload: SetStatsRequest, domain?: string, visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsPostById(requester: HttpRequester, id: string, itemType: string, payload: SetStatsRequest, domain?: string, visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request
@@ -118,7 +118,7 @@ export async function statsPost(requester: HttpRequester, id: string, itemType: 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function statsDelete(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
+export async function statsDeleteById(requester: HttpRequester, id: string, itemType: string, domain?: string, keys?: string[], visibility?: StatsVisibility, gamertag?: string): Promise<HttpResponse<StatsActorCommonResponse>> {
   let endpoint = "/api/stats/{itemType}/{id}".replace(idPlaceholder, endpointEncoder(id)).replace(itemTypePlaceholder, endpointEncoder(itemType));
   
   // Make the API request

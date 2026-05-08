@@ -225,7 +225,7 @@ export async function customersGetStripeSubscriptionByCustomerId(requester: Http
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPutRealms(requester: HttpRequester, customerId: string, realmId: string, payload: UpdateRealmRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutRealmsByRealmId(requester: HttpRequester, customerId: string, realmId: string, payload: UpdateRealmRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -250,7 +250,7 @@ export async function customersPutRealms(requester: HttpRequester, customerId: s
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<RealmView>> {
+export async function customersGetRealmsByRealmId(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<RealmView>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -274,7 +274,7 @@ export async function customersGetRealms(requester: HttpRequester, customerId: s
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersDeleteRealms(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersDeleteRealmsByRealmId(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -374,7 +374,7 @@ export async function customersPostGamesByCustomerId(requester: HttpRequester, c
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetGames(requester: HttpRequester, customerId: string, gameId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<GetGamesResponse>> {
+export async function customersGetGamesByGameId(requester: HttpRequester, customerId: string, gameId: string, showHiddenRealms?: boolean, gamertag?: string): Promise<HttpResponse<GetGamesResponse>> {
   let endpoint = "/api/customers/{customerId}/games/{gameId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(gameIdPlaceholder, endpointEncoder(gameId));
   
   // Make the API request
@@ -402,7 +402,7 @@ export async function customersGetGames(requester: HttpRequester, customerId: st
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPutGames(requester: HttpRequester, customerId: string, gameId: string, payload: CustomerActorUpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutGamesByGameId(requester: HttpRequester, customerId: string, gameId: string, payload: CustomerActorUpdateGameHierarchyRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/games/{gameId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(gameIdPlaceholder, endpointEncoder(gameId));
   
   // Make the API request
