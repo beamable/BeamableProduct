@@ -129,9 +129,10 @@ public class GenerateAnalyticsValidatorsCommand
 			return result;
 		}
 
-		// Mirror GenerateClientFileCommand's Unreal flow: write into each linked UE project under
-		// the core module's public headers in an Analytics/AutoGen subfolder, retry on IO contention,
-		// and regenerate project files if any new file was added.
+		// Write into each linked UE project under the core module's public headers in an
+		// Analytics/AutoGen subfolder. Strictly additive: existing headers (including those for
+		// events that have since been archived/deleted on the realm) are left in place. Files
+		// that are regenerated this run get overwritten in-place; everything else is untouched.
 		const string analyticsSubFolder = "Analytics";
 		const string autoGenFolder = "AutoGen";
 		foreach (var unrealProjectData in linkedUnrealProjects)
@@ -146,27 +147,6 @@ public class GenerateAnalyticsValidatorsCommand
 
 			var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
 			Log.Verbose($"decided to 're-generate project files' for project {unrealProjectData.CoreProjectName} path=[{unrealProjectData.Path}] will-regen=[{needsProjectFilesRebuild}]");
-
-			// Clean only the Analytics/AutoGen folder so we don't trash the microservice client AutoGen output.
-			var analyticsAutoGen = new DirectoryInfo(Path.Combine(outputDir, unrealProjectData.MsCoreHeaderPath, analyticsSubFolder, autoGenFolder));
-			if (analyticsAutoGen.Exists)
-			{
-				bool successfulDelete;
-				do
-				{
-					try
-					{
-						Directory.Delete(analyticsAutoGen.FullName, true);
-						successfulDelete = true;
-					}
-					catch
-					{
-						successfulDelete = false;
-					}
-				} while (!successfulDelete);
-
-				Log.Verbose($"cleaning existing analytics auto-gen directory {unrealProjectData.CoreProjectName} dir=[{analyticsAutoGen}]");
-			}
 
 			var writeFiles = new List<Task>();
 			for (var i = 0; i < allFilesToCreate.Count; i++)

@@ -16,7 +16,7 @@ public struct AnalyticsValidatorFieldDeclaration
 	public string CppType;
 	public string DefaultInit;
 
-	/// <summary>Lines like "\t\tUBeamValidators::ValidateMinimum(Foo, 0, FooResult);", each terminated with "\n". Empty when the property has no constraints.</summary>
+	/// <summary>Lines like "\t\tBeamValidators::ValidateMinimum(Foo, 0, FooResult);", each terminated with "\n". Empty when the property has no constraints.</summary>
 	public string ValidatorCalls;
 
 	/// <summary>Right-hand-side of the per-field deserialize assignment, e.g. "Bag->GetIntegerField(TEXT(\"Foo\"))" or "(float)Bag->GetNumberField(TEXT(\"Foo\"))".</summary>
@@ -158,7 +158,7 @@ struct ₢{nameof(StructName)}₢ : public FBeamAnalyticsEvent
 /// <summary>
 /// Emits one Unreal C++ header per enabled analytics event. Each header defines a USTRUCT
 /// deriving from FBeamAnalyticsEvent with overrides for GetOpCode / GetCategory / GetEventName,
-/// a Validate(FBeamValidationContext&amp;) override that calls into the UBeamValidators static
+/// a Validate(FBeamValidationContext&amp;) override that calls into the BeamValidators namespace
 /// library, and the BeamSerialize / BeamDeserialize property overrides that read/write the
 /// payload's JSON shape. Consumed by the `beam analytics generate-validators` command.
 /// </summary>
@@ -272,39 +272,39 @@ public class AnalyticsValidatorGenerator
 		{
 			case "integer":
 				if (p.Minimum.HasValue)
-					AddLine($"UBeamValidators::ValidateMinimum({cppName}, {IntLit(p.Minimum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMinimum({cppName}, {IntLit(p.Minimum.Value)}, {resultVar});");
 				if (p.Maximum.HasValue)
-					AddLine($"UBeamValidators::ValidateMaximum({cppName}, {IntLit(p.Maximum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMaximum({cppName}, {IntLit(p.Maximum.Value)}, {resultVar});");
 				if (p.ExclusiveMinimum.HasValue)
-					AddLine($"UBeamValidators::ValidateExclusiveMinimum({cppName}, {IntLit(p.ExclusiveMinimum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateExclusiveMinimum({cppName}, {IntLit(p.ExclusiveMinimum.Value)}, {resultVar});");
 				if (p.ExclusiveMaximum.HasValue)
-					AddLine($"UBeamValidators::ValidateExclusiveMaximum({cppName}, {IntLit(p.ExclusiveMaximum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateExclusiveMaximum({cppName}, {IntLit(p.ExclusiveMaximum.Value)}, {resultVar});");
 				if (p.MultipleOf.HasValue)
-					AddLine($"UBeamValidators::ValidateMultipleOf({cppName}, {IntLit(p.MultipleOf.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMultipleOf({cppName}, {IntLit(p.MultipleOf.Value)}, {resultVar});");
 				break;
 
 			case "number":
 				if (p.Minimum.HasValue)
-					AddLine($"UBeamValidators::ValidateMinimum({cppName}, {FloatLit(p.Minimum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMinimum({cppName}, {FloatLit(p.Minimum.Value)}, {resultVar});");
 				if (p.Maximum.HasValue)
-					AddLine($"UBeamValidators::ValidateMaximum({cppName}, {FloatLit(p.Maximum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMaximum({cppName}, {FloatLit(p.Maximum.Value)}, {resultVar});");
 				if (p.ExclusiveMinimum.HasValue)
-					AddLine($"UBeamValidators::ValidateExclusiveMinimum({cppName}, {FloatLit(p.ExclusiveMinimum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateExclusiveMinimum({cppName}, {FloatLit(p.ExclusiveMinimum.Value)}, {resultVar});");
 				if (p.ExclusiveMaximum.HasValue)
-					AddLine($"UBeamValidators::ValidateExclusiveMaximum({cppName}, {FloatLit(p.ExclusiveMaximum.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateExclusiveMaximum({cppName}, {FloatLit(p.ExclusiveMaximum.Value)}, {resultVar});");
 				if (p.MultipleOf.HasValue)
-					AddLine($"UBeamValidators::ValidateMultipleOf({cppName}, {FloatLit(p.MultipleOf.Value)}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMultipleOf({cppName}, {FloatLit(p.MultipleOf.Value)}, {resultVar});");
 				break;
 
 			case "string":
 				if (required)
-					AddLine($"UBeamValidators::ValidateRequired({cppName}, {resultVar});");
+					AddLine($"BeamValidators::ValidateRequired({cppName}, {resultVar});");
 				if (p.MinLength.HasValue)
-					AddLine($"UBeamValidators::ValidateMinLength({cppName}, {p.MinLength.Value}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMinLength({cppName}, {p.MinLength.Value}, {resultVar});");
 				if (p.MaxLength.HasValue)
-					AddLine($"UBeamValidators::ValidateMaxLength({cppName}, {p.MaxLength.Value}, {resultVar});");
+					AddLine($"BeamValidators::ValidateMaxLength({cppName}, {p.MaxLength.Value}, {resultVar});");
 				if (!string.IsNullOrEmpty(p.Pattern))
-					AddLine($"UBeamValidators::ValidatePattern({cppName}, TEXT(\"{EscapeString(p.Pattern!)}\"), {resultVar});");
+					AddLine($"BeamValidators::ValidatePattern({cppName}, TEXT(\"{EscapeString(p.Pattern!)}\"), {resultVar});");
 				break;
 		}
 
