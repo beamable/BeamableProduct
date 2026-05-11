@@ -83,4 +83,11 @@ public class JsonSchemaProperty
 
 	[JsonPropertyName("pattern")]
 	public string? Pattern { get; set; }
+
+	// Populated when Type == "object" — describes the nested custom type's shape.
+	[JsonPropertyName("properties")]
+	public Dictionary<string, JsonSchemaProperty>? Properties { get; set; }
+
+	[JsonPropertyName("required")]
+	public List<string>? Required { get; set; }
 }

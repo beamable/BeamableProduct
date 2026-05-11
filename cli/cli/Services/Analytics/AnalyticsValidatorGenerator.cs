@@ -22,6 +22,12 @@ public struct AnalyticsValidatorFieldDeclaration
 	/// <summary>Right-hand-side of the per-field deserialize assignment, e.g. "Bag->GetIntegerField(TEXT(\"Foo\"))" or "(float)Bag->GetNumberField(TEXT(\"Foo\"))".</summary>
 	public string DeserializeRhs;
 
+	/// <summary>True when this field is a nested custom type (JSON Schema "object"). Picks the custom-type variant of the per-field templates.</summary>
+	public bool IsCustomType;
+
+	/// <summary>Pre-rendered C++ expression for the field's SchemaPath. Either a literal like `TEXT("properties.foo")` (top-level) or `SchemaPathPrefix + TEXT(".properties.foo")` (inside a nested struct's Validate).</summary>
+	public string SchemaPathExpr;
+
 	public void IntoProcessDict(Dictionary<string, string> dict)
 	{
 		dict.Clear();
@@ -31,19 +37,108 @@ public struct AnalyticsValidatorFieldDeclaration
 		dict.Add(nameof(DefaultInit), DefaultInit);
 		dict.Add(nameof(ValidatorCalls), ValidatorCalls);
 		dict.Add(nameof(DeserializeRhs), DeserializeRhs);
+		dict.Add(nameof(SchemaPathExpr), SchemaPathExpr);
+	}
+
+	public string RenderProperty(Dictionary<string, string> dict)
+	{
+		IntoProcessDict(dict);
+		return PROPERTY_DECL.ProcessReplacement(dict);
+	}
+
+	public string RenderValidate(Dictionary<string, string> dict)
+	{
+		IntoProcessDict(dict);
+		return (IsCustomType ? VALIDATE_BLOCK_CUSTOM : VALIDATE_BLOCK).ProcessReplacement(dict);
+	}
+
+	public string RenderSerialize(Dictionary<string, string> dict)
+	{
+		IntoProcessDict(dict);
+		return (IsCustomType ? SERIALIZE_LINE_CUSTOM : SERIALIZE_LINE).ProcessReplacement(dict);
+	}
+
+	public string RenderDeserialize(Dictionary<string, string> dict)
+	{
+		IntoProcessDict(dict);
+		return (IsCustomType ? DESERIALIZE_BLOCK_CUSTOM : DESERIALIZE_BLOCK).ProcessReplacement(dict);
 	}
 
 	public const string PROPERTY_DECL = $@"	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=""Analytics"")
 	₢{nameof(CppType)}₢ ₢{nameof(CppName)}₢₢{nameof(DefaultInit)}₢;";
 
 	public const string VALIDATE_BLOCK = $@"		FBeamValidationResult ₢{nameof(CppName)}₢Result(TEXT(""₢{nameof(CppName)}₢""));
-		₢{nameof(CppName)}₢Result.SchemaPath = TEXT(""properties.₢{nameof(JsonName)}₢"");
+		₢{nameof(CppName)}₢Result.SchemaPath = ₢{nameof(SchemaPathExpr)}₢;
 ₢{nameof(ValidatorCalls)}₢		OutContext.RecordResult(₢{nameof(CppName)}₢Result);";
+
+	public const string VALIDATE_BLOCK_CUSTOM = $@"		₢{nameof(CppName)}₢.Validate(OutContext, ₢{nameof(SchemaPathExpr)}₢);";
 
 	public const string SERIALIZE_LINE = $@"		Serializer->WriteValue(TEXT(""₢{nameof(CppName)}₢""), ₢{nameof(CppName)}₢);";
 
+	public const string SERIALIZE_LINE_CUSTOM = $@"		Serializer->WriteIdentifierPrefix(TEXT(""₢{nameof(CppName)}₢""));
+		₢{nameof(CppName)}₢.BeamSerialize(Serializer);";
+
 	public const string DESERIALIZE_BLOCK = $@"		if (Bag->HasField(TEXT(""₢{nameof(CppName)}₢"")))
 			₢{nameof(CppName)}₢ = ₢{nameof(DeserializeRhs)}₢;";
+
+	public const string DESERIALIZE_BLOCK_CUSTOM = $@"		if (Bag->HasField(TEXT(""₢{nameof(CppName)}₢"")))
+			₢{nameof(CppName)}₢.BeamDeserializeProperties(Bag->GetObjectField(TEXT(""₢{nameof(CppName)}₢"")));";
+}
+
+/// <summary>
+/// One generated USTRUCT for a nested custom type encountered inside an event schema. Emitted as a
+/// sibling USTRUCT in the same .h file as the event that uses it (declared before the event so the
+/// event can name it as a UPROPERTY type). Inherits FBeamJsonSerializableUStruct so it integrates
+/// with the standard Beam serialize/deserialize pipeline; defines a Validate(OutContext, prefix)
+/// helper so the parent can attribute schema paths to the right ancestor.
+/// </summary>
+public struct AnalyticsValidatorCustomTypeDeclaration
+{
+	public string StructName;
+	public List<AnalyticsValidatorFieldDeclaration> Fields;
+
+	public void IntoProcessDict(Dictionary<string, string> helperDict)
+	{
+		var propertyDeclarations = string.Join("\n\n", Fields.Select(f => f.RenderProperty(helperDict)));
+		var validateBlocks = string.Join("\n\n", Fields.Select(f => f.RenderValidate(helperDict)));
+		var serializeLines = string.Join("\n", Fields.Select(f => f.RenderSerialize(helperDict)));
+		var deserializeBlocks = string.Join("\n", Fields.Select(f => f.RenderDeserialize(helperDict)));
+
+		helperDict.Clear();
+		helperDict.Add(nameof(StructName), StructName);
+		helperDict.Add(nameof(propertyDeclarations), propertyDeclarations);
+		helperDict.Add(nameof(validateBlocks), validateBlocks);
+		helperDict.Add(nameof(serializeLines), serializeLines);
+		helperDict.Add(nameof(deserializeBlocks), deserializeBlocks);
+	}
+
+	public const string CUSTOM_TYPE_TEMPLATE = $@"USTRUCT(BlueprintType)
+struct ₢{nameof(StructName)}₢ : public FBeamJsonSerializableUStruct
+{{
+	GENERATED_BODY()
+
+₢propertyDeclarations₢
+
+	virtual void BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const override
+	{{
+₢serializeLines₢
+	}}
+
+	virtual void BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const override
+	{{
+₢serializeLines₢
+	}}
+
+	virtual void BeamDeserializeProperties(const TSharedPtr<FJsonObject>& Bag) override
+	{{
+₢deserializeBlocks₢
+	}}
+
+	void Validate(FBeamValidationContext& OutContext, const FString& SchemaPathPrefix) const
+	{{
+₢validateBlocks₢
+	}}
+}};";
 }
 
 /// <summary>
@@ -64,31 +159,23 @@ public struct AnalyticsValidatorEventDeclaration
 
 	public List<AnalyticsValidatorFieldDeclaration> Fields;
 
+	/// <summary>Nested custom types referenced (transitively) by this event. Ordered leaf-first so each USTRUCT is declared before any USTRUCT that names it as a UPROPERTY type.</summary>
+	public List<AnalyticsValidatorCustomTypeDeclaration> CustomTypes;
+
 	public void IntoProcessDict(Dictionary<string, string> helperDict)
 	{
-		var propertyDeclarations = string.Join("\n\n", Fields.Select(f =>
-		{
-			f.IntoProcessDict(helperDict);
-			return AnalyticsValidatorFieldDeclaration.PROPERTY_DECL.ProcessReplacement(helperDict);
-		}));
+		var propertyDeclarations = string.Join("\n\n", Fields.Select(f => f.RenderProperty(helperDict)));
+		var validateBlocks = string.Join("\n\n", Fields.Select(f => f.RenderValidate(helperDict)));
+		var serializeLines = string.Join("\n", Fields.Select(f => f.RenderSerialize(helperDict)));
+		var deserializeBlocks = string.Join("\n", Fields.Select(f => f.RenderDeserialize(helperDict)));
 
-		var validateBlocks = string.Join("\n\n", Fields.Select(f =>
-		{
-			f.IntoProcessDict(helperDict);
-			return AnalyticsValidatorFieldDeclaration.VALIDATE_BLOCK.ProcessReplacement(helperDict);
-		}));
-
-		var serializeLines = string.Join("\n", Fields.Select(f =>
-		{
-			f.IntoProcessDict(helperDict);
-			return AnalyticsValidatorFieldDeclaration.SERIALIZE_LINE.ProcessReplacement(helperDict);
-		}));
-
-		var deserializeBlocks = string.Join("\n", Fields.Select(f =>
-		{
-			f.IntoProcessDict(helperDict);
-			return AnalyticsValidatorFieldDeclaration.DESERIALIZE_BLOCK.ProcessReplacement(helperDict);
-		}));
+		var customTypeDeclarations = CustomTypes == null || CustomTypes.Count == 0
+			? string.Empty
+			: string.Join("\n\n", CustomTypes.Select(ct =>
+			{
+				ct.IntoProcessDict(helperDict);
+				return AnalyticsValidatorCustomTypeDeclaration.CUSTOM_TYPE_TEMPLATE.ProcessReplacement(helperDict);
+			})) + "\n\n";
 
 		helperDict.Clear();
 		helperDict.Add(nameof(EventName), EventName);
@@ -102,6 +189,7 @@ public struct AnalyticsValidatorEventDeclaration
 		helperDict.Add(nameof(validateBlocks), validateBlocks);
 		helperDict.Add(nameof(serializeLines), serializeLines);
 		helperDict.Add(nameof(deserializeBlocks), deserializeBlocks);
+		helperDict.Add(nameof(customTypeDeclarations), customTypeDeclarations);
 	}
 
 	public const string EVENT_HEADER_TEMPLATE = $@"// Auto-generated by BeamableCLI - DO NOT EDIT
@@ -112,11 +200,12 @@ public struct AnalyticsValidatorEventDeclaration
 
 #include ""CoreMinimal.h""
 #include ""Analytics/BeamAnalyticsEvent.h""
+#include ""Serialization/BeamJsonSerializable.h""
 #include ""Runtime/BeamValidators.h""
 
 #include ""₢{nameof(StructFileBase)}₢.generated.h""
 
-USTRUCT(BlueprintType, meta=(BeamAnalyticsEventBase))
+₢customTypeDeclarations₢USTRUCT(BlueprintType, meta=(BeamAnalyticsEventBase))
 struct ₢{nameof(StructName)}₢ : public FBeamAnalyticsEvent
 {{
 	GENERATED_BODY()
@@ -188,6 +277,9 @@ public class AnalyticsValidatorGenerator
 	{
 		var typePascal = ToPascalCase(ev.Name);
 		var structName = $"F{apiPrefix}{typePascal}Event";
+		// Nested custom types share the event's "F<prefix><EventPascal>" prefix and then append the
+		// PascalCased path of the property they were derived from (e.g. FNewEventTestCustomCustom2).
+		var nestedTypeNameRoot = $"F{apiPrefix}{typePascal}";
 		var schema = ev.Schema;
 
 		var schemaVersion = string.IsNullOrEmpty(schema.SchemaVersion) ? "1.0.0" : schema.SchemaVersion!;
@@ -198,8 +290,10 @@ public class AnalyticsValidatorGenerator
 			? string.Empty
 			: $"// Description: {EscapeForComment(ev.Description)}\n";
 
+		var customTypes = new List<AnalyticsValidatorCustomTypeDeclaration>();
 		var fields = schema.Properties
-			.Select(kvp => MapField(kvp.Key, kvp.Value, schema.Required.Contains(kvp.Key)))
+			.Select(kvp => MapField(kvp.Key, kvp.Value, schema.Required.Contains(kvp.Key),
+				nestedTypeNameRoot, parentSchemaPathExpr: string.Empty, customTypes))
 			.ToList();
 
 		return new AnalyticsValidatorEventDeclaration
@@ -212,12 +306,57 @@ public class AnalyticsValidatorGenerator
 			Category = EscapeString(category),
 			DescriptionComment = descriptionComment,
 			Fields = fields,
+			CustomTypes = customTypes,
 		};
 	}
 
-	private static AnalyticsValidatorFieldDeclaration MapField(string jsonName, JsonSchemaProperty prop, bool required)
+	/// <summary>
+	/// Maps one JSON-Schema property into a field declaration. For "object" properties this also
+	/// (a) builds the nested USTRUCT's field list by recursing and (b) appends the nested struct to
+	/// <paramref name="customTypes"/> in leaf-first order so the caller can emit them in dependency order.
+	/// </summary>
+	/// <param name="structNamePrefix">"F&lt;prefix&gt;&lt;EventPascal&gt;[&lt;ancestor path&gt;]" — used to name child custom types so their identifiers are unique within the event.</param>
+	/// <param name="parentSchemaPathExpr">Empty at the event root (paths render as literals); otherwise the name of the enclosing Validate's <c>SchemaPathPrefix</c> parameter so leaf paths render as a concatenation.</param>
+	private static AnalyticsValidatorFieldDeclaration MapField(string jsonName, JsonSchemaProperty prop, bool required,
+		string structNamePrefix, string parentSchemaPathExpr, List<AnalyticsValidatorCustomTypeDeclaration> customTypes)
 	{
 		var pascal = ToPascalCase(jsonName);
+		var schemaPathExpr = string.IsNullOrEmpty(parentSchemaPathExpr)
+			? $"TEXT(\"properties.{EscapeString(jsonName)}\")"
+			: $"{parentSchemaPathExpr} + TEXT(\".properties.{EscapeString(jsonName)}\")";
+
+		if (prop.Type == "object")
+		{
+			var nestedStructName = $"{structNamePrefix}{pascal}";
+			var nestedProps = prop.Properties ?? new Dictionary<string, JsonSchemaProperty>();
+			var nestedRequired = prop.Required ?? new List<string>();
+
+			var nestedFields = nestedProps
+				.Select(kvp => MapField(kvp.Key, kvp.Value, nestedRequired.Contains(kvp.Key),
+					nestedStructName, parentSchemaPathExpr: "SchemaPathPrefix", customTypes))
+				.ToList();
+
+			// Post-order: register the nested type after its children so the emitted list stays
+			// dependency-ordered (leaves first → parents last).
+			customTypes.Add(new AnalyticsValidatorCustomTypeDeclaration
+			{
+				StructName = nestedStructName,
+				Fields = nestedFields,
+			});
+
+			return new AnalyticsValidatorFieldDeclaration
+			{
+				JsonName = EscapeString(jsonName),
+				CppName = pascal,
+				CppType = nestedStructName,
+				DefaultInit = string.Empty,
+				ValidatorCalls = string.Empty,
+				DeserializeRhs = string.Empty,
+				IsCustomType = true,
+				SchemaPathExpr = schemaPathExpr,
+			};
+		}
+
 		string cppType, cppName, defaultInit, deserializeRhs;
 		var keyLiteral = $"TEXT(\"{EscapeString(pascal)}\")";
 
@@ -259,6 +398,7 @@ public class AnalyticsValidatorGenerator
 			DefaultInit = defaultInit,
 			ValidatorCalls = BuildValidatorCalls(cppName, prop, required),
 			DeserializeRhs = deserializeRhs,
+			SchemaPathExpr = schemaPathExpr,
 		};
 	}
 
