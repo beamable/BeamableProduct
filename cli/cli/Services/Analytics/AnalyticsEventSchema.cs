@@ -84,6 +84,11 @@ public class JsonSchemaProperty
 	[JsonPropertyName("pattern")]
 	public string? Pattern { get; set; }
 
+	// JSON Schema's "$comment" — surfaced as a doc comment above the generated UPROPERTY so AI
+	// tooling reading the .h (and the UE editor's tooltip reflection) gets per-field context.
+	[JsonPropertyName("$comment")]
+	public string? Comment { get; set; }
+
 	// Populated when Type == "object" — describes the nested custom type's shape.
 	[JsonPropertyName("properties")]
 	public Dictionary<string, JsonSchemaProperty>? Properties { get; set; }

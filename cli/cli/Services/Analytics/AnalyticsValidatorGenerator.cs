@@ -28,6 +28,9 @@ public struct AnalyticsValidatorFieldDeclaration
 	/// <summary>Pre-rendered C++ expression for the field's SchemaPath. Either a literal like `TEXT("properties.foo")` (top-level) or `SchemaPathPrefix + TEXT(".properties.foo")` (inside a nested struct's Validate).</summary>
 	public string SchemaPathExpr;
 
+	/// <summary>Pre-rendered Doxygen comment block (one or more "\t/// ...\n" lines) sourced from JSON Schema's "$comment". Empty when the field has no comment. UHT promotes "///" blocks to UPROPERTY ToolTip metadata, so this surfaces in editor tooltips and runtime reflection too.</summary>
+	public string CommentLine;
+
 	public void IntoProcessDict(Dictionary<string, string> dict)
 	{
 		dict.Clear();
@@ -38,6 +41,7 @@ public struct AnalyticsValidatorFieldDeclaration
 		dict.Add(nameof(ValidatorCalls), ValidatorCalls);
 		dict.Add(nameof(DeserializeRhs), DeserializeRhs);
 		dict.Add(nameof(SchemaPathExpr), SchemaPathExpr);
+		dict.Add(nameof(CommentLine), CommentLine);
 	}
 
 	public string RenderProperty(Dictionary<string, string> dict)
@@ -64,7 +68,7 @@ public struct AnalyticsValidatorFieldDeclaration
 		return (IsCustomType ? DESERIALIZE_BLOCK_CUSTOM : DESERIALIZE_BLOCK).ProcessReplacement(dict);
 	}
 
-	public const string PROPERTY_DECL = $@"	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=""Analytics"")
+	public const string PROPERTY_DECL = $@"₢{nameof(CommentLine)}₢	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=""Analytics"")
 	₢{nameof(CppType)}₢ ₢{nameof(CppName)}₢₢{nameof(DefaultInit)}₢;";
 
 	public const string VALIDATE_BLOCK = $@"		FBeamValidationResult ₢{nameof(CppName)}₢Result(TEXT(""₢{nameof(CppName)}₢""));
@@ -324,6 +328,7 @@ public class AnalyticsValidatorGenerator
 		var schemaPathExpr = string.IsNullOrEmpty(parentSchemaPathExpr)
 			? $"TEXT(\"properties.{EscapeString(jsonName)}\")"
 			: $"{parentSchemaPathExpr} + TEXT(\".properties.{EscapeString(jsonName)}\")";
+		var commentLine = BuildCommentLine(prop.Comment);
 
 		if (prop.Type == "object")
 		{
@@ -354,6 +359,7 @@ public class AnalyticsValidatorGenerator
 				DeserializeRhs = string.Empty,
 				IsCustomType = true,
 				SchemaPathExpr = schemaPathExpr,
+				CommentLine = commentLine,
 			};
 		}
 
@@ -399,7 +405,23 @@ public class AnalyticsValidatorGenerator
 			ValidatorCalls = BuildValidatorCalls(cppName, prop, required),
 			DeserializeRhs = deserializeRhs,
 			SchemaPathExpr = schemaPathExpr,
+			CommentLine = commentLine,
 		};
+	}
+
+	/// <summary>
+	/// Renders a JSON-Schema "$comment" string as a tab-indented Doxygen "///" comment block to sit
+	/// immediately above the UPROPERTY line. UHT promotes "///" blocks into ToolTip metadata, so the
+	/// same text is what shows in the editor tooltip and what reflection returns at runtime.
+	/// Returns empty when the comment is null/empty so the property template renders unchanged.
+	/// </summary>
+	private static string BuildCommentLine(string? comment)
+	{
+		if (string.IsNullOrEmpty(comment)) return string.Empty;
+		var sb = new StringBuilder();
+		foreach (var line in comment.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n'))
+			sb.Append("\t/// ").Append(line).Append('\n');
+		return sb.ToString();
 	}
 
 	private static string BuildValidatorCalls(string cppName, JsonSchemaProperty p, bool required)
