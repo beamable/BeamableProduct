@@ -36,6 +36,15 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 	public override async Task Handle(CollectorStatusCommandArgs args)
 	{
+		var otelConfig = args.ConfigService.LoadOtelConfigFromFile();
+
+		if (!Otel.CliTracesEnabled() || !otelConfig.BeamCliAllowTelemetry) // if otel is disabled, then we don't start anything
+		{
+			Log.Trace("Trying to start collector ps, but telemetry is disabled.");
+			return;
+		}
+
+
 		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
