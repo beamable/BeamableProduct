@@ -55,6 +55,52 @@ public static class WebApi
 		var httpRequester = new TsIdentifier("HttpRequester");
 		var httpResponse = new TsIdentifier("HttpResponse");
 
+		// Pre-pass: collect all (endpoint, httpMethod) pairs per API class and resolve name collisions.
+		var apiOperations = new Dictionary<string, List<(string endpoint, string httpMethod)>>();
+		foreach (var document in ctxDocuments)
+		{
+			var serviceName = document.Info.Title.Split(' ').First();
+			var apiName = ToPascalCaseIdentifier(serviceName) + "Api";
+			if (!apiOperations.ContainsKey(apiName))
+				apiOperations[apiName] = new List<(string, string)>();
+
+			foreach (var (apiEndpoint, pathItem) in document.Paths)
+			foreach (var (httpMethod, _) in pathItem.Operations)
+				apiOperations[apiName].Add((apiEndpoint, httpMethod.ToString().ToUpper()));
+		}
+
+		var resolvedNames = new Dictionary<string, Dictionary<string, string>>();
+		foreach (var (apiName, operations) in apiOperations)
+		{
+			var nameMap = new Dictionary<string, string>();
+			var nameGroups = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var (endpoint, httpMethod) in operations)
+			{
+				var key = $"{httpMethod}:{endpoint}";
+				var name = GenerateMethodName(endpoint, httpMethod);
+				nameMap[key] = name;
+
+				if (!nameGroups.ContainsKey(name))
+					nameGroups[name] = new List<string>();
+				nameGroups[name].Add(key);
+			}
+
+			foreach (var (name, keys) in nameGroups)
+			{
+				if (keys.Count <= 1) continue;
+				foreach (var key in keys)
+				{
+					var parts = key.Split(':', 2);
+					var disambiguated = DisambiguateMethodName(parts[1], parts[0], name);
+					if (disambiguated != name)
+						nameMap[key] = disambiguated;
+				}
+			}
+
+			resolvedNames[apiName] = nameMap;
+		}
+
 		foreach (var document in ctxDocuments)
 		{
 			var services = document.Info.Title.Split(' ');
@@ -63,13 +109,13 @@ public static class WebApi
 			var apiName = ToPascalCaseIdentifier(serviceName) + "Api";
 			if (apiDeclarations.TryGetValue(apiName, out var declaration))
 			{
-				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType);
+				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType, resolvedNames[apiName]);
 				continue;
 			}
 
 			var tsImports = new Dictionary<string, TsImport>();
 			var tsFunctions = new List<TsFunction>();
-			GenerateApiMethod(document, tsImports, tsFunctions, enums, serviceName, serviceType);
+			GenerateApiMethod(document, tsImports, tsFunctions, enums, serviceName, serviceType, resolvedNames[apiName]);
 			apiDeclarations.Add(apiName, (tsImports, tsFunctions));
 		}
 
@@ -112,7 +158,8 @@ public static class WebApi
 	}
 
 	private static void GenerateApiMethod(OpenApiDocument document, Dictionary<string, TsImport> tsImports,
-		List<TsFunction> tsFunctions, List<TsEnum> enums, string serviceName, string serviceType)
+		List<TsFunction> tsFunctions, List<TsEnum> enums, string serviceName, string serviceType,
+		Dictionary<string, string> resolvedNames)
 	{
 		foreach (var (apiEndpoint, pathItem) in document.Paths)
 		{
@@ -128,14 +175,14 @@ public static class WebApi
 			foreach (var (httpMethod, operation) in pathItem.Operations)
 			{
 				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsFunctions, enums,
-					serviceName, serviceType);
+					serviceName, serviceType, resolvedNames);
 			}
 		}
 	}
 
 	private static void ProcessOperation(string apiEndpoint, OperationType httpMethod, OpenApiOperation operation,
 		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, List<TsFunction> tsFunctions,
-		List<TsEnum> enums, string serviceName, string serviceType)
+		List<TsEnum> enums, string serviceName, string serviceType, Dictionary<string, string> resolvedNames)
 	{
 		if (!TryGetMediaTypeAndResponseType(operation, out var responseType))
 			return;
@@ -145,7 +192,8 @@ public static class WebApi
 		var (requiresAuth, requiresAuthRemarks) = DetermineAuth(operation, serviceName, serviceType);
 		var deprecatedDoc = DetermineIfDeprecated(operation);
 		var apiMethodType = httpMethod.ToString().ToUpper();
-		var methodName = GenerateMethodName(apiEndpoint, apiMethodType);
+		var nameKey = $"{apiMethodType}:{apiEndpoint}";
+		var methodName = resolvedNames.TryGetValue(nameKey, out var resolved) ? resolved : GenerateMethodName(apiEndpoint, apiMethodType);
 
 		var payload = new TsIdentifier("payload");
 		var modules = new List<string>();

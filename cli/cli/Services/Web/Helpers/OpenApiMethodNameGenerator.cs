@@ -72,9 +72,6 @@ public static class OpenApiMethodNameGenerator
 					// GET /resources/subresources/{id} or /resources/{id}/subresources
 					resources + HttpVerbPrefix(verbUpper) + ConcatCapitalize(filteredStaticSegments[1..]) + "By" +
 					paramNames[0],
-				// _ when apiEndpoint.Equals("/basic/auth/token", StringComparison.OrdinalIgnoreCase) =>
-				// 	// special-case for auth token endpoint
-				// 	"get" + ConcatCapitalize(filteredStaticSegments),
 				_ =>
 					// fallback: list everything e.g GET /resources | /resources/subresources
 					resources + HttpVerbPrefix(verbUpper) + (filteredStaticSegments.Count > 1
@@ -99,6 +96,26 @@ public static class OpenApiMethodNameGenerator
 		// 7) Final camel-case
 		methodName = ToCamel(methodName);
 		return isInternalEndpoint ? $"{methodName}Internal" : methodName;
+	}
+
+	/// <summary>
+	/// Disambiguate a method name by appending "By{lastParam}" using the trailing
+	/// path parameter of the original endpoint.  Called only when a name collision
+	/// is detected after the initial generation pass.
+	/// </summary>
+	public static string DisambiguateMethodName(string apiEndpoint, string httpMethod, string currentName)
+	{
+		var rawSegments = apiEndpoint
+			.Split(Separator, StringSplitOptions.RemoveEmptyEntries)
+			.Where(s => !SkippablePrefixes.Contains(s, StringComparer.OrdinalIgnoreCase))
+			.Select(RemoveNonAlphanumericExceptBraces)
+			.ToList();
+
+		if (rawSegments.Count == 0 || !IsParameter(rawSegments.Last()))
+			return currentName;
+
+		var lastParam = Capitalize(SanitizeSegment(rawSegments.Last()));
+		return currentName + "By" + lastParam;
 	}
 
 	// ─── Helper Methods ───
