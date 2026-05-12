@@ -267,38 +267,21 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
 
 	[JsonProperty(KEY_NAV_GROUP)]
-	[JsonConverter(typeof(OptionalStringConverter))]
+	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavGroup;
 
 	[JsonProperty(KEY_NAV_LABEL)]
-	[JsonConverter(typeof(OptionalStringConverter))]
+	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavLabel;
 
 	[JsonProperty(KEY_NAV_ICON)]
-	[JsonConverter(typeof(OptionalStringConverter))]
+	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavIcon;
 
 	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
 	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
-}
-
-public class OptionalStringConverter : JsonConverter<OptionalString>
-{
-
-	public override void WriteJson(JsonWriter writer, OptionalString value, JsonSerializer serializer)
-	{
-		var stringValue = value.HasValue ? value.Value : string.Empty;
-		writer.WriteValue(stringValue);
-	}
-
-	public override OptionalString ReadJson(JsonReader reader, Type objectType, OptionalString existingValue, bool hasExistingValue,
-		JsonSerializer serializer)
-	{
-		string stringValue = (string)reader.Value;
-		return new OptionalString() { HasValue = !string.IsNullOrEmpty(stringValue), Value = stringValue };
-	}
 }
 
 [Serializable]
