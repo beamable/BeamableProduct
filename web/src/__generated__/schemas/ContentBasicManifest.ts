@@ -8,11 +8,13 @@ import type { ContentReference } from './ContentReference';
 import type { TextReference } from './TextReference';
 
 export type ContentBasicManifest = { 
+  affectedContentIds: string; 
   checksum: string; 
   created: bigint | string; 
   id: string; 
   references: (ContentReference | TextReference | BinaryReference)[]; 
   archived?: boolean; 
+  clientVersion?: string; 
   diffObjectKey?: string; 
   lastChanged?: bigint | string; 
   publisherAccountId?: bigint | string; 

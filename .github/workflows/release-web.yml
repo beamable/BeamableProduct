@@ -53,6 +53,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      contents: write
+
     defaults:
       run:
         working-directory: web
@@ -61,10 +63,9 @@ jobs:
         with:
           ref: ${{ github.event.inputs.commit }}
 
-      - name: Use Node.js LTS
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.14.0'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
@@ -102,7 +103,21 @@ jobs:
       # prepublishOnly runs build automatically
       - name: Publish to npm
         if: ${{ inputs.dryRun == false }}
-        run: pnpm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
+        run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
+
+      - name: Create Release
+        id: create_release
+        if: ${{ inputs.dryRun == false }} 
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: web-sdk-${{ steps.version.outputs.VERSION }}
+          release_name: Web SDK ${{ steps.version.outputs.VERSION }}
+          body: |
+            Web SDK Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ inputs.releaseType != 'production' }}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}

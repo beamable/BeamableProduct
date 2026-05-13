@@ -430,7 +430,7 @@ public class ContentHistorySyncContentCommand : AtomicCommand<ContentHistorySync
 		if (contentIds == null || contentIds.Count == 0)
 		{
 			contentIds = new List<string>();
-			contentIds.AddRange(changelist.Created.Keys);
+			contentIds.AddRange(changelist.Added.Keys);
 			contentIds.AddRange(changelist.Modified.Keys);
 			contentIds.AddRange(changelist.Removed.Keys);
 		}
@@ -465,7 +465,7 @@ public class ContentHistorySyncContentCommand : AtomicCommand<ContentHistorySync
 		var resultEntries = new List<ContentHistoryChangelistEntry>();
 
 		// Add entries from Created that are locally cached
-		foreach (var kvp in changelist.Created)
+		foreach (var kvp in changelist.Added)
 		{
 			if (locallyCachedContentIds.Contains(kvp.Key))
 			{

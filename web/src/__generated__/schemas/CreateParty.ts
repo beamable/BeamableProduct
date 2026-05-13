@@ -3,8 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { Tag } from './Tag';
+
 export type CreateParty = { 
   leader?: string | null; 
   maxSize?: number; 
+  memberTags?: Tag[] | null; 
   restriction?: string | null; 
 };

@@ -19,6 +19,19 @@ public static class StringHelper
 	}
 
 	/// <summary>
+	/// Returns true if the input is NOT a valid unquoted TypeScript identifier.
+	/// </summary>
+	public static bool NeedsQuoting(string input)
+		=> string.IsNullOrEmpty(input) || !Regex.IsMatch(input, @"^[A-Za-z_$][A-Za-z0-9_$]*$");
+
+	/// <summary>
+	/// Returns the property name quoted if it contains characters invalid for
+	/// an unquoted TypeScript identifier, otherwise returns it as-is.
+	/// </summary>
+	public static string QuoteIfNeeded(string name)
+		=> NeedsQuoting(name) ? $"\"{name}\"" : name;
+
+	/// <summary>
 	/// Converts a string to a PascalCase identifier.
 	/// </summary>
 	/// <param name="input">The input string to convert.</param>

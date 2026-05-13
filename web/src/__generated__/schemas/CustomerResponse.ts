@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Customer } from './Customer';
+import type { RealmsBasicCustomer } from './RealmsBasicCustomer';
 
 export type CustomerResponse = { 
-  customer: Customer; 
+  customer: RealmsBasicCustomer; 
 };

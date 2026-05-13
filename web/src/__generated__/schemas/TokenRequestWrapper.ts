@@ -3,15 +3,15 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AuthBasicContextInfo } from './AuthBasicContextInfo';
 import type { ChallengeSolution } from './ChallengeSolution';
+import type { ContextInfo } from './ContextInfo';
 
 export type TokenRequestWrapper = { 
   grant_type: string; 
   challenge_solution?: ChallengeSolution; 
   client_id?: string; 
   code?: string; 
-  context?: AuthBasicContextInfo; 
+  context?: ContextInfo; 
   customerScoped?: boolean; 
   device_id?: string; 
   external_token?: string; 

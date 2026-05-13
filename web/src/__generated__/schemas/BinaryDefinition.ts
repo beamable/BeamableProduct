@@ -8,4 +8,5 @@ export type BinaryDefinition = {
   id: string; 
   uploadContentType: string; 
   tags?: string[]; 
+  visibility?: string; 
 };
