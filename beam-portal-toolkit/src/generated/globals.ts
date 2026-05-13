@@ -73,6 +73,7 @@ declare global {
     'beam-toast': BeamToastElement;
     'beam-toast-stack': BeamToastStackElement;
     'beam-code-snippet': BeamCodeSnippetElement;
+    'beam-change-bar': BeamChangeBarElement;
   }
 
   // ---------------------------------------------------------------------------
@@ -983,5 +984,22 @@ declare global {
 
   interface BeamCodeSnippetElement extends HTMLElement {
     code?: string;
+  }
+
+  interface BeamChangeBarElement extends HTMLElement {
+    changes?: unknown;
+    errors?: unknown;
+    saving?: boolean;
+    summaryText?: string;
+    saveLabel?: string;
+    savingLabel?: string;
+    discardLabel?: string;
+    reviewLabel?: string;
+    reviewTitle?: string;
+    noReview?: boolean;
+    inline?: boolean;
+    autoSave?: boolean;
+    autoSaveDebounce?: number;
+    state?: 'idle' | 'pending' | 'saving' | 'paused-errors';
   }
 }
