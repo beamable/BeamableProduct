@@ -75,11 +75,15 @@ namespace Beamable.Console
 		private GUIStyle _inputStyle;
 		private GUIStyle _promptStyle;
 		private GUIStyle _suggestionStyle;
-		private bool     _stylesReady;
+		private GUIStyle _closeButtonStyle;
 		private readonly Color _backgroundColor = new Color(0f, 0f, 0f, 0.85f);
 		private readonly float _heightRatio = 0.8f;
-		
+
 		private const string InputControlName = "SAConsoleInput";
+
+		private const float ReferenceResolutionHeight = 1080f;
+		private float _screenScale = 1f;
+		private float _lastScreenScale = -1f;
 
 		#endregion
 
@@ -210,6 +214,8 @@ namespace Beamable.Console
 
 		private void OnGUI()
 		{
+			_screenScale = Screen.height / ReferenceResolutionHeight;
+
 			if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.BackQuote)
 			{
 				if (!_isActive)
@@ -219,7 +225,7 @@ namespace Beamable.Console
 					return;
 				}
 			}
-			
+
 			if (!_isActive) return;
 
 			MakeStyle();
@@ -282,12 +288,20 @@ namespace Beamable.Console
 		
 		private void DrawConsoleContent()
 		{
+			var scaledTitleHeight = Mathf.RoundToInt(56 * _screenScale);
+			var scaledCloseButtonSize = Mathf.RoundToInt(44 * _screenScale);
+			var scaledCloseButtonWidth = Mathf.RoundToInt(100 * _screenScale);
+			var scaledPromptWidth = Mathf.RoundToInt(36 * _screenScale);
+			var scaledSeparatorHeight = Mathf.Max(1, Mathf.RoundToInt(2 * _screenScale));
+			var scaledInputHeight = Mathf.RoundToInt(56 * _screenScale);
+			var scaledInputMinHeight = Mathf.RoundToInt(44 * _screenScale);
+
 			// Title bar
-			GUILayout.BeginHorizontal(GUILayout.Height(56));
+			GUILayout.BeginHorizontal(GUILayout.Height(scaledTitleHeight));
 			{
 				GUILayout.Label("<b>▶ BEAMABLE ADMIN CONSOLE</b>", _titleStyle);
 				GUILayout.FlexibleSpace();
-				if (GUILayout.Button("X", GUILayout.Width(56), GUILayout.Height(44)))
+				if (GUILayout.Button("Close", _closeButtonStyle, GUILayout.Width(scaledCloseButtonWidth), GUILayout.Height(scaledCloseButtonSize)))
 				{
 					HideConsole();
 					GUILayout.EndHorizontal();
@@ -297,10 +311,11 @@ namespace Beamable.Console
 			GUILayout.EndHorizontal();
 
 			// Thin separator
-			GUILayout.Box(string.Empty, GUILayout.ExpandWidth(true), GUILayout.Height(2));
+			GUILayout.Box(string.Empty, GUILayout.ExpandWidth(true), GUILayout.Height(scaledSeparatorHeight));
 
-			// Scrollable output area — 108 px reserved for title + input row
-			float outputHeight = Mathf.Max(40f, Screen.height * _heightRatio - 108f);
+			// Scrollable output area — reserved space for title + input row
+			float reservedHeight = scaledTitleHeight + scaledInputHeight + Mathf.RoundToInt(2 * _screenScale);
+			float outputHeight = Mathf.Max(Mathf.RoundToInt(40 * _screenScale), Screen.height * _heightRatio - reservedHeight);
 			_scrollPosition = GUILayout.BeginScrollView(
 				_scrollPosition, GUILayout.Height(outputHeight), GUILayout.ExpandWidth(true));
 			{
@@ -309,16 +324,16 @@ namespace Beamable.Console
 			GUILayout.EndScrollView();
 
 			// Input row:  ">"  [text field]  [suggestion hint]
-			GUILayout.BeginHorizontal(GUILayout.Height(56));
+			GUILayout.BeginHorizontal(GUILayout.Height(scaledInputHeight));
 			{
-				GUILayout.Label(">", _promptStyle, GUILayout.Width(36));
+				GUILayout.Label(">", _promptStyle, GUILayout.Width(scaledPromptWidth));
 
 				GUI.SetNextControlName(InputControlName);
 				var prevBg   = GUI.backgroundColor;
 				GUI.backgroundColor = GUI.GetNameOfFocusedControl() == InputControlName
 					? new Color(0.24f, 0.24f, 0.24f, 1f)
 					: new Color(0.18f, 0.18f, 0.18f, 1f);
-				var newInput = GUILayout.TextField(_inputText, _inputStyle, GUILayout.MinHeight(44));
+				var newInput = GUILayout.TextField(_inputText, _inputStyle, GUILayout.MinHeight(scaledInputMinHeight));
 				GUI.backgroundColor = prevBg;
 				if (newInput != _inputText)
 				{
@@ -337,31 +352,37 @@ namespace Beamable.Console
 		
 		private void MakeStyle()
 		{
-			if (_stylesReady) return;
-			_stylesReady = true;
+			if (Mathf.Abs(_lastScreenScale - _screenScale) < 0.01f) return;
+			_lastScreenScale = _screenScale;
+
+			var scaledFontSize = Mathf.RoundToInt(20 * _screenScale);
+			var scaledPaddingH = Mathf.RoundToInt(12 * _screenScale);
+			var scaledPaddingV = Mathf.RoundToInt(8 * _screenScale);
+			var scaledPaddingSmall = Mathf.RoundToInt(4 * _screenScale);
+			var scaledPaddingTiny = Mathf.RoundToInt(6 * _screenScale);
 
 			_titleStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize  = 20,
+				fontSize  = scaledFontSize,
 				fontStyle = FontStyle.Bold,
 				richText  = true,
 				normal    = { textColor = Color.white },
-				padding   = new RectOffset(12, 8, 8, 4)
+				padding   = new RectOffset(scaledPaddingH, scaledPaddingH / 2, scaledPaddingV, scaledPaddingSmall)
 			};
 
 			_outputStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize     = 20,
+				fontSize     = scaledFontSize,
 				wordWrap     = true,
 				richText     = true,
 				stretchWidth = true,
 				normal       = { textColor = new Color(0.87f, 0.87f, 0.87f) },
-				padding      = new RectOffset(12, 12, 4, 4)
+				padding      = new RectOffset(scaledPaddingH, scaledPaddingH, scaledPaddingSmall, scaledPaddingSmall)
 			};
 
 			_inputStyle = new GUIStyle(GUI.skin.textField)
 			{
-				fontSize = 20,
+				fontSize = scaledFontSize,
 				normal   = { textColor = Color.white },
 				hover    = { textColor = Color.white },
 				focused  = { textColor = Color.white },
@@ -370,19 +391,27 @@ namespace Beamable.Console
 
 			_promptStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize  = 20,
+				fontSize  = scaledFontSize,
 				fontStyle = FontStyle.Bold,
 				normal    = { textColor = new Color(0.4f, 0.9f, 0.4f) },
-				padding   = new RectOffset(8, 0, 6, 0)
+				padding   = new RectOffset(Mathf.RoundToInt(8 * _screenScale), 0, scaledPaddingTiny, 0)
 			};
 
 			_suggestionStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize     = 20,
+				fontSize     = scaledFontSize,
 				fontStyle    = FontStyle.Italic,
 				stretchWidth = false,
 				normal       = { textColor = new Color(0.55f, 0.78f, 1f) },
-				padding      = new RectOffset(12, 8, 6, 0)
+				padding      = new RectOffset(scaledPaddingH, Mathf.RoundToInt(8 * _screenScale), scaledPaddingTiny, 0)
+			};
+
+			_closeButtonStyle = new GUIStyle(GUI.skin.button)
+			{
+				fontSize = scaledFontSize,
+				normal   = { textColor = Color.white },
+				hover    = { textColor = Color.white },
+				active   = { textColor = Color.white }
 			};
 		}
 
