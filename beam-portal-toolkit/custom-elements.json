@@ -32024,6 +32024,596 @@
           }
         }
       ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-change-bar.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamChangeBar",
+          "cssProperties": [
+            {
+              "description": "Stacking context for the bar.",
+              "name": "--beam-change-bar-z-index",
+              "default": "30"
+            },
+            {
+              "description": "Stacking context for the review dialog.",
+              "name": "--beam-change-bar-dialog-z-index",
+              "default": "40"
+            },
+            {
+              "description": "Background of the sticky bar.",
+              "name": "--beam-change-bar-bg",
+              "default": "var(--color-beam-sidebar)"
+            },
+            {
+              "description": "Top border color of the bar.",
+              "name": "--beam-change-bar-border",
+              "default": "var(--color-beam-border)"
+            },
+            {
+              "description": "Max width of the inner bar content.",
+              "name": "--beam-change-bar-max-width",
+              "default": "80rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The fixed-position sticky bar at the bottom of the viewport.",
+              "name": "bar"
+            },
+            {
+              "description": "The max-width container inside the bar.",
+              "name": "bar-content"
+            },
+            {
+              "description": "The summary text and pulsing indicator block.",
+              "name": "summary"
+            },
+            {
+              "description": "The pulsing colored dot.",
+              "name": "indicator"
+            },
+            {
+              "description": "The right-side actions cluster (discard / review / save).",
+              "name": "actions"
+            },
+            {
+              "description": "The discard button.",
+              "name": "discard-button"
+            },
+            {
+              "description": "The review button.",
+              "name": "review-button"
+            },
+            {
+              "description": "The primary save button rendered in the bar.",
+              "name": "save-button"
+            },
+            {
+              "description": "The dialog overlay backdrop.",
+              "name": "dialog"
+            },
+            {
+              "description": "The dialog panel.",
+              "name": "dialog-panel"
+            },
+            {
+              "description": "The dialog header row (title + summary count).",
+              "name": "dialog-header"
+            },
+            {
+              "description": "The scrollable dialog body containing the three change sections.",
+              "name": "dialog-body"
+            },
+            {
+              "description": "The dialog footer row (close + save-all).",
+              "name": "dialog-footer"
+            },
+            {
+              "description": "Each modified / added / deleted section wrapper inside the dialog.",
+              "name": "section"
+            },
+            {
+              "description": "Each individual change entry card in the dialog.",
+              "name": "entry"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "changes",
+              "type": {
+                "text": "BeamChangeSet"
+              },
+              "description": "The change set to render. Bar is hidden when all three lists are empty.",
+              "default": "{}"
+            },
+            {
+              "kind": "field",
+              "name": "errors",
+              "type": {
+                "text": "BeamChangeBarError[]"
+              },
+              "description": "Validation errors keyed by `entry.key`. When non-empty, Save is disabled.",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "saving",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show the Save button as \"Saving…\" and disable it while a save is in flight.",
+              "default": "false",
+              "attribute": "saving",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "summaryText",
+              "type": {
+                "text": "string"
+              },
+              "description": "Override the auto-derived summary text (e.g. \"2 added, 1 modified\").",
+              "default": "''",
+              "attribute": "summary-text"
+            },
+            {
+              "kind": "field",
+              "name": "saveLabel",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Save button.",
+              "default": "'Save'",
+              "attribute": "save-label"
+            },
+            {
+              "kind": "field",
+              "name": "savingLabel",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Save button while saving.",
+              "default": "'Saving...'",
+              "attribute": "saving-label"
+            },
+            {
+              "kind": "field",
+              "name": "discardLabel",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Discard button.",
+              "default": "'Discard'",
+              "attribute": "discard-label"
+            },
+            {
+              "kind": "field",
+              "name": "reviewLabel",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Review button.",
+              "default": "'Review'",
+              "attribute": "review-label"
+            },
+            {
+              "kind": "field",
+              "name": "reviewTitle",
+              "type": {
+                "text": "string"
+              },
+              "description": "Title of the review dialog.",
+              "default": "'Review Changes'",
+              "attribute": "review-title"
+            },
+            {
+              "kind": "field",
+              "name": "noReview",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Hide the Review button + dialog entirely.",
+              "default": "false",
+              "attribute": "no-review"
+            },
+            {
+              "kind": "field",
+              "name": "inline",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "default": "false",
+              "attribute": "inline",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "autoSave",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "default": "false",
+              "attribute": "auto-save",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "autoSaveDebounce",
+              "type": {
+                "text": "number"
+              },
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "default": "800",
+              "attribute": "auto-save-debounce"
+            },
+            {
+              "kind": "field",
+              "name": "_reviewOpen",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_autoSaveTimer",
+              "type": {
+                "text": "number | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "method",
+              "name": "showReview",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Open the review dialog programmatically."
+            },
+            {
+              "kind": "method",
+              "name": "hideReview",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Close the review dialog programmatically."
+            },
+            {
+              "kind": "method",
+              "name": "_emit",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "'wa-save' | 'wa-discard'"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_onDialogOverlayClick",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "_onKeyDown",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "_currentState",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "'idle' | 'pending' | 'saving' | 'paused-errors'"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "state",
+              "type": {
+                "text": "'idle' | 'pending' | 'saving' | 'paused-errors'"
+              },
+              "description": "Public read-only view of the bar's high-level state. Useful for consumers\nthat want to drive per-field UI (spinners, status dots) from the bar's\ninternal phase. Also reflected onto the host as `data-state` for CSS.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "_reflectState",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_clearAutoSaveTimer",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_scheduleAutoSave",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_errorsByKey",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Map<string, BeamChangeBarError[]>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_renderSection",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "title",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "entries",
+                  "type": {
+                    "text": "BeamChangeEntry[]"
+                  }
+                },
+                {
+                  "name": "kind",
+                  "type": {
+                    "text": "'added' | 'modified' | 'deleted'"
+                  }
+                },
+                {
+                  "name": "errorsByKey",
+                  "type": {
+                    "text": "Map<string, BeamChangeBarError[]>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_renderEntry",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "entry",
+                  "type": {
+                    "text": "BeamChangeEntry"
+                  }
+                },
+                {
+                  "name": "kind",
+                  "type": {
+                    "text": "'added' | 'modified' | 'deleted'"
+                  }
+                },
+                {
+                  "name": "errorsByKey",
+                  "type": {
+                    "text": "Map<string, BeamChangeBarError[]>"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "wa-review-show",
+              "type": {
+                "text": "CustomEvent<void>"
+              },
+              "description": "Fired when the review dialog opens."
+            },
+            {
+              "name": "wa-review-hide",
+              "type": {
+                "text": "CustomEvent<void>"
+              },
+              "description": "Fired when the review dialog closes for any reason."
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "wa-state-change",
+              "type": {
+                "text": "CustomEvent<{ state: 'idle' | 'pending' | 'saving' | 'paused-errors' }>"
+              },
+              "description": "Fired when the bar transitions between high-level states. Consumers can use this to drive per-field status UI (e.g., spinners, status dots) without polling. Bubbles, composed."
+            },
+            {
+              "type": {
+                "text": "CustomEvent<void>"
+              },
+              "description": "Fired when the user clicks Save (either in the bar or the dialog footer). Also fired automatically when `auto-save` is enabled and the debounce window elapses. Bubbles, composed.",
+              "name": "wa-save"
+            },
+            {
+              "type": {
+                "text": "CustomEvent<void>"
+              },
+              "description": "Fired when the user clicks Discard. Bubbles, composed.",
+              "name": "wa-discard"
+            }
+          ],
+          "attributes": [
+            {
+              "description": "Reflects the current high-level state (`idle` | `pending` | `saving` | `paused-errors`). Useful as a CSS hook (e.g., `beam-change-bar[data-state=\"saving\"] ~ .field { opacity: 0.7 }`).",
+              "name": "data-state"
+            },
+            {
+              "name": "saving",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show the Save button as \"Saving…\" and disable it while a save is in flight.",
+              "default": "false",
+              "fieldName": "saving"
+            },
+            {
+              "name": "summary-text",
+              "type": {
+                "text": "string"
+              },
+              "description": "Override the auto-derived summary text (e.g. \"2 added, 1 modified\").",
+              "default": "''",
+              "fieldName": "summaryText"
+            },
+            {
+              "name": "save-label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Save button.",
+              "default": "'Save'",
+              "fieldName": "saveLabel"
+            },
+            {
+              "name": "saving-label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Save button while saving.",
+              "default": "'Saving...'",
+              "fieldName": "savingLabel"
+            },
+            {
+              "name": "discard-label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Discard button.",
+              "default": "'Discard'",
+              "fieldName": "discardLabel"
+            },
+            {
+              "name": "review-label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Label of the Review button.",
+              "default": "'Review'",
+              "fieldName": "reviewLabel"
+            },
+            {
+              "name": "review-title",
+              "type": {
+                "text": "string"
+              },
+              "description": "Title of the review dialog.",
+              "default": "'Review Changes'",
+              "fieldName": "reviewTitle"
+            },
+            {
+              "name": "no-review",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Hide the Review button + dialog entirely.",
+              "default": "false",
+              "fieldName": "noReview"
+            },
+            {
+              "name": "inline",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "default": "false",
+              "fieldName": "inline"
+            },
+            {
+              "name": "auto-save",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "default": "false",
+              "fieldName": "autoSave"
+            },
+            {
+              "name": "auto-save-debounce",
+              "type": {
+                "text": "number"
+              },
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "default": "800",
+              "fieldName": "autoSaveDebounce"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-change-bar",
+          "customElement": true,
+          "summary": "Sticky \"you have unsaved changes\" bar with a review dialog and save / discard actions."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamChangeBar",
+          "declaration": {
+            "name": "BeamChangeBar",
+            "module": "src/beam-components/beam-change-bar.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-change-bar",
+          "declaration": {
+            "name": "BeamChangeBar",
+            "module": "src/beam-components/beam-change-bar.ts"
+          }
+        }
+      ]
     }
   ]
 }
