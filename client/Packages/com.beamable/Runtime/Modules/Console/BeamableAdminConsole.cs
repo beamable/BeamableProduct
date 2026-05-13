@@ -7,7 +7,6 @@ using UnityEngine.InputSystem;
 #endif
 
 using Beamable.ConsoleCommands;
-using Beamable.InputManagerIntegration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -500,14 +499,58 @@ namespace Beamable.Console
 			var shouldToggle = false;
 
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-			// 1. Custom user-supplied InputAction (new Input System)
+			// 1. Custom user-supplied InputAction
 			if (CustomToggleAction != null && CustomToggleAction.triggered) return true;
-#endif
-			// 2. Shared ConsoleConfiguration toggle action (works for both input backends)
-			if (BeamableInput.IsActionTriggered(ConsoleConfiguration.Instance.ToggleAction)) return true;
 
-#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
-			// 3. 3-finger touch detection for mobile devices
+			// 2. Shared ConsoleConfiguration toggle action
+			var consoleToggleAction = ConsoleConfiguration.Instance.ToggleAction;
+			if (consoleToggleAction?.action != null && consoleToggleAction.action.triggered) return true;
+
+			// 3. 3-finger touch detection
+			if (Touchscreen.current != null)
+			{
+				var fingerCount = 0;
+				var averagePosition = Vector2.zero;
+				foreach (var touch in Touchscreen.current.touches)
+				{
+					var phase = touch.phase.ReadValue();
+					if (phase != UnityEngine.InputSystem.TouchPhase.Ended &&
+					    phase != UnityEngine.InputSystem.TouchPhase.Canceled &&
+					    phase != UnityEngine.InputSystem.TouchPhase.None)
+					{
+						fingerCount++;
+						averagePosition += touch.position.ReadValue();
+					}
+				}
+
+				switch (fingerCount)
+				{
+					case 3 when !_waitForRelease:
+					{
+						averagePosition /= 3;
+						if (_fingerCount != 3)
+						{
+							_averagePositionStart = averagePosition;
+						}
+						else if ((_averagePositionStart - averagePosition).magnitude > 20.0f)
+						{
+							_waitForRelease = true;
+							shouldToggle = true;
+						}
+						break;
+					}
+					case 0 when _waitForRelease:
+						_waitForRelease = false;
+						break;
+				}
+
+				_fingerCount = fingerCount;
+			}
+
+			// 4. Keyboard fallback — Backtick / Grave
+			return shouldToggle || (Keyboard.current?.backquoteKey.wasPressedThisFrame ?? false);
+#else
+			// 3-finger touch detection (legacy input)
 			var fingerCount = 0;
 			var averagePosition = Vector2.zero;
 			var touchCount = Input.touchCount;
@@ -530,15 +573,11 @@ namespace Beamable.Console
 					{
 						_averagePositionStart = averagePosition;
 					}
-					else
+					else if ((_averagePositionStart - averagePosition).magnitude > 20.0f)
 					{
-						if ((_averagePositionStart - averagePosition).magnitude > 20.0f)
-						{
-							_waitForRelease = true;
-							shouldToggle = true;
-						}
+						_waitForRelease = true;
+						shouldToggle = true;
 					}
-
 					break;
 				}
 				case 0 when _waitForRelease:
@@ -547,13 +586,6 @@ namespace Beamable.Console
 			}
 
 			_fingerCount = fingerCount;
-#endif
-
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-			// 4. New Input System keyboard fallback — Backtick / Grave
-			//    (used when ConsoleConfiguration.ToggleAction has no asset assigned)
-			return shouldToggle || (Keyboard.current?.backquoteKey.wasPressedThisFrame ?? false);
-#else
 			return shouldToggle;
 #endif
 		}
