@@ -10,7 +10,8 @@ namespace Beamable.Console
 	{
 		public static ConsoleConfiguration Instance => Get<ConsoleConfiguration>();
 		
-		public bool EnableConsole = true;
+		public bool EnableAdminConsole = true;
+		public bool ForceEnabled = true;
 
 #if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
 		public InputActionArg ToggleAction = new InputActionArg

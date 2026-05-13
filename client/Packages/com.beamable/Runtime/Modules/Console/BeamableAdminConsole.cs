@@ -44,7 +44,7 @@ namespace Beamable.Console
 		
 
 		#region Private State
-		
+
 		private bool   _isInitialized;
 		private bool   _isActive;
 		private bool   _focusInputNextFrame;
@@ -52,6 +52,14 @@ namespace Beamable.Console
 		private string  _inputText   = string.Empty;
 		private string  _consoleText = string.Empty;
 		private Vector2 _scrollPosition;
+
+		// 3-finger touch detection for Android
+		private int _fingerCount;
+		private bool _waitForRelease;
+		private Vector2 _averagePositionStart;
+
+		// Virtual keyboard state tracking
+		private bool _wasVirtualKeyboardOpen;
 
 		private readonly Dictionary<string, ConsoleCommandEntry> _commands =
 			new Dictionary<string, ConsoleCommandEntry>(StringComparer.OrdinalIgnoreCase);
@@ -69,7 +77,7 @@ namespace Beamable.Console
 		private GUIStyle _suggestionStyle;
 		private bool     _stylesReady;
 		private readonly Color _backgroundColor = new Color(0f, 0f, 0f, 0.85f);
-		private readonly float _heightRatio = 0.4f;
+		private readonly float _heightRatio = 0.8f;
 		
 		private const string InputControlName = "SAConsoleInput";
 
@@ -89,6 +97,32 @@ namespace Beamable.Console
 			if (!AutoStart) return;
 			StartListening();
 			Initialize();*/
+		}
+
+		private void Update()
+		{
+			if (!_isInitialized) return;
+			if (!IsEnabled()) return;
+
+			if (ShouldShow())
+			{
+				if (!_isActive)
+				{
+					ShowConsole();
+				}
+			}
+
+			// Handle virtual keyboard confirmation (any platform)
+			if (_isActive && !string.IsNullOrEmpty(_inputText))
+			{
+				bool isKeyboardOpen = TouchScreenKeyboard.visible;
+				if (_wasVirtualKeyboardOpen && !isKeyboardOpen)
+				{
+					// Keyboard was open and is now closed — user pressed confirm
+					SubmitInput(_inputText);
+				}
+				_wasVirtualKeyboardOpen = isKeyboardOpen;
+			}
 		}
 
 		#endregion
@@ -249,11 +283,11 @@ namespace Beamable.Console
 		private void DrawConsoleContent()
 		{
 			// Title bar
-			GUILayout.BeginHorizontal();
+			GUILayout.BeginHorizontal(GUILayout.Height(56));
 			{
 				GUILayout.Label("<b>▶ BEAMABLE ADMIN CONSOLE</b>", _titleStyle);
 				GUILayout.FlexibleSpace();
-				if (GUILayout.Button("✕", GUILayout.Width(28), GUILayout.Height(22)))
+				if (GUILayout.Button("X", GUILayout.Width(56), GUILayout.Height(44)))
 				{
 					HideConsole();
 					GUILayout.EndHorizontal();
@@ -263,10 +297,10 @@ namespace Beamable.Console
 			GUILayout.EndHorizontal();
 
 			// Thin separator
-			GUILayout.Box(string.Empty, GUILayout.ExpandWidth(true), GUILayout.Height(1));
+			GUILayout.Box(string.Empty, GUILayout.ExpandWidth(true), GUILayout.Height(2));
 
-			// Scrollable output area — 54 px reserved for title + input row
-			float outputHeight = Mathf.Max(20f, Screen.height * _heightRatio - 54f);
+			// Scrollable output area — 108 px reserved for title + input row
+			float outputHeight = Mathf.Max(40f, Screen.height * _heightRatio - 108f);
 			_scrollPosition = GUILayout.BeginScrollView(
 				_scrollPosition, GUILayout.Height(outputHeight), GUILayout.ExpandWidth(true));
 			{
@@ -275,16 +309,16 @@ namespace Beamable.Console
 			GUILayout.EndScrollView();
 
 			// Input row:  ">"  [text field]  [suggestion hint]
-			GUILayout.BeginHorizontal();
+			GUILayout.BeginHorizontal(GUILayout.Height(56));
 			{
-				GUILayout.Label(">", _promptStyle, GUILayout.Width(18));
+				GUILayout.Label(">", _promptStyle, GUILayout.Width(36));
 
 				GUI.SetNextControlName(InputControlName);
 				var prevBg   = GUI.backgroundColor;
 				GUI.backgroundColor = GUI.GetNameOfFocusedControl() == InputControlName
 					? new Color(0.24f, 0.24f, 0.24f, 1f)
 					: new Color(0.18f, 0.18f, 0.18f, 1f);
-				var newInput = GUILayout.TextField(_inputText, _inputStyle);
+				var newInput = GUILayout.TextField(_inputText, _inputStyle, GUILayout.MinHeight(44));
 				GUI.backgroundColor = prevBg;
 				if (newInput != _inputText)
 				{
@@ -308,26 +342,26 @@ namespace Beamable.Console
 
 			_titleStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize  = 13,
+				fontSize  = 20,
 				fontStyle = FontStyle.Bold,
 				richText  = true,
 				normal    = { textColor = Color.white },
-				padding   = new RectOffset(6, 4, 4, 2)
+				padding   = new RectOffset(12, 8, 8, 4)
 			};
 
 			_outputStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize     = 12,
+				fontSize     = 20,
 				wordWrap     = true,
 				richText     = true,
 				stretchWidth = true,
 				normal       = { textColor = new Color(0.87f, 0.87f, 0.87f) },
-				padding      = new RectOffset(6, 6, 2, 2)
+				padding      = new RectOffset(12, 12, 4, 4)
 			};
 
 			_inputStyle = new GUIStyle(GUI.skin.textField)
 			{
-				fontSize = 13,
+				fontSize = 20,
 				normal   = { textColor = Color.white },
 				hover    = { textColor = Color.white },
 				focused  = { textColor = Color.white },
@@ -336,19 +370,19 @@ namespace Beamable.Console
 
 			_promptStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize  = 14,
+				fontSize  = 20,
 				fontStyle = FontStyle.Bold,
 				normal    = { textColor = new Color(0.4f, 0.9f, 0.4f) },
-				padding   = new RectOffset(4, 0, 3, 0)
+				padding   = new RectOffset(8, 0, 6, 0)
 			};
 
 			_suggestionStyle = new GUIStyle(GUI.skin.label)
 			{
-				fontSize     = 12,
+				fontSize     = 20,
 				fontStyle    = FontStyle.Italic,
 				stretchWidth = false,
 				normal       = { textColor = new Color(0.55f, 0.78f, 1f) },
-				padding      = new RectOffset(6, 4, 3, 0)
+				padding      = new RectOffset(12, 8, 6, 0)
 			};
 		}
 
@@ -434,6 +468,8 @@ namespace Beamable.Console
 
 		private bool ShouldShow()
 		{
+			var shouldToggle = false;
+
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 			// 1. Custom user-supplied InputAction (new Input System)
 			if (CustomToggleAction != null && CustomToggleAction.triggered) return true;
@@ -441,12 +477,55 @@ namespace Beamable.Console
 			// 2. Shared ConsoleConfiguration toggle action (works for both input backends)
 			if (BeamableInput.IsActionTriggered(ConsoleConfiguration.Instance.ToggleAction)) return true;
 
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+			// 3. 3-finger touch detection for mobile devices
+			var fingerCount = 0;
+			var averagePosition = Vector2.zero;
+			var touchCount = Input.touchCount;
+			for (var i = 0; i < touchCount; ++i)
+			{
+				var touch = Input.GetTouch(i);
+				if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+				{
+					fingerCount++;
+					averagePosition += touch.position;
+				}
+			}
+
+			switch (fingerCount)
+			{
+				case 3 when !_waitForRelease:
+				{
+					averagePosition /= 3;
+					if (_fingerCount != 3)
+					{
+						_averagePositionStart = averagePosition;
+					}
+					else
+					{
+						if ((_averagePositionStart - averagePosition).magnitude > 20.0f)
+						{
+							_waitForRelease = true;
+							shouldToggle = true;
+						}
+					}
+
+					break;
+				}
+				case 0 when _waitForRelease:
+					_waitForRelease = false;
+					break;
+			}
+
+			_fingerCount = fingerCount;
+#endif
+
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-			// 3. New Input System keyboard fallback — Backtick / Grave
+			// 4. New Input System keyboard fallback — Backtick / Grave
 			//    (used when ConsoleConfiguration.ToggleAction has no asset assigned)
-			return Keyboard.current?.backquoteKey.wasPressedThisFrame ?? false;
+			return shouldToggle || (Keyboard.current?.backquoteKey.wasPressedThisFrame ?? false);
 #else
-			return false; // legacy path is fully covered by ConsoleConfiguration above
+			return shouldToggle;
 #endif
 		}
 

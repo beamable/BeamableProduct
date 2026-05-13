@@ -541,7 +541,7 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 
-			if (ConsoleConfiguration.Instance.EnableConsole)
+			if (ConsoleConfiguration.Instance.EnableAdminConsole)
 			{
 				_adminConsole = ServiceProvider.GetService<BeamableAdminConsole>();
 				_adminConsole.InitializeConsole(this);

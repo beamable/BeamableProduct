@@ -110,7 +110,7 @@ namespace Beamable.Console
 			HideConsole();
 			
 			// Force Disable the new Console Admin flow
-			ConsoleConfiguration.Instance.EnableConsole = false;
+			ConsoleConfiguration.Instance.EnableAdminConsole = false;
 
 #if UNITY_ANDROID || UNITY_IOS
             StartCoroutine(CheckMobileKeyboardState());
