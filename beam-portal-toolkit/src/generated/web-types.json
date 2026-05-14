@@ -4760,6 +4760,96 @@
               }
             }
           ]
+        },
+        {
+          "name": "beam-change-bar",
+          "description": "",
+          "attributes": [
+            {
+              "name": "data-state",
+              "description": "Reflects the current high-level state (`idle` | `pending` | `saving` | `paused-errors`). Useful as a CSS hook (e.g., `beam-change-bar[data-state=\"saving\"] ~ .field { opacity: 0.7 }`).",
+              "value": {
+                "type": "any"
+              }
+            },
+            {
+              "name": "saving",
+              "description": "Show the Save button as \"Saving…\" and disable it while a save is in flight.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "summary-text",
+              "description": "Override the auto-derived summary text (e.g. \"2 added, 1 modified\").",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "save-label",
+              "description": "Label of the Save button.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "saving-label",
+              "description": "Label of the Save button while saving.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "discard-label",
+              "description": "Label of the Discard button.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "review-label",
+              "description": "Label of the Review button.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "review-title",
+              "description": "Title of the review dialog.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "no-review",
+              "description": "Hide the Review button + dialog entirely.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "inline",
+              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "auto-save",
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "auto-save-debounce",
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "value": {
+                "type": "number"
+              }
+            }
+          ]
         }
       ]
     }

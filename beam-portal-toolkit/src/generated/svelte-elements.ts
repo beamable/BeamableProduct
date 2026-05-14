@@ -884,6 +884,21 @@ declare module 'svelte/elements' {
       code?: string;
       lang?: string;
     };
+
+    'beam-change-bar': import('svelte/elements').HTMLAttributes<HTMLElement> & {
+      'data-state'?: unknown;
+      saving?: boolean;
+      'summary-text'?: string;
+      'save-label'?: string;
+      'saving-label'?: string;
+      'discard-label'?: string;
+      'review-label'?: string;
+      'review-title'?: string;
+      'no-review'?: boolean;
+      inline?: boolean;
+      'auto-save'?: boolean;
+      'auto-save-debounce'?: number;
+    };
   }
 }
 

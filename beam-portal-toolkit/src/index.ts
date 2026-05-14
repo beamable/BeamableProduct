@@ -4,7 +4,7 @@
 // Pull in global HTMLElementTagNameMap augmentations so that any consumer
 // who imports from this package automatically gets TypeScript types for all
 // Beamable custom elements.  The file itself is auto-generated — run
-// `pnpm sync-components` to refresh it from Portal's beam-components.json.
+// `pnpm sync-components` to refresh it from agentic-portal's custom-elements.json.
 import './generated/globals';
 
 export * from '@beamable/sdk';
