@@ -69,6 +69,10 @@ Load a skill before attempting complex tasks:
 - `beam-openapi` — OpenAPI spec generation
 - `beam-review` — code review checklist for Beamable projects
 - `beam-get-source` — read Beamable SDK source code
+- `beam-unity-examples` — Unity sample projects and getting started
+- `beam-unreal-guide` — Unreal development guide: custom content, microservices, Blueprints, semantic types
+- `beam-microservice-examples` — Progressive code examples for C# microservices (Stats, Storage, Inventory, Federation)
+- `beam-web-guide` — Web SDK guide: installation, authentication, stats, leaderboards, content, announcements, accounts, and microservice clients
 
 ## Project Structure
 

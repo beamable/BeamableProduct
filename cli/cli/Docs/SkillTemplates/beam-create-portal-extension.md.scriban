@@ -53,7 +53,7 @@ If the portal extension needs to call a microservice, add it as a dependency. Th
 ```
 beam_exec("portal extension add-microservice <Name> <MicroserviceName>")
 ```
-This generates typed client code in the `beamable/clients/` directory inside the extension project, giving you type-safe access to the microservice's `[ClientCallable]` endpoints from TypeScript.
+This generates typed client code in the `beamable/clients/` directory inside the extension project, giving you type-safe access to the microservice's `[ClientCallable]` and `[ServerCallable]` endpoints from TypeScript.
 {{ if commands["portal extension add-microservice"] }}
 #### `beam portal extension add-microservice` options
 | Option | Type | Description |

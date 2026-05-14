@@ -54,12 +54,12 @@ Choose the right attribute for each microservice endpoint:
 | `[Callable]` | Anyone (no auth) | Webhooks, health checks, public endpoints |
 | `[ClientCallable]` | Authenticated players | Player-facing game features (most common) |
 | `[AdminOnlyCallable]` | Admin tokens only | Back-office tools, moderation, migrations |
-| `[ServerCallable]` | Other microservices only | Internal service-to-service communication |
+| `[ServerCallable]` | Portal extensions or other microservices | Direct endpoints, portal extensions, service-to-service |
 
 - [ ] Correct attribute is used for the endpoint's intended audience
 - [ ] `[ClientCallable]` endpoints do NOT blindly trust client input — microservices are authoritative
 - [ ] `[ClientCallable]` endpoints validate and sanitize all parameters from the client
-- [ ] `[ServerCallable]` is used for internal methods that should not be exposed to game clients
+- [ ] `[ServerCallable]` is used for direct endpoints called by portal extensions or other microservices
 
 ### Optional Fields
 - [ ] `Optional<T>` wrapper types are used for nullable content fields (e.g., `OptionalString`, `OptionalInt`, `OptionalFloat`)

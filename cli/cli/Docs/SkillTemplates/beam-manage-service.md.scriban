@@ -61,7 +61,7 @@ Before writing endpoint methods, ask the user what access level each endpoint ne
 | `[Callable]` | No | Public (no auth) | Webhooks, health checks, unauthenticated endpoints |
 | `[ClientCallable]` | Yes (any user) | Authenticated user | Game client calls — most common for player-facing features |
 | `[AdminOnlyCallable]` | Yes (admin only) | `*` (admin scope) | Back-office tools, moderation, data migration |
-| `[ServerCallable]` | No (service identity) | `*` (admin scope) | Microservice-to-microservice calls only |
+| `[ServerCallable]` | No (service identity) | `*` (admin scope) | Portal extensions, other microservices, direct endpoint calls |
 
 ### Examples
 
@@ -95,12 +95,22 @@ public async Task ResetAllScores()
 [ServerCallable]
 public async Task<string> InternalSync()
 {
-    // Only callable from other microservices, not from game clients
+    // Callable from portal extensions or other microservices as a direct endpoint
 }
 ```
 
-### Skipping client code generation
-Add `CallableFlags.SkipGenerateClientFiles` to prevent the CLI from generating typed client code for an endpoint:
+### Client code generation
+
+Not all attributes generate client code (Unity/Unreal client proxies) by default:
+
+| Attribute | Unity | Unreal |
+|-----------|-------|--------|
+| `[Callable]` | Generated | Generated |
+| `[ClientCallable]` | Generated | Generated |
+| `[AdminOnlyCallable]` | Skipped | Generated |
+| `[ServerCallable]` | Skipped | Skipped |
+
+Use `CallableFlags.SkipGenerateClientFiles` to prevent generation for any attribute. This flag skips generation for both Unity and Unreal:
 ```csharp
 [ClientCallable(flags: CallableFlags.SkipGenerateClientFiles)]
 public Task InternalHelper() { /* ... */ }
@@ -149,6 +159,8 @@ Federation declarations are automatically picked up by the OpenAPI spec generati
 - **Removal is permanent and immediate.** `project remove` deletes the service directory recursively with no confirmation prompt. No undo — ensure code is committed first.
 - **Remote deployment is not affected by removal.** `project remove` only removes local source code. Use `deploy plan`/`deploy release` to update the remote state.
 - **Storage removal does not remove linked references.** Remove the dependency first with `project deps remove`, or remove both the service and storage together.
+- **Don't create Storage for simple player data.** Stats (`Services.Stats`) handles per-player key-value pairs with zero infrastructure. Only use MongoDB storage when you need document collections, complex queries, or cross-player aggregation. See "Stats vs Storage" under Service Design.
+- **Don't split endpoints across many services unnecessarily.** Microservices scale horizontally and auto-scale. A single service with many `[ClientCallable]` methods is preferred over many single-method services. Only split when there's a clear domain boundary or independent deployment need.
 
 ## Build Warnings
 
@@ -197,6 +209,29 @@ public class MyStorage : MongoStorageObject { }
 var db = await Storage.GetDatabase<MyStorage>();
 var collection = db.GetCollection<MyDocument>("my-collection");
 await collection.InsertOneAsync(new MyDocument { ... });
+```
+
+### Typed extension methods
+Each storage object generates extension methods for typed collection access:
+```csharp
+public static Promise<IMongoCollection<TCollection>> StorageSampleCollection<TCollection>(
+    this IStorageObjectConnectionProvider provider, string name)
+    where TCollection : StorageDocument
+    => provider.GetCollection<StorageSample, TCollection>(name);
+```
+
+### MongoDB filter builders
+Use `Builders<T>.Filter.Eq()` with the `&` operator for compound filters:
+```csharp
+var collection = await Storage.StorageSampleCollection<TownResident>("town_residents");
+
+var filter = Builders<TownResident>.Filter.Eq(x => x.PlayerId, Context.UserId)
+    & Builders<TownResident>.Filter.Eq(x => x.RegionName, regionName);
+
+var residents = await collection.Find(filter).ToListAsync();
+var count = await collection.CountDocumentsAsync(filter);
+await collection.InsertOneAsync(resident);
+await collection.DeleteOneAsync(filter);
 ```
 
 ## Local Development Patterns
@@ -248,7 +283,25 @@ beam_exec("config -q")
 ```
 Running any beam command in an initialized workspace will regenerate it if needed.
 
-## Calling Other Microservices
+## Service Design
+
+### Prefer fewer services
+
+Beamable microservices scale horizontally — each service auto-scales independently based on load. There is no performance reason to split endpoints across multiple services. Keep related endpoints in a single microservice unless you have a clear domain boundary.
+
+**Use one microservice when:**
+- All endpoints share the same storage dependencies
+- The endpoints belong to the same game feature (e.g., inventory operations, matchmaking, social)
+- You'd need inter-service calls if you split them
+
+**Create a separate microservice when:**
+- The feature has an independent deployment lifecycle (e.g., a seasonal event service)
+- It needs different storage dependencies
+- It's a genuinely separate domain (e.g., game logic vs analytics vs moderation)
+
+A single microservice with 20 `[ClientCallable]` methods is perfectly normal and preferred over 20 single-method microservices.
+
+### Calling other microservices
 
 Use the `[MicroserviceClient]` attribute on an interface to generate a typed client for another microservice. Inject the generated client via constructor DI, then call the remote service's `[ClientCallable]` methods through it.
 
@@ -259,6 +312,38 @@ public interface IServiceBClient { }
 ```
 
 **WARNING:** Inter-service calls create tight coupling. Both services must be deployed, and each call adds network latency. Prefer shared libraries (common `.csproj` references) for reusable logic over microservice-to-microservice calls.
+
+### Stats vs Storage: choosing the right tool
+
+**Default to Stats.** The Stats API (`Services.Stats`) is built into every Beamable project — no extra infrastructure, no storage object, no MongoDB dependency. Use it for any per-player data that fits the key-value string model.
+
+**Use Stats when:**
+- Storing simple per-player values (scores, levels, XP, preferences, flags, timestamps)
+- You need public vs private access control (other players can read public stats)
+- You want to search/filter players by stat values (`Services.Stats.SearchStats`)
+- The data is one value per key per player (not a collection of items)
+
+**Use Storage (MongoDB) only when:**
+- You need collections of documents per player (e.g., inventory of custom objects, chat history, town residents)
+- You need complex queries (range filters, sorting, aggregation, text search)
+- You need relationships between documents
+- The data structure doesn't fit a flat string key-value model
+- You need cross-player queries that Stats.SearchStats can't express
+
+**Common mistake:** Creating a MongoDB storage object just to store a player's score, level, or preferences. Stats handles this with zero setup:
+```csharp
+// RIGHT: Use Stats for simple per-player values
+await Services.Stats.SetStats(
+    StatsDomainType.Game, StatsAccessType.Public, Context.UserId,
+    new Dictionary<string, string> { { "score", "1500" }, { "level", "12" } });
+
+// WRONG: Don't create a MongoDB storage just for key-value data
+// var db = await Storage.GetDatabase<PlayerStorage>();
+// var collection = db.GetCollection<PlayerDoc>("players");
+// await collection.ReplaceOneAsync(filter, new PlayerDoc { Score = 1500, Level = 12 });
+```
+
+**Remember:** All stat values are strings. Numbers must be stringified: `"100"`, not `100`. If you need typed numeric operations on the server side, parse in your microservice code — the storage overhead of MongoDB is rarely worth avoiding a `int.Parse()`.
 
 ## Common API Patterns
 
@@ -370,6 +455,28 @@ await Services.Inventory.Update(builder => builder
     .CurrencyChange("currency.coins", -100)
     .AddItem("items.health_potion")
 );
+```
+
+### Notifications API (`Services.Notifications`)
+
+```csharp
+await Services.Notifications.NotifyPlayer(gamerTag, "event_name", payloadObject);
+```
+
+### Realm Config API (`Services.RealmConfig`)
+
+```csharp
+var realmConfig = await Services.RealmConfig.GetRealmConfigSettings();
+var ns = realmConfig.GetNamespace("discord_integration");
+string botToken = ns.GetSetting("bot_token");
+string guildId = ns.GetSetting("guild_id");
+```
+
+### Auth API (`Services.Auth`)
+
+```csharp
+var account = await Services.Auth.GetUser(gamerTag);
+var externalIdentity = account.external?.FirstOrDefault(e => e.providerNamespace == "discord");
 ```
 
 ## Reading Source Code
