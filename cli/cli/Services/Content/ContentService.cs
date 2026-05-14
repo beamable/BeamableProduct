@@ -844,11 +844,7 @@ public partial class ContentService
 	private static IEnumerable<ContentDefinition[]> BuildSizeAwareBatches(
 		IEnumerable<ContentDefinition> items, long targetBytes, int maxItemsPerBatch)
 	{
-		// Overhead of the SaveContentRequest wrapper: {"content":[…]}
-		// 13 bytes regardless of the number of items.
-		const int wrapperOverheadBytes = 13;
-
-		var batch = new List<ContentDefinition>();
+ 		var batch = new List<ContentDefinition>();
 		long batchBytes = 0;
 
 		foreach (var item in items)
@@ -859,7 +855,7 @@ public partial class ContentService
 			// Each item after the first is preceded by a comma separator.
 			var separatorBytes = batch.Count > 0 ? 1 : 0;
 
-			var projectedTotal = wrapperOverheadBytes + batchBytes + separatorBytes + itemBytes;
+			var projectedTotal = batchBytes + separatorBytes + itemBytes;
 
 			// Flush when either constraint would be violated: byte budget or item count.
 			// The item-count cap prevents server-side processing timeouts for catalogs
