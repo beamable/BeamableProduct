@@ -444,9 +444,6 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine,
 							              _command);
-						});
-						_dispatcher.Schedule(() =>
-						{
 							try
 							{
 								ProcessStandardOut(args.Data);
@@ -469,9 +466,6 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine,
 							              _command);
-						});
-						_dispatcher.Schedule(() =>
-						{
 							try
 							{
 								ProcessStandardErr(args.Data);

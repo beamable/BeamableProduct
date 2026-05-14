@@ -24,7 +24,7 @@ public class CollectorStatusResult
 public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>, IResultSteam<ExtraStreamResultChannel, OtelFileStatus>
 {
 	
-	private const int SECONDS_DELAY_TO_FILE_STATUS = 15;
+	private const int SECONDS_DELAY_TO_FILE_STATUS = 60;
 	public CollectorStatusCommand() : base("ps", "Starts a stream of messages containing the status of the collector")
 	{
 	}
