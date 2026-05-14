@@ -58,6 +58,9 @@ namespace Beamable.Content
 		[Tooltip("When enabled, the Beamable SDK will validate that the content schema is the same between the C# Definition and JSON data.")]
 		public bool validateSchemaDifference = true;
 
+		[Tooltip("When enabled, the SDK asks the backend to omit content tags from the public manifest. This reduces manifest download size for games that use tags only for backend organization. Note: client-side tag-based ContentQuery filtering (e.g. \"tag:weapon\") will return no results when this is enabled, because the manifest does not carry tag data.")]
+		public bool OmitContentManifestTags = false;
+
 		[Header("Baking")]
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
 		public bool EnableBakedContentCompression = true;
@@ -95,7 +98,8 @@ namespace Beamable.Content
 				return new ContentParameterProvider()
 				{
 					manifestID = manifestID,
-					EnableLocalContentInEditor = EnableLocalContentInEditor
+					EnableLocalContentInEditor = EnableLocalContentInEditor,
+					OmitContentManifestTags = OmitContentManifestTags
 				};
 			}
 		}

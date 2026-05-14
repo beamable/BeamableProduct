@@ -41,6 +41,8 @@ namespace Beamable.Content
 		/// </summary>
 		public string ManifestID { get; } = "global";
 
+		private readonly bool _omitTags;
+
 		private ClientManifest _latestManifiest;
 
 		private readonly Promise<Unit> _manifestPromise = new Promise<Unit>();
@@ -55,10 +57,12 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-									string manifestID) : base(provider, "content")
+									string manifestID,
+									bool omitTags = false) : base(provider, "content")
 		{
 			_provider = provider;
 			ManifestID = manifestID;
+			_omitTags = omitTags;
 		}
 
 		/// <summary>
@@ -124,7 +128,12 @@ namespace Beamable.Content
 
 		protected override string CreateRefreshUrl(string scope)
 		{
-			return $"/basic/content/manifest/public?id={ManifestID}";
+			var url = $"/basic/content/manifest/public?id={ManifestID}";
+			if (_omitTags)
+			{
+				url += "&omitTags=true";
+			}
+			return url;
 		}
 
 		protected override Promise<ClientManifest> ExecuteRequest(IBeamableRequester requester, string url)
@@ -276,7 +285,7 @@ namespace Beamable.Content
 
 			// Subscribable = _provider.GetService<IManifestSubscriptionFactory>()
 			//                         .CreateSubscription(CurrentDefaultManifestID);
-			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
+			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID, _config.OmitContentManifestTags);
 			Subscribable.Subscribe(cb =>
 			{
 				// pay attention, server...
@@ -460,7 +469,7 @@ namespace Beamable.Content
 			if (Subscribables.ContainsKey(manifestID))
 				return;
 
-			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID));
+			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID, _config.OmitContentManifestTags));
 			Subscribables[manifestID].Subscribe(cb => { });
 		}
 
