@@ -48,15 +48,31 @@
     "./svelte": {
       "types": "./dist/types/svelte-elements.d.ts"
     },
+    "./react-elements": {
+      "types": "./dist/types/react-elements.d.ts"
+    },
+    "./react": {
+      "types": "./dist/types/react.d.ts",
+      "require": "./dist/react.cjs",
+      "import": "./dist/react.mjs"
+    },
     "./custom-elements.json": "./custom-elements.json",
     "./web-types.json": "./src/generated/web-types.json"
   },
   "peerDependencies": {
     "@beamable/sdk": "1.0.0",
-    "svelte": ">=4.0.0"
+    "svelte": ">=4.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
     "svelte": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
       "optional": true
     }
   },
