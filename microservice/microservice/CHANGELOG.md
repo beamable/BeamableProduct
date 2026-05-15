@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Context.Headers` are not case-sensitive
 - Changed `Func<ILogger> IBeamServiceConfig.LogFactory` to `Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider`, which enables to override the C#MS logs to your own implementation of `ILoggerProvider`
 
+### Fixed
+ - Local running microservice failing to get otel credentials when otel is enabled for local development
+
 ## [7.0.0] - 2026-02-19
 ### Added
 - `net10` support
