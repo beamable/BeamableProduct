@@ -16,8 +16,8 @@ importers:
         version: 19.2.6(react@19.2.6)
     devDependencies:
       '@beamable/sdk':
-        specifier: 0.0.123-local3
-        version: 0.0.123-local3
+        specifier: 1.1.1
+        version: 1.1.1
       svelte:
         specifier: ^5.0.0
         version: 5.55.0
@@ -51,8 +51,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@beamable/sdk@0.0.123-local3':
-    resolution: {integrity: sha512-ty4QBKQqbWD+AiIzVtO/DnFchRgBJxN0J4rRAx/3fgsJBzrjxtkN5IeFVpKJfB4pNKlXWsBHBVaZHI2VaFPa9w==}
+  '@beamable/sdk@1.1.1':
+    resolution: {integrity: sha512-sIxBIeU5J+A0gbqTjIXfTkD6Zm90U0axBp56l31JHaGl04vUhY1CzUF1pGqplJlAPN8dteH9Bnzgx2ySq56jxg==}
     engines: {node: '>=22.14.0'}
 
   '@emnapi/core@1.9.1':
@@ -533,7 +533,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@beamable/sdk@0.0.123-local3': {}
+  '@beamable/sdk@1.1.1': {}
 
   '@emnapi/core@1.9.1':
     dependencies:
