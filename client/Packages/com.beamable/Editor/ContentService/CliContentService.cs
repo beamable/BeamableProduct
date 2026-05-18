@@ -20,6 +20,18 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.ContentService
 {
+	public class ContentOperationProgress
+	{
+		public bool IsActive;
+		public bool HasError;
+		public string Title = string.Empty;
+		public string Description = string.Empty;
+		public string CurrentContentName = string.Empty;
+		public int ProcessedItems;
+		public int TotalItems;
+		public float Progress;
+	}
+
 	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
@@ -46,6 +58,7 @@ namespace Beamable.Editor.ContentService
 		private int syncedContents;
 		private int publishedContents;
 		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
+		private bool _showUnityModalProgress;
 		
 		[NonSerialized]
 		public bool isReloading;
@@ -55,6 +68,8 @@ namespace Beamable.Editor.ContentService
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
 		public BeamContentPsProgressMessage LatestProgressUpdate;
+		public ContentOperationProgress CurrentProgress { get; } = new();
+		public int ProgressUpdateVersion { get; private set; }
 		private readonly ContentConfiguration _contentConfiguration;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
@@ -205,11 +220,12 @@ namespace Beamable.Editor.ContentService
 		                                           bool syncConflicted,
 		                                           bool syncDeleted,
 		                                           string filter = null,
-		                                           ContentFilterType filterType = default)
+		                                           ContentFilterType filterType = default,
+		                                           bool showUnityModalProgress = false)
 		{
 
 			syncedContents = 0;
-			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
+			BeginActionProgress(SYNC_OPERATION_TITLE, "Synchronizing contents...", showUnityModalProgress);
 			try
 			{
 				if (_contentWatcher != null)
@@ -226,6 +242,7 @@ namespace Beamable.Editor.ContentService
 					syncDeleted = syncDeleted,
 					filter = filter,
 					filterType = filterType,
+					downloadMaxParallelCount = GetEditorSyncDownloadMaxParallelCountCliOption(),
 					
 				});
 
@@ -259,6 +276,7 @@ namespace Beamable.Editor.ContentService
 				syncDeleted = syncDeleted,
 				filter = filter,
 				filterType = filterType,
+				downloadMaxParallelCount = GetEditorSyncDownloadMaxParallelCountCliOption(),
 			});
 			
 			await contentSyncCommand.Run();
@@ -421,7 +439,7 @@ namespace Beamable.Editor.ContentService
 		
 		public async Promise PublishContentsWithProgress()
 		{
-			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
+			BeginActionProgress(PUBLISH_OPERATION_TITLE, "Publishing contents...", true);
 			publishedContents = 0;
 			
 			try
@@ -451,8 +469,44 @@ namespace Beamable.Editor.ContentService
 
 		private void FinishActionProgress()
 		{
-			EditorUtility.ClearProgressBar();
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.ClearProgressBar();
+			}
+
+			CurrentProgress.IsActive = false;
+			ProgressUpdateVersion++;
 			_ = Reload();
+		}
+
+		private void BeginActionProgress(string title, string description, bool showUnityModalProgress)
+		{
+			_showUnityModalProgress = showUnityModalProgress;
+			CurrentProgress.IsActive = true;
+			CurrentProgress.Title = title;
+			CurrentProgress.Description = description;
+			CurrentProgress.CurrentContentName = string.Empty;
+			CurrentProgress.ProcessedItems = 0;
+			CurrentProgress.TotalItems = 0;
+			CurrentProgress.Progress = 0;
+			CurrentProgress.HasError = false;
+			ProgressUpdateVersion++;
+
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.DisplayProgressBar(title, description, 0);
+			}
+		}
+
+		private int GetEditorSyncDownloadMaxParallelCountCliOption()
+		{
+			if (_contentConfiguration.EditorSyncDownloadMaxParallelCount?.HasValue != true)
+			{
+				return default;
+			}
+
+			var value = _contentConfiguration.EditorSyncDownloadMaxParallelCount.Value;
+			return value == 0 ? -1 : value;
 		}
 
 		public async Task PublishContents()
@@ -908,13 +962,23 @@ namespace Beamable.Editor.ContentService
 		                                string onSuccessBaseMessage,
 		                                string onErrorBaseMessage, ref int countItem)
 		{
-			string description = string.Empty;
-			float progress = (float)countItem / data.totalItems;
+			int totalItems = Math.Max(data.totalItems, 0);
+			string description = CurrentProgress.Description;
+			float progress = totalItems == 0 ? 0 : Mathf.Clamp01((float)countItem / totalItems);
+			int processedItemsForDisplay = countItem;
 
 			switch (data.EventType)
 			{
 				case 0: // Error on Content Progress Update
-					EditorUtility.ClearProgressBar();
+					CurrentProgress.HasError = true;
+					CurrentProgress.CurrentContentName = data.contentName;
+					CurrentProgress.TotalItems = totalItems;
+					CurrentProgress.Description = string.Format(onErrorBaseMessage, data.contentName, data.errorMessage);
+					ProgressUpdateVersion++;
+					if (_showUnityModalProgress)
+					{
+						EditorUtility.ClearProgressBar();
+					}
 					EditorUtility.DisplayDialog(
 						operationTitle,
 						string.Format(onErrorBaseMessage, data.contentName, data.errorMessage),
@@ -923,14 +987,33 @@ namespace Beamable.Editor.ContentService
 					return;
 				case 1: // Sync Complete
 				case 2: // Publish Complete
-					description = string.Format(onSuccessBaseMessage, data.contentName, countItem, data.totalItems);
+					CurrentProgress.CurrentContentName = data.contentName;
+					int visibleCount = totalItems == 0 ? 0 : Mathf.Min(totalItems, countItem + 1);
+					processedItemsForDisplay = visibleCount;
+					description = string.Format(onSuccessBaseMessage, data.contentName, visibleCount, totalItems);
+					progress = totalItems == 0 ? 1 : Mathf.Clamp01((float)visibleCount / totalItems);
 					break;
 				case 3: // Update Processed item count
 					countItem = data.processedItems;
+					processedItemsForDisplay = totalItems == 0 ? countItem : Mathf.Min(countItem, totalItems);
+					progress = totalItems == 0 ? 1 : Mathf.Clamp01((float)processedItemsForDisplay / totalItems);
+					description = totalItems == 0
+						? $"{operationTitle} complete."
+						: $"{processedItemsForDisplay}/{totalItems} items processed.";
 					break;
 			}
 
-			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+			CurrentProgress.Title = operationTitle;
+			CurrentProgress.Description = description;
+			CurrentProgress.ProcessedItems = processedItemsForDisplay;
+			CurrentProgress.TotalItems = totalItems;
+			CurrentProgress.Progress = progress;
+			ProgressUpdateVersion++;
+
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+			}
 		}
 
 		public void SetManifestId(string id)

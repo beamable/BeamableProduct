@@ -78,6 +78,13 @@ public partial class ContentService
 	/// </summary>
 	private const string FAKE_EMPTY_MANIFEST_UID = "EmptyManifest";
 
+	private const int CONTENT_DOWNLOAD_MAX_ATTEMPTS = 4;
+	private const int DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY = 64;
+	private const int CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS = 250;
+	private const int CONTENT_DOWNLOAD_RETRY_JITTER_MS = 250;
+
+	private static readonly HttpClient _contentDownloadClient = new(CreateContentDownloadHandler());
+
 	private readonly CliRequester _requester;
 	private readonly ConfigService _config;
 	private readonly IContentApi _contentApi;
@@ -942,10 +949,11 @@ public partial class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(AppLifecycle lifecycle, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
+		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null,
+		int downloadMaxParallelCount = DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate, lifecycle.CancellationToken);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate, lifecycle.CancellationToken, downloadMaxParallelCount);
 	}
 
 	/// <summary>
@@ -954,7 +962,8 @@ public partial class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null, CancellationToken cancellationToken = default)
+		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null, CancellationToken cancellationToken = default,
+		int downloadMaxParallelCount = DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY)
 	{
 		// Reset processed count when calling SyncLocalContent method
 		_syncProcessedCount = 0;
@@ -995,10 +1004,14 @@ public partial class ContentService
 		
 		// Download and overwrite the local content for things that have changed based on the hash or don't exist.
 		int totalItems = contentToDownload.Length + contentToDelete.Length;
+		using var contentDownloadSemaphore = downloadMaxParallelCount > 0 ? new SemaphoreSlim(downloadMaxParallelCount) : null;
 		var downloadPromises = contentToDownload.Select(async c => 
 		{
-			Log.Verbose("Downloading content with id. ID={Id}", c.Id);
-			
+			if (contentDownloadSemaphore != null)
+			{
+				await contentDownloadSemaphore.WaitAsync(cancellationToken);
+			}
+
 			ContentProgressUpdateData contentProgress = new ContentProgressUpdateData
 			{
 				totalItems = totalItems, 
@@ -1008,8 +1021,7 @@ public partial class ContentService
 			JsonElement customRequest;
 			try
 			{
-				customRequest = await _requester.CustomRequest(Method.GET, c.ReferenceContent.uri,
-					parser: s => JsonSerializer.Deserialize<JsonElement>(s));
+				customRequest = await DownloadContentFile(c, cancellationToken);
 			}
 			catch (HttpRequesterException exception)
 			{
@@ -1017,6 +1029,17 @@ public partial class ContentService
 				contentProgress.errorMessage = exception.Message;
 				onContentSyncProgressUpdate?.Invoke(contentProgress);
 				throw;
+			}
+			catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+			{
+				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+				contentProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentProgress);
+				throw;
+			}
+			finally
+			{
+				contentDownloadSemaphore?.Release();
 			}
 
 			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncComplete;
@@ -1161,6 +1184,71 @@ public partial class ContentService
 		{
 			_fileSystemOperationSemaphore.Release();
 		}
+	}
+
+	private async Task<JsonElement> DownloadContentFile(ContentFile contentFile, CancellationToken cancellationToken)
+	{
+		for (var attempt = 1; attempt <= CONTENT_DOWNLOAD_MAX_ATTEMPTS; attempt++)
+		{
+			try
+			{
+				using var response = await _contentDownloadClient.GetAsync(contentFile.ReferenceContent.uri, cancellationToken);
+				await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+				using var reader = new StreamReader(stream, Encoding.UTF8);
+				var rawResponse = await reader.ReadToEndAsync();
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new RequesterException("Cli", Method.GET.ToReadableString(), contentFile.ReferenceContent.uri, (int)response.StatusCode, rawResponse);
+				}
+
+				return JsonSerializer.Deserialize<JsonElement>(rawResponse);
+			}
+			catch (Exception exception) when (!cancellationToken.IsCancellationRequested && IsTransientContentDownloadException(exception) && attempt < CONTENT_DOWNLOAD_MAX_ATTEMPTS)
+			{
+				var delay = GetContentDownloadRetryDelay(attempt);
+				Log.Warning($"Transient content download failure. Retrying content-id=[{contentFile.Id}] attempt=[{attempt + 1}/{CONTENT_DOWNLOAD_MAX_ATTEMPTS}] delay-ms=[{delay.TotalMilliseconds}] error=[{exception.GetType().Name}] message=[{exception.Message}]");
+				await Task.Delay(delay, cancellationToken);
+			}
+		}
+
+		throw new InvalidOperationException($"Content download retry loop exited unexpectedly. content-id=[{contentFile.Id}]");
+	}
+
+	private static HttpClientHandler CreateContentDownloadHandler()
+	{
+		return new HttpClientHandler
+		{
+			MaxConnectionsPerServer = int.MaxValue,
+			UseCookies = false
+		};
+	}
+
+	private static TimeSpan GetContentDownloadRetryDelay(int failedAttempt)
+	{
+		var exponentialDelayMs = CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS * (1 << (failedAttempt - 1));
+		var jitterMs = Random.Shared.Next(0, CONTENT_DOWNLOAD_RETRY_JITTER_MS);
+		return TimeSpan.FromMilliseconds(exponentialDelayMs + jitterMs);
+	}
+
+	private static bool IsTransientContentDownloadException(Exception exception)
+	{
+		if (exception is RequesterException requesterException)
+		{
+			return requesterException.Status is 408 or 429 || requesterException.Status >= 500 && requesterException.Status < 600;
+		}
+
+		if (exception is HttpRequestException || exception is TimeoutException)
+		{
+			return true;
+		}
+
+		if (exception is TaskCanceledException)
+		{
+			return true;
+		}
+
+		return exception.InnerException != null && IsTransientContentDownloadException(exception.InnerException);
 	}
 
 

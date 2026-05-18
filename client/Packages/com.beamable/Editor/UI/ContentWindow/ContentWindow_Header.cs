@@ -119,7 +119,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal);
+					ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				}
 			}
 			if (_windowStatus is ContentWindowStatus.Normal || _windowStatus is ContentWindowStatus.Validate)
@@ -258,6 +258,11 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			if(shouldRepaint)
 				Repaint();
+		}
+
+		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus)
+		{
+			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);
 		}
 
 		private void DrawLowBarHeader(Rect rect)
@@ -420,27 +425,27 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Promise RevertAllContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, true, true, true);
+			await _contentService.SyncContentsWithProgress(true, true, true, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertModifiedContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, false, false, false);
+			await _contentService.SyncContentsWithProgress(true, false, false, false, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertConflictedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, true, false);
+			await _contentService.SyncContentsWithProgress(false, false, true, false, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertDeletedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, false, true);
+			await _contentService.SyncContentsWithProgress(false, false, false, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertAllNewContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, true, false, false);
+			await _contentService.SyncContentsWithProgress(false, true, false, false, showUnityModalProgress: false);
 		}
 
 		

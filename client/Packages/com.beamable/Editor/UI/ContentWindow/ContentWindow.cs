@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
+		private int _lastProgressUpdateVersion;
 		private EditorGUISplitView _mainSplitter;
 
 		static ContentWindow()
@@ -109,6 +110,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				ReloadData();
 				Repaint(); 
 			}
+
+			if (_contentService != null && _contentService.ProgressUpdateVersion != _lastProgressUpdateVersion)
+			{
+				_lastProgressUpdateVersion = _contentService.ProgressUpdateVersion;
+				Repaint();
+			}
 		}
 
 		private void ReloadData()
@@ -119,7 +126,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
 		}
 
