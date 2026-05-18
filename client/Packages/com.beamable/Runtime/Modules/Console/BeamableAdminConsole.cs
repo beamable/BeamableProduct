@@ -596,7 +596,7 @@ namespace Beamable.Console
 #if UNITY_EDITOR
 			return true;
 #else
-			return ConsoleConfiguration.Instance.ForceEnabled
+			return ConsoleConfiguration.Instance.EnableAdminConsole
 				|| _beamContext.AuthorizedUser.Value.HasScope("cli:console");
 #endif
 		}
