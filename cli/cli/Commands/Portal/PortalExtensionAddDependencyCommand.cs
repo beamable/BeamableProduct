@@ -1,7 +1,9 @@
+using Beamable.Server;
 using cli.Services;
 using cli.Services.Web;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
+using static Beamable.Common.Constants.Features.PortalExtension;
 
 namespace cli.Portal;
 
@@ -62,7 +64,13 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 			extension.MicroserviceDependencies.Add(microservice.BeamoId);
 
-			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_DEPENDENCIES_PROPERTY_NAME] =
+			if (root[EXTENSION_BEAMABLE_PROPERTY_NAME] == null)
+			{
+				throw new CliException(
+					$"Field {EXTENSION_BEAMABLE_PROPERTY_NAME} expected in extension pakage.json file");
+			}
+
+			root[EXTENSION_BEAMABLE_PROPERTY_NAME][EXTENSION_DEPENDENCIES_PROPERTY_NAME] =
 				JToken.FromObject(extension.MicroserviceDependencies);
 
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
@@ -86,8 +94,14 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
-			if (!dependencies.Contains(beamId) || localProtocol.OpenApiDoc == null)
+			if (!dependencies.Contains(beamId))
 			{
+				continue;
+			}
+
+			if (localProtocol.OpenApiDoc == null)
+			{
+				Log.Warning($"Client generation for {beamId} is being skipped because there is no API doc. Try running {beamId} once to make it available and try again.");
 				continue;
 			}
 
