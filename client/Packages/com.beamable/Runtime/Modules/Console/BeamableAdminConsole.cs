@@ -94,14 +94,6 @@ namespace Beamable.Console
 			_autoCompleter = new AutoCompleter(_commands);
 		}
 
-		private void Start()
-		{
-			/*
-			if (!AutoStart) return;
-			StartListening();
-			Initialize();*/
-		}
-
 		private void Update()
 		{
 			if (!_isInitialized) return;
