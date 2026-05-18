@@ -260,6 +260,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				Repaint();
 		}
 
+		/// <summary>
+		/// Defers Content Manager state changes until the current IMGUI event has finished.
+		/// </summary>
+		/// <remarks>
+		/// Some state transitions remove or add controls. Deferring them avoids mismatched layout groups during repaint.
+		/// </remarks>
 		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus)
 		{
 			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);

@@ -20,6 +20,9 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.ContentService
 {
+	/// <summary>
+	/// Tracks the currently running content operation so the Content Manager can render progress inside the window.
+	/// </summary>
 	public class ContentOperationProgress
 	{
 		public bool IsActive;
@@ -68,7 +71,13 @@ namespace Beamable.Editor.ContentService
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
 		public BeamContentPsProgressMessage LatestProgressUpdate;
+		/// <summary>
+		/// Current publish or sync progress state consumed by the Content Manager IMGUI view.
+		/// </summary>
 		public ContentOperationProgress CurrentProgress { get; } = new();
+		/// <summary>
+		/// Monotonic value incremented when <see cref="CurrentProgress"/> changes so the Content Manager can repaint on demand.
+		/// </summary>
 		public int ProgressUpdateVersion { get; private set; }
 		private readonly ContentConfiguration _contentConfiguration;
 
@@ -467,6 +476,9 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		/// <summary>
+		/// Finishes the active content operation, clears any modal progress UI, and reloads local content state.
+		/// </summary>
 		private void FinishActionProgress()
 		{
 			if (_showUnityModalProgress)
@@ -479,6 +491,9 @@ namespace Beamable.Editor.ContentService
 			_ = Reload();
 		}
 
+		/// <summary>
+		/// Initializes progress state for a content operation. Sync can use in-window progress only, while publish can still opt into Unity's modal progress UI.
+		/// </summary>
 		private void BeginActionProgress(string title, string description, bool showUnityModalProgress)
 		{
 			_showUnityModalProgress = showUnityModalProgress;
@@ -498,6 +513,12 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		/// <summary>
+		/// Converts the optional editor sync concurrency setting to the CLI argument value.
+		/// </summary>
+		/// <remarks>
+		/// Returning the default int omits the CLI argument, allowing the CLI default to apply. A configured value of 0 maps to -1 so the generated command includes an explicit unbounded setting.
+		/// </remarks>
 		private int GetEditorSyncDownloadMaxParallelCountCliOption()
 		{
 			if (_contentConfiguration.EditorSyncDownloadMaxParallelCount?.HasValue != true)
