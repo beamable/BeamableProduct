@@ -83,6 +83,12 @@ public partial class ContentService
 	private const int CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS = 250;
 	private const int CONTENT_DOWNLOAD_RETRY_JITTER_MS = 250;
 
+	/// <summary>
+	/// Shared client for CDN content-file downloads during sync.
+	/// </summary>
+	/// <remarks>
+	/// This intentionally bypasses the generic CLI requester to avoid per-file verbose request/response logging while preserving connection reuse.
+	/// </remarks>
 	private static readonly HttpClient _contentDownloadClient = new(CreateContentDownloadHandler());
 
 	private readonly CliRequester _requester;
@@ -1186,6 +1192,12 @@ public partial class ContentService
 		}
 	}
 
+	/// <summary>
+	/// Downloads a single content file from its remote content URI with transient retry handling.
+	/// </summary>
+	/// <remarks>
+	/// Content sync may download hundreds or thousands of small files. This path keeps those downloads off the generic requester so Unity does not receive a verbose log event for every response body.
+	/// </remarks>
 	private async Task<JsonElement> DownloadContentFile(ContentFile contentFile, CancellationToken cancellationToken)
 	{
 		for (var attempt = 1; attempt <= CONTENT_DOWNLOAD_MAX_ATTEMPTS; attempt++)
@@ -1215,6 +1227,12 @@ public partial class ContentService
 		throw new InvalidOperationException($"Content download retry loop exited unexpectedly. content-id=[{contentFile.Id}]");
 	}
 
+	/// <summary>
+	/// Creates the HTTP handler used by the shared content download client.
+	/// </summary>
+	/// <remarks>
+	/// The sync command owns concurrency limits separately, so the handler allows a high per-server connection ceiling.
+	/// </remarks>
 	private static HttpClientHandler CreateContentDownloadHandler()
 	{
 		return new HttpClientHandler
@@ -1224,6 +1242,9 @@ public partial class ContentService
 		};
 	}
 
+	/// <summary>
+	/// Calculates exponential retry delay with jitter for a failed content download attempt.
+	/// </summary>
 	private static TimeSpan GetContentDownloadRetryDelay(int failedAttempt)
 	{
 		var exponentialDelayMs = CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS * (1 << (failedAttempt - 1));
@@ -1231,6 +1252,9 @@ public partial class ContentService
 		return TimeSpan.FromMilliseconds(exponentialDelayMs + jitterMs);
 	}
 
+	/// <summary>
+	/// Determines whether a content download failure is likely transient and should be retried.
+	/// </summary>
 	private static bool IsTransientContentDownloadException(Exception exception)
 	{
 		if (exception is RequesterException requesterException)

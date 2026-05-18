@@ -267,6 +267,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndVertical();
 		}
 
+		/// <summary>
+		/// Draws the active content operation progress bar in the Content Manager action panel.
+		/// </summary>
+		/// <returns>True when progress UI was drawn and the caller should reserve spacing for it.</returns>
 		private bool DrawContentOperationProgress()
 		{
 			var progress = _contentService.CurrentProgress;
