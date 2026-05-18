@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (_contentService.HasConflictedContent || _contentService.HasInvalidContent || !_contentService.HasChangedContents)
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				return;
 			}
 			
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					_contentService.PublishContentsWithProgress().Then(_ =>
 					{
-						ChangeWindowStatus(ContentWindowStatus.Normal);
+						ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 					});
 				}
 			}
@@ -55,9 +55,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void DrawRevertPanel()
 		{
-			if (!_contentService.HasChangedContents)
+			if (!_contentService.HasChangedContents && !_contentService.CurrentProgress.IsActive)
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				return;
 			}
 			
@@ -69,7 +69,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{ 
 					_revertAction?.Invoke().Then(_ =>
 					{
-						ChangeWindowStatus(ContentWindowStatus.Normal);
+						ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 					});
 				}
 			}
@@ -195,7 +195,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUILayout.FlexibleSpace();
 			if (BeamGUI.CancelButton("Back", GUILayout.Width(60)))
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
 		}
 		
@@ -240,24 +240,61 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndScrollView();
 			
 			EditorGUILayout.Space(12);
+
+			if (DrawContentOperationProgress())
+			{
+				EditorGUILayout.Space(12);
+			}
 			
 			var buttonsRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.Height(30f));
 			var buttonsRectController = new EditorGUIRectController(buttonsRect);
 			var primaryBtnContent = new GUIContent(buttonText);
 			var primaryBtnSize = GUI.skin.button.CalcSize(primaryBtnContent);
 			
-			if (BeamGUI.PrimaryButton(buttonsRectController.ReserveWidthFromRight(primaryBtnSize.x + BASE_PADDING * 2), primaryBtnContent))
+			if (BeamGUI.ShowDisabled(!_contentService.CurrentProgress.IsActive,
+			                         () => BeamGUI.PrimaryButton(buttonsRectController.ReserveWidthFromRight(primaryBtnSize.x + BASE_PADDING * 2), primaryBtnContent)))
 			{
 				onButtonClicked?.Invoke();
 			}
 			var cancelBtnContent = new GUIContent("Cancel");
 			var cancelBtnSize = GUI.skin.button.CalcSize(cancelBtnContent);
-			if (BeamGUI.CustomButton(buttonsRectController.ReserveWidthFromRight(cancelBtnSize.x + BASE_PADDING * 2), cancelBtnContent, BeamGUI.ColorizeButton(Color.gray)))
+			if (BeamGUI.ShowDisabled(!_contentService.CurrentProgress.IsActive,
+			                         () => BeamGUI.CustomButton(buttonsRectController.ReserveWidthFromRight(cancelBtnSize.x + BASE_PADDING * 2), cancelBtnContent, BeamGUI.ColorizeButton(Color.gray))))
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
 
 			EditorGUILayout.EndVertical();
+		}
+
+		private bool DrawContentOperationProgress()
+		{
+			var progress = _contentService.CurrentProgress;
+			if (!progress.IsActive)
+			{
+				return false;
+			}
+
+			var progressAction = progress.Title == "Publish Contents" ? "published" : "synced";
+			var progressText = progress.TotalItems > 0
+				? $"{progress.ProcessedItems}/{progress.TotalItems} items {progressAction}"
+				: $"Preparing {progress.Title.ToLowerInvariant()}...";
+
+			if (!string.IsNullOrEmpty(progress.CurrentContentName))
+			{
+				progressText = $"{progressText} - {progress.CurrentContentName}";
+			}
+
+			EditorGUILayout.LabelField(progress.Title, EditorStyles.boldLabel);
+			var progressRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.Height(20));
+			EditorGUI.ProgressBar(progressRect, progress.Progress, progressText);
+
+			if (!string.IsNullOrEmpty(progress.Description))
+			{
+				EditorGUILayout.LabelField(progress.Description, _contentHeaderDescriptionStyle);
+			}
+
+			return true;
 		}
 
 		private void DrawChangedContents(float width,

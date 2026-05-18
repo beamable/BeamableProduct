@@ -32,6 +32,9 @@ namespace Beamable.Content
 
         [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
         public OptionalInt EditorDownloadBatchSize;
+
+        [Tooltip("In editor, when syncing content from the realm, this controls how many content files can be downloaded in parallel. Leave unset to use the CLI default. Use 0 for unbounded parallelism.")]
+        public OptionalInt EditorSyncDownloadMaxParallelCount;
 #endif
 
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
