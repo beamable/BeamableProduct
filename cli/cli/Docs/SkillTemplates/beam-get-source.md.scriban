@@ -16,7 +16,7 @@ When you need to understand Beamable SDK internals, look up API signatures, or d
 | Unity | `Library/PackageCache/com.beamable@{version}/` | `Packages/manifest.json` has `com.beamable` |
 | Unreal | `Plugins/BeamableCore/` | Directory exists in the project root |
 | WebSDK | `node_modules/@beamable/sdk/` | `package.json` has `@beamable/sdk` |
-| CLI/Microservice | `~/.nuget/packages/beamable.common/{ver}/content/netstandard2.0/Runtime/` | `.config/dotnet-tools.json` has `beamable.tools` |
+| CLI/Microservice | `~/.nuget/packages/beamable.common/{ver}/content/sourceCode/Runtime/` | `.config/dotnet-tools.json` has `beamable.tools` |
 
 ### NuGet cache packages (CLI and Microservices)
 
@@ -24,10 +24,10 @@ The NuGet global cache contains additional SDK source:
 
 | Package | Path in cache | Contents |
 |---|---|---|
-| `beamable.common` | `~/.nuget/packages/beamable.common/{ver}/content/netstandard2.0/Runtime/` | ContentObject, IContentApi, Optional, serialization |
+| `beamable.common` | `~/.nuget/packages/beamable.common/{ver}/content/sourceCode/Runtime/` | ContentObject, IContentApi, Optional, serialization |
 | `beamable.common` (build) | `~/.nuget/packages/beamable.common/{ver}/build/netstandard2.0/` | MSBuild props for the common package |
-| `beamable.tooling.common` | `~/.nuget/packages/beamable.tooling.common/{ver}/content/netstandard2.1/` | ClientCallableAttribute, federation interfaces, Microservice base class |
-| `beamable.microservice.runtime` | `~/.nuget/packages/beamable.microservice.runtime/{ver}/content/net8.0/` | Microservice runtime, request handling, DI |
+| `beamable.tooling.common` | `~/.nuget/packages/beamable.tooling.common/{ver}/content/sourceCode/` | ClientCallableAttribute, federation interfaces, Microservice base class |
+| `beamable.microservice.runtime` | `~/.nuget/packages/beamable.microservice.runtime/{ver}/content/sourceCode/` | Microservice runtime, request handling, DI |
 | `beamable.microservice.runtime` (build) | `~/.nuget/packages/beamable.microservice.runtime/{ver}/build/` | MSBuild targets for OAPI gen, build validation, collector resolution |
 
 To find the exact version, check the project file (`.csproj`) for PackageReference versions, or check `.config/dotnet-tools.json` for the CLI tool version.

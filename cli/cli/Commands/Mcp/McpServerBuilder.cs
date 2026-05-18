@@ -9,6 +9,9 @@ namespace cli.Mcp;
 
 public class McpServerBuilder
 {
+	// Ensures EnsureWorkspaceFromRootsAsync runs only once across concurrent tool calls.
+	// The MCP server invokes multiple tools in parallel, each of which calls this method;
+	// the flag prevents redundant roots requests after the first successful resolution.
 	private static int _workspaceResolved;
 
 	public static async Task EnsureWorkspaceFromRootsAsync(McpServer server)
@@ -31,12 +34,8 @@ public class McpServerBuilder
 		}
 		catch
 		{
-			// Client doesn't support roots — fall through to env var
+			// Client doesn't support roots
 		}
-
-		var workspace = Environment.GetEnvironmentVariable("BEAM_WORKSPACE");
-		if (!string.IsNullOrWhiteSpace(workspace) && Directory.Exists(workspace))
-			Directory.SetCurrentDirectory(workspace);
 	}
 
 	public async Task RunAsync(CancellationToken cancellationToken = default)

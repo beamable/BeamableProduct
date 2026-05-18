@@ -144,10 +144,11 @@ public class McpToolExecutor
 					var nugetBase = Path.Combine(
 						Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
 						".nuget", "packages");
-					var commonSrc = Path.Combine(nugetBase, "beamable.common", detectedVersion, "content", "netstandard2.0", "Runtime");
-					var toolingSrc = Path.Combine(nugetBase, "beamable.tooling.common", detectedVersion, "content", "netstandard2.1");
-					var runtimeSrc = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "content", "net8.0");
+					var commonSrc = Path.Combine(nugetBase, "beamable.common", detectedVersion, "content", "sourceCode", "Runtime");
+					var toolingSrc = Path.Combine(nugetBase, "beamable.tooling.common", detectedVersion, "content", "sourceCode");
+					var runtimeSrc = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "content", "sourceCode");
 					var runtimeBuild = Path.Combine(nugetBase, "beamable.microservice.runtime", detectedVersion, "build");
+					// build folders needs to use Target Framework path because NuGet auto-imports .props/.targets from build/{TargetFramework}/
 					var commonBuild = Path.Combine(nugetBase, "beamable.common", detectedVersion, "build", "netstandard2.0");
 
 					sourcePath = nugetBase;

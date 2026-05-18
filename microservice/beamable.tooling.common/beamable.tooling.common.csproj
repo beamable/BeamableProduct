@@ -57,7 +57,7 @@
     </ItemGroup>
 
     <ItemGroup Label="Pack: source code">
-        <None Include="**/*.cs" PackagePath="content/netstandard2.1" Pack="True" Exclude="bin/**;obj/**" />
+        <None Include="**/*.cs" PackagePath="content/sourceCode" Pack="True" Exclude="bin/**;obj/**" />
     </ItemGroup>
 
 </Project>

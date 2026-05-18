@@ -283,8 +283,7 @@ public class App
 				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
 			}
 
-			var aiAgent = DetectAiAgent();
-			if (!string.IsNullOrEmpty(aiAgent))
+			if (TryDetectAiAgent(out var aiAgent))
 			{
 				dict[Otel.ATTR_AI_AGENT] = aiAgent;
 			}
@@ -712,9 +711,6 @@ public class App
 		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
 		Commands.AddSubCommand<SelectUnrealSampleCommand, SelectUnrealSampleCommandArgs, UnrealGroupCommand>();
 		
-		// env command
-		Commands.AddRootCommand<EnvCommand, EnvCommandArgs>();
-
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -1543,8 +1539,8 @@ public class App
 
 	public virtual int Run(string[] args)
 	{
-		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.Invoke(args);
 	}
 
@@ -1554,15 +1550,14 @@ public class App
 		var joined = string.Join(" ", args).ToLowerInvariant();
 		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
 
-		var aiAgent = DetectAiAgent();
-		if (aiAgent == null) return;
+		if (!TryDetectAiAgent(out _)) return;
 
-		Console.Error.WriteLine(
+		BeamableLogger.LogWarning(
 			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
 			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
 	}
 
-	internal static string DetectAiAgent()
+	public static bool TryDetectAiAgent(out string agentName)
 	{
 		var mapping = new (string EnvVar, string AgentName)[]
 		{
@@ -1579,33 +1574,40 @@ public class App
 			("AI_AGENT", "unknown"),
 		};
 
-		string agentName = null;
+		string detected = null;
 		foreach (var (envVar, name) in mapping)
 		{
 			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVar)))
 			{
-				agentName = name;
+				detected = name;
 				break;
 			}
 		}
 
 		var prefix = IsRunningInMcpServer ? "mcp" : "cli";
 
-		if (agentName != null)
-			return $"{prefix}_{agentName}";
+		if (detected != null)
+		{
+			agentName = $"{prefix}_{detected}";
+			return true;
+		}
 
 		if (IsRunningInMcpServer)
-			return "mcp_unknown";
+		{
+			agentName = "mcp_unknown";
+			return true;
+		}
 
-		return null;
+		agentName = null;
+		return false;
 	}
 
 	internal static bool IsRunningInMcpServer { get; set; }
 
 	public virtual Task<int> RunAsync(string[] args)
 	{
-		WarnIfAIEnvironmentWithoutMcp(args);
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.InvokeAsync(args);
 	}
 
