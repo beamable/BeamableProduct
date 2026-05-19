@@ -143,7 +143,7 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Configure locale
-        if: matrix.runners == 'ubuntu-latest' && matrix.lang != null && matrix.lang != ''
+        if: matrix.runners == 'ubuntu-latest' && matrix.lang
         run: |
           sudo locale-gen ${{ matrix.lang }}
           echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
