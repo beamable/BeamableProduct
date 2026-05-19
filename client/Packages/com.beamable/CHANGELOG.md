@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue when creating a new Content Object some Optional and string values were null instead of default values.
 - Fix issue where Critical log errors where not being parsed to Unity LogLevels.
 - Fix periodic freeze caused by telemetry collector polling.
->>>>>>> main
 
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
