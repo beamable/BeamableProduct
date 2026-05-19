@@ -96,9 +96,6 @@ jobs:
             test-culture: en-US
             dotnet-cli-ui-language: en
             lang: en_US.UTF-8
-          - runners: windows-latest
-            test-culture: pl-PL
-            dotnet-cli-ui-language: pl
           - runners: ubuntu-latest
             test-culture: pl-PL
             dotnet-cli-ui-language: pl
