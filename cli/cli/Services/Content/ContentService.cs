@@ -1253,8 +1253,14 @@ public partial class ContentService
 	}
 
 	/// <summary>
-	/// Determines whether a content download failure is likely transient and should be retried.
+	/// Determines whether a content download failure is likely caused by temporary transport or service pressure
+	/// and should be retried instead of failing the entire sync operation.
 	/// </summary>
+	/// <remarks>
+	/// Content sync can download hundreds or thousands of small files in parallel. In that scenario, occasional
+	/// TLS/socket resets, timeouts, rate limits, or temporary server errors can happen even when the content is valid.
+	/// Retrying only those transient failures prevents one short-lived network issue from aborting the full sync.
+	/// </remarks>
 	private static bool IsTransientContentDownloadException(Exception exception)
 	{
 		if (exception is RequesterException requesterException)
