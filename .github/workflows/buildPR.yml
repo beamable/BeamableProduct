@@ -103,8 +103,6 @@ jobs:
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
       DOTNET_CLI_UI_LANGUAGE: ${{ matrix.dotnet-cli-ui-language }}
-      LANG: ${{ matrix.lang || '' }}
-      LC_ALL: ${{ matrix.lang || '' }}
     steps:
       - name: Check Docker 
         run: docker version
@@ -144,6 +142,12 @@ jobs:
         run: dotnet restore cli/tests
       - name: Build
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
+      - name: Configure locale
+        if: matrix.runners == 'ubuntu-latest' && matrix.lang != ''
+        run: |
+          sudo locale-gen ${{ matrix.lang }}
+          echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
+          echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
       - name: Test
         run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true -- NUnit.DefaultCulture=${{ matrix.test-culture }}
   testSourceGen:
