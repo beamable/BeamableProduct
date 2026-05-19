@@ -120,6 +120,12 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Configure locale
+        if: matrix.runners == 'ubuntu-latest' && matrix.lang
+        run: |
+          sudo locale-gen ${{ matrix.lang }}
+          echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
+          echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -142,12 +148,6 @@ jobs:
         run: dotnet restore cli/tests
       - name: Build
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
-      - name: Configure locale
-        if: matrix.runners == 'ubuntu-latest' && matrix.lang
-        run: |
-          sudo locale-gen ${{ matrix.lang }}
-          echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
-          echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
       - name: Test
         run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true -- NUnit.DefaultCulture=${{ matrix.test-culture }}
   testSourceGen:
