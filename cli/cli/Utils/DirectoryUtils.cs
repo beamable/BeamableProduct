@@ -20,36 +20,25 @@ public static class DirectoryUtils
 			Size = 0
 		};
 
-		var files = Directory.GetFiles(path);
-		foreach (string file in files)
+		try
 		{
-			try
+			var dirInfo = new DirectoryInfo(path);
+			foreach (var fileInfo in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
 			{
-				if(!File.Exists(file))
-					continue;
-				var fileInfo = new FileInfo(file);
-				result.Size += fileInfo.Length;
-				result.FileCount++;
-			}
-			catch (Exception ex)
-			{
-				Log.Warning($"Could not access file {file}: {ex.Message}");
+				try
+				{
+					result.Size += fileInfo.Length;
+					result.FileCount++;
+				}
+				catch (Exception ex)
+				{
+					Log.Warning($"Could not access file {fileInfo.FullName}: {ex.Message}");
+				}
 			}
 		}
-
-		var subdirectories = Directory.GetDirectories(path);
-		foreach (string subdirectory in subdirectories)
+		catch (Exception ex)
 		{
-			try
-			{
-				var subResult = CalculateDirectorySize(subdirectory);
-				result.Size += subResult.Size;
-				result.FileCount += subResult.FileCount;
-			}
-			catch (Exception ex)
-			{
-				Log.Warning($"Could not access directory {subdirectory}: {ex.Message}");
-			}
+			Log.Warning($"Could not access directory {path}: {ex.Message}");
 		}
 
 		return result;

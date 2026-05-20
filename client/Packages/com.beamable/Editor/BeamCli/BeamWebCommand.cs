@@ -420,13 +420,10 @@ namespace Beamable.Editor.BeamCli
 						}
 
 						readTask = reader.ReadLineAsync();
-						while (!readTask.IsCompleted)
+						var cancelTcs = new TaskCompletionSource<bool>();
+						using (_cts.Token.Register(() => cancelTcs.TrySetResult(true)))
 						{
-							await Task.WhenAny(readTask, Task.Delay(50));
-							if (_cts.Token.IsCancellationRequested)
-							{
-								break;
-							}
+							await Task.WhenAny(readTask, cancelTcs.Task);
 						}
 						if (_cts.Token.IsCancellationRequested)
 						{
