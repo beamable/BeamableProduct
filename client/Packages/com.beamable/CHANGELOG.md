@@ -6,14 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added in-window Content Manager progress for sync and revert operations.
+- Added editor content sync download concurrency configuration.
+
 ### Fixed
+- Improved content sync resilience for transient SSL/socket reset download failures.
 - Deserialization issue with `properties` field in Score Items of Events
 - Fixed an issue where the Unity Editor would not detect changes to Icon subObject (for Sprites in Multiple Mode) and thus not saving it correctly
-<<<<<<< fix/contentNullFields
 - Fixed an issue when creating a new Content Object some Optional and string values were null instead of default values.
-=======
 - Fix issue where Critical log errors where not being parsed to Unity LogLevels.
->>>>>>> main
+- Fix periodic freeze caused by telemetry collector polling.
 
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
