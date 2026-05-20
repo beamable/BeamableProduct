@@ -105,7 +105,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 				continue;
 			}
 
-			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "js");
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts");
 			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 			generator.GenerateClientCode(clientsOutputDirectory);
 		}
@@ -122,7 +122,6 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 		if (deps is { Type: JTokenType.Array })
 		{
-			// Convert the JArray directly to a List<string>
 			return deps.ToObject<List<string>>();
 		}
 
