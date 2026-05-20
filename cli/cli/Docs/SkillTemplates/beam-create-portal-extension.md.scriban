@@ -69,12 +69,95 @@ beam_exec("portal open-extension <Name>")
 ## Web SDK Documentation
 The portal extension uses `@beamable/portal-toolkit` which depends on `@beamable/sdk`. To find the actual SDK version, check `node_modules/@beamable/portal-toolkit/package.json` → `peerDependencies["@beamable/sdk"]`. Use the `beam-get-source` skill to read SDK source code locally.
 
+## Beamable UI Components
+
+Portal extensions use custom elements from `@beamable/portal-toolkit`. These are web components that render inside the Portal's Vuetify-based UI. Use them in Svelte templates as regular HTML elements.
+
+Full component manifest: `node_modules/@beamable/portal-toolkit/custom-elements.json`
+
+### beam-card
+
+Surface container with elevation and rounded corners. Structure content with sub-elements: `beam-card-title`, `beam-card-subtitle`, `beam-card-text`, `beam-card-actions`.
+
+```svelte
+<beam-card elevation="2">
+  <beam-card-title>Player Stats</beam-card-title>
+  <beam-card-subtitle>Last 24 hours</beam-card-subtitle>
+  <beam-card-text>Content goes here</beam-card-text>
+  <beam-card-actions>
+    <beam-btn color="primary">Save</beam-btn>
+  </beam-card-actions>
+</beam-card>
+```
+
+### beam-btn
+
+Material Design button. Key attributes: `color` (theme name or CSS color), `outlined`, `text`, `block`, `icon` (square icon button), `fab` (circular FAB), `loading` (spinner + disabled), `disabled`, `small`/`large`/`x-small`/`x-large`, `href`, `type`.
+
+```svelte
+<beam-btn color="primary" on:click={handleSave}>Save</beam-btn>
+<beam-btn outlined color="error" on:click={handleDelete}>Delete</beam-btn>
+<beam-btn icon on:click={handleRefresh}><beam-icon icon="mdi-refresh" /></beam-btn>
+<beam-btn loading={isSaving} color="primary">Saving...</beam-btn>
+```
+
+### beam-icon
+
+Renders a Material Design icon by name. Key attributes: `icon` (MDI name, e.g. `mdi-home`, `mdi-refresh`, `mdi-delete`), `color`, `small`/`large`/`x-small`/`x-large`, `left` (margin-right, before text), `right` (margin-left, after text).
+
+```svelte
+<beam-icon icon="mdi-account" color="primary" />
+<beam-btn><beam-icon icon="mdi-plus" left />Add Item</beam-btn>
+```
+
+### beam-data-table
+
+Full-featured data table with sorting, pagination, filtering, and selection. Key attributes: `headers` (array of `{ text, value }`), `items` (row data array), `items-per-page` (default `10`, `-1` for all), `loading`, `search`, `sort-by`, `sort-desc`, `show-select`, `dense`, `fixed-header` (requires `height`), `item-key` (default `id`), `no-data-text`.
+
+```svelte
+<script>
+  const headers = [
+    { text: 'Player', value: 'name' },
+    { text: 'Score', value: 'score' },
+    { text: 'Level', value: 'level' }
+  ];
+  let items = [];
+</script>
+
+<beam-data-table {headers} {items} items-per-page="25" sort-by="score" sort-desc />
+```
+
+**Important**: `headers` and `items` must be passed as JavaScript objects/arrays via Svelte bindings (`{headers}`), not as JSON strings in the attribute.
+
+### beam-alert
+
+Contextual message banner. Key attributes: `type` (`success`, `info`, `warning`, `error`), `color`, `outlined`, `text`, `dense`, `dismissible` (close button — listen for `input` event), `border` (`top`/`right`/`bottom`/`left`), `prominent`.
+
+```svelte
+<beam-alert type="success">Changes saved successfully</beam-alert>
+<beam-alert type="error" prominent>Failed to deploy service</beam-alert>
+```
+
+### beam-chip
+
+Small label for tags, filters, or status indicators. Key attributes: `color`, `outlined`, `close` (dismiss icon — listen for `click:close`), `small`/`large`/`x-small`, `label` (square), `pill` (pill-shaped).
+
+```svelte
+<beam-chip color="primary">Active</beam-chip>
+<beam-chip outlined close on:click:close={handleRemove}>Filter Tag</beam-chip>
+```
+
+### Theme Colors
+
+All components accept Portal theme color names for `color`: `primary`, `secondary`, `accent`, `error`, `info`, `success`, `warning`. Prefer these over hardcoded CSS colors for Portal-consistent theming.
+
 ## Common Pitfalls
 - **Never guess mount values.** Valid pages and selectors come from a remote config that changes between Portal versions. Always call `list-extension-options` first.
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
 - **Portal extensions use Svelte, not React.** The default `--service-directory` for portal extensions is `extensions/`, not `services/`.
+- **Use `beam-*` components, not raw HTML.** Portal extensions render inside the Portal's Vuetify UI. Use `beam-card`, `beam-btn`, `beam-alert`, etc. for consistent theming. Check `custom-elements.json` for the full API.
 
 ## Generated microservice clients
 

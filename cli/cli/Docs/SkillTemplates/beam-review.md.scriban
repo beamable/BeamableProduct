@@ -95,6 +95,16 @@ Choose the right attribute for each microservice endpoint:
 - [ ] `content publish` targets the correct manifest with `--manifest-ids`
 - [ ] Destructive operations (`content sync --sync-modified`, `deploy plan --replace`) are intentional
 
+### Portal Extension Components
+- [ ] Uses `beam-card` / `beam-card-title` / `beam-card-text` / `beam-card-actions` for content layout — not raw `<div>` with custom CSS
+- [ ] Uses `beam-btn` for actions — not raw `<button>` elements
+- [ ] Uses `beam-alert` for status messages with correct `type` (`success`, `info`, `warning`, `error`)
+- [ ] Uses `beam-data-table` for tabular data with `headers` and `items` passed as Svelte bindings (`{headers}`), not JSON strings
+- [ ] `beam-icon` uses valid MDI icon names (e.g. `mdi-home`, `mdi-plus`) — not guessed names
+- [ ] Components use Portal theme color names (`primary`, `secondary`, `error`, etc.) — not hardcoded CSS colors
+- [ ] Extension uses Svelte (`.svelte` files), not React or plain HTML
+- [ ] Full component API is in `extensions/<Name>/node_modules/@beamable/portal-toolkit/custom-elements.json` — check if unsure about attributes
+
 ### Unreal-Specific
 - [ ] C++ content types (`UBeamContentObject` subclasses) have matching C# equivalents if accessed from microservices
 - [ ] `GetContentType_<ClassName>` function name matches the class name exactly
