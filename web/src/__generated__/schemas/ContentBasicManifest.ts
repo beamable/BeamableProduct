@@ -14,6 +14,7 @@ export type ContentBasicManifest = {
   id: string; 
   references: (ContentReference | TextReference | BinaryReference)[]; 
   archived?: boolean; 
+  clientVersion?: string; 
   diffObjectKey?: string; 
   lastChanged?: bigint | string; 
   publisherAccountId?: bigint | string; 

@@ -7,6 +7,7 @@ using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
 
@@ -264,9 +265,19 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
-	[JsonProperty(KEY_NAV_GROUP)] public OptionalString NavGroup;
-	[JsonProperty(KEY_NAV_LABEL)] public OptionalString NavLabel;
-	[JsonProperty(KEY_NAV_ICON)] public OptionalString NavIcon;
+
+	[JsonProperty(KEY_NAV_GROUP)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavGroup;
+
+	[JsonProperty(KEY_NAV_LABEL)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavLabel;
+
+	[JsonProperty(KEY_NAV_ICON)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavIcon;
+
 	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
 	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
 
