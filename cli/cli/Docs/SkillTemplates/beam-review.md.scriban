@@ -96,14 +96,12 @@ Choose the right attribute for each microservice endpoint:
 - [ ] Destructive operations (`content sync --sync-modified`, `deploy plan --replace`) are intentional
 
 ### Portal Extension Components
-- [ ] Uses `beam-card` / `beam-card-title` / `beam-card-text` / `beam-card-actions` for content layout — not raw `<div>` with custom CSS
-- [ ] Uses `beam-btn` for actions — not raw `<button>` elements
-- [ ] Uses `beam-alert` for status messages with correct `type` (`success`, `info`, `warning`, `error`)
-- [ ] Uses `beam-data-table` for tabular data with `headers` and `items` passed as Svelte bindings (`{headers}`), not JSON strings
-- [ ] `beam-icon` uses valid MDI icon names (e.g. `mdi-home`, `mdi-plus`) — not guessed names
-- [ ] Components use Portal theme color names (`primary`, `secondary`, `error`, etc.) — not hardcoded CSS colors
-- [ ] Extension uses Svelte (`.svelte` files), not React or plain HTML
-- [ ] Full component API is in `extensions/<Name>/node_modules/@beamable/portal-toolkit/custom-elements.json` — check if unsure about attributes
+- [ ] Extension uses React (`.tsx` files) by default — Svelte (`.svelte`) only if the user explicitly requested `--template svelte`
+- [ ] React: imports components from `@beamable/portal-toolkit/react` — does NOT use `<beam-*>` web component tags in TSX
+- [ ] Svelte: uses `<beam-*>` web component tags with `@beamable/portal-toolkit/svelte` type augmentation
+- [ ] Uses Beamable components, not raw HTML elements — read `extensions/<Name>/node_modules/@beamable/portal-toolkit/src/generated/` for available components (React: `react-components.ts`, `react-bindable.ts`, `react-custom.ts`; Svelte: `svelte-elements.ts`; other: `custom-elements.json`)
+- [ ] Form controls use `onValueChange`/`onCheckedChange` callbacks (from `react-bindable.ts`) — not raw `onChange`
+- [ ] Components use `variant` and `appearance` props for styling — not hardcoded CSS colors
 
 ### Unreal-Specific
 - [ ] C++ content types (`UBeamContentObject` subclasses) have matching C# equivalents if accessed from microservices

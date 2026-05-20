@@ -23,6 +23,8 @@ The response has two sections:
 
 ### 2. Create the extension
 
+The default template is **React** (TypeScript). Always use React unless the user explicitly requests Svelte or another framework — React is the LTS-supported template.
+
 For a **page extension** (new navigation page):
 ```
 beam_exec("project new portal-extension <Name> --mount-page \"<routePrefix><your-route>\" --mount-group \"<NavGroup>\" --mount-label \"<NavLabel>\" -q")
@@ -36,6 +38,8 @@ beam_exec("project new portal-extension <Name> --mount-page \"<path>\" --mount-s
 ```
 - `--mount-selector` is REQUIRED and must match one of the selectors from step 1
 - Do NOT provide `--mount-group` or `--mount-label`
+
+To use Svelte instead (only if the user requests it): add `--template svelte` to the command.
 {{ if commands["project new portal-extension"] }}
 #### `beam project new portal-extension` options
 | Option | Type | Description |
@@ -71,117 +75,63 @@ The portal extension uses `@beamable/portal-toolkit` which depends on `@beamable
 
 ## Beamable UI Components
 
-Portal extensions use custom elements from `@beamable/portal-toolkit`. These are web components that render inside the Portal's Vuetify-based UI. Use them in Svelte templates as regular HTML elements.
+Portal extensions use components from `@beamable/portal-toolkit`. Always default to **React (LTS-supported)**. Only use Svelte or other frameworks if the user explicitly requests it.
 
-Full component manifest: `node_modules/@beamable/portal-toolkit/custom-elements.json`
+### Finding the component API
 
-### beam-card
+Read the generated TypeScript files in the extension's `node_modules` to discover available components, their props, and usage patterns. The files are at:
 
-Surface container with elevation and rounded corners. Structure content with sub-elements: `beam-card-title`, `beam-card-subtitle`, `beam-card-text`, `beam-card-actions`.
+`extensions/<Name>/node_modules/@beamable/portal-toolkit/src/generated/`
 
-```svelte
-<beam-card elevation="2">
-  <beam-card-title>Player Stats</beam-card-title>
-  <beam-card-subtitle>Last 24 hours</beam-card-subtitle>
-  <beam-card-text>Content goes here</beam-card-text>
-  <beam-card-actions>
-    <beam-btn color="primary">Save</beam-btn>
-  </beam-card-actions>
-</beam-card>
-```
+| Template | Files to read | Import path |
+|----------|--------------|-------------|
+| **React** (default) | `react-components.ts` — display components<br>`react-bindable.ts` — form controls (`onValueChange`/`onCheckedChange` callbacks)<br>`react-custom.ts` — `BeamTable<T>` with marker children<br>`react-markers.ts` — `BeamColumn<T>`, `BeamTopRow`, `BeamGroupHeader` | `@beamable/portal-toolkit/react` |
+| **Svelte** (only if user requests, `--template svelte`) | `svelte-elements.ts` — typed `<beam-*>` web component tags | Add `/// <reference types="@beamable/portal-toolkit/svelte" />` to `app.d.ts` |
+| **Other frameworks** (only if user requests) | `custom-elements.json` (in `node_modules/@beamable/portal-toolkit/`) | Use `<beam-*>` web component tags directly |
 
-### beam-btn
+### Key patterns
 
-Material Design button. Key attributes: `color` (theme name or CSS color), `outlined`, `text`, `block`, `icon` (square icon button), `fab` (circular FAB), `loading` (spinner + disabled), `disabled`, `small`/`large`/`x-small`/`x-large`, `href`, `type`.
-
-```svelte
-<beam-btn color="primary" on:click={handleSave}>Save</beam-btn>
-<beam-btn outlined color="error" on:click={handleDelete}>Delete</beam-btn>
-<beam-btn icon on:click={handleRefresh}><beam-icon icon="mdi-refresh" /></beam-btn>
-<beam-btn loading={isSaving} color="primary">Saving...</beam-btn>
-```
-
-### beam-icon
-
-Renders a Material Design icon by name. Key attributes: `icon` (MDI name, e.g. `mdi-home`, `mdi-refresh`, `mdi-delete`), `color`, `small`/`large`/`x-small`/`x-large`, `left` (margin-right, before text), `right` (margin-left, after text).
-
-```svelte
-<beam-icon icon="mdi-account" color="primary" />
-<beam-btn><beam-icon icon="mdi-plus" left />Add Item</beam-btn>
-```
-
-### beam-data-table
-
-Full-featured data table with sorting, pagination, filtering, and selection. Key attributes: `headers` (array of `{ text, value }`), `items` (row data array), `items-per-page` (default `10`, `-1` for all), `loading`, `search`, `sort-by`, `sort-desc`, `show-select`, `dense`, `fixed-header` (requires `height`), `item-key` (default `id`), `no-data-text`.
-
-```svelte
-<script>
-  const headers = [
-    { text: 'Player', value: 'name' },
-    { text: 'Score', value: 'score' },
-    { text: 'Level', value: 'level' }
-  ];
-  let items = [];
-</script>
-
-<beam-data-table {headers} {items} items-per-page="25" sort-by="score" sort-desc />
-```
-
-**Important**: `headers` and `items` must be passed as JavaScript objects/arrays via Svelte bindings (`{headers}`), not as JSON strings in the attribute.
-
-### beam-alert
-
-Contextual message banner. Key attributes: `type` (`success`, `info`, `warning`, `error`), `color`, `outlined`, `text`, `dense`, `dismissible` (close button — listen for `input` event), `border` (`top`/`right`/`bottom`/`left`), `prominent`.
-
-```svelte
-<beam-alert type="success">Changes saved successfully</beam-alert>
-<beam-alert type="error" prominent>Failed to deploy service</beam-alert>
-```
-
-### beam-chip
-
-Small label for tags, filters, or status indicators. Key attributes: `color`, `outlined`, `close` (dismiss icon — listen for `click:close`), `small`/`large`/`x-small`, `label` (square), `pill` (pill-shaped).
-
-```svelte
-<beam-chip color="primary">Active</beam-chip>
-<beam-chip outlined close on:click:close={handleRemove}>Filter Tag</beam-chip>
-```
-
-### Theme Colors
-
-All components accept Portal theme color names for `color`: `primary`, `secondary`, `accent`, `error`, `info`, `success`, `warning`. Prefer these over hardcoded CSS colors for Portal-consistent theming.
+- **In React, import `BeamX` components** from `@beamable/portal-toolkit/react` — do NOT use `<beam-x>` web component tags in TSX. The typed React forwarders provide full prop autocompletion.
+- **Form controls** in `react-bindable.ts` use typed callbacks: `onValueChange` (for string/number inputs) and `onCheckedChange` (for checkbox/switch). Use these instead of raw `onChange`.
+- **`BeamTable<T>`** uses `BeamColumn<T>` marker children to define columns (see `react-custom.ts` and `react-markers.ts`) — not a flat `headers` array.
+- **Components delegate to the host portal** at runtime via `window.__beamPortal.react` — they only render inside the Portal. The toolkit ships forwarder shells, not the actual implementations.
+- **Styling** uses `variant` and `appearance` props — not hardcoded CSS colors. Read the component interfaces for available values.
 
 ## Common Pitfalls
 - **Never guess mount values.** Valid pages and selectors come from a remote config that changes between Portal versions. Always call `list-extension-options` first.
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
-- **Portal extensions use Svelte, not React.** The default `--service-directory` for portal extensions is `extensions/`, not `services/`.
-- **Use `beam-*` components, not raw HTML.** Portal extensions render inside the Portal's Vuetify UI. Use `beam-card`, `beam-btn`, `beam-alert`, etc. for consistent theming. Check `custom-elements.json` for the full API.
+- **Always default to React.** React is the LTS-supported template. Only use `--template svelte` or other frameworks if the user explicitly asks for it.
+- **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
+- **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
+- **The `--service-directory` for portal extensions is `extensions/`**, not `services/`.
 
 ## Generated microservice clients
 
 When `portal extension add-microservice` generates clients:
-- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.js` (JavaScript, not TypeScript)
+- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.ts` (TypeScript for React template, `.js` for Svelte template)
 - The client class extends `BeamMicroServiceClient` from `@beamable/sdk`
-- Import path uses `.js` extension: `import { MyServiceClient } from '../beamable/clients/MyServiceClient.js'`
+- Import in React: `import { MyServiceClient } from '../beamable/clients/MyServiceClient'`
+- Import in Svelte: `import { MyServiceClient } from '../beamable/clients/MyServiceClient.js'`
 
 ## Wrap-Up
 
 After completing the workflow, provide the user with a summary that covers:
 
-1. **What was created**: The portal extension name, and whether it is a page extension (new navigation entry) or a component extension (injected into an existing page).
+1. **What was created**: The portal extension name, template used (React or Svelte), and whether it is a page extension (new navigation entry) or a component extension (injected into an existing page).
 2. **Where the files live**:
-   - Extension project root: `extensions/<Name>/` — contains the Svelte source.
-   - Entry point: `extensions/<Name>/src/App.svelte` — the main component rendered by the Portal. Uses `@beamable/portal-toolkit` which provides custom elements: `beam-card`, `beam-btn`, `beam-data-table`, etc.
+   - Extension project root: `extensions/<Name>/` — contains the extension source.
+   - Entry point: `extensions/<Name>/src/App.tsx` (React) or `extensions/<Name>/src/App.svelte` (Svelte).
+   - Components: Import from `@beamable/portal-toolkit/react` (React) or use `<beam-*>` web component tags (Svelte).
    - Package config: `extensions/<Name>/package.json` — dependencies including `@beamable/portal-toolkit`.
-   - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated JavaScript clients for calling microservice endpoints.
+   - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated typed clients for calling microservice endpoints.
    - Service manifest: `.beamable/beamoLocalManifest.json` — tracks the extension alongside other services.
 3. **Why specific choices were made** — explain the reasoning:
    - **Mount point chosen**: Why this `--mount-page` and `--mount-selector` — what Portal page it extends and where in the UI it appears. For page extensions, explain what the nav group and label mean for Portal navigation.
    - **Page vs component**: Why this extension type was chosen — page extensions are standalone features with their own route, while component extensions augment existing Portal pages at specific insertion points.
    - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the extension can call `[ClientCallable]` endpoints, and that the microservice must be running (locally or deployed) for those calls to work.
-4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes to the Svelte source hot-reload in the browser.
+4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes hot-reload in the browser.
 
 ## CLI Version Awareness
 
