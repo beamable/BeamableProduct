@@ -67,7 +67,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 			if (root[EXTENSION_BEAMABLE_PROPERTY_NAME] == null)
 			{
 				throw new CliException(
-					$"Field {EXTENSION_BEAMABLE_PROPERTY_NAME} expected in extension pakage.json file");
+					$"Field {EXTENSION_BEAMABLE_PROPERTY_NAME} expected in extension package.json file");
 			}
 
 			root[EXTENSION_BEAMABLE_PROPERTY_NAME][EXTENSION_DEPENDENCIES_PROPERTY_NAME] =
@@ -118,7 +118,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 		JObject root = JObject.Parse(jsonContent);
 
-		JToken deps = root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_DEPENDENCIES_PROPERTY_NAME];
+		JToken deps = root[EXTENSION_BEAMABLE_PROPERTY_NAME][EXTENSION_DEPENDENCIES_PROPERTY_NAME];
 
 		if (deps is { Type: JTokenType.Array })
 		{
