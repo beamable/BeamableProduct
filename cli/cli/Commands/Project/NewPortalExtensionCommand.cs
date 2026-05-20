@@ -16,6 +16,22 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public string mountLabel;
 	public int mountGroupOrder;
 	public int mountLabelOrder;
+	public string template;
+}
+
+public static class PortalExtensionTemplates
+{
+	public const string Svelte = "svelte";
+	public const string React = "react";
+
+	public static readonly string[] All = { Svelte, React };
+
+	public static string ToDotnetTemplateShortName(string template) => template switch
+	{
+		React => "portalextensionreactapp",
+		Svelte => "portalextensionapp",
+		_ => throw new CliException($"Unknown portal-extension template '{template}'. Valid values: {string.Join(", ", All)}")
+	};
 }
 
 
@@ -67,12 +83,24 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				aliases: new string[] { "--mount-label-order" },
 				description: "Specify the order of the mount label"),
 			binder: (args, i) => args.mountLabelOrder = i);
+
+		AddOption(new Option<string>(
+				aliases: new string[] { "--template" },
+				getDefaultValue: () => PortalExtensionTemplates.React,
+				description: "UI framework template to scaffold the extension with. Allowed values: svelte, react"),
+			binder: (args, i) => args.template = i);
 	}
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
 	{
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
 			throw new CliException("Not all required dependencies exist. Aborting.");
+
+		if (string.IsNullOrWhiteSpace(args.template))
+			args.template = PortalExtensionTemplates.Svelte;
+		args.template = args.template.ToLowerInvariant();
+		if (!PortalExtensionTemplates.All.Contains(args.template))
+			throw new CliException($"Invalid --template value '{args.template}'. Allowed values: {string.Join(", ", PortalExtensionTemplates.All)}");
 
 		var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
 		BuildMountSiteIndex(config,

@@ -6,6 +6,7 @@
  *   - web-types.json             (JetBrains IDE autocomplete)
  *   - src/globals.ts             (TypeScript HTMLElementTagNameMap augmentations)
  *   - src/svelte-elements.ts     (Svelte SvelteHTMLElements augmentations)
+ *   - src/react-elements.ts      (React JSX IntrinsicElements augmentations)
  *
  * By default also copies custom-elements.json from the agentic-portal repo
  * into this project's custom-elements.json first. Pass --no-copy to skip that
@@ -46,6 +47,8 @@ const cemDest = resolve(root, 'custom-elements.json');
 const webTypesDest = resolve(root, 'src/generated/web-types.json');
 const globalsDest = resolve(root, 'src/generated/globals.ts');
 const svelteElementsDest = resolve(root, 'src/generated/svelte-elements.ts');
+const reactElementsDest = resolve(root, 'src/generated/react-elements.ts');
+const reactComponentsDest = resolve(root, 'src/generated/react-components.ts');
 
 // ---------------------------------------------------------------------------
 // Step 1: Read (and optionally copy) CEM
@@ -337,5 +340,227 @@ export {};
 
 writeFileSync(svelteElementsDest, svelteElementsTs);
 console.log(`✓ Generated   →  src/generated/svelte-elements.ts`);
+
+// ---------------------------------------------------------------------------
+// Step 6: Generate src/generated/react-elements.ts
+// ---------------------------------------------------------------------------
+
+// Same attribute set as Svelte (kebab-case attribute names), but typed against
+// React's HTMLAttributes/DetailedHTMLProps and surfaced via JSX.IntrinsicElements.
+const reactElementEntries = declarations.map((decl) => {
+  const attrs = (decl.attributes ?? [])
+    .map((a) => {
+      const key = a.name.includes('-') ? `'${a.name}'` : a.name;
+      return `      ${key}?: ${toTsType(a.type?.text)};`;
+    })
+    .join('\n');
+
+  const body = attrs || '      // No attributes defined in CEM.';
+  return `    '${decl.tagName}': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {\n${body}\n    };`;
+});
+
+const reactElementsTs = `// AUTO-GENERATED — do not edit manually.
+// Run \`pnpm sync-components\` to regenerate from agentic-portal's custom-elements.json.
+//
+// Augments React's JSX.IntrinsicElements so .tsx files get autocomplete and
+// per-attribute typing for Beamable web components.
+//
+// Add one line to your project's app.d.ts (or any .d.ts file):
+//   /// <reference types="@beamable/portal-toolkit/react" />
+//
+// React 19 hosts the JSX namespace inside the \`react\` module rather than on
+// the global \`JSX\` namespace, so we augment via \`declare module 'react'\`.
+
+declare module 'react' {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+${reactElementEntries.join('\n\n')}
+    }
+  }
+}
+
+export {};
+`;
+
+writeFileSync(reactElementsDest, reactElementsTs);
+console.log(`✓ Generated   →  src/generated/react-elements.ts`);
+
+// ---------------------------------------------------------------------------
+// Step 7: Generate src/generated/react-components.ts
+// ---------------------------------------------------------------------------
+//
+// Real React forwarder components — one per CEM custom element except the
+// ones we hand-write (BeamTable; see `react-custom.ts`). Each forwarder looks
+// the host's `Beam*` component up off `window.__beamPortal.react` at render
+// time and returns `createElement(host, { ...props, ref })`.
+//
+// Prop shape: each component emits a `BeamFooProps` interface that mirrors
+// the `react-elements.d.ts` attribute set + standard React HTMLAttributes.
+// This is the same surface authors get today by writing `<beam-foo …>` raw,
+// so migrating to `<BeamFoo …>` is a name change only.
+
+/** Components that have hand-written wrappers in `react-custom.ts`. */
+const REACT_HANDWRITTEN = new Set(['beam-table']);
+
+/** Bindable components — input-like components whose React wrappers
+ *  surface typed `onValueChange` / `onCheckedChange` callbacks for ergonomic
+ *  controlled-component usage. We generate a separate `react-bindable.ts`
+ *  file for these: same attribute shape as the regular auto-generated
+ *  forwarders, plus the bindable callbacks. */
+const REACT_BINDABLE = {
+  'beam-input':        { mode: 'value',   valueType: 'string', hasInput: true },
+  'beam-textarea':     { mode: 'value',   valueType: 'string', hasInput: true },
+  'beam-select':       { mode: 'value',   valueType: 'string', hasInput: false },
+  'beam-checkbox':     { mode: 'checked' },
+  'beam-switch':       { mode: 'checked' },
+  'beam-radio-group':  { mode: 'value',   valueType: 'string', hasInput: false },
+  'beam-slider':       { mode: 'value',   valueType: 'number', hasInput: true },
+  'beam-rating':       { mode: 'value',   valueType: 'number', hasInput: false },
+  'beam-color-picker': { mode: 'value',   valueType: 'string', hasInput: true },
+  'beam-number-input': { mode: 'value',   valueType: 'number', hasInput: true },
+};
+const REACT_BINDABLE_TAGS = new Set(Object.keys(REACT_BINDABLE));
+
+/** 'beam-some-thing' → 'BeamSomeThing' */
+function toReactName(tagName) {
+  return toPascalCase(tagName);
+}
+
+const reactComponentDeclarations = declarations.filter(
+  (d) => !REACT_HANDWRITTEN.has(d.tagName) && !REACT_BINDABLE_TAGS.has(d.tagName),
+);
+const reactBindableDeclarations = declarations.filter((d) => REACT_BINDABLE_TAGS.has(d.tagName));
+
+const reactComponentEntries = reactComponentDeclarations.map((decl) => {
+  const propsName = `${toReactName(decl.tagName)}Props`;
+  const componentName = toReactName(decl.tagName);
+
+  const attrs = (decl.attributes ?? [])
+    .map((a) => {
+      const key = a.name.includes('-') ? `'${a.name}'` : a.name;
+      return `  ${key}?: ${toTsType(a.type?.text)};`;
+    })
+    .join('\n');
+
+  const propsBody = attrs || '  // No attributes defined in CEM.';
+
+  // Use a plain function instead of `forwardRef`. React 19 supports `ref` as
+  // a regular prop, and the tsdown declaration bundler preserves the prop
+  // types on plain function components — `forwardRef`'s exotic-component
+  // return type collapses to `any` after bundling.
+  return `export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+${propsBody}
+}
+
+export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('${componentName}'), props);
+}
+${componentName}.displayName = '${componentName}';`;
+});
+
+const reactComponentsTs = `// AUTO-GENERATED — do not edit manually.
+// Run \`pnpm sync-components\` to regenerate from agentic-portal's custom-elements.json.
+//
+// React forwarder components for every \`beam-*\` web element. Each one
+// resolves the host portal's real implementation at render time via
+// \`window.__beamPortal.react.<Name>\` and renders it with the forwarded
+// props + ref. The toolkit ships only the forwarder shell; the host owns
+// the implementation, so a bugfix in the host doesn't require republishing
+// the toolkit or rebuilding every extension.
+//
+// React 19's ref-as-prop semantics let us use plain function components
+// instead of \`forwardRef\` — that keeps the dts bundler from collapsing
+// each component to \`any\`.
+
+import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
+import { hostComponent } from './react-host';
+
+${reactComponentEntries.join('\n\n')}
+`;
+
+writeFileSync(reactComponentsDest, reactComponentsTs);
+console.log(
+  `✓ Generated   →  src/generated/react-components.ts  (${reactComponentDeclarations.length} components)`,
+);
+
+// ---------------------------------------------------------------------------
+// Step 8: Generate src/generated/react-bindable.ts
+// ---------------------------------------------------------------------------
+//
+// Same forwarder pattern as `react-components.ts`, but for input-like
+// components — adds typed `onValueChange` / `onValueInput` (value-bound) or
+// `onCheckedChange` (checked-bound) callbacks alongside the standard
+// `onChange` / `onInput`. The host's wrapper (see the portal's
+// `beam-components/react.ts`) does the actual event interception and
+// value extraction; the toolkit forwarder only needs to declare the
+// callbacks in its prop type so authors get IntelliSense.
+
+const reactBindableDest = resolve(root, 'src/generated/react-bindable.ts');
+
+const reactBindableEntries = reactBindableDeclarations.map((decl) => {
+  const meta = REACT_BINDABLE[decl.tagName];
+  const propsName = `${toReactName(decl.tagName)}Props`;
+  const componentName = toReactName(decl.tagName);
+
+  const attrs = (decl.attributes ?? [])
+    .map((a) => {
+      const key = a.name.includes('-') ? `'${a.name}'` : a.name;
+      return `  ${key}?: ${toTsType(a.type?.text)};`;
+    })
+    .join('\n');
+
+  const attrsBody = attrs || '  // No attributes defined in CEM.';
+
+  const callbacks = [];
+  if (meta.mode === 'value') {
+    callbacks.push(`  /** Fired on commit (change). Receives the typed value. */`);
+    callbacks.push(`  onValueChange?: (value: ${meta.valueType}) => void;`);
+    if (meta.hasInput) {
+      callbacks.push(`  /** Fired continuously while the user edits. Receives the typed value. */`);
+      callbacks.push(`  onValueInput?: (value: ${meta.valueType}) => void;`);
+    }
+  } else {
+    callbacks.push(`  /** Fired when the checked state toggles. Receives the new boolean. */`);
+    callbacks.push(`  onCheckedChange?: (checked: boolean) => void;`);
+  }
+  const callbackBlock = callbacks.join('\n');
+
+  return `export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+${attrsBody}
+${callbackBlock}
+}
+
+export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('${componentName}'), props);
+}
+${componentName}.displayName = '${componentName}';`;
+});
+
+const reactBindableTs = `// AUTO-GENERATED — do not edit manually.
+// Run \`pnpm sync-components\` to regenerate from agentic-portal's custom-elements.json.
+//
+// React forwarder components for input-like \`beam-*\` elements that support
+// controlled-component binding. Same pattern as \`react-components.ts\`, plus
+// typed value callbacks:
+//
+//   <BeamInput     value={x} onValueChange={setX} />   // (value: string) => void
+//   <BeamSlider    value={x} onValueChange={setX} />   // (value: number) => void
+//   <BeamCheckbox  checked={x} onCheckedChange={setX} /> // (checked: boolean) => void
+//   <BeamNumberInput value={x} onValueChange={setX} /> // empty → NaN
+//
+// The standard \`onChange\` / \`onInput\` still works and fires alongside —
+// these callbacks are purely additive.
+
+import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
+import { hostComponent } from './react-host';
+
+${reactBindableEntries.join('\n\n')}
+`;
+
+writeFileSync(reactBindableDest, reactBindableTs);
+console.log(
+  `✓ Generated   →  src/generated/react-bindable.ts   (${reactBindableDeclarations.length} components)`,
+);
 
 console.log(`\nDone. Run \`pnpm build\` to compile the updated types.\n`);
