@@ -31,7 +31,7 @@
       "subText": "accounts",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Profiles_Violet@3x.png",
       "relativeMainAssetPath": "Sample_AccountManager.unity",
-      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/account-management"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-account/"
     },
     {
       "displayName": "Inventory Management",
@@ -40,7 +40,7 @@
       "subText": "inventory",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Currency_Violet@3x.png",
       "relativeMainAssetPath": "Sample_InventoryManager.unity",
-      "docsUrl": "https://help.beamable.com/Unity-4.0/unity/user-reference/beamable-services/game-economy/inventory-overview/-overview"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-inventory/"
     },
     {
       "displayName": "Friends Management",
@@ -49,7 +49,7 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Serve_Violet@3x.png",
       "relativeMainAssetPath": "Sample_FriendsManager.unity",
-      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-account/"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-friends/"
     },
     {
       "displayName": "Lobby Management",
@@ -58,7 +58,7 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/BattleTested_Violet@3x.png",
       "relativeMainAssetPath": "Sample_LobbyManager.unity",
-      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/user-reference/beamable-services/social-networking/lobbies/"
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-lobby/"
     },
     {
       "displayName": "Loot Box",
@@ -66,6 +66,7 @@
       "path": "SAMPLES_PATH/LightBeamSamples/LootBox",
       "subText": "microservice",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Inventory_Violet@3x.png",
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-loot/",
       "relativeMainAssetPath": "Sample_LootBox.unity"
     },
     {
@@ -74,6 +75,7 @@
       "path": "SAMPLES_PATH/LightBeamSamples/CloudSaving",
       "subText": "data",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/CloudDataToMicroServices_Violet@3x.png",
+      "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-cloud/",
       "relativeMainAssetPath": "Sample_CloudSaving.unity"
     }
   ]
