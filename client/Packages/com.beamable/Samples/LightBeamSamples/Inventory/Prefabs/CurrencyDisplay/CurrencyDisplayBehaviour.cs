@@ -33,16 +33,21 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 
 	private void Refresh()
 	{
-		typeText.text = $"Name: {_model.Content.name}";
+		typeText.text = _model.Content.ContentName;
 		idText.text = $"Amount: {_model.Amount}";
 
 		icon.sprite = null;
-		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
+		if (_model.Content.icon != null)
 		{
 			_model.Content.icon.LoadSprite().Then((sprite) =>
 			{
 				icon.sprite = sprite;
+				icon.gameObject.SetActive(true);
 			});
+		}
+		else
+		{
+			icon.gameObject.SetActive(false);
 		}
 	}
 }

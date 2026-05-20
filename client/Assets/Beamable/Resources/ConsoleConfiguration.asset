@@ -13,4 +13,3 @@ MonoBehaviour:
   m_Name: ConsoleConfiguration
   m_EditorClassIdentifier: 
   ToggleKey: 96
-  ForceEnabled: 1

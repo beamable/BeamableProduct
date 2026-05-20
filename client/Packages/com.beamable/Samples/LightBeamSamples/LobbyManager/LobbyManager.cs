@@ -2,6 +2,7 @@ using Beamable;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
+using UnityEngine.UI;
 using Lobby = Beamable.Experimental.Api.Lobbies.Lobby;
 using LobbyPlayer = Beamable.Experimental.Api.Lobbies.LobbyPlayer;
 
@@ -10,6 +11,7 @@ public class LobbyManager : MonoBehaviour
 	[Header("Scene references")]
 	public RectTransform root;
 	public CanvasGroup loadingBlocker;
+	public Button InfoButton;
 
 	[Header("Asset references")]
 	public LobbyExampleConfig config;
@@ -32,5 +34,7 @@ public class LobbyManager : MonoBehaviour
 		});
 
 		await lightBeam.Scope.Start<HomePage>();
+		
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam-lobby/"));
 	}
 }
