@@ -42,8 +42,8 @@
         <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 
-        <None Include="Runtime/**/*.cs" PackagePath="content/netstandard2.0/Runtime" Pack="True" />
-        <None Include="SharedRuntime/**/*.cs" PackagePath="content/netstandard2.0/SharedRuntime" Pack="True" />
+        <None Include="Runtime/**/*.cs" PackagePath="content/sourceCode/Runtime" Pack="True" />
+        <None Include="SharedRuntime/**/*.cs" PackagePath="content/sourceCode/SharedRuntime" Pack="True" />
     </ItemGroup>
     
 </Project>

@@ -42,9 +42,14 @@ public class ServicesPromoteCommand : AtomicCommand<ServicesPromoteCommandArgs, 
 		var realms = await _realms.GetRealms(_ctx.Pid);
 		var possiblePids = realms.Select(r => r.Pid);
 		if (string.IsNullOrEmpty(args.SourcePid))
+		{
+			if (args.Quiet)
+				throw new CliException("--source-pid is required when using -q (quiet mode). Use --source-pid <pid> to specify the realm to promote from.");
+
 			args.SourcePid = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]PID[/] to Promote to the current realm:")
 				.AddChoices(possiblePids)
 				.AddBeamHightlight());
+		}
 
 		ManifestChecksums response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)

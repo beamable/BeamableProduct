@@ -60,9 +60,11 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 			return;
 		}
 		
+		if (args.Quiet)
+			throw new CliException("--project-name is required when using -q (quiet mode) with multiple Unreal projects linked.");
 		var projectSelection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
-				.Title("Which [green]project[/] do you want to add the Replacement Type?")
+				.Title("Which [green]project[/] do you want to remove the Replacement Type from?")
 				.AddChoices(unrealProjects.Select(item => item.GetProjectName()))
 				.AddBeamHightlight()
 		);
@@ -85,6 +87,8 @@ public class RemoveReplacementTypeCommand : AppCommand<RemoveReplacementTypeComm
 	{
 		if (string.IsNullOrEmpty(args.ReferenceId))
 		{
+			if (args.Quiet)
+				throw new CliException("--reference-id is required when using -q (quiet mode).");
 			return Task.FromResult(AnsiConsole.Prompt(
 				new TextPrompt<string>("Please enter the Replacement [green]Reference Id[/]:").PromptStyle("green")));
 		}
