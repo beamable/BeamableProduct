@@ -99,7 +99,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		}
 
 		// Make it a clean generation every time.
-		if (outputData)
+		if (outputData && Directory.Exists(args.OutputPath))
 		{
 			switch (args.CleaningStrategy)
 			{

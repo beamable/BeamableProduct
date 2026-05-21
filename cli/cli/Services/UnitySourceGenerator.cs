@@ -76,6 +76,9 @@ public class RequiredOneOfInterface
 	public CodeTypeDeclaration type;
 	public CodeTypeDeclaration optionalType;
 	public CodeTypeDeclaration serializationFactoryType;
+	// Populated only for primitive-oneOf wrappers when an array branch is present, so the
+	// generated wrapper's `OptionalArrayOf{Name}` field has a concrete companion class.
+	public CodeTypeDeclaration optionalArrayType;
 }
 
 public static class UnityHelper
@@ -117,9 +120,10 @@ public static class UnityHelper
 			{
 				if (!oneOfs.ContainsKey(oneOf.interfaceName))
 				{
-					root.Types.Add(oneOf.type);
-					root.Types.Add(oneOf.optionalType);
-					root.Types.Add(oneOf.serializationFactoryType);
+					if (oneOf.type != null) root.Types.Add(oneOf.type);
+					if (oneOf.optionalType != null) root.Types.Add(oneOf.optionalType);
+					if (oneOf.serializationFactoryType != null) root.Types.Add(oneOf.serializationFactoryType);
+					if (oneOf.optionalArrayType != null) root.Types.Add(oneOf.optionalArrayType);
 					oneOfs.Add(oneOf.interfaceName, oneOf);
 				}
 			}
@@ -147,6 +151,9 @@ public static class UnityHelper
 		// handle oneOf interface matching...
 		foreach (var (interfaceName, requiredOneOfInterface) in oneOfs)
 		{
+			// Primitive-oneOf wrappers have no reference children to back-stitch — skip them.
+			if (requiredOneOfInterface.childTypeSchemas == null) continue;
+
 			foreach (var childSchema in requiredOneOfInterface.childTypeSchemas)
 			{
 				if (childSchema.Reference == null)
@@ -160,6 +167,34 @@ public static class UnityHelper
 				}
 
 				childType.Model.BaseTypes.Add(interfaceName);
+			}
+		}
+
+		// Service method parameters reference Optional* companion types (see line ~656 in
+		// GenerateApiMethod) but the model-field loop above doesn't see them — so without this
+		// pre-scan, Optional companions used only by query/path params get pruned and the
+		// service file fails to compile. Walk every operation parameter and bump its named
+		// Optional reference count.
+		foreach (var document in context.Documents)
+		{
+			if (document?.Paths == null) continue;
+			foreach (var path in document.Paths)
+			{
+				foreach (var operation in path.Value.Operations)
+				{
+					foreach (var param in operation.Value.Parameters)
+					{
+						if (param.Required) continue;
+						var schema = param.Schema;
+						if (schema == null) continue;
+						var optionalTypeName = new GenSchema(schema).GetOptionalTypeReference().BaseType;
+						if (!nameToRefCount.TryGetValue(optionalTypeName, out var existing))
+						{
+							existing = 0;
+						}
+						nameToRefCount[optionalTypeName] = existing + 1;
+					}
+				}
 			}
 		}
 
@@ -263,6 +298,8 @@ public static class UnityHelper
 
 		foreach (var oneOf in oneOfs) // TODO: wait, we don't need to do this for services that don't reference the oneOf
 		{
+			// Primitive-oneOf wrappers serialize via their own SerializeAt helper and have no factory.
+			if (oneOf.Value.serializationFactoryType == null) continue;
 			var createInstanceExpr = new CodeObjectCreateExpression(new CodeTypeReference(oneOf.Value.serializationFactoryType.Name));
 			cons.Statements.Add(new CodeMethodInvokeExpression(referenceFactories, nameof(List<int>.Add),
 				createInstanceExpr));
@@ -438,6 +475,7 @@ public static class UnityHelper
 
 		var operationName = methodPrefix + operation.Key + methodName;
 		var returnType = new CodeTypeReference(nameof(Promise));
+		EnsureNotPrimitiveOneOfBody(mediaResponse.Schema, pathName, operation.Key, "response");
 		var responseType = new CodeTypeReference(mediaResponse.Schema.Reference.Id);
 
 		// string csvOrder = null;
@@ -504,6 +542,11 @@ public static class UnityHelper
 
 		foreach (var param in parameters)
 		{
+			if (param.Schema == null)
+			{
+				Log.Warning(
+					$"Operation parameter has no schema; defaulting to string. path=[{pathName}] httpMethod=[{operation.Key}] methodPrefix=[{methodPrefix}] methodName=[{methodName}] param=[{param.Name}] in=[{param.In}] ref=[{param.Reference?.Id}]");
+			}
 			var genSchema = new GenSchema(param.Schema);
 
 			methodComments.Add($"<param name=\"{param.Name}\">{param.Description }</param>");
@@ -554,6 +597,7 @@ public static class UnityHelper
 		if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
 		{
 			hasReqBody = true;
+			EnsureNotPrimitiveOneOfBody(requestMediaType.Schema, pathName, operation.Key, "request");
 			methodComments.Add($"<param name=\"{varReq}\">The <see cref=\"{requestMediaType.Schema.Reference.Id}\"/> instance to use for the request</param>");
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
@@ -860,6 +904,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"OptionalMapOf{className}";
 
@@ -883,6 +928,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"MapOf{className}";
 
@@ -921,6 +967,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"OptionalMapOfArrayOf{className}";
 				var type = new CodeTypeDeclaration();
@@ -943,6 +990,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"OptionalArrayOfMapOf{className}";
 				var type = new CodeTypeDeclaration();
@@ -965,6 +1013,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"MapOfArrayOf{className}";
 				var type = new CodeTypeDeclaration();
@@ -990,6 +1039,7 @@ public static class UnityHelper
 		{
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"ArrayOfMapOf{className}";
 				var type = new CodeTypeDeclaration();
@@ -1028,11 +1078,13 @@ public static class UnityHelper
 	public static CodeTypeDeclaration GenerateOptionalArrayDecl(string name, OpenApiSchema schema)
 	{
 		bool isEnum = schema.Enum.Count > 0;
+		bool isPrimitiveOneOf = schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf);
 		switch (schema.Type, schema.Format, isEnum)
 		{
 			case ("array", _, _):
 			case ("object", _, _):
 			case (_, _, true):
+			case (_, _, _) when isPrimitiveOneOf:
 				var className = SanitizeClassName(name);
 				var optionalClassName = $"OptionalArrayOf{className}";
 				var type = new CodeTypeDeclaration();
@@ -1065,6 +1117,36 @@ public static class UnityHelper
 				return type;
 		}
 		return null;
+	}
+
+	/// <summary>
+	/// Builds an <c>OptionalArrayOf{Name}</c> companion for an inline primitive-oneOf wrapper.
+	/// Mirrors the body produced by <see cref="GenerateOptionalArrayDecl(string, OpenApiSchema)"/>
+	/// for the array/object/enum cases, but without needing an <see cref="OpenApiSchema"/> to drive it.
+	/// </summary>
+	public static CodeTypeDeclaration GenerateOptionalArrayDeclForPrimitiveOneOf(string name)
+	{
+		var className = SanitizeClassName(name);
+		var optionalClassName = $"OptionalArrayOf{className}";
+		var type = new CodeTypeDeclaration { Name = optionalClassName };
+		type.CustomAttributes.Add(new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
+
+		var baseType = new CodeTypeReference(typeof(OptionalArray<>));
+		baseType.TypeArguments.Add(new CodeTypeReference(className));
+		type.BaseTypes.Add(baseType);
+
+		type.Members.Add(new CodeConstructor { Attributes = MemberAttributes.Public });
+
+		var typedCons = new CodeConstructor { Attributes = MemberAttributes.Public };
+		var argType = new CodeTypeReference(className) { ArrayRank = 1 };
+		typedCons.Parameters.Add(new CodeParameterDeclarationExpression(argType, "value"));
+		typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional.HasValue)),
+			new CodePrimitiveExpression(true)));
+		typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional<int>.Value)),
+			new CodeVariableReferenceExpression("value")));
+		type.Members.Add(typedCons);
+
+		return type;
 	}
 
 	public static CodeTypeDeclaration GenerateOptionalDecl(string name)
@@ -1119,6 +1201,7 @@ public static class UnityHelper
 			case ("string", _) when schema.Enum?.Count > 0:
 			case ("array", _):
 			case ("object", _):
+			case (_, _) when schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf):
 				return GenerateOptionalDecl(name);
 		}
 		// we don't need anything, because the primitive types are already included in the code base.
@@ -1241,6 +1324,12 @@ public static class UnityHelper
 			return;
 		}
 
+		if (schema.OneOf?.Count > 0 && IsAllPrimitive(schema.OneOf))
+		{
+			generatedModel = BuildPrimitiveOneOfWrapper(name, schema.OneOf);
+			return;
+		}
+
 		var type = new CodeTypeDeclaration(SanitizeClassName(name));
 
 		// make the type partial, so that we can extend it manually...
@@ -1301,14 +1390,32 @@ public static class UnityHelper
 			var isPolymorphArray = fieldSchema.Items?.OneOf?.Count > 0;
 			var isPolymorphObject = fieldSchema.OneOf?.Count > 0;
 			var isPolymorph = isPolymorphArray || isPolymorphObject;
-			var isRequired = isPolymorph || schema.Required.Contains(fieldApiName);
+			var isPrimitiveOneOfInline = isPolymorphObject && IsAllPrimitive(fieldSchema.OneOf);
+			var isPrimitiveOneOfRef = IsPrimitiveOneOfRef(fieldSchema);
+			var isPrimitiveOneOf = isPrimitiveOneOfInline || isPrimitiveOneOfRef;
+			var isRequired = isPolymorph || isPrimitiveOneOf || schema.Required.Contains(fieldApiName);
 
 			// add the field to the model type.
 			var field = GenerateField(fieldApiName, fieldSchema, isRequired);
+			if (isPrimitiveOneOf && field.InitExpression == null)
+			{
+				// Inline primitive-oneOf fields have no schema.Reference and no schema.Type=="object",
+				// so GenerateField skips the initExpression by default. Force it so save-side never NREs.
+				field.InitExpression = new CodeObjectCreateExpression(field.Type);
+			}
 			type.Members.Add(field);
 
 			// add the field's serialization to the serializeMethod.
-			var serializationStatement = GenerateSerializationStatement(type, fieldSchema, field, fieldApiName, isRequired);
+			CodeStatement serializationStatement;
+			if (isPrimitiveOneOf)
+			{
+				serializationStatement = new CodeExpressionStatement(new CodeSnippetExpression(
+					$"this.{field.Name}.SerializeAt({PARAM_SERIALIZER}, \"{fieldApiName}\")"));
+			}
+			else
+			{
+				serializationStatement = GenerateSerializationStatement(type, fieldSchema, field, fieldApiName, isRequired);
+			}
 			if (serializationStatement != null)
 			{
 				serializeMethod.Statements.Add(serializationStatement);
@@ -1329,6 +1436,21 @@ public static class UnityHelper
 			RequiredOneOfInterface HandleOneOf(IList<OpenApiSchema> oneOf)
 			{
 				var interfaceName = OneOfClassName(oneOf);
+
+				if (IsAllPrimitive(oneOf))
+				{
+					var hasArrayBranch = oneOf.Any(c => c?.Type == "array");
+					return new RequiredOneOfInterface
+					{
+						interfaceName = interfaceName,
+						childTypeSchemas = null,
+						type = BuildPrimitiveOneOfWrapper(interfaceName, oneOf),
+						optionalType = GenerateOptionalDecl(interfaceName),
+						serializationFactoryType = null,
+						optionalArrayType = hasArrayBranch ? GenerateOptionalArrayDeclForPrimitiveOneOf(interfaceName) : null
+					};
+				}
+
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
 				innerInterface.IsPartial = true;
@@ -1344,6 +1466,10 @@ public static class UnityHelper
 				factoryType.Members.Add(factoryConstructor);
 				foreach (var child in oneOf)
 				{
+					if (string.IsNullOrEmpty(child?.Reference?.Id))
+					{
+						
+					}
 					var childClassName = SanitizeClassName(child.Reference.Id);
 					var referencedSchema = schema.Reference.HostDocument.Components.Schemas[child.Reference.Id];
 					if (!referencedSchema.Properties.TryGetValue("type", out var childTypeProperty))
@@ -1427,8 +1553,262 @@ public static class UnityHelper
 
 	public static string OneOfClassName(IList<OpenApiSchema> schemas)
 	{
-		var oneOfStrs = string.Join("Or", schemas.Select(x => x.Title.Capitalize()).ToList());
-		return "IOneOf_" + oneOfStrs;
+		var oneOfStrs = string.Join("Or", schemas.Select(x =>
+		{
+			if (string.IsNullOrEmpty(x.Title))
+			{
+				return x.Type.Capitalize();
+			}
+			return x.Title.Capitalize();
+		}).ToList());
+		var prefix = IsAllPrimitive(schemas) ? "OneOf_" : "IOneOf_";
+		return prefix + oneOfStrs;
+	}
+
+	/// <summary>
+	/// True when every child of a oneOf is a primitive (string / integer / number / boolean)
+	/// or an array of primitives — i.e., no <c>$ref</c> to a discriminated schema. This is the
+	/// gate that selects the "primitive oneOf wrapper" code path instead of the
+	/// interface+TypeLookupFactory path that the rest of the generator assumes.
+	/// </summary>
+	public static bool IsAllPrimitive(IList<OpenApiSchema> oneOf)
+	{
+		if (oneOf == null || oneOf.Count == 0) return false;
+		foreach (var child in oneOf)
+		{
+			if (!IsPrimitiveSchema(child)) return false;
+		}
+		return true;
+	}
+
+	private static bool IsPrimitiveSchema(OpenApiSchema s)
+	{
+		if (s == null) return false;
+		if (!string.IsNullOrEmpty(s.Reference?.Id)) return false;
+		switch (s.Type)
+		{
+			case "string":
+			case "integer":
+			case "number":
+			case "boolean":
+				return true;
+			case "array":
+				if (s.Items == null) return false;
+				if (IsPrimitiveSchema(s.Items)) return true;
+				if (s.Items.OneOf != null && s.Items.OneOf.Count > 0)
+				{
+					foreach (var inner in s.Items.OneOf)
+					{
+						if (!IsPrimitiveSchema(inner)) return false;
+					}
+					return true;
+				}
+				return false;
+			default:
+				return false;
+		}
+	}
+
+	/// <summary>
+	/// True when the referenced schema is itself an all-primitive oneOf. Used to detect properties
+	/// declared as <c>{ "$ref": "#/components/schemas/StatsValue" }</c> that should be emitted via
+	/// <c>SerializeAt</c> instead of the default <c>Serialize(key, ref ...)</c> path.
+	/// </summary>
+	public static bool IsPrimitiveOneOfRef(OpenApiSchema fieldSchema)
+	{
+		var refId = fieldSchema?.Reference?.Id;
+		if (string.IsNullOrEmpty(refId)) return false;
+		var host = fieldSchema.Reference.HostDocument;
+		if (host?.Components?.Schemas == null) return false;
+		if (!host.Components.Schemas.TryGetValue(refId, out var resolved)) return false;
+		return resolved?.OneOf != null && IsAllPrimitive(resolved.OneOf);
+	}
+
+	/// <summary>
+	/// Throw if the given operation request/response schema resolves to an all-primitive oneOf
+	/// wrapper. These wrappers intentionally do NOT implement <c>JsonSerializable.ISerializable</c>
+	/// (the runtime would wrap them in <c>{...}</c> which breaks the bare-primitive wire shape),
+	/// so they cannot be used as a top-level request/response body. Catch this at generation time
+	/// rather than letting the service file fail to compile.
+	/// </summary>
+	public static void EnsureNotPrimitiveOneOfBody(OpenApiSchema schema, string pathName, OperationType httpMethod, string kind)
+	{
+		if (schema == null) return;
+		if (IsPrimitiveOneOfRef(schema) || (schema.OneOf != null && IsAllPrimitive(schema.OneOf)))
+		{
+			var refId = schema.Reference?.Id ?? "(inline)";
+			throw new InvalidOperationException(
+				$"Primitive oneOf schema cannot be used as a top-level {kind} body — the generated wrapper does not implement JsonSerializable.ISerializable and the wire shape is a bare primitive, not an object. path=[{pathName}] httpMethod=[{httpMethod}] kind=[{kind}] schema=[{refId}]. Fix the OpenAPI spec to wrap this value in a containing object, or extend the generator/runtime to support bare-primitive bodies.");
+		}
+	}
+
+	private enum PrimitiveBranchKind { String, Integer, Number, Boolean, Array }
+
+	/// <summary>
+	/// Emit a concrete partial class implementing <see cref="Beamable.Serialization.SmallerJSON.IRawJsonProvider"/>,
+	/// with one <c>Optional*</c> field per oneOf branch, a <c>ToJson()</c> that serializes the populated
+	/// branch as a bare JSON value, and a <c>SerializeAt(IStreamSerializer, string)</c> helper that the
+	/// generator invokes from parent <c>Serialize</c> methods (so the bare value lands at the parent's
+	/// key position rather than being wrapped in an object by <c>InternalSerialize</c>).
+	/// </summary>
+	public static CodeTypeDeclaration BuildPrimitiveOneOfWrapper(string name, IList<OpenApiSchema> oneOf)
+	{
+		var className = SanitizeClassName(name);
+
+		var branches = new List<PrimitiveBranchKind>();
+		foreach (var child in oneOf)
+		{
+			switch (child.Type)
+			{
+				case "string":  if (!branches.Contains(PrimitiveBranchKind.String))  branches.Add(PrimitiveBranchKind.String);  break;
+				case "integer": if (!branches.Contains(PrimitiveBranchKind.Integer)) branches.Add(PrimitiveBranchKind.Integer); break;
+				case "number":  if (!branches.Contains(PrimitiveBranchKind.Number))  branches.Add(PrimitiveBranchKind.Number);  break;
+				case "boolean": if (!branches.Contains(PrimitiveBranchKind.Boolean)) branches.Add(PrimitiveBranchKind.Boolean); break;
+				case "array":   if (!branches.Contains(PrimitiveBranchKind.Array))   branches.Add(PrimitiveBranchKind.Array);   break;
+			}
+		}
+
+		var type = new CodeTypeDeclaration(className) { IsPartial = true };
+		type.CustomAttributes.Add(new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
+		type.BaseTypes.Add(new CodeTypeReference("Beamable.Serialization.SmallerJSON.IRawJsonProvider"));
+
+		foreach (var branch in branches)
+		{
+			type.Members.Add(new CodeMemberField(PrimitiveBranchOptionalTypeName(branch, className), PrimitiveBranchFieldName(branch))
+			{
+				Attributes = MemberAttributes.Public
+			});
+		}
+
+		type.Members.Add(new CodeSnippetTypeMember(BuildPrimitiveOneOfBody(className, branches)));
+		return type;
+	}
+
+	private static string PrimitiveBranchFieldName(PrimitiveBranchKind k)
+	{
+		switch (k)
+		{
+			case PrimitiveBranchKind.String:  return "StringValue";
+			case PrimitiveBranchKind.Integer: return "IntValue";
+			case PrimitiveBranchKind.Number:  return "DoubleValue";
+			case PrimitiveBranchKind.Boolean: return "BoolValue";
+			case PrimitiveBranchKind.Array:   return "ArrayValue";
+		}
+		throw new ArgumentOutOfRangeException(nameof(k));
+	}
+
+	private static string PrimitiveBranchOptionalTypeName(PrimitiveBranchKind k, string wrapperClassName)
+	{
+		switch (k)
+		{
+			case PrimitiveBranchKind.String:  return "OptionalString";
+			case PrimitiveBranchKind.Integer: return "OptionalLong";
+			case PrimitiveBranchKind.Number:  return "OptionalDouble";
+			case PrimitiveBranchKind.Boolean: return "OptionalBool";
+			case PrimitiveBranchKind.Array:   return $"OptionalArrayOf{wrapperClassName}";
+		}
+		throw new ArgumentOutOfRangeException(nameof(k));
+	}
+
+	private static string BuildPrimitiveOneOfBody(string className, List<PrimitiveBranchKind> branches)
+	{
+		var sb = new StringBuilder();
+
+		// ToRawValue returns the populated branch as a primitive / List<object> tree. This is what
+		// every IStreamSerializer (JsonSaveStream, SaveStream, etc.) understands via SetValue:
+		// JsonSaveStream routes it through SerializeAny (JSON-encodes), SaveStream stuffs it into
+		// its backing Dictionary<string, object>. Avoids SerializeNestedJson, which is unimplemented
+		// on SaveStream/DeleteStream/DiffStream/MessagePackStream and would crash request bodies
+		// serialized via JsonSerializable.Serialize(...).
+		sb.AppendLine("        public object ToRawValue()");
+		sb.AppendLine("        {");
+		foreach (var branch in branches)
+		{
+			var field = PrimitiveBranchFieldName(branch);
+			if (branch == PrimitiveBranchKind.Array)
+			{
+				sb.AppendLine($"            if ({field} != null && {field}.HasValue)");
+				sb.AppendLine("            {");
+				sb.AppendLine($"                var raw_ = new System.Collections.Generic.List<object>();");
+				sb.AppendLine($"                foreach (var item_ in {field}.Value) raw_.Add(item_ != null ? item_.ToRawValue() : null);");
+				sb.AppendLine($"                return raw_;");
+				sb.AppendLine("            }");
+			}
+			else
+			{
+				sb.AppendLine($"            if ({field} != null && {field}.HasValue) return {field}.Value;");
+			}
+		}
+		sb.AppendLine("            return null;");
+		sb.AppendLine("        }");
+
+		sb.AppendLine();
+		sb.AppendLine("        public string ToJson()");
+		sb.AppendLine("        {");
+		sb.AppendLine("            var raw_ = ToRawValue();");
+		sb.AppendLine("            if (raw_ == null) return \"null\";");
+		sb.AppendLine("            var sb_ = new System.Text.StringBuilder();");
+		sb.AppendLine("            Beamable.Serialization.SmallerJSON.Json.Serialize(raw_, sb_);");
+		sb.AppendLine("            return sb_.ToString();");
+		sb.AppendLine("        }");
+
+		sb.AppendLine();
+		sb.AppendLine("        public void SerializeAt(Beamable.Serialization.JsonSerializable.IStreamSerializer s, string key)");
+		sb.AppendLine("        {");
+		sb.AppendLine("            if (s.isSaving)");
+		sb.AppendLine("            {");
+		sb.AppendLine("                s.SetValue(key, ToRawValue());");
+		sb.AppendLine("                return;");
+		sb.AppendLine("            }");
+		sb.AppendLine("            if (!s.HasKey(key)) return;");
+		sb.AppendLine("            AssignFromRaw(this, s.GetValue(key));");
+		sb.AppendLine("        }");
+
+		sb.AppendLine();
+		sb.AppendLine($"        private static void AssignFromRaw({className} target, object raw)");
+		sb.AppendLine("        {");
+		sb.AppendLine("            if (raw == null) return;");
+		foreach (var branch in branches)
+		{
+			var field = PrimitiveBranchFieldName(branch);
+			switch (branch)
+			{
+				case PrimitiveBranchKind.String:
+					sb.AppendLine($"            if (raw is string vStr_)      {{ target.{field} = new OptionalString(vStr_); return; }}");
+					break;
+				case PrimitiveBranchKind.Boolean:
+					sb.AppendLine($"            if (raw is bool vBool_)       {{ target.{field} = new OptionalBool(vBool_); return; }}");
+					break;
+				case PrimitiveBranchKind.Integer:
+					sb.AppendLine($"            if (raw is long vLong_)       {{ target.{field} = new OptionalLong(vLong_); return; }}");
+					sb.AppendLine($"            if (raw is int vInt_)         {{ target.{field} = new OptionalLong(vInt_); return; }}");
+					break;
+				case PrimitiveBranchKind.Number:
+					// OptionalDouble has no parameterized ctor — use the implicit conversion operator.
+					sb.AppendLine($"            if (raw is double vDouble_)   {{ target.{field} = vDouble_; return; }}");
+					sb.AppendLine($"            if (raw is float vFloat_)     {{ target.{field} = (double)vFloat_; return; }}");
+					break;
+			}
+		}
+		// Array branch comes last because IList would otherwise mask nothing — primitives don't implement IList.
+		if (branches.Contains(PrimitiveBranchKind.Array))
+		{
+			var arrayField = PrimitiveBranchFieldName(PrimitiveBranchKind.Array);
+			sb.AppendLine($"            if (raw is System.Collections.IList vList_)");
+			sb.AppendLine("            {");
+			sb.AppendLine($"                var built_ = new System.Collections.Generic.List<{className}>();");
+			sb.AppendLine($"                foreach (var elem_ in vList_)");
+			sb.AppendLine("                {");
+			sb.AppendLine($"                    var inner_ = new {className}();");
+			sb.AppendLine($"                    AssignFromRaw(inner_, elem_);");
+			sb.AppendLine($"                    built_.Add(inner_);");
+			sb.AppendLine("                }");
+			sb.AppendLine($"                target.{arrayField} = new OptionalArrayOf{className}(built_.ToArray());");
+			sb.AppendLine("            }");
+		}
+		sb.AppendLine("        }");
+
+		return sb.ToString();
 	}
 
 	/// <summary>
@@ -1738,6 +2118,14 @@ public class GenSchema
 
 	public GenCodeTypeReference GetTypeReference()
 	{
+		// A null Schema means an OpenAPI parameter/property had no schema attached (a spec bug
+		// the parser tolerates). Treat it as a string rather than failing the whole generation —
+		// most offenders are query/path params, and string serializes cleanly into a URL.
+		// Callers that care will have logged a warning before they got here.
+		if (Schema == null)
+		{
+			return new GenCodeTypeReference(typeof(string));
+		}
 		switch (Schema?.Type, Schema?.Format, Schema?.Reference?.Id)
 		{
 			case ("array", _, _) when Schema?.Items?.OneOf?.Count > 0:
@@ -1756,7 +2144,7 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(JsonString));
 			case var (_, _, referenceId) when !string.IsNullOrEmpty(referenceId):
 				return new GenCodeTypeReference(referenceId);
-			case (_, _, _) when Schema.OneOf?.Count > 0:
+			case (_, _, _) when Schema?.OneOf?.Count > 0:
 				return new GenCodeTypeReference(UnityHelper.OneOfClassName(Schema.OneOf));
 			case ("object", _, _) when Schema.Reference == null && Schema.AdditionalPropertiesAllowed:
 				var genValues = new GenSchema(Schema.AdditionalProperties);
