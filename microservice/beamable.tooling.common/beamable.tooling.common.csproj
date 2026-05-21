@@ -56,4 +56,8 @@
       <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 
+    <ItemGroup Label="Pack: source code">
+        <None Include="**/*.cs" PackagePath="content/sourceCode" Pack="True" Exclude="bin/**;obj/**" />
+    </ItemGroup>
+
 </Project>

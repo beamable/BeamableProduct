@@ -12,9 +12,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
-        /// <summary>Specify the page that the portal extension should added</summary>
+        /// <summary>The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values</summary>
         public string mountPage;
-        /// <summary>Specify the place on the page that the portal extension should added</summary>
+        /// <summary>The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page</summary>
         public string mountSelector;
         /// <summary>Specify the navigation group of the extension. This is only valid when the extension is a full page</summary>
         public string mountGroup;

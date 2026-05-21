@@ -387,6 +387,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			var contentObject = CreateInstance(type) as ContentObject;
+			// Force Unity's serializer to instantiate all nested [Serializable] reference fields
+			// (e.g. Optional abd strings types) with proper default instances instead of leaving them null.
+			JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(contentObject), contentObject);
 			string baseName = $"New_{itemType.Replace(".","_")}_";
 			int nextNumber = _contentService.GetContentsFromType(type)
 			                                .Select(item => item.Name)

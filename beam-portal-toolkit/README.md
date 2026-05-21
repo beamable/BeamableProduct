@@ -68,27 +68,31 @@ This gives `.svelte` templates full autocomplete for all `beam-*` components.
 
 ## Development
 
-### Syncing web components from Portal
+### Syncing web components from agentic-portal
 
-The custom element definitions live in the Portal repo. When Portal adds or changes components, pull them into this package:
+The custom element definitions live in the `agentic-portal` repo. When that repo adds or changes components, pull them into this package:
 
 ```bash
-# Copies Portal's beam-components.json and regenerates all type files
+# 1. In the agentic-portal repo, regenerate its CEM:
+cd ../../agentic-portal && npm run generate:cem
+
+# 2. Back in this repo, copy the CEM and regenerate all type files:
+cd -
 pnpm sync-components
 ```
 
-By default the script expects Portal to be a sibling directory:
+By default the sync script expects `agentic-portal` to be a sibling directory:
 
 ```
 ~/Documents/Github/
   BeamableProduct/   ← this repo
-  Portal/            ← Portal repo
+  agentic-portal/    ← agentic-portal repo
 ```
 
 Override the path if yours is elsewhere:
 
 ```bash
-PORTAL_REPO_PATH=/path/to/Portal pnpm sync-components
+PORTAL_REPO_PATH=/path/to/agentic-portal pnpm sync-components
 ```
 
 This regenerates:
@@ -107,27 +111,28 @@ pnpm build
 ```
 
 `prepublishOnly` runs `sync-components --no-copy && build` automatically before publish, so the
-generated files are always up to date without re-copying from Portal.
+generated files are always up to date without re-copying from `agentic-portal`.
 
 ---
 
 ## Releasing a new version
 
-### Step 1 — Sync components (if Portal changed)
+### Step 1 — Sync components (if agentic-portal changed)
 
-If the Portal repo has new or updated components since the last release, run:
+If the `agentic-portal` repo has new or updated components since the last release, run:
 
 ```bash
+cd ../../agentic-portal && npm run generate:cem && cd -
 pnpm sync-components
 ```
 
 Review the diff, then commit.
 
-### Step 2 — Update the Portal repo version mapping
+### Step 2 — Update the portal repo version mapping
 
 > **This step is required.** The portal host uses a version map to know which toolkit version to load for a given extension. Without this update, extensions referencing the new version will fail to load.
 
-In the **Portal repo**, update the version mapping file (ask the Portal team for the exact location if unsure) to add an entry for the new toolkit version.
+In the **`agentic-portal` repo**, update the version mapping file (ask the portal team for the exact location if unsure) to add an entry for the new toolkit version.
 
 ### Step 3 — Trigger the GitHub Action
 
