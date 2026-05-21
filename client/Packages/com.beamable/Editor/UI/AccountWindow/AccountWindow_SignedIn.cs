@@ -170,7 +170,7 @@ namespace Beamable.Editor.Accounts
 						if (_onQuitAction == null)
 						{
 							_onQuitAction = BeamLibraryWindow.Init;
-							_onQuitName = "Open Library";
+							_onQuitName = "Open Samples";
 						}
 
 						var clickedLibrary = BeamGUI.PrimaryButton(new GUIContent(_onQuitName), allowEnterKeyToClick: true);
