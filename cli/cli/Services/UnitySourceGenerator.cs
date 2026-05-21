@@ -475,6 +475,7 @@ public static class UnityHelper
 
 		var operationName = methodPrefix + operation.Key + methodName;
 		var returnType = new CodeTypeReference(nameof(Promise));
+		EnsureNotPrimitiveOneOfBody(mediaResponse.Schema, pathName, operation.Key, "response");
 		var responseType = new CodeTypeReference(mediaResponse.Schema.Reference.Id);
 
 		// string csvOrder = null;
@@ -596,6 +597,7 @@ public static class UnityHelper
 		if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
 		{
 			hasReqBody = true;
+			EnsureNotPrimitiveOneOfBody(requestMediaType.Schema, pathName, operation.Key, "request");
 			methodComments.Add($"<param name=\"{varReq}\">The <see cref=\"{requestMediaType.Schema.Reference.Id}\"/> instance to use for the request</param>");
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
@@ -1620,6 +1622,24 @@ public static class UnityHelper
 		if (host?.Components?.Schemas == null) return false;
 		if (!host.Components.Schemas.TryGetValue(refId, out var resolved)) return false;
 		return resolved?.OneOf != null && IsAllPrimitive(resolved.OneOf);
+	}
+
+	/// <summary>
+	/// Throw if the given operation request/response schema resolves to an all-primitive oneOf
+	/// wrapper. These wrappers intentionally do NOT implement <c>JsonSerializable.ISerializable</c>
+	/// (the runtime would wrap them in <c>{...}</c> which breaks the bare-primitive wire shape),
+	/// so they cannot be used as a top-level request/response body. Catch this at generation time
+	/// rather than letting the service file fail to compile.
+	/// </summary>
+	public static void EnsureNotPrimitiveOneOfBody(OpenApiSchema schema, string pathName, OperationType httpMethod, string kind)
+	{
+		if (schema == null) return;
+		if (IsPrimitiveOneOfRef(schema) || (schema.OneOf != null && IsAllPrimitive(schema.OneOf)))
+		{
+			var refId = schema.Reference?.Id ?? "(inline)";
+			throw new InvalidOperationException(
+				$"Primitive oneOf schema cannot be used as a top-level {kind} body — the generated wrapper does not implement JsonSerializable.ISerializable and the wire shape is a bare primitive, not an object. path=[{pathName}] httpMethod=[{httpMethod}] kind=[{kind}] schema=[{refId}]. Fix the OpenAPI spec to wrap this value in a containing object, or extend the generator/runtime to support bare-primitive bodies.");
+		}
 	}
 
 	private enum PrimitiveBranchKind { String, Integer, Number, Boolean, Array }
