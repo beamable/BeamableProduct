@@ -223,7 +223,7 @@ public partial class BeamoLocalSystem
 			.Replace("api", "portal");
 	}
 
-	private static string NormalizePortalExtensionMountPage(string mountPage)
+	public static string NormalizePortalExtensionMountPage(string mountPage)
 	{
 		return string.IsNullOrWhiteSpace(mountPage) ? null : mountPage.Trim().Trim('/');
 	}
@@ -278,8 +278,13 @@ public class PortalExtensionMountProperties
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavIcon;
 
-	[JsonProperty(KEY_NAV_GROUP_ORDER)] public OptionalInt NavGroupOrder;
-	[JsonProperty(KEY_NAV_LABEL_ORDER)] public OptionalInt NavLabelOrder;
+	[JsonProperty(KEY_NAV_GROUP_ORDER)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalInt NavGroupOrder;
+
+	[JsonProperty(KEY_NAV_LABEL_ORDER)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
 }

@@ -19,7 +19,7 @@ public class GetUnityVersionInfoCommand : AtomicCommand<GetUnityVersionInfoComma
 {
 	public override bool IsForInternalUse => true;
 
-	public GetUnityVersionInfoCommand() : base("get-version-info", "get information about a beamable unity sdk project's version dependencies")
+	public GetUnityVersionInfoCommand() : base("get-version-info", "Get version dependency information for a Beamable Unity SDK project")
 	{
 	}
 

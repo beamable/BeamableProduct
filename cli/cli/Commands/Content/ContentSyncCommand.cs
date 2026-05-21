@@ -25,7 +25,7 @@ public class ContentSyncCommand : AtomicCommand<ContentSyncCommandArgs, ContentS
 	private static Option<int> DOWNLOAD_MAX_PARALLEL_COUNT_OPTION = new(
 		"--download-max-parallel-count",
 		() => 64,
-		"Maximum number of content files to download in parallel while syncing. Use 0 for unbounded parallelism.");
+		"Maximum number of content files to download in parallel while syncing. Use 0 for unbounded parallelism");
 
 	private ContentService _contentService;
 

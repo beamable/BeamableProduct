@@ -287,6 +287,19 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			Log.Information("The beamable project has been initialized in the current folder.");
 		}
 
+		var agentsPath = Path.Combine(args.ConfigService.BeamableWorkspace, "AGENTS.md");
+		if (!File.Exists(agentsPath))
+		{
+			var asm = typeof(InitCommand).Assembly;
+			using var agentsStream = asm.GetManifestResourceStream("cli.Docs.AGENTS.md");
+			if (agentsStream != null)
+			{
+				using var reader = new StreamReader(agentsStream);
+				File.WriteAllText(agentsPath, reader.ReadToEnd());
+				Log.Information("Created AGENTS.md for AI agent discovery");
+			}
+		}
+
 		return new InitCommandResult()
 		{
 			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),
@@ -457,6 +470,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.cid))
 			return Task.FromResult(args.cid);
 
+		if (args.Quiet)
+			throw new CliException("--cid is required when using -q (quiet mode). Provide a CID or alias via --cid <value>.");
+
 		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]cid or alias[/]:")
 				.PromptStyle("green")
@@ -497,15 +513,17 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			dev => Constants.PLATFORM_DEV,
 			staging => Constants.PLATFORM_STAGING,
 			prod => Constants.PLATFORM_PRODUCTION,
-			custom => AnsiConsole.Prompt(
-				new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
-					.PromptStyle("green")
-					.ValidationErrorMessage("[red]Not a valid uri[/]")
-					.Validate(age =>
-					{
-						if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
-						return ValidationResult.Success();
-					})).ToString(),
+			custom => args.Quiet
+				? throw new CliException("Provide a full URL with --host (e.g. --host https://your-url.com) instead of 'custom' in quiet mode.")
+				: AnsiConsole.Prompt(
+					new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
+						.PromptStyle("green")
+						.ValidationErrorMessage("[red]Not a valid uri[/]")
+						.Validate(age =>
+						{
+							if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
+							return ValidationResult.Success();
+						})).ToString(),
 			_ => throw new ArgumentOutOfRangeException()
 		});
 	}

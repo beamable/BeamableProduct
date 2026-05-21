@@ -48,7 +48,7 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
 
 		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
-			"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
+			"content/sourceCode/", Path.Combine(info.packageFolder, "Common"));
 
 	}
 	
