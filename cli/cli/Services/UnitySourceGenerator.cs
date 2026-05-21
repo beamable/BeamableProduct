@@ -1714,40 +1714,42 @@ public static class UnityHelper
 	{
 		var sb = new StringBuilder();
 
-		sb.AppendLine("        public string ToJson()");
+		// ToRawValue returns the populated branch as a primitive / List<object> tree. This is what
+		// every IStreamSerializer (JsonSaveStream, SaveStream, etc.) understands via SetValue:
+		// JsonSaveStream routes it through SerializeAny (JSON-encodes), SaveStream stuffs it into
+		// its backing Dictionary<string, object>. Avoids SerializeNestedJson, which is unimplemented
+		// on SaveStream/DeleteStream/DiffStream/MessagePackStream and would crash request bodies
+		// serialized via JsonSerializable.Serialize(...).
+		sb.AppendLine("        public object ToRawValue()");
 		sb.AppendLine("        {");
 		foreach (var branch in branches)
 		{
 			var field = PrimitiveBranchFieldName(branch);
-			sb.AppendLine($"            if ({field} != null && {field}.HasValue)");
-			sb.AppendLine("            {");
-			switch (branch)
+			if (branch == PrimitiveBranchKind.Array)
 			{
-				case PrimitiveBranchKind.String:
-					sb.AppendLine($"                var sb_ = new System.Text.StringBuilder();");
-					sb.AppendLine($"                Beamable.Serialization.SmallerJSON.Json.Serialize({field}.Value, sb_);");
-					sb.AppendLine($"                return sb_.ToString();");
-					break;
-				case PrimitiveBranchKind.Integer:
-					sb.AppendLine($"                return {field}.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);");
-					break;
-				case PrimitiveBranchKind.Number:
-					sb.AppendLine($"                return {field}.Value.ToString(\"R\", System.Globalization.CultureInfo.InvariantCulture);");
-					break;
-				case PrimitiveBranchKind.Boolean:
-					sb.AppendLine($"                return {field}.Value ? \"true\" : \"false\";");
-					break;
-				case PrimitiveBranchKind.Array:
-					sb.AppendLine($"                var raw_ = new System.Collections.Generic.List<object>();");
-					sb.AppendLine($"                foreach (var item_ in {field}.Value) raw_.Add(item_);");
-					sb.AppendLine($"                var sb_ = new System.Text.StringBuilder();");
-					sb.AppendLine($"                Beamable.Serialization.SmallerJSON.Json.Serialize(raw_, sb_);");
-					sb.AppendLine($"                return sb_.ToString();");
-					break;
+				sb.AppendLine($"            if ({field} != null && {field}.HasValue)");
+				sb.AppendLine("            {");
+				sb.AppendLine($"                var raw_ = new System.Collections.Generic.List<object>();");
+				sb.AppendLine($"                foreach (var item_ in {field}.Value) raw_.Add(item_ != null ? item_.ToRawValue() : null);");
+				sb.AppendLine($"                return raw_;");
+				sb.AppendLine("            }");
 			}
-			sb.AppendLine("            }");
+			else
+			{
+				sb.AppendLine($"            if ({field} != null && {field}.HasValue) return {field}.Value;");
+			}
 		}
-		sb.AppendLine("            return \"null\";");
+		sb.AppendLine("            return null;");
+		sb.AppendLine("        }");
+
+		sb.AppendLine();
+		sb.AppendLine("        public string ToJson()");
+		sb.AppendLine("        {");
+		sb.AppendLine("            var raw_ = ToRawValue();");
+		sb.AppendLine("            if (raw_ == null) return \"null\";");
+		sb.AppendLine("            var sb_ = new System.Text.StringBuilder();");
+		sb.AppendLine("            Beamable.Serialization.SmallerJSON.Json.Serialize(raw_, sb_);");
+		sb.AppendLine("            return sb_.ToString();");
 		sb.AppendLine("        }");
 
 		sb.AppendLine();
@@ -1755,8 +1757,7 @@ public static class UnityHelper
 		sb.AppendLine("        {");
 		sb.AppendLine("            if (s.isSaving)");
 		sb.AppendLine("            {");
-		sb.AppendLine("                var carrier_ = Beamable.Serialization.JsonString.FromJson(ToJson());");
-		sb.AppendLine("                s.SerializeNestedJson(key, ref carrier_);");
+		sb.AppendLine("                s.SetValue(key, ToRawValue());");
 		sb.AppendLine("                return;");
 		sb.AppendLine("            }");
 		sb.AppendLine("            if (!s.HasKey(key)) return;");
