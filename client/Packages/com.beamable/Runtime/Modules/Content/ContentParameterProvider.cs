@@ -5,5 +5,7 @@
 		public string manifestID;
 
 		public bool EnableLocalContentInEditor;
+
+		public bool OmitContentManifestTags;
 	}
 }
