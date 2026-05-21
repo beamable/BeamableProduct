@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved content sync resilience for transient SSL/socket reset download failures.
 - Deserialization issue with `properties` field in Score Items of Events
 - Fixed an issue where the Unity Editor would not detect changes to Icon subObject (for Sprites in Multiple Mode) and thus not saving it correctly
+- Fixed CLI web command spamming `ObjectDisposedException` when the local CLI server is unreachable [4581](https://github.com/beamable/BeamableProduct/issues/4581)
 - Fixed an issue when creating a new Content Object some Optional and string values were null instead of default values.
 - Fix issue where Critical log errors where not being parsed to Unity LogLevels.
 - Fix periodic freeze caused by telemetry collector polling.
