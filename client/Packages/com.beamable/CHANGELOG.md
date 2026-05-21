@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `OmitContentManifestTags` option to `ContentConfiguration` to opt out of content tag download in the public manifest. Tag-based `ContentQuery` filters (e.g. `tag:weapon`) return no results when this is enabled. [4597](https://github.com/beamable/BeamableProduct/issues/4597)
 - Added in-window Content Manager progress for sync and revert operations.
 - Added editor content sync download concurrency configuration.
+- Implemented new Admin Console feature
 
 ### Fixed
 - Improved content sync resilience for transient SSL/socket reset download failures.
@@ -21,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
+- Reworked Lightbeam samples
+- Changed default gem icon
+- "Beam Library" Window is now "Beam Samples" Window and was updated with latest docs and samples
+- AdminFlow prefab (ConsoleFlow) was removed from the Beam Samples Window and is now considered Deprecated
 
 ## [5.0.1] - 2026-04-02
 ### Fixed

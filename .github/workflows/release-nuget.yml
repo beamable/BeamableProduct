@@ -41,6 +41,11 @@ on:
         description: When true, no publish will happen
         required: true
         default: false
+      buildMcpb:
+        type: boolean
+        description: Build and upload mcpb bundles (production releases only)
+        required: false
+        default: false
 
 run-name: Release Nuget (CLI) ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
@@ -209,7 +214,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        if: ${{ inputs.dryRun == false }} 
+        if: ${{ inputs.dryRun == false }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
@@ -220,3 +225,23 @@ jobs:
             CLI Release ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ inputs.releaseType != 'production' }}
+
+      - name: Install mcpb CLI
+        if: ${{ inputs.buildMcpb && inputs.releaseType == 'production' && inputs.dryRun == false }}
+        run: npm install -g @anthropic-ai/mcpb
+
+      - name: Build mcpb bundles
+        if: ${{ inputs.buildMcpb && inputs.releaseType == 'production' && inputs.dryRun == false }}
+        working-directory: ./cli/mcpb
+        run: bash build-mcpb.sh
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+
+      - name: Upload mcpb bundles to release
+        if: ${{ inputs.buildMcpb && inputs.releaseType == 'production' && inputs.dryRun == false }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for f in cli/mcpb/output/*.mcpb; do
+            gh release upload "cli-${{ steps.version.outputs.VERSION }}" "$f" --clobber
+          done

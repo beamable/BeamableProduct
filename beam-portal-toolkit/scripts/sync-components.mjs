@@ -203,6 +203,75 @@ function toIfaceName(tagName) {
   return `${toPascalCase(tagName)}Element`;
 }
 
+// ---------------------------------------------------------------------------
+// JSDoc helpers — turn CEM metadata into /** … */ blocks for generated types.
+// ---------------------------------------------------------------------------
+
+function escapeJsDoc(text) {
+  if (!text) return '';
+  return text.replace(/\*\//g, '*\\/');
+}
+
+/**
+ * @param {string | undefined} description
+ * @param {string | undefined} defaultValue
+ * @param {string} indent
+ */
+function formatPropJsDoc(description, defaultValue, indent = '  ') {
+  const desc = escapeJsDoc(description?.trim() ?? '');
+  const def = defaultValue?.trim();
+  if (!desc && !def) return '';
+
+  const parts = [];
+  if (desc) parts.push(desc.replace(/\n\s*/g, ' '));
+  if (def) parts.push(`@default ${def}`);
+
+  const oneLiner = parts.join(' ');
+  if (oneLiner.length <= 100) {
+    return `${indent}/** ${oneLiner} */\n`;
+  }
+  const lines = parts.map((p) => `${indent} * ${p}`);
+  return `${indent}/**\n${lines.join('\n')}\n${indent} */\n`;
+}
+
+/** @param {object} decl  @param {string} indent */
+function formatComponentJsDoc(decl, indent = '') {
+  const lines = [];
+
+  const desc = escapeJsDoc(decl.description?.trim() ?? '');
+  if (desc && !desc.startsWith('<')) {
+    lines.push(`${indent} * ${desc.replace(/\n\s*/g, ' ')}`);
+    lines.push(`${indent} *`);
+  }
+
+  for (const slot of decl.slots ?? []) {
+    const d = escapeJsDoc(slot.description?.trim() ?? '');
+    const n = slot.name || '(default)';
+    lines.push(d ? `${indent} * @slot ${n} - ${d.replace(/\n\s*/g, ' ')}` : `${indent} * @slot ${n}`);
+  }
+
+  for (const part of decl.cssParts ?? []) {
+    const d = escapeJsDoc(part.description?.trim() ?? '');
+    lines.push(d ? `${indent} * @csspart ${part.name} - ${d.replace(/\n\s*/g, ' ')}` : `${indent} * @csspart ${part.name}`);
+  }
+
+  for (const prop of decl.cssProperties ?? []) {
+    const d = escapeJsDoc(prop.description?.trim() ?? '');
+    const defHint = prop.default ? ` [default: ${prop.default}]` : '';
+    lines.push(d ? `${indent} * @cssproperty ${prop.name} - ${d.replace(/\n\s*/g, ' ')}${defHint}` : `${indent} * @cssproperty ${prop.name}${defHint}`);
+  }
+
+  for (const evt of decl.events ?? []) {
+    if (!evt.name.startsWith('wa-')) continue;
+    const d = escapeJsDoc(evt.description?.trim() ?? '');
+    const reactHint = evt.reactName ? ` (React: \`${evt.reactName}\`)` : '';
+    lines.push(d ? `${indent} * @event ${evt.name} - ${d.replace(/\n\s*/g, ' ')}${reactHint}` : `${indent} * @event ${evt.name}${reactHint}`);
+  }
+
+  if (lines.length === 0) return '';
+  return `${indent}/**\n${lines.join('\n')}\n${indent} */\n`;
+}
+
 // HTMLElementTagNameMap entries
 const tagMapLines = declarations
   .map((d) => `    '${d.tagName}': ${toIfaceName(d.tagName)};`)
@@ -269,11 +338,15 @@ const ifaceBlocks = declarations.map((decl) => {
         !WA_INTERNAL_LEAKAGE.has(m.name) &&
         m.type?.text?.trim() !== 'undefined',
     )
-    .map((m) => `    ${m.name}?: ${toTsType(m.type?.text)};`)
+    .map((m) => {
+      const doc = formatPropJsDoc(m.description, m.default, '    ');
+      return `${doc}    ${m.name}?: ${toTsType(m.type?.text)};`;
+    })
     .join('\n');
 
   const body = members || '    // No public properties defined in CEM.';
-  return `  interface ${toIfaceName(decl.tagName)} extends HTMLElement {\n${body}\n  }`;
+  const ifaceDoc = formatComponentJsDoc(decl, '  ');
+  return `${ifaceDoc}  interface ${toIfaceName(decl.tagName)} extends HTMLElement {\n${body}\n  }`;
 });
 
 const globalsTs = `// AUTO-GENERATED — do not edit manually.
@@ -312,12 +385,14 @@ const svelteElementEntries = declarations.map((decl) => {
   const attrs = (decl.attributes ?? [])
     .map((a) => {
       const key = a.name.includes('-') ? `'${a.name}'` : a.name;
-      return `      ${key}?: ${toTsType(a.type?.text)};`;
+      const doc = formatPropJsDoc(a.description, a.default, '      ');
+      return `${doc}      ${key}?: ${toTsType(a.type?.text)};`;
     })
     .join('\n');
 
   const body = attrs || '      // No attributes defined in CEM.';
-  return `    '${decl.tagName}': import('svelte/elements').HTMLAttributes<HTMLElement> & {\n${body}\n    };`;
+  const entryDoc = formatComponentJsDoc(decl, '    ');
+  return `${entryDoc}    '${decl.tagName}': import('svelte/elements').HTMLAttributes<HTMLElement> & {\n${body}\n    };`;
 });
 
 const svelteElementsTs = `// AUTO-GENERATED — do not edit manually.
@@ -351,12 +426,14 @@ const reactElementEntries = declarations.map((decl) => {
   const attrs = (decl.attributes ?? [])
     .map((a) => {
       const key = a.name.includes('-') ? `'${a.name}'` : a.name;
-      return `      ${key}?: ${toTsType(a.type?.text)};`;
+      const doc = formatPropJsDoc(a.description, a.default, '      ');
+      return `${doc}      ${key}?: ${toTsType(a.type?.text)};`;
     })
     .join('\n');
 
   const body = attrs || '      // No attributes defined in CEM.';
-  return `    '${decl.tagName}': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {\n${body}\n    };`;
+  const entryDoc = formatComponentJsDoc(decl, '    ');
+  return `${entryDoc}    '${decl.tagName}': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {\n${body}\n    };`;
 });
 
 const reactElementsTs = `// AUTO-GENERATED — do not edit manually.
@@ -439,21 +516,20 @@ const reactComponentEntries = reactComponentDeclarations.map((decl) => {
   const attrs = (decl.attributes ?? [])
     .map((a) => {
       const key = a.name.includes('-') ? `'${a.name}'` : a.name;
-      return `  ${key}?: ${toTsType(a.type?.text)};`;
+      const doc = formatPropJsDoc(a.description, a.default, '  ');
+      return `${doc}  ${key}?: ${toTsType(a.type?.text)};`;
     })
     .join('\n');
 
   const propsBody = attrs || '  // No attributes defined in CEM.';
+  const ifaceDoc = formatComponentJsDoc(decl);
+  const funcDoc = `/** React forwarder for \`<${decl.tagName}>\`. */\n`;
 
-  // Use a plain function instead of `forwardRef`. React 19 supports `ref` as
-  // a regular prop, and the tsdown declaration bundler preserves the prop
-  // types on plain function components — `forwardRef`'s exotic-component
-  // return type collapses to `any` after bundling.
-  return `export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  return `${ifaceDoc}export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
 ${propsBody}
 }
 
-export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
+${funcDoc}export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
   return createElement(hostComponent('${componentName}'), props);
 }
 ${componentName}.displayName = '${componentName}';`;
@@ -506,7 +582,8 @@ const reactBindableEntries = reactBindableDeclarations.map((decl) => {
   const attrs = (decl.attributes ?? [])
     .map((a) => {
       const key = a.name.includes('-') ? `'${a.name}'` : a.name;
-      return `  ${key}?: ${toTsType(a.type?.text)};`;
+      const doc = formatPropJsDoc(a.description, a.default, '  ');
+      return `${doc}  ${key}?: ${toTsType(a.type?.text)};`;
     })
     .join('\n');
 
@@ -526,12 +603,15 @@ const reactBindableEntries = reactBindableDeclarations.map((decl) => {
   }
   const callbackBlock = callbacks.join('\n');
 
-  return `export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  const ifaceDoc = formatComponentJsDoc(decl);
+  const funcDoc = `/** React forwarder for \`<${decl.tagName}>\` with controlled-component bindings. */\n`;
+
+  return `${ifaceDoc}export interface ${propsName} extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
 ${attrsBody}
 ${callbackBlock}
 }
 
-export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
+${funcDoc}export function ${componentName}(props: ${propsName} & { ref?: Ref<HTMLElement> }): ReactElement {
   return createElement(hostComponent('${componentName}'), props);
 }
 ${componentName}.displayName = '${componentName}';`;

@@ -4,15 +4,18 @@ using Beamable.Avatars;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AccountManager : MonoBehaviour
 {
 	[Header("Scene references")]
 	public RectTransform root;
 	public CanvasGroup loadingBlocker;
-
+	public Button InfoButton;
+	
 	[Header("Asset references")]
 	public AccountExampleConfig config;
+	
 
 	async void Start()
 	{
@@ -30,7 +33,7 @@ public class AccountManager : MonoBehaviour
 
 			builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
 			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
-			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
+			builder.AddLightComponent<AccountDetailsPage, PlayerAccount>(config.accountDetailsTemplate);
 		});
 		//
 		// var ctx = await this.InitLightBeams(root, loadingBlocker, builder =>
@@ -53,5 +56,7 @@ public class AccountManager : MonoBehaviour
 		// LightBeamUtilExtensions.Hints["pageType"] = nameof(RecoverEmailPage);
 		// LightBeamUtilExtensions.Hints["d_email"] = "\"dingus\"";
 		await lightBeam.Scope.Start<HomePage>();
+		
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam-account/"));
 	}
 }

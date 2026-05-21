@@ -10,7 +10,7 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 {
 	private ContentService _contentService;
 
-	public ContentResolveConflictCommand() : base("resolve", "Resolve between local changes ore realm based changes")
+	public ContentResolveConflictCommand() : base("resolve", "Resolve conflicts between local changes and realm-based changes")
 	{
 	}
 

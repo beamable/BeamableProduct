@@ -2,12 +2,14 @@ using Beamable;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FriendsManager : MonoBehaviour
 {
 	[Header("Scene references")]
 	public RectTransform root;
 	public CanvasGroup loadingBlocker;
+	public Button InfoButton;
 
 	[Header("Asset references")]
 	public FriendsExampleConfig config;
@@ -28,5 +30,7 @@ public class FriendsManager : MonoBehaviour
 		});
 
 		await lightBeam.Scope.Start<HomePage>();
+		
+		InfoButton.HandleClicked(()=> LightBeam.OpenDocumentationPage("unity/samples/lightbeam-friends/"));
 	}
 }

@@ -28,7 +28,3 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 80d87f25513784e71bc79f74c89a1cef, type: 3}
   - Name: 6
     Sprite: {fileID: 21300000, guid: 5034cca4069704104856b4a6fb604568, type: 3}
-  - Name: 7
-    Sprite: {fileID: 21300000, guid: b021867186dbf4bf682fedde86f46217, type: 3}
-  - Name: 8
-    Sprite: {fileID: 21300000, guid: 26c5d5018226a4fa68e5834054242b2e, type: 3}
