@@ -26,6 +26,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public int mountGroupOrder;
         /// <summary>Specify the order of the mount label</summary>
         public int mountLabelOrder;
+        /// <summary>UI framework template to scaffold the extension with. Allowed values: svelte, react</summary>
+        public string template;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -77,6 +79,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.mountLabelOrder != default(int)))
             {
                 genBeamCommandArgs.Add(("--mount-label-order=" + this.mountLabelOrder));
+            }
+            // If the template value was not default, then add it to the list of args.
+            if ((this.template != default(string)))
+            {
+                genBeamCommandArgs.Add(("--template=" + this.template));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
