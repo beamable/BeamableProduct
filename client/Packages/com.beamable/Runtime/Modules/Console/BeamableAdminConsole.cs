@@ -74,7 +74,6 @@ namespace Beamable.Console
 		private GUIStyle _inputStyle;
 		private GUIStyle _promptStyle;
 		private GUIStyle _suggestionStyle;
-		private GUIStyle _closeButtonStyle;
 		private readonly Color _backgroundColor = new Color(0f, 0f, 0f, 0.85f);
 		private readonly float _heightRatio = 0.8f;
 
@@ -286,8 +285,6 @@ namespace Beamable.Console
 		private void DrawConsoleContent()
 		{
 			var scaledTitleHeight = Mathf.RoundToInt(56 * _screenScale);
-			var scaledCloseButtonSize = Mathf.RoundToInt(44 * _screenScale);
-			var scaledCloseButtonWidth = Mathf.RoundToInt(100 * _screenScale);
 			var scaledPromptWidth = Mathf.RoundToInt(36 * _screenScale);
 			var scaledSeparatorHeight = Mathf.Max(1, Mathf.RoundToInt(2 * _screenScale));
 			var scaledInputHeight = Mathf.RoundToInt(56 * _screenScale);
@@ -298,12 +295,6 @@ namespace Beamable.Console
 			{
 				GUILayout.Label("<b>▶ BEAMABLE ADMIN CONSOLE</b>", _titleStyle);
 				GUILayout.FlexibleSpace();
-				if (GUILayout.Button("Close", _closeButtonStyle, GUILayout.Width(scaledCloseButtonWidth), GUILayout.Height(scaledCloseButtonSize)))
-				{
-					HideConsole();
-					GUILayout.EndHorizontal();
-					return;
-				}
 			}
 			GUILayout.EndHorizontal();
 
@@ -403,13 +394,6 @@ namespace Beamable.Console
 				padding      = new RectOffset(scaledPaddingH, Mathf.RoundToInt(8 * _screenScale), scaledPaddingTiny, 0)
 			};
 
-			_closeButtonStyle = new GUIStyle(GUI.skin.button)
-			{
-				fontSize = scaledFontSize,
-				normal   = { textColor = Color.white },
-				hover    = { textColor = Color.white },
-				active   = { textColor = Color.white }
-			};
 		}
 
 		#endregion
