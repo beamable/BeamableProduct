@@ -1,17 +1,13 @@
-﻿#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-#if UNITY_2018
-using UnityEngine.Experimental.Input;
-#else
-using UnityEngine.InputSystem;
-#endif
-#endif
-
-using Beamable.ConsoleCommands;
+﻿using Beamable.ConsoleCommands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+using UnityEngine.InputSystem;
+#endif
 
 namespace Beamable.Console
 {
@@ -21,26 +17,6 @@ namespace Beamable.Console
 		public event Action<string> OnLogLine;
 		public bool IsActive => _isActive;
 		public bool IsInitialized => _isInitialized;
-		
-
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-		/// <summary>
-		/// Optional <see cref="InputAction"/> used to toggle the console open/closed
-		/// with the new Input System.  Falls back to <see cref="ConsoleConfiguration"/>'s
-		/// toggle action and then to the Backtick/Grave key if left null.
-		/// Call <c>Enable()</c> on the action before assigning it, or set
-		/// <see cref="AutoEnableToggleAction"/> to true (default).
-		/// </summary>
-		public InputAction CustomToggleAction;
-
-		/// <summary>
-		/// When true, <see cref="StartListening"/> automatically calls
-		/// <c>CustomToggleAction.Enable()</c> if <see cref="CustomToggleAction"/> is set.
-		/// Default: true.
-		/// </summary>
-		public bool AutoEnableToggleAction = true;
-#endif
-		
 
 		#region Private State
 
@@ -96,16 +72,21 @@ namespace Beamable.Console
 		private void Update()
 		{
 			if (!_isInitialized) return;
+			
 			if (!IsEnabled()) return;
-
-			if (ShouldShow())
+			
+			if (CheckToggleKey())
 			{
-				if (!_isActive)
-				{
-					ShowConsole();
-				}
+				if (!_isActive){ShowConsole();}
+				else{HideConsole();}
 			}
 
+			if (ShouldToggleByTouch())
+			{
+				if (!_isActive){ShowConsole();}
+				else{HideConsole();}
+			}
+			
 			// Handle virtual keyboard confirmation (any platform)
 			if (_isActive && !string.IsNullOrEmpty(_inputText))
 			{
@@ -117,6 +98,23 @@ namespace Beamable.Console
 				}
 				_wasVirtualKeyboardOpen = isKeyboardOpen;
 			}
+		}
+
+		private bool CheckToggleKey()
+		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			if (Keyboard.current.backquoteKey.wasPressedThisFrame)
+			{
+				return true;
+			}
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+			if (Input.GetKeyDown(KeyCode.BackQuote))
+			{
+				return true;
+			}
+#endif
+			return false;
 		}
 
 		#endregion
@@ -150,19 +148,8 @@ namespace Beamable.Console
 			_isInitialized = true;
 			Log("Console ready");
 			
-			// Start Listening Inputs
-			StartListening();
 		}
 		
-		public void StartListening()
-		{
-
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-			if (AutoEnableToggleAction && CustomToggleAction != null && !CustomToggleAction.enabled)
-				CustomToggleAction.Enable();
-#endif
-		}
-
 		#endregion
 
 		#region Visibility
@@ -205,23 +192,7 @@ namespace Beamable.Console
 		private void OnGUI()
 		{
 			_screenScale = Screen.height / ReferenceResolutionHeight * ConsoleConfiguration.Instance.UISize;
-
-			if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.BackQuote)
-			{
-				if (!_isActive)
-				{
-					ShowConsole();
-					Event.current.Use();
-					return;
-				}
-				else
-				{
-					HideConsole();
-					Event.current.Use();
-					return;
-				}
-			}
-
+			
 			if (!_isActive) return;
 
 			MakeStyle();
@@ -251,11 +222,6 @@ namespace Beamable.Console
 
 					case KeyCode.DownArrow:
 						_inputText = _history.Next();
-						Event.current.Use();
-						break;
-
-					case KeyCode.Escape:
-						HideConsole();
 						Event.current.Use();
 						break;
 				}
@@ -476,19 +442,12 @@ namespace Beamable.Console
 
 		#region Toggle Detection
 
-		private bool ShouldShow()
+		private bool ShouldToggleByTouch()
 		{
 			var shouldToggle = false;
-
+			
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-			// 1. Custom user-supplied InputAction
-			if (CustomToggleAction != null && CustomToggleAction.triggered) return true;
-
-			// 2. Shared ConsoleConfiguration toggle action
-			var consoleToggleAction = ConsoleConfiguration.Instance.ToggleAction;
-			if (consoleToggleAction?.action != null && consoleToggleAction.action.triggered) return true;
-
-			// 3. 3-finger touch detection
+			
 			if (Touchscreen.current != null)
 			{
 				var fingerCount = 0;
@@ -528,9 +487,8 @@ namespace Beamable.Console
 
 				_fingerCount = fingerCount;
 			}
-
-			// 4. Keyboard fallback — Backtick / Grave
-			return shouldToggle || (Keyboard.current?.backquoteKey.wasPressedThisFrame ?? false);
+			
+			return shouldToggle;
 #else
 			// 3-finger touch detection (legacy input)
 			var fingerCount = 0;
