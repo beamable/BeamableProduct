@@ -23,6 +23,7 @@ namespace Beamable.Console
 		private bool   _isInitialized;
 		private bool   _isActive;
 		private bool   _focusInputNextFrame;
+		private bool   _moveCursorToEndNextFrame;
 
 		private string  _inputText   = string.Empty;
 		private string  _consoleText = string.Empty;
@@ -212,6 +213,8 @@ namespace Beamable.Console
 
 					case KeyCode.Tab:
 						_autoCompleter.Accept(ref _inputText);
+						_moveCursorToEndNextFrame = true;
+						_focusInputNextFrame = true;
 						Event.current.Use();
 						break;
 
@@ -293,6 +296,19 @@ namespace Beamable.Console
 				{
 					_inputText = newInput;
 					_autoCompleter.Update(_inputText);
+				}
+
+				if (_moveCursorToEndNextFrame && Event.current.type == EventType.Repaint)
+				{
+					var editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+					if (editor != null)
+					{
+						editor.text = _inputText;
+						editor.cursorIndex = _inputText.Length;
+						editor.selectIndex = _inputText.Length;
+						editor.MoveTextEnd();
+					}
+					_moveCursorToEndNextFrame = false;
 				}
 
 				var suggestion = _autoCompleter.CurrentSuggestion;
