@@ -852,6 +852,15 @@ public class RemoteStorageDescriptor
 	public string PKey => $"remote-storage-{storage}";
 }
 
+public class RemotePortalExtensionDescriptor
+{
+	public string name;
+	public bool enabled;
+	public bool archived;
+	public string[] dependencies;
+	public string PKey => $"remote-portal-extension-{name}";
+}
+
 public interface IDiscoveryEvent
 {
 	public ServiceEventType Type { get; }
@@ -899,6 +908,16 @@ public class RemoteStorageEvent : DiscoveryService.ServiceEvent<RemoteStorageDes
 	public long StartedByAccountId { get; }
 	public string Service => descriptor.storage;
 	public string ServiceType => "storage";
+	public string RoutingKey => "";
+	public string PrimaryKey => descriptor.PKey;
+}
+
+public class RemotePortalExtensionEvent : DiscoveryService.ServiceEvent<RemotePortalExtensionDescriptor>, IDiscoveryEvent
+{
+	public ServiceEventType Type => type;
+	public long StartedByAccountId => 0;
+	public string Service => descriptor.name;
+	public string ServiceType => "portalExtension";
 	public string RoutingKey => "";
 	public string PrimaryKey => descriptor.PKey;
 }
