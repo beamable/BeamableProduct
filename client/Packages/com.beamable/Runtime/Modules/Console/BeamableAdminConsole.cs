@@ -205,13 +205,19 @@ namespace Beamable.Console
 
 		private void OnGUI()
 		{
-			_screenScale = Screen.height / ReferenceResolutionHeight;
+			_screenScale = Screen.height / ReferenceResolutionHeight * ConsoleConfiguration.Instance.UISize;
 
 			if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.BackQuote)
 			{
 				if (!_isActive)
 				{
 					ShowConsole();
+					Event.current.Use();
+					return;
+				}
+				else
+				{
+					HideConsole();
 					Event.current.Use();
 					return;
 				}
