@@ -19,8 +19,10 @@ public class DiffInstructions
 	public DiffSingleInstruction[] Instructions;
 }
 
-public class PortalExtensionDiff
+public static class PortalExtensionDiff
 {
+	public const int AlgorithmVersion = 1;
+
 	public static DiffInstructions GetDiffInstructions(string[] fileLinesA, string[] fileLinesB)
 	{
 		MyersDiff<string> diff = new MyersDiff<string>(fileLinesA, fileLinesB);

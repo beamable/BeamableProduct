@@ -42,6 +42,7 @@ public class ExtensionBuildData
 	public string ErrorMessage;
 	public string ErrorStackTrace;
 
+	public int DiffAlgorithmVersion;
 	public DiffInstructions DiffInstructionsJs;
 	public DiffInstructions DiffInstructionsCss;
 	public DiffInstructions DiffInstructionsMetadata;
@@ -264,6 +265,7 @@ public class PortalExtensionObserver
 				DiffInstructionsJs = diffJs,
 				DiffInstructionsCss = diffCss,
 				DiffInstructionsMetadata = diffMetadata,
+				DiffAlgorithmVersion = PortalExtensionDiff.AlgorithmVersion
 			};
 		}
 
