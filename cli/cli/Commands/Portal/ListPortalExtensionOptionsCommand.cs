@@ -46,7 +46,8 @@ public class ListPortalExtensionOptionsCommand
 
     public override async Task<PortalExtensionOptionsResult> GetResult(ListPortalExtensionOptionsCommandArgs args)
     {
-        var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
+        var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
+        var config = await configService.GetRemotePortalConfig(args);
 
         const string pathMatchSuffix = "!pathMatch";
         var pageExtensions = new List<PageExtensionOption>();

@@ -114,7 +114,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		if (!PortalExtensionTemplates.All.Contains(args.template))
 			throw new CliException($"Invalid --template value '{args.template}'. Allowed values: {string.Join(", ", PortalExtensionTemplates.All)}");
 
-		var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
+		var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
+		var config = await configService.GetRemotePortalConfig(args);
 		BuildMountSiteIndex(config,
 			out var customPagePrefixes,
 			out var customPageConfigs,
