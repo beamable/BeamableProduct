@@ -138,7 +138,10 @@ namespace Beamable.Editor.BeamCli
 				var proc = new Process();
 				var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed --allow-downgrade";
 
-				if (Application.isBatchMode)
+				// Only add the local folder feed for the local dev version (0.0.123.*). For a published
+				// version, installing from a local folder feed extracts into the global packages folder
+				// without copying the .nupkg, which then crashes finalization; let it resolve from nuget.org.
+				if (Application.isBatchMode && BeamableEnvironment.NugetPackageVersion.ToString().StartsWith("0.0.123"))
 				{
 					installCommand += " --add-source BeamableNugetSource ";
 				}
