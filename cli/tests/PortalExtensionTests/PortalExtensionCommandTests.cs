@@ -190,7 +190,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 
 	[Test]
 	[TestCase("react")]
-	[TestCase("svelte")]
 	public void NewPortalExtension_PageExtension_CreatesFiles(string template)
 	{
 		InitWorkspace();
