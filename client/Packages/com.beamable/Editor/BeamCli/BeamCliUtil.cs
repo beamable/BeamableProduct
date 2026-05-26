@@ -180,6 +180,7 @@ namespace Beamable.Editor.BeamCli
 
 					message.AppendLine($"Error: {error}");
 					message.Append(errorGuide);
+					Debug.Log("Failed Install Command: " + installCommand);
 					Debug.LogError(message.ToString());
 					var tryAgainButtonInfo = new OptionDialogWindow.ButtonInfo()
 					{
