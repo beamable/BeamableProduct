@@ -163,6 +163,8 @@ namespace Beamable.Editor.BeamCli
 					RedirectStandardError = true
 				};
 				proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+				Debug.Log($"[BeamCLI] Installing Beam CLI version [{BeamableEnvironment.NugetPackageVersion}]. " +
+				          $"Command: [dotnet {installCommand}]. A first-time install with a cold NuGet cache can be slow while packages download.");
 				TryRunWithTimeout(1);
 
 				const string errorGuide =
@@ -221,14 +223,34 @@ namespace Beamable.Editor.BeamCli
 
 				bool TryRunWithTimeout(int currentTry)
 				{
+					var timeoutMs = 30 * 1000 * currentTry;
+					Debug.Log($"[BeamCLI] Install attempt {currentTry} starting (timeout {timeoutMs / 1000}s)...");
+					var stopwatch = Stopwatch.StartNew();
 					proc.Start();
-					if (proc.WaitForExit(10 * 1000 * currentTry))
+					if (proc.WaitForExit(timeoutMs))
 					{
+						Debug.Log($"[BeamCLI] Install attempt {currentTry} exited with code {proc.ExitCode} after {stopwatch.Elapsed.TotalSeconds:0.#}s.");
 						return true;
 					}
 
+					// Kill the still-running process before retrying; a concurrent retry corrupts the NuGet cache (a version folder left without its .nupkg), which then fails every later restore.
 					Debug.LogError(
-						"dotnet tool install command did not finish fast enough; timed out. Trying again with longer timeout");
+						$"[BeamCLI] Install attempt {currentTry} did not finish within {timeoutMs / 1000}s. " +
+						"Killing the dotnet process before retrying to avoid corrupting the NuGet cache.");
+					try
+					{
+						if (!proc.HasExited)
+						{
+							proc.Kill();
+						}
+						proc.WaitForExit();
+						Debug.Log($"[BeamCLI] Killed the timed-out dotnet process from attempt {currentTry}.");
+					}
+					catch (Exception killEx)
+					{
+						Debug.LogWarning($"[BeamCLI] Failed to kill the timed-out dotnet install process: {killEx.Message}");
+					}
+
 					const int maxRetries = 5;
 					if (currentTry > maxRetries)
 					{
@@ -246,6 +268,7 @@ namespace Beamable.Editor.BeamCli
 						return false;
 					}
 
+					Debug.Log($"[BeamCLI] Retrying install with a longer timeout (attempt {currentTry + 1}).");
 					return TryRunWithTimeout(++currentTry);
 
 				}
