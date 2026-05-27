@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 // ── Args ───────────────────────────────────────────────────────────────────────
-var validTemplates = new[] { "BeamService", "BeamStorage", "PortalExtensionApp", "PortalExtensionReactApp" };
+var validTemplates = new[] { "BeamService", "BeamStorage", "PortalExtensionReactApp" };
 
 if (args.Length < 1) { Usage(); return; }
 
@@ -84,7 +84,6 @@ switch (templateName)
         Console.Write($"\r{new string(' ', consoleWidth - 1)}\r");
         break;
     }
-    case "PortalExtensionApp":
     case "PortalExtensionReactApp":
     {
         foreach (string f in EnumerateFiles(searchPath, "package.json", ignorePaths, [templatesDir]))
@@ -149,7 +148,7 @@ switch (templateName)
         projectName = Path.GetFileNameWithoutExtension(csproj);
         break;
     }
-    case "PortalExtensionApp":
+    case "PortalExtensionReactApp":
     {
         string pkgPath = Path.Combine(selectedDir, "package.json");
         if (!File.Exists(pkgPath)) { Console.Error.WriteLine($"Error: package.json not found in {selectedDir}"); return; }
@@ -291,7 +290,7 @@ finally
 static void Usage()
 {
     Console.Error.WriteLine("Usage: dotnet run update-template.cs <TemplateName>");
-    Console.Error.WriteLine("  TemplateName: BeamService | BeamStorage | PortalExtensionApp");
+    Console.Error.WriteLine("  TemplateName: BeamService | BeamStorage | PortalExtensionReactApp");
 }
 
 static int ConsoleWidth()
