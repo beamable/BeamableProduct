@@ -145,13 +145,15 @@ namespace Beamable.Editor.BeamCli
 					installCommand += " --add-source BeamableNugetSource ";
 				}
 
-				if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
+				// Lowercase the version: dotnet tool install builds the global-packages path from the raw --version string, so an uppercase pre-release label (7.2.0-PREVIEW.RC1) mismatches NuGet's lowercased cache folder on case-sensitive (Linux) filesystems.
+				var versionArg = BeamableEnvironment.NugetPackageVersion.ToString().ToLowerInvariant();
+				if (!versionArg.Equals("0.0.123"))
 				{
-					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
+					installCommand += $" --version {versionArg}";
 				}
 				else
 				{
-					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
+					installCommand += $" --version {versionArg}.*";
 				}
 
 				var proc = NewInstallProcess();
