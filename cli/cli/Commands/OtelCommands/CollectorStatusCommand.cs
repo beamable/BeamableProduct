@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server;
 using cli.Dotnet;
+using cli.Services;
 using cli.Utils;
 using Spectre.Console;
 using System.Diagnostics;
@@ -64,10 +65,11 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 		{
 			_ = Task.Run(async () =>
 			{
+				var cache = new OtelDirectoryDataCache(args.ConfigService.ConfigTempOtelDirectoryPath);
 				while (!args.Lifecycle.Source.Token.IsCancellationRequested)
 				{
-					var otelFileStatus = await GetOtelFileStatus(args.ConfigService.ConfigTempOtelDirectoryPath);
-					this.SendResults<ExtraStreamResultChannel, OtelFileStatus>(otelFileStatus);
+					await cache.RecalculateSize(args.Lifecycle.Source.Token);
+					this.SendResults<ExtraStreamResultChannel, OtelFileStatus>(cache.LatestOtelFileStatus);
 					await Task.Delay(TimeSpan.FromSeconds(SECONDS_DELAY_TO_FILE_STATUS));
 				}
 			});
