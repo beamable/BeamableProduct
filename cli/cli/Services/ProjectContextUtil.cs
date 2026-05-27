@@ -56,8 +56,6 @@ public static class ProjectContextUtil
 		
 		if (fetchServerManifest)
 		{
-			var ssw = new Stopwatch();
-			ssw.Start();
 			lock (_existingManifestLock)
 			{
 				var now = DateTimeOffset.Now;
@@ -75,8 +73,6 @@ public static class ProjectContextUtil
 					Log.Verbose("using cached manifest.");
 				}
 			}
-			ssw.Stop();
-			Log.Verbose($"Fetching manifest took {ssw.Elapsed.TotalMilliseconds}");
 			remote = await _existingManifest;
 		}
 
@@ -85,23 +81,16 @@ public static class ProjectContextUtil
 		var sw = new Stopwatch();
 		sw.Start();
 
-		// a single pruned tree walk collects every relevant file kind at once, replacing the three
-		// independent recursive Directory.GetFiles walks that each traversed the whole workspace.
-		var scan = DirectoryUtils.ScanProjectFiles(searchPaths, pathsToIgnore);
-		sw.Stop();
-		Log.Verbose($"Scanning project files took {sw.Elapsed.TotalMilliseconds} ");
-		sw.Restart();
-
-		foreach (var id in FindIgnoredBeamoIds(scan.BeamIgnores))
+		foreach (var id in FindIgnoredBeamoIds(searchPaths))
 		{
 			ignoreIds.Add(id);
 		}
-		var allProjects = FindCsharpProjects(configService.BeamableWorkspace, scan.Csprojs).ToArray();
+		var allProjects = FindCsharpProjects(configService.BeamableWorkspace, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
 
-		var allPortalExtensions = FindPortalExtensionProjects(configService.BeamableWorkspace, scan.PackageJsons);
+		var allPortalExtensions = FindPortalExtensionProjects(configService.BeamableWorkspace, searchPaths, pathsToIgnore);
 
 		sw.Stop();
 		Log.Verbose($"Gathering portal extension apps took {sw.Elapsed.TotalMilliseconds} ");
@@ -111,14 +100,6 @@ public static class ProjectContextUtil
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
 		Dictionary<string, CsharpProjectMetadata> fileNameToProject = allProjects.ToDictionary(kvp => kvp.absolutePath);
-
-		// index projects by file-name-without-extension (first wins, case-insensitive) so the http
-		// protocol conversion can resolve project references in O(1) instead of an O(n) scan per ref.
-		var nameToProject = new Dictionary<string, CsharpProjectMetadata>(StringComparer.InvariantCultureIgnoreCase);
-		foreach (var project in allProjects)
-		{
-			nameToProject.TryAdd(project.fileNameWithoutExtension, project);
-		}
 		
 		var manifest = new BeamoLocalManifest
 		{
@@ -147,7 +128,7 @@ public static class ProjectContextUtil
 			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject);
 			if (ignoreIds.Contains(definition.BeamoId)) continue;
 			
-			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, nameToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, fileNameToProject);
 			manifest.ServiceDefinitions.Add(definition);
 			try
 			{
@@ -326,35 +307,7 @@ public static class ProjectContextUtil
 		new Dictionary<string, CsharpProjectMetadata>();
 
 	private static object _cacheLock = new object();
-
-	/// <summary>
-	/// A single MSBuild <see cref="ProjectCollection"/> reused for every csproj parsed in this process,
-	/// instead of allocating one per file. The metadata cache retains the live <see cref="Project"/>
-	/// objects this loads (used later for property/path lookups), so the collection is intentionally
-	/// long-lived and never disposed.
-	/// </summary>
-	private static ProjectCollection _sharedProjectCollection;
-	private static object _projectCollectionLock = new object();
-
-	/// <summary>
-	/// Loads a project from the shared <see cref="ProjectCollection"/>, unloading any stale instance
-	/// already loaded for that path first so a re-parse (after a file change) reflects the new content.
-	/// </summary>
-	static Project LoadProjectFresh(string fullPath)
-	{
-		lock (_projectCollectionLock)
-		{
-			_sharedProjectCollection ??= new ProjectCollection { IsBuildEnabled = true };
-
-			foreach (var loaded in _sharedProjectCollection.GetLoadedProjects(fullPath).ToArray())
-			{
-				_sharedProjectCollection.UnloadProject(loaded);
-			}
-
-			return _sharedProjectCollection.LoadProject(fullPath);
-		}
-	}
-
+	
 	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
 	{
 		metadata = null;
@@ -393,31 +346,65 @@ public static class ProjectContextUtil
 		}
 	}
 
-	public static HashSet<string> FindIgnoredBeamoIds(IReadOnlyList<string> beamIgnoreFiles)
+	public static HashSet<string> FindIgnoredBeamoIds(List<string> searchPaths)
 	{
 
 		// .beamignore files are files with beamoIds per line.
 		// All beamoIds listed in these files need to be ignored
-		// from the resulting local manifest.
+		// from the resulting local manifest. 
 
 		var beamoIdsToIgnore = new HashSet<string>();
-		foreach (var path in beamIgnoreFiles)
+		foreach (var searchPath in searchPaths)
 		{
-			var lines = File.ReadAllLines(path);
-			foreach (var line in lines)
+			var somePaths = Directory.GetFiles(searchPath, "*.beamignore", SearchOption.AllDirectories);
+			foreach (var path in somePaths)
 			{
-				beamoIdsToIgnore.Add(line.Trim());
+				var lines = File.ReadAllLines(path);
+				foreach (var line in lines)
+				{
+					beamoIdsToIgnore.Add(line.Trim());
+				}
 			}
 		}
 
 		return beamoIdsToIgnore;
 	}
 
-	public static List<PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, IReadOnlyList<string> packageJsonPaths)
+	public static List<PortalExtensionDef> FindPortalExtensionProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			var somePaths = Directory.GetFiles(searchPath, "package.json", SearchOption.AllDirectories);
+
+			var relevantFiles = somePaths
+				.Where(path => !path.Contains(Path.DirectorySeparatorChar + "node_modules" + Path.DirectorySeparatorChar));
+
+			pathList.AddRange(relevantFiles);
+		}
+
+		var filteredPaths = new List<string>();
+
+		foreach (var path in pathList)
+		{
+			var canBeAdded = true;
+			foreach (var pathToIgnore in pathsToIgnore)
+			{
+				if (path.StartsWith(pathToIgnore))
+				{
+					canBeAdded = false;
+					break;
+				}
+			}
+
+			if(canBeAdded) filteredPaths.Add(path);
+		}
+
+		var paths = filteredPaths.ToArray();
+
 		var projects = new List<PortalExtensionDef>();
 
-		foreach (string filePath in packageJsonPaths)
+		foreach (string filePath in paths)
 		{
 			try
 			{
@@ -447,17 +434,40 @@ public static class ProjectContextUtil
 		return projects;
 	}
 
-	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, IReadOnlyList<string> csprojPaths)
+	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
 
-		// paths are already collected and ignore-filtered by DirectoryUtils.ScanProjectFiles.
-		var paths = csprojPaths as IList<string> ?? csprojPaths.ToArray();
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			var somePaths = Directory.GetFiles(searchPath, "*.csproj", SearchOption.AllDirectories);
+			pathList.AddRange(somePaths);
+		}
 
-		var projects = new CsharpProjectMetadata[paths.Count];
+		var filteredPaths = new List<string>();
 
-		for (var i = 0 ; i < paths.Count; i ++)
+		foreach (var path in pathList)
+		{
+			var canBeAdded = true;
+			foreach (var pathToIgnore in pathsToIgnore)
+			{
+				if (path.StartsWith(pathToIgnore))
+				{
+					canBeAdded = false;
+					break;
+				}
+			}
+
+			if(canBeAdded) filteredPaths.Add(path);
+		}
+
+		var paths = filteredPaths.ToArray();
+		
+		var projects = new CsharpProjectMetadata[paths.Length];
+
+		for (var i = 0 ; i < paths.Length; i ++)
 		{
 			var path = paths[i];
 
@@ -501,7 +511,9 @@ public static class ProjectContextUtil
 				fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path)
 			};
 
-			var buildProject = LoadProjectFresh(Path.GetFullPath(path));
+			var buildEngine = new ProjectCollection();
+			buildEngine.IsBuildEnabled = true;
+			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
 			// Log.Verbose($"loaded csproj - {sw.ElapsedMilliseconds}");
 
@@ -660,7 +672,7 @@ public static class ProjectContextUtil
 		return protocol;
 	}
 	
-	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> fileNameToProject)
+	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		var protocol = new HttpMicroserviceLocalProtocol();
 		protocol.DockerBuildContextPath = ".";
@@ -676,7 +688,7 @@ public static class ProjectContextUtil
 		foreach (MsBuildProjectReference referencedProject in project.projectReferences)
 		{
 			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
-			if(!fileNameToProject.TryGetValue(referencedName, out var knownProject))
+			if(!TryGetValueFromFileName(absPathToProject, referencedName, out var knownProject))
 			{
 				// Check if this is a Unity Assembly reference that does not have it's csproj generated yet
 				if (!string.IsNullOrEmpty(referencedProject.BeamUnityAssemblyName))
@@ -740,6 +752,26 @@ public static class ProjectContextUtil
 	}
 
 
+	public static bool TryGetValueFromFileName(Dictionary<string, CsharpProjectMetadata> absPathToProject, string fileName,
+		out CsharpProjectMetadata projectMetadata)
+	{
+		foreach (var csharpProjectMetadata in absPathToProject)
+		{
+			if(csharpProjectMetadata.Key == null)
+			{
+				throw new CliException("Invalid CSharp Project Name found");
+			}
+			if (Path.GetFileNameWithoutExtension(csharpProjectMetadata.Key)!.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
+			{
+				projectMetadata = csharpProjectMetadata.Value;
+				return true;
+			}
+		}
+
+		projectMetadata = null;
+		return false;
+	}
+	
 	static string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 		? metadata.fileNameWithoutExtension
 		: metadata.properties.BeamId;
