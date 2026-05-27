@@ -23,7 +23,7 @@ The response has two sections:
 
 ### 2. Create the extension
 
-The default template is **React** (TypeScript). Always use React unless the user explicitly requests Svelte or another framework — React is the LTS-supported template.
+The default template is **React** (TypeScript). There aren't other templates for other frameworks at the current moment.
 
 For a **page extension** (new navigation page):
 ```
@@ -39,7 +39,6 @@ beam_exec("project new portal-extension <Name> --mount-page \"<path>\" --mount-s
 - `--mount-selector` is REQUIRED and must match one of the selectors from step 1
 - Do NOT provide `--mount-group` or `--mount-label`
 
-To use Svelte instead (only if the user requests it): add `--template svelte` to the command.
 {{ if commands["project new portal-extension"] }}
 #### `beam project new portal-extension` options
 | Option | Type | Description |
@@ -75,7 +74,7 @@ The portal extension uses `@beamable/portal-toolkit` which depends on `@beamable
 
 ## Beamable UI Components
 
-Portal extensions use components from `@beamable/portal-toolkit`. Always default to **React (LTS-supported)**. Only use Svelte or other frameworks if the user explicitly requests it.
+Portal extensions use components from `@beamable/portal-toolkit`. Always default to **React (LTS-supported)**.
 
 ### Finding the component API
 
@@ -86,7 +85,6 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 | Template | Files to read | Import path |
 |----------|--------------|-------------|
 | **React** (default) | `react-components.ts` — display components<br>`react-bindable.ts` — form controls (`onValueChange`/`onCheckedChange` callbacks)<br>`react-custom.ts` — `BeamTable<T>` with marker children<br>`react-markers.ts` — `BeamColumn<T>`, `BeamTopRow`, `BeamGroupHeader` | `@beamable/portal-toolkit/react` |
-| **Svelte** (only if user requests, `--template svelte`) | `svelte-elements.ts` — typed `<beam-*>` web component tags | Add `/// <reference types="@beamable/portal-toolkit/svelte" />` to `app.d.ts` |
 | **Other frameworks** (only if user requests) | `custom-elements.json` (in `node_modules/@beamable/portal-toolkit/`) | Use `<beam-*>` web component tags directly |
 
 ### Key patterns
@@ -102,7 +100,7 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
-- **Always default to React.** React is the LTS-supported template. Only use `--template svelte` or other frameworks if the user explicitly asks for it.
+- **Always default to React.** React is the only supported template.
 - **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
 - **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
 - **The `--service-directory` for portal extensions is `extensions/`**, not `services/`.
@@ -110,20 +108,19 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 ## Generated microservice clients
 
 When `portal extension add-microservice` generates clients:
-- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.ts` (TypeScript for React template, `.js` for Svelte template)
+- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.ts`
 - The client class extends `BeamMicroServiceClient` from `@beamable/sdk`
 - Import in React: `import { MyServiceClient } from '../beamable/clients/MyServiceClient'`
-- Import in Svelte: `import { MyServiceClient } from '../beamable/clients/MyServiceClient.js'`
 
 ## Wrap-Up
 
 After completing the workflow, provide the user with a summary that covers:
 
-1. **What was created**: The portal extension name, template used (React or Svelte), and whether it is a page extension (new navigation entry) or a component extension (injected into an existing page).
+1. **What was created**: The portal extension name and whether it is a page extension (new navigation entry) or a component extension (injected into an existing page).
 2. **Where the files live**:
    - Extension project root: `extensions/<Name>/` — contains the extension source.
-   - Entry point: `extensions/<Name>/src/App.tsx` (React) or `extensions/<Name>/src/App.svelte` (Svelte).
-   - Components: Import from `@beamable/portal-toolkit/react` (React) or use `<beam-*>` web component tags (Svelte).
+   - Entry point: `extensions/<Name>/src/App.tsx`.
+   - Components: Import from `@beamable/portal-toolkit/react`.
    - Package config: `extensions/<Name>/package.json` — dependencies including `@beamable/portal-toolkit`.
    - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated typed clients for calling microservice endpoints.
    - Service manifest: `.beamable/beamoLocalManifest.json` — tracks the extension alongside other services.

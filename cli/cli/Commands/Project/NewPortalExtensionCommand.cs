@@ -86,7 +86,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		AddOption(new Option<string>(
 				aliases: new string[] { "--template" },
 				getDefaultValue: () => PortalExtensionTemplates.React,
-				description: "UI framework template to scaffold the extension with. Allowed values: svelte, react"),
+				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
 	}
 

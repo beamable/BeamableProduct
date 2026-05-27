@@ -53,7 +53,7 @@ public class ExtensionBuildData
 
 public class PortalExtensionObserver
 {
-	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "svelte", "js", "html", "tsx", "jsx", "ts" };
+	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "js", "html", "tsx", "jsx", "ts" };
 	private bool _alreadyStarted;
 
 	private PortalExtensionDef _metaData;

@@ -12,5 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `react` and `react-dom` are declared as optional peer dependencies.
 - `@beamable/portal-toolkit/react` types entry: a strict React JSX augmentation that adds per-component type information for `beam-*` web components (parallel to the existing `@beamable/portal-toolkit/svelte` entry).
 
+### Removed
+- `@beamable/portal-toolkit/svelte` types export and `svelte` peer/dev dependencies. Svelte template is no longer supported — React is the only portal extension template.
+
 ### Changed
 - Uses beam web component definitions from in development portal.
