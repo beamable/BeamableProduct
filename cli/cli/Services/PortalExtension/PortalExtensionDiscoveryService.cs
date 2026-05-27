@@ -21,7 +21,8 @@ public class ExtensionBuildMetaData
 public class PortalExtensionDiscoveryService : Microservice
 {
 
-	[ClientCallable]
+	// Note: this creates source code leaking, even tho the service has an ever changing Guid
+	[Callable]
 	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
