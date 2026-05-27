@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed useless regex escapes in `BeamJsonUtils`.
+- Fixed session-start event for Athena pipeline.
 
 ## [1.1.1] - 2026-04-16
 
