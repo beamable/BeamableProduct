@@ -166,6 +166,8 @@ namespace Beamable.Editor.BeamCli
 					RedirectStandardError = true
 				};
 				proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+				// Remove a corrupt global-packages entry (extracted, missing its .nupkg) so the install re-downloads cleanly instead of short-circuiting on it.
+				HealCorruptGlobalPackagesEntry();
 				Debug.Log($"[BeamCLI] Installing Beam CLI version [{BeamableEnvironment.NugetPackageVersion}]. " +
 				          $"Command: [dotnet {installCommand}]. A first-time install with a cold NuGet cache can be slow while packages download.");
 				TryRunWithTimeout(1);
@@ -274,6 +276,45 @@ namespace Beamable.Editor.BeamCli
 					Debug.Log($"[BeamCLI] Retrying install with a longer timeout (attempt {currentTry + 1}).");
 					return TryRunWithTimeout(++currentTry);
 
+				}
+
+				void HealCorruptGlobalPackagesEntry()
+				{
+					try
+					{
+						var packageId = "beamable.tools";
+						var version = BeamableEnvironment.NugetPackageVersion.ToString().ToLowerInvariant();
+						var globalPackages = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+						if (string.IsNullOrEmpty(globalPackages))
+						{
+							var home = Environment.GetEnvironmentVariable("HOME");
+							if (string.IsNullOrEmpty(home))
+							{
+								home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+							}
+							globalPackages = Path.Combine(home, ".nuget", "packages");
+						}
+
+						var packageDir = Path.Combine(globalPackages, packageId, version);
+						if (!Directory.Exists(packageDir))
+						{
+							Debug.Log($"[BeamCLI] No pre-existing global-packages entry at [{packageDir}].");
+							return;
+						}
+
+						var nupkgCount = Directory.GetFiles(packageDir, "*.nupkg").Length;
+						var totalFiles = Directory.GetFiles(packageDir, "*", SearchOption.AllDirectories).Length;
+						Debug.Log($"[BeamCLI] Found global-packages entry [{packageDir}]: {nupkgCount} .nupkg, {totalFiles} total files.");
+						if (nupkgCount == 0)
+						{
+							Debug.LogWarning($"[BeamCLI] Entry [{packageDir}] is missing its .nupkg (corrupt). Deleting it so the install can re-download a complete copy.");
+							Directory.Delete(packageDir, true);
+						}
+					}
+					catch (Exception healEx)
+					{
+						Debug.LogWarning($"[BeamCLI] Auto-heal of the global-packages cache failed: {healEx.Message}");
+					}
 				}
 			}
 		}
