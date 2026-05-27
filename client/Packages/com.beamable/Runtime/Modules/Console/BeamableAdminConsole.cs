@@ -227,6 +227,13 @@ namespace Beamable.Console
 						_inputText = _history.Next();
 						Event.current.Use();
 						break;
+					
+					// Forced hide here if using the Old Input System since the tab intercept all input calls
+#if ENABLE_LEGACY_INPUT_MANAGER
+					case KeyCode.BackQuote:
+						HideConsole();
+						break;
+#endif
 				}
 			}
 
