@@ -135,7 +135,6 @@ namespace Beamable.Editor.BeamCli
 					return true;
 				}
 
-				var proc = new Process();
 				var installCommand = $"tool install Beamable.Tools --create-manifest-if-needed --allow-downgrade";
 
 				// Only add the local folder feed for the local dev version (0.0.123.*). For a published
@@ -155,19 +154,7 @@ namespace Beamable.Editor.BeamCli
 					installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}.*";
 				}
 
-				proc.StartInfo = new ProcessStartInfo
-				{
-					FileName = "dotnet",
-					WorkingDirectory = Path.GetFullPath("."),
-					Arguments = installCommand,
-					UseShellExecute = false,
-					CreateNoWindow = true,
-					RedirectStandardOutput = true,
-					RedirectStandardError = true
-				};
-				proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-				// Remove a corrupt global-packages entry (extracted, missing its .nupkg) so the install re-downloads cleanly instead of short-circuiting on it.
-				HealCorruptGlobalPackagesEntry();
+				var proc = NewInstallProcess();
 				Debug.Log($"[BeamCLI] Installing Beam CLI version [{BeamableEnvironment.NugetPackageVersion}]. " +
 				          $"Command: [dotnet {installCommand}]. A first-time install with a cold NuGet cache can be slow while packages download.");
 				TryRunWithTimeout(1);
@@ -177,6 +164,22 @@ namespace Beamable.Editor.BeamCli
 
 				var output = proc.StandardOutput.ReadToEnd();
 				var error = proc.StandardError.ReadToEnd();
+
+				// On some SDKs the local tool installer caches the package without its .nupkg and then crashes finalizing it. Only when we see that exact failure, pre-download the package via a normal restore (which keeps the .nupkg) and retry once, so unaffected SDKs never pay the cost.
+				var installLog = (output ?? string.Empty) + (error ?? string.Empty);
+				if (proc.ExitCode != 0 && installLog.Contains(".nupkg") &&
+				    (installLog.Contains("Could not find file") || installLog.Contains("FileNotFoundException")))
+				{
+					Debug.LogWarning("[BeamCLI] Install failed with a missing .nupkg in the global packages cache (known local tool-install issue). Healing the cache and pre-downloading the package, then retrying once.");
+					HealCorruptGlobalPackagesEntry();
+					WarmGlobalPackagesCache();
+
+					proc = NewInstallProcess();
+					TryRunWithTimeout(1);
+					output = proc.StandardOutput.ReadToEnd();
+					error = proc.StandardError.ReadToEnd();
+				}
+
 				if (!string.IsNullOrWhiteSpace(error) || proc.ExitCode != 0)
 				{
 					StringBuilder message = new StringBuilder("Unable to install BeamCLI");
@@ -225,6 +228,25 @@ namespace Beamable.Editor.BeamCli
 				}
 
 				return proc.ExitCode == 0;
+
+				Process NewInstallProcess()
+				{
+					var p = new Process
+					{
+						StartInfo = new ProcessStartInfo
+						{
+							FileName = "dotnet",
+							WorkingDirectory = Path.GetFullPath("."),
+							Arguments = installCommand,
+							UseShellExecute = false,
+							CreateNoWindow = true,
+							RedirectStandardOutput = true,
+							RedirectStandardError = true
+						}
+					};
+					p.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+					return p;
+				}
 
 				bool TryRunWithTimeout(int currentTry)
 				{
@@ -276,6 +298,61 @@ namespace Beamable.Editor.BeamCli
 					Debug.Log($"[BeamCLI] Retrying install with a longer timeout (attempt {currentTry + 1}).");
 					return TryRunWithTimeout(++currentTry);
 
+				}
+
+				void WarmGlobalPackagesCache()
+				{
+					var version = BeamableEnvironment.NugetPackageVersion.ToString();
+					// The local dev flow installs 0.0.123.* from the local folder feed, which already
+					// lands the .nupkg in the cache, so there is nothing to warm (and it is not on nuget.org).
+					if (version.StartsWith("0.0.123"))
+					{
+						return;
+					}
+
+					try
+					{
+						var warmDir = Path.Combine(Path.GetFullPath("Library/BeamableEditor"), "cli-cache-warm");
+						Directory.CreateDirectory(warmDir);
+						var csprojPath = Path.Combine(warmDir, "warm.csproj");
+						File.WriteAllText(csprojPath,
+							"<Project Sdk=\"Microsoft.NET.Sdk\">\n" +
+							"  <PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup>\n" +
+							$"  <ItemGroup><PackageDownload Include=\"Beamable.Tools\" Version=\"[{version}]\" /></ItemGroup>\n" +
+							"</Project>\n");
+
+						var warm = new Process
+						{
+							StartInfo = new ProcessStartInfo
+							{
+								FileName = "dotnet",
+								WorkingDirectory = warmDir,
+								Arguments = $"restore \"{csprojPath}\"",
+								UseShellExecute = false,
+								CreateNoWindow = true,
+								RedirectStandardOutput = true,
+								RedirectStandardError = true
+							}
+						};
+						warm.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+						Debug.Log($"[BeamCLI] Warming the NuGet cache with Beamable.Tools [{version}] via PackageDownload restore...");
+						warm.Start();
+						if (!warm.WaitForExit(120 * 1000))
+						{
+							try { if (!warm.HasExited) warm.Kill(); }
+							catch { /* ignore */ }
+							Debug.LogWarning("[BeamCLI] Cache-warm restore timed out; continuing to the install anyway.");
+							return;
+						}
+
+						var output = warm.StandardOutput.ReadToEnd();
+						var error = warm.StandardError.ReadToEnd();
+						Debug.Log($"[BeamCLI] Cache-warm restore exited with code {warm.ExitCode}. {output} {error}");
+					}
+					catch (Exception warmEx)
+					{
+						Debug.LogWarning($"[BeamCLI] Cache-warm failed (continuing to the install anyway): {warmEx.Message}");
+					}
 				}
 
 				void HealCorruptGlobalPackagesEntry()
