@@ -14,30 +14,34 @@ public static class DirectoryUtils
 {
 	public static DirectoryInfoUtils CalculateDirectorySize(string path)
 	{
-		long size = 0;
-		int fileCount = 0;
-
-		var options = new EnumerationOptions
+		var result = new DirectoryInfoUtils()
 		{
-			RecurseSubdirectories = true,
-			IgnoreInaccessible = true,          // skip permission errors silently
-			AttributesToSkip = FileAttributes.ReparsePoint  // skip symlinks/junctions
+			FileCount = 0,
+			Size = 0
 		};
 
-		foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", options))
+		try
 		{
-			try
+			var dirInfo = new DirectoryInfo(path);
+			foreach (var fileInfo in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
 			{
-				size += file.Length;   // Length is pre-populated on the FileInfo
-				fileCount++;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Could not access file {file.FullName}: {ex.Message}");
+				try
+				{
+					result.Size += fileInfo.Length;
+					result.FileCount++;
+				}
+				catch (Exception ex)
+				{
+					Log.Warning($"Could not access file {fileInfo.FullName}: {ex.Message}");
+				}
 			}
 		}
+		catch (Exception ex)
+		{
+			Log.Warning($"Could not access directory {path}: {ex.Message}");
+		}
 
-		return new DirectoryInfoUtils { Size = size, FileCount = fileCount };
+		return result;
 	}
 
 	/// <summary>
