@@ -70,6 +70,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Spectre.Console;
+using System.Globalization;
 using ZLogger;
 using Command = System.CommandLine.Command;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -826,6 +827,9 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be built again");
 		
+		CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
 		BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		var logBuffer = new ZLoggerBufferedProcessor();
 		{ // construct some fake log setup so that we can log before the actual logs are initilaized. 
