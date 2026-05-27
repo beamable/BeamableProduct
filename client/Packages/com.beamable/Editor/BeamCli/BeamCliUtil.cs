@@ -284,13 +284,13 @@ namespace Beamable.Editor.BeamCli
 					{
 						var packageId = "beamable.tools";
 						var version = BeamableEnvironment.NugetPackageVersion.ToString().ToLowerInvariant();
-						var globalPackages = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+						var globalPackages = System.Environment.GetEnvironmentVariable("NUGET_PACKAGES");
 						if (string.IsNullOrEmpty(globalPackages))
 						{
-							var home = Environment.GetEnvironmentVariable("HOME");
+							var home = System.Environment.GetEnvironmentVariable("HOME");
 							if (string.IsNullOrEmpty(home))
 							{
-								home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+								home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
 							}
 							globalPackages = Path.Combine(home, ".nuget", "packages");
 						}
