@@ -12,6 +12,11 @@ using UnityEngine.UI;
 using Component = UnityEngine.Component;
 using Object = UnityEngine.Object;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+using UnityEngine.EventSystems;
+#endif
+
 namespace Beamable.Runtime.LightBeams
 {
 	/// <summary>
@@ -133,6 +138,28 @@ namespace Beamable.Runtime.LightBeams
 			Application.OpenURL(url);
 		}
 		
+		public static void CheckConvertSampleToNewInputSystem()
+		{
+#if ENABLE_INPUT_SYSTEM
+		EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+            return;
+
+        // Remove old module
+        var oldModule = eventSystem.GetComponent<StandaloneInputModule>();
+
+        if (oldModule != null)
+        {
+            Object.Destroy(oldModule);
+        }
+        
+        // Add new module if missing
+        if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
+        {
+            eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
+#endif
+		}
 	}
 
 	public interface ILightRoot
