@@ -40,6 +40,7 @@ namespace Beamable.Runtime.LightBeams
 			CanvasGroup loadingBlocker,
 			Action<IDependencyBuilder> scopeConfiguration)
 		{
+			
 			var lightContext = new LightBeam
 			{
 				BeamContext = ctx,
@@ -52,7 +53,10 @@ namespace Beamable.Runtime.LightBeams
 				scopeConfiguration?.Invoke(builder);
 			});
 			lightContext.Scope = scope;
-
+			
+			// Check and convert Input
+			LightBeam.CheckConvertSampleToNewInputSystem();
+			
 			await ctx.OnReady.ShowLoading(lightContext);
 			return lightContext;
 		}
