@@ -751,7 +751,7 @@ namespace Beamable.Server.Editor.Usam
 			
 			if (_config.LogErrorsToUnityConsole  && (logMessage.logLevel.ToLowerInvariant().StartsWith("f") || logMessage.logLevel.ToLowerInvariant().StartsWith("e"))) // fatal or error
 			{
-				Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, "{0}", $"[{beamoId}] {message}");
+				Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, "[{0}] {1}", beamoId, message);
 			}
 		}
 		
