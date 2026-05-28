@@ -398,64 +398,47 @@ export class ContentService
     const contentStorage = await this.contentStoragePromise;
     const checksumKey = this.getManifestChecksumKey(manifestId);
 
-    let latestChecksum;
-    try {
-      // Fetch the locally stored checksum and the latest checksum from the API in parallel.
-      const [cachedChecksum, checksumResponse] = await Promise.all([
-        contentStorage.get<ContentManifestChecksum>(checksumKey),
-        contentGetManifestChecksumBasic(
-          this.requester,
-          manifestId,
-          undefined,
-          this.accountId,
-        ),
-      ]);
-      latestChecksum = checksumResponse.body;
+    // Fetch the locally stored checksum and the latest checksum from the API in parallel.
+    const [cachedChecksum, { body: latestChecksum }] = await Promise.all([
+      contentStorage.get<ContentManifestChecksum>(checksumKey),
+      contentGetManifestChecksumBasic(
+        this.requester,
+        manifestId,
+        undefined,
+        this.accountId,
+      ),
+    ]);
 
-      // Compare the checksums to see if an update is needed.
-      if (cachedChecksum?.checksum === latestChecksum.checksum) {
-        // Checksums match. The local version is up-to-date.
-        const entriesKey = this.getManifestEntriesKey(manifestId);
-        const manifestEntries =
-          await contentStorage.get<ClientContentInfoJson[]>(entriesKey);
+    // Compare the checksums to see if an update is needed.
+    if (cachedChecksum?.checksum === latestChecksum.checksum) {
+      // Checksums match. The local version is up-to-date.
+      const entriesKey = this.getManifestEntriesKey(manifestId);
+      const manifestEntries =
+        await contentStorage.get<ClientContentInfoJson[]>(entriesKey);
 
-        if (!manifestEntries) {
-          // Manifest entries not found in storage. Fetch them from the API.
-          await this.fetchAndCacheManifestEntries(manifestId, {
-            id: latestChecksum.id,
-            checksum: latestChecksum.checksum,
-            created: latestChecksum.createdAt,
-            uid: latestChecksum.uid,
-          });
-          return;
-        }
-
-        // Manifest entries found in storage. Load them into the in-memory cache.
-        ContentService._manifestChecksumsCache[manifestId] = cachedChecksum;
-        ContentService._manifestEntriesCache[manifestId] = manifestEntries;
-      } else {
-        // Checksums differ. Fetch the manifest entries from the API and cache it.
+      if (!manifestEntries) {
+        // Manifest entries not found in storage. Fetch them from the API.
         await this.fetchAndCacheManifestEntries(manifestId, {
           id: latestChecksum.id,
           checksum: latestChecksum.checksum,
           created: latestChecksum.createdAt,
           uid: latestChecksum.uid,
         });
-      }
-    } catch (err) {
-      if (ContentService.isManifestNotFound(err)) {
-        // Realm has no published content — treat as empty manifest.
-        ContentService._manifestEntriesCache[manifestId] = [];
         return;
       }
-      throw err;
-    }
-  }
 
-  private static isManifestNotFound(err: unknown): boolean {
-    if (!BeamError.is(err)) return false;
-    const status = (err.context?.response as { status?: number })?.status;
-    return status === 404;
+      // Manifest entries found in storage. Load them into the in-memory cache.
+      ContentService._manifestChecksumsCache[manifestId] = cachedChecksum;
+      ContentService._manifestEntriesCache[manifestId] = manifestEntries;
+    } else {
+      // Checksums differ. Fetch the manifest entries from the API and cache it.
+      await this.fetchAndCacheManifestEntries(manifestId, {
+        id: latestChecksum.id,
+        checksum: latestChecksum.checksum,
+        created: latestChecksum.createdAt,
+        uid: latestChecksum.uid,
+      });
+    }
   }
 
   /** Fetches a content manifest entries from the API and caches it locally. */

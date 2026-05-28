@@ -1,6 +1,5 @@
 using Beamable.Editor.Util;
 using System.Collections.Generic;
-using TMPro;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -312,16 +311,6 @@ namespace Beamable.Editor.Library
 			{
 				AddDelayedAction(() =>
 				{
-					
-						// Search for the TMP Settings asset which is part of the Essential Resources
-						// Use this to detect if the TMP Pro Resources was imported already
-						string[] guid = AssetDatabase.FindAssets("t:TMP_Settings");
-						if (guid.Length == 0)
-						{
-							TMP_PackageResourceImporter.ImportResources(true,false,false);
-							Debug.Log("TMP Pro Resources Imported");
-						}
-					
 					library.OpenSample(lightBeam);
 				});
 			}

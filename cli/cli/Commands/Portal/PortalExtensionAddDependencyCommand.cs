@@ -1,9 +1,7 @@
-using Beamable.Server;
 using cli.Services;
 using cli.Services.Web;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
-using static Beamable.Common.Constants.Features.PortalExtension;
 
 namespace cli.Portal;
 
@@ -64,13 +62,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 			extension.MicroserviceDependencies.Add(microservice.BeamoId);
 
-			if (root[EXTENSION_BEAMABLE_PROPERTY_NAME] == null)
-			{
-				throw new CliException(
-					$"Field {EXTENSION_BEAMABLE_PROPERTY_NAME} expected in extension package.json file");
-			}
-
-			root[EXTENSION_BEAMABLE_PROPERTY_NAME][EXTENSION_DEPENDENCIES_PROPERTY_NAME] =
+			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_DEPENDENCIES_PROPERTY_NAME] =
 				JToken.FromObject(extension.MicroserviceDependencies);
 
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
@@ -94,18 +86,12 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
-			if (!dependencies.Contains(beamId))
+			if (!dependencies.Contains(beamId) || localProtocol.OpenApiDoc == null)
 			{
 				continue;
 			}
 
-			if (localProtocol.OpenApiDoc == null)
-			{
-				Log.Warning($"Client generation for {beamId} is being skipped because there is no API doc. Try running {beamId} once to make it available and try again.");
-				continue;
-			}
-
-			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts");
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "js");
 			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 			generator.GenerateClientCode(clientsOutputDirectory);
 		}
@@ -118,10 +104,11 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 
 		JObject root = JObject.Parse(jsonContent);
 
-		JToken deps = root[EXTENSION_BEAMABLE_PROPERTY_NAME][EXTENSION_DEPENDENCIES_PROPERTY_NAME];
+		JToken deps = root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_DEPENDENCIES_PROPERTY_NAME];
 
 		if (deps is { Type: JTokenType.Array })
 		{
+			// Convert the JArray directly to a List<string>
 			return deps.ToObject<List<string>>();
 		}
 

@@ -77,8 +77,8 @@ echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
 pnpm version "$VERSION" --no-git-tag-version
 echo "  [cmd] pnpm build"
 pnpm build
-echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks --tag local"
-pnpm publish --registry "$REGISTRY" --no-git-checks --tag local
+echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
+pnpm publish --registry "$REGISTRY" --no-git-checks
 
 cp package.json.devbak package.json && rm package.json.devbak
 SDK_BACKUP=false
@@ -119,8 +119,8 @@ pnpm version "$VERSION" --no-git-tag-version
 
 echo "  [cmd] pnpm build"
 pnpm build
-echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks --tag local"
-pnpm publish --registry "$REGISTRY" --no-git-checks --tag local
+echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
+pnpm publish --registry "$REGISTRY" --no-git-checks
 
 cp package.json.devbak package.json && rm package.json.devbak
 TOOLKIT_BACKUP=false

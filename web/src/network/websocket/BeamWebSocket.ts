@@ -228,8 +228,7 @@ interface SessionStartFrame {
     platform: string;
     model: string;
     locale?: string;
-    "language.code"?: string;
-    "language.context"?: string;
+    language?: { code: string; context: string };
   };
 }
 
@@ -253,8 +252,7 @@ function buildSessionStartFrame(): SessionStartFrame {
 
   if (browserLocale) {
     frame.device.locale = browserLocale.toLowerCase();
-    frame.device["language.code"] =  browserLocale; 
-    frame.device["language.context"] =  'IETF' ;
+    frame.device.language = { code: browserLocale, context: 'IETF' };
   }
 
   return frame;

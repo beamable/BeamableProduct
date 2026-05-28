@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: OpenToolboxWindowMenuItem
   m_EditorClassIdentifier: 
   Order: 10
-  Text: Open Beam Samples
+  Text: Open Beam Library

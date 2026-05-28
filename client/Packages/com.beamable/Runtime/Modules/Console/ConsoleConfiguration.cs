@@ -10,7 +10,6 @@ namespace Beamable.Console
 	{
 		public static ConsoleConfiguration Instance => Get<ConsoleConfiguration>();
 		
-		public float UISize = 1.0f;
 		public bool EnableAdminConsole = true;
 		public bool ForceEnabled = true;
 

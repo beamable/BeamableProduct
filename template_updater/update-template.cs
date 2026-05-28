@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 // ── Args ───────────────────────────────────────────────────────────────────────
-var validTemplates = new[] { "BeamService", "BeamStorage", "PortalExtensionApp", "PortalExtensionReactApp" };
+var validTemplates = new[] { "BeamService", "BeamStorage", "PortalExtensionApp" };
 
 if (args.Length < 1) { Usage(); return; }
 
@@ -85,7 +85,6 @@ switch (templateName)
         break;
     }
     case "PortalExtensionApp":
-    case "PortalExtensionReactApp":
     {
         foreach (string f in EnumerateFiles(searchPath, "package.json", ignorePaths, [templatesDir]))
         {
