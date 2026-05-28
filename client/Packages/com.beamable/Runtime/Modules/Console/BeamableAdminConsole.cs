@@ -37,6 +37,11 @@ namespace Beamable.Console
 		// Virtual keyboard state tracking
 		private bool _wasVirtualKeyboardOpen;
 
+		// Drag-to-scroll state
+		private bool  _isDraggingScroll;
+		private float _dragLastMouseY;
+		private Rect  _scrollViewRect;
+
 		private readonly Dictionary<string, ConsoleCommandEntry> _commands =
 			new Dictionary<string, ConsoleCommandEntry>(StringComparer.OrdinalIgnoreCase);
 
@@ -52,7 +57,6 @@ namespace Beamable.Console
 		private GUIStyle _promptStyle;
 		private GUIStyle _suggestionStyle;
 		private readonly Color _backgroundColor = new Color(0f, 0f, 0f, 0.85f);
-		private readonly float _heightRatio = 0.8f;
 
 		private const string InputControlName = "SAConsoleInput";
 
@@ -86,18 +90,6 @@ namespace Beamable.Console
 			{
 				if (!_isActive){ShowConsole();}
 				else{HideConsole();}
-			}
-			
-			// Handle virtual keyboard confirmation (any platform)
-			if (_isActive && !string.IsNullOrEmpty(_inputText))
-			{
-				bool isKeyboardOpen = TouchScreenKeyboard.visible;
-				if (_wasVirtualKeyboardOpen && !isKeyboardOpen)
-				{
-					// Keyboard was open and is now closed — user pressed confirm
-					SubmitInput(_inputText);
-				}
-				_wasVirtualKeyboardOpen = isKeyboardOpen;
 			}
 		}
 
@@ -240,7 +232,7 @@ namespace Beamable.Console
 			// Guard: Hide() might have been called by Escape above
 			if (!_isActive) return;
 
-			var windowRect = new Rect(0f, 0f, Screen.width, Screen.height * _heightRatio);
+			var windowRect = new Rect(0f, 0f, Screen.width, Screen.height * ConsoleConfiguration.Instance.Height);
 			var prevColor  = GUI.color;
 			GUI.color = _backgroundColor;
 			GUI.DrawTexture(windowRect, Texture2D.whiteTexture);
@@ -279,7 +271,7 @@ namespace Beamable.Console
 
 			// Scrollable output area — reserved space for title + input row
 			float reservedHeight = scaledTitleHeight + scaledInputHeight + Mathf.RoundToInt(2 * _screenScale);
-			float outputHeight = Mathf.Max(Mathf.RoundToInt(40 * _screenScale), Screen.height * _heightRatio - reservedHeight);
+			float outputHeight = Mathf.Max(Mathf.RoundToInt(40 * _screenScale), Screen.height * ConsoleConfiguration.Instance.Height - reservedHeight);
 			_scrollPosition = GUILayout.BeginScrollView(
 				_scrollPosition, GUILayout.Height(outputHeight), GUILayout.ExpandWidth(true));
 			{
@@ -287,10 +279,16 @@ namespace Beamable.Console
 			}
 			GUILayout.EndScrollView();
 
+			if (Event.current.type == EventType.Repaint)
+				_scrollViewRect = GUILayoutUtility.GetLastRect();
+
+			HandleScrollViewDrag();
+
 			// Input row:  ">"  [text field]  [suggestion hint]
 			GUILayout.BeginHorizontal(GUILayout.Height(scaledInputHeight));
 			{
-				GUILayout.Label(">", _promptStyle, GUILayout.Width(scaledPromptWidth));
+				if (GUILayout.Button("Run", _promptStyle, GUILayout.Width(scaledPromptWidth * 2f), GUILayout.Height(scaledInputMinHeight)) && !string.IsNullOrEmpty(_inputText))
+					SubmitInput(_inputText);
 
 				GUI.SetNextControlName(InputControlName);
 				var prevBg   = GUI.backgroundColor;
@@ -321,12 +319,39 @@ namespace Beamable.Console
 				var suggestion = _autoCompleter.CurrentSuggestion;
 				if (!string.IsNullOrEmpty(suggestion))
 				{
-					GUILayout.Label($"↹  {suggestion}", _suggestionStyle, GUILayout.ExpandWidth(false));
+					if (GUILayout.Button($"↹  {suggestion}", _suggestionStyle, GUILayout.ExpandWidth(false)))
+					{
+						_autoCompleter.Accept(ref _inputText);
+						_moveCursorToEndNextFrame = true;
+						_focusInputNextFrame      = true;
+					}
 				}
 			}
 			GUILayout.EndHorizontal();
 		}
 		
+		private void HandleScrollViewDrag()
+		{
+			var e = Event.current;
+			switch (e.type)
+			{
+				case EventType.MouseDown when _scrollViewRect.Contains(e.mousePosition):
+					_isDraggingScroll = true;
+					_dragLastMouseY   = e.mousePosition.y;
+					e.Use();
+					break;
+				case EventType.MouseDrag when _isDraggingScroll:
+					_scrollPosition.y += _dragLastMouseY - e.mousePosition.y;
+					_dragLastMouseY    = e.mousePosition.y;
+					e.Use();
+					break;
+				case EventType.MouseUp when _isDraggingScroll:
+					_isDraggingScroll = false;
+					e.Use();
+					break;
+			}
+		}
+
 		private void MakeStyle()
 		{
 			if (Mathf.Abs(_lastScreenScale - _screenScale) < 0.01f) return;
@@ -359,11 +384,12 @@ namespace Beamable.Console
 
 			_inputStyle = new GUIStyle(GUI.skin.textField)
 			{
-				fontSize = scaledFontSize,
-				normal   = { textColor = Color.white },
-				hover    = { textColor = Color.white },
-				focused  = { textColor = Color.white },
-				active   = { textColor = Color.white }
+				fontSize   = scaledFontSize,
+				alignment  = TextAnchor.MiddleLeft,
+				normal     = { textColor = Color.white },
+				hover      = { textColor = Color.white },
+				focused    = { textColor = Color.white },
+				active     = { textColor = Color.white }
 			};
 
 			_promptStyle = new GUIStyle(GUI.skin.label)
