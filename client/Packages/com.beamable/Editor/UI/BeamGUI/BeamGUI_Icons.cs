@@ -68,79 +68,79 @@ namespace Beamable.Editor.Util
 
 		public static void LoadUnityIcons()
 		{
-			if (iconLocked == null)
+			if (!iconLocked)
 			{
 				iconLocked = EditorGUIUtility.IconContent("Locked").image;
 			}
-			
-			if (iconHelp == null)
+
+			if (!iconHelp)
 			{
 				iconHelp = EditorGUIUtility.IconContent("_Help").image;
 			}
 
-			if (iconRefresh == null)
+			if (!iconRefresh)
 			{
 				iconRefresh = EditorGUIUtility.IconContent("Refresh").image;
 			}
 
-			if (iconSettings == null)
+			if (!iconSettings)
 			{
 				iconSettings = EditorGUIUtility.IconContent("Settings").image;
 			}
 
-			if (iconFolder == null)
+			if (!iconFolder)
 			{
 				iconFolder = EditorGUIUtility.IconContent("Folder Icon").image;
 			}
 
 
-			if (iconOpenApi == null)
+			if (!iconOpenApi)
 			{
 				iconOpenApi = EditorGUIUtility.IconContent("BuildSettings.Web.Small").image;
 			}
 
-			if (iconOpenProject == null)
+			if (!iconOpenProject)
 			{
 				iconOpenProject = EditorGUIUtility.FindTexture("cs Script Icon");
 			}
 
-			if (iconMoreOptions == null)
+			if (!iconMoreOptions)
 			{
 				iconMoreOptions = EditorGUIUtility.IconContent("pane options@2x").image;
 			}
 
-			if (iconPlay == null)
+			if (!iconPlay)
 			{
 				iconPlay = EditorGUIUtility.FindTexture("PlayButton");
 			}
 
-			if (iconPlus == null)
+			if (!iconPlus)
 			{
 				iconPlus = EditorGUIUtility.IconContent("d_Toolbar Plus@2x").image;
 			}
 
-			if (iconCheck == null)
+			if (!iconCheck)
 			{
 				// iconCheck = EditorGUIUtility.IconContent("d_FilterSelectedOnly@2x").image;
 				iconCheck = EditorGUIUtility.IconContent("Toggle Icon").image;
 			}
 
-			if (iconUpload == null)
+			if (!iconUpload)
 			{
 				iconUpload = EditorGUIUtility.IconContent("Update-Available@2x").image;
 			}
 
-			if (iconDownload == null)
+			if (!iconDownload)
 			{
 				iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
 			}
 
-			if (iconMenuOptions == null)
+			if (!iconMenuOptions)
 			{
 				iconMenuOptions = EditorGUIUtility.IconContent("d__Menu@2x").image;
 			}
 
-			if (iconRotate == null)
+			if (!iconRotate)
 			{
 				iconRotate = EditorGUIUtility.IconContent("RotateTool On@2x").image;
 			}
@@ -177,28 +177,28 @@ namespace Beamable.Editor.Util
 				
 
 
-				if (artGameServers == null)
+				if (!artGameServers)
 				{
 					artGameServers =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_gameservers.png", true);
 				}
 
-				if (artLiveOps == null)
+				if (!artLiveOps)
 				{
 					artLiveOps =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_liveops.png", true);
 				}
 
-				if (artContent == null)
+				if (!artContent)
 				{
 					artContent =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_game_content.png", true);
 				}
 
-				if (artServerless == null)
+				if (!artServerless)
 				{
 					artServerless =
 						EditorResources.Load<Texture>(
@@ -211,29 +211,29 @@ namespace Beamable.Editor.Util
 				}
 
 
-				if (iconShadowSoftA == null)
+				if (!iconShadowSoftA)
 				{
 					iconShadowSoftA =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
 				}
 
-				
-				if (iconLogoHeader == null)
+
+				if (!iconLogoHeader)
 				{
 					iconLogoHeader =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Login/UI/icon/logo2 L white.png", true);
 				}
 
-				if (iconBeamableSmall == null)
+				if (!iconBeamableSmall)
 				{
 					iconBeamableSmall =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small.png", true);
 				}
 
-				if (iconBeamableSmallColor == null)
+				if (!iconBeamableSmallColor)
 				{
 					iconBeamableSmallColor =
 						EditorResources.Load<Texture>(
@@ -242,119 +242,119 @@ namespace Beamable.Editor.Util
 				}
 
 
-				if (iconService == null)
+				if (!iconService)
 				{
 					iconService =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/microservice.png", true);
 				}
 
-				if (iconStorage == null)
+				if (!iconStorage)
 				{
 					iconStorage =
 						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/storage.png", true);
 				}
 
-				if (iconOpenMongoExpress == null)
+				if (!iconOpenMongoExpress)
 				{
 					iconOpenMongoExpress =
 						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png",
 						                              true);
 				}
 
-				if (iconTag == null)
+				if (!iconTag)
 				{
 					iconTag = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Tag.png");
 				}
 
-				if (iconType == null)
+				if (!iconType)
 				{
 					iconType = EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Type.png");
 				}
 
-				if (iconStatus == null)
+				if (!iconStatus)
 				{
 					iconStatus =
 						EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Statuses.png");
 				}
 
-				if (iconDelete == null)
+				if (!iconDelete)
 				{
 					iconDelete =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Delete.png");
 				}
 
-				if (iconStatusModified == null)
+				if (!iconStatusModified)
 				{
 					iconStatusModified =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Modified.png");
 				}
 
-				if (iconStatusAdded == null)
+				if (!iconStatusAdded)
 				{
 					iconStatusAdded =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Added.png");
 				}
 
-				if (iconStatusDeleted == null)
+				if (!iconStatusDeleted)
 				{
 					iconStatusDeleted =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Deleted.png");
 				}
 
-				if (iconStatusConflicted == null)
+				if (!iconStatusConflicted)
 				{
 					iconStatusConflicted =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
 				}
 
-				if (iconStatusInvalid == null)
+				if (!iconStatusInvalid)
 				{
 					iconStatusInvalid =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Invalid.png");
 				}
 
-				if (iconSync == null)
+				if (!iconSync)
 				{
 					iconSync = EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Sync.png");
 				}
 
-				if (iconPublish == null)
+				if (!iconPublish)
 				{
 					iconPublish =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Publish.png");
 				}
 
-				if (iconRevertAction == null)
+				if (!iconRevertAction)
 				{
 					iconRevertAction =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconAction_Revert.png");
 				}
 
-				if (iconContentEditorIcon == null)
+				if (!iconContentEditorIcon)
 				{
 					iconContentEditorIcon =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_ItemFallback.png");
 				}
 
-				if (iconContentSnapshotWhite == null)
+				if (!iconContentSnapshotWhite)
 				{
 					iconContentSnapshotWhite =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconsWhite_ContentSnapshot.png");
 				}
 
-				if (iconContentSnapshotColor == null)
+				if (!iconContentSnapshotColor)
 				{
 					iconContentSnapshotColor =
 						EditorResources.Load<Texture>(
