@@ -53,11 +53,12 @@ public static class ProjectContextUtil
 	{
 		var totalsw = Stopwatch.StartNew();
 		ServiceManifest remote = new ServiceManifest();
+		Promise<ServiceManifest> remoteFetch = null;
 		using var activity = rootActivity.CreateChild("generateManifest");
-		
+		var ssw = new Stopwatch();
+
 		if (fetchServerManifest)
 		{
-			var ssw = new Stopwatch();
 			ssw.Start();
 			lock (_existingManifestLock)
 			{
@@ -75,10 +76,11 @@ public static class ProjectContextUtil
 				{
 					Log.Verbose("using cached manifest.");
 				}
+				remoteFetch = _existingManifest;
 			}
-			ssw.Stop();
-			Log.Verbose($"Fetching manifest took {ssw.Elapsed.TotalMilliseconds}");
-			remote = await _existingManifest;
+			// the remote fetch is left in flight intentionally; we await it just before
+			// merging remote services/storages into the manifest, so the network
+			// round-trip overlaps with the local file scan and csproj parsing.
 		}
 
 		configService.GetProjectSearchPaths(out var searchPaths);
@@ -187,6 +189,21 @@ public static class ProjectContextUtil
 		}
 		
 		
+		// await the remote fetch only now — it was kicked off above and ran concurrently
+		// with the local file scan and csproj parsing. If the cache was hit, this returns
+		// immediately. If the fetch failed, the exception surfaces here before we touch
+		// remote.manifest/remote.storageReference below.
+		if (remoteFetch != null)
+		{
+			var rsw = new Stopwatch();
+			rsw.Start();
+			remote = await remoteFetch;
+			rsw.Stop();
+			ssw.Stop();
+			Log.Verbose($"Awaiting remote manifest took {rsw.Elapsed.TotalMilliseconds}");
+			Log.Verbose($"Fetching manifest took {ssw.Elapsed.TotalMilliseconds}");
+		}
+
 		// add in the remote knowledge of services and storages
 		foreach (var remoteService in remote.manifest)
 		{
