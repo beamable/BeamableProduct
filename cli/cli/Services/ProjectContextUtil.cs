@@ -51,6 +51,7 @@ public static class ProjectContextUtil
 		bool useCache=true,
 		bool fetchServerManifest=true)
 	{
+		var totalsw = Stopwatch.StartNew();
 		ServiceManifest remote = new ServiceManifest();
 		using var activity = rootActivity.CreateChild("generateManifest");
 		
@@ -259,6 +260,8 @@ public static class ProjectContextUtil
 		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
 		
 		activity.SetStatus(ActivityStatusCode.Ok);
+		totalsw.Stop();
+		Log.Verbose($"Generate local manifest took {totalsw.Elapsed.TotalMilliseconds}");
 		return manifest;
 	}
 
@@ -328,31 +331,17 @@ public static class ProjectContextUtil
 	private static object _cacheLock = new object();
 
 	/// <summary>
-	/// A single MSBuild <see cref="ProjectCollection"/> reused for every csproj parsed in this process,
-	/// instead of allocating one per file. The metadata cache retains the live <see cref="Project"/>
-	/// objects this loads (used later for property/path lookups), so the collection is intentionally
-	/// long-lived and never disposed.
-	/// </summary>
-	private static ProjectCollection _sharedProjectCollection;
-	private static object _projectCollectionLock = new object();
-
-	/// <summary>
-	/// Loads a project from the shared <see cref="ProjectCollection"/>, unloading any stale instance
-	/// already loaded for that path first so a re-parse (after a file change) reflects the new content.
+	/// Loads a csproj into its own <see cref="ProjectCollection"/>. The collection (and the
+	/// <see cref="Project"/> it owns) stays alive via the reference returned in
+	/// <see cref="CsharpProjectMetadata.msbuildProject"/>; downstream readers call
+	/// <c>GetPropertyValue</c> on that <see cref="Project"/> for properties not captured eagerly.
+	/// A shared collection was tried and broken cached <see cref="Project"/> references after
+	/// re-parses (UnloadProject detaches the live instance another caller still holds).
 	/// </summary>
 	static Project LoadProjectFresh(string fullPath)
 	{
-		lock (_projectCollectionLock)
-		{
-			_sharedProjectCollection ??= new ProjectCollection { IsBuildEnabled = true };
-
-			foreach (var loaded in _sharedProjectCollection.GetLoadedProjects(fullPath).ToArray())
-			{
-				_sharedProjectCollection.UnloadProject(loaded);
-			}
-
-			return _sharedProjectCollection.LoadProject(fullPath);
-		}
+		var collection = new ProjectCollection { IsBuildEnabled = true };
+		return collection.LoadProject(fullPath);
 	}
 
 	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
