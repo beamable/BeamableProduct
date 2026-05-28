@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
 - Removed 5% sample rating for OTEL traces so we can get all traces from portal extensions and errors that happens in the CLI.
 - Improved Content Publish command performance by adding size-aware batching and retry.
+- Refactored calculation of directory size, 2x performance improvement.
+- Refactored generation of local manifest data, 20x performance improvement.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
 - Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
 - Setting environment variable ``BEAM_NO_TELEMETRY`` or the ``BeamCliAllowTelemetry`` config now prevents collector ps process from starting
+- Fixed .NET framework argument parsing issues related to culture and locale handling.
 
 ## [7.0.1] - 2026-04-02
 ### Fixed
