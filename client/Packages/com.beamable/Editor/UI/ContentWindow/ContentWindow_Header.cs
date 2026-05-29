@@ -1,7 +1,9 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
 using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
@@ -436,7 +438,18 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Promise RevertModifiedContents()
 		{
+			// Capture renames before the first sync clears the registry via Reload()
+			var renames = _contentService.GetAllRenames();
+
 			await _contentService.SyncContentsWithProgress(true, false, false, false, showUnityModalProgress: false);
+
+			if (renames.Count > 0)
+			{
+				var renameIds = string.Join(",",
+					renames.SelectMany(r => new[] { r.CreatedFullId, r.DeletedFullId }));
+				await _contentService.SyncContentsWithProgress(
+					true, true, true, true, renameIds, ContentFilterType.ExactIds);
+			}
 		}
 
 		private async Promise RevertConflictedContents()
