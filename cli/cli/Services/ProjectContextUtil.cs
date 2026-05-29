@@ -848,7 +848,7 @@ public static class ProjectContextUtil
 		definition.Protocol = BeamoProtocolType.PortalExtension;
 		definition.ProjectPath = def.AbsolutePackageJsonPath;
 		definition.AbsoluteProjectPath = def.AbsolutePath;
-		definition.Language = BeamoServiceDefinition.ProjectLanguage.JavascriptSvelte;
+		definition.Language = BeamoServiceDefinition.ProjectLanguage.TypescriptReact;
 
 		return definition;
 	}

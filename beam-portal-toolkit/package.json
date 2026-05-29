@@ -45,9 +45,6 @@
       "require": "./dist/rollup.cjs",
       "import": "./dist/rollup.mjs"
     },
-    "./svelte": {
-      "types": "./dist/types/svelte-elements.d.ts"
-    },
     "./react-elements": {
       "types": "./dist/types/react-elements.d.ts"
     },
@@ -61,14 +58,10 @@
   },
   "peerDependencies": {
     "@beamable/sdk": "1.1.1",
-    "svelte": ">=4.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "svelte": {
-      "optional": true
-    },
     "react": {
       "optional": true
     },
@@ -78,7 +71,6 @@
   },
   "devDependencies": {
     "@beamable/sdk": "1.1.1",
-    "svelte": "^5.0.0",
     "tsdown": "^0.16.5",
     "typescript": "^5.8.3"
   }

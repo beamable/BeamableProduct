@@ -96,10 +96,9 @@ Choose the right attribute for each microservice endpoint:
 - [ ] Destructive operations (`content sync --sync-modified`, `deploy plan --replace`) are intentional
 
 ### Portal Extension Components
-- [ ] Extension uses React (`.tsx` files) by default — Svelte (`.svelte`) only if the user explicitly requested `--template svelte`
+- [ ] Extension uses React (`.tsx` files)
 - [ ] React: imports components from `@beamable/portal-toolkit/react` — does NOT use `<beam-*>` web component tags in TSX
-- [ ] Svelte: uses `<beam-*>` web component tags with `@beamable/portal-toolkit/svelte` type augmentation
-- [ ] Uses Beamable components, not raw HTML elements — read `extensions/<Name>/node_modules/@beamable/portal-toolkit/src/generated/` for available components (React: `react-components.ts`, `react-bindable.ts`, `react-custom.ts`; Svelte: `svelte-elements.ts`; other: `custom-elements.json`)
+- [ ] Uses Beamable components, not raw HTML elements — read `extensions/<Name>/node_modules/@beamable/portal-toolkit/src/generated/` for available components (React: `react-components.ts`, `react-bindable.ts`, `react-custom.ts`; other: `custom-elements.json`)
 - [ ] Form controls use `onValueChange`/`onCheckedChange` callbacks (from `react-bindable.ts`) — not raw `onChange`
 - [ ] Components use `variant` and `appearance` props for styling — not hardcoded CSS colors
 

@@ -4,7 +4,6 @@ Utilities and type definitions for building Beamable portal extensions.
 
 - **`Portal.registerExtension()`** — registers your extension with the portal host
 - **TypeScript types** for all Beamable web components (`beam-btn`, `beam-data-table`, etc.)
-- **Svelte element types** for `.svelte` template autocomplete
 - **Re-exports** of `@beamable/sdk` types
 
 ---
@@ -54,18 +53,6 @@ Portal.registerExtension({
 });
 ```
 
-### Svelte autocomplete
-
-Add one line to your project's `app.d.ts`:
-
-```ts
-/// <reference types="@beamable/portal-toolkit/svelte" />
-```
-
-This gives `.svelte` templates full autocomplete for all `beam-*` components.
-
----
-
 ## Development
 
 ### Syncing web components from agentic-portal
@@ -98,7 +85,6 @@ PORTAL_REPO_PATH=/path/to/agentic-portal pnpm sync-components
 This regenerates:
 - `custom-elements.json` — CEM manifest (VS Code HTML IntelliSense)
 - `src/generated/globals.ts` — `HTMLElementTagNameMap` augmentations
-- `src/generated/svelte-elements.ts` — `SvelteHTMLElements` augmentations
 - `src/generated/web-types.json` — JetBrains/WebStorm autocomplete
 
 Commit all generated files after syncing.
@@ -180,6 +166,5 @@ You must be logged in to npm (`npm login`) with publish rights to the `@beamable
 | Import path | Contents |
 |---|---|
 | `@beamable/portal-toolkit` | `Portal` namespace, all `@beamable/sdk` types, web component globals |
-| `@beamable/portal-toolkit/svelte` | `SvelteHTMLElements` augmentations (triple-slash reference only) |
 | `@beamable/portal-toolkit/custom-elements.json` | CEM manifest |
 | `@beamable/portal-toolkit/web-types.json` | JetBrains web-types |
