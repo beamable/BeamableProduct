@@ -23,8 +23,6 @@ The response has two sections:
 
 ### 2. Create the extension
 
-The default template is **React** (TypeScript). There aren't other templates for other frameworks at the current moment.
-
 For a **page extension** (new navigation page):
 ```
 beam_exec("project new portal-extension <Name> --mount-page \"<routePrefix><your-route>\" --mount-group \"<NavGroup>\" --mount-label \"<NavLabel>\" -q")
