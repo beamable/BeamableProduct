@@ -43,6 +43,7 @@ public class ExtensionBuildData
 	public string ErrorMessage;
 	public string ErrorStackTrace;
 
+	public int DiffAlgorithmVersion;
 	public DiffInstructions DiffInstructionsJs;
 	public DiffInstructions DiffInstructionsCss;
 	public DiffInstructions DiffInstructionsMetadata;
@@ -52,7 +53,7 @@ public class ExtensionBuildData
 
 public class PortalExtensionObserver
 {
-	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "svelte", "js", "html", "tsx", "jsx", "ts" };
+	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "js", "html", "tsx", "jsx", "ts" };
 	private bool _alreadyStarted;
 
 	private PortalExtensionDef _metaData;
@@ -265,6 +266,7 @@ public class PortalExtensionObserver
 				DiffInstructionsJs = diffJs,
 				DiffInstructionsCss = diffCss,
 				DiffInstructionsMetadata = diffMetadata,
+				DiffAlgorithmVersion = PortalExtensionDiff.AlgorithmVersion
 			};
 		}
 

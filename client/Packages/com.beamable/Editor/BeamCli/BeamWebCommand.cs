@@ -86,6 +86,7 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
+		public HttpClient localClient;
 
 		private readonly BeamWebCliCommandHistory _history;
 		private readonly BeamWebCommandFactoryOptions _options;
@@ -94,8 +95,8 @@ namespace Beamable.Editor.BeamCli
 		private ServerServeWrapper _serverCommand;
 
 		public BeamWebCommandFactory(
-			BeamableDispatcher dispatcher, 
-			BeamWebCliCommandHistory history, 
+			BeamableDispatcher dispatcher,
+			BeamWebCliCommandHistory history,
 			BeamWebCommandFactoryOptions options, BeamCli beamCli)
 		{
 			this.dispatcher = dispatcher;
@@ -104,7 +105,10 @@ namespace Beamable.Editor.BeamCli
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(processFactory, beamCli);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
-			
+			// Shared across all BeamWebCommand instances; per-call HttpClient
+			// churns TCP connections and amplifies Mono's transport flakiness.
+			localClient = new HttpClient { Timeout = TimeSpan.FromDays(7) };
+
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
 		
@@ -146,6 +150,13 @@ namespace Beamable.Editor.BeamCli
 					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
 
 				KillServer();
+				// Mono's HttpClient pool can hold half-closed sockets pointing
+				// at the dead server; swap in a fresh client so the next
+				// command opens a clean connection. Don't dispose the old one
+				// — in-flight requests still reference it and disposing would
+				// throw ObjectDisposedException, re-triggering invalidation in
+				// a thundering herd. GC will collect it once requests drain.
+				localClient = new HttpClient { Timeout = TimeSpan.FromDays(7) };
 				port = _options.startPortOverride.GetOrElse(8432);
 				discoveryRequest++;
 			});
@@ -413,76 +424,80 @@ namespace Beamable.Editor.BeamCli
 
 			try
 			{
-				if (!_cts.IsCancellationRequested)
+				var sendTask = _factory.localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
+				_history.AddCustomLog(id, "[Unity] sent request...");
+
+				using HttpResponseMessage response = await sendTask;
+				_history.AddCustomLog(id, "[Unity] opened response...");
+
+				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+				_history.AddCustomLog(id, "[Unity] opened response stream...");
+
+				using StreamReader reader = new StreamReader(streamToReadFrom);
+
+				Task<string> readTask = null;
+				while (!reader.EndOfStream)
 				{
-					using var client = new HttpClient() {Timeout = TimeSpan.FromDays(7),};
-					var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
-					_history.AddCustomLog(id, "[Unity] sent request...");
-
-					using HttpResponseMessage response = await sendTask;
-					_history.AddCustomLog(id, "[Unity] opened response...");
-
-					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-					_history.AddCustomLog(id, "[Unity] opened response stream...");
-
-					using StreamReader reader = new StreamReader(streamToReadFrom);
-
-					Task<string> readTask = null;
-					while (!reader.EndOfStream)
+					if (_cts.Token.IsCancellationRequested)
 					{
-						if (_cts.Token.IsCancellationRequested)
-						{
-							break;
-						}
-
-						readTask = reader.ReadLineAsync();
-						var cancelTcs = new TaskCompletionSource<bool>();
-						using (_cts.Token.Register(() => cancelTcs.TrySetResult(true)))
-						{
-							await Task.WhenAny(readTask, cancelTcs.Task);
-						}
-						if (_cts.Token.IsCancellationRequested)
-						{
-							break;
-						}
-						
-						var line = await readTask;
-						if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-
-						// remove life-cycle zero-width character
-						line = line.Replace("\u200b", "");
-						if (!line.StartsWith("data: "))
-						{
-							Debug.LogWarning(
-								$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-							continue;
-						}
-
-						var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
-						{
-							var lineJson = line
-								.Substring("data: ".Length); // remove the Server-Side-Event notation
-
-							CliLogger.Log("received, " + lineJson, "from " + commandString);
-
-							var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-							res.json = lineJson;
-
-
-							_history.HandleMessage(id, res);
-							_callbacks?.Invoke(res);
-						});
-						dispatchedIds.Add(jobId);
+						break;
 					}
+
+					readTask = reader.ReadLineAsync();
+					var cancelTcs = new TaskCompletionSource<bool>();
+					using (_cts.Token.Register(() => cancelTcs.TrySetResult(true)))
+					{
+						await Task.WhenAny(readTask, cancelTcs.Task);
+					}
+					if (_cts.Token.IsCancellationRequested)
+					{
+						break;
+					}
+
+					var line = await readTask;
+					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+
+					// remove life-cycle zero-width character
+					line = line.Replace("\u200b", "");
+					if (!line.StartsWith("data: "))
+					{
+						Debug.LogWarning(
+							$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+						continue;
+					}
+
+					var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+					{
+						var lineJson = line
+							.Substring("data: ".Length); // remove the Server-Side-Event notation
+
+						CliLogger.Log("received, " + lineJson, "from " + commandString);
+
+						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
+						res.json = lineJson;
+
+
+						_history.HandleMessage(id, res);
+						_callbacks?.Invoke(res);
+					});
+					dispatchedIds.Add(jobId);
 				}
 
 			}
-			catch (Exception ex) when (IsTransportFailure(ex) && !_cts.IsCancellationRequested)
+			catch (OperationCanceledException) when (_cts.IsCancellationRequested)
+			{
+				// Caller invoked Cancel(); exit quietly.
+				_history.AddCustomLog(id, "[Unity] cancelled by caller");
+			}
+			catch (Exception ex) when (
+				(IsTransportFailure(ex) || ex is OperationCanceledException)
+				&& !_cts.IsCancellationRequested)
 			{
 				// The loopback connection to the CLI server is unhealthy
-				// (server died, port stale, half-closed socket). Tear down
-				// the cached server state so the next attempt rediscovers
-				// before we keep hammering a dead endpoint.
+				// (server died, port stale, half-closed socket). Mono surfaces
+				// some of these as TaskCanceledException even though the token
+				// wasn't tripped \u2014 treat them as transport failures and force
+				// rediscovery before we keep hammering a dead endpoint.
 				_factory.InvalidateServer(ex);
 				throw;
 			}

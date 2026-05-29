@@ -561,7 +561,7 @@ public class BeamoServiceDefinition
 
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
-	public enum ProjectLanguage { CSharpDotnet, JavascriptSvelte }
+	public enum ProjectLanguage { CSharpDotnet, TypescriptReact }
 
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.
@@ -952,7 +952,7 @@ public enum BeamoProtocolType
 	// Current Mongo-based Data Storage
 	EmbeddedMongoDb,
 
-	// A svelte app
+	// A portal extension app
 	PortalExtension
 }
 
