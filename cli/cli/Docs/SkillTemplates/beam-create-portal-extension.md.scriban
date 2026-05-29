@@ -74,7 +74,7 @@ The portal extension uses `@beamable/portal-toolkit` which depends on `@beamable
 
 ## Beamable UI Components
 
-Portal extensions use components from `@beamable/portal-toolkit`. Always default to **React (LTS-supported)**.
+Portal extensions use components from `@beamable/portal-toolkit`.
 
 ### Finding the component API
 
@@ -100,7 +100,6 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
-- **Always default to React.** React is the only supported template.
 - **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
 - **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
 - **The `--service-directory` for portal extensions is `extensions/`**, not `services/`.
