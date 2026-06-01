@@ -250,7 +250,7 @@ public class App
 		services.AddSingleton<HttpSignedRequester>();
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
-		
+		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>

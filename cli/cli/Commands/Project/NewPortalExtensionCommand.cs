@@ -21,15 +21,13 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 
 public static class PortalExtensionTemplates
 {
-	public const string Svelte = "svelte";
 	public const string React = "react";
 
-	public static readonly string[] All = { Svelte, React };
+	public static readonly string[] All = { React };
 
 	public static string ToDotnetTemplateShortName(string template) => template switch
 	{
 		React => "portalextensionreactapp",
-		Svelte => "portalextensionapp",
 		_ => throw new CliException($"Unknown portal-extension template '{template}'. Valid values: {string.Join(", ", All)}")
 	};
 }
@@ -88,7 +86,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		AddOption(new Option<string>(
 				aliases: new string[] { "--template" },
 				getDefaultValue: () => PortalExtensionTemplates.React,
-				description: "UI framework template to scaffold the extension with. Allowed values: svelte, react"),
+				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
 	}
 
@@ -108,13 +106,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
 			throw new CliException("Not all required dependencies exist. Aborting.");
 
-		if (string.IsNullOrWhiteSpace(args.template))
-			args.template = PortalExtensionTemplates.Svelte;
 		args.template = args.template.ToLowerInvariant();
 		if (!PortalExtensionTemplates.All.Contains(args.template))
 			throw new CliException($"Invalid --template value '{args.template}'. Allowed values: {string.Join(", ", PortalExtensionTemplates.All)}");
 
-		var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
+		var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
+		var config = await configService.GetRemotePortalConfig(args);
 		BuildMountSiteIndex(config,
 			out var customPagePrefixes,
 			out var customPageConfigs,
