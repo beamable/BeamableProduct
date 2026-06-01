@@ -86,7 +86,6 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
-		public HttpClient localClient;
 
 		private readonly BeamWebCliCommandHistory _history;
 		private readonly BeamWebCommandFactoryOptions _options;
@@ -105,9 +104,6 @@ namespace Beamable.Editor.BeamCli
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(processFactory, beamCli);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
-			// Shared across all BeamWebCommand instances; per-call HttpClient
-			// churns TCP connections and amplifies Mono's transport flakiness.
-			localClient = new HttpClient { Timeout = TimeSpan.FromDays(7) };
 
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
@@ -150,13 +146,6 @@ namespace Beamable.Editor.BeamCli
 					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
 
 				KillServer();
-				// Mono's HttpClient pool can hold half-closed sockets pointing
-				// at the dead server; swap in a fresh client so the next
-				// command opens a clean connection. Don't dispose the old one
-				// — in-flight requests still reference it and disposing would
-				// throw ObjectDisposedException, re-triggering invalidation in
-				// a thundering herd. GC will collect it once requests drain.
-				localClient = new HttpClient { Timeout = TimeSpan.FromDays(7) };
 				port = _options.startPortOverride.GetOrElse(8432);
 				discoveryRequest++;
 			});
@@ -389,6 +378,7 @@ namespace Beamable.Editor.BeamCli
 		private BeamWebCommandFactory _factory;
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
+		private Promise _runPromise;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
 		{
@@ -406,7 +396,13 @@ namespace Beamable.Editor.BeamCli
 			_history.UpdateCommand(id, commandString);
 		}
 		
-		public async Promise Run()
+		public Promise Run()
+		{
+			_runPromise = RunImpl();
+			return _runPromise;
+		}
+
+		private async Promise RunImpl()
 		{
 			_history.UpdateResolvingHostTime(id);
 
@@ -424,7 +420,13 @@ namespace Beamable.Editor.BeamCli
 
 			try
 			{
-				var sendTask = _factory.localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
+				// Per-call HttpClient. We tried sharing one on the factory but
+				// pooled connections to the localhost CLI server went bad on
+				// Windows (login would surface as TaskCanceledException from a
+				// poisoned half-closed socket); a fresh client per command
+				// avoids that.
+				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
+				var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
 				_history.AddCustomLog(id, "[Unity] sent request...");
 
 				using HttpResponseMessage response = await sendTask;
@@ -513,6 +515,10 @@ namespace Beamable.Editor.BeamCli
 		public void Cancel()
 		{
 			if (_cts.IsCancellationRequested) return; // no-op
+			// Mark the run's promise as observed so the cancellation
+			// exception we're about to trigger isn't logged as an
+			// UncaughtPromiseException. Awaiters still see the throw.
+			_runPromise?.Error(_ => { });
 			_cts.Cancel();
 		}
 
