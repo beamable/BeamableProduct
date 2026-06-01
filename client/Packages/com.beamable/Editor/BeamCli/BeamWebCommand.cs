@@ -484,11 +484,6 @@ namespace Beamable.Editor.BeamCli
 				}
 
 			}
-			catch (OperationCanceledException) when (_cts.IsCancellationRequested)
-			{
-				// Caller invoked Cancel(); exit quietly.
-				_history.AddCustomLog(id, "[Unity] cancelled by caller");
-			}
 			catch (Exception ex) when (
 				(IsTransportFailure(ex) || ex is OperationCanceledException)
 				&& !_cts.IsCancellationRequested)
