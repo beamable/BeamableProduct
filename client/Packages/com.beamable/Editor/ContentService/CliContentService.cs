@@ -75,9 +75,6 @@ namespace Beamable.Editor.ContentService
 		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
 		private readonly Dictionary<string, ContentRenameInfo> _renameRegistry = new();
 		private readonly Dictionary<string, ContentRenameInfo> _explicitRenameTracking = new();
-		private Dictionary<string, string> _hashLookup = new();
-		private static readonly string HashCachePath =
-			Path.Combine("Library", "BeamableEditor", "ContentHashCache.json");
 		private static readonly string RenameCachePath =
 			Path.Combine("Library", "BeamableEditor", "ContentRenameCache.json");
 		private bool _showUnityModalProgress;
@@ -118,12 +115,8 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		public bool HasRenamedContents => _renameRegistry.Count > 0;
-
 		public bool TryGetRenameInfo(string fullId, out ContentRenameInfo info) =>
 			_renameRegistry.TryGetValue(fullId, out info);
-
-		public bool IsRenamedEntry(string fullId) => _renameRegistry.ContainsKey(fullId);
 
 		public List<ContentRenameInfo> GetAllRenames() =>
 			_renameRegistry.Values
@@ -145,7 +138,6 @@ namespace Beamable.Editor.ContentService
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			_contentConfiguration = contentConfiguration;
-			LoadHashCache();
 			LoadRenameCache();
 			_ = Reload();
 		}
@@ -698,10 +690,7 @@ namespace Beamable.Editor.ContentService
 								RemoveContentFromCache(oldEntry);
 							}
 
-							var entryToAdd = entry;
-							if (string.IsNullOrEmpty(entryToAdd.Hash) && _hashLookup.TryGetValue(entry.FullId, out var cachedHash))
-								entryToAdd.Hash = cachedHash;
-							AddContentToCache(entryToAdd);
+							AddContentToCache(entry);
 						}
 					}
 
@@ -714,23 +703,12 @@ namespace Beamable.Editor.ContentService
 								RemoveContentFromCache(oldEntry);
 								if (oldEntry.StatusEnum is not ContentStatus.Created)
 								{
-									var entryToAdd = entry;
-									if (string.IsNullOrEmpty(entryToAdd.Hash))
-									{
-										if (!string.IsNullOrEmpty(oldEntry.Hash))
-											entryToAdd.Hash = oldEntry.Hash;
-										else if (_hashLookup.TryGetValue(entry.FullId, out var cachedHash))
-											entryToAdd.Hash = cachedHash;
-									}
-									AddContentToCache(entryToAdd);
+									AddContentToCache(entry);
 								}
 							}
 							else
 							{
-								var entryToAdd = entry;
-								if (string.IsNullOrEmpty(entryToAdd.Hash) && _hashLookup.TryGetValue(entry.FullId, out var cachedHash))
-									entryToAdd.Hash = cachedHash;
-								AddContentToCache(entryToAdd);
+								AddContentToCache(entry);
 							}
 
 							ValidationContext.AllContent.Remove(entry.FullId);
@@ -739,8 +717,7 @@ namespace Beamable.Editor.ContentService
 
 					if (hasRemoveManifest || hasChangeManifest)
 					{
-						DetectRenames();
-						SaveHashCache();
+						RestoreRenameRegistry();
 						ManifestChangedCount++;
 					}
 
@@ -825,13 +802,6 @@ namespace Beamable.Editor.ContentService
 
 		private void ClearCaches()
 		{
-			foreach (var kvp in EntriesCache)
-			{
-				if (!string.IsNullOrEmpty(kvp.Value.Hash))
-					_hashLookup[kvp.Key] = kvp.Value.Hash;
-			}
-			SaveHashCache();
-
 			LatestProgressUpdate = new BeamContentPsProgressMessage();
 			ValidationContext.AllContent.Clear();
 			EntriesCache.Clear();
@@ -844,11 +814,10 @@ namespace Beamable.Editor.ContentService
 			_renameRegistry.Clear();
 		}
 
-		private void DetectRenames()
+		private void RestoreRenameRegistry()
 		{
 			_renameRegistry.Clear();
 
-			// Restore explicit renames that are still valid (both entries exist in cache)
 			foreach (var kvp in _explicitRenameTracking)
 			{
 				if (EntriesCache.ContainsKey(kvp.Value.CreatedFullId) &&
@@ -858,48 +827,6 @@ namespace Beamable.Editor.ContentService
 				}
 			}
 
-			bool hasCreated = _statusContentCache.TryGetValue(ContentStatus.Created, out var createdList);
-			bool hasDeleted = _statusContentCache.TryGetValue(ContentStatus.Deleted, out var deletedList);
-
-			if (hasCreated && hasDeleted)
-			{
-				var deletedByTypeAndHash = new Dictionary<(string typeName, string hash), List<LocalContentManifestEntry>>();
-				foreach (var deleted in deletedList)
-				{
-					if (string.IsNullOrEmpty(deleted.Hash)) continue;
-					if (_renameRegistry.ContainsKey(deleted.FullId)) continue;
-					var key = (deleted.TypeName, deleted.Hash);
-					if (!deletedByTypeAndHash.TryGetValue(key, out var list))
-						deletedByTypeAndHash[key] = list = new List<LocalContentManifestEntry>();
-					list.Add(deleted);
-				}
-
-				foreach (var created in createdList)
-				{
-					if (string.IsNullOrEmpty(created.Hash)) continue;
-					if (_renameRegistry.ContainsKey(created.FullId)) continue;
-					var key = (created.TypeName, created.Hash);
-					if (!deletedByTypeAndHash.TryGetValue(key, out var candidates) || candidates.Count == 0)
-						continue;
-
-					var deleted = candidates[0];
-					candidates.RemoveAt(0);
-
-					var renameInfo = new ContentRenameInfo
-					{
-						CreatedFullId = created.FullId,
-						DeletedFullId = deleted.FullId,
-						OldName = deleted.Name,
-						NewName = created.Name,
-						TypeName = created.TypeName,
-					};
-
-					_renameRegistry[created.FullId] = renameInfo;
-					_renameRegistry[deleted.FullId] = renameInfo;
-				}
-			}
-
-			// Prune stale explicit tracking entries (e.g., after a revert)
 			var staleKeys = _explicitRenameTracking
 				.Where(kvp => !EntriesCache.ContainsKey(kvp.Value.CreatedFullId) ||
 				              !EntriesCache.ContainsKey(kvp.Value.DeletedFullId))
@@ -912,47 +839,6 @@ namespace Beamable.Editor.ContentService
 				SaveRenameCache();
 			}
 		}
-
-		private void LoadHashCache()
-		{
-			try
-			{
-				if (File.Exists(HashCachePath))
-				{
-					var json = File.ReadAllText(HashCachePath);
-					var data = JsonUtility.FromJson<HashCacheData>(json);
-					if (data?.Entries != null)
-					{
-						_hashLookup.Clear();
-						foreach (var e in data.Entries)
-							_hashLookup[e.Id] = e.Hash;
-					}
-				}
-			}
-			catch { }
-		}
-
-		private void SaveHashCache()
-		{
-			try
-			{
-				var dir = Path.GetDirectoryName(HashCachePath);
-				if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-					Directory.CreateDirectory(dir);
-				var data = new HashCacheData
-				{
-					Entries = _hashLookup.Select(kvp => new HashCacheEntry { Id = kvp.Key, Hash = kvp.Value }).ToArray()
-				};
-				File.WriteAllText(HashCachePath, JsonUtility.ToJson(data));
-			}
-			catch { }
-		}
-
-		[Serializable]
-		private class HashCacheData { public HashCacheEntry[] Entries; }
-
-		[Serializable]
-		private class HashCacheEntry { public string Id; public string Hash; }
 
 		private void LoadRenameCache()
 		{
@@ -1188,9 +1074,6 @@ namespace Beamable.Editor.ContentService
 			_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
 			
 			EntriesCache[entry.FullId] = entry;
-
-			if (!string.IsNullOrEmpty(entry.Hash))
-				_hashLookup[entry.FullId] = entry.Hash;
 
 			CacheScriptableContent(entry);
 
