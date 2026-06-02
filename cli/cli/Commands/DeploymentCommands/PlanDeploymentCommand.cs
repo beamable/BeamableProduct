@@ -20,6 +20,7 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	public bool RunHealthChecks { get; set; }
 	bool UseSequentialBuild { get; set; }
 	int MaxParallelTask { get; set; }
+	int MaxConcurrentUploads { get; set; }
 }
 
 public interface IHasDockerComposeArgs
@@ -39,6 +40,7 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDo
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
+	public int MaxConcurrentUploads { get; set; }
 	public string SlnFilePath;
 
 
