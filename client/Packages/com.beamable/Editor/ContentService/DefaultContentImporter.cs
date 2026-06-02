@@ -51,34 +51,25 @@ namespace Beamable.Editor.ContentService
 		[MenuItem(Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Import Default Content")]
 		public static async void ImportDefaultContent_MenuItem()
 		{
-			// 0 = Import, 1 = Cancel, 2 = Import & Publish
-			int choice = EditorUtility.DisplayDialogComplex(
+			bool confirmed = EditorUtility.DisplayDialog(
 				"Import Default Content",
-				"This will create Beamable's default content (gems & coins currencies) in this realm, " +
+				"This will create Beamable's default content (gems & coins currencies) as local content, " +
 				"copying their icon sprites into Assets/Beamable/DefaultAssets and registering them as " +
-				"Addressables.\n\nPublishing pushes the content to the realm immediately.",
+				"Addressables.",
 				"Import",
-				"Cancel",
-				"Import & Publish");
+				"Cancel");
 
-			switch (choice)
+			if (confirmed)
 			{
-				case 0:
-					await ImportDefaultContent(false);
-					break;
-				case 2:
-					await ImportDefaultContent(true);
-					break;
-				default:
-					return;
+				await ImportDefaultContent();
 			}
 		}
 
 		/// <summary>
-		/// Shared import routine used by both the menu item and the Content Manager prompt.
+		/// Shared import routine used by both the menu item and the Content Manager prompt. Seeds the
+		/// default content as local content; the user can review and publish it themselves.
 		/// </summary>
-		/// <param name="publishAfter">When true, publishes the seeded content to the realm.</param>
-		public static async Task ImportDefaultContent(bool publishAfter)
+		public static async Task ImportDefaultContent()
 		{
 			var api = BeamEditorContext.Default;
 			await api.InitializePromise;
@@ -107,13 +98,8 @@ namespace Beamable.Editor.ContentService
 			//    point at the pinned GUIDs, so no per-asset remap is needed.
 			SeedDefaultContent(contentService);
 
-			// 4. Optionally publish to the realm (the user opted into this explicitly).
-			if (publishAfter)
-			{
-				await contentService.PublishContents();
-			}
-
-			// 5. Refresh the Content Manager view.
+			// 4. Refresh the Content Manager view. The seeded content is left local for the user to
+			//    review and publish on their own terms.
 			await contentService.Reload();
 		}
 

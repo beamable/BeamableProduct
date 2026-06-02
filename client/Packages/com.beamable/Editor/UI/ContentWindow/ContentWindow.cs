@@ -406,8 +406,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				"\n\n" +
 				"Would you like to import Beamable's default content? This creates the gems and coins " +
 				"currencies and copies their icon sprites into Assets/Beamable/DefaultAssets, " +
-				"registering them as Addressables. \"Import & Publish\" also publishes the content to " +
-				"this realm.",
+				"registering them as Addressables. The content is added locally so you can review and " +
+				"publish it yourself.",
 				new GUIStyle(EditorStyles.label) { wordWrap = true });
 
 			EditorGUILayout.BeginHorizontal(new GUIStyle
@@ -419,7 +419,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(5, true);
 
 			var clickedNotNow = BeamGUI.CancelButton("Not now");
-			var clickedImportAndPublish = BeamGUI.CancelButton("Import & Publish");
 			var clickedImport = BeamGUI.PrimaryButton(new GUIContent("Import"));
 
 			EditorGUILayout.EndHorizontal();
@@ -432,15 +431,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			else if (clickedImport)
 			{
-				StartDefaultContentImport(false);
-			}
-			else if (clickedImportAndPublish)
-			{
-				StartDefaultContentImport(true);
+				StartDefaultContentImport();
 			}
 		}
 
-		private async void StartDefaultContentImport(bool publishAfter)
+		private async void StartDefaultContentImport()
 		{
 			if (_importingDefaultContent)
 				return;
@@ -450,7 +445,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			try
 			{
 				// Awaited continuations resume on Unity's main-thread synchronization context.
-				await DefaultContentImporter.ImportDefaultContent(publishAfter);
+				await DefaultContentImporter.ImportDefaultContent();
 			}
 			finally
 			{
