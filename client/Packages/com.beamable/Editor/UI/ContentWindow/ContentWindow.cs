@@ -255,21 +255,28 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			var bottomRectController = new EditorGUIRectController(bottomRect);
 
-			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created);
+			var allRenames = _contentService.GetAllRenames();
+			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
+			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
+
+			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created)
+				.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
 			if (createdContents.Count > 0)
 			{
 				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
-			
+
 			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
-			if (modifiedContents.Count > 0)
+			int modifiedCount = modifiedContents.Count + allRenames.Count;
+			if (modifiedCount > 0)
 			{
-				DrawFooterButton($"{modifiedContents.Count}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
+				DrawFooterButton($"{modifiedCount}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
-			
-			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted);
+
+			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted)
+				.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
 			if (deletedContents.Count > 0)
 			{
 				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);

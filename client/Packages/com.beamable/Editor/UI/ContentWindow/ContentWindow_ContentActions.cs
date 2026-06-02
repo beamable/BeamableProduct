@@ -2,9 +2,11 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Editor;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Editor.BeamCli.UI;
@@ -19,7 +21,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private Dictionary<string, bool> _foldoutStates = new()
 		{
-			{"Created Contents", true}, {"Modified Contents", true}, {"Deleted Contents", true}
+			{"Created Contents", true}, {"Modified Contents", true}, {"Deleted Contents", true}, {"Renamed Contents", true}
 		};
 
 		private Vector2 _mainScrollPosition;
@@ -206,8 +208,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			var allCreated = (_statusToDraw & ContentStatus.Created) != 0 ? _contentService.GetAllContentFromStatus(ContentStatus.Created) : emptyList;
 			var allDeleted = (_statusToDraw & ContentStatus.Deleted) != 0 ? _contentService.GetAllContentFromStatus(ContentStatus.Deleted) : emptyList;
 
+			// Separate renamed items from Created/Deleted lists
+			var allRenames = _contentService.GetAllRenames();
+			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
+			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
+			allCreated = allCreated.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
+			allDeleted = allDeleted.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
+
 			float screenWidth = EditorGUIUtility.currentViewWidth;
-			// float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
 			float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
 
 			EditorGUILayout.BeginVertical();
@@ -217,14 +225,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.DrawTexture(texRect, icon);
 			EditorGUILayout.LabelField(title, _contentHeaderStyle);
 			EditorGUILayout.EndHorizontal();
-			
+
 			GUILayout.Space(12);
 			EditorGUILayout.LabelField(warningMessage, _contentHeaderDescriptionStyle);
 			GUILayout.Space(12);
-		
-			
+
+
 			EditorGUILayout.Space(12);
-			
+
 			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, GUILayout.ExpandWidth(true));
 			const int widthOfAUnityScrollBar = 25;
 			availableSpace -= widthOfAUnityScrollBar + NESTED_CONTENT_PADDING*2;
@@ -235,7 +243,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			DrawChangedContents(availableSpace, "Created Contents", BeamGUI.iconStatusAdded, allCreated, showRevert);
 			DrawChangedContents(availableSpace, "Modified Contents", BeamGUI.iconStatusModified, allModified, showRevert);
 			DrawChangedContents(availableSpace, "Deleted Contents", BeamGUI.iconStatusDeleted, allDeleted, showRevert);
-			
+			if (allRenames.Count > 0)
+			{
+				DrawRenamedContents(availableSpace, "Renamed Contents", BeamGUI.iconStatusModified, allRenames, showRevert);
+			}
+
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndScrollView();
 			
@@ -377,6 +389,85 @@ namespace Beamable.Editor.UI.ContentWindow
 								{
 									_ = _contentService.SyncContentsWithProgress(
 										true, true, true, true, localContentManifestEntry.FullId,
+										ContentFilterType.ExactIds);
+								}
+							}
+						}
+					}
+					EditorGUILayout.EndHorizontal();
+					rectController.ReserveHeight(EditorGUIUtility.standardVerticalSpacing);
+				}
+			}
+
+			EditorGUILayout.EndVertical();
+		}
+
+		private void DrawRenamedContents(float width, string headerName, Texture icon,
+			List<ContentRenameInfo> renames, bool showRevert)
+		{
+			if (renames.Count == 0) return;
+
+			_foldoutStates.TryAdd(headerName, true);
+
+			var heightSize = CalculateContentsHeight(_foldoutStates[headerName], renames.Count);
+			EditorGUILayout.BeginVertical();
+			var rectController =
+				new EditorGUIRectController(
+					EditorGUILayout.GetControlRect(GUILayout.Width(width), GUILayout.Height(heightSize)));
+
+			GUI.Box(rectController.rect, GUIContent.none, EditorStyles.helpBox);
+			var headerRect = new EditorGUIRectController(rectController.ReserveHeight(BeamGUI.StandardVerticalSpacing * 1.5f));
+
+			headerRect.ReserveWidth(BASE_PADDING);
+			var foldoutRect = headerRect.ReserveWidth(FOLDOUT_WIDTH);
+			_foldoutStates[headerName] = EditorGUI.Foldout(foldoutRect, _foldoutStates[headerName], GUIContent.none);
+
+			var iconSize = 15f;
+			var iconRect = headerRect.ReserveWidth(iconSize);
+			GUI.DrawTexture(new Rect(iconRect.x, iconRect.center.y - iconSize / 2f, iconSize, iconSize), icon, ScaleMode.ScaleToFit);
+
+			headerRect.ReserveWidth(BASE_PADDING);
+
+			var labelRect = headerRect.rect;
+			var guiStyle = new GUIStyle(EditorStyles.boldLabel) { alignment = TextAnchor.MiddleLeft };
+			EditorGUI.LabelField(labelRect, headerName, guiStyle);
+
+			if (_foldoutStates[headerName])
+			{
+				foreach (var rename in renames)
+				{
+					var itemRect = rectController.ReserveSingleLine();
+					EditorGUILayout.BeginHorizontal();
+					{
+						itemRect.xMin = iconRect.xMax;
+						itemRect.width -= BASE_PADDING;
+						var itemRectController = new EditorGUIRectController(itemRect);
+
+						var itemIconRect = itemRectController.ReserveWidth(iconSize);
+						itemRectController.ReserveWidth(BASE_PADDING);
+
+						Rect buttonRect = default;
+						if (showRevert)
+						{
+							buttonRect = itemRectController.ReserveWidthFromRight(80);
+						}
+						var contentRect = itemRectController.rect;
+						var displayText = $"{rename.DeletedFullId}  →  {rename.NewName}";
+						var entryContent = new GUIContent(displayText, displayText);
+						EditorGUI.LabelField(contentRect, entryContent);
+						if (showRevert)
+						{
+							var revertContent = new GUIContent("Revert", BeamGUI.iconRevertAction,
+							                                   "Revert this rename to its original name");
+							if (GUI.Button(buttonRect, revertContent))
+							{
+								if (EditorUtility.DisplayDialog("Revert Rename",
+								                                $"Are you sure you want to revert the rename of {rename.OldName}?",
+								                                "Revert", "Cancel"))
+								{
+									var bothIds = $"{rename.CreatedFullId},{rename.DeletedFullId}";
+									_ = _contentService.SyncContentsWithProgress(
+										true, true, true, true, bothIds,
 										ContentFilterType.ExactIds);
 								}
 							}
