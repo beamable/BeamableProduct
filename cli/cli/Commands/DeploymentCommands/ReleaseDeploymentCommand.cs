@@ -22,6 +22,7 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
+	public int MaxConcurrentUploads { get; set; }
 	public string SlnFilePath;
 
 
@@ -160,20 +161,20 @@ public class ReleaseDeploymentCommand
 				var progressTasks = new Dictionary<string, ProgressTask>();
 			
 				await DeployUtil.Deploy(
-					plan, 
-					args.DependencyProvider, 
+					plan,
+					args.DependencyProvider,
 					progressHandler: (name, progress, isKnownLength, serviceName) =>
 					{
 						if (!progressTasks.TryGetValue(name, out var progressTask))
 						{
 							progressTasks[name] = progressTask = ctx.AddTask(name, maxValue: 1);
 						}
-						
+
 						if (!isKnownLength && progress > 0)
 						{
 							progressTask.IsIndeterminate = true;
 						}
-						
+
 						progressReporter.SendResults(new PlanReleaseProgress
 						{
 							ratio = progress,
@@ -181,11 +182,12 @@ public class ReleaseDeploymentCommand
 							isKnownLength = isKnownLength,
 							serviceName = serviceName
 						});
-						
+
 						progressTask.Value = progress;
-					}, 
+					},
 					args.Lifecycle.Source,
-					remoteManifestTask);
+					remoteManifestTask,
+					maxConcurrentUploads: args.MaxConcurrentUploads);
 	
 			});
 

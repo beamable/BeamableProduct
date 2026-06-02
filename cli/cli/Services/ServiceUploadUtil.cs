@@ -8,6 +8,7 @@ using SharpCompress.Archives.Tar;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using Beamable.Server;
@@ -51,13 +52,52 @@ public static class ServiceUploadUtil
 		return stream;
 	}
 	
-	public static async Task Upload(IDependencyProvider provider, 
+	private const int MAX_UPLOAD_ATTEMPTS = 3;
+	private const int UPLOAD_RETRY_BASE_DELAY_MS = 1000;
+	private const int UPLOAD_RETRY_JITTER_MS = 500;
+	private static readonly TimeSpan DEFAULT_STALL_TIMEOUT = TimeSpan.FromSeconds(30);
+
+	public static async Task Upload(IDependencyProvider provider,
 		string beamoId,
 		string imageId,
 		string gamePid,
 		string dockerRegistryUrl,
 		CancellationTokenSource cts,
-		Action<float> onProgressCallback)
+		Action<float> onProgressCallback,
+		TimeSpan? stallTimeout = null)
+	{
+		var effectiveStallTimeout = stallTimeout ?? DEFAULT_STALL_TIMEOUT;
+
+		for (var attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++)
+		{
+			try
+			{
+				await UploadCore(provider, beamoId, imageId, gamePid, dockerRegistryUrl, cts, onProgressCallback, effectiveStallTimeout);
+				return;
+			}
+			catch (Exception ex) when (
+				!cts.Token.IsCancellationRequested &&
+				IsTransientUploadException(ex) &&
+				attempt < MAX_UPLOAD_ATTEMPTS)
+			{
+				var delay = GetUploadRetryDelay(attempt);
+				Log.Warning($"Transient upload failure for [{beamoId}]. " +
+					$"Retrying attempt=[{attempt + 1}/{MAX_UPLOAD_ATTEMPTS}] " +
+					$"delay=[{delay.TotalMilliseconds}ms] error=[{ex.GetType().Name}] message=[{ex.Message}]");
+				onProgressCallback?.Invoke(0);
+				await Task.Delay(delay, cts.Token);
+			}
+		}
+	}
+
+	private static async Task UploadCore(IDependencyProvider provider,
+		string beamoId,
+		string imageId,
+		string gamePid,
+		string dockerRegistryUrl,
+		CancellationTokenSource cts,
+		Action<float> onProgressCallback,
+		TimeSpan stallTimeout)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
@@ -70,117 +110,183 @@ public static class ServiceUploadUtil
 			Log.Verbose($"upload perf timer -- {msg} -- {elapsed} - {diff}");
 			lastLogTime = sw.ElapsedMilliseconds;
 		}
-		
-		onProgressCallback?.Invoke(.02f);
-		// TODO: handle image deletion with a nicer exception, "plan references image that no longer exists locally", "replan"
-		using var memoryImageStream = await SaveDockerImage(provider.GetService<IAppContext>().DockerPath, imageId);
-		memoryImageStream.Position = 0;
-		
-		LogTime("copied image to local memory");
 
-		onProgressCallback?.Invoke(.04f);
-
-		memoryImageStream.Position = 0;
-		
-		using var imageArchive = TarArchive.Open(memoryImageStream);
-
-		var ctx = provider.GetService<IAppContext>();
-		
-		onProgressCallback?.Invoke(.05f);
-		
-		var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
-			// This substring exists because there is a char-length limit on the remote beamo registry :(
-			.Substring(0, 30);
-		var baseUrl = dockerRegistryUrl + serviceUniqueName + "/";
-
-		var client = new HttpClient
+		var progressTicks = new StrongBox<long>(Stopwatch.GetTimestamp());
+		void TrackProgress(float ratio)
 		{
-			Timeout = Timeout.InfiniteTimeSpan,
-			BaseAddress = new Uri(baseUrl),
-			DefaultRequestVersion = HttpVersion.Version20,
-			DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
-		};
-		client.DefaultRequestHeaders.Add("x-ks-clientid", ctx.Cid);
-		client.DefaultRequestHeaders.Add("x-ks-projectid", ctx.Pid);
-		client.DefaultRequestHeaders.Add("x-ks-token", provider.GetService<IBeamableRequester>().AccessToken.Token);
+			Interlocked.Exchange(ref progressTicks.Value, Stopwatch.GetTimestamp());
+			onProgressCallback?.Invoke(ratio);
+		}
 
+		var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+		var token = linkedCts.Token;
 
-		var (hasManifest, manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");
-		if (!hasManifest)
-			throw new CliException($"unable to find manifest.json entry in archive. service=[{beamoId}] image=[{imageId}]");
-		
-		var manifest = BeamoLocalSystem.DockerManifest.FromBytes(manifestBytes);
-
-		LogTime("got manifest");
-
-		var uploadManifest = new Dictionary<string, object>
+		var watchdogTask = Task.Run(async () =>
 		{
-			{ "schemaVersion", 2 }, 
-			{ "mediaType", MEDIA_MANIFEST }, 
-			{ "config", new Dictionary<string, object>
+			try
 			{
-				{ "mediaType", MEDIA_CONFIG }
-			} }, 
-			{ "layers", new List<object>() },
-		};
-		var config = (Dictionary<string, object>)uploadManifest["config"];
-		var layers = (List<object>)uploadManifest["layers"];
-		
-		var manifestStream = await imageArchive.OpenEntryAsMemoryStream($"{manifest.config}");
-		var configResult = (await UploadFileBlob(client, manifestStream, cts.Token, (bytes, progress) =>
-		{
-			onProgressCallback?.Invoke(.05f + .05f * progress);
-		}));
-		cts.Token.ThrowIfCancellationRequested();
-		
-		config["digest"] = configResult.Digest;
-		config["size"] = configResult.Size;
+				while (!token.IsCancellationRequested)
+				{
+					await Task.Delay(TimeSpan.FromSeconds(5), token);
+					var elapsed = Stopwatch.GetElapsedTime(Interlocked.Read(ref progressTicks.Value));
+					if (elapsed > stallTimeout)
+					{
+						Log.Error($"Upload stall detected for service [{beamoId}]. No progress for {elapsed.TotalSeconds:F0}s. Cancelling upload.");
+						try { await linkedCts.CancelAsync(); }
+						catch (ObjectDisposedException) { }
+					}
+				}
+			}
+			catch (OperationCanceledException) { }
+		}, token);
 
-		// upload the blobs
-		var uploadIndexToJob = new SortedDictionary<int, Task<Dictionary<string, object>>>();
-		var uploadTasks = new List<Task>();
-		
-		var progressBytes = new long[manifest.layers.Length];
-		var layerStreams = new MemoryStream[manifest.layers.Length];
-		var totalUploadSize = 0L;
-		for (var i = 0; i < manifest.layers.Length; i++)
+		try
 		{
-			var index = i;
-			var layerStream = await imageArchive.OpenEntryAsMemoryStream(manifest.layers[index]);
-			totalUploadSize += layerStream.Length;
-			layerStreams[index] = layerStream;
-		}
-		
-		for (var i = 0; i < manifest.layers.Length; i++)
-		{
-			var index = i;
-			var layer = layerStreams[i];
-			var uploadTask = UploadLayer(client, layer, (bytes, _) =>
+			TrackProgress(.02f);
+			// TODO: handle image deletion with a nicer exception, "plan references image that no longer exists locally", "replan"
+			using var memoryImageStream = await SaveDockerImage(provider.GetService<IAppContext>().DockerPath, imageId);
+			memoryImageStream.Position = 0;
+
+			LogTime("copied image to local memory");
+
+			TrackProgress(.04f);
+
+			memoryImageStream.Position = 0;
+
+			using var imageArchive = TarArchive.Open(memoryImageStream);
+
+			var ctx = provider.GetService<IAppContext>();
+
+			TrackProgress(.05f);
+
+			var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
+				// This substring exists because there is a char-length limit on the remote beamo registry :(
+				.Substring(0, 30);
+			var baseUrl = dockerRegistryUrl + serviceUniqueName + "/";
+
+			var client = new HttpClient
 			{
-				progressBytes[index] = bytes;
-				var totalProgress = progressBytes.Sum() / (float)totalUploadSize;
-				onProgressCallback?.Invoke(.1f + totalProgress * .85f );
-			}, cts.Token);
-			uploadIndexToJob.Add(i, uploadTask);
-			uploadTasks.Add(uploadTask);
-		}
-		
-		await Task.WhenAll(uploadTasks.ToArray());
-		onProgressCallback?.Invoke(.95f);
-		
+				Timeout = Timeout.InfiniteTimeSpan,
+				BaseAddress = new Uri(baseUrl),
+				DefaultRequestVersion = HttpVersion.Version20,
+				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+			};
+			client.DefaultRequestHeaders.Add("x-ks-clientid", ctx.Cid);
+			client.DefaultRequestHeaders.Add("x-ks-projectid", ctx.Pid);
+			client.DefaultRequestHeaders.Add("x-ks-token", provider.GetService<IBeamableRequester>().AccessToken.Token);
 
-		foreach (var kvp in uploadIndexToJob)
-		{
-			layers.Add(kvp.Value.Result);
-		}
-		onProgressCallback?.Invoke(.96f);
 
-		await UploadManifestJson(client, uploadManifest, imageId, progress =>
+			var (hasManifest, manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");
+			if (!hasManifest)
+				throw new CliException($"unable to find manifest.json entry in archive. service=[{beamoId}] image=[{imageId}]");
+
+			var manifest = BeamoLocalSystem.DockerManifest.FromBytes(manifestBytes);
+
+			LogTime("got manifest");
+
+			var uploadManifest = new Dictionary<string, object>
+			{
+				{ "schemaVersion", 2 },
+				{ "mediaType", MEDIA_MANIFEST },
+				{ "config", new Dictionary<string, object>
+				{
+					{ "mediaType", MEDIA_CONFIG }
+				} },
+				{ "layers", new List<object>() },
+			};
+			var config = (Dictionary<string, object>)uploadManifest["config"];
+			var layers = (List<object>)uploadManifest["layers"];
+
+			var manifestStream = await imageArchive.OpenEntryAsMemoryStream($"{manifest.config}");
+			var configResult = (await UploadFileBlob(client, manifestStream, token, (bytes, progress) =>
+			{
+				TrackProgress(.05f + .05f * progress);
+			}));
+			token.ThrowIfCancellationRequested();
+
+			config["digest"] = configResult.Digest;
+			config["size"] = configResult.Size;
+
+			// upload the blobs
+			var uploadIndexToJob = new SortedDictionary<int, Task<Dictionary<string, object>>>();
+			var uploadTasks = new List<Task>();
+
+			var progressBytes = new long[manifest.layers.Length];
+			var layerStreams = new MemoryStream[manifest.layers.Length];
+			var totalUploadSize = 0L;
+			for (var i = 0; i < manifest.layers.Length; i++)
+			{
+				var index = i;
+				var layerStream = await imageArchive.OpenEntryAsMemoryStream(manifest.layers[index]);
+				totalUploadSize += layerStream.Length;
+				layerStreams[index] = layerStream;
+			}
+
+			for (var i = 0; i < manifest.layers.Length; i++)
+			{
+				var index = i;
+				var layer = layerStreams[i];
+				var uploadTask = UploadLayer(client, layer, (bytes, _) =>
+				{
+					progressBytes[index] = bytes;
+					var totalProgress = progressBytes.Sum() / (float)totalUploadSize;
+					TrackProgress(.1f + totalProgress * .85f);
+				}, token);
+				uploadIndexToJob.Add(i, uploadTask);
+				uploadTasks.Add(uploadTask);
+			}
+
+			await Task.WhenAll(uploadTasks.ToArray());
+			TrackProgress(.95f);
+
+
+			foreach (var kvp in uploadIndexToJob)
+			{
+				layers.Add(kvp.Value.Result);
+			}
+			TrackProgress(.96f);
+
+			await UploadManifestJson(client, uploadManifest, imageId, progress =>
+			{
+				TrackProgress(.96f + .03f * progress);
+			}, token);
+
+			TrackProgress(1);
+		}
+		catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cts.Token.IsCancellationRequested)
 		{
-			onProgressCallback?.Invoke(.96f + .03f * progress);
-		});
-		
-		onProgressCallback?.Invoke(1);
+			throw new CliException($"Upload for service [{beamoId}] timed out: no progress for {stallTimeout.TotalSeconds}s. This may indicate network issues or server-side throttling.");
+		}
+		finally
+		{
+			linkedCts.Cancel();
+			try { await watchdogTask; } catch (OperationCanceledException) { }
+			linkedCts.Dispose();
+		}
+	}
+
+	private static bool IsTransientUploadException(Exception exception)
+	{
+		if (exception is HttpRequestException)
+			return true;
+
+		if (exception is TimeoutException)
+			return true;
+
+		if (exception is TaskCanceledException)
+			return true;
+
+		if (exception is CliException cliEx && cliEx.Message.Contains("timed out: no progress"))
+			return true;
+
+		return exception.InnerException != null && IsTransientUploadException(exception.InnerException);
+	}
+
+	private static TimeSpan GetUploadRetryDelay(int failedAttempt)
+	{
+		var exponentialDelayMs = UPLOAD_RETRY_BASE_DELAY_MS * (1 << (failedAttempt - 1));
+		var jitterMs = Random.Shared.Next(0, UPLOAD_RETRY_JITTER_MS);
+		return TimeSpan.FromMilliseconds(exponentialDelayMs + jitterMs);
 	}
 	
 	
@@ -188,7 +294,7 @@ public static class ServiceUploadUtil
 	/// Upload the manifest JSON to complete the Docker image push.
 	/// </summary>
 	/// <param name="uploadManifest">Data structure containing image data.</param>
-	private static async Task UploadManifestJson(HttpClient http, Dictionary<string, object> uploadManifest, string imageId, Action<float> onProgressCallback)
+	private static async Task UploadManifestJson(HttpClient http, Dictionary<string, object> uploadManifest, string imageId, Action<float> onProgressCallback, CancellationToken token = default)
 	{
 		var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
 		var manifestBytes = Encoding.UTF8.GetBytes(manifestJson);
@@ -199,7 +305,7 @@ public static class ServiceUploadUtil
 		};
 		streamContent.Headers.ContentType =  new MediaTypeHeaderValue(MEDIA_MANIFEST);
 
-		var response = await http.PutAsync($"manifests/{imageId}", streamContent);
+		var response = await http.PutAsync($"manifests/{imageId}", streamContent, token);
 		response.EnsureSuccessStatusCode();
 	}
 	
