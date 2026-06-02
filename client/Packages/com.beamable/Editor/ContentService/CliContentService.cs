@@ -83,6 +83,23 @@ namespace Beamable.Editor.ContentService
 		public bool isReloading;
 		public List<string> availableManifestIds;
 
+		/// <summary>
+		/// True once the most recent <see cref="Reload"/> has finished fetching the realm's remote
+		/// manifest list. Until this is true the realm's emptiness is unknown (still loading).
+		/// </summary>
+		public bool RemoteManifestsLoaded { get; private set; }
+		/// <summary>
+		/// True when the last remote-manifest fetch errored. Used so the Content Manager does not
+		/// misread a transient failure as "this realm is empty".
+		/// </summary>
+		public bool RemoteManifestsErrored { get; private set; }
+		/// <summary>
+		/// Number of remote manifests on the realm as of the last successful fetch. Zero means the
+		/// realm has never had content published — the signal used to offer the opt-in default
+		/// content import (see DefaultContentImporter).
+		/// </summary>
+		public int RemoteManifestCount { get; private set; }
+
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
@@ -735,10 +752,10 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
 				_ = _contentWatcher.Command.Run();
 
-				bool addedAnyDefault = false;
+				RemoteManifestsLoaded = false;
+				RemoteManifestsErrored = false;
 				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
 				{
-					
 					var manifestIds = new HashSet<string>();
 					foreach (var id in dp.data.localManifests)
 					{
@@ -749,40 +766,24 @@ namespace Beamable.Editor.ContentService
 					{
 						manifestIds.Add(id);
 					}
-					
-					if (dp.data.remoteManifests.Count == 0)
-					{
-						// If no remote manifest on remote, it means that it is the first time that the customer is using this realm
-						// If so, we need to create the default contents
-						string[] guids = BeamableAssetDatabase.FindAssets<ContentObject>(new[] {Constants.Directories.DEFAULT_DATA_DIR});
-						foreach (string guid in guids)
-						{
-							string path = AssetDatabase.GUIDToAssetPath(guid);
-							ContentObject obj = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
 
-							if (obj == null)
-								continue;
-
-							string fileName = Path.GetFileNameWithoutExtension(path);
-							obj.SetContentName(fileName);
-							SaveContent(obj);
-							addedAnyDefault = true;
-						}
-					}
+					// A realm with zero remote manifests has never had content published to it.
+					// Seeding default content is deferred to an explicit, user-initiated action
+					// (see DefaultContentImporter) so we never mutate the AssetDatabase / Addressables
+					// at init time. Here we only record the signal the Content Manager uses to offer
+					// the opt-in import prompt.
+					RemoteManifestCount = dp.data.remoteManifests.Count;
+					RemoteManifestsLoaded = true;
 
 					availableManifestIds = manifestIds.ToList();
 				}).OnError(dp =>
 				{
+					RemoteManifestsErrored = true;
 					Debug.LogError(dp.data.message);
 				}).Run();
-				
+
 				await manifestIsFetchedTaskCompletion.Task;
 				await getAvailableManifestsPromise;
-
-				if (addedAnyDefault)
-				{
-					await PublishContents();
-				}
 
 				ManifestChangedCount++;
 			}
