@@ -59,3 +59,34 @@ export interface BeamCellProps<T = unknown> {
   rowIndex: number;
 }
 export type BeamCellComponent<T = unknown> = ComponentType<BeamCellProps<T>>;
+
+// ---------------------------------------------------------------------------
+// BeamChildExtension — embed another portal extension inside an extension.
+// ---------------------------------------------------------------------------
+
+export interface BeamChildExtensionProps {
+  extensionName: string;
+}
+
+export function BeamChildExtension(
+  props: BeamChildExtensionProps & { ref?: Ref<HTMLElement> },
+): ReactElement {
+  return createElement(hostComponent('BeamChildExtension'), props);
+}
+BeamChildExtension.displayName = 'BeamChildExtension';
+
+// ---------------------------------------------------------------------------
+// BeamExtensionSite — declare a mount site inside an extension where other
+// extensions can attach (via their manifest's `page` + `selector` fields).
+// ---------------------------------------------------------------------------
+
+export interface BeamExtensionSiteProps {
+  selector: string;
+}
+
+export function BeamExtensionSite(
+  props: BeamExtensionSiteProps & { ref?: Ref<HTMLElement> },
+): ReactElement {
+  return createElement(hostComponent('BeamExtensionSite'), props);
+}
+BeamExtensionSite.displayName = 'BeamExtensionSite';
