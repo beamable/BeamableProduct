@@ -36,6 +36,50 @@ export interface ExtensionLocation {
 export type ExtensionNavigate = (path: string, opts?: { replace?: boolean }) => void;
 
 /**
+ * A read-only observable of portal-wide state. Call {@link get} for the
+ * current value and {@link subscribe} to be notified on every change —
+ * the handler receives the new value and the returned function is the
+ * unsubscribe. Use these to react to portal-level settings (date range,
+ * theme, etc.) without polling.
+ *
+ * @example
+ *   // Render once with the current date range, then re-render on changes.
+ *   const initial = context.config.dateRange.get();
+ *   const unsubscribe = context.config.dateRange.subscribe((next) => {
+ *     console.log('date range is now', next);
+ *   });
+ *   // …later, on extension unmount:
+ *   unsubscribe();
+ */
+export interface ExtensionObservable<T> {
+  get(): T;
+  subscribe(handler: (value: T) => void): () => void;
+}
+
+/**
+ * The portal-wide state extensions can react to. Every entry is a
+ * read-only observable — extensions never write back through this channel.
+ *
+ * - `dateRange`: the active range selection from the portal's TopBar.
+ *   Values: `'7d' | '30d' | '90d' | 'custom'`. Extensions that filter by
+ *   time should subscribe here so the whole portal stays in sync.
+ * - `timezone`: the user's preferred IANA zone, or the literal `'local'`
+ *   sentinel (resolve to `Intl.DateTimeFormat().resolvedOptions().timeZone`
+ *   when displaying dates).
+ * - `theme`: `'dark'` or `'light'`. Useful for picking chart palettes,
+ *   conditional images, etc. Theme tokens already inherit through the
+ *   shadow boundary, so most styling needs no explicit branching.
+ * - `account`: the logged-in user identity, or `null` when unauthenticated.
+ *   Carries `{ id, email, role }`.
+ */
+export interface ExtensionConfig {
+  dateRange: ExtensionObservable<string>;
+  timezone: ExtensionObservable<string>;
+  theme: ExtensionObservable<'dark' | 'light'>;
+  account: ExtensionObservable<{ id: string; email: string; role: string } | null>;
+}
+
+/**
  * A single mount declaration from the extension's manifest. An extension
  * can declare multiple mounts via `Properties.mounts`; the portal mounts
  * the bundle once per matching entry and passes the matched entry on
@@ -84,6 +128,13 @@ export interface ExtensionContext extends Map<any, any> {
    * mount sites.
    */
   mount: ExtensionMountPoint;
+  /**
+   * Portal-wide read-only state exposed as observables —
+   * see {@link ExtensionConfig}. Extensions subscribe here to react to
+   * settings shared across the whole portal (active date range, theme,
+   * timezone preference, logged-in account).
+   */
+  config: ExtensionConfig;
 }
 
 /**
