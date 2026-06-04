@@ -8,12 +8,57 @@ import { Beam, BeamBase } from "@beamable/sdk";
 // ---------------------------------------------------------------------------
 
 /**
+ * A read-only snapshot of the portal URL at the moment the extension is
+ * mounted. Captures `pathname`, `search`, and `hash`. To observe URL changes
+ * after mount, extensions can read `window.location` directly or listen for
+ * `popstate` — `context.location` is intentionally a snapshot, not a live ref.
+ */
+export interface ExtensionLocation {
+  pathname: string;
+  search: string;
+  hash: string;
+}
+
+/**
+ * Navigate the host portal to another route.
+ *
+ * Path resolution follows two rules:
+ * - A path that starts with `/` is treated as **absolute** — the extension
+ *   has constructed the full URL itself (e.g. `/<cid>/games/<gid>/realms/<rid>/foo`).
+ * - A path without a leading `/` is **realm-relative** — the portal will
+ *   prefix it with `/<cid>/games/<gid>/realms/<rid>/` automatically.
+ *
+ * @example
+ *   context.navigate('analytics/dashboard');         // realm-relative
+ *   context.navigate('/auth/login');                 // absolute
+ *   context.navigate('players/abc', { replace: true });
+ */
+export type ExtensionNavigate = (path: string, opts?: { replace?: boolean }) => void;
+
+/**
  * Runtime context provided by the Beamable portal to every extension on mount.
  */
 export interface ExtensionContext extends Map<any, any> {
   realm: string;
   cid: string;
   beam: Promise<Beam>;
+  /**
+   * URL params extracted by matching the extension's `mount.page` pattern
+   * against the current realm-relative path. For example, an extension
+   * mounted at `mount.page = "players/:playerId"` viewing
+   * `/.../realms/abc/players/xyz` receives `{ playerId: "xyz" }`.
+   * Empty object when the mount pattern has no params (or for nested child
+   * extensions mounted via `BeamExtensionSite`).
+   */
+  params: Record<string, string>;
+  /**
+   * Read-only snapshot of the URL at mount time — see {@link ExtensionLocation}.
+   */
+  location: ExtensionLocation;
+  /**
+   * Navigate the host portal — see {@link ExtensionNavigate}.
+   */
+  navigate: ExtensionNavigate;
 }
 
 /**
