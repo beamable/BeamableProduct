@@ -36,6 +36,24 @@ export interface ExtensionLocation {
 export type ExtensionNavigate = (path: string, opts?: { replace?: boolean }) => void;
 
 /**
+ * A single mount declaration from the extension's manifest. An extension
+ * can declare multiple mounts via `Properties.mounts`; the portal mounts
+ * the bundle once per matching entry and passes the matched entry on
+ * `context.mount` so the extension can branch on `(selector, args)` to
+ * render different UI at each site.
+ */
+export interface ExtensionMountPoint {
+  page: string;
+  selector: string;
+  navLabel?: string;
+  navGroup?: string;
+  navGroupOrder?: number;
+  navLabelOrder?: number;
+  navIcon?: string;
+  args?: Record<string, unknown>;
+}
+
+/**
  * Runtime context provided by the Beamable portal to every extension on mount.
  */
 export interface ExtensionContext extends Map<any, any> {
@@ -59,6 +77,13 @@ export interface ExtensionContext extends Map<any, any> {
    * Navigate the host portal — see {@link ExtensionNavigate}.
    */
   navigate: ExtensionNavigate;
+  /**
+   * The specific mount entry from the manifest that triggered this mount
+   * call — see {@link ExtensionMountPoint}. Read `mount.selector` or
+   * `mount.args` to branch when the same bundle is bound to multiple
+   * mount sites.
+   */
+  mount: ExtensionMountPoint;
 }
 
 /**

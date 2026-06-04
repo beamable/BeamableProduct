@@ -190,7 +190,13 @@ public partial class BeamoLocalSystem
 		}
 
 		var baseUrl = $"{treatedHost}/{context.Cid}/games/{context.Pid}/realms/{context.Pid}";
-		var mountPath = NormalizePortalExtensionMountPage(extension?.Properties?.Mount?.Page);
+		// An extension can declare multiple mounts; pick the first one with a
+		// non-empty page to use as the "open in browser" landing target. If a
+		// future iteration adds explicit selection (e.g. a --mount flag), this
+		// is where to plumb it.
+		var mountPath = extension?.Properties?.Mounts?
+			.Select(m => NormalizePortalExtensionMountPage(m?.Page))
+			.FirstOrDefault(p => !string.IsNullOrEmpty(p));
 		if (!string.IsNullOrEmpty(mountPath))
 		{
 			return $"{baseUrl}/{mountPath}?refresh_token={context.RefreshToken}";
@@ -299,7 +305,13 @@ public class PortalExtensionPackageProperties
 	[JsonProperty("microserviceDependencies")]
 	public List<string> MicroserviceDependencies;
 
-	[JsonProperty("mount")] public PortalExtensionMountProperties Mount;
+	/// <summary>
+	/// Mount declarations. An extension binds to every entry independently —
+	/// each match triggers its own mount call with a distinct shadow root.
+	/// A single bundle can contribute both a sidebar widget and a full page,
+	/// or a hub-declaration extension can also seed a default nav item.
+	/// </summary>
+	[JsonProperty("mounts")] public List<PortalExtensionMountProperties> Mounts;
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider
