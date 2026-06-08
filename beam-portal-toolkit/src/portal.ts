@@ -94,6 +94,20 @@ export interface ExtensionMountPoint {
   navGroupOrder?: number;
   navLabelOrder?: number;
   navIcon?: string;
+  /**
+   * Short tagline used by the portal hub picker as the dropdown subtitle.
+   * Only consumed for hub-declaration mounts (single-segment `page`) — the
+   * portal ignores it on sub-page mounts. Keep it under ~30 characters so
+   * it fits one line in the dropdown.
+   */
+  navDescription?: string;
+  /**
+   * CSS color for the hub-picker badge background. Any value `background`
+   * accepts works — hex (`#13D63D`), CSS variable (`var(--color-beam-accent)`),
+   * or a gradient. Only consumed for hub-declaration mounts. When unset,
+   * the portal falls back to its default accent.
+   */
+  navColor?: string;
   args?: Record<string, unknown>;
 }
 

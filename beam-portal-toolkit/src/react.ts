@@ -17,3 +17,7 @@
 export * from './generated/react-components';
 export * from './generated/react-bindable';
 export * from './generated/react-custom';
+// React-flavored runtime helpers: `useBeam`, `registerReactExtension`.
+// Co-located with the components so extension authors get them from a
+// single import path instead of remembering a separate subpath.
+export * from './react-helpers';

@@ -271,9 +271,11 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
+	public const string KEY_NAV_DESCRIPTION = "navDescription";
+	public const string KEY_NAV_COLOR = "navColor";
 	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
-	
+
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
@@ -289,6 +291,18 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_NAV_ICON)]
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavIcon;
+
+	// Short tagline used by the portal hub picker as the dropdown subtitle.
+	// Only consumed for hub-declaration mounts (single-segment `Page`).
+	[JsonProperty(KEY_NAV_DESCRIPTION)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavDescription;
+
+	// CSS color for the hub-picker badge background — hex, CSS variable, or
+	// gradient. Only consumed for hub-declaration mounts.
+	[JsonProperty(KEY_NAV_COLOR)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavColor;
 
 	[JsonProperty(KEY_NAV_GROUP_ORDER)]
 	[JsonConverter(typeof(OptionalConverter))]
