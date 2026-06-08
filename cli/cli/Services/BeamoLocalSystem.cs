@@ -586,29 +586,40 @@ public class BeamoServiceDefinition
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
 		= new MicroserviceFederationsConfig();
 
+	public static async Task<(bool, OpenApiDocument)> TryGetOpenApiDocument(string openApiPath)
+	{
+		if (!File.Exists(openApiPath))
+		{
+			return (false, null);
+		}
+
+		var openApiStringReader = new OpenApiStringReader();
+		var fileContent = await File.ReadAllTextAsync(openApiPath);
+		var document = openApiStringReader.Read(fileContent, out var diagnostic);
+		foreach (var warning in diagnostic.Warnings)
+		{
+			Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+				warning.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+		}
+
+		foreach (var error in diagnostic.Errors)
+		{
+			Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+				error.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+		}
+
+		return (true, document);
+	}
+
 	public static async Task<MicroserviceFederationsConfig> ReloadFederationsData(string openApiPath)
 	{
 		// string openApiPath = definition.OpenApiPath;
-		if (File.Exists(openApiPath))
+		(bool hasOpenApiDocument, OpenApiDocument document) = await TryGetOpenApiDocument(openApiPath);
+		if (hasOpenApiDocument)
 		{
-			var openApiStringReader = new OpenApiStringReader();
-			var fileContent = await File.ReadAllTextAsync(openApiPath);
-			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
-			foreach (var warning in diagnostic.Warnings)
-			{
-				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
-					warning.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
-			}
-
-			foreach (var error in diagnostic.Errors)
-			{
-				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
-					error.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
-			}
-
-			if (!openApiDocument.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
+			if (!document.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
 				    out var ext) ||
 			    ext is not OpenApiArray { Count: > 0 } federationIds)
 			{

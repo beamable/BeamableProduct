@@ -373,9 +373,6 @@ public class PortalExtensionObserver
 			return; // this case we ignore because these are the build files
 		}
 
-		// generate microservice client files, in case a manually change happened to the package.json adding a new dep
-		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(AppFilesPath, _manifest);
-
 		// build the app since there are new changes in the src files
 		BuildExtension();
 
