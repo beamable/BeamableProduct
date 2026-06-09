@@ -70,7 +70,7 @@ namespace Beamable.Editor.Accounts
 						RenderLabel("Runtime Host", config.HostUrl, "No value set");
 						RenderLabel("Runtime Cid", config.Cid, "No value set");
 
-						string realmDisplay = config.Pid;
+						var realmDisplay = config.Pid;
 						if (!string.IsNullOrEmpty(config.Pid) && cli.pidToRealm.TryGetValue(config.Pid, out RealmView realm))
 						{
 							realmDisplay = realm.GetDisplayName();

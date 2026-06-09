@@ -685,13 +685,14 @@ namespace Beamable
 
 			if (writeConfig)
 			{
+				var wasNewConfigFile = !File.Exists(path);
 				string directoryName = Path.GetDirectoryName(path);
 				if (!string.IsNullOrWhiteSpace(directoryName))
 				{
 					Directory.CreateDirectory(directoryName);
 				}
 
-				if (File.Exists(path))
+				if (!wasNewConfigFile)
 				{
 					var fileInfo = new FileInfo(path);
 					fileInfo.IsReadOnly = false;
@@ -708,25 +709,28 @@ namespace Beamable
 				}
 				
 				File.WriteAllText(path, asJson);
-				
-				// Import synchronously so Unity's AssetDatabase can see the newly-created
-				// Resources asset before callers continue. This matters for first-run setup,
-				// where config-defaults.txt may not have existed a moment earlier.
-				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-				
-				// ImportAsset can still fail to resolve the asset immediately in some editor
-				// timing cases, so fall back to a synchronous refresh before reloading config.
-				if (AssetDatabase.LoadAssetAtPath<TextAsset>(path) == null)
+				if (wasNewConfigFile)
 				{
-					AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+					// Import synchronously so Unity's AssetDatabase can see the newly-created
+					// Resources asset before callers continue. This matters for first-run setup,
+					// where config-defaults.txt may not have existed a moment earlier.
+					AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+
+					// ImportAsset can still fail to resolve the asset immediately in some editor
+					// timing cases, so fall back to a synchronous refresh before reloading config.
+					if (AssetDatabase.LoadAssetAtPath<TextAsset>(path) == null)
+					{
+						AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+					}
+
+					// Keep the Project window in sync for editor-driven writes, but avoid repainting
+					// editor UI while Unity is in the build pipeline.
+					if (!BuildPipeline.isBuildingPlayer)
+					{
+						EditorApplication.RepaintProjectWindow();
+					}
 				}
 				
-				// Keep the Project window in sync for editor-driven writes, but avoid repainting
-				// editor UI while Unity is in the build pipeline.
-				if (!BuildPipeline.isBuildingPlayer)
-				{
-					EditorApplication.RepaintProjectWindow();
-				}
 				ServiceScope.GetService<ConfigDatabaseProvider>().Reload();
 			}
 		}
