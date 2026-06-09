@@ -21,6 +21,18 @@ using Object = UnityEngine.Object;
 namespace Beamable.Editor.ContentService
 {
 	/// <summary>
+	/// Tracks a detected rename: a Created entry (new name) paired with a Deleted entry (old name).
+	/// </summary>
+	public struct ContentRenameInfo
+	{
+		public string CreatedFullId;
+		public string DeletedFullId;
+		public string OldName;
+		public string NewName;
+		public string TypeName;
+	}
+
+	/// <summary>
 	/// Tracks the currently running content operation so the Content Manager can render progress inside the window.
 	/// </summary>
 	public class ContentOperationProgress
@@ -61,11 +73,32 @@ namespace Beamable.Editor.ContentService
 		private int syncedContents;
 		private int publishedContents;
 		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
+		private readonly Dictionary<string, ContentRenameInfo> _renameRegistry = new();
+		private readonly Dictionary<string, ContentRenameInfo> _explicitRenameTracking = new();
+		private static readonly string RenameCachePath =
+			Path.Combine("Library", "BeamableEditor", "ContentRenameCache.json");
 		private bool _showUnityModalProgress;
 		
 		[NonSerialized]
 		public bool isReloading;
 		public List<string> availableManifestIds;
+
+		/// <summary>
+		/// True once the most recent <see cref="Reload"/> has finished fetching the realm's remote
+		/// manifest list. Until this is true the realm's emptiness is unknown (still loading).
+		/// </summary>
+		public bool RemoteManifestsLoaded { get; private set; }
+		/// <summary>
+		/// True when the last remote-manifest fetch errored. Used so the Content Manager does not
+		/// misread a transient failure as "this realm is empty".
+		/// </summary>
+		public bool RemoteManifestsErrored { get; private set; }
+		/// <summary>
+		/// Number of remote manifests on the realm as of the last successful fetch. Zero means the
+		/// realm has never had content published — the signal used to offer the opt-in default
+		/// content import (see DefaultContentImporter).
+		/// </summary>
+		public int RemoteManifestCount { get; private set; }
 
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 
@@ -99,6 +132,15 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		public bool TryGetRenameInfo(string fullId, out ContentRenameInfo info) =>
+			_renameRegistry.TryGetValue(fullId, out info);
+
+		public List<ContentRenameInfo> GetAllRenames() =>
+			_renameRegistry.Values
+				.GroupBy(r => r.CreatedFullId)
+				.Select(g => g.First())
+				.ToList();
+
 		public Dictionary<string, List<LocalContentManifestEntry>> TypeContentCache => _typeContentCache;
 
 		public List<string> TagsCache => _tagsCache;
@@ -113,6 +155,7 @@ namespace Beamable.Editor.ContentService
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			_contentConfiguration = contentConfiguration;
+			LoadRenameCache();
 			_ = Reload();
 		}
 
@@ -385,6 +428,8 @@ namespace Beamable.Editor.ContentService
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
+				string oldName = entry.Name;
+
 				RemoveContentFromCache(entry);
 				entry.CurrentStatus = (int)ContentStatus.Deleted;
 				AddContentToCache(entry);
@@ -392,10 +437,82 @@ namespace Beamable.Editor.ContentService
 				entry.CurrentStatus = (int)ContentStatus.Created;
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
+
+				// Track rename: collapse chain if this was already the Created side of a prior rename (A→B→C becomes A→C)
+				string ultimateDeletedId = contentId;
+				string ultimateOldName = oldName;
+				if (_explicitRenameTracking.TryGetValue(contentId, out var priorRename) && priorRename.CreatedFullId == contentId)
+				{
+					ultimateDeletedId = priorRename.DeletedFullId;
+					ultimateOldName = priorRename.OldName;
+					_explicitRenameTracking.Remove(priorRename.CreatedFullId);
+					_explicitRenameTracking.Remove(priorRename.DeletedFullId);
+					_renameRegistry.Remove(priorRename.CreatedFullId);
+					_renameRegistry.Remove(priorRename.DeletedFullId);
+				}
+
+				// If renamed back to the original name (A→B→A), remove tracking entirely
+				if (newFullId == ultimateDeletedId)
+				{
+					// Undo the Deleted+Created pair: remove the Deleted entry we just added and restore the original status
+					RemoveContentFromCache(entry);
+					entry.CurrentStatus = (int)ContentStatus.UpToDate;
+					entry.FullId = newFullId;
+					entry.Name = newName;
+					// Also remove the stale Deleted entry we added above
+					if (EntriesCache.TryGetValue(ultimateDeletedId, out var staleDeleted))
+						RemoveContentFromCache(staleDeleted);
+					AddContentToCache(entry);
+					SaveRenameCache();
+				}
+				else
+				{
+					var renameInfo = new ContentRenameInfo
+					{
+						CreatedFullId = newFullId,
+						DeletedFullId = ultimateDeletedId,
+						OldName = ultimateOldName,
+						NewName = newName,
+						TypeName = entry.TypeName,
+					};
+					_explicitRenameTracking[newFullId] = renameInfo;
+					_explicitRenameTracking[ultimateDeletedId] = renameInfo;
+					_renameRegistry[newFullId] = renameInfo;
+					_renameRegistry[ultimateDeletedId] = renameInfo;
+					SaveRenameCache();
+				}
 			}
 			else
 			{
 				RemoveContentFromCache(entry);
+
+				// If this Created entry is the Created side of a prior rename (A→B), update tracking to A→C
+				if (_explicitRenameTracking.TryGetValue(contentId, out var priorRename) && priorRename.CreatedFullId == contentId)
+				{
+					_explicitRenameTracking.Remove(priorRename.CreatedFullId);
+					_explicitRenameTracking.Remove(priorRename.DeletedFullId);
+					_renameRegistry.Remove(priorRename.CreatedFullId);
+					_renameRegistry.Remove(priorRename.DeletedFullId);
+
+					// If renamed back to the original name (A→B→A), just clear tracking
+					if (newFullId != priorRename.DeletedFullId)
+					{
+						var renameInfo = new ContentRenameInfo
+						{
+							CreatedFullId = newFullId,
+							DeletedFullId = priorRename.DeletedFullId,
+							OldName = priorRename.OldName,
+							NewName = newName,
+							TypeName = entry.TypeName,
+						};
+						_explicitRenameTracking[newFullId] = renameInfo;
+						_explicitRenameTracking[priorRename.DeletedFullId] = renameInfo;
+						_renameRegistry[newFullId] = renameInfo;
+						_renameRegistry[priorRename.DeletedFullId] = renameInfo;
+					}
+					SaveRenameCache();
+				}
+
 				entry.Name = newName;
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
@@ -606,6 +723,10 @@ namespace Beamable.Editor.ContentService
 									AddContentToCache(entry);
 								}
 							}
+							else
+							{
+								AddContentToCache(entry);
+							}
 
 							ValidationContext.AllContent.Remove(entry.FullId);
 						}
@@ -613,6 +734,7 @@ namespace Beamable.Editor.ContentService
 
 					if (hasRemoveManifest || hasChangeManifest)
 					{
+						RestoreRenameRegistry();
 						ManifestChangedCount++;
 					}
 
@@ -630,10 +752,10 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
 				_ = _contentWatcher.Command.Run();
 
-				bool addedAnyDefault = false;
+				RemoteManifestsLoaded = false;
+				RemoteManifestsErrored = false;
 				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
 				{
-					
 					var manifestIds = new HashSet<string>();
 					foreach (var id in dp.data.localManifests)
 					{
@@ -644,40 +766,24 @@ namespace Beamable.Editor.ContentService
 					{
 						manifestIds.Add(id);
 					}
-					
-					if (dp.data.remoteManifests.Count == 0)
-					{
-						// If no remote manifest on remote, it means that it is the first time that the customer is using this realm
-						// If so, we need to create the default contents
-						string[] guids = BeamableAssetDatabase.FindAssets<ContentObject>(new[] {Constants.Directories.DEFAULT_DATA_DIR});
-						foreach (string guid in guids)
-						{
-							string path = AssetDatabase.GUIDToAssetPath(guid);
-							ContentObject obj = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
 
-							if (obj == null)
-								continue;
-
-							string fileName = Path.GetFileNameWithoutExtension(path);
-							obj.SetContentName(fileName);
-							SaveContent(obj);
-							addedAnyDefault = true;
-						}
-					}
+					// A realm with zero remote manifests has never had content published to it.
+					// Seeding default content is deferred to an explicit, user-initiated action
+					// (see DefaultContentImporter) so we never mutate the AssetDatabase / Addressables
+					// at init time. Here we only record the signal the Content Manager uses to offer
+					// the opt-in import prompt.
+					RemoteManifestCount = dp.data.remoteManifests.Count;
+					RemoteManifestsLoaded = true;
 
 					availableManifestIds = manifestIds.ToList();
 				}).OnError(dp =>
 				{
+					RemoteManifestsErrored = true;
 					Debug.LogError(dp.data.message);
 				}).Run();
-				
+
 				await manifestIsFetchedTaskCompletion.Task;
 				await getAvailableManifestsPromise;
-
-				if (addedAnyDefault)
-				{
-					await PublishContents();
-				}
 
 				ManifestChangedCount++;
 			}
@@ -706,6 +812,103 @@ namespace Beamable.Editor.ContentService
 			_conflictedContentCache.Clear();
 			_contentIdTagsCache.Clear();
 			_lastSavedPropertiesCache.Clear();
+			_renameRegistry.Clear();
+		}
+
+		private void RestoreRenameRegistry()
+		{
+			_renameRegistry.Clear();
+
+			foreach (var kvp in _explicitRenameTracking)
+			{
+				if (EntriesCache.ContainsKey(kvp.Value.CreatedFullId) &&
+				    EntriesCache.ContainsKey(kvp.Value.DeletedFullId))
+				{
+					_renameRegistry[kvp.Key] = kvp.Value;
+				}
+			}
+
+			var staleKeys = _explicitRenameTracking
+				.Where(kvp => !EntriesCache.ContainsKey(kvp.Value.CreatedFullId) ||
+				              !EntriesCache.ContainsKey(kvp.Value.DeletedFullId))
+				.Select(kvp => kvp.Key)
+				.ToList();
+			if (staleKeys.Count > 0)
+			{
+				foreach (var key in staleKeys)
+					_explicitRenameTracking.Remove(key);
+				SaveRenameCache();
+			}
+		}
+
+		private void LoadRenameCache()
+		{
+			try
+			{
+				if (File.Exists(RenameCachePath))
+				{
+					var json = File.ReadAllText(RenameCachePath);
+					var data = JsonUtility.FromJson<RenameCacheData>(json);
+					if (data?.Entries != null)
+					{
+						_explicitRenameTracking.Clear();
+						foreach (var e in data.Entries)
+						{
+							var info = new ContentRenameInfo
+							{
+								CreatedFullId = e.CreatedFullId,
+								DeletedFullId = e.DeletedFullId,
+								OldName = e.OldName,
+								NewName = e.NewName,
+								TypeName = e.TypeName,
+							};
+							_explicitRenameTracking[info.CreatedFullId] = info;
+							_explicitRenameTracking[info.DeletedFullId] = info;
+						}
+					}
+				}
+			}
+			catch { }
+		}
+
+		private void SaveRenameCache()
+		{
+			try
+			{
+				var dir = Path.GetDirectoryName(RenameCachePath);
+				if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+					Directory.CreateDirectory(dir);
+				var distinct = _explicitRenameTracking.Values
+					.GroupBy(r => r.CreatedFullId)
+					.Select(g => g.First())
+					.ToArray();
+				var data = new RenameCacheData
+				{
+					Entries = distinct.Select(r => new RenameCacheEntry
+					{
+						CreatedFullId = r.CreatedFullId,
+						DeletedFullId = r.DeletedFullId,
+						OldName = r.OldName,
+						NewName = r.NewName,
+						TypeName = r.TypeName,
+					}).ToArray()
+				};
+				File.WriteAllText(RenameCachePath, JsonUtility.ToJson(data));
+			}
+			catch { }
+		}
+
+		[Serializable]
+		private class RenameCacheData { public RenameCacheEntry[] Entries; }
+
+		[Serializable]
+		private class RenameCacheEntry
+		{
+			public string CreatedFullId;
+			public string DeletedFullId;
+			public string OldName;
+			public string NewName;
+			public string TypeName;
 		}
 
 		public void ReceiveStorageHandle(StorageHandle<CliContentService> handle)
@@ -832,13 +1035,19 @@ namespace Beamable.Editor.ContentService
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
+			if (entry.StatusEnum is not ContentStatus.Deleted &&
+			    (string.IsNullOrEmpty(entry.JsonFilePath) || !File.Exists(entry.JsonFilePath)))
+			{
+				return;
+			}
+
 			var entryType = _contentTypeReflectionCache.GetTypeFromId(entry.FullId);
 			if (!_contentTypeReflectionCache.TryGetName(entryType, out var typeName))
 			{
 				//Fallback to CLI Value
 				typeName = entry.TypeName;
 			}
-			
+
 			if (!TypeContentCache.TryGetValue(typeName, out var typeContentList))
 			{
 				TypeContentCache[typeName] = typeContentList = new List<LocalContentManifestEntry>();;
@@ -866,7 +1075,7 @@ namespace Beamable.Editor.ContentService
 			_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
 			
 			EntriesCache[entry.FullId] = entry;
-			
+
 			CacheScriptableContent(entry);
 
 			if (entry.StatusEnum is not ContentStatus.Deleted)
@@ -904,7 +1113,7 @@ namespace Beamable.Editor.ContentService
 				contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
 				_contentScriptableCache[entry.FullId] = contentObject;
 			}
-			
+
 			contentObject = LoadContentObject(entry, contentObject);
 
 			Object.DontDestroyOnLoad(contentObject);

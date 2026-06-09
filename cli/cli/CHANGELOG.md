@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved Content Publish command performance by adding size-aware batching and retry.
 - Refactored calculation of directory size, 2x performance improvement.
 - Refactored generation of local manifest data, 20x performance improvement.
+- Added support to Max Concurrent Upload for `deploy release`.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.

@@ -1548,11 +1548,12 @@ public partial class DeployUtil
 	}
 	
 	public static async Task Deploy(
-		DeployablePlan plan, 
-		IDependencyProvider provider, 
-		ProgressHandler progressHandler, 
+		DeployablePlan plan,
+		IDependencyProvider provider,
+		ProgressHandler progressHandler,
 		CancellationTokenSource cts,
-		Task<ManifestView> remoteManifestTask=null)
+		Task<ManifestView> remoteManifestTask=null,
+		int maxConcurrentUploads=6)
 	{
 		var api = provider.GetService<IBeamoApi>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
@@ -1576,7 +1577,7 @@ public partial class DeployUtil
 		
 		// identity the services we need to upload.
 		var uploadTasks = new List<Task>();
-		
+
 		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
 
 		if (servicesToUpload.Count > 0)
@@ -1587,7 +1588,9 @@ public partial class DeployUtil
 				throw CliExceptions.DOCKER_NOT_RUNNING;
 			}
 		}
-		
+
+		using var uploadSemaphore = new SemaphoreSlim(maxConcurrentUploads, maxConcurrentUploads);
+
 		foreach (var service in plan.manifest.manifest)
 		{
 			var needsUpload = servicesToUpload.Contains(service.serviceName);
@@ -1596,17 +1599,28 @@ public partial class DeployUtil
 
 			var serviceName = service.serviceName;
 			var progressTaskName = $"upload {serviceName}";
-			var uploadTask = ServiceUploadUtil.Upload(
-				provider: provider,
-				beamoId: service.serviceName,
-				imageId: service.imageId, 
-				gamePid: gamePid,
-				dockerRegistryUrl: dockerRegistryUrl, 
-				cts: cts, 
-				onProgressCallback: progressRatio =>
+			var uploadTask = Task.Run(async () =>
+			{
+				await uploadSemaphore.WaitAsync(cts.Token);
+				try
 				{
-					progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
-				});
+					await ServiceUploadUtil.Upload(
+						provider: provider,
+						beamoId: service.serviceName,
+						imageId: service.imageId,
+						gamePid: gamePid,
+						dockerRegistryUrl: dockerRegistryUrl,
+						cts: cts,
+						onProgressCallback: progressRatio =>
+						{
+							progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
+						});
+				}
+				finally
+				{
+					uploadSemaphore.Release();
+				}
+			});
 
 			uploadTasks.Add(uploadTask);
 		}

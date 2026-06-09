@@ -53,8 +53,12 @@ public class DeployArgs
 		command.AddOption(
 			new Option<int>(new string[] { "--max-parallel-count", "-mpc" }, () => 8,
 				"Maximum number of parallel services builds"), (args, i) => args.MaxParallelTask = i);
+		command.AddOption(
+			new Option<int>(new string[] { "--max-concurrent-uploads", "-mcu" }, () => 6,
+				"Maximum number of concurrent service image uploads during deployment"),
+			(args, i) => args.MaxConcurrentUploads = i);
 
-		
+
 		AddModeOption(command, (args, i) => args.DeployMode = i);
 	}
 	

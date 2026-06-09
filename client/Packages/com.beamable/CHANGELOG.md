@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed default gem icon
 - "Beam Library" Window is now "Beam Samples" Window and was updated with latest docs and samples
 - AdminFlow prefab (ConsoleFlow) was removed from the Beam Samples Window and is now considered Deprecated
+- Now Renamed content entries will be shown as Modified Renamed in the Content Manager Window rather than a New and Deleted entries.
+- Default assets and content are imported manually on first visit to Content Manager
 
 ## [5.0.1] - 2026-04-02
 ### Fixed
