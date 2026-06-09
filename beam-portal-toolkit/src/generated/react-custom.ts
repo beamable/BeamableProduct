@@ -2,11 +2,17 @@
 // substantially from the underlying web component's CEM-derived API.
 // Auto-generated forwarders live in `react-components.ts`.
 //
-// At the moment that's just `BeamTable<T>` — the React wrapper accepts
-// `<BeamColumn>` / `<BeamTopRow>` / `<BeamGroupHeader>` markers as children
-// and exposes a generic row type, neither of which the CEM models.
+// Currently:
+//   - `BeamTable<T>` — accepts `<BeamColumn>` / `<BeamTopRow>` /
+//     `<BeamGroupHeader>` markers as children and exposes a generic row
+//     type, neither of which the CEM models.
+//   - `BeamChangeBar` — the codegen pulls only from CEM attributes, but
+//     this component's primary data inputs (`changes`, `errors`) are Lit
+//     `@property({ attribute: false })` fields and its outputs are custom
+//     events (`wa-save`, `wa-discard`). The hand-written forwarder surfaces
+//     both as typed React props.
 
-import { createElement, type ComponentType, type CSSProperties, type ReactElement, type ReactNode, type Ref } from 'react';
+import { createElement, type CSSProperties, type ComponentType, type ReactElement, type ReactNode, type Ref } from 'react';
 import { hostComponent } from './react-host';
 
 export interface BeamTableProps<T = unknown> {
@@ -116,3 +122,110 @@ export function BeamExtensionSite(
   return createElement(hostComponent('BeamExtensionSite'), props);
 }
 BeamExtensionSite.displayName = 'BeamExtensionSite';
+
+// ---------------------------------------------------------------------------
+// BeamChangeBar — sticky change bar with typed `changes` / `errors` props
+// and `onWaSave` / `onWaDiscard` event handlers.
+// ---------------------------------------------------------------------------
+
+/**
+ * One pending edit shown in the change bar / review dialog. Labels and
+ * values are pre-computed by the consumer — the component is a pure
+ * renderer. Use `labelPrefix` for a muted lead-in (e.g. a namespace) that
+ * should be visually de-emphasized but stay in line with the label.
+ */
+export interface BeamChangeEntry {
+  /** Stable identity for the item. Used to match validation errors and as a render key. */
+  key: string;
+  /** Primary display label (plain text). */
+  label: string;
+  /** Optional muted prefix rendered before the label (e.g. a namespace). */
+  labelPrefix?: string;
+  /** Current/new value (added & modified). */
+  value?: string;
+  /** Original value (modified only). */
+  previousValue?: string;
+}
+
+/** Full payload consumed by `BeamChangeBar.changes`. */
+export interface BeamChangeSet {
+  added?: BeamChangeEntry[];
+  modified?: BeamChangeEntry[];
+  deleted?: BeamChangeEntry[];
+  /** Optional human summary. When omitted, the component derives one. */
+  summary?: string;
+}
+
+/** Validation error shown inline next to its owning entry. */
+export interface BeamChangeBarError {
+  key: string;
+  field?: string;
+  message: string;
+}
+
+export interface BeamChangeBarProps {
+  /** Pending edits to display + (optionally) summarize. */
+  changes?: BeamChangeSet;
+  /** Validation errors paired with `changes[*].key`. Save is gated while present. */
+  errors?: BeamChangeBarError[];
+  /** Show the Save button as "Saving…" and disable it while a save is in flight. @default false */
+  saving?: boolean;
+  /** Override the auto-derived summary text (e.g. "2 added, 1 modified"). */
+  'summary-text'?: string;
+  /** Label of the Save button. @default 'Save' */
+  'save-label'?: string;
+  /** Label of the Save button while saving. @default 'Saving...' */
+  'saving-label'?: string;
+  /** Label of the Discard button. @default 'Discard' */
+  'discard-label'?: string;
+  /** Label of the Review button. @default 'Review' */
+  'review-label'?: string;
+  /** Title of the review dialog. @default 'Review Changes' */
+  'review-title'?: string;
+  /** Hide the Review button + dialog entirely. @default false */
+  'no-review'?: boolean;
+  /**
+   * Render the bar inline at the host's normal flow position instead of
+   * fixed to the bottom of the viewport. Useful for in-page docs/previews
+   * and for embedding the bar inside a settings panel. @default false
+   */
+  inline?: boolean;
+  /**
+   * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically
+   * (debounced by `auto-save-debounce`) whenever `changes` is dirty AND
+   * `errors` is empty, and the visible bar UI is hidden. If validation
+   * errors appear, the bar falls back to its normal interactive state so
+   * the user can fix them. The consumer still owns the actual save logic
+   * via the `wa-save` handler — the bar only schedules the dispatch.
+   * @default false
+   */
+  'auto-save'?: boolean;
+  /**
+   * Debounce window in milliseconds before auto-save dispatches `wa-save`.
+   * Resets every time `changes` updates so rapid edits collapse into one
+   * save. @default 800
+   */
+  'auto-save-debounce'?: number;
+
+  /** Fired when the user clicks Save (bar or dialog footer), or auto-save fires. */
+  onWaSave?: (event: CustomEvent) => void;
+  /** Fired when the user clicks Discard. */
+  onWaDiscard?: (event: CustomEvent) => void;
+  /** Fired when the review dialog opens. */
+  onWaReviewShow?: (event: CustomEvent) => void;
+  /** Fired when the review dialog closes for any reason. */
+  onWaReviewHide?: (event: CustomEvent) => void;
+  /** Fired when the bar transitions between high-level states. */
+  onWaStateChange?: (event: CustomEvent) => void;
+
+  className?: string;
+  style?: CSSProperties;
+}
+
+/** React forwarder for `<beam-change-bar>`. */
+export function BeamChangeBar(
+  props: BeamChangeBarProps & { ref?: Ref<HTMLElement> },
+): ReactElement {
+  return createElement(hostComponent('BeamChangeBar'), props);
+}
+BeamChangeBar.displayName = 'BeamChangeBar';

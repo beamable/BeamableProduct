@@ -112,6 +112,39 @@ export interface ExtensionMountPoint {
 }
 
 /**
+ * Tone vocabulary for sidebar nav badges. Mirrors the host portal's
+ * `badge-pill` color palette: `info` (cyan), `warning` (amber),
+ * `error` (red), `accent` (purple).
+ */
+export type BadgeTone = 'info' | 'warning' | 'error' | 'accent';
+
+/**
+ * A sidebar nav badge value. `value` is a count or a short label like
+ * `"LIVE"` / `"PENDING"`. Pass `null` to clear an existing badge.
+ *
+ * String values default to `accent` tone unless the extension supplies
+ * one — count tones default to `info`.
+ */
+export interface BadgeValue {
+  value: number | string;
+  tone?: BadgeTone;
+}
+
+/**
+ * Limited context handed to `getBadge`. Deliberately narrower than
+ * {@link ExtensionContext} — the badge pull runs *outside* the extension's
+ * mount lifecycle (no shadow DOM, no React tree, no URL params) so the
+ * extension must never reach for `params` / `location` / `navigate` /
+ * `mount` here.
+ */
+export interface BadgeContext {
+  realm: string;
+  cid: string;
+  beam: Promise<Beam>;
+  config: ExtensionConfig;
+}
+
+/**
  * Runtime context provided by the Beamable portal to every extension on mount.
  */
 export interface ExtensionContext extends Map<any, any> {
@@ -149,6 +182,14 @@ export interface ExtensionContext extends Map<any, any> {
    * timezone preference, logged-in account).
    */
   config: ExtensionConfig;
+  /**
+   * Push the extension's sidebar nav-item badge. Pass `null` to clear.
+   * Only valid while this extension is mounted — the value sticks in the
+   * portal's badge store after unmount until the next page load. Pair with
+   * the pull-side `getBadge` (on `Portal.registerExtension`) for cases where
+   * the badge must appear even when the user hasn't visited the page yet.
+   */
+  updateBadge: (value: BadgeValue | null) => void;
 }
 
 /**
@@ -181,6 +222,44 @@ export interface RegisterExtensionOptions {
    * @param instance - The instance object returned by the corresponding `onMount` call.
    */
   onUnmount: (instance: unknown) => void | Promise<void>;
+
+  /**
+   * Optional sidebar nav-badge supplier. Invoked once per page-load by
+   * the portal when the extension's nav item first scrolls into view.
+   * MUST NOT depend on the extension's React tree or shadow DOM (the
+   * extension may not be mounted yet) — only read from the supplied
+   * {@link BadgeContext}.
+   *
+   * Return `null` to clear / suppress the badge.
+   *
+   * For live updates while the extension is mounted, use the push channel
+   * on the mount context: {@link ExtensionContext.updateBadge}.
+   *
+   * @example
+   *   Portal.registerExtension({
+   *     beamId: 'tickets',
+   *     onMount(...) { ... },
+   *     onUnmount(...) { ... },
+   *     getBadge: async (context) => {
+   *       const beam = await context.beam;
+   *       const n = await beam.tickets.getUnreadCount();
+   *       return n > 0 ? { value: n, tone: 'warning' } : null;
+   *     },
+   *   });
+   */
+  getBadge?: (context: BadgeContext) => Promise<BadgeValue | null>;
+}
+
+/**
+ * Shape published on `window[beamId]` by {@link Portal.registerExtension}.
+ * The portal reads this back to invoke mount/unmount and (separately, with
+ * a narrower context) the badge pull. Exported so portal-side typings can
+ * reach the same shape.
+ */
+export interface WindowExtensionRegistration {
+  mount: (targetElement: HTMLElement, context: ExtensionContext) => unknown | Promise<unknown>;
+  unmount: (instance: unknown) => void | Promise<void>;
+  getBadge?: (context: BadgeContext) => Promise<BadgeValue | null>;
 }
 
 
@@ -207,16 +286,12 @@ export interface RegisterExtensionOptions {
  * ```
  */
 function registerExtension(options: RegisterExtensionOptions): void {
-
-  (window as unknown as Record<string, unknown>)[options.beamId] = {
-    mount: (targetElement: HTMLElement, context: ExtensionContext) => {
-      return options.onMount(targetElement, context);
-    },
-    unmount: (instance: unknown) => {
-      return options.onUnmount(instance);
-    },
+  const registration: WindowExtensionRegistration = {
+    mount: (targetElement, context) => options.onMount(targetElement, context),
+    unmount: (instance) => options.onUnmount(instance),
+    ...(options.getBadge ? { getBadge: options.getBadge } : {}),
   };
-
+  (window as unknown as Record<string, WindowExtensionRegistration>)[options.beamId] = registration;
 }
 
 // ---------------------------------------------------------------------------

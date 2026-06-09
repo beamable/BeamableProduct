@@ -478,7 +478,14 @@ console.log(`✓ Generated   →  src/generated/react-elements.ts`);
 // so migrating to `<BeamFoo …>` is a name change only.
 
 /** Components that have hand-written wrappers in `react-custom.ts`. */
-const REACT_HANDWRITTEN = new Set(['beam-table']);
+const REACT_HANDWRITTEN = new Set([
+  'beam-table',
+  // `beam-change-bar` carries Lit `@property({ attribute: false })` fields
+  // (`changes`, `errors`) and custom events (`wa-save`, `wa-discard`) that
+  // the auto-gen can't see — it pulls only from CEM attributes. The
+  // hand-written forwarder surfaces those as typed React props.
+  'beam-change-bar',
+]);
 
 /** Bindable components — input-like components whose React wrappers
  *  surface typed `onValueChange` / `onCheckedChange` callbacks for ergonomic
