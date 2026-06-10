@@ -66,6 +66,11 @@ public partial class BeamoLocalSystem
 						var notification = provider.GetService<IMicroserviceNotificationsApi>();
 						var attributes = provider.GetService<MicroserviceAttribute>();
 						observer.ConfigureServiceData(notification, attributes, beamActivity, localSystem.BeamoManifest);
+
+						// Make sure each file: library dependency still points at its real location before we
+						// install/build. Auto-repairs a moved library or throws a clear error if one is missing.
+						PortalExtensionAddLibraryCommand.ValidateAndRepairLibraryDependencies(extension, localSystem.BeamoManifest);
+
 						observer.InstallDeps();
 						observer.BuildExtension();
 						
@@ -295,6 +300,8 @@ public class PortalExtensionPackageProperties
 	[JsonProperty("version")] public string Version;
 
 	[JsonProperty("portalExtension")] public bool IsPortalExtension;
+
+	[JsonProperty("portalExtensionLib")] public bool IsPortalExtensionLib;
 
 	[JsonProperty("microserviceDependencies")]
 	public List<string> MicroserviceDependencies;

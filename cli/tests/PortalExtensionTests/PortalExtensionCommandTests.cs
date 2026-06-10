@@ -275,4 +275,66 @@ public class PortalExtensionCommandTests : CLITestExtensions
 	}
 
 	#endregion
+
+	#region project new portal-extension-lib
+
+	[Test]
+	public void NewPortalExtensionLib_CreatesFiles()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+
+		Run("project", "new", "portal-extension-lib", "TestLib", "--quiet");
+
+		Assert.That(BFile.Exists("extensions-libs/TestLib/package.json"),
+			"package.json must exist after scaffolding the library");
+		Assert.That(BFile.Exists("extensions-libs/TestLib/src/index.ts"),
+			"src/index.ts must exist after scaffolding the library");
+
+		var packageJson = BFile.ReadAllText("extensions-libs/TestLib/package.json");
+		Assert.That(packageJson, Does.Contain("TestLib"),
+			"package.json name must match the provided library name");
+		Assert.That(packageJson, Does.Contain("portalExtensionLib"),
+			"package.json must mark the project as a portal extension library");
+		Assert.That(packageJson, Does.Contain("./src/index.ts"),
+			"package.json must expose its TypeScript source as the entry point");
+	}
+
+	#endregion
+
+	#region portal extension add-library
+
+	[Test]
+	public void AddLibrary_AddsFileDependencyToPackageJson()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		Run("project", "new", "portal-extension-lib", "TestLib", "--quiet");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+		Run("project", "new", "portal-extension", "TestExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		Run("portal", "extension", "add-library", "TestExt", "TestLib", "--quiet");
+
+		var packageJson = BFile.ReadAllText("extensions/TestExt/package.json");
+		Assert.That(packageJson, Does.Contain("TestLib"),
+			"package.json must list TestLib as a dependency");
+		Assert.That(packageJson, Does.Contain("file:"),
+			"package.json must reference the library via a file: specifier");
+		Assert.That(packageJson, Does.Contain("extensions-libs/TestLib"),
+			"the file: specifier must point at the library directory");
+	}
+
+	#endregion
 }
