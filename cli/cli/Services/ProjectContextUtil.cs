@@ -105,7 +105,6 @@ public static class ProjectContextUtil
 		sw.Restart();
 
 		var allPortalExtensions = FindPortalExtensionProjects(configService.BeamableWorkspace, scan.PackageJsons);
-		var allPortalExtensionLibs = FindPortalExtensionLibs(configService.BeamableWorkspace, scan.PackageJsons);
 
 		sw.Stop();
 		Log.Verbose($"Gathering portal extension apps took {sw.Elapsed.TotalMilliseconds} ");
@@ -186,12 +185,6 @@ public static class ProjectContextUtil
 		foreach (var extension in allPortalExtensions)
 		{
 			var definition = ProjectContextUtil.ConvertPortalExtensionToServiceDefinition(extension);
-			manifest.ServiceDefinitions.Add(definition);
-		}
-
-		foreach (var lib in allPortalExtensionLibs)
-		{
-			var definition = ProjectContextUtil.ConvertPortalExtensionLibToServiceDefinition(lib);
 			manifest.ServiceDefinitions.Add(definition);
 		}
 		
@@ -307,8 +300,7 @@ public static class ProjectContextUtil
 		{
 			//TODO: need to implement this for portal extensions
 			{
-				if (definition.Protocol == BeamoProtocolType.PortalExtension ||
-				    definition.Protocol == BeamoProtocolType.PortalExtensionLib)
+				if (definition.Protocol == BeamoProtocolType.PortalExtension)
 				{
 					continue;
 				}
@@ -459,40 +451,6 @@ public static class ProjectContextUtil
 		}
 
 		return projects;
-	}
-
-	public static List<PortalExtensionLibDef> FindPortalExtensionLibs(string rootFolder, IReadOnlyList<string> packageJsonPaths)
-	{
-		var libs = new List<PortalExtensionLibDef>();
-
-		foreach (string filePath in packageJsonPaths)
-		{
-			try
-			{
-				string jsonContent = File.ReadAllText(filePath);
-
-				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(jsonContent);
-				var properties = info.BeamableProperties;
-
-				if (properties == null || !properties.IsPortalExtensionLib) continue;
-
-				var dir = Path.GetDirectoryName(filePath);
-
-				libs.Add(new PortalExtensionLibDef()
-				{
-					Name = info.Name,
-					Properties = properties,
-					RelativePath = Path.GetRelativePath(rootFolder, dir),
-					AbsolutePath = Path.GetFullPath(dir),
-				});
-			}
-			catch (Exception e)
-			{
-				// we don't really care if the file is not the correct format one
-			}
-		}
-
-		return libs;
 	}
 
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, IReadOnlyList<string> csprojPaths)
@@ -888,19 +846,6 @@ public static class ProjectContextUtil
 		definition.PortalExtensionDefinition = def;
 		definition.BeamoId = def.Name;
 		definition.Protocol = BeamoProtocolType.PortalExtension;
-		definition.ProjectPath = def.AbsolutePackageJsonPath;
-		definition.AbsoluteProjectPath = def.AbsolutePath;
-		definition.Language = BeamoServiceDefinition.ProjectLanguage.TypescriptReact;
-
-		return definition;
-	}
-
-	public static BeamoServiceDefinition ConvertPortalExtensionLibToServiceDefinition(PortalExtensionLibDef def)
-	{
-		var definition = new BeamoServiceDefinition();
-		definition.PortalExtensionLibDefinition = def;
-		definition.BeamoId = def.Name;
-		definition.Protocol = BeamoProtocolType.PortalExtensionLib;
 		definition.ProjectPath = def.AbsolutePackageJsonPath;
 		definition.AbsoluteProjectPath = def.AbsolutePath;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.TypescriptReact;

@@ -161,7 +161,6 @@ public partial class BeamoLocalSystem
 		{
 			BeamoProtocolType.HttpMicroservice => "service",
 			BeamoProtocolType.PortalExtension => "portalExtension",
-			BeamoProtocolType.PortalExtensionLib => "portalExtensionLib",
 			BeamoProtocolType.EmbeddedMongoDb => "storage",
 			_ => throw new ArgumentOutOfRangeException()
 		};
@@ -558,9 +557,6 @@ public class BeamoServiceDefinition
 	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
 	public PortalExtensionDef PortalExtensionDefinition;
 
-	// Set when this definition represents a shared TypeScript library (BeamoProtocolType.PortalExtensionLib)
-	public PortalExtensionLibDef PortalExtensionLibDefinition;
-
 	public bool IsInRemote;
 
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
@@ -877,19 +873,6 @@ public class PortalExtensionDef
 
 }
 
-public class PortalExtensionLibDef
-{
-	public string Name;
-	public string Version => Properties?.Version;
-
-	public string RelativePath;
-	public string AbsolutePath;
-
-	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
-
-	public PortalExtensionPackageProperties Properties;
-}
-
 /// <summary>
 /// Data representing a Docker Port Binding.
 /// </summary>
@@ -970,10 +953,7 @@ public enum BeamoProtocolType
 	EmbeddedMongoDb,
 
 	// A portal extension app
-	PortalExtension,
-
-	// A shared TypeScript library importable by portal extensions
-	PortalExtensionLib
+	PortalExtension
 }
 
 public interface IBeamoLocalProtocol

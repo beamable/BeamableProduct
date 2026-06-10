@@ -69,9 +69,14 @@ public partial class BeamoLocalSystem
 
 						// Make sure each file: library dependency still points at its real location before we
 						// install/build. Auto-repairs a moved library or throws a clear error if one is missing.
-						PortalExtensionAddLibraryCommand.ValidateAndRepairLibraryDependencies(extension, localSystem.BeamoManifest);
+						PortalExtensionAddLibraryCommand.ValidateAndRepairLibraryDependencies(extension, _configService.BeamableWorkspace);
 
 						observer.InstallDeps();
+
+						// Fail fast if the extension and any of its libraries disagree on the @beamable/portal-toolkit
+						// version. Uses npm's own resolver (a dry-run install) rather than comparing versions by hand.
+						PortalExtensionAddLibraryCommand.ValidateLibraryPeerDependencies(extension);
+
 						observer.BuildExtension();
 						
 						// We can dispose beamActivity here now as we are only getting the Install and Build traces, as the 

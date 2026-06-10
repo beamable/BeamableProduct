@@ -159,8 +159,6 @@ public partial class BeamoLocalSystem
 							return info.Names[0] == "/" + GetBeamIdAsMicroserviceContainer(c.BeamoId);
 						case BeamoProtocolType.PortalExtension:
 							return info.Names[0] == "/" + GetBeamIdAsPortalExtension(c.BeamoId);
-						case BeamoProtocolType.PortalExtensionLib:
-							return false; // libraries are not containerized
 						default:
 							throw new CliException("Unknown protocol type");
 					}
@@ -350,8 +348,6 @@ public partial class BeamoLocalSystem
 				return true; // always pull down a version of mongo.
 			case BeamoProtocolType.PortalExtension:
 				return false;
-			case BeamoProtocolType.PortalExtensionLib:
-				return false; // libraries are not built or deployed on their own
 			default:
 				throw new CliException($"Unknown protocol=[{toCheck.Protocol}] inside method=[{nameof(VerifyCanBeBuiltLocally)}]");
 		}

@@ -1,6 +1,7 @@
 using Beamable.Server;
 using cli.Services;
 using cli.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
 using static Beamable.Common.Constants.Features.PortalExtension;
@@ -15,8 +16,6 @@ public class PortalExtensionAddLibraryCommandArgs : CommandArgs
 
 public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLibraryCommandArgs>, IEmptyResult
 {
-	public override bool IsForInternalUse => true;
-
 	public PortalExtensionAddLibraryCommand() : base("add-library", "Adds a shared TypeScript library as a dependency of a Portal Extension")
 	{
 	}
@@ -43,12 +42,9 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			throw new CliException($"Couldn't find a Portal Extension service with the name: [{args.ExtensionName}]");
 		}
 
-		var library = manifest.ServiceDefinitions
-			.Where(p => p.Protocol == BeamoProtocolType.PortalExtensionLib)
-			.Select(s => s.PortalExtensionLibDefinition)
-			.FirstOrDefault(p => p.Name == args.LibraryName);
+		var libraryPath = LocateLibrary(args.ConfigService.BeamableWorkspace, args.LibraryName);
 
-		if (library == null)
+		if (libraryPath == null)
 		{
 			throw new CliException(
 				$"Couldn't find a Portal Extension library with the name: [{args.LibraryName}]. " +
@@ -62,7 +58,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 
 			JObject root = JObject.Parse(jsonContent);
 
-			var specifier = ComputeFileSpecifier(extension.AbsolutePath, library.AbsolutePath);
+			var specifier = ComputeFileSpecifier(extension.AbsolutePath, libraryPath);
 
 			var dependencies = root[EXTENSION_NPM_DEPENDENCIES_PROPERTY_NAME] as JObject;
 			if (dependencies == null)
@@ -110,23 +106,61 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	}
 
 	/// <summary>
-	/// Verifies that every "file:" library dependency in the extension's package.json still resolves to
-	/// the library's real location. If a library moved (it is still present in the manifest but the
-	/// recorded path is wrong/broken), the path is auto-repaired. If a referenced library can't be found
-	/// anywhere, a comprehensive exception is thrown so the user knows exactly what to fix.
+	/// Searches the workspace's "extensions-libs" folder on demand for a portal extension library with
+	/// the given name. Returns its absolute directory, or null if no matching library exists.
 	/// </summary>
-	public static void ValidateAndRepairLibraryDependencies(PortalExtensionDef extension, BeamoLocalManifest manifest)
+	public static string LocateLibrary(string workspace, string libName)
+	{
+		if (string.IsNullOrEmpty(workspace))
+		{
+			return null;
+		}
+
+		var libsRoot = Path.Combine(workspace, "extensions-libs");
+		if (!Directory.Exists(libsRoot))
+		{
+			return null;
+		}
+
+		foreach (var dir in Directory.GetDirectories(libsRoot))
+		{
+			var packagePath = Path.Combine(dir, "package.json");
+			if (!File.Exists(packagePath))
+			{
+				continue;
+			}
+
+			try
+			{
+				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(File.ReadAllText(packagePath));
+				if (info?.BeamableProperties?.IsPortalExtensionLib == true &&
+				    string.Equals(info.Name, libName, StringComparison.Ordinal))
+				{
+					return Path.GetFullPath(dir);
+				}
+			}
+			catch
+			{
+				// ignore files that aren't valid package.json libraries
+			}
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Verifies that every "file:" library dependency in the extension's package.json still resolves to
+	/// the library's real location. If a library moved (it can still be found by name in the workspace
+	/// but the recorded path is wrong/broken), the path is auto-repaired. If a referenced library can't
+	/// be found anywhere, a comprehensive exception is thrown so the user knows exactly what to fix.
+	/// </summary>
+	public static void ValidateAndRepairLibraryDependencies(PortalExtensionDef extension, string workspace)
 	{
 		var packagePath = extension.AbsolutePackageJsonPath;
 		if (!File.Exists(packagePath))
 		{
 			return;
 		}
-
-		var libsByName = manifest.ServiceDefinitions
-			.Where(s => s.Protocol == BeamoProtocolType.PortalExtensionLib && s.PortalExtensionLibDefinition != null)
-			.Select(s => s.PortalExtensionLibDefinition)
-			.ToDictionary(l => l.Name, l => l, StringComparer.Ordinal);
 
 		JObject root = JObject.Parse(File.ReadAllText(packagePath));
 		var dependencies = root[EXTENSION_NPM_DEPENDENCIES_PROPERTY_NAME] as JObject;
@@ -148,9 +182,11 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			var relPath = value.Substring("file:".Length);
 			var resolvedAbs = Path.GetFullPath(Path.Combine(extension.AbsolutePath, relPath));
 
-			if (libsByName.TryGetValue(depName, out var lib))
+			var libAbsPath = LocateLibrary(workspace, depName);
+
+			if (libAbsPath != null)
 			{
-				var expectedAbs = Path.GetFullPath(lib.AbsolutePath);
+				var expectedAbs = Path.GetFullPath(libAbsPath);
 				var alreadyCorrect = string.Equals(
 					resolvedAbs.TrimEnd(Path.DirectorySeparatorChar),
 					expectedAbs.TrimEnd(Path.DirectorySeparatorChar),
@@ -158,7 +194,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 
 				if (!alreadyCorrect)
 				{
-					var repaired = ComputeFileSpecifier(extension.AbsolutePath, lib.AbsolutePath);
+					var repaired = ComputeFileSpecifier(extension.AbsolutePath, libAbsPath);
 					Log.Warning($"Repairing library dependency [{depName}] in extension [{extension.Name}]: [{value}] -> [{repaired}]");
 					dependencies[depName] = repaired;
 					changed = true;
@@ -166,7 +202,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			}
 			else if (!Directory.Exists(resolvedAbs))
 			{
-				// References a library that is neither in the manifest nor present on disk at the recorded path.
+				// References a library that can't be found by name and whose recorded path no longer exists.
 				throw new CliException(
 					$"Portal Extension [{extension.Name}] depends on library [{depName}] via [{value}], " +
 					$"but that path does not exist (resolved to [{resolvedAbs}]) and no matching library was found. " +
@@ -179,5 +215,53 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		{
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
 		}
+	}
+
+	private const string TOOLKIT_PACKAGE = "@beamable/portal-toolkit";
+
+	/// <summary>
+	/// Validates that the extension and its file:-linked libraries agree on the @beamable/portal-toolkit
+	/// version, using npm's own dependency resolver rather than comparing strings ourselves.
+	///
+	/// npm does not evaluate a symlinked file: package's peerDependencies against the consumer, so a plain
+	/// install never catches this. We therefore run a NON-mutating dry-run with `--install-links`
+	/// (which makes npm resolve the library as a real package, evaluating its peers) and
+	/// `--strict-peer-deps` (which turns an incompatible peer into an ERESOLVE failure). The dry-run does
+	/// not touch node_modules, so the real symlinked install — and the live-reload dev loop — is unaffected.
+	///
+	/// The strict resolver also reports unrelated peer noise (e.g. react/react-dom), so we only fail when
+	/// the conflict npm reports actually concerns the toolkit package.
+	/// </summary>
+	public static void ValidateLibraryPeerDependencies(PortalExtensionDef extension)
+	{
+		var result = StartProcessUtil.Run(
+			"npm",
+			"install --install-links --strict-peer-deps --dry-run --no-audit --no-fund",
+			useShell: true,
+			workingDirectoryPath: extension.AbsolutePath).WaitForResult();
+
+		var output = $"{result.stdout}\n{result.stderr}";
+
+		if (HasToolkitVersionConflict(result.exit, output))
+		{
+			throw new CliException(
+				$"{TOOLKIT_PACKAGE} version conflict detected by npm for Portal Extension [{extension.Name}]. " +
+				$"An extension and one of its libraries require incompatible {TOOLKIT_PACKAGE} versions; " +
+				$"align them so both use the same version.\n\nnpm reported:\n{output.Trim()}");
+		}
+	}
+
+	/// <summary>
+	/// True when npm's dependency resolution failed (non-zero exit) AND the reported conflict involves the
+	/// toolkit package. Kept pure so the scoping logic can be unit-tested without invoking npm.
+	/// </summary>
+	public static bool HasToolkitVersionConflict(int npmExitCode, string npmOutput)
+	{
+		if (npmExitCode == 0 || string.IsNullOrEmpty(npmOutput))
+		{
+			return false;
+		}
+
+		return npmOutput.Contains(TOOLKIT_PACKAGE, StringComparison.Ordinal);
 	}
 }
