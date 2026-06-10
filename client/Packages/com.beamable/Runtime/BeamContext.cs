@@ -471,11 +471,12 @@ namespace Beamable
 				var errors = new Exception[attemptDurations.Length];
 				while (!success)
 				{
-					var attemptIndex = attempt;
+					//var attemptIndex = attempt;
+					var retryConfigIndex = attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt;
 					yield return InitProcedure()
 						.Error(err =>
 						{
-							errors[attemptIndex] = err;
+							errors[retryConfigIndex] = err;
 							switch (err)
 							{
 								case ServiceScopeDisposedException ex:
@@ -502,7 +503,7 @@ namespace Beamable
 					}
 
 					var duration =
-						attemptDurations[attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt];
+						attemptDurations[retryConfigIndex];
 					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
 					yield return new WaitForSecondsRealtime((float)duration);
 					attempt++;
