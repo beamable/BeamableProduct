@@ -471,7 +471,6 @@ namespace Beamable
 				var errors = new Exception[attemptDurations.Length];
 				while (!success)
 				{
-					//var attemptIndex = attempt;
 					var retryConfigIndex = attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt;
 					yield return InitProcedure()
 						.Error(err =>
@@ -502,8 +501,7 @@ namespace Beamable
 						yield break;
 					}
 
-					var duration =
-						attemptDurations[retryConfigIndex];
+					var duration = attemptDurations[retryConfigIndex];
 					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
 					yield return new WaitForSecondsRealtime((float)duration);
 					attempt++;
