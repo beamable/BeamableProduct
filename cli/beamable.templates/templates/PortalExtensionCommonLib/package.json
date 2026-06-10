@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "@beamable/portal-toolkit": "0.1.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

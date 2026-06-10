@@ -1,22 +1,11 @@
-// A shared React component. Because react/react-dom are declared as
-// peerDependencies (never dependencies), the consuming extension's build
-// externalizes them to the Portal host's React instance — so hooks used here
-// share the host's React and do not trigger "Invalid hook call".
+// A shared React component rendered through the Portal's design system.
+//
+// @beamable/portal-toolkit is a peerDependency (never a dependency), so the
+// consuming extension provides the single shared toolkit/React instance — this
+// library never bundles its own copy.
 
-import { useState } from 'react';
-import { greet } from './sample';
+import { BeamCard } from '@beamable/portal-toolkit/react';
 
-interface SampleWidgetProps {
-  name: string;
-}
-
-export function SampleWidget({ name }: SampleWidgetProps) {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div style={{ padding: 12 }}>
-      <p>{greet(name)}</p>
-      <button onClick={() => setCount((c) => c + 1)}>Clicked {count} times</button>
-    </div>
-  );
+export function SampleWidget() {
+  return <BeamCard>Common Library!</BeamCard>;
 }
