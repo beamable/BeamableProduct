@@ -42,7 +42,7 @@ on:
         default: ""
       dryRun:
         type: boolean
-        description: When true, nothing is published, tagged, or uploaded
+        description: "Dry Run: build but don't publish, tag, or upload"
         required: true
         default: false
 
