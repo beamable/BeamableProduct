@@ -10,36 +10,31 @@ namespace cli.Portal;
 
 public class PortalExtensionAddLibraryCommandArgs : CommandArgs
 {
-	public string ExtensionName;
 	public string LibraryName;
+	public List<string> ExtensionNames = new List<string>();
 }
 
 public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLibraryCommandArgs>, IEmptyResult
 {
-	public PortalExtensionAddLibraryCommand() : base("add-library", "Adds a shared TypeScript library as a dependency of a Portal Extension")
+	public PortalExtensionAddLibraryCommand() : base("add-library", "Adds a shared TypeScript library as a dependency of one or more Portal Extensions")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("extension", description: "The Portal Extension name that the library will be added to"),
-			(args, i) => args.ExtensionName = i);
-		AddArgument(new Argument<string>("library", description: "The shared library that will be a new dependency of the specified Portal Extension"),
+		AddArgument(new Argument<string>("library", description: "The shared library that will be a new dependency of the specified Portal Extensions"),
 			(args, i) => args.LibraryName = i);
+		AddOption(new Option<List<string>>(
+				name: "--extensions",
+				description: "The list of Portal Extension names that the library will be added to (separated by whitespace)") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.OneOrMore },
+			(args, i) => args.ExtensionNames = i);
 	}
 
 	public override Task Handle(PortalExtensionAddLibraryCommandArgs args)
 	{
-		var manifest = args.BeamoLocalSystem.BeamoManifest;
-
-		var extension = manifest.ServiceDefinitions
-			.Where(p => p.Protocol == BeamoProtocolType.PortalExtension)
-			.Select(s => s.PortalExtensionDefinition)
-			.FirstOrDefault(p => p.Name == args.ExtensionName);
-
-		if (extension == null)
+		if (args.ExtensionNames == null || args.ExtensionNames.Count == 0)
 		{
-			throw new CliException($"Couldn't find a Portal Extension service with the name: [{args.ExtensionName}]");
+			throw new CliException("No Portal Extensions were specified. Use --extensions to list one or more extension names.");
 		}
 
 		var libraryPath = LocateLibrary(args.ConfigService.BeamableWorkspace, args.LibraryName);
@@ -51,6 +46,32 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 				$"Create one with 'beam project new portal-extension-lib {args.LibraryName}'.");
 		}
 
+		var requestedNames = args.ExtensionNames.Distinct().ToList();
+		var portalExtensions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+			.Where(p => p.Protocol == BeamoProtocolType.PortalExtension)
+			.Where(p => requestedNames.Contains(p.PortalExtensionDefinition.Name))
+			.ToList();
+
+		var foundNames = portalExtensions
+			.Select(p => p.PortalExtensionDefinition.Name)
+			.ToHashSet();
+		var missingNames = requestedNames.Where(n => !foundNames.Contains(n)).ToList();
+
+		if (missingNames.Count > 0)
+		{
+			throw new CliException($"Couldn't find Portal Extension services with the names: [{string.Join(", ", missingNames)}]");
+		}
+
+		foreach (var serviceDefinition in portalExtensions)
+		{
+			AddLibraryToExtension(args, serviceDefinition.PortalExtensionDefinition, libraryPath);
+		}
+
+		return Task.CompletedTask;
+	}
+
+	private void AddLibraryToExtension(PortalExtensionAddLibraryCommandArgs args, PortalExtensionDef extension, string libraryPath)
+	{
 		try
 		{
 			var packagePath = extension.AbsolutePackageJsonPath;
@@ -78,7 +99,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			var result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
 			if (result.exit != 0)
 			{
-				Log.Warning($"Added library [{args.LibraryName}] to [{args.ExtensionName}], but 'npm install' failed. " +
+				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed. " +
 					$"Run it manually in the extension directory to resolve types. Errors: \n{result.stderr}");
 			}
 		}
@@ -89,10 +110,8 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		catch (Exception e)
 		{
 			throw new CliException(
-				$"Could not add library [{args.LibraryName}] to extension [{args.ExtensionName}]. Message = [{e.Message}] Stacktrace = [{e.StackTrace}]");
+				$"Could not add library [{args.LibraryName}] to extension [{extension.Name}]. Message = [{e.Message}] Stacktrace = [{e.StackTrace}]");
 		}
-
-		return Task.CompletedTask;
 	}
 
 	/// <summary>
@@ -106,8 +125,9 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	}
 
 	/// <summary>
-	/// Searches the workspace's "extensions-libs" folder on demand for a portal extension library with
-	/// the given name. Returns its absolute directory, or null if no matching library exists.
+	/// Scans the workspace for any "package.json" marked as a portal extension library (via the
+	/// "beamable": { "portalExtensionLib": true } property) whose name matches the given library name.
+	/// Returns the library's absolute directory, or null if no matching library exists.
 	/// </summary>
 	public static string LocateLibrary(string workspace, string libName)
 	{
@@ -116,27 +136,15 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			return null;
 		}
 
-		var libsRoot = Path.Combine(workspace, "extensions-libs");
-		if (!Directory.Exists(libsRoot))
+		foreach (var packagePath in Directory.EnumerateFiles(workspace, "package.json", SearchOption.AllDirectories))
 		{
-			return null;
-		}
-
-		foreach (var dir in Directory.GetDirectories(libsRoot))
-		{
-			var packagePath = Path.Combine(dir, "package.json");
-			if (!File.Exists(packagePath))
-			{
-				continue;
-			}
-
 			try
 			{
 				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(File.ReadAllText(packagePath));
 				if (info?.BeamableProperties?.IsPortalExtensionLib == true &&
 				    string.Equals(info.Name, libName, StringComparison.Ordinal))
 				{
-					return Path.GetFullPath(dir);
+					return Path.GetFullPath(Path.GetDirectoryName(packagePath));
 				}
 			}
 			catch
