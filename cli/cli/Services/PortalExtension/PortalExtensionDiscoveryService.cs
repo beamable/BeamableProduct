@@ -310,33 +310,98 @@ public class PortalExtensionObserver
 
 		_alreadyStarted = true;
 
-		using var watcher = new FileSystemWatcher(AppFilesPath);
-
-		watcher.Filters.Clear();
-
 		var fileExtensions = _defaultFilesExtensionsToObserve.ToList();
 		fileExtensions.AddRange(FileExtensions);
 		fileExtensions = fileExtensions.Distinct().ToList();
 
-		foreach (var ext in fileExtensions)
+		// Watch the extension itself plus any shared libraries it depends on, so editing a linked
+		// library rebuilds the extension that consumes it.
+		var watchPaths = new List<string> { AppFilesPath };
+		watchPaths.AddRange(GetLinkedLibraryPaths());
+
+		var watchers = new List<FileSystemWatcher>();
+		try
 		{
-			watcher.Filters.Add($"*.{ext}");
+			foreach (var watchPath in watchPaths)
+			{
+				var watcher = new FileSystemWatcher(watchPath);
+				watcher.Filters.Clear();
+
+				foreach (var ext in fileExtensions)
+				{
+					watcher.Filters.Add($"*.{ext}");
+				}
+
+				watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+
+				watcher.IncludeSubdirectories = true;
+				watcher.EnableRaisingEvents = true;
+
+				watcher.Changed += OnChanged;
+				watcher.Created += OnChanged;
+				watcher.Deleted += OnChanged;
+				watcher.Renamed += OnChanged;
+
+				watchers.Add(watcher);
+			}
+
+			while (!token.IsCancellationRequested)
+			{
+				await Task.Delay(250, token);
+			}
+		}
+		finally
+		{
+			foreach (var watcher in watchers)
+			{
+				watcher.Dispose();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Resolves the real source directories of any "file:" library dependencies declared in the
+	/// extension's package.json, so they can be watched for live-rebuild alongside the extension.
+	/// </summary>
+	private List<string> GetLinkedLibraryPaths()
+	{
+		var paths = new List<string>();
+		try
+		{
+			var packagePath = ExtensionMetaData.AbsolutePackageJsonPath;
+			if (!File.Exists(packagePath))
+			{
+				return paths;
+			}
+
+			var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packagePath));
+			if (root["dependencies"] is not Newtonsoft.Json.Linq.JObject dependencies)
+			{
+				return paths;
+			}
+
+			foreach (var (_, token) in dependencies)
+			{
+				var value = token?.ToString();
+				if (string.IsNullOrEmpty(value) || !value.StartsWith("file:"))
+				{
+					continue;
+				}
+
+				var relPath = value.Substring("file:".Length);
+				var resolved = Path.GetFullPath(Path.Combine(AppFilesPath, relPath));
+				if (Directory.Exists(resolved))
+				{
+					paths.Add(resolved);
+				}
+			}
+		}
+		catch
+		{
+			// If the package.json can't be read we simply don't add extra watchers.
 		}
 
-		watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-
-		watcher.IncludeSubdirectories = true;
-		watcher.EnableRaisingEvents = true;
-
-		watcher.Changed += OnChanged;
-		watcher.Created += OnChanged;
-		watcher.Deleted += OnChanged;
-		watcher.Renamed += OnChanged;
-
-		while (!token.IsCancellationRequested)
-		{
-			await Task.Delay(250, token);
-		}
+		return paths;
 	}
 
 	private string ConvertBuiltFiles(string[] paths)

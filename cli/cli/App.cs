@@ -593,6 +593,7 @@ public class App
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionLibCommand, NewPortalExtensionLibCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -659,6 +660,9 @@ public class App
 				PortalExtensionCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddLibraryCommand, PortalExtensionAddLibraryCommandArgs,
 				PortalExtensionCommand>();
 		Commands
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,

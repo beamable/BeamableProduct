@@ -12,7 +12,13 @@ import { portalExtensionPlugin } from '@beamable/portal-toolkit/vite'
 export default defineConfig({
   plugins: [react(), portalExtensionPlugin({ react: true })],
   resolve: {
-    dedupe: []
+    // Force shared packages to resolve to THIS extension's single copy, even when imported
+    // from a file:-linked common library whose own folder has no node_modules. Without this,
+    // Rollup can't resolve a bare import (e.g. @beamable/portal-toolkit) from the library's
+    // source, and you'd risk bundling a second copy of the toolkit (double web-component
+    // registration). react/react-dom are externalized by the plugin, but are listed here too
+    // so any direct import from a library still resolves to one instance.
+    dedupe: ['@beamable/portal-toolkit', 'react', 'react-dom']
   },
   build: {
     minify: false,
