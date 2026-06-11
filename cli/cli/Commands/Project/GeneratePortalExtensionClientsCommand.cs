@@ -1,4 +1,5 @@
 using Beamable.Server;
+using cli.Dotnet;
 using cli.Services;
 using cli.Services.Web;
 using Microsoft.OpenApi.Models;
@@ -9,7 +10,9 @@ namespace cli.Commands.Project;
 
 public class GeneratePortalExtensionClientsCommandArgs : CommandArgs
 {
-	public string ServiceName;
+	public List<string> services = new List<string>();
+	public List<string> withServiceTags = new List<string>();
+	public List<string> withoutServiceTags = new List<string>();
 }
 
 
@@ -25,39 +28,26 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--service-name", () => null,
-				"When null or empty, it will generate clients for all microservices. Generates a client for this service for all dependent portal extensions"),
-			(args, val) => args.ServiceName = val);
+		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
+		ProjectCommand.AddServiceTagsOption(this,
+			bindWithTags: (args, i) => args.withServiceTags = i,
+			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override async Task Handle(GeneratePortalExtensionClientsCommandArgs args)
 	{
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
+			withoutTags: args.withoutServiceTags,
+			includeStorage: false,
+			ref args.services);
+
 		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions;
 		var allExtensions = allServices.Where((s) => s.Protocol == BeamoProtocolType.PortalExtension).ToList();
 
-		var micros = new List<BeamoServiceDefinition>();
-
-		if (!string.IsNullOrEmpty(args.ServiceName))
-		{
-			var def = allServices.FirstOrDefault((s) => s.BeamoId == args.ServiceName);
-
-			if (def == null)
-			{
-				throw new CliException($"Could not find microservice with name: {args.ServiceName}");
-			}
-
-			micros.Add(def);
-		}
-		else
-		{
-			foreach (var service in allServices)
-			{
-				if (service.Protocol == BeamoProtocolType.HttpMicroservice)
-				{
-					micros.Add(service);
-				}
-			}
-		}
+		var micros = allServices
+			.Where(s => s.Protocol == BeamoProtocolType.HttpMicroservice && args.services.Contains(s.BeamoId))
+			.ToList();
 
 		var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
 

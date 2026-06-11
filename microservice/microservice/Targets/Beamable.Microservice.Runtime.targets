@@ -124,7 +124,7 @@
             AfterTargets="AfterBuild">
         <Exec EchoOff="true"
               EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
-              Command="dotnet beam project generate pe-client --service-name $(BeamId)" />
+              Command="dotnet beam project generate pe-client --ids $(BeamId)" />
     </Target>
 
     <!--
