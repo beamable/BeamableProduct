@@ -325,8 +325,6 @@ public class ProjectService
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
 		}
 
-		await args.BeamoLocalSystem.InitManifest();
-
 		return libInfo;
 	}
 
