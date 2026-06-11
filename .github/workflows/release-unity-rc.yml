@@ -40,13 +40,8 @@ on:
         description: "Optional. Force a Unity SDK version e.g. 2.4.6-PREVIEW.RC1. Blank = auto: Unity changelog prefix + next RC from tags."
         required: false
         default: ""
-      dryRun:
-        type: boolean
-        description: When true, nothing is published, tagged, or uploaded
-        required: true
-        default: false
 
-run-name: "RC Publish from ${{ inputs.commit }} by @${{ github.actor }}${{ inputs.dryRun == true && ' [dry run]' || '' }}"
+run-name: "RC Publish from ${{ inputs.commit }} by @${{ github.actor }}"
 
 env:
   DOCKER_REGISTRY: ghcr.io
@@ -73,10 +68,9 @@ jobs:
     steps:
       - name: review options
         run: |
-          echo dryRun=${{ inputs.dryRun }}
           echo commit=${{ inputs.commit }}
-          echo cli=${{ inputs.cliMajor }}.${{ inputs.cliMinor }}.${{ inputs.cliPatch }} RC${{ inputs.cliRc }}
-          echo unity=${{ inputs.unityMajor }}.${{ inputs.unityMinor }}.${{ inputs.unityPatch }} RC${{ inputs.unityRc }}
+          echo cliVersionOverride=${{ inputs.cliVersionOverride }}
+          echo unityVersionOverride=${{ inputs.unityVersionOverride }}
 
       - uses: actions/checkout@v4
         with:
@@ -228,34 +222,28 @@ jobs:
         run: find . -type f ! -name '*.gz' -exec gzip -k -9 {} \;
 
       - name: Upload Collector to S3
-        if: ${{ inputs.dryRun == false }}
         working-directory: otel-bin
         run: |
           AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.CLI_VERSION }} --exclude "*" --include "*.gz" --acl public-read
 
       - name: Prepare Cloudfront Invalidation
-        if: ${{ inputs.dryRun == false }}
         run: |
           CLOUD_DISTRO=E3S54OWVMS4PQH
           CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
           echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/version/${{ steps.version.outputs.CLI_VERSION }}/*"]}}}' >> cloudfront-invalidation.json
           cat cloudfront-invalidation.json
       - name: Do Cloudfront Invalidation
-        if: ${{ inputs.dryRun == false }}
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
 
       - name: Publish Nuget Packages
-        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/release-nuget.sh
         env:
           VERSION: ${{ steps.version.outputs.CLI_VERSION }}
           VERSION_PREFIX: ${{ steps.version.outputs.CLI_VERSION_PREFIX }}
           VERSION_SUFFIX: ${{ steps.version.outputs.CLI_VERSION_SUFFIX }}
-          DRY_RUN: ${{ inputs.dryRun }}
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
       - name: Publish CLI Changelog
-        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'false'
@@ -267,7 +255,6 @@ jobs:
           BRANCH: staging
 
       - name: Create CLI Release
-        if: ${{ inputs.dryRun == false }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -378,7 +365,6 @@ jobs:
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
       - name: Release com.beamable UPM Package to Nexus
-        if: ${{ inputs.dryRun == false }}
         run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.UNITY_VERSION }}.tgz --tag rc
         working-directory: ./client/build/package_dist/
         env:
@@ -387,14 +373,12 @@ jobs:
           NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-preview
 
       - name: Release com.beamable UPM Package to Public
-        if: ${{ inputs.dryRun == false }}
         run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.UNITY_VERSION }}.tgz --tag rc
         working-directory: ./client/build/package_dist/
         env:
           NPM_REGISTRY: https://registry.npmjs.org
 
       - name: Release com.beamable.server UPM Package
-        if: ${{ inputs.dryRun == false }}
         run: npm publish --tag rc
         working-directory: ./client/Packages/com.beamable.server
         env:
@@ -403,7 +387,6 @@ jobs:
           NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-preview
 
       - name: Publish Unity SDK Changelog
-        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'true'
@@ -415,7 +398,6 @@ jobs:
           BRANCH: staging
 
       - name: Create Unity SDK Release
-        if: ${{ inputs.dryRun == false }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -429,7 +411,6 @@ jobs:
 
   lightbeam:
     needs: publish
-    if: ${{ inputs.dryRun == false }}
     uses: ./.github/workflows/lightBeamRelease.yml
     with:
       customTag: unity-sdk-${{ needs.publish.outputs.unityVersion }}
