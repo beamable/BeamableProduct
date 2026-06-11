@@ -325,7 +325,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		ResetConfigurator();
 
 		SetupBeamoServiceMock();
-		Run("portal", "extension", "add-library", "TestExt", "TestLib", "--quiet");
+		Run("portal", "extension", "add-library", "TestLib", "--extensions", "TestExt", "--quiet");
 
 		var packageJson = BFile.ReadAllText("extensions/TestExt/package.json");
 		Assert.That(packageJson, Does.Contain("TestLib"),

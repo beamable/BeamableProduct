@@ -148,4 +148,46 @@ public class PortalExtensionLibraryTests
 
 		Assert.That(PortalExtensionAddLibraryCommand.HasToolkitVersionConflict(1, toolkitConflict), Is.True);
 	}
+
+	[Test]
+	public void HasReactVersionConflict_False_WhenNpmSucceeds()
+	{
+		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(0, "up to date"), Is.False);
+	}
+
+	[Test]
+	public void HasReactVersionConflict_False_WhenReactIsOnlyTransitiveNoise()
+	{
+		// A "peer react@..." line with no "Could not resolve dependency:" header is informational
+		// noise about a transitive relationship, not the dependency npm actually failed to resolve.
+		const string reactNoise =
+			"npm error ERESOLVE unable to resolve dependency tree\n" +
+			"npm error peer react@\"^19.2.0\" from react-dom@19.2.7";
+
+		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, reactNoise), Is.False);
+	}
+
+	[Test]
+	public void HasReactVersionConflict_True_WhenReactConflicts()
+	{
+		const string reactConflict =
+			"npm error ERESOLVE unable to resolve dependency tree\n" +
+			"npm error Could not resolve dependency:\n" +
+			"npm error peer react@\"^18.0.0\" from MyLib@1.0.0";
+
+		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, reactConflict), Is.True);
+	}
+
+	[Test]
+	public void HasReactVersionConflict_False_WhenOnlyToolkitConflicts()
+	{
+		// A toolkit-only conflict must not be misreported as a react conflict, even though react may
+		// appear elsewhere in npm's resolution output.
+		const string toolkitConflict =
+			"npm error ERESOLVE unable to resolve dependency tree\n" +
+			"npm error Could not resolve dependency:\n" +
+			"npm error peer @beamable/portal-toolkit@\"0.1.10\" from MyLib@1.0.0";
+
+		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, toolkitConflict), Is.False);
+	}
 }

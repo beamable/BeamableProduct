@@ -4,6 +4,7 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
+using System.Text.RegularExpressions;
 using static Beamable.Common.Constants.Features.PortalExtension;
 
 namespace cli.Portal;
@@ -226,10 +227,12 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	}
 
 	private const string TOOLKIT_PACKAGE = "@beamable/portal-toolkit";
+	private const string REACT_PACKAGE = "react";
 
 	/// <summary>
-	/// Validates that the extension and its file:-linked libraries agree on the @beamable/portal-toolkit
-	/// version, using npm's own dependency resolver rather than comparing strings ourselves.
+	/// Validates that the extension and its file:-linked libraries agree on the versions of the packages
+	/// they share as peers (@beamable/portal-toolkit and react), using npm's own dependency resolver
+	/// rather than comparing strings ourselves.
 	///
 	/// npm does not evaluate a symlinked file: package's peerDependencies against the consumer, so a plain
 	/// install never catches this. We therefore run a NON-mutating dry-run with `--install-links`
@@ -237,8 +240,8 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	/// `--strict-peer-deps` (which turns an incompatible peer into an ERESOLVE failure). The dry-run does
 	/// not touch node_modules, so the real symlinked install — and the live-reload dev loop — is unaffected.
 	///
-	/// The strict resolver also reports unrelated peer noise (e.g. react/react-dom), so we only fail when
-	/// the conflict npm reports actually concerns the toolkit package.
+	/// The strict resolver also reports unrelated peer noise, so we only fail when the dependency npm could
+	/// not resolve is actually one of the packages we care about.
 	/// </summary>
 	public static void ValidateLibraryPeerDependencies(PortalExtensionDef extension)
 	{
@@ -250,26 +253,77 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 
 		var output = $"{result.stdout}\n{result.stderr}";
 
+		var conflicts = new List<string>();
 		if (HasToolkitVersionConflict(result.exit, output))
 		{
+			conflicts.Add(TOOLKIT_PACKAGE);
+		}
+
+		if (HasReactVersionConflict(result.exit, output))
+		{
+			conflicts.Add(REACT_PACKAGE);
+		}
+
+		if (conflicts.Count > 0)
+		{
+			var packages = string.Join(" and ", conflicts);
 			throw new CliException(
-				$"{TOOLKIT_PACKAGE} version conflict detected by npm for Portal Extension [{extension.Name}]. " +
-				$"An extension and one of its libraries require incompatible {TOOLKIT_PACKAGE} versions; " +
+				$"Dependency version conflict detected by npm for Portal Extension [{extension.Name}] ({packages}). " +
+				$"An extension and one of its libraries require incompatible versions of {packages}; " +
 				$"align them so both use the same version.\n\nnpm reported:\n{output.Trim()}");
 		}
 	}
 
 	/// <summary>
-	/// True when npm's dependency resolution failed (non-zero exit) AND the reported conflict involves the
-	/// toolkit package. Kept pure so the scoping logic can be unit-tested without invoking npm.
+	/// True when npm's dependency resolution failed (non-zero exit) AND the dependency it could not resolve
+	/// is the toolkit package. Kept pure so the scoping logic can be unit-tested without invoking npm.
 	/// </summary>
 	public static bool HasToolkitVersionConflict(int npmExitCode, string npmOutput)
+	{
+		return ConflictConcernsPackage(npmExitCode, npmOutput, TOOLKIT_PACKAGE);
+	}
+
+	/// <summary>
+	/// True when npm's dependency resolution failed (non-zero exit) AND the dependency it could not resolve
+	/// is react. Kept pure so the scoping logic can be unit-tested without invoking npm.
+	/// </summary>
+	public static bool HasReactVersionConflict(int npmExitCode, string npmOutput)
+	{
+		return ConflictConcernsPackage(npmExitCode, npmOutput, REACT_PACKAGE);
+	}
+
+	/// <summary>
+	/// True when npm failed to resolve dependencies (non-zero exit) and the package it names as unresolvable
+	/// is <paramref name="package"/>. npm scatters transitive peer relationships (e.g. react/react-dom)
+	/// throughout its output as noise, so a bare substring match yields false positives. The dependency that
+	/// actually conflicts is the one npm names on the "peer &lt;pkg&gt;@..." line directly under its
+	/// "Could not resolve dependency:" header — we only trust that.
+	/// </summary>
+	public static bool ConflictConcernsPackage(int npmExitCode, string npmOutput, string package)
 	{
 		if (npmExitCode == 0 || string.IsNullOrEmpty(npmOutput))
 		{
 			return false;
 		}
 
-		return npmOutput.Contains(TOOLKIT_PACKAGE, StringComparison.Ordinal);
+		return string.Equals(GetUnresolvedPeerPackage(npmOutput), package, StringComparison.Ordinal);
+	}
+
+	/// <summary>
+	/// Extracts the package name npm reports as the unresolvable peer dependency — the "peer &lt;pkg&gt;@..."
+	/// line that follows npm's "Could not resolve dependency:" header. Returns null if npm's output has no
+	/// such block.
+	/// </summary>
+	public static string GetUnresolvedPeerPackage(string npmOutput)
+	{
+		var headerIndex = npmOutput.IndexOf("Could not resolve dependency:", StringComparison.Ordinal);
+		if (headerIndex < 0)
+		{
+			return null;
+		}
+
+		var block = npmOutput.Substring(headerIndex);
+		var match = Regex.Match(block, @"peer\s+(?<pkg>@?[^@\s]+)@");
+		return match.Success ? match.Groups["pkg"].Value : null;
 	}
 }
