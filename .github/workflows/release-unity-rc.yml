@@ -66,77 +66,25 @@ jobs:
     outputs:
       unityVersion: ${{ steps.version.outputs.UNITY_VERSION }}
     steps:
-      - name: review options
-        run: |
-          echo commit=${{ inputs.commit }}
-          echo cliVersionOverride=${{ inputs.cliVersionOverride }}
-          echo unityVersionOverride=${{ inputs.unityVersionOverride }}
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.commit }}
           # Shallow clone is fine: RC auto-derivation reads tag names straight
           # from the remote via git ls-remote, so no local history is needed. ~Claude
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Update npm
-        run: npm install -g npm@latest
-      - name: Check Npm version
-        run: npm --version
-
-      - name: Install JQ
-        run: |
-          sudo apt-get update
-          sudo apt-get install jq
-          jq --version
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-
-      - name: Build Otel Collector
-        working-directory: ./otel-collector
-        run: |
-          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
-
-      - name: Add collector version
-        run: |
-            sh ./build/bin/set-collector-version-property.sh
-
-      - name: Install CLI
-        working-directory: ./
-        run: |
-          bash ./setup.sh
-          bash ./dev.sh
-
-      - name: Check CLI
-        run: beam version
-
-      # Resolve both RC versions with as little human input as possible.
+      # Resolve both RC versions first, before any build, so the run fails fast
+      # on a bad changelog/override/already-shipped line and prints the versions
+      # up front instead of ~5 minutes in.
       #   prefix  <- top "## [x.y.z]" entry of each changelog (the human-maintained
       #              source of truth; package.json is 0.0.0 on main)
-      #   rc      <- highest existing matching git tag + 1, computed independently
-      #              per artifact (CLI and Unity SDK ride separate version lines)
+      #   rc      <- highest existing matching tag + 1, read straight from the
+      #              remote, computed independently per artifact (CLI and Unity
+      #              SDK ride separate version lines)
       # An explicit *VersionOverride input short-circuits derivation for that
-      # artifact (used when patching an older line, e.g. 2.4.6-PREVIEW.RC1). ~Claude
+      # artifact (used when patching an older line, e.g. 2.4.6-PREVIEW.RC1).
+      # The version string is assembled directly as <prefix>-PREVIEW.RC<n> rather
+      # than via `beam version construct`, so this needs no built CLI and runs
+      # first. This workflow only cuts RCs, so that format is fixed. ~Claude
       - name: Resolve RC versions
         id: version
         env:
@@ -191,29 +139,82 @@ jobs:
             unity_rc=$(next_rc "unity-sdk-$unity_prefix")
           fi
 
-          # Format the canonical version strings through the CLI so the suffix
-          # matches the rest of the pipeline (x.y.z-PREVIEW.RCn).
-          IFS=. read -r cmaj cmin cpat <<< "$cli_prefix"
-          IFS=. read -r umaj umin upat <<< "$unity_prefix"
-          beam version construct "$cmaj" "$cmin" "$cpat" --rc "$cli_rc" > cli-version.txt
-          beam version construct "$umaj" "$umin" "$upat" --rc "$unity_rc" > unity-version.txt
+          # Assemble the canonical RC strings directly (fixed format for RCs).
+          cli_version="$cli_prefix-PREVIEW.RC$cli_rc"
+          unity_version="$unity_prefix-PREVIEW.RC$unity_rc"
+
+          echo "commit=${{ inputs.commit }}"
+          echo "Resolved CLI:   $cli_version"
+          echo "Resolved Unity: $unity_version"
 
           {
-            echo "CLI_VERSION=$(jq -r .data.versionString cli-version.txt)"
-            echo "CLI_VERSION_PREFIX=$(jq -r .data.versionPrefix cli-version.txt)"
-            echo "CLI_VERSION_SUFFIX=$(jq -r .data.versionSuffix cli-version.txt)"
-            echo "UNITY_VERSION=$(jq -r .data.versionString unity-version.txt)"
-            echo "UNITY_VERSION_PREFIX=$(jq -r .data.versionPrefix unity-version.txt)"
-            echo "UNITY_VERSION_SUFFIX=$(jq -r .data.versionSuffix unity-version.txt)"
+            echo "CLI_VERSION=$cli_version"
+            echo "CLI_VERSION_PREFIX=$cli_prefix"
+            echo "CLI_VERSION_SUFFIX=PREVIEW.RC$cli_rc"
+            echo "UNITY_VERSION=$unity_version"
+            echo "UNITY_VERSION_PREFIX=$unity_prefix"
+            echo "UNITY_VERSION_SUFFIX=PREVIEW.RC$unity_rc"
           } >> "$GITHUB_OUTPUT"
 
           {
             echo "### RC versions resolved"
             echo "| Artifact | Version | Source |"
             echo "|---|---|---|"
-            echo "| CLI | \`$(jq -r .data.versionString cli-version.txt)\` | ${CLI_OVERRIDE:+override}${CLI_OVERRIDE:-changelog + tags} |"
-            echo "| Unity SDK | \`$(jq -r .data.versionString unity-version.txt)\` | ${UNITY_OVERRIDE:+override}${UNITY_OVERRIDE:-changelog + tags} |"
+            echo "| CLI | \`$cli_version\` | ${CLI_OVERRIDE:+override}${CLI_OVERRIDE:-changelog + tags} |"
+            echo "| Unity SDK | \`$unity_version\` | ${UNITY_OVERRIDE:+override}${UNITY_OVERRIDE:-changelog + tags} |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Check Npm version
+        run: npm --version
+
+      - name: Install JQ
+        run: |
+          sudo apt-get update
+          sudo apt-get install jq
+          jq --version
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+
+      - name: Build Otel Collector
+        working-directory: ./otel-collector
+        run: |
+          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
+
+      - name: Add collector version
+        run: |
+            sh ./build/bin/set-collector-version-property.sh
+
+      - name: Install CLI
+        working-directory: ./
+        run: |
+          bash ./setup.sh
+          bash ./dev.sh
+
+      - name: Check CLI
+        run: beam version
 
       # ---- CLI nuget release (RC) ----
 
