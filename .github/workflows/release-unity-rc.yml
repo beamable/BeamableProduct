@@ -28,16 +28,16 @@ on:
     inputs:
       commit:
         type: string
-        description: "Commit / branch to build from. Point at a maintenance branch to patch an older line."
+        description: "Branch / ref to build from"
         default: main
       cliVersionOverride:
         type: string
-        description: "Optional. Force a CLI version e.g. 2.4.6-PREVIEW.RC1. Blank = auto: CLI changelog prefix + next RC from tags."
+        description: "(optional) Force CLI ver like 5.6.7-PREVIEW.RC8"
         required: false
         default: ""
       unityVersionOverride:
         type: string
-        description: "Optional. Force a Unity SDK version e.g. 2.4.6-PREVIEW.RC1. Blank = auto: Unity changelog prefix + next RC from tags."
+        description: "(optional) Force Unity ver like 1.2.3-PREVIEW.RC4"
         required: false
         default: ""
       dryRun:
