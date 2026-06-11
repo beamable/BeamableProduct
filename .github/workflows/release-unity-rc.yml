@@ -1,0 +1,441 @@
+# RC Publish (Unity + CLI) for testing
+#
+# One dispatch that cuts a CLI release candidate AND the matching Unity SDK
+# release candidate, so testers receive the most accurate representation of an
+# upcoming release without juggling two workflows by hand.
+#
+# What it does, in order:
+#   1. Builds and publishes the CLI nuget packages + CLI changelog for the CLI
+#      version you enter.
+#   2. Overwrites nugetPackageVersion in versions-default.json *at build time*
+#      (the same jq step release.yml uses in production). Nothing is committed
+#      and main's committed value is left untouched -- you no longer hand-edit
+#      that deep file per RC.
+#   3. Runs the real game-ci Unity editor pack and publishes the Unity SDK UPM
+#      packages + Unity SDK changelog for the Unity version you enter.
+#
+# CLI and the Unity SDK version independently, so both version numbers are
+# separate inputs. releaseType is fixed to "rc" -- this workflow only cuts RCs.
+#
+# A fail-fast changelog guard runs *before* the long build: if the top entry of
+# either changelog does not match the version being cut, the run stops before
+# anything is published or built. ~Claude
+
+name: RC Publish (Unity + CLI) for testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        type: string
+        description: "Commit / branch to build from. Point at a maintenance branch to patch an older line."
+        default: main
+      cliVersionOverride:
+        type: string
+        description: "Optional. Force a CLI version e.g. 2.4.6-PREVIEW.RC1. Blank = auto: CLI changelog prefix + next RC from tags."
+        required: false
+        default: ""
+      unityVersionOverride:
+        type: string
+        description: "Optional. Force a Unity SDK version e.g. 2.4.6-PREVIEW.RC1. Blank = auto: Unity changelog prefix + next RC from tags."
+        required: false
+        default: ""
+      dryRun:
+        type: boolean
+        description: When true, nothing is published, tagged, or uploaded
+        required: true
+        default: false
+
+run-name: "RC Publish from ${{ inputs.commit }} by @${{ github.actor }}${{ inputs.dryRun == true && ' [dry run]' || '' }}"
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      packages: read
+    concurrency:
+      group: release-unity-rc
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        unityVersion:
+          - 6000.3.0f1
+        gameCiVersion:
+          - 3.2.1
+    outputs:
+      unityVersion: ${{ steps.version.outputs.UNITY_VERSION }}
+    steps:
+      - name: review options
+        run: |
+          echo dryRun=${{ inputs.dryRun }}
+          echo commit=${{ inputs.commit }}
+          echo cli=${{ inputs.cliMajor }}.${{ inputs.cliMinor }}.${{ inputs.cliPatch }} RC${{ inputs.cliRc }}
+          echo unity=${{ inputs.unityMajor }}.${{ inputs.unityMinor }}.${{ inputs.unityPatch }} RC${{ inputs.unityRc }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit }}
+          fetch-tags: true   # needed to auto-derive the next RC number from existing tags ~Claude
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Check Npm version
+        run: npm --version
+
+      - name: Install JQ
+        run: |
+          sudo apt-get update
+          sudo apt-get install jq
+          jq --version
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+
+      - name: Build Otel Collector
+        working-directory: ./otel-collector
+        run: |
+          OUTPUT_DIRECTORY="$(pwd)/../otel-bin" bash ./build.sh
+
+      - name: Add collector version
+        run: |
+            sh ./build/bin/set-collector-version-property.sh
+
+      - name: Install CLI
+        working-directory: ./
+        run: |
+          bash ./setup.sh
+          bash ./dev.sh
+
+      - name: Check CLI
+        run: beam version
+
+      # Resolve both RC versions with as little human input as possible.
+      #   prefix  <- top "## [x.y.z]" entry of each changelog (the human-maintained
+      #              source of truth; package.json is 0.0.0 on main)
+      #   rc      <- highest existing matching git tag + 1, computed independently
+      #              per artifact (CLI and Unity SDK ride separate version lines)
+      # An explicit *VersionOverride input short-circuits derivation for that
+      # artifact (used when patching an older line, e.g. 2.4.6-PREVIEW.RC1). ~Claude
+      - name: Resolve RC versions
+        id: version
+        env:
+          CLI_OVERRIDE: ${{ inputs.cliVersionOverride }}
+          UNITY_OVERRIDE: ${{ inputs.unityVersionOverride }}
+        run: |
+          set -euo pipefail
+
+          changelog_prefix() {
+            local file="$1" p
+            p=$(grep -m1 -oP '^##\s*\[\K[0-9]+\.[0-9]+\.[0-9]+' "$file" || true)
+            if [ -z "$p" ]; then
+              echo "::error file=$file::Could not parse a '## [x.y.z]' version from the top of this changelog." >&2
+              exit 1
+            fi
+            echo "$p"
+          }
+
+          next_rc() {                       # $1 = tag prefix, e.g. unity-sdk-5.1.0
+            local max
+            max=$(git tag --list "$1-PREVIEW.RC*" \
+                  | sed -nE 's/.*-PREVIEW\.RC([0-9]+)$/\1/p' \
+                  | sort -n | tail -1)
+            if [ -z "$max" ]; then echo 1; else echo $((max + 1)); fi
+          }
+
+          guard_not_shipped() {             # refuse to cut an RC for an already-released line
+            local tag="$1" file="$2" prefix="$3"
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+              echo "::error file=$file::$prefix already shipped to production (tag $tag exists). Bump the changelog before cutting another RC." >&2
+              exit 1
+            fi
+          }
+
+          # CLI
+          if [ -n "$CLI_OVERRIDE" ]; then
+            cli_prefix=$(echo "$CLI_OVERRIDE" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+            cli_rc=$(echo "$CLI_OVERRIDE" | grep -oP 'RC\K[0-9]+')
+          else
+            cli_prefix=$(changelog_prefix cli/cli/CHANGELOG.md)
+            guard_not_shipped "cli-$cli_prefix" cli/cli/CHANGELOG.md "CLI $cli_prefix"
+            cli_rc=$(next_rc "cli-$cli_prefix")
+          fi
+
+          # Unity SDK
+          if [ -n "$UNITY_OVERRIDE" ]; then
+            unity_prefix=$(echo "$UNITY_OVERRIDE" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+            unity_rc=$(echo "$UNITY_OVERRIDE" | grep -oP 'RC\K[0-9]+')
+          else
+            unity_prefix=$(changelog_prefix client/Packages/com.beamable/CHANGELOG.md)
+            guard_not_shipped "unity-sdk-$unity_prefix" client/Packages/com.beamable/CHANGELOG.md "Unity SDK $unity_prefix"
+            unity_rc=$(next_rc "unity-sdk-$unity_prefix")
+          fi
+
+          # Format the canonical version strings through the CLI so the suffix
+          # matches the rest of the pipeline (x.y.z-PREVIEW.RCn).
+          IFS=. read -r cmaj cmin cpat <<< "$cli_prefix"
+          IFS=. read -r umaj umin upat <<< "$unity_prefix"
+          beam version construct "$cmaj" "$cmin" "$cpat" --rc "$cli_rc" > cli-version.txt
+          beam version construct "$umaj" "$umin" "$upat" --rc "$unity_rc" > unity-version.txt
+
+          {
+            echo "CLI_VERSION=$(jq -r .data.versionString cli-version.txt)"
+            echo "CLI_VERSION_PREFIX=$(jq -r .data.versionPrefix cli-version.txt)"
+            echo "CLI_VERSION_SUFFIX=$(jq -r .data.versionSuffix cli-version.txt)"
+            echo "UNITY_VERSION=$(jq -r .data.versionString unity-version.txt)"
+            echo "UNITY_VERSION_PREFIX=$(jq -r .data.versionPrefix unity-version.txt)"
+            echo "UNITY_VERSION_SUFFIX=$(jq -r .data.versionSuffix unity-version.txt)"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### RC versions resolved"
+            echo "| Artifact | Version | Source |"
+            echo "|---|---|---|"
+            echo "| CLI | \`$(jq -r .data.versionString cli-version.txt)\` | ${CLI_OVERRIDE:+override}${CLI_OVERRIDE:-changelog + tags} |"
+            echo "| Unity SDK | \`$(jq -r .data.versionString unity-version.txt)\` | ${UNITY_OVERRIDE:+override}${UNITY_OVERRIDE:-changelog + tags} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---- CLI nuget release (RC) ----
+
+      - name: Compress Collector Files
+        working-directory: otel-bin
+        run: find . -type f ! -name '*.gz' -exec gzip -k -9 {} \;
+
+      - name: Upload Collector to S3
+        if: ${{ inputs.dryRun == false }}
+        working-directory: otel-bin
+        run: |
+          AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./ s3://beamable-otel-collector-ch/version/${{ steps.version.outputs.CLI_VERSION }} --exclude "*" --include "*.gz" --acl public-read
+
+      - name: Prepare Cloudfront Invalidation
+        if: ${{ inputs.dryRun == false }}
+        run: |
+          CLOUD_DISTRO=E3S54OWVMS4PQH
+          CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/version/${{ steps.version.outputs.CLI_VERSION }}/*"]}}}' >> cloudfront-invalidation.json
+          cat cloudfront-invalidation.json
+      - name: Do Cloudfront Invalidation
+        if: ${{ inputs.dryRun == false }}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
+
+      - name: Publish Nuget Packages
+        if: ${{ inputs.dryRun == false }}
+        run: sh ./build/bin/release-nuget.sh
+        env:
+          VERSION: ${{ steps.version.outputs.CLI_VERSION }}
+          VERSION_PREFIX: ${{ steps.version.outputs.CLI_VERSION_PREFIX }}
+          VERSION_SUFFIX: ${{ steps.version.outputs.CLI_VERSION_SUFFIX }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
+
+      - name: Publish CLI Changelog
+        if: ${{ inputs.dryRun == false }}
+        run: sh ./build/bin/upload-changelogs.sh
+        env:
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'true'
+          COPY_WEB_SDK: 'false'
+          VERSION: ${{ steps.version.outputs.CLI_VERSION }}
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          BRANCH: staging
+
+      - name: Create CLI Release
+        if: ${{ inputs.dryRun == false }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: cli-${{ steps.version.outputs.CLI_VERSION }}
+          release_name: CLI ${{ steps.version.outputs.CLI_VERSION }}
+          body: |
+            CLI Release ${{ steps.version.outputs.CLI_VERSION }}
+          draft: false
+          prerelease: true
+
+      # ---- Unity SDK release (RC) ----
+
+      - name: Prepare Unity Env
+        run: sh ./build/bin/modify-unity-files.sh
+        env:
+          VERSION: ${{ steps.version.outputs.UNITY_VERSION }}
+          ENVIRONMENT: staging
+
+      # Point the Unity SDK at the CLI nuget version we just published. This
+      # overwrites the working-tree copy only; main's committed value is not
+      # changed and nothing is committed. ~Claude
+      - name: Apply Nuget Version to Unity SDK
+        run: jq --arg nextVersion ${{ steps.version.outputs.CLI_VERSION }} '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Review Unity versions-default file
+        run: cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Copy Nuget Code Over
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 10
+          retry_wait_seconds: 60
+          retry_on: error
+          command: beam unity download-all-nuget-packages ./client --logs v
+
+      - name: Prepare Unity Samples
+        run: sh ./../../../build/bin/prepare-samples.sh
+        working-directory: ./client/Packages/com.beamable/
+
+      - name: Update UPM Versions (com.beamable)
+        run: npm version ${{ steps.version.outputs.UNITY_VERSION }}
+        working-directory: ./client/Packages/com.beamable/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+
+      - name: Update UPM Version (com.beamable.server)
+        run: npm version ${{ steps.version.outputs.UNITY_VERSION }}
+        working-directory: ./client/Packages/com.beamable.server/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+
+      - name: Normalize line endings
+        shell: bash
+        run: ./build/bin/fix-line-endings.sh client/Packages/com.beamable
+
+      - name: Review Unity SDK Files
+        run: |
+          ls ./client/Packages/com.beamable/Runtime/Environment/Resources
+          cat client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
+          cat client/Packages/com.beamable.server/package.json
+          ls ./client/Packages/com.beamable
+          ls ./client/Packages/com.beamable/Samples~
+          cat client/Packages/com.beamable/package.json
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - uses: game-ci/unity-builder@v4
+        timeout-minutes: 60
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          DOTNET_CLI_UI_LANGUAGE: en
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable
+          gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: client
+          allowDirtyBuild: true
+          versioning: Custom
+          version: ${{ steps.version.outputs.UNITY_VERSION }}
+
+      - name: Review Output
+        run: |
+          ls -Ra client/build/package_dist
+          file client/build/package_dist/com.beamable
+
+      - name: Fix permissions
+        run: |
+          sudo chown -R $USER:$USER client/build
+
+      - name: Copy npmRC over
+        run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
+
+      - name: Release com.beamable UPM Package to Nexus
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.UNITY_VERSION }}.tgz --tag rc
+        working-directory: ./client/build/package_dist/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-preview
+
+      - name: Release com.beamable UPM Package to Public
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.UNITY_VERSION }}.tgz --tag rc
+        working-directory: ./client/build/package_dist/
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+
+      - name: Release com.beamable.server UPM Package
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish --tag rc
+        working-directory: ./client/Packages/com.beamable.server
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-preview
+
+      - name: Publish Unity SDK Changelog
+        if: ${{ inputs.dryRun == false }}
+        run: sh ./build/bin/upload-changelogs.sh
+        env:
+          COPY_UNITY_SDK: 'true'
+          COPY_CLI: 'false'
+          COPY_WEB_SDK: 'false'
+          VERSION: ${{ steps.version.outputs.UNITY_VERSION }}
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          BRANCH: staging
+
+      - name: Create Unity SDK Release
+        if: ${{ inputs.dryRun == false }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: unity-sdk-${{ steps.version.outputs.UNITY_VERSION }}
+          release_name: Unity SDK ${{ steps.version.outputs.UNITY_VERSION }}
+          body: |
+            Unity SDK Release ${{ steps.version.outputs.UNITY_VERSION }}
+          draft: false
+          prerelease: true
+
+  lightbeam:
+    needs: publish
+    if: ${{ inputs.dryRun == false }}
+    uses: ./.github/workflows/lightBeamRelease.yml
+    with:
+      customTag: unity-sdk-${{ needs.publish.outputs.unityVersion }}
+    secrets:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_DEVOPS }}
+      AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}
