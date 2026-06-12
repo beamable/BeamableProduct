@@ -16,8 +16,8 @@ importers:
         version: 19.2.6(react@19.2.6)
     devDependencies:
       '@beamable/sdk':
-        specifier: 1.2.1
-        version: 1.2.1
+        specifier: 0.0.123-local17
+        version: 0.0.123-local17
       tsdown:
         specifier: ^0.16.5
         version: 0.16.8(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(typescript@5.9.3)
@@ -48,8 +48,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@beamable/sdk@1.2.1':
-    resolution: {integrity: sha512-wFwpjT0dNdAMlMHyfLyjAbgqGQsoktImbXKqmvWi8MIsBkbuPMhuf+WqkLbajFcaMkdwp7jdNL5NkMpgW8vbjQ==}
+  '@beamable/sdk@0.0.123-local17':
+    resolution: {integrity: sha512-DaUGXiCrRYQTANfsjt6aR7BvwEiLZ0wVvNiv1qaEz/4p26dHXPLQPdJI/C0E/l5D+Gt0qG99wfN/BDD+8CoeNA==}
     engines: {node: '>=22.14.0'}
 
   '@emnapi/core@1.10.0':
@@ -267,11 +267,11 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.17':
     resolution: {integrity: sha512-n8iosDOt6Ig1UhJ2AYqoIhHWh/isz0xpicHTzpKBeotdVsTEcxsSA/i3EVM7gQAj0rU27OLAxCjzlj15IWY7bg==}
 
-  '@tybys/wasm-util@0.10.2':
-    resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
+  '@tybys/wasm-util@0.10.1':
+    resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
-  ansis@4.3.0:
-    resolution: {integrity: sha512-44mvgtPvohuU/70DdY5Oz2AIrLJ9k6/5x4KmoSvPwO+5Moijo0+N9D0fKbbYZQWP1hNm5CpOf+E01jhxG/r8xg==}
+  ansis@4.2.0:
+    resolution: {integrity: sha512-HqZ5rWlFjGiV0tDm3UxxgNRqsOTniqoKZu0pIAfh7TZQMGuZK+hH0drySty0si0QXj1ieop4+SkSfPZBPPkHig==}
     engines: {node: '>=14'}
 
   ast-kit@2.2.0:
@@ -395,12 +395,12 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  tinyexec@1.1.2:
-    resolution: {integrity: sha512-dAqSqE/RabpBKI8+h26GfLq6Vb3JVXs30XYQjdMjaj/c2tS8IYYMbIzP599KtRj7c57/wYApb3QjgRgXmrCukA==}
+  tinyexec@1.0.4:
+    resolution: {integrity: sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw==}
     engines: {node: '>=18'}
 
-  tinyglobby@0.2.16:
-    resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
+  tinyglobby@0.2.15:
+    resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
   tree-kill@1.2.2:
@@ -476,7 +476,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@beamable/sdk@1.2.1': {}
+  '@beamable/sdk@0.0.123-local17': {}
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -623,12 +623,12 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.17': {}
 
-  '@tybys/wasm-util@0.10.2':
+  '@tybys/wasm-util@0.10.1':
     dependencies:
       tslib: 2.8.1
     optional: true
 
-  ansis@4.3.0: {}
+  ansis@4.2.0: {}
 
   ast-kit@2.2.0:
     dependencies:
@@ -647,7 +647,7 @@ snapshots:
 
   dts-resolver@2.1.3: {}
 
-  empathic@2.0.1: {}
+  empathic@2.0.0: {}
 
   fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
@@ -749,9 +749,9 @@ snapshots:
 
   semver@7.8.0: {}
 
-  tinyexec@1.1.2: {}
+  tinyexec@1.0.4: {}
 
-  tinyglobby@0.2.16:
+  tinyglobby@0.2.15:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
@@ -798,4 +798,4 @@ snapshots:
 
   unrun@0.2.39:
     dependencies:
-      rolldown: 1.0.0-rc.17
+      rolldown: 1.0.0-rc.11
