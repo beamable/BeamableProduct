@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
@@ -6,6 +7,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
+using EmptyResponse = Beamable.Common.Api.EmptyResponse;
 
 namespace cli.Services.PortalExtension;
 
@@ -55,6 +57,7 @@ public class PortalExtensionObserver
 {
 	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "js", "html", "tsx", "jsx", "ts" };
 	private bool _alreadyStarted;
+	private bool _startedNotified;
 
 	private PortalExtensionDef _metaData;
 
@@ -441,14 +444,58 @@ public class PortalExtensionObserver
 		// build the app since there are new changes in the src files
 		BuildExtension();
 
-		//TODO: check this back once event subscriptions change
-		_notificationsApi.NotifyServer(true, "notify-portalextension",
+		NotifyPortalExtension(PortalExtensionEventType.Changed);
+	}
+
+	/// <summary>
+	/// Broadcasts a <c>notify-portalextension</c> message so the portal can refresh, mount, or
+	/// unmount this extension. Safe to call only while the microservice websocket is alive.
+	/// </summary>
+	private Promise<EmptyResponse> NotifyPortalExtension(string eventType)
+	{
+		if (_notificationsApi == null)
+		{
+			return Promise<EmptyResponse>.Successful(new EmptyResponse());
+		}
+
+		return _notificationsApi.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload()
 			{
-				serviceName = _attributes.MicroserviceName ,
+				serviceName = _attributes.MicroserviceName,
 				extensionName = _metaData.Name,
-				extensionProperties = _metaData.Properties
+				extensionProperties = _metaData.Properties,
+				eventType = eventType
 			});
+	}
+
+	/// <summary>
+	/// Notifies the portal that the extension is ready for traffic. Fires at most once per run.
+	/// </summary>
+	public void NotifyStarted()
+	{
+		if (_startedNotified)
+		{
+			return;
+		}
+
+		_startedNotified = true;
+		NotifyPortalExtension(PortalExtensionEventType.Started);
+	}
+
+	/// <summary>
+	/// Notifies the portal that the extension is shutting down. Awaitable so the caller can ensure
+	/// the message is sent before the websocket connection closes.
+	/// </summary>
+	public Promise<EmptyResponse> NotifyStopped()
+	{
+		return NotifyPortalExtension(PortalExtensionEventType.Stopped);
+	}
+
+	public static class PortalExtensionEventType
+	{
+		public const string Started = "started";
+		public const string Stopped = "stopped";
+		public const string Changed = "changed";
 	}
 
 	[Serializable]
@@ -457,5 +504,6 @@ public class PortalExtensionObserver
 		public string serviceName;
 		public string extensionName;
 		public PortalExtensionPackageProperties extensionProperties;
+		public string eventType;
 	}
 }

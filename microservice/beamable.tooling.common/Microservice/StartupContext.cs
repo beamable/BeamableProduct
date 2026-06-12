@@ -33,6 +33,7 @@ public class StartupContext
 
     public List<Func<IDependencyProviderScope, Task>> initializers = new List<Func<IDependencyProviderScope, Task>>();
     public List<Func<IDependencyProviderScope, Task>> perServiceInitializers = new List<Func<IDependencyProviderScope, Task>>();
+    public List<Func<IDependencyProviderScope, Task>> shutdownHandlers = new List<Func<IDependencyProviderScope, Task>>();
 
     public ReflectionCache reflectionCache;
     public IUsageApi ecsService;

@@ -115,6 +115,9 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		{
 			if (kill)
 			{
+				// Force-kill sends SIGKILL, which cannot be intercepted — the service's OnShutdown
+				// handlers don't run, so a portal extension can't broadcast its "stopped" notification.
+				// The portal drops it via service discovery instead. Use a graceful stop to notify.
 				try
 				{
 					var proc = Process.GetProcessById(hostEvt.processId);

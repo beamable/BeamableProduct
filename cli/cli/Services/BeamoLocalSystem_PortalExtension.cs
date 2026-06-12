@@ -49,10 +49,26 @@ public partial class BeamoLocalSystem
 	{
 		var extension = definition.PortalExtensionDefinition;
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
-		
+
 		// Reset so each run gets a fresh sink.
 		_portalExtensionSink = null;
-		
+
+		// Captured during InitializeServices (the only place the observer is resolvable from the
+		// DI scope). Used to fire the "started" notification once the service is ready for traffic.
+		PortalExtensionObserver capturedObserver = null;
+
+		// Wraps the caller's progress callback so we also broadcast a "started" notification when the
+		// service reports it is ready for traffic (progress == 1). Capturing the observer alone sends
+		// nothing — the notification only goes out here, at readiness.
+		void OnProgress(float progress, string message)
+		{
+			onProgress?.Invoke(progress, message);
+			if (progress >= 1f)
+			{
+				capturedObserver?.NotifyStarted();
+			}
+		}
+
 		try
 		{
 			Environment.SetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE", "true");
@@ -66,6 +82,7 @@ public partial class BeamoLocalSystem
 						var notification = provider.GetService<IMicroserviceNotificationsApi>();
 						var attributes = provider.GetService<MicroserviceAttribute>();
 						observer.ConfigureServiceData(notification, attributes, beamActivity, localSystem.BeamoManifest);
+						capturedObserver = observer;
 
 						// Make sure each file: library dependency still points at its real location before we
 						// install/build. Auto-repairs a moved library or throws a clear error if one is missing.
@@ -126,8 +143,20 @@ public partial class BeamoLocalSystem
 						MicroserviceName = microserviceName,
 						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
 					};
-					
-					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, extension, microserviceName, onProgress);
+
+					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, extension, microserviceName, OnProgress);
+				})
+				// Tell the portal to unmount this extension on graceful shutdown. The websocket is
+				// still alive when shutdown handlers run. Note: a force-kill (beam project stop -k)
+				// terminates the process via SIGKILL and cannot run this; the portal then drops the
+				// extension via service discovery instead.
+				.OnShutdown(async provider =>
+				{
+					var observer = provider.GetService<PortalExtensionObserver>();
+					if (observer != null)
+					{
+						await observer.NotifyStopped();
+					}
 				})
 				.RunForever();
 			
