@@ -381,6 +381,7 @@ namespace Beamable.Editor.BeamCli
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
 		private Promise _runPromise;
+		private const int MaxPreResponseTransportRetries = 2;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
 		{
@@ -408,16 +409,28 @@ namespace Beamable.Editor.BeamCli
 		{
 			_history.UpdateResolvingHostTime(id);
 
-			try
+			for (var attempt = 0;; attempt++)
 			{
-				await RunHttpRequestOnce();
-			}
-			catch (Exception ex) when (IsRecoverableLocalTransportFailure(ex))
-			{
-				_history.AddCustomLog(id, "[Unity] local CLI transport failed; rediscovering server and retrying once...");
-				await _factory.InvalidateServer(ex);
-				//await _factory.EnsureServerIsRunning();
-				await RunHttpRequestOnce();
+				try
+				{
+					await RunHttpRequestOnce();
+					return;
+				}
+				catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
+				{
+					if (attempt == 0)
+					{
+						_history.AddCustomLog(id,
+							$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
+						await _factory.EnsureServerIsRunning();
+					}
+					else
+					{
+						_history.AddCustomLog(id,
+							$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
+						await _factory.InvalidateServer(ex.InnerException ?? ex);
+					}
+				}
 			}
 		}
 
@@ -434,6 +447,7 @@ namespace Beamable.Editor.BeamCli
 			CliLogger.Log("Sending cli web request, " + json);
 			var dispatchedIds = new List<long>();
 			var p = new Promise();
+			var responseStarted = false;
 
 			try
 			{
@@ -447,6 +461,7 @@ namespace Beamable.Editor.BeamCli
 				_history.AddCustomLog(id, "[Unity] sent request...");
 
 				using HttpResponseMessage response = await sendTask;
+				responseStarted = true;
 				_history.AddCustomLog(id, "[Unity] opened response...");
 
 				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
@@ -503,17 +518,9 @@ namespace Beamable.Editor.BeamCli
 				}
 
 			}
-			catch (Exception ex) when (
-				(IsTransportFailure(ex) || ex is OperationCanceledException)
-				&& !_cts.IsCancellationRequested)
+			catch (Exception ex) when (IsRecoverableLocalTransportFailure(ex) && !responseStarted)
 			{
-				// The loopback connection to the CLI server is unhealthy
-				// (server died, port stale, half-closed socket). Mono surfaces
-				// some of these as TaskCanceledException even though the token
-				// wasn't tripped \u2014 treat them as transport failures and force
-				// rediscovery before we keep hammering a dead endpoint.
-				//_factory.InvalidateServer(ex);
-				throw;
+				throw new PreResponseTransportException(ex);
 			}
 			finally
 			{
@@ -549,8 +556,16 @@ namespace Beamable.Editor.BeamCli
 
 		private bool IsRecoverableLocalTransportFailure(Exception ex)
 		{
-			return !_cts.IsCancellationRequested && 
+			return !_cts.IsCancellationRequested &&
 			       (IsTransportFailure(ex) || ex is OperationCanceledException);
+		}
+
+		private class PreResponseTransportException : Exception
+		{
+			public PreResponseTransportException(Exception innerException)
+				: base(innerException.Message, innerException)
+			{
+			}
 		}
 
 		public IBeamCommand On<T>(Func<ReportDataPointDescription, bool> predicate, Action<ReportDataPoint<T>> cb)
