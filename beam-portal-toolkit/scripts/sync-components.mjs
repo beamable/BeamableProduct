@@ -514,6 +514,7 @@ function toReactName(tagName) {
 const reactComponentDeclarations = declarations.filter(
   (d) => !REACT_HANDWRITTEN.has(d.tagName) && !REACT_BINDABLE_TAGS.has(d.tagName),
 );
+console.log('react components to generate', reactComponentDeclarations.map(x => x.tagName))
 const reactBindableDeclarations = declarations.filter((d) => REACT_BINDABLE_TAGS.has(d.tagName));
 
 const reactComponentEntries = reactComponentDeclarations.map((decl) => {
