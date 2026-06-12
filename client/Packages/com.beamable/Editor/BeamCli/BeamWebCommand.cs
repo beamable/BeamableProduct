@@ -135,12 +135,12 @@ namespace Beamable.Editor.BeamCli
 			_serverCommand = null;
 		}
 
-		public void InvalidateServer(Exception cause)
+		public Promise InvalidateServer(Exception cause)
 		{
 			// Marshal back to the editor coroutine thread — port, _serverCommand,
 			// and discoveryRequest are all touched by ServerDiscoveryLoop and
 			// shouldn't race with an async continuation.
-			dispatcher.Schedule(() =>
+			var jobId = dispatcher.Schedule(() =>
 			{
 				_history.AddServerEvent(
 					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
@@ -149,6 +149,8 @@ namespace Beamable.Editor.BeamCli
 				port = _options.startPortOverride.GetOrElse(8432);
 				discoveryRequest++;
 			});
+
+			return dispatcher.WaitForJobIds(new List<long> { jobId });
 		}
 
 		public string GetServerProcess()
@@ -406,6 +408,21 @@ namespace Beamable.Editor.BeamCli
 		{
 			_history.UpdateResolvingHostTime(id);
 
+			try
+			{
+				await RunHttpRequestOnce();
+			}
+			catch (Exception ex) when (IsRecoverableLocalTransportFailure(ex))
+			{
+				_history.AddCustomLog(id, "[Unity] local CLI transport failed; rediscovering server and retrying once...");
+				await _factory.InvalidateServer(ex);
+				//await _factory.EnsureServerIsRunning();
+				await RunHttpRequestOnce();
+			}
+		}
+
+		private async Promise RunHttpRequestOnce()
+		{
 			await _factory.EnsureServerIsRunning();
 
 			_history.UpdateStartTime(id, _factory.ExecuteUrl);
@@ -495,7 +512,7 @@ namespace Beamable.Editor.BeamCli
 				// some of these as TaskCanceledException even though the token
 				// wasn't tripped \u2014 treat them as transport failures and force
 				// rediscovery before we keep hammering a dead endpoint.
-				_factory.InvalidateServer(ex);
+				//_factory.InvalidateServer(ex);
 				throw;
 			}
 			finally
@@ -528,6 +545,12 @@ namespace Beamable.Editor.BeamCli
 			       || ex is SocketException
 			       || ex is ObjectDisposedException
 			       || ex is IOException;
+		}
+
+		private bool IsRecoverableLocalTransportFailure(Exception ex)
+		{
+			return !_cts.IsCancellationRequested && 
+			       (IsTransportFailure(ex) || ex is OperationCanceledException);
 		}
 
 		public IBeamCommand On<T>(Func<ReportDataPointDescription, bool> predicate, Action<ReportDataPoint<T>> cb)
