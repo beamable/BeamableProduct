@@ -5,5 +5,6 @@ import { name } from './package.json'
 // the Portal host's window globals, emitting `assets/index.js` + `style.css`.
 // `name` is derived from package.json so the extension id lives in exactly one
 // place. definePortalExtensionConfig captures the rest of the build/rollup
-// boilerplate; pass `extraPlugins`, `minify`, `outDir`, etc. here to override.
+// boilerplate (including the shared-package dedupe); pass `extraPlugins`,
+// `minify`, `outDir`, etc. here to override.
 export default definePortalExtensionConfig({ entry: 'src/main.tsx', name })
