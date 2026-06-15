@@ -86,7 +86,8 @@ namespace Beamable.Editor.ToolbarExtender
 				});
 				if(!sameEditorAndBuildPids)
 				{
-					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, editor.CommitConfigDefaults);
+					menu.AddItem(new GUIContent(rootDisplay.text + "/Save to config-defaults"), false, 
+					             () => editor.CommitConfigDefaults());
 				}
 			}
 		}

@@ -301,6 +301,33 @@ public class ProjectService
 		return portalExtensionInfo;
 	}
 
+	public async Task<NewServiceInfo> CreateNewPortalExtensionLib(NewPortalExtensionLibCommandArgs args)
+	{
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+		var libInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion);
+
+		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions-libs");
+
+		libInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
+		await RunDotnetCommand($"new portalextensioncommonlib -n {args.ProjectName} -o {libInfo.ServicePath.EnquotePath()}");
+
+		{ // Updates the package name to use the same name passed in it's creation, making sure it's the correct one instead of what dotnet template might parse
+			var packagePath = Path.Combine(libInfo.ServicePath, "package.json");
+			string jsonContent = File.ReadAllText(packagePath);
+
+			JObject root = JObject.Parse(jsonContent);
+			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
+				JToken.FromObject(args.ProjectName.Value);
+
+			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+		}
+
+		return libInfo;
+	}
+
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();

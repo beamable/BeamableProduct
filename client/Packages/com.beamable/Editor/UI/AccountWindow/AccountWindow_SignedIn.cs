@@ -1,3 +1,4 @@
+using Beamable.Common.Api.Realms;
 using Beamable.Config;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.Content;
@@ -70,13 +71,13 @@ namespace Beamable.Editor.Accounts
 						RenderLabel("Runtime Cid", config.Cid, "No value set");
 
 						var realmDisplay = config.Pid;
-						if (cli.pidToRealm.TryGetValue(config.Pid, out var realm))
+						if (!string.IsNullOrEmpty(config.Pid) && cli.pidToRealm.TryGetValue(config.Pid, out RealmView realm))
 						{
 							realmDisplay = realm.GetDisplayName();
 						}
 						RenderLabel("Runtime Realm", realmDisplay, "No value set");
 
-						List<string> missingRuntimeFields = new List<string>();
+						var missingRuntimeFields = new List<string>();
 						if (string.IsNullOrEmpty(config.HostUrl))
 						{
 							missingRuntimeFields.Add("host");
