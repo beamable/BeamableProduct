@@ -99,10 +99,10 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 
-		// The AGENTS.md AI-agent guide points at the Beamable MCP, which is internal-only for now.
-		// Keep this opt-in and hidden until the MCP integration is public (see feature/beam-mcp-public).
+		// Opt-in generation of the AGENTS.md AI-agent guide. Prefer `beam mcp setup`, which also
+		// configures the Beamable MCP server.
 		var agentsOption = new Option<bool>("--generate-agents-file", () => false,
-			"INTERNAL Generate an AGENTS.md AI-agent guide for this workspace") { IsHidden = true };
+			"Generate an AGENTS.md AI-agent guide for this workspace");
 		AddOption(agentsOption, (args, v) => args.generateAgentsFile = v);
 	}
 
@@ -296,8 +296,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		if (args.generateAgentsFile)
 		{
-			var (_, outcome) = AgentsFileWriter.EnsureAgentsFile(args.ConfigService.BeamableWorkspace);
-			if (outcome is AgentsFileWriter.AgentsFileOutcome.Created or AgentsFileWriter.AgentsFileOutcome.Appended)
+			var (_, outcome) = AiFileWriter.EnsureAgentsFile(args.ConfigService.BeamableWorkspace);
+			if (outcome is AiFileWriter.AgentsFileOutcome.Created or AiFileWriter.AgentsFileOutcome.Appended)
 				Log.Information("Created AGENTS.md for AI agent discovery");
 		}
 

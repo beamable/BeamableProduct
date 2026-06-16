@@ -30,9 +30,6 @@ public class InstallAISkillsCommand
 	, IStandaloneCommand
 	, ISkipManifest
 {
-	// Hidden while the Beamable MCP / AI integration is internal-only (see feature/beam-mcp-public).
-	public override bool IsForInternalUse => true;
-
 	private static readonly (string flag, string dirName, string skillsSubPath, string skillFileName)[] KnownAgents =
 	{
 		("claude", ".claude", Path.Combine(".claude", "skills"), "Skill.md"),

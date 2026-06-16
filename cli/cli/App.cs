@@ -1555,9 +1555,6 @@ public class App
 
 	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
 	{
-		// Disabled while the Beamable MCP is internal-only (see feature/beam-mcp-public).
-		return;
-
 		if (IsRunningInMcpServer) return;
 		var joined = string.Join(" ", args).ToLowerInvariant();
 		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
@@ -1566,7 +1563,7 @@ public class App
 
 		BeamableLogger.LogWarning(
 			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
-			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+			"Run 'beam mcp setup' to enable the Beamable MCP server, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
 	}
 
 	public static bool TryDetectAiAgent(out string agentName)
