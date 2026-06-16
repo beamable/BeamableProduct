@@ -20,6 +20,13 @@ LOCALDEV_DIR="$SCRIPT_DIR/portal-localdev"
 WEB_BUILD_NUMBER_FILE="$SCRIPT_DIR/web-build-number.txt"
 REGISTRY="http://localhost:4873"
 
+COMPOSE_FILE="$LOCALDEV_DIR/docker-compose.yml"
+# Docker is a native Windows binary; under Cygwin it won't understand POSIX
+# paths (/cygdrive/c/...), so convert the compose file path to Windows form.
+case "$OSTYPE" in
+    cygwin*) COMPOSE_FILE="$(cygpath -m "$COMPOSE_FILE")" ;;
+esac
+
 # ---------------------------------------------------------------------------
 # Cleanup trap — restores package.json files even if the script exits early
 # ---------------------------------------------------------------------------
@@ -133,7 +140,7 @@ cd "$SCRIPT_DIR"
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Restarting local-unpkg (clearing file cache) ---"
-docker compose -f "$LOCALDEV_DIR/docker-compose.yml" restart local-unpkg
+docker compose -f "$COMPOSE_FILE" restart local-unpkg
 
 # ---------------------------------------------------------------------------
 # Done
