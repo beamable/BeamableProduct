@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.beamable.push'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            // Libraries ship unminified; the consuming app shrinks using our
+            // consumerProguardFiles. This keeps the .aar's classes intact.
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    // FCM. The library always links against firebase-messaging so PushFirebaseService
+    // resolves; remote only activates when a google-services.json is present in the app.
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+
+    // The React Native adapter (com.beamable.push.react) ships in this .aar. React is
+    // compileOnly: linked at build time, NOT bundled or transitive — in a Unity/Unreal app the
+    // RN classes are simply never loaded. The unreal/ bridge uses JNI `external` funcs (no dep).
+    compileOnly 'com.facebook.react:react-android:0.73.4'
+}

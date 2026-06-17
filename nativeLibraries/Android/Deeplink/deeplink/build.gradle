@@ -1,0 +1,38 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.beamable.deeplink'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+
+    // The React Native adapter (com.beamable.deeplink.react) ships in this .aar. React is
+    // compileOnly — linked at build time, not bundled, never loaded outside an RN app. The
+    // unreal/ bridge uses JNI `external` funcs (no dependency).
+    compileOnly 'com.facebook.react:react-android:0.73.4'
+}

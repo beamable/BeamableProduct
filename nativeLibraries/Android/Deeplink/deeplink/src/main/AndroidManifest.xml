@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- No components and no VIEW intent-filter here: the deeplink scheme + launcher
+       activity stay in the consuming app's manifest. This library only observes the
+       host activity's intents. -->
+  <application />
+</manifest>

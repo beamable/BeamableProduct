@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+
+    <!-- Firebase Cloud Messaging entry point. Receives push + token-refresh events.
+         Harmless when remote is disabled / no google-services.json (never invoked). -->
+    <service
+        android:name="com.beamable.push.PushFirebaseService"
+        android:exported="false">
+      <intent-filter>
+        <action android:name="com.google.firebase.MESSAGING_EVENT" />
+      </intent-filter>
+    </service>
+
+    <!-- Fires scheduled local notifications (driven by AlarmManager). -->
+    <receiver
+        android:name="com.beamable.push.NotificationActionReceiver"
+        android:exported="false" />
+
+    <!-- Default channel for FCM-displayed notifications when none is specified. -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="@string/beamable_default_channel" />
+
+  </application>
+
+</manifest>
