@@ -84,7 +84,7 @@ namespace Beamable.Api
 		{
 			if (_prefix.StartsWith("editor."))
 			{
-				SaveTokenForCustomer(cid, token); // if this token looks like an editor token, then we should should also save it as customer scoped, otherwise, the save action won't apply to the right data. 
+				SaveTokenForCustomer(cid, token); // if this token looks like an editor token, then we should should also save it as customer scoped, otherwise, the save action won't apply to the right data.
 			}
 			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.access_token", token.Token);
@@ -160,7 +160,7 @@ namespace Beamable.Api
 			string key = GetDeviceTokenKey(cid, pid);
 			var compressedTokens = PlayerPrefs.GetString(key, "");
 			var set = compressedTokens.Split(Constants.DelimiterSplit, StringSplitOptions.RemoveEmptyEntries);
-			set = Array.FindAll(set, curr => !MatchesRefreshToken(curr, token.refresh_token));
+			set = Array.FindAll(set, curr => !MatchesToken(curr, token));
 			var nextCompressedTokens = string.Join(DeviceTokenDelimiterStr, set);
 
 			PlayerPrefs.SetString(key, nextCompressedTokens);
@@ -203,6 +203,20 @@ namespace Beamable.Api
 			return encoded.EndsWith(refreshToken, StringComparison.Ordinal) &&
 				   encoded.Length > refreshToken.Length &&
 				   encoded[encoded.Length - refreshToken.Length - 1] == DeviceTokenSeparator;
+		}
+
+		private static bool MatchesToken(string encoded, TokenResponse token)
+		{
+			if (token == null) return false;
+			if (!string.IsNullOrEmpty(token.refresh_token))
+			{
+				return MatchesRefreshToken(encoded, token.refresh_token);
+			}
+
+			var parts = encoded.Split(Constants.SeparatorSplit, StringSplitOptions.None);
+			return parts.Length > 0 &&
+				   parts[0] == token.access_token &&
+				   (parts.Length == 1 || string.IsNullOrEmpty(parts[1]));
 		}
 
 		private TokenResponse Convert(string token)

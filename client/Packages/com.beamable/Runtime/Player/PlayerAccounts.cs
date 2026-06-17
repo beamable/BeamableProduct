@@ -2013,6 +2013,98 @@ namespace Beamable.Player
 				AccountManagementConfiguration.Instance.AvatarStat);
 		}
 
+		private class RefreshedAccount
+		{
+			public User user;
+			public TokenResponse token;
+			public UserExtensions.StatCollection stats;
+		}
+
+		private class RememberedAccountRefreshResult
+		{
+			public RefreshedAccount account;
+			public TokenResponse tokenToRemove;
+		}
+
+		private static bool IsTerminalRememberedTokenError(Exception ex)
+		{
+			if (!(ex is PlatformRequesterException platformRequesterException)) return false;
+			var error = platformRequesterException.Error?.error ?? platformRequesterException.RequestError?.error;
+
+			return error switch
+			{
+				"UnknownTokenError" or "InvalidTokenError" or "TokenValidationError"
+					or "RefreshAccessTokenError" => true,
+				_ => false
+			};
+		}
+
+		private static bool IsDuplicateOfCurrentToken(TokenResponse rememberedToken, AccessToken currentToken)
+		{
+			return rememberedToken != null &&
+			       currentToken != null &&
+			       !string.IsNullOrEmpty(rememberedToken.refresh_token) &&
+			       rememberedToken.refresh_token == currentToken.RefreshToken;
+		}
+
+		private static bool IsMalformedRememberedToken(TokenResponse token)
+		{
+			return token == null ||
+			       string.IsNullOrEmpty(token.access_token) ||
+			       string.IsNullOrEmpty(token.refresh_token);
+		}
+
+		private static TokenResponse ToTokenResponse(AccessToken currentToken)
+		{
+			return new TokenResponse
+			{
+				access_token = currentToken.Token,
+				refresh_token = currentToken.RefreshToken
+			};
+		}
+
+		private static UserExtensions.StatCollection CreateEmptyStats()
+		{
+			return new UserExtensions.StatCollection();
+		}
+
+		private async Promise<RememberedAccountRefreshResult> TryRefreshRememberedAccount(TokenResponse token)
+		{
+			try
+			{
+				var user = await _authService.GetUser(token);
+				UserExtensions.StatCollection statValues;
+
+				try
+				{
+					statValues = await GetStatsForUser(user);
+				}
+				catch
+				{
+					statValues = CreateEmptyStats();
+				}
+
+				return new RememberedAccountRefreshResult
+				{
+					account = new RefreshedAccount
+					{
+						user = user,
+						token = token,
+						stats = statValues
+					}
+				};
+			}
+			catch (Exception ex)
+			{
+				if (IsTerminalRememberedTokenError(ex))
+				{
+					return new RememberedAccountRefreshResult { tokenToRemove = token };
+				}
+
+				return new RememberedAccountRefreshResult();
+			}
+		}
+
 		protected override async Promise PerformRefresh()
 		{
 			await _ctx.OnReady;
@@ -2028,33 +2120,81 @@ namespace Beamable.Player
 
 			var deviceTokens = _storage.RetrieveDeviceRefreshTokens(_ctx.Cid, _ctx.Pid);
 			var currToken = _storage.LoadTokenForRealmImmediate(_ctx.Cid, _ctx.Pid);
-			var tokens = new TokenResponse[deviceTokens.Length + 1];
+
+			if (currToken == null)
+			{
+				throw new Exception(
+					$"Cannot refresh player accounts because no current token exists for cid=[{_ctx.Cid}] pid=[{_ctx.Pid}].");
+			}
+
+			if (string.IsNullOrEmpty(currToken.Token) || string.IsNullOrEmpty(currToken.RefreshToken))
+			{
+				throw new Exception(
+					$"Cannot refresh player accounts because the current token is incomplete for cid=[{_ctx.Cid}] pid=[{_ctx.Pid}].");
+			}
+
+			var refreshedAccounts = new List<RefreshedAccount>();
+			var currentTokenResponse = ToTokenResponse(currToken);
+			var currentUser = await _authService.GetUser(currentTokenResponse);
+			var currentStats = await GetStatsForUser(currentUser);
+
+			refreshedAccounts.Add(new RefreshedAccount
+			{
+				user = currentUser,
+				token = currentTokenResponse,
+				stats = currentStats
+			});
+
+			var rememberedAccountPromises = new List<Promise<RememberedAccountRefreshResult>>();
+			var rememberedAccountResults = new List<RememberedAccountRefreshResult>();
+
 			for (var i = 0; i < deviceTokens.Length; i++)
 			{
-				tokens[i] = deviceTokens[i];
-			}
-			tokens[deviceTokens.Length] = new TokenResponse { access_token = currToken.Token, refresh_token = currToken.RefreshToken, };
+				var token = deviceTokens[i];
+				if (token == null) continue;
+				if (IsDuplicateOfCurrentToken(token, currToken)) continue;
 
-			var userPromises = new Promise<User>[tokens.Length];
-			var statPromises = new Promise<UserExtensions.StatCollection>[tokens.Length];
-			for (var i = 0; i < userPromises.Length; i++)
-			{
-				userPromises[i] = _authService.GetUser(tokens[i]);
-				statPromises[i] = userPromises[i].FlatMap(GetStatsForUser);
-			}
-			var users = await Promise.Sequence(userPromises);
-			var stats = await Promise.Sequence(statPromises);
+				if (IsMalformedRememberedToken(token))
+				{
+					rememberedAccountResults.Add(new RememberedAccountRefreshResult { tokenToRemove = token });
+					continue;
+				}
 
-			for (var i = 0; i < userPromises.Length; i++)
+				rememberedAccountPromises.Add(TryRefreshRememberedAccount(token));
+			}
+
+			rememberedAccountResults.AddRange(await Promise.Sequence(rememberedAccountPromises));
+			var removedRememberedToken = false;
+
+			for (var i = 0; i < rememberedAccountResults.Count; i++)
 			{
-				var user = users[i];
+				var result = rememberedAccountResults[i];
+				if (result.account != null)
+				{
+					refreshedAccounts.Add(result.account);
+				}
+
+				if (result.tokenToRemove != null)
+				{
+					_storage.RemoveDeviceRefreshToken(_ctx.Cid, _ctx.Pid, result.tokenToRemove);
+					removedRememberedToken = true;
+				}
+			}
+
+			if (removedRememberedToken)
+			{
+				PlayerPrefs.Save();
+			}
+
+			for (var i = 0; i < refreshedAccounts.Count; i++)
+			{
+				var refreshed = refreshedAccounts[i];
+				var user = refreshed.user;
 				if (seen.Contains(user.id)) continue;
 				seen.Add(user.id);
 
-				var statValues = stats[i];
-				var token = tokens[i];
-
-
+				var statValues = refreshed.stats;
+				var token = refreshed.token;
 
 				if (gamerTagToAccount.TryGetValue(user.id, out var existing))
 				{

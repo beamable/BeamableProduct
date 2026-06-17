@@ -150,5 +150,18 @@ namespace Beamable.Platform.Tests
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
 			Assert.AreEqual("token1|test1,token2|test2,token3|test3", value);
 		}
+
+		[Test]
+		public void CanRemove_MalformedTokenWithoutRefreshToken()
+		{
+			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,bad_access_token,token3|test3");
+			_storage.RemoveDeviceRefreshToken(_cid, _pid, new TokenResponse
+			{
+				access_token = "bad_access_token",
+				refresh_token = ""
+			});
+			var value = PlayerPrefs.GetString(DeviceTokensKey);
+			Assert.AreEqual("token1|test1,token3|test3", value);
+		}
 	}
 }
