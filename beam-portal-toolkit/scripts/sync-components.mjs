@@ -558,7 +558,7 @@ const reactComponentsTs = `// AUTO-GENERATED — do not edit manually.
 // each component to \`any\`.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 ${reactComponentEntries.join('\n\n')}
 `;
@@ -641,7 +641,7 @@ const reactBindableTs = `// AUTO-GENERATED — do not edit manually.
 // these callbacks are purely additive.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 ${reactBindableEntries.join('\n\n')}
 `;

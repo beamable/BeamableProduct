@@ -13,7 +13,7 @@
 // each component to `any`.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 /**
  * @csspart svg - The internal SVG element.
