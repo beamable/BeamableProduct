@@ -4,6 +4,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using cli.Commands.Project;
+using cli.Services.PortalExtension;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -116,6 +117,13 @@ public partial class BeamoLocalSystem
 		
 		
 		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);
+
+		// Surface portal extension name collisions (e.g. after a rename) as warnings. This is a purely
+		// local, non-fatal check; the hard failure for conflicts happens during `beam deploy`.
+		foreach (var conflict in PortalExtensionNameValidator.FindLocalConflicts(BeamoManifest))
+		{
+			Log.Warning(conflict);
+		}
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
