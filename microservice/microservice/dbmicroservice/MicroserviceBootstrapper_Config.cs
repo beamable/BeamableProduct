@@ -36,9 +36,6 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.PerServiceInitializers { get; set; } =
 	    new List<Func<IDependencyProviderScope, Task>>();
 
-    List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ShutdownHandlers { get; set; } =
-	    new List<Func<IDependencyProviderScope, Task>>();
-
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
 
     Action<BeamCliInvocation> IBeamServiceConfig.LocalEnvModifier { get; set; } = _ => { };
@@ -129,13 +126,6 @@ public static class BeamServiceConfigExtensions
 		return conf;
 	}
 
-	public static IBeamServiceConfig OnShutdown(this IBeamServiceConfig conf,
-		Func<IDependencyProviderScope, Task> handler)
-	{
-		conf.ShutdownHandlers.Add(handler);
-		return conf;
-	}
-
 }
 
 public interface IBeamServiceConfig
@@ -148,11 +138,6 @@ public interface IBeamServiceConfig
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
-    /// <summary>
-    /// Handlers invoked while the microservice is shutting down gracefully, before its websocket
-    /// connection is closed. Useful for sending a final notification. Not invoked on a force-kill.
-    /// </summary>
-    List<Func<IDependencyProviderScope, Task>> ShutdownHandlers { get; set; }
     /// <summary>
     /// An optional delegate that customizes the logging pipeline for this microservice.
     /// <para>
@@ -247,27 +232,7 @@ public class BeamServiceConfigBuilder
 		    return Task.CompletedTask;
 	    });
     }
-
-    public BeamServiceConfigBuilder OnShutdown(Func<IDependencyProviderScope, Task> handler)
-    {
-	    Config.OnShutdown(handler);
-	    return this;
-    }
-
-    public BeamServiceConfigBuilder OnShutdown(Func<Task> handler)
-    {
-	    return OnShutdown(_ => handler());
-    }
-
-    public BeamServiceConfigBuilder OnShutdown(Action handler)
-    {
-	    return OnShutdown(_ =>
-	    {
-		    handler();
-		    return Task.CompletedTask;
-	    });
-    }
-
+    
     public BeamServiceConfigBuilder OverrideConfig(Action<IBeamServiceConfig> configurator)
     {
         configurator?.Invoke(Config);

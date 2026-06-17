@@ -248,24 +248,6 @@ namespace Beamable.Server
       {
          IsShuttingDown = true;
 
-         // Run user-registered shutdown handlers while the websocket is still alive, so they can
-         // send a final notification before the connection is closed further down.
-         foreach (var handler in _startupContext.shutdownHandlers)
-         {
-            try
-            {
-               var task = handler?.Invoke(InstanceArgs.ServiceScope);
-               if (task != null)
-               {
-                  await task;
-               }
-            }
-            catch (Exception ex)
-            {
-               Log.Warning("Shutdown handler failed. {message}", ex.Message);
-            }
-         }
-
          // need to wait for all tasks to complete...
          Log.Debug("Shutdown started... {runningTaskCount} tasks running.", _runningTaskTable.Count);
 

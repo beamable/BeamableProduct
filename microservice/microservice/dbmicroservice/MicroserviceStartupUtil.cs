@@ -97,8 +97,7 @@ public static class MicroserviceStartupUtil
 			
 			generateLocalEnvInvocationModifier = configurator.LocalEnvModifier ?? (_ => { }),
 			initializers = configurator.ServiceInitializers.ToList(),
-			perServiceInitializers = configurator.PerServiceInitializers.ToList(),
-			shutdownHandlers = configurator.ShutdownHandlers.ToList()
+			perServiceInitializers = configurator.PerServiceInitializers.ToList()
 		};
 
 		ConfigureLogging(configurator, startupCtx, includeOtel: false, string.Empty);
