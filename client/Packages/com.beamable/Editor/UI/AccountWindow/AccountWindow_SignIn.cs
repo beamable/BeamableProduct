@@ -43,6 +43,19 @@ namespace Beamable.Editor.Accounts
 			envMap[Env.Custom],
 		};
 
+		[Serializable]
+		public class SavedCredentials
+		{
+			public string CidOrAlias;
+			public string Email;
+		}
+
+		[Serializable]
+		class SavedCredentialsArray
+		{
+			public SavedCredentials[] items;
+		}
+
 		public string GetHostString()
 		{
 			switch (env)
@@ -52,6 +65,29 @@ namespace Beamable.Editor.Accounts
 				case Env.Dev: return BEAM_DEV_ENDPOINT;
 				case Env.Custom: return host;
 				default: throw new InvalidOperationException("unknown env");
+			}
+		}
+
+		List<SavedCredentials> EditorSavedCredentials
+		{
+			get
+			{
+				try
+				{
+					return JsonUtility.FromJson<SavedCredentialsArray>(
+						EditorPrefs.GetString("Beamable.SavedCredentials", "{}")).items.ToList();
+				}
+				catch
+				{
+					return new List<SavedCredentials>();
+				}
+			}
+			set
+			{
+				var vv = JsonUtility.ToJson(new SavedCredentialsArray{items = value
+				                                                              .GroupBy(c => (c.CidOrAlias, c.Email))
+				                                                              .Select(g => g.First()).ToArray()});
+				EditorPrefs.SetString("Beamable.SavedCredentials", vv);
 			}
 		}
 
@@ -80,7 +116,7 @@ namespace Beamable.Editor.Accounts
 		private GUIStyle _textboxStyle;
 		private GUIStyle _textboxPlaceholderStyle;
 		private GUIStyle _placeholderStyle;
-
+		
 		public void Draw_SignIn()
 		{
 			EditorGUILayout.BeginVertical(new GUIStyle
@@ -181,7 +217,14 @@ namespace Beamable.Editor.Accounts
 					}
 					
 					rect = GUILayoutUtility.GetRect(GUIContent.none, _textboxStyle);
-					cidOrAlias = BeamGUI.PlaceholderTextField(rect, cidOrAlias, "Enter Organization Alias", _textboxStyle, _placeholderStyle);
+					cidOrAlias = BeamGUI.DropdownTextField(rect, cidOrAlias, "Enter Organization Alias", EditorSavedCredentials.Select(cred => $"{cred.CidOrAlias} - {cred.Email}").ToArray(),
+					                                       newValue =>
+					                                       {
+						                                       var splited = newValue.Split(" - ");
+						                                       cidOrAlias = splited[0];
+						                                       email = splited[1];
+						                                       password = string.Empty;
+					                                       }, _textboxStyle, _placeholderStyle);
 
 					// EditorGUILayout.Space(2);
 
@@ -267,6 +310,9 @@ namespace Beamable.Editor.Accounts
 							_loginPromise = context.Login(GetHostString(), cidOrAlias, email, password);
 							_loginPromise.Then(_ =>
 							{
+								var saved = EditorSavedCredentials;
+								saved.Add(new SavedCredentials{CidOrAlias = cidOrAlias, Email = email});
+								EditorSavedCredentials = saved;
 								if (cli.latestGames?.VisibleGames.Length > 1) // if there is only one game, there is no reason to make a selection
 								{
 									needsGameSelection = true;
@@ -291,7 +337,6 @@ namespace Beamable.Editor.Accounts
 			}
 
 			EditorGUILayout.EndVertical();
-
 		}
 	}
 }
