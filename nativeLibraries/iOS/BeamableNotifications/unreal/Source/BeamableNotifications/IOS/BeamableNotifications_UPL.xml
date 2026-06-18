@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Unreal Plugin Language (UPL) for BeamableNotifications iOS.
+
+  This automates what UPL can reliably do:
+    * adds the remote-notification background mode to Info.plist
+    * publishes the App Group id (BMNAppGroup) so SharedConfig can find it
+    * stages the Notification Service Extension sources next to the project
+
+  Two things UPL cannot create reliably and must be done once in Xcode / Project Settings
+  (see docs/unreal.md):
+    1. Enable Push Notifications: Project Settings > iOS > "Enable Remote Notifications
+       Support" (writes the aps-environment entitlement), and add the App Group
+       capability (group.com.beamable.notifications) to the app + extension.
+    2. Add the Notification Service Extension *target* in the generated Xcode project,
+       using the sources staged by this UPL (BeamableNotificationServiceExtension/).
+-->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- iOS only -->
+  <init>
+    <log text="BeamableNotifications: applying iOS UPL"/>
+    <setStringFromProperty result="AppGroup" ini="Engine" section="/Script/BeamableNotifications.Settings" property="AppGroup" default="group.com.beamable.notifications"/>
+  </init>
+
+  <iosPListUpdates>
+    <!-- Remote-notification background mode -->
+    <addElements tag="dict" once="true">
+      <key>UIBackgroundModes</key>
+      <array>
+        <string>remote-notification</string>
+      </array>
+    </addElements>
+    <!-- App Group id consumed by the SDK's SharedConfig (app + NSE) -->
+    <addElements tag="dict" once="true">
+      <key>BMNAppGroup</key>
+      <string>group.com.beamable.notifications</string>
+    </addElements>
+  </iosPListUpdates>
+
+  <!-- Stage the NSE sources into the built project so they can be added to an
+       extension target. Paths are relative to the plugin's IOS directory. -->
+  <iosPostProcessProject>
+    <copyDir src="$S(PluginDir)/../../../Extension"
+             dst="$S(BuildDir)/BeamableNotificationServiceExtension"/>
+    <log text="BeamableNotifications: staged NSE sources to BeamableNotificationServiceExtension/"/>
+  </iosPostProcessProject>
+
+</root>
