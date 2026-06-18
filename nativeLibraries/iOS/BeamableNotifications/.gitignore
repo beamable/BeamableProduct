@@ -1,0 +1,18 @@
+# Build artifacts
+build/
+*.xcarchive
+DerivedData/
+.build/
+.swiftpm/
+
+# Node / RN
+node_modules/
+reactnative/lib/
+
+# Vendored binaries (regenerate with scripts/build-xcframework.sh)
+unity/Plugins/iOS/*.xcframework
+reactnative/ios/Frameworks/*.xcframework
+unreal/ThirdParty/*.zip
+
+# macOS
+.DS_Store

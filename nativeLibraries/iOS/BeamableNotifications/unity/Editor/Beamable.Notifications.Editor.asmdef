@@ -1,0 +1,17 @@
+{
+  "name": "Beamable.Notifications.Editor",
+  "rootNamespace": "Beamable.Notifications.Editor",
+  "references": [
+    "Beamable.Notifications"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "defineConstraints": [],
+  "versionDefines": []
+}

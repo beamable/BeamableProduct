@@ -1,0 +1,15 @@
+{
+  "name": "Beamable.Notifications",
+  "rootNamespace": "Beamable.Notifications",
+  "references": [
+    "Unity.Nuget.Newtonsoft-Json"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "defineConstraints": [],
+  "versionDefines": []
+}
