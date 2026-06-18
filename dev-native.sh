@@ -93,18 +93,6 @@ echo "  pushnotifications-release.aar → $CLIENT_ANDROID_DIR"
 echo "  deeplink-release.aar          → $CLIENT_ANDROID_DIR"
 
 # ---------------------------------------------------------------------------
-# 3. Open the folder with the packages
-# ---------------------------------------------------------------------------
-echo ""
-echo "--- Opening package folder ---"
-if [ "$OS" = windows ]; then
-  # explorer returns a non-zero exit code even on success.
-  explorer "$(cygpath -w "$CLIENT_ANDROID_DIR")" || true
-else
-  open "$CLIENT_ANDROID_DIR" || true
-fi
-
-# ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 echo ""
