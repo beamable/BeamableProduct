@@ -82,8 +82,8 @@ Register via app-manifest meta-data (required for the closed-app case):
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.fully.Qualified.HandlerClass" />
 ```
-or programmatically with `PushManager.setNotificationReceivedHandler(...)`. Reference impl:
-`com.beamable.push.sample.DemoPushNotificationReceivedHandler`.
+or programmatically with `PushManager.setNotificationReceivedHandler(...)`. Working example:
+`client/Assets/Plugins/Android/DiscordWebhookPushHandler.java`.
 
 **Requirements & caveats:** send **data-only, high-priority** FCM messages (a `notification`
 block is auto-displayed and bypasses the hook while closed — only fires on tap). A

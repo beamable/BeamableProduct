@@ -44,9 +44,10 @@ object UnityPush {
         PushManager.initialize(act.applicationContext, gameObject, enableRemote)
     }
 
-    /** Register a notification channel from a JSON spec. */
+    /** Register a notification channel. [importance] uses NotificationManager.IMPORTANCE_* (4 = HIGH). */
     @JvmStatic
-    fun registerChannel(json: String) = PushManager.registerChannel(json)
+    fun registerChannel(id: String, name: String, description: String, importance: Int) =
+        PushManager.registerChannel(id, name, description, importance)
 
     /** Request POST_NOTIFICATIONS (API 33+). */
     @JvmStatic
@@ -65,6 +66,28 @@ object UnityPush {
     @JvmStatic
     fun scheduleLocal(json: String, delayMillis: Long): Int =
         PushManager.scheduleLocal(json, delayMillis)
+
+    /** Exact variant of [scheduleLocal] (needs SCHEDULE_EXACT_ALARM; falls back to inexact). */
+    @JvmStatic
+    fun scheduleLocalExact(json: String, delayMillis: Long): Int =
+        PushManager.scheduleLocalExact(json, delayMillis)
+
+    /** Schedule at an absolute wall-clock time, interpreted as UTC ([useUtc]) or device-local. month is 1-12. */
+    @JvmStatic
+    fun scheduleLocalAt(
+        json: String, year: Int, month: Int, dayOfMonth: Int,
+        hourOfDay: Int, minute: Int, second: Int, useUtc: Boolean, exact: Boolean
+    ): Int = PushManager.scheduleLocalAt(json, year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact)
+
+    /** Whether exact alarms can currently be scheduled. */
+    @JvmStatic
+    fun canScheduleExactAlarms(): Boolean = PushManager.canScheduleExactAlarms()
+
+    /** Open the system settings to grant exact-alarm permission (API 31+). */
+    @JvmStatic
+    fun requestExactAlarmPermission() {
+        currentActivity()?.let { PushManager.requestExactAlarmPermission(it) }
+    }
 
     /** Fetch the current FCM token (delivered via OnTokenReceived). */
     @JvmStatic
