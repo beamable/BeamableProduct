@@ -158,13 +158,55 @@ The Kotlin facade (`com.beamable.push.unreal.UnrealPush`) and JNI bridge
 
 ---
 
-## Receive-time handler (runs even when the app is killed)
+## How notifications are detected (remote + local)
 
-Implement `com.beamable.push.PushNotificationReceivedHandler` (engine-agnostic) and register it
-via app-manifest meta-data — fires natively on FCM receipt even with the app closed:
+Both delivery paths converge on the **same** receive-time handler,
+`com.beamable.push.PushNotificationReceivedHandler`, so a single implementation handles every case
+— remote/local × foreground/background/killed. It is registered via app-manifest meta-data and
+instantiated by **reflection**, so it runs even in a freshly spawned process when the app is killed:
 ```xml
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.Handler" />
 ```
-Requires **data-only, high-priority** FCM messages (a `notification`-block message is shown by the
-OS and bypasses the hook until tapped). See `sample/DemoPushNotificationReceivedHandler.kt`.
+(Or set it at runtime via `PushManager.setNotificationReceivedHandler(...)` — app-alive only.)
+
+```kotlin
+interface PushNotificationReceivedHandler {
+    fun onNotificationReceived(context: Context, event: PushReceivedEvent)
+}
+// PushReceivedEvent(messageId, dataJson, sentTimeMillis, receivedTimeMillis, wasForeground, deepLink)
+```
+
+### Remote (FCM)
+`PushFirebaseService.onMessageReceived` fires for every FCM message and invokes the handler
+**before** any display/branching — so it runs in **foreground, background, and killed** states.
+Background/killed delivery requires **data-only, high-priority** messages (a `notification`-block
+message is auto-displayed by the OS and only reaches the app when tapped). When the app is
+foreground it additionally forwards the raw message to the engine via `onMessageReceivedForeground`
+(Unity `OnMessageForeground`).
+
+### Local (AlarmManager)
+`scheduleLocal(...)` sets an `AlarmManager` alarm; when it fires, the broadcast wakes the app
+process and is delivered to `NotificationActionReceiver`, which posts the notification **and**
+invokes the same handler — so local notifications reach it too, in **foreground, background, and
+killed** states. Since `BroadcastReceiver.onReceive` runs on the main thread, the handler is called
+on a background thread via `goAsync()` (~10s budget), matching the FCM path and allowing a short
+blocking call (e.g. an HTTP request). Note: local notifications never go through FCM, so they fire
+the handler **without** any `google-services.json` / Firebase setup.
+
+### Foreground vs background — `event.wasForeground`
+`wasForeground` is read from `PushManager.isForeground`, which the engine keeps current by calling
+`setForeground(bool)` across its lifecycle (the Unity adapter does this at init and on
+`OnApplicationFocus`/`OnApplicationPause`). In a killed-app process it defaults to `false`. So:
+- `true`  → the app was open when the notification arrived.
+- `false` → the app was backgrounded or killed.
+
+### Engine-side callbacks (app-alive only)
+Besides the native handler, results route to the engine via `PushListener`
+(`onMessageReceivedForeground`, `onNotificationOpened` on tap, `onLocalNotificationScheduled`, …).
+These need the engine running, so they cover the **app-open** case only; the native handler above
+is the single hook that also runs when the app is **killed**.
+
+> Constraints: ~10s background-thread budget (enqueue WorkManager for longer work); a
+> force-stopped/OEM-killed app receives nothing until reopened. Reference impl:
+> `sample/DemoPushNotificationReceivedHandler.kt`.

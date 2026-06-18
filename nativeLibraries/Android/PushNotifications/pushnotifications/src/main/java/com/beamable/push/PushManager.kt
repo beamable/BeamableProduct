@@ -98,10 +98,9 @@ object PushManager {
         }
     }
 
-    /** Replaces the active listener. */
-    fun setListener(listener: PushListener) {
-        this.listener = listener
-    }
+    // Note: the public `listener` property already exposes a JVM `setListener(...)`
+    // setter to Java/JNI/C# callers, so no explicit setter method is needed (an
+    // explicit one would clash with the property's generated setter signature).
 
     /** Sets the receive-time handler programmatically (app-alive only). */
     fun setNotificationReceivedHandler(handler: PushNotificationReceivedHandler?) {

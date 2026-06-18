@@ -29,8 +29,10 @@ class ReactDeepLinkModule(
 
     override fun getName() = "BeamableDeeplink"
 
+    // Named initializeDeepLinks (not initialize) to avoid hiding the no-arg
+    // ReactContextBaseJavaModule.initialize() lifecycle method.
     @ReactMethod
-    fun initialize() {
+    fun initializeDeepLinks() {
         val app = reactContext.applicationContext as? Application ?: return
         DeepLinkManager.initialize(app, this)
     }
