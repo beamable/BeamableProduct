@@ -26,7 +26,10 @@ class ReactPushModule(
         PushManager.initialize(reactContext.applicationContext, this, enableRemote)
     }
 
-    @ReactMethod fun registerChannel(channelJson: String) = PushManager.registerChannel(channelJson)
+    /** Register a notification channel. importance uses NotificationManager.IMPORTANCE_* (4 = HIGH). */
+    @ReactMethod
+    fun registerChannel(id: String, name: String, description: String, importance: Double) =
+        PushManager.registerChannel(id, name, description, importance.toInt())
 
     @ReactMethod
     fun requestPermission() {
@@ -36,6 +39,37 @@ class ReactPushModule(
     @ReactMethod
     fun scheduleLocal(templateJson: String, delayMillis: Double, promise: Promise) {
         promise.resolve(PushManager.scheduleLocal(templateJson, delayMillis.toLong()))
+    }
+
+    /** Exact variant of [scheduleLocal] (needs SCHEDULE_EXACT_ALARM; falls back to inexact). */
+    @ReactMethod
+    fun scheduleLocalExact(templateJson: String, delayMillis: Double, promise: Promise) {
+        promise.resolve(PushManager.scheduleLocalExact(templateJson, delayMillis.toLong()))
+    }
+
+    /** Schedule at an absolute wall-clock time, interpreted as UTC ([useUtc]) or device-local. month is 1-12. */
+    @ReactMethod
+    fun scheduleLocalAt(
+        templateJson: String, year: Double, month: Double, dayOfMonth: Double,
+        hourOfDay: Double, minute: Double, second: Double, useUtc: Boolean, exact: Boolean,
+        promise: Promise
+    ) {
+        promise.resolve(
+            PushManager.scheduleLocalAt(
+                templateJson, year.toInt(), month.toInt(), dayOfMonth.toInt(),
+                hourOfDay.toInt(), minute.toInt(), second.toInt(), useUtc, exact
+            )
+        )
+    }
+
+    @ReactMethod
+    fun canScheduleExactAlarms(promise: Promise) {
+        promise.resolve(PushManager.canScheduleExactAlarms())
+    }
+
+    @ReactMethod
+    fun requestExactAlarmPermission() {
+        currentActivity?.let { PushManager.requestExactAlarmPermission(it) }
     }
 
     @ReactMethod fun fetchToken() = PushManager.fetchToken()

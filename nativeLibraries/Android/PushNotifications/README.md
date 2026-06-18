@@ -25,12 +25,12 @@ The React adapter compiles against a `compileOnly` `com.facebook.react` dependen
 
 ## API (shared core)
 
-JSON shapes used by every engine:
+Channels are registered with explicit fields —
+`registerChannel(id, name, description, importance)` (`importance` uses the
+`NotificationManager.IMPORTANCE_*` constants, 4 = HIGH). The notification **template** is passed as
+JSON to `scheduleLocal*`:
 
 ```jsonc
-// channel
-{ "id": "default", "name": "General", "description": "", "importance": 4 } // 4 = IMPORTANCE_HIGH
-
 // notification template
 {
   "id": 0,                       // 0 = auto-assign
@@ -44,10 +44,22 @@ JSON shapes used by every engine:
 ```
 
 Operations (names are consistent across engines): `initialize(enableRemote)`,
-`registerChannel(json)`, `requestPermission()`, `hasPermission()`,
+`registerChannel(id, name, description, importance)`, `requestPermission()`, `hasPermission()`,
 `scheduleLocal(templateJson, delayMillis) → id`, `fetchToken()`, `subscribeTopic(t)`,
 `unsubscribeTopic(t)`, `consumeLaunchIntent()` (was app opened from a notification?),
-`cancel(id)`, `cancelAll()`, `setForeground(bool)`.
+`cancel(id)`, `cancelAll()`, `setForeground(bool)`,
+`scheduleLocalExact(templateJson, delayMillis) → id`,
+`scheduleLocalAt(templateJson, year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact) → id`,
+`canScheduleExactAlarms()`, `requestExactAlarmPermission()`.
+
+**Exact alarms & absolute time.** `scheduleLocal*` defaults to **inexact** doze-friendly alarms
+(no permission). `scheduleLocalExact` (and `scheduleLocalAt(..., exact=true)`) use an **exact** alarm,
+which needs `SCHEDULE_EXACT_ALARM` — the consuming app declares it; on API 33+ the user grants it in
+Settings. The library checks `canScheduleExactAlarms()` and **falls back to inexact** (dispatching a
+`schedule_exact_denied` error) when it isn't available. `scheduleLocalAt` schedules at an absolute
+wall-clock time interpreted as **UTC** (`useUtc=true`) or the **device-local** zone, converted to an
+epoch by the library. (`USE_EXACT_ALARM` is intentionally not used — Play restricts it to
+alarm/calendar apps.)
 
 Callbacks (`PushListener`): `onTokenReceived`, `onTokenRefreshError`,
 `onMessageReceivedForeground`, `onNotificationOpened`, `onPermissionResult`,
@@ -103,7 +115,7 @@ with no compile-time references to UE classes.)
    using (var push = new AndroidJavaClass("com.beamable.push.unity.UnityPush"))
    {
        push.CallStatic("initialize", "BeamablePush", /*enableRemote*/ true); // routes callbacks to GameObject "BeamablePush"
-       push.CallStatic("registerChannel", "{\"id\":\"default\",\"name\":\"General\",\"importance\":4}");
+       push.CallStatic("registerChannel", "default", "General", "", 4); // importance 4 = HIGH
        push.CallStatic("requestPermission");
        int id = push.CallStatic<int>("scheduleLocal",
            "{\"title\":\"Hi\",\"body\":\"Yo\",\"channelId\":\"default\",\"deepLinkUrl\":\"myapp://x\"}", (long)5000);
@@ -132,7 +144,7 @@ The native module + `ReactPackage` ship in the `.aar` (`com.beamable.push.react`
    const emitter = new NativeEventEmitter(BeamablePush);
 
    BeamablePush.initialize(true);
-   BeamablePush.registerChannel(JSON.stringify({ id: 'default', name: 'General', importance: 4 }));
+   BeamablePush.registerChannel('default', 'General', '', 4); // importance 4 = HIGH
    BeamablePush.requestPermission();
    emitter.addListener('onTokenReceived', (t) => console.log('token', t));
    emitter.addListener('onNotificationOpened', (json) => route(json));
@@ -208,5 +220,5 @@ These need the engine running, so they cover the **app-open** case only; the nat
 is the single hook that also runs when the app is **killed**.
 
 > Constraints: ~10s background-thread budget (enqueue WorkManager for longer work); a
-> force-stopped/OEM-killed app receives nothing until reopened. Reference impl:
-> `sample/DemoPushNotificationReceivedHandler.kt`.
+> force-stopped/OEM-killed app receives nothing until reopened. Working example:
+> `client/Assets/Plugins/Android/DiscordWebhookPushHandler.java`.

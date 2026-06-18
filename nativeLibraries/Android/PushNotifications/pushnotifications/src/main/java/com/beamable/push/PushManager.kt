@@ -2,8 +2,13 @@ package com.beamable.push
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
+import java.util.Calendar
+import java.util.TimeZone
 import com.beamable.push.unity.UnityPushBridge
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
@@ -154,23 +159,12 @@ object PushManager {
         NotificationBuilder.ensureChannel(ctx, spec)
     }
 
-    /** JSON overload of [registerChannel] for easy cross-language calls. */
-    fun registerChannel(json: String) {
-        try {
-            val obj = org.json.JSONObject(json)
-            val spec = NotificationChannelSpec(
-                id = obj.optString("id"),
-                name = obj.optString("name", "Notifications"),
-                description = obj.optString("description", ""),
-                importance = obj.optInt(
-                    "importance",
-                    android.app.NotificationManager.IMPORTANCE_HIGH
-                )
-            )
-            registerChannel(spec)
-        } catch (t: Throwable) {
-            dispatchError("register_channel", t.message ?: t.toString())
-        }
+    /**
+     * Field overload of [registerChannel] for easy cross-language calls (engine adapters use this
+     * — no JSON). [importance] uses the `NotificationManager.IMPORTANCE_*` constants (e.g. 4 = HIGH).
+     */
+    fun registerChannel(id: String, name: String, description: String, importance: Int) {
+        registerChannel(NotificationChannelSpec(id, name, description, importance))
     }
 
     // ---- Permission ---------------------------------------------------------
@@ -204,6 +198,93 @@ object PushManager {
         } catch (t: Throwable) {
             dispatchError("schedule_local", t.message ?: t.toString())
             0
+        }
+    }
+
+    /**
+     * Exact variant of [scheduleLocal] — uses an exact alarm so it fires precisely (subject to OEM
+     * limits) instead of being batched. Requires the SCHEDULE_EXACT_ALARM permission on API 31+
+     * (the app must declare it; API 33+ also needs a user grant — see [canScheduleExactAlarms] /
+     * [requestExactAlarmPermission]); falls back to inexact with a `schedule_exact_denied` warning.
+     */
+    fun scheduleLocalExact(template: NotificationTemplate, delayMillis: Long): Int {
+        val ctx = appContext
+        if (ctx == null) {
+            dispatchError("schedule_local", "PushManager not initialized")
+            return 0
+        }
+        val id = LocalNotificationScheduler.schedule(ctx, template, delayMillis, exact = true)
+        dispatchLocalScheduled(id)
+        return id
+    }
+
+    /** JSON overload of [scheduleLocalExact]. */
+    fun scheduleLocalExact(templateJson: String, delayMillis: Long): Int {
+        return try {
+            scheduleLocalExact(NotificationTemplate.fromJson(templateJson), delayMillis)
+        } catch (t: Throwable) {
+            dispatchError("schedule_local", t.message ?: t.toString())
+            0
+        }
+    }
+
+    /**
+     * Schedules [template] at an absolute wall-clock time. The given fields are interpreted in
+     * **UTC** when [useUtc] is true, otherwise in the **device's local** time zone, then converted
+     * to an epoch instant. [month] is 1-12.
+     *
+     * @param exact use an exact alarm (see [scheduleLocalExact]); defaults to inexact via the JSON overload.
+     */
+    fun scheduleLocalAt(
+        template: NotificationTemplate,
+        year: Int, month: Int, dayOfMonth: Int, hourOfDay: Int, minute: Int, second: Int,
+        useUtc: Boolean, exact: Boolean
+    ): Int {
+        val ctx = appContext
+        if (ctx == null) {
+            dispatchError("schedule_local", "PushManager not initialized")
+            return 0
+        }
+        val tz = if (useUtc) TimeZone.getTimeZone("UTC") else TimeZone.getDefault()
+        val cal = Calendar.getInstance(tz)
+        cal.clear()
+        cal.set(year, month - 1, dayOfMonth, hourOfDay, minute, second)
+        val id = LocalNotificationScheduler.scheduleAt(ctx, template, cal.timeInMillis, exact)
+        dispatchLocalScheduled(id)
+        return id
+    }
+
+    /** JSON overload of [scheduleLocalAt]. */
+    fun scheduleLocalAt(
+        templateJson: String,
+        year: Int, month: Int, dayOfMonth: Int, hourOfDay: Int, minute: Int, second: Int,
+        useUtc: Boolean, exact: Boolean
+    ): Int {
+        return try {
+            scheduleLocalAt(
+                NotificationTemplate.fromJson(templateJson),
+                year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact
+            )
+        } catch (t: Throwable) {
+            dispatchError("schedule_local", t.message ?: t.toString())
+            0
+        }
+    }
+
+    /** True if exact alarms can currently be scheduled (always pre-API-31; permission-gated after). */
+    fun canScheduleExactAlarms(): Boolean {
+        val ctx = appContext ?: return false
+        return LocalNotificationScheduler.canScheduleExact(ctx)
+    }
+
+    /** Opens the system settings screen where the user can grant exact-alarm permission (API 31+). */
+    fun requestExactAlarmPermission(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                activity.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+            } catch (t: Throwable) {
+                dispatchError("request_exact_alarm", t.message ?: t.toString())
+            }
         }
     }
 
