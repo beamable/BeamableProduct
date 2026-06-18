@@ -83,10 +83,11 @@ namespace Beamable.Editor.Util
     {
         fieldStyle ??= EditorStyles.textField;
 
-        const float buttonWidth = 18f;
+        const float buttonWidth = 25f;
         const float spacing    = 2f;
 
-        var fieldRect  = new Rect(rect.x, rect.y, rect.width - buttonWidth - spacing, rect.height);
+        var fieldWidth = options != null && options.Length > 0 ? rect.width - buttonWidth - spacing : rect.width;
+        var fieldRect  = new Rect(rect.x, rect.y, fieldWidth, rect.height);
         var buttonRect = new Rect(fieldRect.xMax + spacing, rect.y, buttonWidth, EditorGUIUtility.singleLineHeight);
 
         // ── Text field ──────────────────────────────────────────────────

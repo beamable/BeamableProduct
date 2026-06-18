@@ -74,8 +74,9 @@ namespace Beamable.Editor.Accounts
 			{
 				try
 				{
+					var savedValue = EditorUserSettings.GetConfigValue("Beamable.SavedCredentials");
 					return JsonUtility.FromJson<SavedCredentialsArray>(
-						EditorPrefs.GetString("Beamable.SavedCredentials", "{}")).items.ToList();
+						string.IsNullOrWhiteSpace(savedValue) ? "{}" : savedValue).items.ToList();
 				}
 				catch
 				{
@@ -87,7 +88,7 @@ namespace Beamable.Editor.Accounts
 				var vv = JsonUtility.ToJson(new SavedCredentialsArray{items = value
 				                                                              .GroupBy(c => (c.CidOrAlias, c.Email))
 				                                                              .Select(g => g.First()).ToArray()});
-				EditorPrefs.SetString("Beamable.SavedCredentials", vv);
+				EditorUserSettings.SetConfigValue("Beamable.SavedCredentials", vv);
 			}
 		}
 
@@ -221,11 +222,12 @@ namespace Beamable.Editor.Accounts
 					                                       newValue =>
 					                                       {
 						                                       var splited = newValue.Split(" - ");
+						                                       EditorGUIUtility.editingTextField = false;
 						                                       cidOrAlias = splited[0];
 						                                       email = splited[1];
 						                                       password = string.Empty;
 					                                       }, _textboxStyle, _placeholderStyle);
-
+					
 					// EditorGUILayout.Space(2);
 
 					var clickedCreateOrg = BeamGUI.SoftRightLinkButton(new GUIContent("Create a new organization"));
